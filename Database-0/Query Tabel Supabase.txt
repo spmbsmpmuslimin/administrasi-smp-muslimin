@@ -1,0 +1,88 @@
+STRUKTUR TABEL TERINTEGRASI
+
+
+CREATE TABLE classes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  grade INT NOT NULL CHECK (grade BETWEEN 7 AND 9),
+  academic_year TEXT NOT NULL
+);
+
+
+-- TABEL UTAMA: USERS
+CREATE TABLE users (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'teacher')),
+  homeroom_class_id UUID REFERENCES classes(id),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- TABEL MENGAJAR GURU (Teacher Assignments)
+CREATE TABLE teacher_assignments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  teacher_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  subject TEXT NOT NULL,  -- Mapel yang diajar
+  academic_year TEXT NOT NULL,
+  semester TEXT NOT NULL CHECK (semester IN ('odd', 'even')),
+  UNIQUE(teacher_id, class_id, subject, academic_year, semester)
+);
+
+
+CREATE TABLE students (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  nis TEXT UNIQUE NOT NULL,
+  class_id TEXT REFERENCES classes(id) ON DELETE SET NULL,  -- Sekarang TEXT
+  academic_year TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+CREATE TABLE attendances (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+  teacher_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  date DATE NOT NULL,
+  subject TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('present', 'sick', 'permission', 'absent')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(student_id, date, subject)
+);
+
+CREATE TABLE grades (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES students(id) ON DELETE CASCADE,
+  teacher_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  subject TEXT NOT NULL,
+  assignment_type TEXT NOT NULL CHECK (assignment_type IN ('NH1', 'NH2', 'NH3', 'UTS', 'UAS')),
+  score NUMERIC(5,2) CHECK (score >= 0 AND score <= 100),
+  semester TEXT NOT NULL CHECK (semester IN ('odd', 'even')),
+  academic_year TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(student_id, subject, assignment_type, semester, academic_year)
+);
+
+
+=================================================================== YANG ATAS SUDAH DIBUATKAN TABELNYA
+
+
+
+
+
+
+
+
+
+
+
+
+
+

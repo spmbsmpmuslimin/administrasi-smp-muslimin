@@ -1,0 +1,118 @@
+
+Nama Project : Administrasisekolah's Project
+Password Project : administrasi
+
+Akun Project : smpmuslimincililin2026@gmail.com 
+
+URL : https://ujuzahnsljxpqlfjqszb.supabase.co
+API Keys :eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqdXphaG5zbGp4cHFsZmpxc3piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjM2MjEsImV4cCI6MjA3MjQzOTYyMX0.bSgBFMzL3J5ZAnBogvowQEniWotkJN7svrGr-vVtLcU
+
+
+
+Tabel Pada Supabase :
+users : id,username,password,full_name,role,homeroom_class_id,is_active,created_at,updated_at,teacher_id
+teacher_assignments :id,teacher_id,class_id,subject,academic_year,semester
+classes : id,grade,academic_year
+students : id,full_name,nis,class_id,academic_year,is_active,created_at,updated_at,gender
+attendances : id,student_id,teacher_id,date,subject,status,created_at,notes,class_id,type
+grades :id, student_id, teacher_id, subject, assignment_type, score, semester, academic_year, created_at, class_id
+announcement : id,title,content,created_at,updated_at
+
+
+
+
+🔹 ADMIN Dashboard:
+Cards: |Total Guru | Total Kelas | Total Siswa |  Siswa per Jenjang  |
+Quick Actions: [Kelola Data Guru] [Kelola Kelas] [Kelola Siswa ] [Laporan Lengkap] 
++ Section tambahan: Pengumuman Terkini
+
+**🔹 HOMEROOM TEACHER Dashboard (contoh: Agus Sopandi - Kelas 7A):**
+Cards: Siswa Kelas 7A | Siswa Laki-Laki / Perempuan | Hadir Hari Ini (7A) | Tidak Hadir (7A) | 
+Quick Actions: [Presensi Kelas 7A] [Input Nilai PJOK] [Data Siswa 7A] [Laporan Kelas 7A]
++ Section tambahan: Pengumuman Terkini
+
+**🔹 TEACHER Dashboard (contoh: Yayat - Bahasa Sunda):**
+Cards: Total Siswa Diajar | Total Kelas Diajar | Hadir Mapel Hari Ini | 
+Quick Actions: [Presensi Bahasa Sunda] [Input Nilai Bahasa Sunda] [EasyModul]
++ Section tambahan: Pengumuman Terkini
+
+
+
+
+src/
+│── App.js
+│── App.module.css        # styling khusus untuk App.js
+│── supabaseClient.js     # konfigurasi supabase
+│── index.js
+│── index.css
+│── main.js
+│
+├── pages/                
+│   ├── Login/
+│   │   └── Login.js
+│   │   └── Login.css   
+│   │
+│   ├── Dashboard/
+│   │   └── Dashboard.js
+│   │   └── Dashboard.css
+│   │
+│   ├── Sidebar/
+│   │   └── Sidebar.js
+│   │   └── Sidebar.css
+│   │
+│   ├── Attendance/
+│   │   └── Attendance.js
+│   │   └── Attendance.module.css
+│   │
+│   └── Grades/
+│   │   └── Grades.js
+│   │   └── Grades.module.css
+│   │
+│   ├── EasyModul/
+│   │   └── EasyModul.js
+│   │   └── EasyModul.css
+│   │ 
+│   ├── Teachers/
+│   │   └── Teachers.js
+│   │   └── Teachers.css
+│   │
+│   ├─── Classes
+│   │
+│   ├─── Report
+│   │   
+│   ├─── Students
+│   │
+└──
+
+================================================================================
+
+├── Dashboard.js                 # Main router
+├── AdminDashboard.js            # Admin-specific dashboard
+├── HomeroomTeacherDashboard.js  # Homeroom teacher dashboard  
+├── TeacherDashboard.js          # Regular teacher dashboard
+
+
+
+src/
+├── index.js
+├── index.css                 
+├── App.js                   
+├── supabaseClient.js        
+│
+├── components/             
+│   ├── Layout.js
+│   ├── Login.js
+│   ├── Dashboard.js                 # Main router
+│   ├── AdminDashboard.js            # Admin-specific dashboard
+│   ├── HomeroomTeacherDashboard.js  # Homeroom teacher dashboard  
+│   ├── TeacherDashboard.js          # Regular teacher dashboard
+│   ├── Sidebar.js
+│   ├── Attendance.js
+│   ├── RecapModal.js
+│   ├── Grades.js
+│   ├── Teachers.js
+│   ├── Classes.js
+│   ├── Students.js
+│   ├── Report.js
+│   └── EasyModul.js
+

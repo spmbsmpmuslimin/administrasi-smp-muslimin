@@ -1,0 +1,31 @@
+﻿teacher_id;username;password;full_name;role;homeroom_class_id;is_active
+;admin01;admin123;Administrator;admin;;TRUE
+G-02;yayatsubaryat;guru123;YAYAT SUBARYAT;teacher;;TRUE
+G-03;agussopandi;guru123;AGUS SOPANDI;teacher;7A;TRUE
+G-04;elisitirohimah;guru123;ELI SITI ROHIMAH;teacher;;TRUE
+G-05;herawati;guru123;HERAWATI;teacher;8F;TRUE
+G-06;eulissumaritni;guru123;EULIS SUMARTINI;teacher;7D;TRUE
+G-07;yetikaryati;guru123;YETI KARYATI;teacher;8C;TRUE
+G-08;hodijah;guru123;HODIJAH;teacher;9B;TRUE
+G-09;emarahmawati;guru123;EMA RAHMAWATI;teacher;;TRUE
+G-10;didahmardiah;guru123;DIDAH MARDIAH;teacher;9E;TRUE
+G-11;iismasruroh;guru123;IS MASRUROH;teacher;9C;TRUE
+G-12;elanjaelani;guru123;ELAN JAELANI;teacher;7F;TRUE
+G-13;wiwindamayanti;guru123;WIWIN DAMAYANTI;teacher;8B;TRUE
+G-14;dewipuspitasari;guru123;DEWI PUSPITASARI;teacher;7B;TRUE
+G-15;didirahmandani;guru123;DIDI RAHMANDANI;teacher;;TRUE
+G-16;adawiyah;guru123;ADAWIYAH;teacher;8A;TRUE
+G-17;listridamayanti;guru123;LISTRI DAMAYANTI;teacher;9D;TRUE
+G-18;rahmathidayat;guru123;RAHMAT HIDAYAT;teacher;;TRUE
+G-19;jajanghilman;guru123;JAJANG HILMAN;teacher;;TRUE
+G-20;endahmirawanti;guru123;ENDAH MIRAWANTI;teacher;7C;TRUE
+G-21;sandisahril;guru123;SANDI SAHRIL;teacher;8D;TRUE
+G-22;usin;guru123;USIN;teacher;;TRUE
+G-23;nisadestianti;guru123;NISA DESTIANTI;teacher;8E;TRUE
+G-24;lutfianursaniah;guru123;LUTFIA NURSAINIH;teacher;9F;TRUE
+G-25;ulfahhumairoh;guru123;ULFAH HUMAIROH;teacher;;TRUE
+G-26;sitimaryam;guru123;SITI MARYAM LOMRAH;teacher;9A;TRUE
+G-27;syalfahauratunisa;guru123;SYALFA HAURATUNISA;teacher;7E;TRUE
+G-28;hanahumaira;guru123;HANA AL HUMAIRA N;teacher;;TRUE
+G-29;sandiindrawan;guru123;SANDI INDRAWAN;teacher;;TRUE
+G-30;hilmi;guru123;HILMI NAJMATUL MURSYIDAH;teacher;;TRUE
