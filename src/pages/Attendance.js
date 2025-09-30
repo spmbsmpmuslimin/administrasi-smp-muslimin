@@ -8,7 +8,14 @@ const Attendance = ({ user, onShowToast }) => {
   const [subjects, setSubjects] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  // Set default date dengan buffer timezone
+  const getDefaultDate = () => {
+    const today = new Date();
+    // Tambah offset untuk timezone Indonesia (UTC+7)
+    today.setHours(today.getHours() + 7);
+    return today.toISOString().split("T")[0];
+  };
+  const [date, setDate] = useState(getDefaultDate());
   const [students, setStudents] = useState([]);
   const [attendanceStatus, setAttendanceStatus] = useState({});
   const [attendanceNotes, setAttendanceNotes] = useState({});
@@ -365,7 +372,7 @@ const Attendance = ({ user, onShowToast }) => {
     };
 
     fetchClasses();
-  }, [selectedSubject, teacherId, isHomeroomTeacher, homeroomClass]); // TAMBAH homeroomClass DI SINI
+  }, [selectedSubject, teacherId, isHomeroomTeacher, homeroomClass]);
 
   // FETCH STUDENTS FUNCTION (Used for normal subject selection)
   const fetchStudentsForClass = async (classId) => {
@@ -405,7 +412,7 @@ const Attendance = ({ user, onShowToast }) => {
   useEffect(() => {
     // Skip if homeroom daily (already fetched inline in fetchClasses)
     if (selectedClass && !isHomeroomDaily()) {
-      console.log("📝 Fetching students for normal class:", selectedClass);
+      console.log("🔍 Fetching students for normal class:", selectedClass);
       fetchStudentsForClass(selectedClass);
     }
   }, [selectedClass]);
@@ -675,9 +682,18 @@ const Attendance = ({ user, onShowToast }) => {
               value={date}
               onChange={(e) => setDate(e.target.value)}
               disabled={loading}
-              max={new Date().toISOString().split("T")[0]}
+              min="2024-01-01"
+              max="2026-12-31"
               className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
             />
+            <p className="text-xs text-slate-500 mt-1">
+              Tanggal saat ini: {new Date().toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </p>
           </div>
         </div>
       </div>
