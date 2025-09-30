@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import AcademicYearTab from '../components/AcademicYearTab';
 import { 
   Settings, 
   User, 
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 
 const Setting = ({ user, onShowToast }) => {
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('academic');
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     full_name: '',
@@ -37,7 +38,7 @@ const Setting = ({ user, onShowToast }) => {
     confirm: false
   });
 
-  // Fetch user profile data - SESUAIKAN DENGAN STRUKTUR TABEL
+  // Fetch user profile data
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
@@ -51,7 +52,6 @@ const Setting = ({ user, onShowToast }) => {
 
         if (error) {
           console.error('Error fetching profile:', error);
-          // Fallback: gunakan data dari user prop
           setProfileData({
             full_name: user.full_name || '',
             username: user.username || '',
@@ -75,14 +75,13 @@ const Setting = ({ user, onShowToast }) => {
         }
       } catch (error) {
         console.error('Error in fetchProfile:', error);
-        // Jangan tampilkan error ke user
       }
     };
 
     fetchProfile();
   }, [user]);
 
-  // Handle profile update - SESUAIKAN DENGAN STRUKTUR TABEL
+  // Handle profile update
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -162,14 +161,13 @@ const Setting = ({ user, onShowToast }) => {
     onShowToast('Cache berhasil dibersihkan', 'success');
   };
 
-  // Logout dari semua perangkat (contoh)
+  // Logout dari semua perangkat
   const handleLogoutAllDevices = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       onShowToast('Berhasil logout dari semua perangkat', 'success');
-      // Redirect ke login page akan ditangani oleh App.js
     } catch (error) {
       console.error('Error logging out:', error);
       onShowToast('Gagal logout', 'error');
@@ -177,6 +175,7 @@ const Setting = ({ user, onShowToast }) => {
   };
 
   const tabs = [
+    { id: 'academic', label: 'Tahun Ajaran', icon: BookOpen },
     { id: 'profile', label: 'Profil', icon: User },
     { id: 'security', label: 'Keamanan', icon: Shield },
     { id: 'system', label: 'Sistem', icon: Database }
@@ -233,6 +232,11 @@ const Setting = ({ user, onShowToast }) => {
 
           {/* Tab Content */}
           <div className="p-6">
+            {/* Academic Year Tab */}
+            {activeTab === 'academic' && (
+              <AcademicYearTab onShowToast={onShowToast} />
+            )}
+
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div>
