@@ -10,10 +10,14 @@ const Attendance = ({ user, onShowToast }) => {
   const [selectedSubject, setSelectedSubject] = useState("");
   // Set default date dengan buffer timezone
   const getDefaultDate = () => {
-    const today = new Date();
-    // Tambah offset untuk timezone Indonesia (UTC+7)
-    today.setHours(today.getHours() + 7);
-    return today.toISOString().split("T")[0];
+    const options = {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    };
+    const parts = new Intl.DateTimeFormat("en-CA", options).format(new Date());
+    return parts; // Format: yyyy-mm-dd
   };
   const [date, setDate] = useState(getDefaultDate());
   const [students, setStudents] = useState([]);
@@ -687,11 +691,12 @@ const Attendance = ({ user, onShowToast }) => {
               className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
             />
             <p className="text-xs text-slate-500 mt-1">
-              Tanggal saat ini: {new Date().toLocaleDateString('id-ID', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              Tanggal saat ini:{" "}
+              {new Date().toLocaleDateString("id-ID", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
               })}
             </p>
           </div>
