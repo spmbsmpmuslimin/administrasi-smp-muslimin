@@ -1,7 +1,8 @@
 // TeacherReports.jsx - Subject Teacher View
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-Open,
+import { 
+  FileText, BookOpen, BarChart3, Eye,
   Filter, X, AlertTriangle, ChevronDown, FileSpreadsheet, FileTextIcon,
   Users, GraduationCap, CheckCircle
 } from 'lucide-react';
@@ -25,7 +26,7 @@ const StatCard = ({ icon: Icon, label, value, color = 'indigo' }) => (
 );
 
 // Filter Panel Component
-const FilterPanel = ({ filters, onFilterChange, onReset, subjectOptions = [] }) => {
+const FilterPanel = ({ filters, onFilterChange, onReset, subjectOptions = [], academicYears = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const activeFilterCount = useMemo(() => {
@@ -89,9 +90,9 @@ const FilterPanel = ({ filters, onFilterChange, onReset, subjectOptions = [] }) 
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">Semua Tahun</option>
-              <option value="2024/2025">2024/2025</option>
-              <option value="2023/2024">2023/2024</option>
-              <option value="2022/2023">2022/2023</option>
+              {academicYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
             </select>
           </div>
           
@@ -324,12 +325,19 @@ const TeacherReports = ({ user }) => {
   });
   const [filters, setFilters] = useState({});
   const [subjectOptions, setSubjectOptions] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
   const [previewModal, setPreviewModal] = useState({ isOpen: false, data: null });
   const [success, setSuccess] = useState(null);
 
-  // Fetch subjects taught by teacher (dari Reports.js baris 282-296)
+  // Fetch subjects taught by teacher and academic years
   useEffect(() => {
-    if (!user.id) return;
+    if (!user?.id) {
+      console.error('User ID tidak tersedia:', user);
+      setError('Data user tidak lengkap');
+      return;
+    }
+    
+    console.log('🔍 TeacherReports user data:', user);
     
     const fetchSubjects = async () => {
       try {
@@ -354,16 +362,44 @@ const TeacherReports = ({ user }) => {
       }
     };
 
-    fetchSubjects();
-    fetchStats();
-  }, [user.id]);
+    const fetchAcademicYears = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('grades')
+          .select('academic_year')
+          .eq('teacher_id', user.id)
+          .order('academic_year', { ascending: false });
+        
+        if (error) throw error;
+        
+        const uniqueYears = [...new Set(data.map(item => item.academic_year))].filter(Boolean);
+        
+        if (uniqueYears.length > 0) {
+          setAcademicYears(uniqueYears);
+        } else {
+          // Fallback to default years
+          setAcademicYears(['2025/2026', '2024/2025', '2023/2024', '2022/2023']);
+        }
+      } catch (err) {
+        console.error('Error fetching academic years:', err);
+        // Fallback to default years
+        setAcademicYears(['2025/2026', '2024/2025', '2023/2024', '2022/2023']);
+      }
+    };
 
-  // Fetch stats for teacher (dari Reports.js baris 439-488)
+    fetchSubjects();
+    fetchAcademicYears();
+    fetchStats();
+  }, [user?.id]);
+
+  // Fetch stats for teacher
   const fetchStats = async () => {
-    if (!user.id) {
+    if (!user?.id) {
       console.error('User ID tidak ditemukan');
       return;
     }
+
+    console.log('📊 Fetching stats for user:', user);
 
     try {
       // Get teacher assignments
@@ -372,7 +408,12 @@ const TeacherReports = ({ user }) => {
         .select('class_id, subject')
         .eq('teacher_id', user.id);
 
-      if (assignmentError) throw assignmentError;
+      if (assignmentError) {
+        console.error('Error fetching teacher assignments:', assignmentError);
+        throw assignmentError;
+      }
+
+      console.log('📚 Teacher assignments:', teacherAssignments);
 
       const classIds = teacherAssignments?.map(ta => ta.class_id) || [];
       const firstAssignment = teacherAssignments?.[0];
@@ -404,8 +445,10 @@ const TeacherReports = ({ user }) => {
       if (gradeError) {
         console.error('Error fetching grades:', gradeError);
       } else if (grades && grades.length > 0) {
-        avgGrade = Math.round(grades.reduce((sum, g) => sum + g.score, 0) / grades.length);
+        avgGrade = Math.round(grades.reduce((sum, g) => sum + (g.score || 0), 0) / grades.length);
       }
+
+      console.log('📈 Stats calculated:', { classIds, totalStudents, avgGrade });
 
       setStats({
         totalClasses: classIds.length,
@@ -435,10 +478,18 @@ const TeacherReports = ({ user }) => {
     }
   };
 
-  // Fetch report data - GRADES ONLY (dari Reports.js baris 564-603)
+  // Fetch report data - GRADES ONLY
   const fetchReportData = async () => {
     setPreviewLoading(true);
     setError(null);
+    
+    if (!user?.id) {
+      setError('User ID tidak tersedia');
+      setPreviewLoading(false);
+      return;
+    }
+
+    console.log('📥 Fetching report data for user:', user.id);
     
     try {
       let query = supabase
@@ -454,6 +505,8 @@ const TeacherReports = ({ user }) => {
         .eq('teacher_id', user.id)
         .order('academic_year', { ascending: false });
 
+      console.log('🔍 Query filters:', filters);
+
       // Apply filters
       if (filters.subject) {
         query = query.eq('subject', filters.subject);
@@ -467,23 +520,28 @@ const TeacherReports = ({ user }) => {
 
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Query error:', error);
+        throw error;
+      }
+
+      console.log('✅ Data fetched:', data?.length, 'records');
 
       const headers = ['Tahun Ajaran', 'Semester', 'NIS', 'Nama Siswa', 'Kelas', 'Mata Pelajaran', 'Jenis', 'Nilai'];
       
       const formattedData = data.map(row => ({
-        academic_year: row.academic_year,
-        semester: row.semester,
+        academic_year: row.academic_year || '-',
+        semester: row.semester || '-',
         nis: row.students?.nis || '-',
         full_name: row.students?.full_name || '-',
         class_id: row.students?.class_id || '-',
-        subject: row.subject,
-        assignment_type: row.assignment_type,
-        score: row.score
+        subject: row.subject || '-',
+        assignment_type: row.assignment_type || '-',
+        score: row.score || 0
       }));
 
       // Calculate summary
-      const scores = data.map(d => d.score).filter(s => s != null);
+      const scores = data.map(d => d.score).filter(s => s != null && !isNaN(s));
       const avg = scores.length > 0 ? Math.round(scores.reduce((a,b) => a+b, 0) / scores.length) : 0;
       
       const summary = [
@@ -606,6 +664,7 @@ const TeacherReports = ({ user }) => {
           onFilterChange={handleFilterChange}
           onReset={resetFilters}
           subjectOptions={subjectOptions}
+          academicYears={academicYears}
         />
 
         {/* Report Card */}

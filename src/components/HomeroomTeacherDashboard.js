@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 const HomeroomTeacherDashboard = ({ user }) => {
-  console.log("🏠 HomeroomTeacherDashboard received user:", user);
-
   const navigate = useNavigate();
   
   const [stats, setStats] = useState({
@@ -25,37 +23,46 @@ const HomeroomTeacherDashboard = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Extract user data untuk prevent unnecessary re-renders
+  const username = user?.username;
+  const fullName = user?.full_name;
+  const homeroomClassId = user?.homeroom_class_id;
+  const teacherId = user?.teacher_id;
+  const userRole = user?.role;
+
+  // Debug log - HANYA sekali saat mount atau username berubah
   useEffect(() => {
-    // Simple logic - ambil homeroom_class_id langsung dari database
-    if (user?.homeroom_class_id) {
-      console.log("🏠 User has homeroom_class_id:", user.homeroom_class_id);
-      fetchHomeroomDashboardData(user);
-    } else {
+    if (process.env.NODE_ENV === 'development') {
+      console.log("🏠 HomeroomTeacherDashboard mounted with user:", username);
+    }
+  }, [username]);
+
+  // Memoize fetchHomeroomDashboardData untuk prevent re-creation
+  const fetchHomeroomDashboardData = useCallback(async () => {
+    if (!homeroomClassId) {
       setError(
-        `Guru ${
-          user?.full_name || user?.username || "ini"
-        } bukan wali kelas. Dashboard ini khusus untuk wali kelas.`
+        `Guru ${fullName || username || "ini"} bukan wali kelas. Dashboard ini khusus untuk wali kelas.`
       );
       setLoading(false);
+      return;
     }
-  }, [user]);
 
-  const fetchHomeroomDashboardData = async (user) => {
     try {
       setLoading(true);
-      console.log(
-        "📊 Fetching data for homeroom class:",
-        user.homeroom_class_id
-      );
+      if (process.env.NODE_ENV === 'development') {
+        console.log("📊 Fetching data for homeroom class:", homeroomClassId);
+      }
 
       // Get class info
       const { data: classInfo, error: classError } = await supabase
         .from("classes")
         .select("id, grade, academic_year")
-        .eq("id", user.homeroom_class_id)
+        .eq("id", homeroomClassId)
         .single();
 
-      console.log("🏫 Class info result:", { classInfo, classError });
+      if (process.env.NODE_ENV === 'development') {
+        console.log("🏫 Class info result:", { classInfo, classError });
+      }
 
       if (classError || !classInfo) {
         throw new Error(
@@ -69,7 +76,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
       // Get today's date
       const today = new Date().toISOString().split("T")[0];
-      console.log("📅 Today:", today);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("📅 Today:", today);
+      }
 
       // Parallel fetch data
       const [studentsResult, attendanceResult, announcementsResult, teachingResult] =
@@ -78,7 +87,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
           supabase
             .from("students")
             .select("id, full_name, gender")
-            .eq("class_id", user.homeroom_class_id)
+            .eq("class_id", homeroomClassId)
             .eq("academic_year", classInfo.academic_year)
             .eq("is_active", true),
 
@@ -97,11 +106,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
           `
             )
             .eq("date", today)
-            .eq("class_id", user.homeroom_class_id),
+            .eq("class_id", homeroomClassId),
 
           // Recent Announcements
           supabase
-            .from("announcement") // ✅ FIXED: Changed from "announcements" to "announcement"
+            .from("announcement")
             .select("id, title, content, created_at")
             .order("created_at", { ascending: false })
             .limit(5),
@@ -122,16 +131,18 @@ const HomeroomTeacherDashboard = ({ user }) => {
               )
             `
             )
-            .eq("teacher_id", user.teacher_id)
+            .eq("teacher_id", teacherId)
             .eq("academic_year", currentYear),
         ]);
 
-      console.log("📊 Query results:", {
-        students: studentsResult.data?.length,
-        attendances: attendanceResult.data?.length,
-        announcements: announcementsResult.data?.length,
-        teaching: teachingResult.data?.length,
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log("📊 Query results:", {
+          students: studentsResult.data?.length,
+          attendances: attendanceResult.data?.length,
+          announcements: announcementsResult.data?.length,
+          teaching: teachingResult.data?.length,
+        });
+      }
 
       const students = studentsResult.data || [];
       const attendances = attendanceResult.data || [];
@@ -161,7 +172,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
       const subjects = [...new Set(assignments.map((a) => a.subject))];
       const classesTaught = assignments.map((a) => ({
         id: a.class_id,
-        className: a.classes.id, // This is the class name like "7A", "7B", etc.
+        className: a.classes.id,
         grade: a.classes.grade,
         subject: a.subject,
       }));
@@ -172,7 +183,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         femaleStudents: femaleCount,
         presentToday: uniqueStudentsPresent.size,
         absentToday: uniqueStudentsAbsent.size,
-        className: user.homeroom_class_id,
+        className: homeroomClassId,
         grade: classInfo.grade,
       });
 
@@ -183,36 +194,64 @@ const HomeroomTeacherDashboard = ({ user }) => {
       });
 
       setAnnouncements(announcementsResult.data || []);
+      setError(null);
     } catch (err) {
       console.error("❌ Error fetching homeroom dashboard data:", err);
       setError("Gagal memuat data dashboard homeroom: " + err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [homeroomClassId, teacherId, fullName, username]); // ✅ DEPENDENCY SPESIFIK!
+
+  // Fetch data - HANYA ketika dependency berubah
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log("🏠 User has homeroom_class_id:", homeroomClassId);
+    }
+    fetchHomeroomDashboardData();
+  }, [fetchHomeroomDashboardData]); // ✅ Dependency pada memoized function
 
   const handleRetry = () => {
-    if (user?.homeroom_class_id) {
-      fetchHomeroomDashboardData(user);
-    }
+    fetchHomeroomDashboardData();
   };
 
-  // Navigation handlers for Quick Actions
-  const handleAttendance = () => {
+  // Navigation handlers - Memoized untuk prevent re-creation
+  const handleAttendance = useCallback(() => {
     navigate('/attendance');
-  };
+  }, [navigate]);
 
-  const handleGrades = () => {
+  const handleGrades = useCallback(() => {
     navigate('/grades');
-  };
+  }, [navigate]);
 
-  const handleStudents = () => {
+  const handleStudents = useCallback(() => {
     navigate('/students');
-  };
+  }, [navigate]);
 
-  const handleReports = () => {
+  const handleReports = useCallback(() => {
     navigate('/reports');
-  };
+  }, [navigate]);
+
+  // Memoize subject breakdown calculation
+  const subjectBreakdown = useMemo(() => {
+    const breakdown = {};
+    teachingData.classesTaught.forEach((cls) => {
+      if (!breakdown[cls.subject]) {
+        breakdown[cls.subject] = [];
+      }
+      breakdown[cls.subject].push(cls.className);
+    });
+    return breakdown;
+  }, [teachingData.classesTaught]);
+
+  // Memoize primary subject calculation
+  const primarySubject = useMemo(() => {
+    if (Object.keys(subjectBreakdown).length === 0) return "";
+    return Object.keys(subjectBreakdown).reduce(
+      (a, b) => (subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b),
+      teachingData.subjects[0] || ""
+    );
+  }, [subjectBreakdown, teachingData.subjects]);
 
   if (loading) {
     return (
@@ -238,11 +277,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
             <h3 className="text-lg font-semibold text-slate-800 mb-2">Info</h3>
             <p className="text-amber-600 mb-4 text-sm sm:text-base">{error}</p>
             <p className="text-xs sm:text-sm text-slate-500 mb-4">
-              Username: {user?.username}
+              Username: {username}
               <br />
-              Role: {user?.role}
+              Role: {userRole}
               <br />
-              Homeroom Class: {user?.homeroom_class_id || "Tidak ada"}
+              Homeroom Class: {homeroomClassId || "Tidak ada"}
             </p>
             <button
               onClick={handleRetry}
@@ -255,30 +294,15 @@ const HomeroomTeacherDashboard = ({ user }) => {
     );
   }
 
-  // Calculate subject breakdown for teaching data
-  const subjectBreakdown = {};
-  teachingData.classesTaught.forEach((cls) => {
-    if (!subjectBreakdown[cls.subject]) {
-      subjectBreakdown[cls.subject] = [];
-    }
-    subjectBreakdown[cls.subject].push(cls.className);
-  });
-
-  // Get primary subject (most taught)
-  const primarySubject = Object.keys(subjectBreakdown).reduce(
-    (a, b) => (subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b),
-    teachingData.subjects[0] || ""
-  );
-
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
-        {/* Header - Removed Clock & Day */}
+        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 lg:p-8">
             <div>
               <h1 className="text-xl sm:text-2xl font-semibold text-slate-800 mb-3 sm:mb-2">
-                Selamat Datang, {user?.full_name || user?.username}
+                Selamat Datang, {fullName || username}
               </h1>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
@@ -294,7 +318,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
           </div>
         </div>
 
-        {/* Stats Cards - Mobile-First Grid */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           {/* Total Siswa Kelas */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
@@ -313,7 +337,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
             </div>
           </div>
 
-          {/* Gender Ratio - Mobile Optimized */}
+          {/* Gender Ratio */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
             <div>
               <p className="text-xs sm:text-sm font-medium text-slate-500 mb-2 sm:mb-3">
@@ -372,7 +396,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
           </div>
         </div>
 
-        {/* Content Grid - Mobile-First */}
+        {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Mata Pelajaran & Kelas */}
           {teachingData.subjects.length > 0 && (
@@ -386,7 +410,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   // Group classes by grade
                   const classByGrade = {};
                   classes.forEach(className => {
-                    const grade = className.charAt(0); // Get first character (7, 8, 9)
+                    const grade = className.charAt(0);
                     if (!classByGrade[grade]) {
                       classByGrade[grade] = [];
                     }
@@ -404,14 +428,13 @@ const HomeroomTeacherDashboard = ({ user }) => {
                         </span>
                       </div>
                       
-                      {/* Display classes grouped by grade */}
                       <div className="space-y-2">
                         {Object.entries(classByGrade)
-                          .sort(([a], [b]) => a.localeCompare(b)) // Sort by grade
+                          .sort(([a], [b]) => a.localeCompare(b))
                           .map(([grade, gradeClasses]) => (
                             <div key={grade} className="flex flex-wrap gap-2">
                               {gradeClasses
-                                .sort() // Sort classes within grade (7A, 7B, 7C, etc.)
+                                .sort()
                                 .map((className, index) => (
                                   <span
                                     key={index}
@@ -436,7 +459,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
             </div>
           )}
 
-          {/* Quick Actions - Mobile-First with Working Navigation */}
+          {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 flex items-center">
               <span className="mr-2">⚡</span>

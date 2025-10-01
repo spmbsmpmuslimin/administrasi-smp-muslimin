@@ -1,39 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
-import Teachers from './pages/Teachers'; // ✅ UBAH
-import EasyModul from './pages/EasyModul'; // ✅ UBAH  
-import Classes from './pages/Classes'; // ✅ UBAH
-import { Students } from './pages/Students'; // ✅ UBAH
-import Attendance from './pages/Attendance'; // ✅ UBAH
-import Grades from './pages/Grades'; // ✅ UBAH
-import Reports from './pages/Reports'; // ✅ UBAH
-import Setting from './pages/Setting'; // ✅ UBAH
+
+// Import pages dari folder pages
+import Teachers from './pages/Teachers';
+import EasyModul from './pages/EasyModul';  
+import Classes from './pages/Classes';
+import Students from './pages/Students';
+import Attendance from './pages/Attendance';
+import Grades from './pages/Grades';
+import Settings from './pages/Settings';
+
+// Import reports dari folder reports
+import Reports from './reports/Reports';
 
 function App() {
-  const [user, setUser] = useState(null)
-  const [toastMessage, setToastMessage] = useState('')
+  const [user, setUser] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('info');
+  const [showToast, setShowToast] = useState(false);
 
-  const handleLogin = (userData) => {
-    setUser(userData)
-    console.log('User logged in:', userData)
-  }
+  // ✅ Auto hide toast setelah 3 detik
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        setToastMessage('');
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
 
-  const handleLogout = () => {
-    setUser(null)
-    console.log('User logged out')
-  }
+  // ✅ Memoize handlers untuk prevent re-creation
+  const handleLogin = useCallback((userData) => {
+    setUser(userData);
+    setToastMessage('Login berhasil!');
+    setToastType('success');
+    setShowToast(true); // ✅ Tampilkan toast
+    console.log('User logged in:', userData);
+    
+    // ✅ Auto reset setelah 3 detik - UDAH DITANGANI SAMA useEffect di atas
+  }, []);
 
-  const handleShowToast = (message, type = 'info') => {
-    setToastMessage(message)
-    console.log(`Toast (${type}):`, message)
-    // Auto hide toast after 3 seconds
-    setTimeout(() => {
-      setToastMessage('')
-    }, 3000)
-  }
+  const handleLogout = useCallback(() => {
+    setUser(null);
+    setToastMessage('Logout berhasil!');
+    setToastType('info');
+    setShowToast(true);
+    console.log('User logged out');
+  }, []);
+
+  const handleShowToast = useCallback((message, type = 'info') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    console.log(`Toast (${type}):`, message);
+  }, []);
+
+  // Toast styles berdasarkan type
+  const getToastStyle = () => {
+    const baseStyle = "fixed top-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform";
+    
+    switch (toastType) {
+      case 'success':
+        return `${baseStyle} bg-green-500`;
+      case 'error':
+        return `${baseStyle} bg-red-500`;
+      case 'warning':
+        return `${baseStyle} bg-yellow-500`;
+      default:
+        return `${baseStyle} bg-blue-500`;
+    }
+  };
+
+  // ✅ Extract ProtectedRoute keluar (stable reference)
+  const ProtectedRoute = useCallback(({ children }) => {
+    if (!user) {
+      return <Navigate to="/" />;
+    }
+    return children;
+  }, [user]);
+
+  // ✅ LayoutWrapper sederhana
+  const LayoutWrapper = useCallback(({ children }) => (
+    <Layout user={user} onLogout={handleLogout}>
+      {children}
+    </Layout>
+  ), [user, handleLogout]);
 
   return (
     <BrowserRouter 
@@ -42,158 +98,108 @@ function App() {
         v7_relativeSplatPath: true
       }}
     >
+      {/* ✅ TOAST HANYA MUNCUL 3 DETIK SAJA */}
+      {showToast && (
+        <div className={getToastStyle()}>
+          <div className="flex items-center gap-2">
+            {toastType === 'success' && <span className="text-lg">✅</span>}
+            {toastType === 'error' && <span className="text-lg">❌</span>}
+            {toastType === 'warning' && <span className="text-lg">⚠️</span>}
+            {toastType === 'info' && <span className="text-lg">ℹ️</span>}
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+      
       <Routes>
+        {/* Public Route - Login */}
         <Route 
           path="/" 
-          element={user ? <Navigate to="/dashboard" /> : <Login onLogin={handleLogin} />} 
+          element={
+            user ? 
+            <Navigate to="/dashboard" replace /> : 
+            <Login onLogin={handleLogin} onShowToast={handleShowToast} />
+          } 
         />
         
-        {user && (
-          <>
-            {/* Dashboard Route */}
-            <Route path="/dashboard" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* Dashboard Component */}
-                <Dashboard user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
+        {/* Protected Routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Dashboard user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
-            {/* Teachers Route */}
-            <Route path="/teachers" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* Teachers Component */}
-                <Teachers user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
-            
-            {/* EasyModul Route */}
-            <Route path="/easymodul" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* EasyModul Component */}
-                <EasyModul user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
+        <Route path="/teachers" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Teachers user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/easymodul" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <EasyModul user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
-            {/* Classes Route */}
-            <Route path="/classes" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* Classes Component */}
-                <Classes user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
+        <Route path="/classes" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Classes user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
-            {/* Students Route */}
-            <Route path="/students" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* Students Component */}
-                <Students user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
+        <Route path="/students" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Students user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
-            {/* Attendance Route */}
-            <Route path="/attendance" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* Attendance Component */}
-                <Attendance user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
+        <Route path="/attendance" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Attendance user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
-            {/* Grades Route */}
-            <Route path="/grades" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* Grades Component */}
-                <Grades user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
+        <Route path="/grades" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Grades user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
-            {/* Reports Route */}
-            <Route path="/reports" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* Reports Component */}
-                <Reports user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
+        <Route path="/reports" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Reports user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
-            {/* Setting Route - TAMBAHKAN INI */}
-            <Route path="/settings" element={
-              <Layout user={user} onLogout={handleLogout}>
-                {/* Toast Notification */}
-                {toastMessage && (
-                  <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300">
-                    {toastMessage}
-                  </div>
-                )}
-                
-                {/* Setting Component */}
-                <Setting user={user} onShowToast={handleShowToast} />
-              </Layout>
-            } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Settings user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
-            {/* Tambahkan route lainnya sesuai kebutuhan */}
-          </>
-        )}
-
-        {/* Catch-all route untuk redirect ke root jika path tidak cocok */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* Catch-all route untuk redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
 export default App;

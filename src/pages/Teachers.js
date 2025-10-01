@@ -17,10 +17,16 @@ export const Teachers = () => {
       const { data: guruData, error: guruError } = await supabase
         .from("users")
         .select("id, teacher_id, full_name, is_active, homeroom_class_id")
-        .eq("role", "teacher")
-        .order("full_name", { ascending: true });
+        .eq("role", "teacher");
 
       if (guruError) throw guruError;
+
+      // Sort berdasarkan kode guru secara numerik (ekstrak angka dari teacher_id)
+      const sortedGuruData = guruData.sort((a, b) => {
+        const numA = parseInt(a.teacher_id?.replace(/\D/g, '') || '0');
+        const numB = parseInt(b.teacher_id?.replace(/\D/g, '') || '0');
+        return numA - numB;
+      });
 
       // Ambil data mapel dari teacher_assignments
       const { data: mapelData, error: mapelError } = await supabase
@@ -31,7 +37,7 @@ export const Teachers = () => {
       if (mapelError) throw mapelError;
 
       // Gabungkan data
-      const guruWithMapel = guruData.map((guru) => {
+      const guruWithMapel = sortedGuruData.map((guru) => {
         const mapelGuru = mapelData
           .filter((item) => item.teacher_id === guru.teacher_id)
           .map((item) => item.subject);
@@ -82,12 +88,15 @@ export const Teachers = () => {
       <div className="bg-white rounded-xl shadow-lg shadow-blue-100/50 overflow-hidden border border-blue-100">
         {/* Table Wrapper - Responsive Scroll */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] sm:min-w-[768px]">
+          <table className="w-full min-w-[768px] sm:min-w-[900px]">
             {/* Table Header */}
             <thead className="bg-gradient-to-r from-blue-600 to-blue-700">
               <tr>
                 <th className="w-12 sm:w-16 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
                   No.
+                </th>
+                <th className="w-24 sm:w-32 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
+                  Kode Guru
                 </th>
                 <th className="w-40 sm:w-48 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
                   Nama Guru
@@ -111,6 +120,13 @@ export const Teachers = () => {
                   {/* Nomor */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-500 text-center font-medium">
                     {index + 1}
+                  </td>
+                  
+                  {/* Kode Guru */}
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
+                    <div className="text-xs sm:text-sm font-bold text-blue-600">
+                      {guru.teacher_id || "-"}
+                    </div>
                   </td>
                   
                   {/* Nama Guru */}
@@ -146,9 +162,15 @@ export const Teachers = () => {
                   
                   {/* Status */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
-                    <div className="text-xs sm:text-sm text-slate-900 font-medium">
-                      {guru.is_active ? "AKTIF" : "NONAKTIF"}
-                    </div>
+                    {guru.is_active ? (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                        Aktif
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                        Nonaktif
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

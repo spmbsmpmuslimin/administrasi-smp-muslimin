@@ -5,10 +5,11 @@ import ExcelJS from 'exceljs';
  * @param {Array} students - Array of student objects from Attendance.js
  * @param {string} selectedClass - Selected class ID 
  * @param {string} selectedSubject - Selected subject name
- * @param {string} date - Date in YYYY-MM-DD format (not used, just for compatibility)
+ * @param {string} date - Date in YYYY-MM-DD format (used to determine the month)
  * @param {Object} attendanceStatus - Object with student_id as key, status as value (not used)
  * @param {Object} attendanceNotes - Object with student_id as key, notes as value (not used)
  * @param {Function} onShowToast - Toast notification function
+ * @param {string} selectedMonth - Month in format 'YYYY-MM' (optional, will use date if not provided)
  */
 export const exportAttendanceToExcel = async (
   students,
@@ -17,7 +18,8 @@ export const exportAttendanceToExcel = async (
   date,
   attendanceStatus,
   attendanceNotes,
-  onShowToast
+  onShowToast,
+  selectedMonth = null
 ) => {
   try {
     if (!students || students.length === 0) {
@@ -28,12 +30,35 @@ export const exportAttendanceToExcel = async (
     // Import supabase client
     const { supabase } = await import('../supabaseClient');
 
-    // Query all attendance records for this class and subject
+    // Determine the month to export
+    let yearMonth;
+    if (selectedMonth) {
+      yearMonth = selectedMonth; // Format: 'YYYY-MM'
+    } else if (date) {
+      // Extract year-month from date (YYYY-MM-DD -> YYYY-MM)
+      yearMonth = date.substring(0, 7);
+    } else {
+      // Use current month as fallback
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      yearMonth = `${year}-${month}`;
+    }
+
+    // Calculate start and end date for the month
+    const [year, month] = yearMonth.split('-');
+    const startDate = `${year}-${month}-01`;
+    const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+    const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+
+    // Query attendance records for this class, subject, and MONTH ONLY
     const { data: attendanceRecords, error } = await supabase
       .from('attendances')
       .select('student_id, date, status, notes')
       .eq('class_id', selectedClass)
       .eq('subject', selectedSubject.includes('Presensi Harian') ? 'Harian' : selectedSubject)
+      .gte('date', startDate)
+      .lte('date', endDate)
       .order('date', { ascending: true });
 
     if (error) {
@@ -54,7 +79,7 @@ export const exportAttendanceToExcel = async (
       });
 
     if (uniqueDates.length === 0) {
-      onShowToast?.("Tidak ada data kehadiran untuk diekspor!", "error");
+      onShowToast?.("Tidak ada data kehadiran untuk diekspor di bulan ini!", "error");
       return;
     }
 
@@ -100,11 +125,19 @@ export const exportAttendanceToExcel = async (
     const summaryCols = 6; // Hadir, Izin, Sakit, Alpha, Total, Persentase
     const totalCols = baseCols + dateCols + summaryCols;
 
+    // Format month name for display
+    const monthNames = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const monthName = monthNames[parseInt(month) - 1];
+    const periodText = `${monthName} ${year}`;
+
     // Header rows
     const headerData = [
       ['SMP MUSLIMIN CILILIN'],
       [`REKAP PRESENSI KELAS ${selectedClass}`],
-      [`MATA PELAJARAN: ${selectedSubject}`],
+      [`MATA PELAJARAN: ${selectedSubject} - ${periodText}`],
       [], // Empty row
       // Table headers
       [
@@ -269,7 +302,7 @@ export const exportAttendanceToExcel = async (
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Rekap_Presensi_${selectedClass}_${selectedSubject.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
+    link.download = `Rekap_Presensi_${selectedClass}_${selectedSubject.replace(/[^a-zA-Z0-9]/g, '_')}_${periodText.replace(/\s/g, '_')}.xlsx`;
     
     document.body.appendChild(link);
     link.click();
