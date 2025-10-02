@@ -404,16 +404,21 @@ const Layout = ({ user, onLogout, children }) => {
                           <Home size={16} className="flex-shrink-0" />
                           <span className="font-medium">Dashboard</span>
                         </button>
-                        <button
-                          onClick={() => {
-                            handleNavigate('settings')
-                            setProfileDropdownOpen(false)
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 touch-manipulation"
-                        >
-                          <Settings size={16} className="flex-shrink-0" />
-                          <span className="font-medium">Pengaturan</span>
-                        </button>
+                        
+                        {/* Pengaturan - Only for Admin */}
+                        {user?.role === 'admin' && (
+                          <button
+                            onClick={() => {
+                              handleNavigate('settings')
+                              setProfileDropdownOpen(false)
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 touch-manipulation"
+                          >
+                            <Settings size={16} className="flex-shrink-0" />
+                            <span className="font-medium">Pengaturan</span>
+                          </button>
+                        )}
+                        
                         <button
                           onClick={() => {
                             onLogout()
