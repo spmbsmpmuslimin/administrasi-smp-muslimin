@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import Logo from './Logo';
 
 export const Login = ({ onLogin }) => {
   const [username, setUsername] = useState("");
@@ -144,9 +145,13 @@ export const Login = ({ onLogin }) => {
           <div className="absolute top-0 right-0 w-full h-full bg-gradient-radial from-white/10 to-transparent animate-pulse"></div>
           <div className="absolute bottom-0 left-0 w-4/5 h-4/5 bg-gradient-radial from-white/5 to-transparent animate-pulse delay-1000"></div>
           
-          {/* Brand Logo - Responsive */}
-          <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-30 lg:h-30 bg-white/15 rounded-xl sm:rounded-2xl flex items-center justify-center text-3xl sm:text-4xl lg:text-5xl mb-4 sm:mb-6 lg:mb-8 backdrop-blur-lg relative z-10 transition-transform duration-300 hover:scale-105 border-2 border-white/20">
-            🏫
+          {/* Brand Logo - Logo PUTIH untuk sebelah kiri */}
+          <div className="mb-4 sm:mb-6 lg:mb-8 relative z-10 transition-transform duration-300 hover:scale-105">
+            <Logo 
+              size="xlarge"
+              className="drop-shadow-2xl"
+              variant="white"
+            />
           </div>
           
           {/* Brand Title - Responsive */}
@@ -214,10 +219,15 @@ export const Login = ({ onLogin }) => {
             className="bg-white/95 backdrop-blur-xl p-6 sm:p-8 lg:p-12 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md relative z-10 border border-white/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-3xl"
             onSubmit={handleSubmit}
           >
-            {/* Form Header - Mobile Optimized */}
+            {/* Form Header - Logo WARNA ASLI untuk form login */}
             <div className="text-center mb-6 sm:mb-8 lg:mb-10 relative">
-              {/* Lock Icon */}
-              <div className="text-2xl sm:text-3xl mb-3 sm:mb-4 opacity-80">🔒</div>
+              {/* Logo kecil di form login */}
+              <div className="mb-3 sm:mb-4 flex justify-center">
+                <Logo 
+                  size="medium"
+                  className="opacity-90"
+                />
+              </div>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-600 mb-1 sm:mb-2">
                 Selamat Datang
               </h2>
@@ -242,7 +252,7 @@ export const Login = ({ onLogin }) => {
                 placeholder="Masukkan username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                style={{ minHeight: '48px' }} // Touch target minimum
+                style={{ minHeight: '48px' }}
                 required
               />
               {errors.username && (
