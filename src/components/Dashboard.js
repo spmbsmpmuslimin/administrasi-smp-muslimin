@@ -3,6 +3,7 @@ import { AlertTriangle, User, School, Home } from 'lucide-react'
 import AdminDashboard from './AdminDashboard'
 import HomeroomTeacherDashboard from './HomeroomTeacherDashboard'
 import TeacherDashboard from './TeacherDashboard'
+import GuruBKDashboard from './GuruBKDashboard' // ✅ BARU: Import dashboard Guru BK
 
 const Dashboard = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true)
@@ -11,13 +12,16 @@ const Dashboard = ({ user }) => {
   const memoizedUser = useMemo(() => {
     if (!user) return null
     return {
+      id: user.id,
       username: user.username,
       full_name: user.full_name,
       role: user.role,
       teacher_id: user.teacher_id,
-      homeroom_class_id: user.homeroom_class_id
+      homeroom_class_id: user.homeroom_class_id,
+      email: user.email,
+      is_active: user.is_active
     }
-  }, [user?.username, user?.role, user?.teacher_id, user?.homeroom_class_id])
+  }, [user?.id, user?.username, user?.role, user?.teacher_id, user?.homeroom_class_id])
 
   // Optimized loading
   useEffect(() => {
@@ -34,30 +38,32 @@ const Dashboard = ({ user }) => {
     }
   }, [memoizedUser])
 
-  // Memoize dashboard component selection
+  // ✅ FIX: Role mapping yang sesuai dengan database SMP Muslimin Cililin
   const DashboardComponent = useMemo(() => {
     if (!memoizedUser) return null
 
     const userRole = memoizedUser.role?.toLowerCase()
 
-    // ADMIN
+    // ✅ ROLE MAPPING SESUAI DATABASE
+    
+    // 1. ADMIN
     if (userRole === 'admin') {
       return <AdminDashboard user={memoizedUser} />
     }
 
-    // TEACHER dengan homeroom
+    // 2. GURU BK/BP - ✅ BARU DITAMBAHKAN
+    if (userRole === 'guru_bk') {
+      return <GuruBKDashboard user={memoizedUser} />
+    }
+
+    // 3. GURU WALI KELAS - Teacher dengan homeroom_class_id
     if (userRole === 'teacher' && memoizedUser.homeroom_class_id) {
       return <HomeroomTeacherDashboard user={memoizedUser} />
     }
 
-    // TEACHER regular
+    // 4. GURU BIASA - Teacher tanpa homeroom_class_id
     if (userRole === 'teacher') {
       return <TeacherDashboard user={memoizedUser} />
-    }
-
-    // Legacy role
-    if (userRole === 'homeroom_teacher') {
-      return <HomeroomTeacherDashboard user={memoizedUser} />
     }
 
     // Unknown role
@@ -92,7 +98,7 @@ const Dashboard = ({ user }) => {
   return DashboardComponent
 }
 
-// Component untuk unknown role - extracted untuk cleaner code
+// Component untuk unknown role
 const UnknownRoleView = ({ user }) => (
   <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-4">
     <div className="max-w-2xl mx-auto">
@@ -120,6 +126,7 @@ const UnknownRoleView = ({ user }) => (
               <div className="space-y-1 text-sm text-blue-700">
                 <p><span className="font-medium">Username:</span> {user?.username}</p>
                 <p><span className="font-medium">Nama:</span> {user?.full_name}</p>
+                <p><span className="font-medium">ID:</span> {user?.id}</p>
               </div>
             </div>
 
@@ -131,6 +138,7 @@ const UnknownRoleView = ({ user }) => (
               <div className="space-y-1 text-sm text-gray-700">
                 <p><span className="font-medium">Role:</span> {user?.role}</p>
                 <p><span className="font-medium">Teacher ID:</span> {user?.teacher_id || '-'}</p>
+                <p><span className="font-medium">Status:</span> {user?.is_active ? 'Aktif' : 'Non-aktif'}</p>
               </div>
             </div>
           </div>
@@ -143,7 +151,7 @@ const UnknownRoleView = ({ user }) => (
                 <span className="font-medium text-emerald-800">Class Assignment</span>
               </div>
               <p className="text-sm text-emerald-700">
-                <span className="font-medium">Homeroom Class:</span> {user.homeroom_class_id}
+                <span className="font-medium">Homeroom Class ID:</span> {user.homeroom_class_id}
               </p>
             </div>
           )}
@@ -171,7 +179,10 @@ const UnknownRoleView = ({ user }) => (
           {/* Help Text */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              Hubungi administrator sistem jika masalah berlanjut
+              Hubungi administrator sistem untuk menyesuaikan role dashboard
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Role yang didukung: admin, teacher, guru_bk
             </p>
           </div>
         </div>

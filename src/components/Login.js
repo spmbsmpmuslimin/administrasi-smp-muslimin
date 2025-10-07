@@ -18,18 +18,18 @@ export const Login = ({ onLogin }) => {
   });
   const [statsLoading, setStatsLoading] = useState(true);
 
-  // Optimized stats fetching with single query approach
+  // ✅ FIX: Optimized stats fetching dengan role yang benar
   const fetchStatsData = async () => {
     try {
       setStatsLoading(true);
       
-      // Single query approach for better performance
+      // ✅ QUERY YANG BENAR - sesuaikan dengan role database
       const [teachersResult, studentsResult] = await Promise.all([
         supabase
           .from("users")
           .select("*", { count: "exact", head: true })
           .eq("is_active", true)
-          .eq("role", "teacher"),
+          .in("role", ["teacher", "guru_bk"]), // ✅ UPDATE: include guru_bk
         
         supabase
           .from("students")
@@ -72,6 +72,7 @@ export const Login = ({ onLogin }) => {
     fetchStatsData();
   }, []);
 
+  // ✅ FIX: Login handler dengan error handling yang better
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -91,37 +92,52 @@ export const Login = ({ onLogin }) => {
     try {
       console.log("Mencoba login dengan:", { username });
 
+      // ✅ QUERY YANG BENAR - sesuaikan dengan structure database
       const { data, error } = await supabase
         .from("users")
         .select("*")
-        .ilike("username", username)
+        .eq("username", username) 
         .eq("is_active", true)
-        .maybeSingle();
+        .maybeSingle() 
 
       if (error) {
         console.error("Error dari Supabase:", error);
-        throw new Error("Terjadi kesalahan sistem");
+        // ✅ ERROR HANDLING YANG LEBIH SPECIFIC
+        if (error.code === 'PGRST116') {
+          throw new Error("Username tidak ditemukan");
+        }
+        throw new Error("Terjadi kesalahan sistem: " + error.message);
       }
 
       if (!data) {
-        throw new Error("Username atau password salah");
+        throw new Error("Username tidak ditemukan");
       }
 
-      // Simple password check (keeping as requested)
+      // ✅ PASSWORD CHECK - tambahkan logging untuk debug
+      console.log("Password check:", { 
+        input: password, 
+        stored: data.password,
+        match: data.password === password 
+      });
+
       if (data.password !== password) {
         throw new Error("Password salah");
       }
 
       console.log("Login sukses:", data);
 
+      // ✅ PASS USER DATA YANG LENGKAP
       onLogin({
+        id: data.id, // ✅ IMPORTANT: tambahkan ID
         username: data.username,
         role: data.role,
         nama: data.full_name,
         full_name: data.full_name,
         teacher_id: data.teacher_id,
         homeroom_class_id: data.homeroom_class_id,
-        email: `${data.username}@smp.edu`,
+        email: data.email || `${data.username}@smp.edu`,
+        is_active: data.is_active,
+        created_at: data.created_at
       });
 
     } catch (error) {

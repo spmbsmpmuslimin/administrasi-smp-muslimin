@@ -40,11 +40,12 @@ const Logo = ({
       setLoading(true);
       setError(null);
 
-      // Fetch school settings dari database
+      // ✅ GANTI .single() JADI .maybeSingle() untuk menghindari error 406
       const { data, error: dbError } = await supabase
         .from('school_settings')
-        .select('school_logo')
-        .single();
+        .select('setting_value')
+        .eq('setting_key', 'school_logo')
+        .maybeSingle(); // ✅ PERUBAHAN DI SINI!
 
       if (dbError) {
         console.log('Error fetching logo from database:', dbError);
@@ -54,8 +55,10 @@ const Logo = ({
         return;
       }
 
-      if (data && data.school_logo) {
-        setLogoData(data.school_logo);
+      // ✅ AMBIL setting_value BUKAN school_logo
+      if (data && data.setting_value) {
+        console.log('✅ Logo berhasil dimuat dari database');
+        setLogoData(data.setting_value);
         onLogoLoad(true);
       } else {
         console.log('Logo tidak ditemukan di database, menggunakan logo lokal');

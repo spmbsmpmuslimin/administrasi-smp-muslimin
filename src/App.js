@@ -11,10 +11,12 @@ import Classes from './pages/Classes';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import Grades from './pages/Grades';
-import Settings from './pages/Settings';
+import Setting from './setting/setting';
 
-// Import reports dari folder reports
-import Reports from './reports/Reports';
+// Import dari folder khusus
+import Konseling from './konseling/Konseling'; // <- dari folder konseling
+import Reports from './reports/Reports';       // dari folder reports
+import SPMB from './spmb/SPMB';               // dari folder spmb
 
 function App() {
   const [user, setUser] = useState(null);
@@ -39,10 +41,8 @@ function App() {
     setUser(userData);
     setToastMessage('Login berhasil!');
     setToastType('success');
-    setShowToast(true); // ✅ Tampilkan toast
+    setShowToast(true);
     console.log('User logged in:', userData);
-    
-    // ✅ Auto reset setelah 3 detik - UDAH DITANGANI SAMA useEffect di atas
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -179,6 +179,15 @@ function App() {
           </ProtectedRoute>
         } />
 
+        {/* ✅ BARU: Route Konseling - Khusus untuk Guru BK */}
+        <Route path="/konseling" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <Konseling user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
         <Route path="/reports" element={
           <ProtectedRoute>
             <LayoutWrapper>
@@ -187,10 +196,18 @@ function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/spmb" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <SPMB user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
         <Route path="/settings" element={
           <ProtectedRoute>
             <LayoutWrapper>
-              <Settings user={user} onShowToast={handleShowToast} />
+              <Setting user={user} onShowToast={handleShowToast} />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

@@ -9,7 +9,7 @@ const Layout = ({ user, onLogout, children }) => {
   
   // State management
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Mobile-first: closed by default
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
@@ -26,7 +26,6 @@ const Layout = ({ user, onLogout, children }) => {
       const isLaptopSize = window.innerWidth >= 1024
       setIsLaptop(isLaptopSize)
       
-      // Auto-open sidebar on laptop, auto-close on mobile/tablet
       if (isLaptopSize) {
         setIsSidebarOpen(true)
         setMobileMenuOpen(false)
@@ -35,7 +34,7 @@ const Layout = ({ user, onLogout, children }) => {
       }
     }
 
-    handleResize() // Initial check
+    handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -123,8 +122,10 @@ const Layout = ({ user, onLogout, children }) => {
     if (path === '/classes') return 'classes'
     if (path === '/attendance') return 'attendance'
     if (path === '/grades') return 'grades'
+    if (path === '/konseling') return 'konseling'
     if (path === '/reports') return 'reports'
     if (path === '/easymodul') return 'easymodul'
+    if (path === '/spmb') return 'spmb'
     if (path === '/settings') return 'settings'
     return 'dashboard'
   }
@@ -138,8 +139,10 @@ const Layout = ({ user, onLogout, children }) => {
       '/classes': 'Data Kelas',
       '/attendance': 'Kehadiran',
       '/grades': 'Nilai Akademik',
+      '/konseling': 'Konseling', 
       '/reports': 'Laporan',
       '/easymodul': 'EasyModul',
+      '/spmb': 'SPMB',
       '/settings': 'Pengaturan',
     }
     return pathMap[location.pathname] || 'Dashboard'
@@ -160,12 +163,20 @@ const Layout = ({ user, onLogout, children }) => {
         'Data Kelas': 'Kelola Data Kelas Sekolah',
         Kehadiran: 'Kelola Kehadiran Siswa',
         'Nilai Akademik': 'Kelola Nilai Akademik Siswa',
+        Konseling: 'Kelola Data Konseling BK/BP',
         Laporan: 'Generate dan Kelola Laporan',
         EasyModul: 'Kelola Modul Pembelajaran',
+        SPMB: 'Seleksi Penerimaan Murid Baru',
         Pengaturan: 'Pengaturan Sistem Sekolah',
       },
+      guru_bk: { // ✅ GURU BK
+        Dashboard: 'Dashboard Bimbingan Konseling',
+        'Data Siswa': 'Lihat Data Siswa Sekolah',
+        'Data Guru': 'Lihat Data Guru Sekolah',
+        Laporan: 'Laporan BK/BP', // ✅ MENU LAPORAN DENGAN SUBTITLE KHUSUS
+        Konseling: 'Kelola Data Konseling Siswa',
+      },
       teacher: homeroom_class_id ? {
-        // Homeroom Teacher - Format asli yang lebih spesifik
         Dashboard: `Kelola Data Kelas ${homeroom_class_id}`,
         'Data Siswa': `Kelola Data Siswa Kelas ${homeroom_class_id}`,
         'Data Guru': 'Kelola Data Guru Sekolah',
@@ -176,7 +187,6 @@ const Layout = ({ user, onLogout, children }) => {
         EasyModul: 'Akses Modul Pembelajaran',
         Pengaturan: 'Pengaturan Akun',
       } : {
-        // Subject Teacher - Format asli
         Dashboard: 'Monitor semua kelas yang diampu',
         'Data Siswa': 'Lihat data siswa semua kelas',
         'Data Guru': 'Lihat data guru sekolah',
@@ -203,8 +213,10 @@ const Layout = ({ user, onLogout, children }) => {
       'classes': '/classes',
       'attendance': '/attendance',
       'grades': '/grades',
-      'reports': '/reports',
+      'konseling': '/konseling',
+      'reports': '/reports', // ✅ ROUTE LAPORAN
       'easymodul': '/easymodul',
+      'spmb': '/spmb',
       'settings': '/settings'
     }
     
@@ -245,6 +257,7 @@ const Layout = ({ user, onLogout, children }) => {
     const { role, homeroom_class_id } = user
     
     if (role === 'admin') return 'Admin'
+    if (role === 'guru_bk') return 'Guru BK/BP' // ✅ ROLE DISPLAY GURU BK
     if (role === 'teacher' && homeroom_class_id) return `Wali ${homeroom_class_id}`
     if (role === 'teacher') return 'Guru'
     return 'User'
@@ -263,7 +276,7 @@ const Layout = ({ user, onLogout, children }) => {
       )}
 
       {/* Sidebar - Laptop/Desktop */}
-      <div className={`fixed inset-y-0 left-0 z-50 ${isSidebarOpen ? 'w-60' : 'w-0'} transition-all duration-300 hidden lg:block`}>
+      <div className={`fixed inset-y-0 left-0 z-50 ${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 hidden lg:block`}>
         <Sidebar 
           currentPage={getCurrentPage()}
           onNavigate={handleNavigate}
@@ -286,25 +299,25 @@ const Layout = ({ user, onLogout, children }) => {
       </div>
       
       {/* Main Content */}
-      <main className={`flex-1 min-h-screen transition-all duration-300 ${isSidebarOpen && isLaptop ? 'lg:ml-60' : 'ml-0'}`}>
+      <main className={`flex-1 min-h-screen transition-all duration-300 ${isSidebarOpen && isLaptop ? 'lg:ml-64' : 'ml-0'}`}>
         
         {/* Mobile-First Header */}
         <header className="bg-white shadow-md shadow-blue-100/50 border-b border-blue-100 sticky top-0 z-30">
-          {/* Mobile Header (Base Design) */}
+          {/* Mobile Header */}
           <div className="px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-4">
             <div className="flex justify-between items-center">
-              {/* Left Side - Mobile Optimized */}
+              {/* Left Side */}
               <div className="flex items-center gap-2 sm:gap-3 flex-1">
                 {/* Menu Button */}
                 <button
                   onClick={isLaptop ? () => setIsSidebarOpen(!isSidebarOpen) : toggleMobileMenu}
                   className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors touch-manipulation"
-                  style={{ minWidth: '44px', minHeight: '44px' }} // Touch-friendly
+                  style={{ minWidth: '44px', minHeight: '44px' }}
                 >
                   {isSidebarOpen && isLaptop ? <X size={20} /> : <Menu size={20} />}
                 </button>
 
-                {/* Page Info - Mobile First */}
+                {/* Page Info */}
                 <div className="flex flex-col min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h1 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
@@ -320,7 +333,7 @@ const Layout = ({ user, onLogout, children }) => {
                 </div>
               </div>
 
-              {/* Right Side - Mobile Optimized */}
+              {/* Right Side */}
               <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
                 {/* Compact Time Display - Mobile */}
                 <div className="lg:hidden flex flex-col items-center min-w-[60px]">
@@ -359,7 +372,7 @@ const Layout = ({ user, onLogout, children }) => {
                   </div>
                 </div>
 
-                {/* Profile Dropdown - Touch Optimized */}
+                {/* Profile Dropdown */}
                 <div className="relative" ref={profileDropdownRef}>
                   <button 
                     onClick={toggleProfileDropdown}
@@ -372,16 +385,17 @@ const Layout = ({ user, onLogout, children }) => {
                     </span>
                   </button>
                   
-                  {/* Mobile-Optimized Dropdown */}
+                  {/* Dropdown */}
                   {profileDropdownOpen && (
                     <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white border border-blue-100 rounded-xl shadow-lg z-50">
-                      {/* User Info Header - Mobile Friendly */}
+                      {/* User Info Header */}
                       <div className="px-4 py-3 border-b border-blue-50 bg-gradient-to-r from-blue-50 to-white">
                         <p className="font-semibold text-gray-900 text-sm truncate">
                           {user?.full_name || user?.username || 'User'}
                         </p>
                         <p className="text-xs text-blue-600 capitalize font-medium">
                           {user?.role === 'admin' ? 'Administrator' : 
+                           user?.role === 'guru_bk' ? 'Guru BK/BP' : // ✅ Role Display for Guru BK
                            user?.role === 'teacher' && user?.homeroom_class_id ? `Wali Kelas ${user.homeroom_class_id}` :
                            user?.role === 'teacher' ? 'Guru Mata Pelajaran' : 'User'}
                         </p>
@@ -392,7 +406,7 @@ const Layout = ({ user, onLogout, children }) => {
                         )}
                       </div>
                       
-                      {/* Menu Items - Touch Friendly */}
+                      {/* Menu Items */}
                       <div className="py-2">
                         <button
                           onClick={() => {
@@ -438,7 +452,7 @@ const Layout = ({ user, onLogout, children }) => {
           </div>
         </header>
 
-        {/* Main Content - Mobile Optimized Padding */}
+        {/* Main Content */}
         <div className="bg-gradient-to-br from-blue-50 to-white min-h-screen p-3 sm:p-4 lg:p-6">
           {isNavigating ? (
             <div className="flex items-center justify-center h-32 sm:h-48">

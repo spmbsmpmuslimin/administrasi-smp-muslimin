@@ -13,11 +13,11 @@ export const Teachers = () => {
     try {
       setIsLoading(true);
 
-      // Query data guru
+      // ✅ UPDATE: Include both teacher AND guru_bk roles
       const { data: guruData, error: guruError } = await supabase
         .from("users")
-        .select("id, teacher_id, full_name, is_active, homeroom_class_id")
-        .eq("role", "teacher");
+        .select("id, teacher_id, full_name, is_active, homeroom_class_id, role")
+        .in("role", ["teacher", "guru_bk"]); // ✅ Include guru_bk
 
       if (guruError) throw guruError;
 
@@ -38,12 +38,25 @@ export const Teachers = () => {
 
       // Gabungkan data
       const guruWithMapel = sortedGuruData.map((guru) => {
-        const mapelGuru = mapelData
-          .filter((item) => item.teacher_id === guru.teacher_id)
-          .map((item) => item.subject);
+        // ✅ Tentukan tugas/mapel berdasarkan role dan teacher_id
+        let tugasMapel = [];
+        
+        if (guru.teacher_id === "G-01") {
+          // Kepala Sekolah
+          tugasMapel = ["Kepala Sekolah"];
+        } else if (guru.role === "guru_bk") {
+          // Guru BK
+          tugasMapel = ["Guru BK"];
+        } else {
+          // Guru biasa - ambil dari teacher_assignments
+          const mapelGuru = mapelData
+            .filter((item) => item.teacher_id === guru.teacher_id)
+            .map((item) => item.subject);
+          tugasMapel = [...new Set(mapelGuru)];
+        }
 
         // Gabung semua mapel dengan tanda "dan"
-        const combinedMapel = [...new Set(mapelGuru)].join(" dan ");
+        const combinedMapel = tugasMapel.join(" dan ");
 
         return {
           ...guru,
@@ -102,7 +115,7 @@ export const Teachers = () => {
                   Nama Guru
                 </th>
                 <th className="w-48 sm:w-72 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                  Mata Pelajaran
+                  Tugas/Mapel {/* ✅ UPDATE: Mata Pelajaran -> Tugas/Mapel */}
                 </th>
                 <th className="w-28 sm:w-32 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
                   Wali Kelas
@@ -136,7 +149,7 @@ export const Teachers = () => {
                     </div>
                   </td>
                   
-                  {/* Mata Pelajaran */}
+                  {/* Tugas/Mapel */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     {guru.mapel?.length > 0 ? (
                       <div className="text-xs sm:text-sm text-slate-900 font-medium">
@@ -144,7 +157,7 @@ export const Teachers = () => {
                       </div>
                     ) : (
                       <span className="text-xs sm:text-sm text-slate-400 italic">
-                        Belum ada mapel
+                        Belum ada tugas
                       </span>
                     )}
                   </td>
