@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import RecapModal from "./RecapModal";
-import { exportAttendanceToExcel } from "./ExportExcel";
+import { exportAttendanceToExcel } from "./AttendanceExcel";
 
 const Attendance = ({ user, onShowToast }) => {
   const [classes, setClasses] = useState([]);

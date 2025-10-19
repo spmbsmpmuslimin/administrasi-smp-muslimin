@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import ExcelJS from "exceljs";
+import { exportAllStudents } from "./SpmbExcel"; // ✅ Import dari utility
 
 const StudentList = ({
   students,
@@ -22,40 +22,28 @@ const StudentList = ({
   const [isExporting, setIsExporting] = useState(false);
 
   // ✅ FIXED: Fallback calculation untuk totalPages
-  const effectiveTotalPages = totalPages > 0 ? totalPages : Math.ceil(totalStudents / rowsPerPage);
+  const effectiveTotalPages =
+    totalPages > 0 ? totalPages : Math.ceil(totalStudents / rowsPerPage);
   const shouldShowPagination = effectiveTotalPages > 1;
 
-  console.log('🎯 PAGINATION DEBUG StudentList:', {
+  console.log("🎯 PAGINATION DEBUG StudentList:", {
     totalStudents,
-    currentPageNum, 
+    currentPageNum,
     totalPages,
     effectiveTotalPages,
     shouldShowPagination,
     rowsPerPage,
-    studentsCount: students.length
+    studentsCount: students.length,
   });
-
-  // Helper function untuk academic year
-  const getCurrentAcademicYear = useCallback(() => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    
-    if (currentMonth >= 7) {
-      return `${currentYear + 1}/${currentYear + 2}`;
-    } else {
-      return `${currentYear}/${currentYear + 1}`;
-    }
-  }, []);
 
   // Helper function untuk format tanggal DD-MM-YYYY
   const formatDateToDDMMYYYY = useCallback((dateString) => {
     if (!dateString || dateString === "-") return "-";
-    
+
     try {
       if (dateString.includes("-")) {
         const [year, month, day] = dateString.split("-");
-        return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+        return `${day.padStart(2, "0")}-${month.padStart(2, "0")}-${year}`;
       }
       return dateString;
     } catch (error) {
@@ -65,11 +53,14 @@ const StudentList = ({
   }, []);
 
   // ✅ FIXED: Helper untuk get display number yang reliable
-  const getDisplayNumber = useCallback((index) => {
-    const page = currentPageNum || 1;
-    const perPage = rowsPerPage || 20;
-    return (page - 1) * perPage + index + 1;
-  }, [currentPageNum, rowsPerPage]);
+  const getDisplayNumber = useCallback(
+    (index) => {
+      const page = currentPageNum || 1;
+      const perPage = rowsPerPage || 20;
+      return (page - 1) * perPage + index + 1;
+    },
+    [currentPageNum, rowsPerPage]
+  );
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -84,7 +75,7 @@ const StudentList = ({
 
     return [...students].sort((a, b) => {
       let aValue, bValue;
-      
+
       if (sortConfig.key === "nama_lengkap") {
         aValue = a.nama_lengkap || "";
         bValue = b.nama_lengkap || "";
@@ -123,7 +114,7 @@ const StudentList = ({
     }
   };
 
-  // Export to Excel function
+  // ✅ UPDATED: Export menggunakan utility function
   const handleExportData = async () => {
     if (!allStudents || allStudents.length === 0) {
       if (showToast) {
@@ -133,205 +124,11 @@ const StudentList = ({
     }
 
     setIsExporting(true);
-
+    
     try {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Data Calon Siswa");
-
-      // Set column widths
-      worksheet.columns = [
-        { width: 5 },
-        { width: 30 },
-        { width: 15 },
-        { width: 25 },
-        { width: 15 },
-        { width: 25 },
-        { width: 15 },
-        { width: 25 },
-        { width: 20 },
-        { width: 20 },
-        { width: 25 },
-        { width: 20 },
-        { width: 20 },
-        { width: 18 },
-        { width: 100 },
-      ];
-
-      // Get statistics
-      const totalLaki = allStudents.filter(
-        (s) => s.jenis_kelamin === "Laki-laki"
-      ).length;
-      const totalPerempuan = allStudents.filter(
-        (s) => s.jenis_kelamin === "Perempuan"
-      ).length;
-      const academicYear = getCurrentAcademicYear();
-      const currentDate = new Date().toLocaleDateString("id-ID", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
-      // Header Sekolah - DIUBAH untuk SMP Muslimin Cililin
-      worksheet.mergeCells("A1:O1");
-      const schoolHeader = worksheet.getCell("A1");
-      schoolHeader.value = "SMP MUSLIMIN CILILIN";
-      schoolHeader.font = { bold: true, size: 16 };
-      schoolHeader.alignment = { horizontal: "center", vertical: "middle" };
-
-      // Header Data - DIUBAH untuk SMP
-      worksheet.mergeCells("A2:O2");
-      const dataHeader = worksheet.getCell("A2");
-      dataHeader.value = `DATA CALON SISWA BARU SMP TAHUN AJARAN ${academicYear}`;
-      dataHeader.font = { bold: true, size: 14 };
-      dataHeader.alignment = { horizontal: "center", vertical: "middle" };
-
-      // Tanggal Export
-      const dateCell = worksheet.getCell("A4");
-      dateCell.value = `Tanggal Export: ${currentDate}`;
-      dateCell.font = { italic: true, size: 11 };
-
-      // Total Data
-      const totalCell = worksheet.getCell("A5");
-      totalCell.value = `Total Data Siswa Baru : ${totalStudents} siswa`;
-      totalCell.font = { bold: true, size: 11 };
-
-      // Siswa Laki-laki
-      const lakiCell = worksheet.getCell("A6");
-      lakiCell.value = `Siswa Laki-laki: ${totalLaki} siswa`;
-      lakiCell.font = { size: 11 };
-
-      // Siswa Perempuan
-      const perempuanCell = worksheet.getCell("A7");
-      perempuanCell.value = `Siswa Perempuan: ${totalPerempuan} siswa`;
-      perempuanCell.font = { size: 11 };
-
-      // Header tabel - DIUBAH: "Asal TK/PAUD" menjadi "Asal SD"
-      const headers = [
-        "No.",
-        "Nama Lengkap",
-        "Jenis Kelamin",
-        "Tempat Lahir",
-        "Tanggal Lahir",
-        "Asal SD", // DIUBAH
-        "NISN",
-        "Nama Ayah",
-        "Pekerjaan Ayah",
-        "Pendidikan Ayah",
-        "Nama Ibu",
-        "Pekerjaan Ibu",
-        "Pendidikan Ibu",
-        "No. HP Orang Tua",
-        "Alamat Lengkap",
-      ];
-
-      const headerRow = worksheet.getRow(10);
-      headerRow.values = headers;
-
-      // Style header
-      headerRow.eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: "FFFFFF" } };
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "1e3a8a" },
-        };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        cell.border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" },
-        };
-      });
-
-      // Data rows
-      allStudents.forEach((student, index) => {
-        const row = worksheet.getRow(11 + index);
-
-        const namaLengkap = student.nama_lengkap || "-";
-        const jenisKelamin = student.jenis_kelamin || "-";
-        const tempatLahir = student.tempat_lahir || "-";
-        const tanggalLahir = formatDateToDDMMYYYY(student.tanggal_lahir);
-        const asalSekolah = student.asal_sekolah || "-"; // DIUBAH
-        const nisn = student.nisn && student.nisn !== "-" ? student.nisn : "-";
-        
-        const namaAyah = student.nama_ayah || "-";
-        const pekerjaanAyah = student.pekerjaan_ayah || "-";
-        const pendidikanAyah = student.pendidikan_ayah || "-";
-        const namaIbu = student.nama_ibu || "-";
-        const pekerjaanIbu = student.pekerjaan_ibu || "-";
-        const pendidikanIbu = student.pendidikan_ibu || "-";
-        const noHP = student.no_hp || "-";
-        const alamat = student.alamat || "-";
-
-        row.values = [
-          index + 1,
-          namaLengkap,
-          jenisKelamin,
-          tempatLahir,
-          tanggalLahir,
-          asalSekolah, // DIUBAH
-          nisn,
-          namaAyah,
-          pekerjaanAyah,
-          pendidikanAyah,
-          namaIbu,
-          pekerjaanIbu,
-          pendidikanIbu,
-          noHP,
-          alamat,
-        ];
-
-        // Style data rows
-        row.eachCell((cell) => {
-          cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-          };
-          cell.alignment = { vertical: "middle" };
-
-          if (index % 2 === 0) {
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "F8FAFC" },
-            };
-          }
-        });
-
-        row.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
-        row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
-      });
-
-      // Generate file - DIUBAH nama file untuk SMP Muslimin Cililin
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-
-      // Download file - DIUBAH
-      const fileName = `Data_Siswa_SMP_Muslimin_Cililin_${academicYear.replace('/', '-')}_${
-        new Date().toISOString().split("T")[0]
-      }.xlsx`;
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      if (showToast) {
-        showToast(`Data berhasil di-export: ${fileName}`, "success");
-      }
+      await exportAllStudents(allStudents, totalStudents, showToast);
     } catch (error) {
-      console.error("Error exporting data:", error);
-      if (showToast) {
-        showToast("Gagal export data. Silakan coba lagi.", "error");
-      }
+      console.error("Error in handleExportData:", error);
     } finally {
       setIsExporting(false);
     }
@@ -340,7 +137,7 @@ const StudentList = ({
   // Render functions
   const renderPhoneNumber = (phoneNumber, parentName) => {
     if (!phoneNumber) return <div className="text-gray-400 text-sm">-</div>;
-    
+
     const cleanPhone = phoneNumber.toString().replace(/\D/g, "");
     let waPhone = cleanPhone;
     if (waPhone.startsWith("0")) {
@@ -399,7 +196,7 @@ const StudentList = ({
             </h3>
             <span
               className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                student.jenis_kelamin === "Laki-laki"
+                student.jenis_kelamin === "L"
                   ? "bg-blue-100 text-blue-800"
                   : "bg-pink-100 text-pink-800"
               }`}>
@@ -427,7 +224,8 @@ const StudentList = ({
         <div>
           <div className="text-gray-500 mb-1">Tempat, Tanggal Lahir</div>
           <div className="font-medium">
-            {student.tempat_lahir}, {formatDateToDDMMYYYY(student.tanggal_lahir)}
+            {student.tempat_lahir},{" "}
+            {formatDateToDDMMYYYY(student.tanggal_lahir)}
           </div>
         </div>
 
@@ -445,19 +243,17 @@ const StudentList = ({
 
         <div>
           <div className="text-gray-500 mb-1">Orang Tua</div>
-          <div className="font-medium">
-            Ayah: {student.nama_ayah || "-"}
-          </div>
-          <div className="font-medium">
-            Ibu: {student.nama_ibu || "-"}
-          </div>
+          <div className="font-medium">Ayah: {student.nama_ayah || "-"}</div>
+          <div className="font-medium">Ibu: {student.nama_ibu || "-"}</div>
           <div className="mt-2">
-            {renderPhoneNumber(student.no_hp, student.nama_ayah || student.nama_ibu)}
+            {renderPhoneNumber(
+              student.no_hp,
+              student.nama_ayah || student.nama_ibu
+            )}
           </div>
         </div>
 
         <div>
-          {/* DIUBAH: Asal TK/PAUD menjadi Asal SD */}
           <div className="text-gray-500 mb-1">Asal SD</div>
           <div className="font-medium">{student.asal_sekolah || "-"}</div>
         </div>
@@ -543,13 +339,17 @@ const StudentList = ({
         </div>
         <div className="bg-gradient-to-r from-green-100 to-green-50 border-2 border-green-200 rounded-xl p-4 text-center">
           <div className="text-2xl font-bold text-green-800">
-            {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "Laki-laki").length : 0}
+            {allStudents
+              ? allStudents.filter((s) => s.jenis_kelamin === "L").length
+              : 0}
           </div>
           <div className="text-green-600 text-sm">Siswa Laki-laki</div>
         </div>
         <div className="bg-gradient-to-r from-pink-100 to-pink-50 border-2 border-pink-200 rounded-xl p-4 text-center">
           <div className="text-2xl font-bold text-pink-800">
-            {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "Perempuan").length : 0}
+            {allStudents
+              ? allStudents.filter((s) => s.jenis_kelamin === "P").length
+              : 0}
           </div>
           <div className="text-pink-600 text-sm">Siswa Perempuan</div>
         </div>
@@ -608,7 +408,6 @@ const StudentList = ({
                     className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 transition-colors text-sm min-w-[150px]"
                     onClick={() => handleSort("asal_sekolah")}>
                     <div className="flex items-center gap-2">
-                      {/* DIUBAH: Asal TK/PAUD menjadi Asal SD */}
                       Asal SD
                       <i className={getSortIcon("asal_sekolah")}></i>
                     </div>
@@ -650,11 +449,11 @@ const StudentList = ({
                       <td className="p-3">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            student.jenis_kelamin === "Laki-laki"
+                            student.jenis_kelamin === "L"
                               ? "bg-blue-100 text-blue-800"
                               : "bg-pink-100 text-pink-800"
                           }`}>
-                          {student.jenis_kelamin === "Laki-laki" ? "L" : "P"}
+                          {student.jenis_kelamin === "L" ? "L" : "P"}
                         </span>
                       </td>
                       <td className="p-3">
@@ -675,11 +474,13 @@ const StudentList = ({
                           <div className="font-medium mb-1">
                             Ibu: {student.nama_ibu || "-"}
                           </div>
-                          {renderPhoneNumber(student.no_hp, student.nama_ayah || student.nama_ibu)}
+                          {renderPhoneNumber(
+                            student.no_hp,
+                            student.nama_ayah || student.nama_ibu
+                          )}
                         </div>
                       </td>
                       <td className="p-3">
-                        {/* DIUBAH */}
                         <div className="text-sm font-medium">
                           {student.asal_sekolah || "-"}
                         </div>
@@ -715,7 +516,8 @@ const StudentList = ({
           <div className="text-sm text-gray-600 text-center sm:text-left">
             Menampilkan{" "}
             <span className="font-semibold">
-              {getDisplayNumber(0)}-{getDisplayNumber(sortedStudents.length - 1)}
+              {getDisplayNumber(0)}-
+              {getDisplayNumber(sortedStudents.length - 1)}
             </span>{" "}
             dari <span className="font-semibold">{totalStudents}</span> data
           </div>
@@ -730,31 +532,34 @@ const StudentList = ({
               </button>
 
               <div className="flex gap-1 mx-2">
-                {Array.from({ length: Math.min(5, effectiveTotalPages) }, (_, i) => {
-                  let pageNum;
-                  if (effectiveTotalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPageNum <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPageNum >= effectiveTotalPages - 2) {
-                    pageNum = effectiveTotalPages - 4 + i;
-                  } else {
-                    pageNum = currentPageNum - 2 + i;
-                  }
+                {Array.from(
+                  { length: Math.min(5, effectiveTotalPages) },
+                  (_, i) => {
+                    let pageNum;
+                    if (effectiveTotalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPageNum <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPageNum >= effectiveTotalPages - 2) {
+                      pageNum = effectiveTotalPages - 4 + i;
+                    } else {
+                      pageNum = currentPageNum - 2 + i;
+                    }
 
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => onPageChange(pageNum)}
-                      className={`min-w-[44px] h-12 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center ${
-                        currentPageNum === pageNum
-                          ? "bg-gradient-to-r from-blue-800 to-blue-600 text-white shadow-lg"
-                          : "bg-white border border-gray-300 hover:bg-gray-50"
-                      }`}>
-                      {pageNum}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => onPageChange(pageNum)}
+                        className={`min-w-[44px] h-12 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center ${
+                          currentPageNum === pageNum
+                            ? "bg-gradient-to-r from-blue-800 to-blue-600 text-white shadow-lg"
+                            : "bg-white border border-gray-300 hover:bg-gray-50"
+                        }`}>
+                        {pageNum}
+                      </button>
+                    );
+                  }
+                )}
               </div>
 
               <button
@@ -765,7 +570,7 @@ const StudentList = ({
                 <i className="fas fa-chevron-right"></i>
               </button>
             </div>
-            
+
             <div className="text-xs text-gray-500 bg-gray-100 px-3 py-2 rounded-lg">
               Halaman {currentPageNum} dari {effectiveTotalPages}
             </div>

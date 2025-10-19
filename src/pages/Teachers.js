@@ -45,8 +45,8 @@ export const Teachers = () => {
           // Kepala Sekolah
           tugasMapel = ["Kepala Sekolah"];
         } else if (guru.role === "guru_bk") {
-          // Guru BK
-          tugasMapel = ["Guru BK"];
+          // GURU BK/BP
+          tugasMapel = ["GURU BK/BP"];
         } else {
           // Guru biasa - ambil dari teacher_assignments
           const mapelGuru = mapelData

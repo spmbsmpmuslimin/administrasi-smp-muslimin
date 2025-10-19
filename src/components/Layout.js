@@ -178,12 +178,12 @@ const Layout = ({ user, onLogout, children }) => {
       },
       teacher: homeroom_class_id ? {
         Dashboard: `Kelola Data Kelas ${homeroom_class_id}`,
-        'Data Siswa': `Kelola Data Siswa Kelas ${homeroom_class_id}`,
+        'Data Siswa': `Kelola Data Siswa Kelas`,
         'Data Guru': 'Kelola Data Guru Sekolah',
-        'Data Kelas': `Informasi Kelas ${homeroom_class_id}`,
-        Kehadiran: `Input kehadiran Kelas ${homeroom_class_id}`,
-        'Nilai Akademik': `Input Nilai Kelas ${homeroom_class_id}`,
-        Laporan: `Laporan Kelas ${homeroom_class_id}`,
+        'Data Kelas': `Informasi Kelas`,
+        Kehadiran: `Input kehadiran Kelas`,
+        'Nilai Akademik': `Input Nilai Kelas`,
+        Laporan: `Laporan Kelas`,
         EasyModul: 'Akses Modul Pembelajaran',
         Pengaturan: 'Pengaturan Akun',
       } : {
@@ -257,7 +257,7 @@ const Layout = ({ user, onLogout, children }) => {
     const { role, homeroom_class_id } = user
     
     if (role === 'admin') return 'Admin'
-    if (role === 'guru_bk') return 'Guru BK/BP' // ✅ ROLE DISPLAY GURU BK
+    if (role === 'guru_bk') return 'Guru BK/BP' 
     if (role === 'teacher' && homeroom_class_id) return `Wali ${homeroom_class_id}`
     if (role === 'teacher') return 'Guru'
     return 'User'
@@ -395,7 +395,7 @@ const Layout = ({ user, onLogout, children }) => {
                         </p>
                         <p className="text-xs text-blue-600 capitalize font-medium">
                           {user?.role === 'admin' ? 'Administrator' : 
-                           user?.role === 'guru_bk' ? 'Guru BK/BP' : // ✅ Role Display for Guru BK
+                           user?.role === 'guru_bk' ? 'Guru BK/BP' : 
                            user?.role === 'teacher' && user?.homeroom_class_id ? `Wali Kelas ${user.homeroom_class_id}` :
                            user?.role === 'teacher' ? 'Guru Mata Pelajaran' : 'User'}
                         </p>

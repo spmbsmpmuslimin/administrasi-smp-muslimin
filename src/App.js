@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Layout from './components/Layout';
@@ -14,15 +14,34 @@ import Grades from './pages/Grades';
 import Setting from './setting/setting';
 
 // Import dari folder khusus
-import Konseling from './konseling/Konseling'; // <- dari folder konseling
-import Reports from './reports/Reports';       // dari folder reports
-import SPMB from './spmb/SPMB';               // dari folder spmb
+import Konseling from './konseling/Konseling';
+import Reports from './reports/Reports';
+import SPMB from './spmb/SPMB';
 
 function App() {
   const [user, setUser] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('info');
   const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // ✅ CHECK localStorage saat app load - RESTORE USER KALAU ADA
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        console.log('✅ User restored from localStorage');
+      } catch (err) {
+        console.error('❌ Error parsing stored user:', err);
+        localStorage.removeItem('user');
+      }
+    }
+    
+    setLoading(false);
+  }, []);
 
   // ✅ Auto hide toast setelah 3 detik
   useEffect(() => {
@@ -36,21 +55,37 @@ function App() {
     }
   }, [showToast]);
 
-  // ✅ Memoize handlers untuk prevent re-creation
-  const handleLogin = useCallback((userData) => {
+  // ✅ Handler Login - SELALU SIMPAN ke localStorage (untuk refresh tetap login)
+  const handleLogin = useCallback((userData, rememberMe = false) => {
     setUser(userData);
-    setToastMessage('Login berhasil!');
+    
+    // ✅ SELALU simpan ke localStorage supaya refresh tetap login
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // ✅ Kalau rememberMe TRUE, set flag tambahan (untuk close browser tetap login)
+    if (rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+      console.log('✅ Remember Me enabled - will persist after browser close');
+    } else {
+      localStorage.setItem('rememberMe', 'false');
+      console.log('ℹ️ Remember Me disabled - will logout after browser close');
+    }
+    
+    setToastMessage(`Selamat datang, ${userData.full_name}! 👋`);
     setToastType('success');
     setShowToast(true);
-    console.log('User logged in:', userData);
+    console.log('✅ User logged in:', userData);
   }, []);
 
+  // ✅ Handler Logout + HAPUS dari localStorage
   const handleLogout = useCallback(() => {
     setUser(null);
-    setToastMessage('Logout berhasil!');
+    localStorage.removeItem('user');
+    localStorage.removeItem('rememberMe');
+    setToastMessage('Logout berhasil! 👋');
     setToastType('info');
     setShowToast(true);
-    console.log('User logged out');
+    console.log('✅ User logged out and storage cleared');
   }, []);
 
   const handleShowToast = useCallback((message, type = 'info') => {
@@ -76,20 +111,42 @@ function App() {
     }
   };
 
-  // ✅ Extract ProtectedRoute keluar (stable reference)
+  // ✅ Protected Route
   const ProtectedRoute = useCallback(({ children }) => {
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 font-medium">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+    
     if (!user) {
       return <Navigate to="/" />;
     }
     return children;
-  }, [user]);
+  }, [user, loading]);
 
-  // ✅ LayoutWrapper sederhana
+  // ✅ Layout Wrapper
   const LayoutWrapper = useCallback(({ children }) => (
     <Layout user={user} onLogout={handleLogout}>
       {children}
     </Layout>
   ), [user, handleLogout]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter 
@@ -179,7 +236,6 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* ✅ BARU: Route Konseling - Khusus untuk Guru BK */}
         <Route path="/konseling" element={
           <ProtectedRoute>
             <LayoutWrapper>

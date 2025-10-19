@@ -3,7 +3,7 @@ import { AlertTriangle, User, School, Home } from 'lucide-react'
 import AdminDashboard from './AdminDashboard'
 import HomeroomTeacherDashboard from './HomeroomTeacherDashboard'
 import TeacherDashboard from './TeacherDashboard'
-import GuruBKDashboard from './GuruBKDashboard' // ✅ BARU: Import dashboard Guru BK
+import GuruBKDashboard from './GuruBKDashboard' 
 
 const Dashboard = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true)

@@ -5,7 +5,7 @@ import { supabase } from "../supabaseClient";
 const AdminDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalTeachers: 0,
+    totalTeachers: 0,        // ✅ 29 Guru (exclude Kepala Sekolah)
     totalClasses: 0,
     totalStudents: 0,
     studentsByGrade: [],
@@ -25,6 +25,7 @@ const AdminDashboard = ({ user }) => {
     fetchDashboardData();
   }, []);
 
+  // ✅ FIX: fetchDashboardData dengan query yang benar
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -49,22 +50,37 @@ const AdminDashboard = ({ user }) => {
         teachersResult,
         classesResult,
         studentsResult,
+        gradesResult,
         announcementsResult,
       ] = await Promise.all([
+        // ✅ Query 1: Total Guru (29) = 27 teacher + 2 guru_bk, EXCLUDE Kepala Sekolah
         supabase
           .from("users")
-          .select("id")
-          .in("role", ["teacher", "homeroom_teacher"])
-          .eq("is_active", true),
+          .select("id", { count: "exact", head: true })
+          .in("role", ["teacher", "guru_bk"])
+          .eq("is_active", true)
+          .neq("username", "adenurmughni"), // EXCLUDE Kepala Sekolah
 
-        supabase.from("classes").select("id").eq("academic_year", currentYear),
+        // ✅ Query 2: Total Kelas
+        supabase
+          .from("classes")
+          .select("id", { count: "exact", head: true })
+          .eq("academic_year", currentYear),
 
+        // ✅ Query 3: Total Siswa Aktif
         supabase
           .from("students")
-          .select("id, class_id")
+          .select("id, class_id", { count: "exact" })
           .eq("academic_year", currentYear)
           .eq("is_active", true),
 
+        // ✅ Query 4: Ambil grade data untuk students by grade
+        supabase
+          .from("classes")
+          .select("id, grade")
+          .eq("academic_year", currentYear),
+
+        // ✅ Query 5: Announcements
         supabase
           .from("announcement")
           .select("*")
@@ -77,6 +93,7 @@ const AdminDashboard = ({ user }) => {
         teachersResult,
         classesResult,
         studentsResult,
+        gradesResult,
         announcementsResult,
       ].some((result) => result.error);
 
@@ -85,26 +102,17 @@ const AdminDashboard = ({ user }) => {
           teachers: teachersResult.error,
           classes: classesResult.error,
           students: studentsResult.error,
+          grades: gradesResult.error,
           announcements: announcementsResult.error,
         });
       }
 
-      // Get class data untuk students by grade
-      const { data: classesData, error: classesError } = await supabase
-        .from("classes")
-        .select("id, grade")
-        .eq("academic_year", currentYear);
-
-      if (classesError) {
-        console.error("Classes data error:", classesError);
-      }
-
-      // Process students by grade
+      // ✅ Process students by grade
       const gradeStats = {};
-      if (studentsResult.data && classesData) {
+      if (studentsResult.data && gradesResult.data) {
         studentsResult.data.forEach((student) => {
           if (student?.class_id) {
-            const classData = classesData.find(
+            const classData = gradesResult.data.find(
               (c) => c?.id === student.class_id
             );
             if (classData?.grade) {
@@ -119,10 +127,11 @@ const AdminDashboard = ({ user }) => {
         .map(([grade, count]) => ({ grade: parseInt(grade), count }))
         .sort((a, b) => a.grade - b.grade);
 
+      // ✅ SET STATS dengan 29 Guru (exclude Kepala Sekolah)
       setStats({
-        totalTeachers: teachersResult.data?.length || 0,
-        totalClasses: classesResult.data?.length || 0,
-        totalStudents: studentsResult.data?.length || 0,
+        totalTeachers: teachersResult.count || 0,         // ✅ 29 Guru
+        totalClasses: classesResult.count || 0,
+        totalStudents: studentsResult.count || 0,
         studentsByGrade,
       });
 
@@ -162,7 +171,7 @@ const AdminDashboard = ({ user }) => {
       }
 
       const newRecord = data[0];
-      setAnnouncements((prev) => [newRecord, ...prev.slice(0, 4)]); // Keep only 5 items
+      setAnnouncements((prev) => [newRecord, ...prev.slice(0, 4)]);
 
       console.log("Create successful:", newRecord);
       return { data: newRecord, error: null };
@@ -172,7 +181,7 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // UPDATE - Edit announcement (FIXED)
+  // UPDATE - Edit announcement
   const updateAnnouncement = async (id, updates) => {
     try {
       if (!id) throw new Error("ID pengumuman tidak valid");
@@ -180,7 +189,6 @@ const AdminDashboard = ({ user }) => {
         throw new Error("Judul dan konten tidak boleh kosong");
       }
 
-      // Perform update with returning data
       const { data, error } = await supabase
         .from("announcement")
         .update({
@@ -195,14 +203,12 @@ const AdminDashboard = ({ user }) => {
         throw new Error(`Gagal mengupdate: ${error.message}`);
       }
 
-      // Check if update affected any rows
       if (!data || data.length === 0) {
         throw new Error("Pengumuman tidak ditemukan");
       }
 
       const updatedRecord = data[0];
 
-      // Update local state
       setAnnouncements((prev) =>
         prev.map((item) => (item.id === id ? updatedRecord : item))
       );
@@ -315,7 +321,6 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // Navigation handlers for Quick Actions
   const handleManageTeachers = () => {
     navigate('/teachers');
   };
@@ -356,7 +361,7 @@ const AdminDashboard = ({ user }) => {
         </div>
       )}
 
-      {/* Enhanced Header - Removed Clock */}
+      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 lg:p-8">
           <div>
@@ -375,7 +380,7 @@ const AdminDashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Stats Cards - Enhanced with gradients & animations */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
         {/* Total Guru */}
         <div className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-xl shadow-lg hover:shadow-xl border border-blue-100 hover:border-blue-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
@@ -450,7 +455,7 @@ const AdminDashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Quick Actions - Enhanced with gradients & animations */}
+      {/* Quick Actions */}
       <div className="mb-6 sm:mb-8">
         <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
           Quick Actions
@@ -498,7 +503,7 @@ const AdminDashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Pengumuman Terkini - Enhanced */}
+      {/* Pengumuman Terkini */}
       <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 rounded-xl shadow-xl border border-blue-100 p-4 sm:p-6 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
           <h3 className="text-base sm:text-lg font-semibold text-slate-800 flex items-center">
@@ -513,14 +518,14 @@ const AdminDashboard = ({ user }) => {
           </button>
         </div>
 
-        {/* Form Tambah/Edit - Enhanced */}
+        {/* Form Tambah/Edit */}
         {showAddForm && (
           <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 p-4 rounded-xl mb-4 border-2 border-blue-200 shadow-inner backdrop-blur-sm">
             <h4 className="font-semibold mb-3 text-slate-800 text-sm sm:text-base flex items-center">
               <span className="mr-2">{editData ? "✏️" : "➕"}</span>
               {editData ? "Edit Pengumuman" : "Tambah Pengumuman Baru"}
             </h4>
-            <div onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit}>
               <div className="mb-3">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Judul *
@@ -555,21 +560,22 @@ const AdminDashboard = ({ user }) => {
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <button
-                  onClick={handleSubmit}
+                  type="submit"
                   disabled={submitting}
                   className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-blue-300 disabled:to-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none">
                   <span className="mr-1">{submitting ? "⏳" : editData ? "💾" : "✨"}</span>
                   {submitting ? "Menyimpan..." : editData ? "Update" : "Simpan"}
                 </button>
                 <button
+                  type="button"
                   onClick={handleCancel}
                   disabled={submitting}
                   className="bg-gradient-to-r from-slate-400 to-slate-500 hover:from-slate-500 hover:to-slate-600 disabled:from-slate-300 disabled:to-slate-400 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none">
-                  <span className="mr-1">❌</span>
+                  <span className="mr-1">✕</span>
                   Batal
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         )}
 
@@ -591,7 +597,7 @@ const AdminDashboard = ({ user }) => {
                         {announcement.content || "No content"}
                       </p>
                       <p className="text-xs text-slate-500 mt-2 ml-6 flex items-center group-hover:text-blue-600 transition-colors">
-                        <span className="mr-1">🕒</span>
+                        <span className="mr-1">🕐</span>
                         {announcement.created_at
                           ? new Date(
                               announcement.created_at

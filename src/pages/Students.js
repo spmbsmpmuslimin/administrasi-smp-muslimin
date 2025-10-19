@@ -9,6 +9,7 @@ export const Students = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedJenjang, setSelectedJenjang] = useState("");
   const [selectedKelas, setSelectedKelas] = useState("");
+  const [selectedGender, setSelectedGender] = useState(""); // ✅ TAMBAH STATE JENIS KELAMIN
 
   useEffect(() => {
     fetchStudents();
@@ -23,7 +24,8 @@ export const Students = () => {
         .from("students")
         .select("*")
         .eq("is_active", true)
-        .order("full_name", { ascending: true });
+        .order("full_name", { ascending: true })   // ✅ NAMA A-Z
+        .order("class_id", { ascending: true });   // ✅ KELAS 7,8,9
 
       const { data, error } = await query;
 
@@ -57,7 +59,7 @@ export const Students = () => {
     ? kelasOptions.filter((kelas) => kelas.startsWith(selectedJenjang))
     : [];
 
-  // Filter data berdasarkan search, jenjang, dan kelas
+  // Filter data berdasarkan search, jenjang, kelas, dan jenis kelamin
   const filteredData = siswaData.filter((siswa) => {
     const matchesSearch =
       siswa.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -68,8 +70,11 @@ export const Students = () => {
     const matchesKelas = selectedKelas
       ? siswa.class_id === selectedKelas
       : true;
+    const matchesGender = selectedGender // ✅ FILTER JENIS KELAMIN
+      ? siswa.gender === selectedGender
+      : true;
 
-    return matchesSearch && matchesJenjang && matchesKelas;
+    return matchesSearch && matchesJenjang && matchesKelas && matchesGender;
   });
 
   const handleJenjangChange = (e) => {
@@ -100,9 +105,9 @@ export const Students = () => {
         </p>
       </div>
 
-      {/* Filter & Search Section */}
-      <div className="bg-white p-6 rounded-xl shadow-sm mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-        {/* Search Input - Lebih lebar */}
+      {/* Filter & Search Section - UBAH GRID JADI 5 KOLOM */}
+      <div className="bg-white p-6 rounded-xl shadow-sm mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+        {/* Search Input - Tetap lebar */}
         <div className="md:col-span-2">
           <input
             type="text"
@@ -145,14 +150,27 @@ export const Students = () => {
             ))}
           </select>
         </div>
+
+        {/* ✅ DROPDOWN JENIS KELAMIN */}
+        <div>
+          <select
+            value={selectedGender}
+            onChange={(e) => setSelectedGender(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer transition">
+            <option value="">Semua Jenis Kelamin</option>
+            <option value="L">Laki-laki</option>
+            <option value="P">Perempuan</option>
+          </select>
+        </div>
       </div>
 
-      {/* Info Filter */}
-      {(selectedJenjang || selectedKelas || searchTerm) && (
+      {/* Info Filter - TAMBAH INFO JENIS KELAMIN */}
+      {(selectedJenjang || selectedKelas || searchTerm || selectedGender) && (
         <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100 text-sm inline-block">
           Menampilkan <strong>{filteredData.length} Siswa</strong>
           {searchTerm && ` dengan kata kunci "${searchTerm}"`}
           {selectedKelas && ` Di Kelas ${selectedKelas}`}
+          {selectedGender && ` ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}`}
         </div>
       )}
 
@@ -199,7 +217,7 @@ export const Students = () => {
 
         {filteredData.length === 0 && (
           <div className="p-12 text-center text-gray-500 text-lg">
-            {searchTerm || selectedJenjang || selectedKelas
+            {searchTerm || selectedJenjang || selectedKelas || selectedGender
               ? "Tidak ada data siswa yang sesuai dengan filter"
               : "Belum ada data siswa"}
           </div>

@@ -14,19 +14,13 @@ import {
   FileSpreadsheet,
   TrendingUp,
   AlertCircle,
+  Award,
 } from "lucide-react";
 import { exportToExcel } from "./ReportExcel";
 import ReportModal from "./ReportModal";
 
-// ✅ IMPORT HELPERS
-import {
-  fetchTeachersData,
-  fetchStudentsData,
-  fetchAttendanceRecapData,
-  fetchGradesData,
-  buildFilterDescription,
-  TEACHER_ROLES
-} from './ReportHelpers';
+// ==================== CONSTANTS ====================
+const TEACHER_ROLES = ["teacher", "guru_bk"];
 
 // ==================== COMPONENTS ====================
 
@@ -287,7 +281,7 @@ const AdminReports = ({ user, onShowToast }) => {
 
       const attendanceData = attendanceResult.data || [];
       const presentCount = attendanceData.filter(
-        (a) => a.status?.toLowerCase() === "hadir"
+        (a) => a.status === "Hadir"
       ).length;
       const attendanceRate =
         attendanceData.length > 0
@@ -348,49 +342,359 @@ const AdminReports = ({ user, onShowToast }) => {
     }
   };
 
-  // ✅ REFACTORED: Fetch Report Data using helpers
   const fetchReportData = async (reportType) => {
     console.log("📊 Fetching report:", reportType);
     console.log("📅 Filters:", filters);
 
+    const startDate =
+      filters.start_date ||
+      new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0];
+    const endDate = filters.end_date || new Date().toISOString().split("T")[0];
+
+    console.log("📆 Date range:", startDate, "to", endDate);
+
+    let query,
+      headers,
+      formatRow,
+      summary = [];
     let reportTitle = "";
-    let result = null;
 
-    try {
-      switch (reportType) {
-        case "teachers":
-          reportTitle = "DATA GURU";
-          result = await fetchTeachersData(filters);
-          break;
+    switch (reportType) {
+      case "teachers":
+        reportTitle = "DATA GURU";
+        query = supabase
+          .from("users")
+          .select("*")
+          .in("role", TEACHER_ROLES)
+          .neq("username", "adenurmughni")
+          .eq("is_active", true)
+          .order("teacher_id");
 
-        case "students":
-          reportTitle = "DATA SISWA";
-          result = await fetchStudentsData(filters, true); // Include grade
-          break;
+        headers = [
+          "Kode Guru",
+          "Username",
+          "Nama Lengkap",
+          "Role",
+          "Wali Kelas",
+          "Status",
+          "Tanggal Bergabung",
+        ];
 
-        case "attendance-recap":
-          reportTitle = "REKAPITULASI KEHADIRAN";
-          result = await fetchAttendanceRecapData(filters);
-          break;
+        formatRow = (row) => ({
+          teacher_id: row.teacher_id || "-",
+          username: row.username,
+          full_name: row.full_name,
+          role:
+            row.role === "guru_bk"
+              ? "Guru BK"
+              : row.role === "teacher"
+              ? "Guru"
+              : row.role,
+          homeroom_class_id: row.homeroom_class_id || "-",
+          is_active: row.is_active ? "Aktif" : "Tidak Aktif",
+          created_at: new Date(row.created_at).toLocaleDateString("id-ID", {
+            timeZone: "Asia/Jakarta",
+          }),
+        });
+        break;
 
-        case "grades":
-          reportTitle = "DATA NILAI AKADEMIK";
-          result = await fetchGradesData(filters);
-          break;
+      case "students":
+        reportTitle = "DATA SISWA";
+        query = supabase
+          .from("students")
+          .select("*, classes(grade)")
+          .eq("is_active", true);
 
-        default:
-          throw new Error("Tipe laporan tidak valid");
-      }
+        if (filters.class_id) query = query.eq("class_id", filters.class_id);
+        if (filters.academic_year)
+          query = query.eq("academic_year", filters.academic_year);
 
-      return {
-        ...result,
-        reportTitle
-      };
+        query = query.order("class_id").order("full_name");
 
-    } catch (err) {
-      console.error("❌ Query error:", err);
-      throw err;
+        headers = [
+          "NIS",
+          "Nama Lengkap",
+          "Gender",
+          "Kelas",
+          "Tingkat",
+          "Tahun Ajaran",
+        ];
+
+        formatRow = (row) => ({
+          nis: row.nis,
+          full_name: row.full_name,
+          gender: row.gender === "L" ? "Laki-laki" : "Perempuan",
+          class_id: row.class_id,
+          grade: row.classes?.grade || "-",
+          academic_year: row.academic_year,
+        });
+        break;
+
+      case "attendance-recap":
+        reportTitle = "REKAPITULASI KEHADIRAN";
+        console.log("📊 Fetching attendance data...");
+
+        let attendanceQuery = supabase
+          .from("attendances")
+          .select(
+            `
+            *,
+            students!inner(nis, full_name, class_id)
+          `
+          )
+          .gte("date", startDate)
+          .lte("date", endDate);
+
+        const { data: rawAttendance, error: attendanceError } =
+          await attendanceQuery;
+
+        if (attendanceError) {
+          console.error("❌ Attendance error:", attendanceError);
+          throw attendanceError;
+        }
+
+        console.log(
+          "✅ Raw attendance data:",
+          rawAttendance?.length || 0,
+          "records"
+        );
+
+        let filteredAttendance = rawAttendance || [];
+        if (filters.class_id) {
+          filteredAttendance = filteredAttendance.filter(
+            (a) => a.students?.class_id === filters.class_id
+          );
+          console.log(
+            "🔎 Filtered to class:",
+            filters.class_id,
+            "→",
+            filteredAttendance.length,
+            "records"
+          );
+        }
+
+        if (filteredAttendance.length === 0) {
+          console.warn("⚠️ No attendance data found!");
+          return {
+            headers: [
+              "NIS",
+              "Nama",
+              "Kelas",
+              "Hadir",
+              "Sakit",
+              "Izin",
+              "Alpa",
+              "Total",
+              "Persentase",
+            ],
+            preview: [],
+            total: 0,
+            fullData: [],
+            summary: [
+              { label: "Total Siswa", value: 0 },
+              { label: "Total Presensi", value: 0 },
+              { label: "Rata-rata Kehadiran", value: "0%" },
+              { label: "Siswa <75%", value: 0 },
+            ],
+            reportTitle,
+          };
+        }
+
+        const recapData = {};
+        filteredAttendance.forEach((record) => {
+          const key = record.student_id;
+          if (!recapData[key]) {
+            recapData[key] = {
+              nis: record.students?.nis || "-",
+              name: record.students?.full_name || "-",
+              class_id: record.students?.class_id || "-",
+              Hadir: 0,
+              Sakit: 0,
+              Izin: 0,
+              Alpa: 0,
+              total: 0,
+            };
+          }
+          recapData[key].total++;
+
+          if (record.status === "Hadir") recapData[key].Hadir++;
+          if (record.status === "Sakit") recapData[key].Sakit++;
+          if (record.status === "Izin") recapData[key].Izin++;
+          if (record.status === "Alpa") recapData[key].Alpa++;
+        });
+
+        const finalData = Object.values(recapData)
+          .map((r) => ({
+            ...r,
+            persentase: `${Math.round((r.Hadir / (r.total || 1)) * 100)}%`,
+          }))
+          .sort((a, b) => b.Hadir - a.Hadir);
+
+        console.log("✅ Recap data:", finalData.length, "students");
+
+        const totalHadir = finalData.reduce((sum, r) => sum + r.Hadir, 0);
+        const totalPresensi = finalData.reduce((sum, r) => sum + r.total, 0);
+        const avgAttendance =
+          totalPresensi > 0
+            ? Math.round((totalHadir / totalPresensi) * 100)
+            : 0;
+
+        summary = [
+          { label: "Total Siswa", value: finalData.length },
+          { label: "Total Presensi", value: totalPresensi },
+          { label: "Rata-rata Kehadiran", value: `${avgAttendance}%` },
+          {
+            label: "Siswa <75%",
+            value: finalData.filter((s) => parseFloat(s.persentase) < 75)
+              .length,
+          },
+        ];
+
+        headers = [
+          "NIS",
+          "Nama",
+          "Kelas",
+          "Hadir",
+          "Sakit",
+          "Izin",
+          "Alpa",
+          "Total",
+          "Persentase",
+        ];
+
+        return {
+          headers,
+          preview: finalData.slice(0, 100),
+          total: finalData.length,
+          fullData: finalData,
+          summary,
+          reportTitle,
+        };
+
+      case "grades":
+        reportTitle = "DATA NILAI AKADEMIK";
+        query = supabase
+          .from("grades")
+          .select(
+            "*, students!inner(nis, full_name, class_id), users!inner(full_name)"
+          );
+
+        if (filters.class_id) {
+          query = query.eq("students.class_id", filters.class_id);
+        }
+        if (filters.academic_year) {
+          query = query.eq("academic_year", filters.academic_year);
+        }
+        if (filters.semester) {
+          query = query.eq("semester", filters.semester);
+        }
+
+        query = query
+          .order("academic_year", { ascending: false })
+          .order("semester");
+
+        headers = [
+          "Tahun Ajaran",
+          "Semester",
+          "NIS",
+          "Nama",
+          "Kelas",
+          "Mata Pelajaran",
+          "Jenis Tugas",
+          "Nilai",
+          "Guru",
+        ];
+
+        formatRow = (row) => ({
+          academic_year: row.academic_year,
+          semester: row.semester,
+          nis: row.students?.nis || "-",
+          full_name: row.students?.full_name || "-",
+          class_id: row.students?.class_id || "-",
+          subject: row.subject,
+          assignment_type: row.assignment_type,
+          score: row.score,
+          teacher: row.users?.full_name || "-",
+        });
+        break;
+
+      default:
+        throw new Error("Tipe laporan tidak valid");
     }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("❌ Query error:", error);
+      throw error;
+    }
+
+    console.log("✅ Query result:", data?.length || 0, "records");
+
+    const formattedData = data?.map(formatRow) || [];
+
+    console.log("✅ Formatted data:", formattedData.length, "records");
+
+    if (reportType === "students" && formattedData.length > 0) {
+      const maleCount = formattedData.filter(
+        (s) => s.gender === "Laki-laki"
+      ).length;
+      const femaleCount = formattedData.filter(
+        (s) => s.gender === "Perempuan"
+      ).length;
+      const classes = [...new Set(formattedData.map((s) => s.class_id))];
+      summary = [
+        { label: "Total Siswa", value: formattedData.length },
+        { label: "Laki-laki", value: maleCount },
+        { label: "Perempuan", value: femaleCount },
+        { label: "Jumlah Kelas", value: classes.length },
+      ];
+    }
+
+    if (reportType === "teachers" && formattedData.length > 0) {
+      const activeCount = formattedData.filter(
+        (t) => t.is_active === "Aktif"
+      ).length;
+      const homeroomCount = formattedData.filter(
+        (t) => t.homeroom !== "-"
+      ).length;
+      const bkCount = formattedData.filter((t) => t.role === "Guru BK").length;
+      summary = [
+        { label: "Total Guru", value: formattedData.length },
+        { label: "Guru Aktif", value: activeCount },
+        { label: "Wali Kelas", value: homeroomCount },
+        { label: "Guru BK", value: bkCount },
+      ];
+    }
+
+    if (reportType === "grades" && formattedData.length > 0) {
+      const avgScore = (
+        formattedData.reduce((sum, g) => sum + (parseFloat(g.score) || 0), 0) /
+        formattedData.length
+      ).toFixed(2);
+      const highestScore = Math.max(
+        ...formattedData.map((g) => parseFloat(g.score) || 0)
+      );
+      const lowestScore = Math.min(
+        ...formattedData.map((g) => parseFloat(g.score) || 0)
+      );
+      const subjects = [...new Set(formattedData.map((g) => g.subject))];
+      summary = [
+        { label: "Total Nilai", value: formattedData.length },
+        { label: "Rata-rata", value: avgScore },
+        { label: "Tertinggi", value: highestScore },
+        { label: "Terendah", value: lowestScore },
+        { label: "Mata Pelajaran", value: subjects.length },
+      ];
+    }
+
+    return {
+      headers,
+      preview: formattedData.slice(0, 100),
+      total: formattedData.length,
+      fullData: formattedData,
+      summary,
+      reportTitle,
+    };
   };
 
   const previewReport = async (reportType) => {
@@ -433,7 +737,20 @@ const AdminReports = ({ user, onShowToast }) => {
         throw new Error("Tidak ada data untuk di-download");
       }
 
-      const filterDescription = buildFilterDescription(filters);
+      const filterParts = [];
+      if (filters.class_id) filterParts.push(`Kelas ${filters.class_id}`);
+      if (filters.academic_year)
+        filterParts.push(`TA ${filters.academic_year}`);
+      if (filters.semester) filterParts.push(`Semester ${filters.semester}`);
+      if (filters.start_date && filters.end_date) {
+        filterParts.push(
+          `Periode ${new Date(filters.start_date).toLocaleDateString(
+            "id-ID"
+          )} - ${new Date(filters.end_date).toLocaleDateString("id-ID")}`
+        );
+      }
+      const filterDescription =
+        filterParts.length > 0 ? filterParts.join(", ") : "Semua Data";
 
       const metadata = {
         title: data.reportTitle || "LAPORAN",
@@ -570,28 +887,27 @@ const AdminReports = ({ user, onShowToast }) => {
           </h2>
         </div>
 
-        {/* ✅ COMPACT CARDS - 4 in 1 row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {REPORT_CARDS.map((card) => {
             const Icon = card.icon;
             return (
               <div
                 key={card.id}
-                className={`bg-white rounded-lg shadow-sm border-2 ${card.colorCard} p-4 hover:shadow-md transition-shadow`}>
-                <div className="flex items-center justify-between mb-3">
+                className={`bg-white rounded-lg shadow-sm border-2 ${card.colorCard} p-6 hover:shadow-md transition-shadow`}>
+                <div className="flex items-center justify-between mb-4">
                   <div
-                    className={`w-11 h-11 rounded-xl ${card.colorIcon} flex items-center justify-center`}>
-                    <Icon className="w-5 h-5" />
+                    className={`w-14 h-14 rounded-xl ${card.colorIcon} flex items-center justify-center`}>
+                    <Icon className="w-7 h-7" />
                   </div>
                 </div>
 
-                <h3 className="text-sm font-semibold text-slate-800 mb-1.5 leading-tight">
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">
                   {card.title}
                 </h3>
-                <p className="text-xs text-slate-600 mb-2 leading-tight line-clamp-2">
+                <p className="text-sm text-slate-600 mb-3">
                   {card.description}
                 </p>
-                <p className="text-xs text-slate-500 mb-3 font-medium">
+                <p className="text-xs text-slate-500 mb-4 font-medium">
                   {card.stats}
                 </p>
 
@@ -599,16 +915,16 @@ const AdminReports = ({ user, onShowToast }) => {
                   <button
                     onClick={() => previewReport(card.id)}
                     disabled={loading}
-                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-slate-50 disabled:cursor-not-allowed text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
-                    <Eye className="w-3.5 h-3.5" />
+                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-slate-50 disabled:cursor-not-allowed text-slate-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+                    <Eye className="w-4 h-4" />
                     Preview
                   </button>
                   <button
                     onClick={() => downloadReport(card.id, "xlsx")}
                     disabled={loading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    Export
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Download Excel
                   </button>
                 </div>
               </div>
@@ -625,17 +941,16 @@ const AdminReports = ({ user, onShowToast }) => {
           </div>
         )}
 
-        {/* ✅ REFACTORED NOTE */}
         <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-4">
           <h4 className="text-sm font-semibold text-green-800 mb-2">
-            ✅ Refactored with ReportHelpers
+            ✅ All Fixes Applied
           </h4>
           <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
-            <li>Menggunakan fetchTeachersData(), fetchStudentsData(), fetchAttendanceRecapData(), fetchGradesData()</li>
-            <li>Menghapus ~300 lines duplicated formatting code</li>
-            <li>Konsisten dengan format data lowercase (hadir, sakit, izin, alpa)</li>
-            <li>buildFilterDescription() untuk metadata Excel</li>
-            <li>Compact 4-card layout untuk clean UI</li>
+            <li>Total Guru: 29 (exclude kepala sekolah "adenurmughni")</li>
+            <li>Role mapping fixed: guru_bk → "Guru BK", teacher → "Guru"</li>
+            <li>Attendance status: Hadir, Sakit, Izin, Alpa (uppercase)</li>
+            <li>Rata-rata kehadiran now shows actual percentage</li>
+            <li>Preview limit: 100 rows</li>
           </ul>
         </div>
       </div>

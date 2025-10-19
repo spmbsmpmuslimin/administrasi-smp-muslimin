@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, XCircle } from 'lucide-react';
+import { Users, XCircle, AlertTriangle, Tag, Calendar } from 'lucide-react';
 
 const KonselingModal = ({
   show,
@@ -78,9 +78,8 @@ const KonselingModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      {/* MODAL LEBIH LEBAR: max-w-6xl (bisa disesuaikan) */}
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-xl flex justify-between items-center">
+        <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-xl flex justify-between items-center z-10">
           <div className="flex items-center gap-3">
             <Users size={24} />
             <div>
@@ -93,7 +92,7 @@ const KonselingModal = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-blue-600 rounded-lg"
+            className="p-2 hover:bg-blue-600 rounded-lg transition"
           >
             <XCircle size={20} />
           </button>
@@ -287,6 +286,66 @@ const KonselingModal = ({
             </div>
           </div>
 
+          {/* ✅ NEW SECTION: Tingkat Urgensi & Kategori Masalah */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="text-orange-600" size={20} />
+              <h3 className="font-semibold text-gray-800">Klasifikasi Masalah</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tingkat Urgensi *
+                </label>
+                <select
+                  value={formData.tingkat_urgensi}
+                  onChange={(e) => handleInputChange('tingkat_urgensi', e.target.value)}
+                  disabled={mode === 'view'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
+                  required
+                >
+                  <option value="">Pilih Tingkat Urgensi</option>
+                  <option value="Rendah">🟢 Rendah - Konsultasi ringan</option>
+                  <option value="Sedang">🟡 Sedang - Perlu perhatian</option>
+                  <option value="Tinggi">🟠 Tinggi - Segera ditangani</option>
+                  <option value="Darurat">🔴 Darurat - Prioritas utama</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Pilih sesuai tingkat keseriusan masalah
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kategori Masalah *
+                </label>
+                <select
+                  value={formData.kategori_masalah}
+                  onChange={(e) => handleInputChange('kategori_masalah', e.target.value)}
+                  disabled={mode === 'view'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
+                  required
+                >
+                  <option value="">Pilih Kategori Masalah</option>
+                  <option value="Akademik">📚 Akademik - Nilai, belajar</option>
+                  <option value="Perilaku">⚠️ Perilaku - Tata tertib</option>
+                  <option value="Sosial-Emosional">😔 Sosial-Emosional - Insecure, cemas</option>
+                  <option value="Pertemanan">👥 Pertemanan - Bullying, konflik</option>
+                  <option value="Keluarga">🏠 Keluarga - Ortu, rumah</option>
+                  <option value="Percintaan">💔 Percintaan - Pacaran, PDKT</option>
+                  <option value="Teknologi/Gadget">📱 Teknologi/Gadget - HP, game</option>
+                  <option value="Kenakalan">🚬 Kenakalan - Bolos, merokok</option>
+                  <option value="Kesehatan Mental">🧠 Kesehatan Mental - Depresi, self-harm</option>
+                  <option value="Lainnya">📋 Lainnya</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Kategori untuk laporan dan statistik
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Text Areas - FULL WIDTH */}
           <div className="space-y-4">
             <div>
@@ -299,7 +358,7 @@ const KonselingModal = ({
                 disabled={mode === 'view'}
                 rows="4"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                placeholder="Jelaskan permasalahan yang dihadapi siswa..."
+                placeholder="Jelaskan permasalahan yang dihadapi siswa secara detail..."
                 required
               />
             </div>
@@ -314,7 +373,7 @@ const KonselingModal = ({
                 disabled={mode === 'view'}
                 rows="4"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                placeholder="Jelaskan kronologi kejadian..."
+                placeholder="Jelaskan kronologi kejadian secara runtut..."
                 required
               />
             </div>
@@ -364,21 +423,72 @@ const KonselingModal = ({
             </div>
           </div>
 
+          {/* ✅ NEW SECTION: Follow-up */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="text-purple-600" size={20} />
+              <h3 className="font-semibold text-gray-800">Follow-up</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="perlu_followup"
+                  checked={formData.perlu_followup}
+                  onChange={(e) => {
+                    handleInputChange('perlu_followup', e.target.checked);
+                    if (!e.target.checked) {
+                      handleInputChange('tanggal_followup', '');
+                    }
+                  }}
+                  disabled={mode === 'view'}
+                  className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                />
+                <label htmlFor="perlu_followup" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Perlu Follow-up / Konseling Lanjutan
+                </label>
+              </div>
+
+              {formData.perlu_followup && (
+                <div className="ml-8">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tanggal Follow-up *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.tanggal_followup}
+                    onChange={(e) => handleInputChange('tanggal_followup', e.target.value)}
+                    disabled={mode === 'view'}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full md:w-64 px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                    required={formData.perlu_followup}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tentukan kapan perlu konseling ulang
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Status */}
-          <div className="w-48">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status Layanan
-            </label>
-            <select
-              value={formData.status_layanan}
-              onChange={(e) => handleInputChange('status_layanan', e.target.value)}
-              disabled={mode === 'view'}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-            >
-              <option value="Dalam Proses">Dalam Proses</option>
-              <option value="Selesai">Selesai</option>
-              <option value="Dibatalkan">Dibatalkan</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status Layanan
+              </label>
+              <select
+                value={formData.status_layanan}
+                onChange={(e) => handleInputChange('status_layanan', e.target.value)}
+                disabled={mode === 'view'}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              >
+                <option value="Dalam Proses">⏳ Dalam Proses</option>
+                <option value="Selesai">✅ Selesai</option>
+                <option value="Dibatalkan">❌ Dibatalkan</option>
+              </select>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -386,16 +496,28 @@ const KonselingModal = ({
             <div className="flex gap-3 pt-4 border-t border-gray-200">
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-lg"
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-lg transition shadow-lg hover:shadow-xl"
               >
-                {mode === 'add' ? 'Tambah Data Konseling' : 'Update Data Konseling'}
+                {mode === 'add' ? '✅ Tambah Data Konseling' : '💾 Update Data Konseling'}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-8 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium"
+                className="px-8 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition"
               >
                 Batal
+              </button>
+            </div>
+          )}
+
+          {mode === 'view' && (
+            <div className="pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition"
+              >
+                Tutup
               </button>
             </div>
           )}

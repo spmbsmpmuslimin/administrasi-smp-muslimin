@@ -35,16 +35,19 @@ const Konseling = ({ user, onShowToast }) => {
     studentName: ''
   });
 
-  // Filters
+  // Filters - ✅ UPDATED: Tambah filter urgensi & kategori
   const [filters, setFilters] = useState({
     search: '',
     kelas: '',
     status: '',
+    tingkat_urgensi: '', // NEW
+    kategori_masalah: '', // NEW
+    perlu_followup: '', // NEW
     tanggalAwal: '',
     tanggalAkhir: ''
   });
 
-  // Form data
+  // Form data - ✅ UPDATED: Tambah field baru
   const [formData, setFormData] = useState({
     student_id: '',
     nis: '',
@@ -54,19 +57,25 @@ const Konseling = ({ user, onShowToast }) => {
     tanggal: new Date().toISOString().split('T')[0],
     jenis_layanan: '',
     bidang_bimbingan: '',
+    tingkat_urgensi: 'Sedang', // NEW - default Sedang
+    kategori_masalah: '', // NEW
     permasalahan: '',
     kronologi: '',
     tindakan_layanan: '',
     hasil_layanan: '',
     rencana_tindak_lanjut: '',
+    perlu_followup: false, // NEW
+    tanggal_followup: '', // NEW
     status_layanan: 'Dalam Proses'
   });
 
-  // Stats
+  // Stats - ✅ UPDATED: Tambah stats urgensi & follow-up
   const [stats, setStats] = useState({
     total: 0,
     dalam_proses: 0,
-    selesai: 0
+    selesai: 0,
+    darurat: 0, // NEW
+    perlu_followup: 0 // NEW
   });
 
   // Load data
@@ -125,24 +134,35 @@ const Konseling = ({ user, onShowToast }) => {
     }
   };
 
+  // ✅ UPDATED: Calculate stats dengan urgensi & follow-up
   const calculateStats = (data) => {
     const total = data.length;
     const dalam_proses = data.filter(item => item.status_layanan === 'Dalam Proses').length;
     const selesai = data.filter(item => item.status_layanan === 'Selesai').length;
-    setStats({ total, dalam_proses, selesai });
+    const darurat = data.filter(item => item.tingkat_urgensi === 'Darurat').length;
+    const perlu_followup = data.filter(item => item.perlu_followup === true).length;
+    
+    setStats({ total, dalam_proses, selesai, darurat, perlu_followup });
   };
 
-  // Filter functions
+  // ✅ UPDATED: Filter functions dengan field baru
   const filteredKonseling = konselingData.filter(item => {
     const matchesSearch = !filters.search || 
       item.full_name?.toLowerCase().includes(filters.search.toLowerCase()) ||
       item.nis?.includes(filters.search);
     const matchesStatus = !filters.status || item.status_layanan === filters.status;
+    const matchesUrgensi = !filters.tingkat_urgensi || item.tingkat_urgensi === filters.tingkat_urgensi;
+    const matchesKategori = !filters.kategori_masalah || item.kategori_masalah === filters.kategori_masalah;
+    const matchesFollowup = !filters.perlu_followup || 
+      (filters.perlu_followup === 'true' && item.perlu_followup === true) ||
+      (filters.perlu_followup === 'false' && item.perlu_followup === false);
+    
     const itemDate = new Date(item.tanggal);
     const matchesTanggalAwal = !filters.tanggalAwal || itemDate >= new Date(filters.tanggalAwal);
     const matchesTanggalAkhir = !filters.tanggalAkhir || itemDate <= new Date(filters.tanggalAkhir);
 
-    return matchesSearch && matchesStatus && matchesTanggalAwal && matchesTanggalAkhir;
+    return matchesSearch && matchesStatus && matchesUrgensi && matchesKategori && 
+           matchesFollowup && matchesTanggalAwal && matchesTanggalAkhir;
   });
 
   const resetFilters = () => {
@@ -150,6 +170,9 @@ const Konseling = ({ user, onShowToast }) => {
       search: '',
       kelas: '',
       status: '',
+      tingkat_urgensi: '',
+      kategori_masalah: '',
+      perlu_followup: '',
       tanggalAwal: '',
       tanggalAkhir: ''
     });
@@ -159,7 +182,7 @@ const Konseling = ({ user, onShowToast }) => {
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 
-  // Modal handlers
+  // ✅ UPDATED: Modal handlers dengan field baru
   const openAddModal = () => {
     setFormData({
       student_id: '',
@@ -170,11 +193,15 @@ const Konseling = ({ user, onShowToast }) => {
       tanggal: new Date().toISOString().split('T')[0],
       jenis_layanan: '',
       bidang_bimbingan: '',
+      tingkat_urgensi: 'Sedang',
+      kategori_masalah: '',
       permasalahan: '',
       kronologi: '',
       tindakan_layanan: '',
       hasil_layanan: '',
       rencana_tindak_lanjut: '',
+      perlu_followup: false,
+      tanggal_followup: '',
       status_layanan: 'Dalam Proses'
     });
     setModalMode('add');
@@ -191,11 +218,15 @@ const Konseling = ({ user, onShowToast }) => {
       tanggal: konseling.tanggal.split('T')[0],
       jenis_layanan: konseling.jenis_layanan,
       bidang_bimbingan: konseling.bidang_bimbingan,
+      tingkat_urgensi: konseling.tingkat_urgensi || 'Sedang',
+      kategori_masalah: konseling.kategori_masalah || '',
       permasalahan: konseling.permasalahan,
       kronologi: konseling.kronologi,
       tindakan_layanan: konseling.tindakan_layanan,
       hasil_layanan: konseling.hasil_layanan,
       rencana_tindak_lanjut: konseling.rencana_tindak_lanjut,
+      perlu_followup: konseling.perlu_followup || false,
+      tanggal_followup: konseling.tanggal_followup || '',
       status_layanan: konseling.status_layanan
     });
     setSelectedKonseling(konseling);
@@ -213,10 +244,10 @@ const Konseling = ({ user, onShowToast }) => {
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
-  // ✅ FIXED: handleSubmit dengan validasi dan error handling yang proper
+  // ✅ UPDATED: handleSubmit dengan field baru + validasi
   const handleSubmit = async () => {
     try {
-      // ✅ VALIDASI: Cek field wajib
+      // Validasi field wajib
       if (!formData.student_id) {
         onShowToast('Pilih siswa terlebih dahulu', 'error');
         return;
@@ -233,6 +264,14 @@ const Konseling = ({ user, onShowToast }) => {
         onShowToast('Bidang bimbingan wajib dipilih', 'error');
         return;
       }
+      if (!formData.tingkat_urgensi) {
+        onShowToast('Tingkat urgensi wajib dipilih', 'error');
+        return;
+      }
+      if (!formData.kategori_masalah) {
+        onShowToast('Kategori masalah wajib dipilih', 'error');
+        return;
+      }
       if (!formData.permasalahan?.trim()) {
         onShowToast('Permasalahan wajib diisi', 'error');
         return;
@@ -241,10 +280,15 @@ const Konseling = ({ user, onShowToast }) => {
         onShowToast('Kronologi wajib diisi', 'error');
         return;
       }
+      // Validasi: Jika perlu follow-up, tanggal follow-up wajib diisi
+      if (formData.perlu_followup && !formData.tanggal_followup) {
+        onShowToast('Tanggal follow-up wajib diisi jika perlu follow-up', 'error');
+        return;
+      }
 
       setLoading(true);
       
-      // ✅ FIX: Gunakan user.id (UUID) bukan teacher_id
+      // Data yang akan disimpan
       const konselingData = {
         student_id: formData.student_id,
         nis: formData.nis,
@@ -254,13 +298,17 @@ const Konseling = ({ user, onShowToast }) => {
         tanggal: formData.tanggal,
         jenis_layanan: formData.jenis_layanan,
         bidang_bimbingan: formData.bidang_bimbingan,
+        tingkat_urgensi: formData.tingkat_urgensi, // NEW
+        kategori_masalah: formData.kategori_masalah, // NEW
         permasalahan: formData.permasalahan,
         kronologi: formData.kronologi,
         tindakan_layanan: formData.tindakan_layanan || null,
         hasil_layanan: formData.hasil_layanan || null,
         rencana_tindak_lanjut: formData.rencana_tindak_lanjut || null,
+        perlu_followup: formData.perlu_followup, // NEW
+        tanggal_followup: formData.tanggal_followup || null, // NEW
         status_layanan: formData.status_layanan,
-        guru_bk_id: user.id, // ✅ PERBAIKAN: Pakai user.id (UUID)
+        guru_bk_id: user.id,
         guru_bk_name: user.full_name,
         academic_year: '2025/2026',
         semester: '1'
@@ -277,7 +325,6 @@ const Konseling = ({ user, onShowToast }) => {
           throw error;
         }
         
-        console.log('Data inserted:', data);
         onShowToast('Data konseling berhasil ditambahkan', 'success');
       } else {
         const { data, error } = await supabase
@@ -291,7 +338,6 @@ const Konseling = ({ user, onShowToast }) => {
           throw error;
         }
         
-        console.log('Data updated:', data);
         onShowToast('Data konseling berhasil diupdate', 'success');
       }
 

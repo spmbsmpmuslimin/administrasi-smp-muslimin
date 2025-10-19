@@ -9,11 +9,15 @@ import {
   BarChart3,
   Calendar,
   GraduationCap,
+  Download,
+  Upload,
 } from "lucide-react";
+import { exportToExcel, importFromExcel } from "./GradesExcel";
 
 const Grades = ({ user, onShowToast }) => {
   // States untuk auth dan user
   const [teacherId, setTeacherId] = useState(null);
+  const [teacherName, setTeacherName] = useState(""); // TAMBAHAN: nama guru
   const [authLoading, setAuthLoading] = useState(true);
 
   // States untuk filter - IMPROVED WITH DYNAMIC DATA
@@ -381,7 +385,6 @@ const Grades = ({ user, onShowToast }) => {
       const gradesToSave = [];
       const gradesToUpdate = [];
 
-      // Perbaikan pada fungsi saveGrades - bagian yang membuat gradeRecord
       students.forEach((student) => {
         const studentGrades = grades[student.id];
         if (studentGrades) {
@@ -395,7 +398,7 @@ const Grades = ({ user, onShowToast }) => {
                 const gradeRecord = {
                   student_id: student.id,
                   teacher_id: teacherUUID,
-                  class_id: selectedClass, // TAMBAHKAN INI!
+                  class_id: selectedClass,
                   subject: selectedSubject,
                   assignment_type: type,
                   score: scoreValue,
@@ -407,7 +410,7 @@ const Grades = ({ user, onShowToast }) => {
                 if (
                   !gradeRecord.student_id ||
                   !gradeRecord.teacher_id ||
-                  !gradeRecord.class_id || // TAMBAHKAN VALIDASI INI!
+                  !gradeRecord.class_id ||
                   !gradeRecord.subject ||
                   !gradeRecord.assignment_type ||
                   !gradeRecord.semester ||
@@ -528,6 +531,72 @@ const Grades = ({ user, onShowToast }) => {
     }
   };
 
+  // ===== HANDLER EXPORT TO EXCEL =====
+  const handleExport = async () => {
+    if (!selectedClass || !selectedSubject || students.length === 0) {
+      setMessage("Pilih mata pelajaran dan kelas terlebih dahulu!");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("Mengekspor data ke Excel...");
+
+    const result = await exportToExcel({
+      students,
+      grades,
+      selectedSubject,
+      selectedClass,
+      className: classes.find((c) => c.id === selectedClass)?.displayName,
+      academicYear,
+      semester,
+    });
+
+    setMessage(result.message);
+    if (onShowToast) {
+      onShowToast(result.message, result.success ? "success" : "error");
+    }
+    setLoading(false);
+  };
+
+  // ===== HANDLER IMPORT FROM EXCEL =====
+  const handleImport = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!selectedClass || !selectedSubject || students.length === 0) {
+      setMessage("Pilih mata pelajaran dan kelas terlebih dahulu!");
+      event.target.value = "";
+      return;
+    }
+
+    setLoading(true);
+    setMessage("Memproses file Excel...");
+
+    const result = await importFromExcel(file, {
+      students,
+      teacherId,
+      selectedSubject,
+      selectedClass,
+      academicYear,
+      semester,
+    });
+
+    setMessage(result.message);
+    if (onShowToast) {
+      onShowToast(result.message, result.success ? "success" : "error");
+    }
+
+    if (result.success) {
+      setTimeout(() => {
+        fetchStudentsAndGrades(selectedClass);
+        setMessage("");
+      }, 2000);
+    }
+
+    setLoading(false);
+    event.target.value = "";
+  };
+
   // Get grade statistics
   const getGradeStats = () => {
     const stats = { total: 0, completed: 0, average: 0 };
@@ -599,9 +668,7 @@ const Grades = ({ user, onShowToast }) => {
                 </h1>
               </div>
               <div className="text-gray-600">
-                <span>
-                  Kelola Nilai Siswa Untuk Mata Pelajaran
-                </span>
+                <span>Kelola Nilai Siswa Untuk Mata Pelajaran</span>
               </div>
             </div>
           </div>
@@ -779,13 +846,44 @@ const Grades = ({ user, onShowToast }) => {
                     NA = Rata-rata NH (40%) + UTS (30%) + UAS (30%)
                   </p>
                 </div>
-                <button
-                  onClick={saveGrades}
-                  disabled={loading || students.length === 0}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors">
-                  <Save className="w-4 h-4" />
-                  {loading ? "Menyimpan..." : "Simpan Nilai"}
-                </button>
+                
+                {/* TOMBOL SIMPAN, EXPORT & IMPORT SEJAJAR */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveGrades}
+                    disabled={loading || students.length === 0}
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors">
+                    <Save className="w-4 h-4" />
+                    {loading ? "Menyimpan..." : "Simpan Nilai"}
+                  </button>
+
+                  <button
+                    onClick={handleExport}
+                    disabled={loading || students.length === 0}
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                    title="Export data nilai ke Excel">
+                    <Download className="w-4 h-4" />
+                    Export Excel
+                  </button>
+
+                  <label
+                    className={`${
+                      loading || students.length === 0
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                    } text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors`}
+                    title="Import nilai dari file Excel">
+                    <Upload className="w-4 h-4" />
+                    Import Excel
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleImport}
+                      disabled={loading || students.length === 0}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
 

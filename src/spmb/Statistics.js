@@ -12,165 +12,186 @@ const Statistics = ({ students, totalStudents, maleStudents, femaleStudents, get
 
     return Object.entries(schoolCounts)
       .map(([school, count]) => ({ school, count }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
   }, [students]);
 
+  const malePercentage = totalStudents > 0 ? (maleStudents / totalStudents) * 100 : 0;
+  const femalePercentage = totalStudents > 0 ? (femaleStudents / totalStudents) * 100 : 0;
+
+  const maxSchoolCount = getSchoolStats.length > 0 ? Math.max(...getSchoolStats.map(s => s.count)) : 0;
+
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
-        <i className="fas fa-chart-bar text-blue-600"></i>
-        Laporan Statistik Pendaftaran SMP
-      </h2>
-
-      {/* Header Summary - Clean Blue Theme */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6">
-        <div className="text-center">
-          <h3 className="text-xl font-bold text-blue-900 mb-2">
-            SMP MUSLIMIN CILILIN
-          </h3>
-          <p className="text-blue-700 mb-4">
-            Tahun Ajaran {getCurrentAcademicYear()}
-          </p>
-          <div className="text-4xl font-bold text-blue-600 mb-2">
-            {totalStudents}
-          </div>
-          <p className="text-blue-600 font-semibold">Total Calon Siswa Baru</p>
+    <div className="bg-gray-50 min-h-screen p-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Statistik</h1>
+          <p className="text-gray-600">SMP Muslimin Cililin - Tahun Ajaran {getCurrentAcademicYear()}</p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Gender Statistics - Clean White Cards */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <h3 className="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2">
-            <i className="fas fa-users text-blue-500"></i>
-            Statistik Jenis Kelamin
-          </h3>
-          
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-blue-700 font-semibold">Laki-laki</span>
-                <span className="text-blue-700 font-semibold">{maleStudents} ({totalStudents > 0 ? Math.round((maleStudents / totalStudents) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
-                  className="bg-blue-500 h-3 rounded-full transition-all duration-1000" 
-                  style={{ width: `${totalStudents > 0 ? (maleStudents / totalStudents) * 100 : 0}%` }}
-                  aria-label={`Persentase siswa laki-laki: ${totalStudents > 0 ? Math.round((maleStudents / totalStudents) * 100) : 0}%`}
-                ></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-blue-700 font-semibold">Perempuan</span>
-                <span className="text-blue-700 font-semibold">{femaleStudents} ({totalStudents > 0 ? Math.round((femaleStudents / totalStudents) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
-                  className="bg-blue-400 h-3 rounded-full transition-all duration-1000" 
-                  style={{ width: `${totalStudents > 0 ? (femaleStudents / totalStudents) * 100 : 0}%` }}
-                  aria-label={`Persentase siswa perempuan: ${totalStudents > 0 ? Math.round((femaleStudents / totalStudents) * 100) : 0}%`}
-                ></div>
-              </div>
-            </div>
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <div className="text-sm text-gray-500 mb-2">Total Pendaftar</div>
+            <div className="text-4xl font-bold text-gray-900">{totalStudents}</div>
           </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-4 text-center">
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-              <div className="text-2xl font-bold text-blue-700">{maleStudents}</div>
-              <div className="text-blue-600 text-sm">Siswa Laki-laki</div>
-            </div>
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-              <div className="text-2xl font-bold text-blue-700">{femaleStudents}</div>
-              <div className="text-blue-600 text-sm">Siswa Perempuan</div>
-            </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <div className="text-sm text-gray-500 mb-2">Siswa Laki-laki</div>
+            <div className="text-4xl font-bold text-blue-600">{maleStudents}</div>
+            <div className="text-sm text-gray-500 mt-1">{malePercentage.toFixed(1)}%</div>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <div className="text-sm text-gray-500 mb-2">Siswa Perempuan</div>
+            <div className="text-4xl font-bold text-rose-600">{femaleStudents}</div>
+            <div className="text-sm text-gray-500 mt-1">{femalePercentage.toFixed(1)}%</div>
           </div>
         </div>
 
-        {/* School Statistics - Clean White Cards */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <h3 className="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2">
-            <i className="fas fa-school text-blue-500"></i>
-            Statistik Asal Sekolah Dasar
-          </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {getSchoolStats.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Belum ada data sekolah</p>
-            ) : (
-              getSchoolStats.map((stat, index) => (
-                <div key={index} className="flex items-center justify-between p-2 hover:bg-blue-50 rounded-lg border border-gray-100">
-                  <span className="text-sm font-medium text-gray-700 truncate flex-1 mr-2" title={stat.school}>
-                    {stat.school}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-blue-600 font-semibold text-sm">{stat.count}</span>
-                    <div className="w-20 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full" 
-                        style={{ width: `${totalStudents > 0 ? (stat.count / totalStudents) * 100 : 0}%` }}
-                        aria-label={`${stat.school}: ${stat.count} siswa`}
-                      ></div>
+          {/* Pie Chart - Gender Distribution */}
+          <div className="bg-white rounded-xl p-8 shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-900 mb-8">Distribusi Gender</h2>
+            
+            <div className="flex items-center justify-center mb-8">
+              <svg width="280" height="280" viewBox="0 0 280 280" className="transform -rotate-90">
+                {/* Background circle */}
+                <circle
+                  cx="140"
+                  cy="140"
+                  r="100"
+                  fill="none"
+                  stroke="#f3f4f6"
+                  strokeWidth="40"
+                />
+                {/* Male segment */}
+                <circle
+                  cx="140"
+                  cy="140"
+                  r="100"
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="40"
+                  strokeDasharray={`${(malePercentage / 100) * 628} 628`}
+                  strokeLinecap="round"
+                  className="transition-all duration-1000"
+                />
+                {/* Female segment */}
+                <circle
+                  cx="140"
+                  cy="140"
+                  r="100"
+                  fill="none"
+                  stroke="#f43f5e"
+                  strokeWidth="40"
+                  strokeDasharray={`${(femalePercentage / 100) * 628} 628`}
+                  strokeDashoffset={`-${(malePercentage / 100) * 628}`}
+                  strokeLinecap="round"
+                  className="transition-all duration-1000"
+                />
+                {/* Center text */}
+                <text x="140" y="140" textAnchor="middle" dy="0.3em" className="text-4xl font-bold fill-gray-900 transform rotate-90" style={{transformOrigin: '140px 140px'}}>
+                  {totalStudents}
+                </text>
+              </svg>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded bg-blue-600"></div>
+                <div>
+                  <div className="text-sm text-gray-600">Laki-laki</div>
+                  <div className="text-lg font-semibold text-gray-900">{maleStudents} ({malePercentage.toFixed(1)}%)</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded bg-rose-600"></div>
+                <div>
+                  <div className="text-sm text-gray-600">Perempuan</div>
+                  <div className="text-lg font-semibold text-gray-900">{femaleStudents} ({femalePercentage.toFixed(1)}%)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bar Chart - Top Schools */}
+          <div className="bg-white rounded-xl p-8 shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-900 mb-8">Asal Sekolah (Top 8)</h2>
+            
+            <div className="space-y-4">
+              {getSchoolStats.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">Belum ada data</div>
+              ) : (
+                getSchoolStats.map((stat, index) => {
+                  const barWidth = maxSchoolCount > 0 ? (stat.count / maxSchoolCount) * 100 : 0;
+                  return (
+                    <div key={index}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-gray-700 truncate flex-1 mr-4" title={stat.school}>
+                          {stat.school}
+                        </div>
+                        <div className="text-sm font-semibold text-gray-900 tabular-nums">
+                          {stat.count}
+                        </div>
+                      </div>
+                      <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg transition-all duration-1000 flex items-center px-3"
+                          style={{ width: `${barWidth}%` }}
+                        >
+                          {barWidth > 15 && (
+                            <span className="text-xs font-medium text-white">
+                              {((stat.count / totalStudents) * 100).toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))
-            )}
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Summary Cards - Updated as requested */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border-2 border-blue-200 rounded-xl p-5 text-center shadow-sm hover:shadow-md transition-shadow">
-          <i className="fas fa-users text-3xl mb-2 text-blue-500"></i>
-          <div className="text-2xl font-bold text-blue-700">{totalStudents}</div>
-          <div className="text-blue-600">Total Siswa</div>
+        {/* Recent Students - Table */}
+        <div className="bg-white rounded-xl p-8 shadow-sm">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Pendaftar Terbaru</h2>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">No</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Nama Lengkap</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Asal Sekolah</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Tanggal Daftar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!students || students.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="text-center py-12 text-gray-400">
+                      Belum ada pendaftar
+                    </td>
+                  </tr>
+                ) : (
+                  students.slice(0, 10).map((student, index) => (
+                    <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-4 px-4 text-sm text-gray-600">{index + 1}</td>
+                      <td className="py-4 px-4 text-sm font-medium text-gray-900">{student.nama_lengkap}</td>
+                      <td className="py-4 px-4 text-sm text-gray-600">{student.asal_sekolah || '—'}</td>
+                      <td className="py-4 px-4 text-sm text-gray-600">{student.tanggal_daftar || '—'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-        
-        <div className="bg-white border-2 border-blue-200 rounded-xl p-5 text-center shadow-sm hover:shadow-md transition-shadow">
-          <i className="fas fa-male text-3xl mb-2 text-blue-500"></i>
-          <div className="text-2xl font-bold text-blue-700">{maleStudents}</div>
-          <div className="text-blue-600">Siswa Laki-laki</div>
-        </div>
-        
-        <div className="bg-white border-2 border-blue-200 rounded-xl p-5 text-center shadow-sm hover:shadow-md transition-shadow">
-          <i className="fas fa-female text-3xl mb-2 text-blue-500"></i>
-          <div className="text-2xl font-bold text-blue-700">{femaleStudents}</div>
-          <div className="text-blue-600">Siswa Perempuan</div>
-        </div>
-      </div>
 
-      {/* Recent Activity - Clean Theme */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mt-6">
-        <h3 className="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2">
-          <i className="fas fa-clock text-blue-500"></i>
-          Pendaftar Terbaru
-        </h3>
-        
-        <div className="space-y-3">
-          {!students || students.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">Belum ada data pendaftar</p>
-          ) : (
-            students.slice(0, 5).map((student, index) => (
-              <div key={student.id} className="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-800">{student.nama_lengkap}</div>
-                    <div className="text-sm text-gray-500">{student.asal_sekolah || 'Tidak ada data'}</div>
-                  </div>
-                </div>
-                <div className="text-sm text-blue-600 font-medium">
-                  {student.tanggal_daftar || 'Belum ada tanggal'}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
       </div>
     </div>
   );

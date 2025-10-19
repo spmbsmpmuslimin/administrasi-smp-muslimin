@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Building2, MapPin, Phone, Calendar, Image, Edit3, Save, Upload, X, RotateCcw, Mail, Globe, User } from 'lucide-react';
+import { Building2, MapPin, Phone, Calendar, Image, Edit3, Save, Upload, X, RotateCcw, Mail, Globe, User, AlertTriangle, Check } from 'lucide-react';
 
 const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
   const [schoolSettings, setSchoolSettings] = useState({
@@ -21,6 +21,35 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
   const [tempSchoolSettings, setTempSchoolSettings] = useState({});
   const [uploadProgress, setUploadProgress] = useState(0);
   const [imageValidation, setImageValidation] = useState({ isValid: true, message: '' });
+
+  // ✅ AUTO-DETECTION SEMESTER
+  const getExpectedSemester = () => {
+    const month = new Date().getMonth() + 1; // 1-12
+    
+    // Juli (7) - Desember (12) = GANJIL
+    if (month >= 7 && month <= 12) {
+      return 'Ganjil';
+    } 
+    // Januari (1) - Juni (6) = GENAP
+    else {
+      return 'Genap';
+    }
+  };
+
+  const getCurrentMonthName = () => {
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    return months[new Date().getMonth()];
+  };
+
+  const getCurrentYear = () => {
+    return new Date().getFullYear();
+  };
+
+  // Cek apakah semester match dengan bulan sekarang
+  const isSemesterMismatch = () => {
+    return schoolSettings.semester !== getExpectedSemester();
+  };
 
   useEffect(() => {
     loadSchoolSettings();
@@ -52,6 +81,32 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     }
   };
 
+  // ✅ QUICK UPDATE SEMESTER
+  const quickUpdateSemester = async () => {
+    try {
+      setLoading(true);
+      const newSemester = getExpectedSemester();
+      
+      const { error } = await supabase
+        .from('school_settings')
+        .upsert({ 
+          setting_key: 'semester', 
+          setting_value: newSemester 
+        }, { onConflict: 'setting_key' });
+      
+      if (error) throw error;
+      
+      setSchoolSettings(prev => ({ ...prev, semester: newSemester }));
+      showToast(`Semester berhasil diupdate ke "${newSemester}"!`, 'success');
+      
+    } catch (error) {
+      console.error('Error updating semester:', error);
+      showToast('Error mengupdate semester', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Enhanced Image Compression Function
   const compressImage = (file, options = {}) => {
     return new Promise((resolve, reject) => {
@@ -62,7 +117,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
       const img = new Image();
       
       img.onload = () => {
-        // Calculate new dimensions maintaining aspect ratio
         let width = img.width;
         let height = img.height;
         
@@ -79,7 +133,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
         canvas.width = width;
         canvas.height = height;
         
-        // Draw and compress
         ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(
           (blob) => {
@@ -99,7 +152,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     });
   };
 
-  // Enhanced Image Validation
   const validateImageFile = (file) => {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const maxSize = 2 * 1024 * 1024; // 2MB
@@ -118,7 +170,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
       };
     }
     
-    // Check dimensions
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -144,7 +195,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     });
   };
 
-  // ENHANCED LOGO UPLOAD WITH COMPRESSION
   const handleLogoUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -154,7 +204,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
       setUploadProgress(0);
       setImageValidation({ isValid: true, message: '' });
 
-      // Step 1: Validate image
       const validation = await validateImageFile(file);
       if (!validation.isValid) {
         setImageValidation(validation);
@@ -162,10 +211,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
         return;
       }
 
-      // Simulate progress
       setUploadProgress(30);
 
-      // Step 2: Compress image
       const compressedBlob = await compressImage(file, {
         maxWidth: 800,
         maxHeight: 800,
@@ -174,7 +221,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
       setUploadProgress(70);
 
-      // Step 3: Convert to Base64
       const base64String = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(compressedBlob);
@@ -183,7 +229,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
       setUploadProgress(100);
 
-      // Step 4: Update form with compressed image
       setTempSchoolSettings(prev => ({ 
         ...prev, 
         school_logo: base64String 
@@ -210,7 +255,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     showToast('Logo dihapus dari form', 'info');
   };
 
-  // Enhanced Form Validation
   const validateForm = () => {
     const errors = [];
     
@@ -226,25 +270,21 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
       errors.push('Tahun ajaran wajib diisi');
     }
     
-    // Validate academic year format (YYYY/YYYY)
     const yearRegex = /^\d{4}\/\d{4}$/;
     if (tempSchoolSettings.current_academic_year && !yearRegex.test(tempSchoolSettings.current_academic_year)) {
       errors.push('Format tahun ajaran harus: YYYY/YYYY (contoh: 2024/2025)');
     }
     
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (tempSchoolSettings.school_email && !emailRegex.test(tempSchoolSettings.school_email)) {
       errors.push('Format email tidak valid');
     }
     
-    // Validate website URL
     const urlRegex = /^https?:\/\/.+\..+$/;
     if (tempSchoolSettings.school_website && !urlRegex.test(tempSchoolSettings.school_website)) {
       errors.push('Format website harus dimulai dengan http:// atau https://');
     }
     
-    // Validate NPSN (8 digits)
     const npsnRegex = /^\d{8}$/;
     if (tempSchoolSettings.npsn && !npsnRegex.test(tempSchoolSettings.npsn)) {
       errors.push('NPSN harus terdiri dari 8 digit angka');
@@ -291,7 +331,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     }
   };
 
-  // Reset form to original values
   const resetForm = () => {
     setTempSchoolSettings({ ...schoolSettings });
     setImageValidation({ isValid: true, message: '' });
@@ -320,6 +359,42 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           </button>
         )}
       </div>
+
+      {/* ✅ SEMESTER MISMATCH WARNING */}
+      {!editingSchoolSettings && isSemesterMismatch() && (
+        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="text-yellow-600 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-yellow-900 mb-1">
+                ⚠️ Perhatian: Semester Mungkin Perlu Diupdate
+              </h4>
+              <p className="text-sm text-yellow-800 mb-3">
+                Sekarang <strong>{getCurrentMonthName()} {getCurrentYear()}</strong>, semester seharusnya <strong className="text-yellow-900">"{getExpectedSemester()}"</strong>
+                <br />
+                Semester aktif saat ini: <strong className="text-red-700">"{schoolSettings.semester}"</strong>
+              </p>
+              <div className="flex items-center gap-2 text-xs text-yellow-700 mb-3">
+                <span className="px-2 py-1 bg-yellow-100 rounded">Juli-Des = Ganjil</span>
+                <span className="px-2 py-1 bg-yellow-100 rounded">Jan-Jun = Genap</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={quickUpdateSemester}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors shadow-sm"
+                >
+                  <Check size={14} />
+                  {loading ? 'Updating...' : `Update ke "${getExpectedSemester()}" Sekarang`}
+                </button>
+                <span className="text-xs text-yellow-700 self-center">
+                  atau abaikan jika semester sudah benar
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Informasi Sekolah */}
@@ -527,24 +602,34 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                   Semester Aktif
                 </label>
                 {editingSchoolSettings ? (
-                  <select
-                    value={tempSchoolSettings.semester || ''}
-                    onChange={(e) => setTempSchoolSettings(prev => ({ ...prev, semester: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="Ganjil">Ganjil</option>
-                    <option value="Genap">Genap</option>
-                  </select>
+                  <div className="space-y-2">
+                    <select
+                      value={tempSchoolSettings.semester || ''}
+                      onChange={(e) => setTempSchoolSettings(prev => ({ ...prev, semester: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="Ganjil">Ganjil</option>
+                      <option value="Genap">Genap</option>
+                    </select>
+                    <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded border border-blue-200">
+                      📅 <strong>Info:</strong> Jul-Des = Ganjil | Jan-Jun = Genap
+                    </p>
+                  </div>
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg">
-                    {schoolSettings.semester}
+                  <div>
+                    <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg mb-2">
+                      {schoolSettings.semester}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Jul-Des: Ganjil | Jan-Jun: Genap
+                    </p>
                   </div>
                 )}
               </div>
             </div>
           </div>
           
-          {/* ENHANCED LOGO SECTION */}
+          {/* Logo Section - Keep existing logo upload code */}
           <div className="bg-white p-6 rounded-lg border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Image size={20} className="text-orange-600" />
@@ -553,7 +638,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
             
             {editingSchoolSettings ? (
               <div className="space-y-4">
-                {/* Upload Progress */}
                 {uploadProgress > 0 && (
                   <div className="space-y-2">
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -568,14 +652,12 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                   </div>
                 )}
 
-                {/* Validation Error */}
                 {!imageValidation.isValid && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-sm text-red-700">{imageValidation.message}</p>
                   </div>
                 )}
 
-                {/* Preview Logo */}
                 {(tempSchoolSettings.school_logo || schoolSettings.school_logo) && (
                   <div className="relative p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <button
@@ -604,7 +686,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                   </div>
                 )}
                 
-                {/* Upload Area */}
                 <label className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
                   loading ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500 border-gray-300'
                 } bg-gray-50`}>
