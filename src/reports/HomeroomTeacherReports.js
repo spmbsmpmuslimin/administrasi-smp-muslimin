@@ -1,12 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../supabaseClient';
-import { 
-  FileText, GraduationCap, Calendar, BarChart3, Download, 
-  Eye, TrendingUp, CheckCircle, Filter, X, AlertTriangle, 
-  ChevronDown, FileSpreadsheet, BookOpen, Users
-} from 'lucide-react';
-import { exportToExcel } from './ReportExcel';
-import ReportModal from './ReportModal';
+import React, { useState, useEffect, useMemo } from "react";
+import { supabase } from "../supabaseClient";
+import {
+  FileText,
+  GraduationCap,
+  Calendar,
+  BarChart3,
+  Download,
+  Eye,
+  TrendingUp,
+  CheckCircle,
+  Filter,
+  X,
+  AlertTriangle,
+  ChevronDown,
+  FileSpreadsheet,
+  BookOpen,
+  Users,
+} from "lucide-react";
+import { exportToExcel } from "./ReportExcel";
+import ReportModal from "./ReportModal";
 
 // ✅ IMPORT HELPERS
 import {
@@ -15,15 +27,26 @@ import {
   fetchAttendanceRecapData,
   fetchGradesData,
   buildFilterDescription,
-  REPORT_HEADERS
-} from './ReportHelpers';
+  calculateFinalGrades, // ← TAMBAH INI
+  REPORT_HEADERS,
+} from "./ReportHelpers";
 
 // ==================== COMPONENTS ====================
 
-const StatCard = ({ icon: Icon, label, value, color = 'indigo', alert = false }) => (
-  <div className={`bg-white rounded-lg shadow-sm border ${alert ? 'border-red-300' : 'border-slate-200'} p-4 hover:shadow-md transition-shadow`}>
+const StatCard = ({
+  icon: Icon,
+  label,
+  value,
+  color = "indigo",
+  alert = false,
+}) => (
+  <div
+    className={`bg-white rounded-lg shadow-sm border ${
+      alert ? "border-red-300" : "border-slate-200"
+    } p-4 hover:shadow-md transition-shadow`}>
     <div className="flex items-center gap-3">
-      <div className={`w-12 h-12 bg-${color}-100 rounded-lg flex items-center justify-center`}>
+      <div
+        className={`w-12 h-12 bg-${color}-100 rounded-lg flex items-center justify-center`}>
         <Icon className={`w-6 h-6 text-${color}-600`} />
       </div>
       <div className="flex-1">
@@ -35,17 +58,22 @@ const StatCard = ({ icon: Icon, label, value, color = 'indigo', alert = false })
   </div>
 );
 
-const FilterPanel = ({ filters, onFilterChange, onReset, academicYears = [] }) => {
+const FilterPanel = ({
+  filters,
+  onFilterChange,
+  onReset,
+  academicYears = [],
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    ['start_date', 'end_date', 'academic_year', 'semester'].forEach(key => {
-      if (filters[key] && filters[key] !== '') count++;
+    ["start_date", "end_date", "academic_year", "semester"].forEach((key) => {
+      if (filters[key] && filters[key] !== "") count++;
     });
     return count;
   }, [filters]);
-  
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
       <div className="flex items-center justify-between mb-3">
@@ -60,12 +88,15 @@ const FilterPanel = ({ filters, onFilterChange, onReset, academicYears = [] }) =
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="text-slate-600 hover:text-slate-800"
-        >
-          <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          className="text-slate-600 hover:text-slate-800">
+          <ChevronDown
+            className={`w-5 h-5 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
         </button>
       </div>
-      
+
       {isOpen && (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-3 border-t border-slate-200">
           <div>
@@ -74,60 +105,59 @@ const FilterPanel = ({ filters, onFilterChange, onReset, academicYears = [] }) =
             </label>
             <input
               type="date"
-              value={filters.start_date || ''}
-              onChange={(e) => onFilterChange('start_date', e.target.value)}
+              value={filters.start_date || ""}
+              onChange={(e) => onFilterChange("start_date", e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Sampai Tanggal
             </label>
             <input
               type="date"
-              value={filters.end_date || ''}
-              onChange={(e) => onFilterChange('end_date', e.target.value)}
+              value={filters.end_date || ""}
+              onChange={(e) => onFilterChange("end_date", e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Tahun Ajaran
             </label>
             <select
-              value={filters.academic_year || ''}
-              onChange={(e) => onFilterChange('academic_year', e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
+              value={filters.academic_year || ""}
+              onChange={(e) => onFilterChange("academic_year", e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
               <option value="">Semua Tahun</option>
-              {academicYears.map(year => (
-                <option key={year} value={year}>{year}</option>
+              {academicYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
               ))}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Semester
             </label>
             <select
-              value={filters.semester || ''}
-              onChange={(e) => onFilterChange('semester', e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
+              value={filters.semester || ""}
+              onChange={(e) => onFilterChange("semester", e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
               <option value="">Semua Semester</option>
               <option value="1">Semester 1</option>
               <option value="2">Semester 2</option>
             </select>
           </div>
-          
+
           <div className="flex items-end">
             <button
               onClick={onReset}
-              className="w-full px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
-            >
+              className="w-full px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
               <X className="w-4 h-4" />
               Reset Filter
             </button>
@@ -141,7 +171,7 @@ const FilterPanel = ({ filters, onFilterChange, onReset, academicYears = [] }) =
 // ==================== MAIN COMPONENT ====================
 
 const HomeroomTeacherReports = ({ user }) => {
-  const [activeTab, setActiveTab] = useState('homeroom');
+  const [activeTab, setActiveTab] = useState("homeroom");
   const [loading, setLoading] = useState(false);
   const [downloadingReportId, setDownloadingReportId] = useState(null);
   const [error, setError] = useState(null);
@@ -149,7 +179,11 @@ const HomeroomTeacherReports = ({ user }) => {
   const [stats, setStats] = useState({});
   const [teacherStats, setTeacherStats] = useState({});
   const [filters, setFilters] = useState({ class_id: user.homeroom_class_id });
-  const [previewModal, setPreviewModal] = useState({ isOpen: false, data: null, type: null });
+  const [previewModal, setPreviewModal] = useState({
+    isOpen: false,
+    data: null,
+    type: null,
+  });
   const [alertStudents, setAlertStudents] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [teacherAssignments, setTeacherAssignments] = useState([]);
@@ -163,104 +197,109 @@ const HomeroomTeacherReports = ({ user }) => {
   const fetchTeacherAssignments = async () => {
     try {
       const { data, error } = await supabase
-        .from('teacher_assignments')
-        .select('*, classes!inner(id, grade)')
-        .eq('teacher_id', user.teacher_id);
+        .from("teacher_assignments")
+        .select("*, classes!inner(id, grade)")
+        .eq("teacher_id", user.teacher_id);
 
       if (error) throw error;
-      
+
       setTeacherAssignments(data || []);
-      
+
       if (data && data.length > 0) {
-        const classIds = data.map(a => a.class_id);
-        const subjects = [...new Set(data.map(a => a.subject))];
-        
+        const classIds = data.map((a) => a.class_id);
+        const subjects = [...new Set(data.map((a) => a.subject))];
+
         const { data: gradesData } = await supabase
-          .from('grades')
-          .select('id', { count: 'exact' })
-          .eq('teacher_id', user.id)
-          .in('class_id', classIds);
+          .from("grades")
+          .select("id", { count: "exact" })
+          .eq("teacher_id", user.id)
+          .in("class_id", classIds);
 
         const { data: attendanceData } = await supabase
-          .from('attendances')
-          .select('id', { count: 'exact' })
-          .eq('teacher_id', user.id)
-          .in('class_id', classIds);
+          .from("attendances")
+          .select("id", { count: "exact" })
+          .eq("teacher_id", user.id)
+          .in("class_id", classIds);
 
         setTeacherStats({
           totalClasses: classIds.length,
           totalSubjects: subjects.length,
           totalGrades: gradesData?.length || 0,
-          totalAttendances: attendanceData?.length || 0
+          totalAttendances: attendanceData?.length || 0,
         });
       }
     } catch (err) {
-      console.error('Error fetching teacher assignments:', err);
+      console.error("Error fetching teacher assignments:", err);
     }
   };
 
   const fetchAcademicYears = async () => {
     try {
       const { data, error } = await supabase
-        .from('students')
-        .select('academic_year')
-        .eq('class_id', user.homeroom_class_id)
-        .order('academic_year', { ascending: false });
+        .from("students")
+        .select("academic_year")
+        .eq("class_id", user.homeroom_class_id)
+        .order("academic_year", { ascending: false });
 
       if (error) throw error;
 
-      const uniqueYears = [...new Set(data.map(item => item.academic_year))].filter(Boolean);
+      const uniqueYears = [
+        ...new Set(data.map((item) => item.academic_year)),
+      ].filter(Boolean);
       setAcademicYears(uniqueYears);
     } catch (err) {
-      console.error('Error fetching academic years:', err);
+      console.error("Error fetching academic years:", err);
       setAcademicYears([]);
     }
   };
 
   const fetchStats = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      
+      const today = new Date().toISOString().split("T")[0];
+
       const [studentsResult, attendanceResult] = await Promise.all([
         supabase
-          .from('students')
-          .select('id, nis, full_name', { count: 'exact' })
-          .eq('class_id', user.homeroom_class_id)
-          .eq('is_active', true),
+          .from("students")
+          .select("id, nis, full_name", { count: "exact" })
+          .eq("class_id", user.homeroom_class_id)
+          .eq("is_active", true),
         supabase
-          .from('attendances')
-          .select('student_id, status')
-          .eq('date', today)
+          .from("attendances")
+          .select("student_id, status")
+          .eq("date", today),
       ]);
 
       const totalStudents = studentsResult.count || 0;
-      const studentIds = studentsResult.data?.map(s => s.id) || [];
-      const presentToday = attendanceResult.data?.filter(a => 
-        studentIds.includes(a.student_id) && a.status?.toLowerCase() === 'hadir'
-      ).length || 0;
+      const studentIds = studentsResult.data?.map((s) => s.id) || [];
+      const presentToday =
+        attendanceResult.data?.filter(
+          (a) =>
+            studentIds.includes(a.student_id) &&
+            a.status?.toLowerCase() === "hadir"
+        ).length || 0;
 
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       const { data: attendanceData } = await supabase
-        .from('attendances')
-        .select('student_id, status, students!inner(nis, full_name, class_id)')
-        .eq('students.class_id', user.homeroom_class_id)
-        .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
+        .from("attendances")
+        .select("student_id, status, students!inner(nis, full_name, class_id)")
+        .eq("students.class_id", user.homeroom_class_id)
+        .gte("date", thirtyDaysAgo.toISOString().split("T")[0]);
 
       const studentAttendance = {};
-      attendanceData?.forEach(record => {
+      attendanceData?.forEach((record) => {
         if (!studentAttendance[record.student_id]) {
           studentAttendance[record.student_id] = {
             name: record.students.full_name,
             nis: record.students.nis,
             total: 0,
-            present: 0
+            present: 0,
           };
         }
         studentAttendance[record.student_id].total++;
-        const status = record.status?.toLowerCase() || '';
-        if (status === 'hadir') {
+        const status = record.status?.toLowerCase() || "";
+        if (status === "hadir") {
           studentAttendance[record.student_id].present++;
         }
       });
@@ -273,7 +312,7 @@ const HomeroomTeacherReports = ({ user }) => {
         })
         .map(([id, data]) => ({
           ...data,
-          rate: Math.round((data.present / data.total) * 100)
+          rate: Math.round((data.present / data.total) * 100),
         }));
 
       setAlertStudents(alerts);
@@ -281,23 +320,25 @@ const HomeroomTeacherReports = ({ user }) => {
       setStats({
         totalStudents,
         presentToday,
-        attendanceRate: totalStudents > 0 ? Math.round((presentToday / totalStudents) * 100) : 0,
+        attendanceRate:
+          totalStudents > 0
+            ? Math.round((presentToday / totalStudents) * 100)
+            : 0,
         alerts: alerts.length,
-        className: user.homeroom_class_id
+        className: user.homeroom_class_id,
       });
-      
     } catch (err) {
-      console.error('Error fetching stats:', err);
-      setError('Gagal memuat statistik');
+      console.error("Error fetching stats:", err);
+      setError("Gagal memuat statistik");
     }
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const resetFilters = () => {
-    if (activeTab === 'homeroom') {
+    if (activeTab === "homeroom") {
       setFilters({ class_id: user.homeroom_class_id });
     } else {
       setFilters({});
@@ -307,169 +348,243 @@ const HomeroomTeacherReports = ({ user }) => {
   // ✅ REFACTORED: Fetch Report Data using helpers
   const fetchReportData = async (reportType) => {
     try {
-      let reportTitle = '';
+      let reportTitle = "";
       let result = null;
 
       // 🔥 TAB HOMEROOM REPORTS
-      if (activeTab === 'homeroom') {
-        const homeroomFilters = { ...filters, class_id: user.homeroom_class_id };
+      if (activeTab === "homeroom") {
+        const homeroomFilters = {
+          ...filters,
+          class_id: user.homeroom_class_id,
+        };
 
         switch (reportType) {
-          case 'students':
-            reportTitle = 'DATA SISWA WALI KELAS';
+          case "students":
+            reportTitle = "DATA SISWA WALI KELAS";
             result = await fetchStudentsData(homeroomFilters, false); // No grade column
             break;
 
-          case 'attendance':
-            reportTitle = 'PRESENSI HARIAN WALI KELAS';
+          case "attendance":
+            reportTitle = "PRESENSI HARIAN WALI KELAS";
             result = await fetchAttendanceDailyData(homeroomFilters);
             break;
 
-          case 'attendance-recap':
-            reportTitle = 'REKAPITULASI KEHADIRAN WALI KELAS';
+          case "attendance-recap":
+            reportTitle = "REKAPITULASI KEHADIRAN WALI KELAS";
             result = await fetchAttendanceRecapData(homeroomFilters);
             break;
 
-          case 'grades':
-            reportTitle = 'DATA NILAI AKADEMIK WALI KELAS';
-            result = await fetchGradesData(homeroomFilters);
+          case "grades":
+            reportTitle = "DATA NILAI AKADEMIK WALI KELAS";
+            result = await fetchGradesData(homeroomFilters, null, true);
             break;
 
           default:
-            throw new Error('Tipe laporan tidak valid');
+            throw new Error("Tipe laporan tidak valid");
         }
-      } 
+      }
       // 🔥 TAB TEACHER MAPEL REPORTS
-      else if (activeTab === 'teacher') {
-        const classIds = teacherAssignments.map(a => a.class_id);
-        
+      else if (activeTab === "teacher") {
+        const classIds = teacherAssignments.map((a) => a.class_id);
+
         switch (reportType) {
-          case 'teacher-grades':
-            reportTitle = 'NILAI MATA PELAJARAN YANG DIAMPU';
-            result = await fetchGradesData(filters, user.id);
-            // Override headers to exclude teacher column (it's the user itself)
-            result.headers = REPORT_HEADERS.gradesSimple;
+          case "teacher-grades":
+            reportTitle = "NILAI MATA PELAJARAN YANG DIAMPU";
+            result = await fetchGradesData(filters, user.id, true); // ← ADD parameter true
+            result.headers = REPORT_HEADERS.gradesFinalOnly; // ← UBAH jadi gradesFinalOnly
             break;
 
-          case 'teacher-attendance':
-            reportTitle = 'PRESENSI MATA PELAJARAN';
-            
-            const startDate = filters.start_date || (() => {
-              const date = new Date();
-              date.setDate(1);
-              return date.toISOString().split('T')[0];
-            })();
-            const endDate = filters.end_date || new Date().toISOString().split('T')[0];
+          case "teacher-attendance":
+            reportTitle = "PRESENSI MATA PELAJARAN";
 
+            const startDate =
+              filters.start_date ||
+              (() => {
+                const date = new Date();
+                date.setDate(1);
+                return date.toISOString().split("T")[0];
+              })();
+            const endDate =
+              filters.end_date || new Date().toISOString().split("T")[0];
+
+            // ✅ FIX: Ambil subjects yang guru ajar dari teacher_assignments
+            const teacherSubjects = teacherAssignments
+              .map((a) => a.subject)
+              .filter(Boolean);
+
+            // ✅ FIX: Filter by subjects yang diajar (exclude 'Harian')
             let query = supabase
-              .from('attendances')
-              .select('date, subject, status, class_id, students!inner(nis, full_name)')
-              .eq('teacher_id', user.id)
-              .in('class_id', classIds)
-              .gte('date', startDate)
-              .lte('date', endDate)
-              .order('date', { ascending: false });
+              .from("attendances")
+              .select(
+                "date, subject, status, class_id, students!inner(nis, full_name)"
+              )
+              .eq("teacher_id", user.id)
+              .in("class_id", classIds)
+              .in("subject", teacherSubjects) // ✅ ONLY mata pelajaran yang diajar
+              .gte("date", startDate)
+              .lte("date", endDate)
+              .order("date", { ascending: false });
 
             const { data: teacherAtt, error: taError } = await query;
             if (taError) throw taError;
 
-            const formattedTA = teacherAtt.map(row => ({
-              date: new Date(row.date).toLocaleDateString('id-ID'),
-              nis: row.students?.nis || '-',
-              full_name: row.students?.full_name || '-',
-              class_id: row.class_id || '-',
-              subject: row.subject || '-',
-              status: {
-                'hadir': 'Hadir',
-                'tidak_hadir': 'Tidak Hadir',
-                'alpa': 'Alpa',
-                'sakit': 'Sakit',
-                'izin': 'Izin'
-              }[row.status?.toLowerCase()] || row.status
+            const formattedTA = teacherAtt.map((row) => ({
+              date: new Date(row.date).toLocaleDateString("id-ID"),
+              nis: row.students?.nis || "-",
+              full_name: row.students?.full_name || "-",
+              class_id: row.class_id || "-",
+              subject: row.subject || "-",
+              status:
+                {
+                  hadir: "Hadir",
+                  tidak_hadir: "Tidak Hadir",
+                  alpa: "Alpa",
+                  sakit: "Sakit",
+                  izin: "Izin",
+                }[row.status?.toLowerCase()] || row.status,
             }));
 
             const taTotal = teacherAtt.length;
-            const taHadir = teacherAtt.filter(d => d.status?.toLowerCase() === 'hadir').length;
-            const taPercent = taTotal > 0 ? Math.round((taHadir/taTotal)*100) : 0;
-            
+            const taHadir = teacherAtt.filter(
+              (d) => d.status?.toLowerCase() === "hadir"
+            ).length;
+            const taPercent =
+              taTotal > 0 ? Math.round((taHadir / taTotal) * 100) : 0;
+
             result = {
-              headers: ['Tanggal', 'NIS', 'Nama Siswa', 'Kelas', 'Mata Pelajaran', 'Status'],
+              headers: [
+                "Tanggal",
+                "NIS",
+                "Nama Siswa",
+                "Kelas",
+                "Mata Pelajaran",
+                "Status",
+              ],
               preview: formattedTA,
               total: formattedTA.length,
               fullData: formattedTA,
               summary: [
-                { label: 'Total Records', value: taTotal },
-                { label: 'Hadir', value: `${taPercent}%` },
-                { label: 'Tidak Hadir', value: teacherAtt.filter(d => d.status?.toLowerCase() !== 'hadir').length }
-              ]
+                { label: "Total Records", value: taTotal },
+                { label: "Hadir", value: `${taPercent}%` },
+                {
+                  label: "Tidak Hadir",
+                  value: teacherAtt.filter(
+                    (d) => d.status?.toLowerCase() !== "hadir"
+                  ).length,
+                },
+              ],
             };
             break;
 
-          case 'teacher-recap':
-            reportTitle = 'REKAPITULASI KELAS YANG DIAMPU';
-            
+          // Di HomeroomTeacherReports.js, cari case "teacher-recap" dan ganti dengan ini:
+
+          case "teacher-recap":
+            reportTitle = "REKAPITULASI KELAS YANG DIAMPU";
+
             const recapByClass = {};
-            
+
             for (const assignment of teacherAssignments) {
-              const { data: classGrades } = await supabase
-                .from('grades')
-                .select('score')
-                .eq('teacher_id', user.id)
-                .eq('class_id', assignment.class_id)
-                .eq('subject', assignment.subject);
+              // Ambil SEMUA grades (NH, UTS, UAS) untuk class & subject ini
+              const { data: allClassGrades } = await supabase
+                .from("grades")
+                .select(
+                  "*, students(nis, full_name, class_id), users(full_name)"
+                )
+                .eq("teacher_id", user.id)
+                .eq("class_id", assignment.class_id)
+                .eq("subject", assignment.subject);
+
+              console.log("DEBUG teacher-recap:", {
+                class: assignment.class_id,
+                subject: assignment.subject,
+                gradesCount: allClassGrades?.length || 0,
+                firstGrade: allClassGrades?.[0],
+              });
+
+              // Calculate final grades
+              const finalGrades = calculateFinalGrades(allClassGrades || []);
+              const finalScores = finalGrades
+                .map((g) => g.final_score)
+                .filter((s) => !isNaN(s));
+
+              console.log("DEBUG final grades:", {
+                finalGradesCount: finalGrades.length,
+                finalScoresCount: finalScores.length,
+                finalScores: finalScores,
+              });
+
+              const avgGrade =
+                finalScores.length > 0
+                  ? Math.round(
+                      (finalScores.reduce((a, b) => a + b, 0) /
+                        finalScores.length) *
+                        100
+                    ) / 100
+                  : 0;
 
               const { data: classAtt } = await supabase
-                .from('attendances')
-                .select('status')
-                .eq('teacher_id', user.id)
-                .eq('class_id', assignment.class_id)
-                .eq('subject', assignment.subject);
+                .from("attendances")
+                .select("status")
+                .eq("teacher_id", user.id)
+                .eq("class_id", assignment.class_id)
+                .eq("subject", assignment.subject);
 
-              const gradeScores = (classGrades || []).map(g => g.score).filter(s => s != null);
-              const avgGrade = gradeScores.length > 0 ? Math.round(gradeScores.reduce((a,b) => a+b, 0) / gradeScores.length) : 0;
-              
               const totalAtt = (classAtt || []).length;
-              const hadirAtt = (classAtt || []).filter(a => a.status?.toLowerCase() === 'hadir').length;
-              const attRate = totalAtt > 0 ? Math.round((hadirAtt/totalAtt)*100) : 0;
+              const hadirAtt = (classAtt || []).filter(
+                (a) => a.status?.toLowerCase() === "hadir"
+              ).length;
+              const attRate =
+                totalAtt > 0 ? Math.round((hadirAtt / totalAtt) * 100) : 0;
 
               recapByClass[assignment.class_id] = {
                 class_id: assignment.class_id,
                 subject: assignment.subject,
                 academic_year: assignment.academic_year,
                 semester: assignment.semester,
-                total_grades: gradeScores.length,
+                total_grades: finalScores.length,
                 avg_grade: avgGrade,
                 total_attendance: totalAtt,
-                attendance_rate: `${attRate}%`
+                attendance_rate: `${attRate}%`,
               };
             }
 
             const recapArray = Object.values(recapByClass);
-            
+
             result = {
-              headers: ['Kelas', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Total Nilai', 'Rata-rata Nilai', 'Total Presensi', 'Tingkat Kehadiran'],
+              headers: [
+                "Kelas",
+                "Mata Pelajaran",
+                "Tahun Ajaran",
+                "Semester",
+                "Total Nilai",
+                "Rata-rata Nilai",
+                "Total Presensi",
+                "Tingkat Kehadiran",
+              ],
               preview: recapArray,
               total: recapArray.length,
               fullData: recapArray,
               summary: [
-                { label: 'Total Kelas', value: recapArray.length },
-                { label: 'Total Mata Pelajaran', value: [...new Set(recapArray.map(r => r.subject))].length }
-              ]
+                { label: "Total Kelas", value: recapArray.length },
+                {
+                  label: "Total Mata Pelajaran",
+                  value: [...new Set(recapArray.map((r) => r.subject))].length,
+                },
+              ],
             };
             break;
 
           default:
-            throw new Error('Tipe laporan tidak valid');
+            throw new Error("Tipe laporan tidak valid");
         }
       }
 
       return {
         ...result,
-        reportTitle
+        reportTitle,
       };
-
     } catch (err) {
-      console.error('Error in fetchReportData:', err);
+      console.error("Error in fetchReportData:", err);
       throw err;
     }
   };
@@ -477,15 +592,15 @@ const HomeroomTeacherReports = ({ user }) => {
   const previewReport = async (reportType) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await fetchReportData(reportType);
       setPreviewModal({ isOpen: true, data, type: reportType });
-      setSuccess('✅ Preview berhasil dimuat');
+      setSuccess("✅ Preview berhasil dimuat");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(`Gagal preview laporan: ${err.message}`);
-      console.error('Preview error:', err);
+      console.error("Preview error:", err);
     } finally {
       setLoading(false);
     }
@@ -494,37 +609,41 @@ const HomeroomTeacherReports = ({ user }) => {
   const downloadReport = async (reportType, format) => {
     setDownloadingReportId(reportType);
     setError(null);
-    
+
     try {
       let data;
-      
-      if (previewModal.isOpen && previewModal.type === reportType && previewModal.data?.fullData) {
+
+      if (
+        previewModal.isOpen &&
+        previewModal.type === reportType &&
+        previewModal.data?.fullData
+      ) {
         data = previewModal.data;
       } else {
         data = await fetchReportData(reportType);
       }
-      
+
       const filterDescription = buildFilterDescription(filters);
 
       const metadata = {
-        title: data.reportTitle || 'LAPORAN',
+        title: data.reportTitle || "LAPORAN",
         academicYear: filters.academic_year,
         semester: filters.semester ? `Semester ${filters.semester}` : null,
         filters: filterDescription,
-        summary: data.summary
+        summary: data.summary,
       };
 
       await exportToExcel(data.fullData, data.headers, metadata, {
-        role: activeTab === 'homeroom' ? 'homeroom' : 'teacher',
-        reportType: reportType
+        role: activeTab === "homeroom" ? "homeroom" : "teacher",
+        reportType: reportType,
       });
-      
-      setSuccess('✅ Laporan berhasil diexport!');
+
+      setSuccess("✅ Laporan berhasil diexport!");
       setTimeout(() => setSuccess(null), 3000);
       setPreviewModal({ isOpen: false, data: null, type: null });
     } catch (err) {
       setError(`Gagal export laporan: ${err.message}`);
-      console.error('Download error:', err);
+      console.error("Download error:", err);
     } finally {
       setDownloadingReportId(null);
     }
@@ -533,74 +652,75 @@ const HomeroomTeacherReports = ({ user }) => {
   // Report cards config
   const homeroomReports = [
     {
-      id: 'students',
+      id: "students",
       icon: GraduationCap,
       title: `Data Siswa`,
-      description: 'Export data siswa kelas Anda',
+      description: "Export data siswa kelas Anda",
       stats: `${stats.totalStudents || 0} siswa`,
-      color: 'bg-green-50 border-green-200',
-      iconColor: 'text-green-600',
+      color: "bg-green-50 border-green-200",
+      iconColor: "text-green-600",
     },
     {
-      id: 'attendance',
+      id: "attendance",
       icon: Calendar,
-      title: 'Presensi Harian',
-      description: 'Data kehadiran per hari',
+      title: "Presensi Harian",
+      description: "Data kehadiran per hari",
       stats: `Kelas ${user.homeroom_class_id}`,
-      color: 'bg-yellow-50 border-yellow-200',
-      iconColor: 'text-yellow-600',
+      color: "bg-yellow-50 border-yellow-200",
+      iconColor: "text-yellow-600",
     },
     {
-      id: 'attendance-recap',
+      id: "attendance-recap",
       icon: CheckCircle,
-      title: 'Rekap Kehadiran',
-      description: 'Ringkasan total kehadiran',
-      stats: 'Per siswa',
-      color: 'bg-orange-50 border-orange-200',
-      iconColor: 'text-orange-600',
+      title: "Rekap Kehadiran",
+      description: "Ringkasan total kehadiran",
+      stats: "Per siswa",
+      color: "bg-orange-50 border-orange-200",
+      iconColor: "text-orange-600",
     },
     {
-      id: 'grades',
+      id: "grades",
       icon: BarChart3,
-      title: 'Nilai Akademik',
-      description: 'Data nilai semua mapel',
+      title: "Nilai Akademik",
+      description: "Data nilai semua mapel",
       stats: `Kelas ${user.homeroom_class_id}`,
-      color: 'bg-purple-50 border-purple-200',
-      iconColor: 'text-purple-600',
+      color: "bg-purple-50 border-purple-200",
+      iconColor: "text-purple-600",
     },
   ];
 
   const teacherReports = [
     {
-      id: 'teacher-grades',
+      id: "teacher-grades",
       icon: BarChart3,
-      title: 'Nilai Mata Pelajaran',
-      description: 'Data nilai siswa di semua kelas yang Anda ajar',
+      title: "Nilai Mata Pelajaran",
+      description: "Data nilai siswa di semua kelas yang Anda ajar",
       stats: `${teacherStats.totalGrades || 0} nilai tercatat`,
-      color: 'bg-blue-50 border-blue-200',
-      iconColor: 'text-blue-600',
+      color: "bg-blue-50 border-blue-200",
+      iconColor: "text-blue-600",
     },
     {
-      id: 'teacher-attendance',
+      id: "teacher-attendance",
       icon: Calendar,
-      title: 'Presensi Mata Pelajaran',
-      description: 'Data kehadiran siswa di mata pelajaran Anda',
+      title: "Presensi Mata Pelajaran",
+      description: "Data kehadiran siswa di mata pelajaran Anda",
       stats: `${teacherStats.totalAttendances || 0} presensi tercatat`,
-      color: 'bg-indigo-50 border-indigo-200',
-      iconColor: 'text-indigo-600',
+      color: "bg-indigo-50 border-indigo-200",
+      iconColor: "text-indigo-600",
     },
     {
-      id: 'teacher-recap',
+      id: "teacher-recap",
       icon: BookOpen,
-      title: 'Rekapitulasi Per Kelas',
-      description: 'Ringkasan performa per kelas yang Anda ajar',
+      title: "Rekapitulasi Per Kelas",
+      description: "Ringkasan performa per kelas yang Anda ajar",
       stats: `${teacherStats.totalClasses || 0} kelas diampu`,
-      color: 'bg-teal-50 border-teal-200',
-      iconColor: 'text-teal-600',
+      color: "bg-teal-50 border-teal-200",
+      iconColor: "text-teal-600",
     },
   ];
 
-  const currentReports = activeTab === 'homeroom' ? homeroomReports : teacherReports;
+  const currentReports =
+    activeTab === "homeroom" ? homeroomReports : teacherReports;
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -618,7 +738,9 @@ const HomeroomTeacherReports = ({ user }) => {
               </p>
             </div>
           </div>
-          <p className="text-slate-600">Kelola laporan sebagai wali kelas dan guru mata pelajaran</p>
+          <p className="text-slate-600">
+            Kelola laporan sebagai wali kelas dan guru mata pelajaran
+          </p>
         </div>
 
         {/* Success/Error Alerts */}
@@ -628,7 +750,9 @@ const HomeroomTeacherReports = ({ user }) => {
               <CheckCircle className="w-5 h-5" />
               {success}
             </span>
-            <button onClick={() => setSuccess(null)} className="text-green-800 hover:text-green-900 font-bold">
+            <button
+              onClick={() => setSuccess(null)}
+              className="text-green-800 hover:text-green-900 font-bold">
               ×
             </button>
           </div>
@@ -641,7 +765,9 @@ const HomeroomTeacherReports = ({ user }) => {
                 <AlertTriangle className="w-5 h-5" />
                 {error}
               </span>
-              <button onClick={() => setError(null)} className="text-red-800 hover:text-red-900 font-bold">
+              <button
+                onClick={() => setError(null)}
+                className="text-red-800 hover:text-red-900 font-bold">
                 ×
               </button>
             </div>
@@ -653,15 +779,14 @@ const HomeroomTeacherReports = ({ user }) => {
           <div className="flex border-b border-slate-200">
             <button
               onClick={() => {
-                setActiveTab('homeroom');
+                setActiveTab("homeroom");
                 resetFilters();
               }}
               className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'homeroom'
-                  ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
+                activeTab === "homeroom"
+                  ? "bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}>
               <Users className="w-5 h-5" />
               Laporan Wali Kelas
               <span className="ml-2 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">
@@ -670,15 +795,14 @@ const HomeroomTeacherReports = ({ user }) => {
             </button>
             <button
               onClick={() => {
-                setActiveTab('teacher');
+                setActiveTab("teacher");
                 resetFilters();
               }}
               className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'teacher'
-                  ? 'bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
+                activeTab === "teacher"
+                  ? "bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}>
               <BookOpen className="w-5 h-5" />
               Laporan Guru Mapel
               <span className="ml-2 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">
@@ -689,59 +813,59 @@ const HomeroomTeacherReports = ({ user }) => {
         </div>
 
         {/* Stats Dashboard */}
-        {activeTab === 'homeroom' ? (
+        {activeTab === "homeroom" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard 
-              icon={GraduationCap} 
-              label="Siswa di Kelas" 
-              value={stats.totalStudents || 0} 
-              color="green" 
+            <StatCard
+              icon={GraduationCap}
+              label="Siswa di Kelas"
+              value={stats.totalStudents || 0}
+              color="green"
             />
-            <StatCard 
-              icon={CheckCircle} 
-              label="Hadir Hari Ini" 
-              value={stats.presentToday || 0} 
-              color="blue" 
+            <StatCard
+              icon={CheckCircle}
+              label="Hadir Hari Ini"
+              value={stats.presentToday || 0}
+              color="blue"
             />
-            <StatCard 
-              icon={TrendingUp} 
-              label="Tingkat Kehadiran" 
-              value={`${stats.attendanceRate || 0}%`} 
-              color="purple" 
+            <StatCard
+              icon={TrendingUp}
+              label="Tingkat Kehadiran"
+              value={`${stats.attendanceRate || 0}%`}
+              color="purple"
             />
-            <StatCard 
-              icon={AlertTriangle} 
-              label="Perlu Perhatian" 
-              value={stats.alerts || 0} 
-              color="red" 
-              alert={stats.alerts > 0} 
+            <StatCard
+              icon={AlertTriangle}
+              label="Perlu Perhatian"
+              value={stats.alerts || 0}
+              color="red"
+              alert={stats.alerts > 0}
             />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard 
-              icon={BookOpen} 
-              label="Kelas Diampu" 
-              value={teacherStats.totalClasses || 0} 
-              color="blue" 
+            <StatCard
+              icon={BookOpen}
+              label="Kelas Diampu"
+              value={teacherStats.totalClasses || 0}
+              color="blue"
             />
-            <StatCard 
-              icon={FileText} 
-              label="Mata Pelajaran" 
-              value={teacherStats.totalSubjects || 0} 
-              color="indigo" 
+            <StatCard
+              icon={FileText}
+              label="Mata Pelajaran"
+              value={teacherStats.totalSubjects || 0}
+              color="indigo"
             />
-            <StatCard 
-              icon={BarChart3} 
-              label="Total Nilai" 
-              value={teacherStats.totalGrades || 0} 
-              color="purple" 
+            <StatCard
+              icon={BarChart3}
+              label="Total Nilai"
+              value={teacherStats.totalGrades || 0}
+              color="purple"
             />
-            <StatCard 
-              icon={Calendar} 
-              label="Total Presensi" 
-              value={teacherStats.totalAttendances || 0} 
-              color="teal" 
+            <StatCard
+              icon={Calendar}
+              label="Total Presensi"
+              value={teacherStats.totalAttendances || 0}
+              color="teal"
             />
           </div>
         )}
@@ -755,7 +879,12 @@ const HomeroomTeacherReports = ({ user }) => {
         />
 
         {/* Reports Grid */}
-        <div className={`grid grid-cols-1 ${activeTab === 'homeroom' ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'} gap-4 mb-8`}>
+        <div
+          className={`grid grid-cols-1 ${
+            activeTab === "homeroom"
+              ? "md:grid-cols-2 lg:grid-cols-4"
+              : "md:grid-cols-3"
+          } gap-4 mb-8`}>
           {currentReports.map((report) => {
             const Icon = report.icon;
             const isDownloading = downloadingReportId === report.id;
@@ -763,43 +892,45 @@ const HomeroomTeacherReports = ({ user }) => {
             return (
               <div
                 key={report.id}
-                className={`bg-white rounded-lg shadow-sm border-2 ${report.color} p-4 hover:shadow-md transition-all duration-200`}
-              >
+                className={`bg-white rounded-lg shadow-sm border-2 ${report.color} p-4 hover:shadow-md transition-all duration-200`}>
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`w-11 h-11 rounded-xl ${report.color} flex items-center justify-center`}>
+                  <div
+                    className={`w-11 h-11 rounded-xl ${report.color} flex items-center justify-center`}>
                     <Icon className={`w-5 h-5 ${report.iconColor}`} />
                   </div>
                 </div>
-                
+
                 <h3 className="text-sm font-semibold text-slate-800 mb-1.5 leading-tight">
                   {report.title}
                 </h3>
-                
+
                 <p className="text-xs text-slate-600 mb-2 leading-tight">
                   {report.description}
                 </p>
-                
+
                 <p className="text-xs text-slate-500 mb-3 font-medium">
                   {report.stats}
                 </p>
-                
+
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => previewReport(report.id)}
                     disabled={loading || downloadingReportId}
-                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-gray-300 text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
-                  >
+                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-gray-300 text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
                     <Eye className="w-3.5 h-3.5" />
-                    {loading ? 'Memuat...' : 'Preview'}
+                    {loading ? "Memuat..." : "Preview"}
                   </button>
-                  
+
                   <button
-                    onClick={() => downloadReport(report.id, 'xlsx')}
-                    disabled={loading || isDownloading || (downloadingReportId && !isDownloading)}
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
-                  >
+                    onClick={() => downloadReport(report.id, "xlsx")}
+                    disabled={
+                      loading ||
+                      isDownloading ||
+                      (downloadingReportId && !isDownloading)
+                    }
+                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
                     <FileSpreadsheet className="w-3.5 h-3.5" />
-                    {isDownloading ? 'Exporting...' : 'Export Excel'}
+                    {isDownloading ? "Exporting..." : "Export Excel"}
                   </button>
                 </div>
               </div>
@@ -808,7 +939,7 @@ const HomeroomTeacherReports = ({ user }) => {
         </div>
 
         {/* Alert Students Panel - Only show in homeroom tab */}
-        {activeTab === 'homeroom' && alertStudents.length > 0 && (
+        {activeTab === "homeroom" && alertStudents.length > 0 && (
           <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 mb-8">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-6 h-6 text-orange-600 mt-1" />
@@ -817,16 +948,20 @@ const HomeroomTeacherReports = ({ user }) => {
                   Siswa Perlu Perhatian Khusus
                 </h3>
                 <p className="text-sm text-orange-800 mb-3">
-                  Siswa dengan tingkat kehadiran di bawah 75% dalam 30 hari terakhir
+                  Siswa dengan tingkat kehadiran di bawah 75% dalam 30 hari
+                  terakhir
                 </p>
                 <div className="space-y-2">
                   {alertStudents.map((student, idx) => (
-                    <div key={idx} className="bg-white p-3 rounded-lg border border-orange-200">
+                    <div
+                      key={idx}
+                      className="bg-white p-3 rounded-lg border border-orange-200">
                       <p className="text-sm font-medium text-slate-800">
                         {student.name} ({student.nis})
                       </p>
                       <p className="text-xs text-slate-600">
-                        Kehadiran: {student.rate}% ({student.present} dari {student.total} hari)
+                        Kehadiran: {student.rate}% ({student.present} dari{" "}
+                        {student.total} hari)
                       </p>
                     </div>
                   ))}
@@ -837,7 +972,7 @@ const HomeroomTeacherReports = ({ user }) => {
         )}
 
         {/* Teacher Assignments Info - Only show in teacher tab */}
-        {activeTab === 'teacher' && teacherAssignments.length > 0 && (
+        {activeTab === "teacher" && teacherAssignments.length > 0 && (
           <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
             <div className="flex items-start gap-3">
               <BookOpen className="w-6 h-6 text-blue-600 mt-1" />
@@ -847,7 +982,9 @@ const HomeroomTeacherReports = ({ user }) => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
                   {teacherAssignments.map((assignment, idx) => (
-                    <div key={idx} className="bg-white p-3 rounded-lg border border-blue-200">
+                    <div
+                      key={idx}
+                      className="bg-white p-3 rounded-lg border border-blue-200">
                       <p className="text-sm font-medium text-slate-800">
                         Kelas {assignment.class_id}
                       </p>
@@ -855,7 +992,8 @@ const HomeroomTeacherReports = ({ user }) => {
                         {assignment.subject}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {assignment.academic_year} • Semester {assignment.semester}
+                        {assignment.academic_year} • Semester{" "}
+                        {assignment.semester}
                       </p>
                     </div>
                   ))}
@@ -877,7 +1015,8 @@ const HomeroomTeacherReports = ({ user }) => {
                 Format File
               </h4>
               <p className="text-sm text-slate-600">
-                Laporan tersedia dalam format Excel dengan layout yang rapi dan profesional.
+                Laporan tersedia dalam format Excel dengan layout yang rapi dan
+                profesional.
               </p>
             </div>
             <div>
@@ -886,10 +1025,9 @@ const HomeroomTeacherReports = ({ user }) => {
                 Cakupan Data
               </h4>
               <p className="text-sm text-slate-600">
-                {activeTab === 'homeroom' 
+                {activeTab === "homeroom"
                   ? `Laporan wali kelas mencakup data kelas ${user.homeroom_class_id}.`
-                  : `Laporan guru mapel mencakup semua kelas yang Anda ajar.`
-                }
+                  : `Laporan guru mapel mencakup semua kelas yang Anda ajar.`}
               </p>
             </div>
             <div>
@@ -911,10 +1049,9 @@ const HomeroomTeacherReports = ({ user }) => {
             <div>
               <h4 className="font-medium text-indigo-900 mb-1">Tips:</h4>
               <p className="text-sm text-indigo-700">
-                {activeTab === 'homeroom' 
-                  ? 'Export laporan presensi dan nilai secara berkala untuk monitoring performa siswa. Gunakan data ini untuk parent meeting dan evaluasi kelas.'
-                  : 'Gunakan laporan guru mapel untuk analisis performa siswa per mata pelajaran. Bandingkan hasil antar kelas untuk evaluasi metode pengajaran.'
-                }
+                {activeTab === "homeroom"
+                  ? "Export laporan presensi dan nilai secara berkala untuk monitoring performa siswa. Gunakan data ini untuk parent meeting dan evaluasi kelas."
+                  : "Gunakan laporan guru mapel untuk analisis performa siswa per mata pelajaran. Bandingkan hasil antar kelas untuk evaluasi metode pengajaran."}
               </p>
             </div>
           </div>
@@ -926,8 +1063,12 @@ const HomeroomTeacherReports = ({ user }) => {
             ✅ Refactored with ReportHelpers
           </h4>
           <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
-            <li>Menggunakan centralized fetch functions dari ReportHelpers.js</li>
-            <li>Konsisten dengan format data lowercase (hadir, sakit, izin, alpa)</li>
+            <li>
+              Menggunakan centralized fetch functions dari ReportHelpers.js
+            </li>
+            <li>
+              Konsisten dengan format data lowercase (hadir, sakit, izin, alpa)
+            </li>
             <li>Menghapus ~300 lines duplicated code</li>
             <li>Semua formatters (date, status, gender) dari helpers</li>
             <li>Summary calculations otomatis dari helpers</li>
@@ -938,10 +1079,12 @@ const HomeroomTeacherReports = ({ user }) => {
       {/* Preview Modal */}
       <ReportModal
         isOpen={previewModal.isOpen}
-        onClose={() => setPreviewModal({ isOpen: false, data: null, type: null })}
+        onClose={() =>
+          setPreviewModal({ isOpen: false, data: null, type: null })
+        }
         reportData={previewModal.data || {}}
         reportType={previewModal.type}
-        role={activeTab === 'homeroom' ? 'homeroom' : 'teacher'}
+        role={activeTab === "homeroom" ? "homeroom" : "teacher"}
         onDownload={downloadReport}
         loading={downloadingReportId !== null}
       />

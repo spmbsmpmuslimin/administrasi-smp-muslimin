@@ -4,7 +4,7 @@
 // ============================================
 // Purpose: Single source of truth untuk semua report logic
 // Usage: Import functions yang dibutuhkan di setiap role component
-// Last Update: 2025-10-19
+// Last Update: 2025-10-20
 // ============================================
 
 import { supabase } from '../supabaseClient';
@@ -162,6 +162,18 @@ export const REPORT_HEADERS = {
     'Mata Pelajaran',
     'Jenis',
     'Nilai'
+  ],
+
+  // Grade final only (untuk homeroom)
+  gradesFinalOnly: [
+    'Tahun Ajaran',
+    'Semester',
+    'NIS',
+    'Nama Siswa',
+    'Kelas',
+    'Mata Pelajaran',
+    'Nilai Akhir',
+    'Guru'
   ]
 };
 
@@ -212,6 +224,17 @@ export const formatGradeRow = (row, teacherMap = {}) => ({
   assignment_type: row.assignment_type || '-',
   score: row.score || 0,
   teacher: teacherMap[row.teacher_id] || row.users?.full_name || '-'
+});
+
+export const formatFinalGradeRow = (row, teacherMap = {}) => ({
+  academic_year: row.academic_year || '-',
+  semester: row.semester || '-',
+  nis: row.nis || '-',
+  full_name: row.full_name || '-',
+  class_id: row.class_id || '-',
+  subject: row.subject || '-',
+  final_score: row.final_score ? Math.round(row.final_score * 100) / 100 : 0,
+  teacher: teacherMap[row.teacher_id] || row.teacher_name || '-'
 });
 
 // ==================== DATA FETCHERS ====================
@@ -333,9 +356,9 @@ export const fetchAttendanceRecapData = async (filters = {}) => {
 };
 
 /**
- * Fetch grades data
+ * Fetch grades data - NEW: Support both teacher (all assignment types) and homeroom (final grades only)
  */
-export const fetchGradesData = async (filters = {}, teacherId = null) => {
+export const fetchGradesData = async (filters = {}, teacherId = null, isHomeroom = false) => {
   let query = supabase
     .from('grades')
     .select('*, students!inner(nis, full_name, class_id), users!inner(full_name)');
@@ -353,6 +376,30 @@ export const fetchGradesData = async (filters = {}, teacherId = null) => {
   const { data, error } = await query;
   if (error) throw error;
 
+  // HOMEROOM: Calculate final grades, show ONLY Nilai Akhir
+  if (isHomeroom) {
+    const finalGrades = calculateFinalGrades(data || []);
+    
+    // Build teacher map
+    const teacherMap = {};
+    (data || []).forEach(row => {
+      if (row.teacher_id && row.users?.full_name) {
+        teacherMap[row.teacher_id] = row.users.full_name;
+      }
+    });
+
+    const formattedData = finalGrades.map(row => formatFinalGradeRow(row, teacherMap));
+    
+    return {
+      headers: REPORT_HEADERS.gradesFinalOnly,
+      preview: formattedData.slice(0, 100),
+      fullData: formattedData,
+      total: formattedData.length,
+      summary: calculateFinalGradeSummary(finalGrades)
+    };
+  }
+
+  // TEACHER: Show all assignment types
   const formattedData = data?.map(row => formatGradeRow(row)) || [];
   
   return {
@@ -477,6 +524,24 @@ export const calculateGradeSummary = (data) => {
   ];
 };
 
+export const calculateFinalGradeSummary = (finalGrades) => {
+  const scores = finalGrades.map(g => g.final_score).filter(s => !isNaN(s));
+  const avg = scores.length > 0 
+    ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
+    : 0;
+  const highest = scores.length > 0 ? Math.max(...scores) : 0;
+  const lowest = scores.length > 0 ? Math.min(...scores) : 0;
+  const subjects = [...new Set(finalGrades.map(g => g.subject))].filter(Boolean);
+  
+  return [
+    { label: 'Total Nilai Akhir', value: finalGrades.length },
+    { label: 'Rata-rata', value: avg },
+    { label: 'Tertinggi', value: highest },
+    { label: 'Terendah', value: lowest },
+    { label: 'Mata Pelajaran', value: subjects.length }
+  ];
+};
+
 // ==================== UTILITY FUNCTIONS ====================
 
 export const getDateRange = (filters) => {
@@ -509,6 +574,82 @@ export const validateReportData = (data, headers) => {
   return { valid: true, message: 'Data valid' };
 };
 
+/**
+ * Calculate final grades per student per subject
+ * Formula: 40% Rata² NH + 30% UTS + 30% UAS
+ * Group by: student_id + subject + semester + academic_year
+ */
+export const calculateFinalGrades = (gradesData) => {
+  const groupedByStudentSubject = {};
+
+  // Group by student_id + subject + semester + academic_year
+  gradesData.forEach(grade => {
+    const key = `${grade.student_id}_${grade.subject}_${grade.semester}_${grade.academic_year}`;
+    
+    if (!groupedByStudentSubject[key]) {
+      groupedByStudentSubject[key] = {
+        student_id: grade.student_id,
+        nis: grade.students?.nis,
+        full_name: grade.students?.full_name,
+        class_id: grade.students?.class_id || grade.class_id,
+        subject: grade.subject,
+        teacher_id: grade.teacher_id,
+        teacher_name: grade.users?.full_name,
+        academic_year: grade.academic_year,
+        semester: grade.semester,
+        nh: [],
+        uts: null,
+        uas: null
+      };
+    }
+
+    const type = grade.assignment_type?.toLowerCase() || '';
+    const score = parseFloat(grade.score);
+    
+    if (isNaN(score)) return;
+    
+    // Collect NH (Nilai Harian)
+    if (type.includes('nh') || type.includes('harian')) {
+      groupedByStudentSubject[key].nh.push(score);
+    }
+    // Collect UTS
+    else if (type.includes('uts')) {
+      groupedByStudentSubject[key].uts = score;
+    }
+    // Collect UAS
+    else if (type.includes('uas')) {
+      groupedByStudentSubject[key].uas = score;
+    }
+  });
+
+  // Calculate final score
+  const finalGrades = [];
+  
+  Object.values(groupedByStudentSubject).forEach(group => {
+    // Calculate rata-rata NH
+    const avgNH = group.nh.length > 0
+      ? group.nh.reduce((a, b) => a + b, 0) / group.nh.length
+      : 0;
+
+    const uts = group.uts || 0;
+    const uas = group.uas || 0;
+
+    // Formula: 40% NH + 30% UTS + 30% UAS
+    const finalScore = (0.4 * avgNH) + (0.3 * uts) + (0.3 * uas);
+
+    // Only include if has some scores
+    if (avgNH > 0 || uts > 0 || uas > 0) {
+      finalGrades.push({
+        ...group,
+        final_score: Math.round(finalScore * 100) / 100,
+        avg_nh: Math.round(avgNH * 100) / 100
+      });
+    }
+  });
+
+  return finalGrades;
+};
+
 // ==================== EXPORT ALL ====================
 
 export default {
@@ -530,6 +671,7 @@ export default {
   formatStudentRow,
   formatAttendanceRow,
   formatGradeRow,
+  formatFinalGradeRow,
   
   // Data Fetchers
   fetchTeachersData,
@@ -543,9 +685,11 @@ export default {
   calculateTeacherSummary,
   calculateAttendanceSummary,
   calculateGradeSummary,
+  calculateFinalGradeSummary,
   
   // Utilities
   getDateRange,
   buildFilterDescription,
-  validateReportData
+  validateReportData,
+  calculateFinalGrades
 };

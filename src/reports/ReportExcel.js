@@ -12,7 +12,7 @@ const exportToExcel = async (data, headers, metadata, options = {}) => {
     const worksheet = workbook.addWorksheet('Laporan');
 
     // Set column widths based on role and report type
-    const columnWidths = getColumnWidths(role, reportType, headers);
+    const columnWidths = getColumnWidths(headers);
     worksheet.columns = columnWidths;
 
     let currentRow = 1;
@@ -40,7 +40,7 @@ const exportToExcel = async (data, headers, metadata, options = {}) => {
     // ==================== FOOTER ====================
     await addFooter(worksheet, currentRow, role);
 
-    // Auto-fit columns dengan logic khusus (HARUS dipanggil setelah semua data ditambah)
+    // Auto-fit columns
     await autoFitColumns(worksheet, headers, data, role);
 
     // Download
@@ -63,67 +63,49 @@ const exportToExcel = async (data, headers, metadata, options = {}) => {
 
 // ==================== HELPER FUNCTIONS ====================
 
-const getColumnWidths = (role, reportType, headers) => {
-  // Default widths
-  let widths = headers.map(() => ({ width: 15 }));
+// UPDATED: Dynamic column widths based on headers
+const getColumnWidths = (headers) => {
+  const defaultWidth = 12;
+  const headerWidthMap = {
+    'Tahun Ajaran': 14,
+    'Semester': 10,
+    'NIS': 12,
+    'Nama Siswa': 20,
+    'Nama Lengkap': 20,
+    'Kelas': 10,
+    'Mata Pelajaran': 18,
+    'Jenis': 12,
+    'Nilai': 8,
+    'Nilai Akhir': 12,
+    'Guru': 15,
+    'Tanggal': 12,
+    'Status': 12,
+    'Status Kehadiran': 12,
+    'Persentase': 10,
+    'Hadir': 8,
+    'Sakit': 8,
+    'Izin': 8,
+    'Absen': 8,
+    'Tidak Hadir': 12,
+    'Total': 8,
+    'Username': 12,
+    'Role': 10,
+    'Wali Kelas': 12,
+    'Tanggal Bergabung': 14,
+    'Total Nilai': 12,
+    'Rata-rata Nilai': 14,
+    'Total Presensi': 12,
+    'Tingkat Kehadiran': 14,
+    'Jenis Kelamin': 12,
+    'Gender': 10,
+    'Tingkat': 8,
+    'Kode Guru': 10,
+    'Teacher ID': 10
+  };
 
-  // Custom widths berdasarkan role dan report type
-  if (role === 'admin') {
-    if (reportType === 'teachers') {
-      widths = [
-        { width: 6 }, // Teacher ID
-        { width: 10 }, // Username
-        { width: 20 }, // Nama Lengkap
-        { width: 6 }, // Wali Kelas
-        { width: 6 }, // Status
-        { width: 10 }  // Tanggal Bergabung
-      ];
-    } else if (reportType === 'attendance-recap') {
-      widths = [
-        { width: 12 }, // NIS
-        { width: 20 }, // Nama
-        { width: 10 }, // Kelas
-        { width: 8 },  // Hadir
-        { width: 8 },  // Sakit
-        { width: 8 },  // Izin
-        { width: 12 }, // Tidak Hadir
-        { width: 8 },  // Total
-        { width: 12 }  // Persentase
-      ];
-    }
-  } else if (role === 'bk') {
-    // ✅ UPDATED: Tambah kolom untuk field baru
-    widths = [
-      { width: 20 }, // Nama
-      { width: 12 }, // NIS
-      { width: 10 }, // Kelas
-      { width: 15 }, // Tanggal
-      { width: 12 }, // Tingkat Urgensi (NEW)
-      { width: 18 }, // Kategori Masalah (NEW)
-      { width: 15 }, // Jenis Layanan
-      { width: 15 }, // Bidang Bimbingan
-      { width: 12 }, // Status Layanan
-      { width: 10 }, // Follow-up (NEW)
-      { width: 15 }, // Tanggal Follow-up (NEW)
-      { width: 35 }, // Permasalahan
-      { width: 35 }  // Hasil Layanan
-    ];
-  } else if (role === 'homeroom') {
-    widths = headers.map(() => ({ width: 12 }));
-  } else if (role === 'teacher') {
-    widths = [
-      { width: 12 }, // Tahun Ajaran
-      { width: 10 }, // Semester
-      { width: 12 }, // NIS
-      { width: 20 }, // Nama Siswa
-      { width: 10 }, // Kelas
-      { width: 15 }, // Mata Pelajaran
-      { width: 12 }, // Jenis
-      { width: 8 }   // Nilai
-    ];
-  }
-
-  return widths;
+  return headers.map(header => ({
+    width: headerWidthMap[header] || defaultWidth
+  }));
 };
 
 const addHeaderSection = async (worksheet, startRow, metadata, role) => {
@@ -138,7 +120,7 @@ const addHeaderSection = async (worksheet, startRow, metadata, role) => {
     color: { argb: 'FF1E3A8A' } 
   };
   titleRow.height = 25;
-  worksheet.mergeCells(`A${currentRow-1}:M${currentRow-1}`); // Extended to M for more columns
+  worksheet.mergeCells(`A${currentRow-1}:M${currentRow-1}`);
 
   // School Row
   const schoolRow = worksheet.getRow(currentRow++);
@@ -178,7 +160,7 @@ const addHeaderSection = async (worksheet, startRow, metadata, role) => {
     worksheet.mergeCells(`A${currentRow-1}:M${currentRow-1}`);
   }
 
-  currentRow++; // Empty row
+  currentRow++;
   return currentRow;
 };
 
@@ -186,7 +168,7 @@ const addSummarySection = async (worksheet, startRow, summary, role) => {
   let currentRow = startRow;
 
   const summaryTitleRow = worksheet.getRow(currentRow++);
-  summaryTitleRow.getCell(1).value = '📊 RINGKASAN DATA';
+  summaryTitleRow.getCell(1).value = 'RINGKASAN DATA';
   summaryTitleRow.getCell(1).font = { size: 11, bold: true };
   summaryTitleRow.height = 20;
   worksheet.mergeCells(`A${currentRow-1}:B${currentRow-1}`);
@@ -199,7 +181,7 @@ const addSummarySection = async (worksheet, startRow, summary, role) => {
     statRow.getCell(2).font = { bold: true, color: { argb: 'FF4F46E5' } };
   });
 
-  currentRow++; // Empty row
+  currentRow++;
   return currentRow;
 };
 
@@ -210,7 +192,6 @@ const addTableHeaders = async (worksheet, startRow, headers, role, reportType) =
     const cell = headerRow.getCell(idx + 1);
     cell.value = header;
     
-    // Styling berbeda berdasarkan role
     const headerStyle = getHeaderStyle(role, reportType);
     cell.fill = headerStyle.fill;
     cell.font = headerStyle.font;
@@ -243,13 +224,12 @@ const getHeaderStyle = (role, reportType) => {
     alignment: { vertical: 'middle', horizontal: 'center' }
   };
 
-  // Custom styling untuk role berbeda
   if (role === 'bk') {
-    baseStyle.fill.fgColor = { argb: 'FF8B5CF6' }; // Purple
+    baseStyle.fill.fgColor = { argb: 'FF8B5CF6' };
   } else if (role === 'teacher') {
-    baseStyle.fill.fgColor = { argb: 'FF10B981' }; // Green
+    baseStyle.fill.fgColor = { argb: 'FF10B981' };
   } else if (role === 'homeroom') {
-    baseStyle.fill.fgColor = { argb: 'FFF59E0B' }; // Orange
+    baseStyle.fill.fgColor = { argb: 'FFF59E0B' };
   }
 
   return baseStyle;
@@ -265,10 +245,8 @@ const addDataRows = async (worksheet, startRow, data, headers, role, reportType)
       const cell = dataRow.getCell(colIdx + 1);
       cell.value = value || '-';
       
-      // Apply conditional formatting
       applyConditionalFormatting(cell, headers[colIdx], value, role, reportType);
       
-      // Base styling
       cell.border = {
         top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
         left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
@@ -278,7 +256,6 @@ const addDataRows = async (worksheet, startRow, data, headers, role, reportType)
       cell.alignment = { vertical: 'middle', wrapText: true };
     });
 
-    // Alternating row colors
     if (rowIdx % 2 === 0) {
       dataRow.eachCell(cell => {
         if (!cell.fill || !cell.fill.fgColor || cell.fill.fgColor.argb === 'FFFFFFFF') {
@@ -295,10 +272,10 @@ const addDataRows = async (worksheet, startRow, data, headers, role, reportType)
   return currentRow;
 };
 
-// ✅ UPDATED: Tambah conditional formatting untuk field baru
+// UPDATED: Support untuk Nilai Akhir dan semua header baru
 const applyConditionalFormatting = (cell, header, value, role, reportType) => {
-  // Formatting untuk attendance percentage
-  if (header === 'Persentase' && typeof value === 'string' && value.includes('%')) {
+  // Formatting untuk percentage (Persentase, Tingkat Kehadiran)
+  if ((header === 'Persentase' || header === 'Tingkat Kehadiran') && typeof value === 'string' && value.includes('%')) {
     const pct = parseFloat(value);
     if (pct >= 90) {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
@@ -312,8 +289,8 @@ const applyConditionalFormatting = (cell, header, value, role, reportType) => {
     }
   }
 
-  // Formatting untuk nilai (grades)
-  if ((header === 'Nilai' || header === 'score') && typeof value === 'number') {
+  // Formatting untuk nilai/score (Nilai, Nilai Akhir, Rata-rata Nilai)
+  if ((header === 'Nilai' || header === 'Nilai Akhir' || header === 'Rata-rata Nilai' || header === 'score') && typeof value === 'number') {
     if (value >= 85) {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
       cell.font = { color: { argb: 'FF065F46' }, bold: true };
@@ -326,7 +303,7 @@ const applyConditionalFormatting = (cell, header, value, role, reportType) => {
     }
   }
 
-  // ✅ NEW: Formatting khusus untuk TINGKAT URGENSI
+  // BK-specific formatting
   if (role === 'bk' && (header === 'Tingkat Urgensi' || header === 'Urgensi')) {
     if (value === 'Darurat') {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } };
@@ -343,7 +320,6 @@ const applyConditionalFormatting = (cell, header, value, role, reportType) => {
     }
   }
 
-  // ✅ NEW: Formatting khusus untuk KATEGORI MASALAH
   if (role === 'bk' && (header === 'Kategori Masalah' || header === 'Kategori')) {
     const categoryColors = {
       'Akademik': { bg: 'FFDBEAFE', fg: 'FF6B21A8' },
@@ -365,7 +341,6 @@ const applyConditionalFormatting = (cell, header, value, role, reportType) => {
     }
   }
 
-  // ✅ UPDATED: Formatting untuk STATUS LAYANAN
   if (role === 'bk' && (header === 'Status Layanan' || header === 'Status')) {
     if (value === 'Selesai') {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
@@ -379,7 +354,6 @@ const applyConditionalFormatting = (cell, header, value, role, reportType) => {
     }
   }
 
-  // ✅ NEW: Formatting untuk FOLLOW-UP
   if (role === 'bk' && header === 'Follow-up') {
     if (value === 'Ya') {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9D5FF' } };
@@ -391,19 +365,16 @@ const applyConditionalFormatting = (cell, header, value, role, reportType) => {
   }
 };
 
-// ✅ UPDATED: BK Special Section dengan insights baru
 const addBKSpecialSection = async (worksheet, startRow, data) => {
   let currentRow = startRow;
   
-  // Add empty row
   currentRow++;
   
   const insightRow = worksheet.getRow(currentRow++);
-  insightRow.getCell(1).value = '📈 INSIGHT KONSELING';
+  insightRow.getCell(1).value = 'INSIGHT KONSELING';
   insightRow.getCell(1).font = { size: 11, bold: true, color: { argb: 'FF8B5CF6' } };
   worksheet.mergeCells(`A${currentRow-1}:M${currentRow-1}`);
   
-  // Calculate insights
   const urgencyCount = {
     darurat: data.filter(d => d.urgensi === 'Darurat').length,
     tinggi: data.filter(d => d.urgensi === 'Tinggi').length,
@@ -419,28 +390,25 @@ const addBKSpecialSection = async (worksheet, startRow, data) => {
 
   const topCategory = Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0];
   
-  // Insight 1: Urgensi
   const urgencyRow = worksheet.getRow(currentRow++);
-  urgencyRow.getCell(1).value = '⚠️ Distribusi Urgensi:';
+  urgencyRow.getCell(1).value = 'Distribusi Urgensi:';
   urgencyRow.getCell(2).value = `Darurat: ${urgencyCount.darurat} | Tinggi: ${urgencyCount.tinggi} | Sedang: ${urgencyCount.sedang} | Rendah: ${urgencyCount.rendah}`;
   urgencyRow.getCell(1).font = { bold: true };
   worksheet.mergeCells(`B${currentRow-1}:M${currentRow-1}`);
 
-  // Insight 2: Top Category
   if (topCategory) {
     const categoryRow = worksheet.getRow(currentRow++);
-    categoryRow.getCell(1).value = '📊 Kategori Tertinggi:';
+    categoryRow.getCell(1).value = 'Kategori Tertinggi:';
     categoryRow.getCell(2).value = `${topCategory[0]} (${topCategory[1]} kasus)`;
     categoryRow.getCell(1).font = { bold: true };
     categoryRow.getCell(2).font = { color: { argb: 'FF8B5CF6' }, bold: true };
     worksheet.mergeCells(`B${currentRow-1}:M${currentRow-1}`);
   }
 
-  // Insight 3: Follow-up
   const followupCount = data.filter(d => d.followup === 'Ya').length;
   if (followupCount > 0) {
     const followupRow = worksheet.getRow(currentRow++);
-    followupRow.getCell(1).value = '📅 Perlu Follow-up:';
+    followupRow.getCell(1).value = 'Perlu Follow-up:';
     followupRow.getCell(2).value = `${followupCount} siswa memerlukan konseling lanjutan`;
     followupRow.getCell(1).font = { bold: true };
     followupRow.getCell(2).font = { color: { argb: 'FF7E22CE' }, bold: true };
@@ -465,12 +433,10 @@ const autoFitColumns = async (worksheet, headers, data, role) => {
   worksheet.columns.forEach((column, idx) => {
     let maxLength = 0;
 
-    // Cek header
     if (headers[idx]) {
       maxLength = headers[idx].toString().length;
     }
 
-    // Cek semua row data
     if (data && data.length > 0) {
       data.forEach(row => {
         const keys = Object.keys(row);
@@ -484,10 +450,8 @@ const autoFitColumns = async (worksheet, headers, data, role) => {
       });
     }
 
-    // Set width dengan special handling untuk text panjang
     let width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, maxLength + PADDING));
     
-    // Special case untuk kolom permasalahan/hasil
     if (headers[idx] && (headers[idx].includes('Permasalahan') || headers[idx].includes('Hasil'))) {
       width = Math.min(35, width);
     }
@@ -496,6 +460,7 @@ const autoFitColumns = async (worksheet, headers, data, role) => {
   });
 };
 
+// UPDATED: Support untuk semua report types termasuk teacher reports
 const generateFilename = (metadata, role, reportType) => {
   const roleNames = {
     admin: 'Admin',
@@ -508,9 +473,12 @@ const generateFilename = (metadata, role, reportType) => {
     'teachers': 'DataGuru',
     'students': 'DataSiswa', 
     'attendance-recap': 'RekapKehadiran',
+    'attendance': 'PresensiHarian',
     'grades': 'DataNilai',
-    'counseling': 'DataKonseling',
-    'attendance': 'PresensiHarian'
+    'teacher-grades': 'NilaiMapel',
+    'teacher-attendance': 'PresensiMapel',
+    'teacher-recap': 'RekapitulasiKelas',
+    'counseling': 'DataKonseling'
   };
   
   const timestamp = new Date().toISOString().split('T')[0];
@@ -524,13 +492,11 @@ const getLastRow = async (worksheet) => {
   return worksheet.lastRow ? worksheet.lastRow.number + 1 : 1;
 };
 
-// Export function untuk BK yang butuh CSV
 const exportToCSV = (data, headers, filename) => {
   const csvHeaders = headers;
   const csvData = data.map(item => 
     headers.map(header => {
       const value = item[header] || '';
-      // Handle quotes in CSV
       return `"${String(value).replace(/"/g, '""')}"`;
     })
   );
