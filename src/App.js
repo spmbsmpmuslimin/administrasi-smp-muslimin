@@ -11,6 +11,8 @@ import Classes from './pages/Classes';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import Grades from './pages/Grades';
+import TeacherSchedule from './pages/TeacherSchedule';
+import CatatanPerkembangan from './pages/CatatanPerkembangan';
 import Setting from './setting/setting';
 
 // Import dari folder khusus
@@ -25,7 +27,7 @@ function App() {
   const [showToast, setShowToast] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ✅ CHECK localStorage saat app load - RESTORE USER KALAU ADA
+  // CHECK localStorage saat app load - RESTORE USER KALAU ADA
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     
@@ -33,9 +35,9 @@ function App() {
       try {
         const userData = JSON.parse(storedUser);
         setUser(userData);
-        console.log('✅ User restored from localStorage');
+        console.log('User restored from localStorage');
       } catch (err) {
-        console.error('❌ Error parsing stored user:', err);
+        console.error('Error parsing stored user:', err);
         localStorage.removeItem('user');
       }
     }
@@ -43,7 +45,7 @@ function App() {
     setLoading(false);
   }, []);
 
-  // ✅ Auto hide toast setelah 3 detik
+  // Auto hide toast setelah 3 detik
   useEffect(() => {
     if (showToast) {
       const timer = setTimeout(() => {
@@ -55,29 +57,29 @@ function App() {
     }
   }, [showToast]);
 
-  // ✅ Handler Login - SELALU SIMPAN ke localStorage (untuk refresh tetap login)
+  // Handler Login - SELALU SIMPAN ke localStorage
   const handleLogin = useCallback((userData, rememberMe = false) => {
     setUser(userData);
     
-    // ✅ SELALU simpan ke localStorage supaya refresh tetap login
+    // SELALU simpan ke localStorage supaya refresh tetap login
     localStorage.setItem('user', JSON.stringify(userData));
     
-    // ✅ Kalau rememberMe TRUE, set flag tambahan (untuk close browser tetap login)
+    // Kalau rememberMe TRUE, set flag tambahan
     if (rememberMe) {
       localStorage.setItem('rememberMe', 'true');
-      console.log('✅ Remember Me enabled - will persist after browser close');
+      console.log('Remember Me enabled - will persist after browser close');
     } else {
       localStorage.setItem('rememberMe', 'false');
-      console.log('ℹ️ Remember Me disabled - will logout after browser close');
+      console.log('Remember Me disabled - will logout after browser close');
     }
     
     setToastMessage(`Selamat datang, ${userData.full_name}! 👋`);
     setToastType('success');
     setShowToast(true);
-    console.log('✅ User logged in:', userData);
+    console.log('User logged in:', userData);
   }, []);
 
-  // ✅ Handler Logout + HAPUS dari localStorage
+  // Handler Logout + HAPUS dari localStorage
   const handleLogout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('user');
@@ -85,7 +87,7 @@ function App() {
     setToastMessage('Logout berhasil! 👋');
     setToastType('info');
     setShowToast(true);
-    console.log('✅ User logged out and storage cleared');
+    console.log('User logged out and storage cleared');
   }, []);
 
   const handleShowToast = useCallback((message, type = 'info') => {
@@ -111,7 +113,7 @@ function App() {
     }
   };
 
-  // ✅ Protected Route
+  // Protected Route
   const ProtectedRoute = useCallback(({ children }) => {
     if (loading) {
       return (
@@ -130,7 +132,7 @@ function App() {
     return children;
   }, [user, loading]);
 
-  // ✅ Layout Wrapper
+  // Layout Wrapper
   const LayoutWrapper = useCallback(({ children }) => (
     <Layout user={user} onLogout={handleLogout}>
       {children}
@@ -155,7 +157,7 @@ function App() {
         v7_relativeSplatPath: true
       }}
     >
-      {/* ✅ TOAST HANYA MUNCUL 3 DETIK SAJA */}
+      {/* TOAST HANYA MUNCUL 3 DETIK SAJA */}
       {showToast && (
         <div className={getToastStyle()}>
           <div className="flex items-center gap-2">
@@ -232,6 +234,22 @@ function App() {
           <ProtectedRoute>
             <LayoutWrapper>
               <Grades user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/jadwal-saya" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <TeacherSchedule user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/catatan-perkembangan" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <CatatanPerkembangan user={user} onShowToast={handleShowToast} />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

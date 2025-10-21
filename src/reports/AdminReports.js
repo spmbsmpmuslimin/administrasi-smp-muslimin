@@ -14,27 +14,226 @@ import {
   FileSpreadsheet,
   TrendingUp,
   AlertCircle,
+  AlertTriangle,
+  TrendingDown,
 } from "lucide-react";
 import { exportToExcel } from "./ReportExcel";
 import ReportModal from "./ReportModal";
 
-// ✅ IMPORT HELPERS
 import {
   fetchTeachersData,
   fetchStudentsData,
   fetchAttendanceRecapData,
   fetchGradesData,
+  calculateFinalGrades,
   buildFilterDescription,
-  TEACHER_ROLES
+  TEACHER_ROLES,
+  REPORT_HEADERS
 } from './ReportHelpers';
 
-// ==================== COMPONENTS ====================
+// ==================== MONITORING HELPERS ====================
+
+const calculateAtRiskStudents = async (classId = null) => {
+  try {
+    // Ambil attendance recap
+    const filters = classId ? { class_id: classId } : {};
+    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    let attendanceQuery = supabase
+      .from('attendances')
+      .select('student_id, status, students!inner(nis, full_name, class_id)')
+      .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
+    
+    if (classId) {
+      attendanceQuery = attendanceQuery.eq('students.class_id', classId);
+    }
+
+    const { data: attendanceData } = await attendanceQuery;
+
+    // Calculate attendance percentage per student
+    const studentAttendance = {};
+    attendanceData?.forEach(record => {
+      const key = record.student_id;
+      if (!studentAttendance[key]) {
+        studentAttendance[key] = {
+          nis: record.students?.nis,
+          name: record.students?.full_name,
+          class_id: record.students?.class_id,
+          total: 0,
+          present: 0,
+        };
+      }
+      studentAttendance[key].total++;
+      if (record.status?.toLowerCase() === 'hadir') {
+        studentAttendance[key].present++;
+      }
+    });
+
+    // Filter students dengan absensi < 75%
+    const atRiskAttendance = Object.values(studentAttendance)
+      .filter(s => s.total >= 10 && (s.present / s.total) * 100 < 75)
+      .map(s => ({
+        ...s,
+        attendanceRate: Math.round((s.present / s.total) * 100),
+        riskType: 'attendance'
+      }))
+      .sort((a, b) => a.attendanceRate - b.attendanceRate);
+
+    return atRiskAttendance;
+  } catch (err) {
+    console.error('Error calculating at-risk students:', err);
+    return [];
+  }
+};
+
+const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
+  try {
+    let gradesQuery = supabase
+      .from('grades')
+      .select('*, students!inner(nis, full_name, class_id)');
+
+    if (classId) {
+      gradesQuery = gradesQuery.eq('students.class_id', classId);
+    }
+
+    const { data: gradesData } = await gradesQuery;
+    
+    // Calculate final grades
+    const finalGrades = calculateFinalGrades(gradesData || []);
+    
+    // Filter students dengan nilai < threshold di multiple subjects
+    const studentGrades = {};
+    finalGrades.forEach(grade => {
+      const key = grade.student_id;
+      if (!studentGrades[key]) {
+        studentGrades[key] = {
+          nis: grade.nis,
+          name: grade.full_name,
+          class_id: grade.class_id,
+          subjects: [],
+          averageGrade: 0,
+        };
+      }
+      studentGrades[key].subjects.push({
+        subject: grade.subject,
+        score: grade.final_score
+      });
+    });
+
+    // Calculate average dan filter
+    const atRiskGrades = Object.values(studentGrades)
+      .map(s => ({
+        ...s,
+        averageGrade: Math.round((s.subjects.reduce((sum, subj) => sum + subj.score, 0) / s.subjects.length) * 100) / 100,
+        lowSubjects: s.subjects.filter(subj => subj.score < threshold).length,
+      }))
+      .filter(s => s.averageGrade < threshold || s.lowSubjects >= 2)
+      .sort((a, b) => a.averageGrade - b.averageGrade);
+
+    return atRiskGrades;
+  } catch (err) {
+    console.error('Error calculating low grade students:', err);
+    return [];
+  }
+};
+
+const calculateHighRiskStudents = (atRiskAttendance, atRiskGrades) => {
+  // Combine both lists: students yang ada di both lists
+  const highRisk = [];
+  
+  atRiskAttendance.forEach(attStudent => {
+    const gradeStudent = atRiskGrades.find(g => g.nis === attStudent.nis);
+    if (gradeStudent) {
+      highRisk.push({
+        nis: attStudent.nis,
+        name: attStudent.name,
+        class_id: attStudent.class_id,
+        attendanceRate: attStudent.attendanceRate,
+        averageGrade: gradeStudent.averageGrade,
+        riskScore: Math.round((((75 - attStudent.attendanceRate) / 25) + ((70 - gradeStudent.averageGrade) / 70)) * 50), // 0-100
+      });
+    }
+  });
+
+  return highRisk.sort((a, b) => b.riskScore - a.riskScore);
+};
+
+// ==================== MONITORING CARDS ====================
+
+const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className={`bg-white rounded-lg border-2 ${color} p-4`}>
+        <div className="flex items-center gap-2 mb-3">
+          <Icon className="w-5 h-5" />
+          <h3 className="font-semibold text-slate-800">{title}</h3>
+        </div>
+        <p className="text-sm text-slate-500">Tidak ada data yang perlu perhatian</p>
+      </div>
+    );
+  }
+
+  const displayData = data.slice(0, 5);
+
+  return (
+    <div className={`bg-white rounded-lg border-2 ${color} p-4`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Icon className="w-5 h-5" />
+        <h3 className="font-semibold text-slate-800">{title}</h3>
+        <span className="ml-auto bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">
+          {data.length} siswa
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        {displayData.map((student, idx) => (
+          <div key={idx} className="bg-slate-50 p-2 rounded text-xs">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-semibold text-slate-800">{student.name}</p>
+                <p className="text-slate-600">{student.nis} • Kelas {student.class_id}</p>
+              </div>
+              {type === 'attendance' && (
+                <span className={`px-2 py-1 rounded font-bold ${
+                  student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {student.attendanceRate}%
+                </span>
+              )}
+              {type === 'grades' && (
+                <span className={`px-2 py-1 rounded font-bold ${
+                  student.averageGrade >= 70 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {student.averageGrade}
+                </span>
+              )}
+              {type === 'highRisk' && (
+                <span className="px-2 py-1 rounded font-bold bg-red-100 text-red-700">
+                  ⚠️ {student.riskScore}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {data.length > 5 && (
+        <p className="text-xs text-slate-500 mt-3 pt-3 border-t">
+          +{data.length - 5} siswa lainnya
+        </p>
+      )}
+    </div>
+  );
+};
+
+// ==================== STAT CARD ====================
 
 const StatCard = ({ icon: Icon, label, value, subtitle, colorClass }) => (
   <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow">
     <div className="flex items-center gap-3">
-      <div
-        className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass}`}>
+      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass}`}>
         <Icon className="w-6 h-6" />
       </div>
       <div className="flex-1">
@@ -45,129 +244,6 @@ const StatCard = ({ icon: Icon, label, value, subtitle, colorClass }) => (
     </div>
   </div>
 );
-
-const FilterPanel = ({
-  filters,
-  onFilterChange,
-  onReset,
-  classOptions = [],
-  academicYears = [],
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const activeFilterCount = useMemo(() => {
-    return Object.values(filters).filter((v) => v && v !== "").length;
-  }, [filters]);
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-slate-600" />
-          <h3 className="font-semibold text-slate-800">Filter Laporan</h3>
-          {activeFilterCount > 0 && (
-            <span className="ml-2 bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">
-              {activeFilterCount} Filter Aktif
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-slate-600 hover:text-slate-800 transition-colors">
-          <ChevronDown
-            className={`w-5 h-5 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-      </div>
-
-      {isOpen && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-3 border-t border-slate-200">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Kelas
-            </label>
-            <select
-              value={filters.class_id || ""}
-              onChange={(e) => onFilterChange("class_id", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-              <option value="">Semua Kelas</option>
-              {classOptions.map((cls) => (
-                <option key={cls} value={cls}>
-                  {cls}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Dari Tanggal
-            </label>
-            <input
-              type="date"
-              value={filters.start_date || ""}
-              onChange={(e) => onFilterChange("start_date", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Sampai Tanggal
-            </label>
-            <input
-              type="date"
-              value={filters.end_date || ""}
-              onChange={(e) => onFilterChange("end_date", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Tahun Ajaran
-            </label>
-            <select
-              value={filters.academic_year || ""}
-              onChange={(e) => onFilterChange("academic_year", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-              <option value="">Semua Tahun</option>
-              {academicYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Semester
-            </label>
-            <select
-              value={filters.semester || ""}
-              onChange={(e) => onFilterChange("semester", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-              <option value="">Semua Semester</option>
-              <option value="1">Semester 1</option>
-              <option value="2">Semester 2</option>
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={onReset}
-              className="w-full px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
-              <X className="w-4 h-4" />
-              Reset Filter
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // ==================== MAIN COMPONENT ====================
 
@@ -184,6 +260,12 @@ const AdminReports = ({ user, onShowToast }) => {
   });
   const [classOptions, setClassOptions] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
+  
+  // Monitoring data
+  const [atRiskAttendance, setAtRiskAttendance] = useState([]);
+  const [atRiskGrades, setAtRiskGrades] = useState([]);
+  const [highRiskStudents, setHighRiskStudents] = useState([]);
+  const [monitoringLoading, setMonitoringLoading] = useState(false);
 
   const REPORT_CARDS = [
     {
@@ -218,7 +300,7 @@ const AdminReports = ({ user, onShowToast }) => {
       icon: BarChart3,
       title: "Data Nilai",
       description: "Nilai akademik semua mata pelajaran",
-      stats: `Rata-rata: ${stats.averageGrade || 0}`,
+      stats: `Rata-rata Akhir: ${stats.averageGrade || 0}`,
       colorCard: "bg-purple-50 border-purple-200",
       colorIcon: "bg-purple-100 text-purple-600",
     },
@@ -235,6 +317,7 @@ const AdminReports = ({ user, onShowToast }) => {
         fetchStats(),
         fetchClassOptions(),
         fetchAcademicYears(),
+        fetchMonitoringData(),
       ]);
     } catch (err) {
       setError("Gagal memuat data awal");
@@ -281,7 +364,7 @@ const AdminReports = ({ user, onShowToast }) => {
 
         supabase
           .from("grades")
-          .select("score")
+          .select("*, students(nis, full_name, class_id)")
           .eq("academic_year", currentAcademicYear),
       ]);
 
@@ -294,13 +377,11 @@ const AdminReports = ({ user, onShowToast }) => {
           ? Math.round((presentCount / attendanceData.length) * 100)
           : 0;
 
-      const grades = gradesResult.data || [];
-      const avgGrade =
-        grades.length > 0
-          ? (
-              grades.reduce((sum, g) => sum + (g.score || 0), 0) / grades.length
-            ).toFixed(1)
-          : 0;
+      const finalGrades = calculateFinalGrades(gradesResult.data || []);
+      const finalScores = finalGrades.map(g => g.final_score).filter(s => !isNaN(s));
+      const avgGrade = finalScores.length > 0
+        ? (finalScores.reduce((a, b) => a + b, 0) / finalScores.length).toFixed(1)
+        : 0;
 
       setStats({
         totalTeachers: teachersResult.count || 0,
@@ -312,6 +393,26 @@ const AdminReports = ({ user, onShowToast }) => {
       });
     } catch (err) {
       console.error("Error fetching stats:", err);
+    }
+  };
+
+  const fetchMonitoringData = async () => {
+    setMonitoringLoading(true);
+    try {
+      const classId = filters.class_id || null;
+      
+      const [attRisk, gradeRisk] = await Promise.all([
+        calculateAtRiskStudents(classId),
+        calculateLowGradeStudents(classId, 70),
+      ]);
+
+      setAtRiskAttendance(attRisk);
+      setAtRiskGrades(gradeRisk);
+      setHighRiskStudents(calculateHighRiskStudents(attRisk, gradeRisk));
+    } catch (err) {
+      console.error("Error fetching monitoring data:", err);
+    } finally {
+      setMonitoringLoading(false);
     }
   };
 
@@ -348,11 +449,7 @@ const AdminReports = ({ user, onShowToast }) => {
     }
   };
 
-  // ✅ REFACTORED: Fetch Report Data using helpers
   const fetchReportData = async (reportType) => {
-    console.log("📊 Fetching report:", reportType);
-    console.log("📅 Filters:", filters);
-
     let reportTitle = "";
     let result = null;
 
@@ -365,7 +462,7 @@ const AdminReports = ({ user, onShowToast }) => {
 
         case "students":
           reportTitle = "DATA SISWA";
-          result = await fetchStudentsData(filters, true); // Include grade
+          result = await fetchStudentsData(filters, true);
           break;
 
         case "attendance-recap":
@@ -375,7 +472,8 @@ const AdminReports = ({ user, onShowToast }) => {
 
         case "grades":
           reportTitle = "DATA NILAI AKADEMIK";
-          result = await fetchGradesData(filters);
+          result = await fetchGradesData(filters, null, true);
+          result.headers = REPORT_HEADERS.gradesFinalOnly;
           break;
 
         default:
@@ -388,7 +486,7 @@ const AdminReports = ({ user, onShowToast }) => {
       };
 
     } catch (err) {
-      console.error("❌ Query error:", err);
+      console.error("Error in fetchReportData:", err);
       throw err;
     }
   };
@@ -398,7 +496,6 @@ const AdminReports = ({ user, onShowToast }) => {
     setError(null);
     try {
       const data = await fetchReportData(reportType);
-      console.log("✅ Preview data ready:", data);
 
       setTimeout(() => {
         setPreviewModal({ isOpen: true, data, type: reportType });
@@ -448,7 +545,7 @@ const AdminReports = ({ user, onShowToast }) => {
         reportType: reportType,
       });
 
-      const successMsg = `File Excel berhasil didownload`;
+      const successMsg = "File Excel berhasil didownload";
       if (onShowToast) {
         onShowToast(successMsg, "success");
       } else {
@@ -478,6 +575,10 @@ const AdminReports = ({ user, onShowToast }) => {
     setFilters({});
   };
 
+  const handleApplyFilter = () => {
+    fetchMonitoringData();
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -491,7 +592,7 @@ const AdminReports = ({ user, onShowToast }) => {
                 Laporan Admin
               </h1>
               <p className="text-slate-600">
-                SMP Muslimin Cililin - Kelola dan export laporan sekolah
+                SMP Muslimin Cililin - Monitoring & Export Laporan Sekolah
               </p>
             </div>
           </div>
@@ -530,7 +631,7 @@ const AdminReports = ({ user, onShowToast }) => {
             icon={Users}
             label="Total Guru"
             value={stats.totalTeachers || 0}
-            subtitle="Guru aktif (exclude Kepsek)"
+            subtitle="Guru aktif"
             colorClass="bg-blue-100 text-blue-600"
           />
           <StatCard
@@ -551,26 +652,90 @@ const AdminReports = ({ user, onShowToast }) => {
             icon={TrendingUp}
             label="Kehadiran Hari Ini"
             value={`${stats.attendanceToday || 0}%`}
-            subtitle={`Rata-rata nilai: ${stats.averageGrade || 0}`}
+            subtitle={`Rata-rata nilai akhir: ${stats.averageGrade || 0}`}
             colorClass="bg-indigo-100 text-indigo-600"
           />
         </div>
 
-        <FilterPanel
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          onReset={handleResetFilters}
-          classOptions={classOptions}
-          academicYears={academicYears}
-        />
+        {/* MONITORING SECTION */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
+            Monitoring Siswa
+          </h2>
 
+          <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Filter Kelas (Opsional)
+                </label>
+                <select
+                  value={filters.class_id || ""}
+                  onChange={(e) => handleFilterChange("class_id", e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                  <option value="">Semua Kelas</option>
+                  {classOptions.map((cls) => (
+                    <option key={cls} value={cls}>
+                      {cls}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end gap-2">
+                <button
+                  onClick={handleApplyFilter}
+                  disabled={monitoringLoading}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium">
+                  Refresh Data
+                </button>
+                <button
+                  onClick={handleResetFilters}
+                  className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium">
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {monitoringLoading ? (
+            <div className="text-center py-8">
+              <p className="text-slate-600">Memproses data monitoring...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <MonitoringCard
+                title="Siswa Absensi Tinggi (< 75%)"
+                data={atRiskAttendance}
+                icon={TrendingDown}
+                color="bg-red-50 border-red-200"
+                type="attendance"
+              />
+              <MonitoringCard
+                title="Siswa Nilai Rendah (< 70)"
+                data={atRiskGrades}
+                icon={AlertCircle}
+                color="bg-orange-50 border-orange-200"
+                type="grades"
+              />
+              <MonitoringCard
+                title="Siswa High Risk (Both Issues)"
+                data={highRiskStudents}
+                icon={AlertTriangle}
+                color="bg-red-50 border-red-300"
+                type="highRisk"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* EXPORT REPORTS SECTION */}
         <div className="mb-6">
           <h2 className="text-xl font-bold text-slate-800 mb-4">
-            Export Laporan
+            Export Laporan Lengkap
           </h2>
         </div>
 
-        {/* ✅ COMPACT CARDS - 4 in 1 row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {REPORT_CARDS.map((card) => {
             const Icon = card.icon;
@@ -579,19 +744,18 @@ const AdminReports = ({ user, onShowToast }) => {
                 key={card.id}
                 className={`bg-white rounded-lg shadow-sm border-2 ${card.colorCard} p-4 hover:shadow-md transition-shadow`}>
                 <div className="flex items-center justify-between mb-3">
-                  <div
-                    className={`w-11 h-11 rounded-xl ${card.colorIcon} flex items-center justify-center`}>
+                  <div className={`w-11 h-11 rounded-xl ${card.colorIcon} flex items-center justify-center`}>
                     <Icon className="w-5 h-5" />
                   </div>
                 </div>
 
-                <h3 className="text-sm font-semibold text-slate-800 mb-1.5 leading-tight">
+                <h3 className="text-sm font-semibold text-slate-800 mb-1.5">
                   {card.title}
                 </h3>
-                <p className="text-xs text-slate-600 mb-2 leading-tight line-clamp-2">
+                <p className="text-xs text-slate-600 mb-2 line-clamp-2">
                   {card.description}
                 </p>
-                <p className="text-xs text-slate-500 mb-3 font-medium">
+                <p className="text-xs text-slate-500 mb-3">
                   {card.stats}
                 </p>
 
@@ -599,14 +763,14 @@ const AdminReports = ({ user, onShowToast }) => {
                   <button
                     onClick={() => previewReport(card.id)}
                     disabled={loading}
-                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-slate-50 disabled:cursor-not-allowed text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-slate-50 text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5">
                     <Eye className="w-3.5 h-3.5" />
                     Preview
                   </button>
                   <button
                     onClick={() => downloadReport(card.id, "xlsx")}
                     disabled={loading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5">
                     <FileSpreadsheet className="w-3.5 h-3.5" />
                     Export
                   </button>
@@ -624,20 +788,6 @@ const AdminReports = ({ user, onShowToast }) => {
             </div>
           </div>
         )}
-
-        {/* ✅ REFACTORED NOTE */}
-        <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-green-800 mb-2">
-            ✅ Refactored with ReportHelpers
-          </h4>
-          <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
-            <li>Menggunakan fetchTeachersData(), fetchStudentsData(), fetchAttendanceRecapData(), fetchGradesData()</li>
-            <li>Menghapus ~300 lines duplicated formatting code</li>
-            <li>Konsisten dengan format data lowercase (hadir, sakit, izin, alpa)</li>
-            <li>buildFilterDescription() untuk metadata Excel</li>
-            <li>Compact 4-card layout untuk clean UI</li>
-          </ul>
-        </div>
       </div>
 
       <ReportModal

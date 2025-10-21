@@ -7,7 +7,6 @@ const Layout = ({ user, onLogout, children }) => {
   const navigate = useNavigate()
   const location = useLocation()
   
-  // State management
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
@@ -15,12 +14,10 @@ const Layout = ({ user, onLogout, children }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [isLaptop, setIsLaptop] = useState(false)
   
-  // Refs for cleanup and outside click detection
   const timerRef = useRef(null)
   const navigationTimeoutRef = useRef(null)
   const profileDropdownRef = useRef(null)
 
-  // Detect screen size and adjust sidebar behavior
   useEffect(() => {
     const handleResize = () => {
       const isLaptopSize = window.innerWidth >= 1024
@@ -39,7 +36,6 @@ const Layout = ({ user, onLogout, children }) => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Update clock every second with proper cleanup
   useEffect(() => {
     const updateTime = () => setCurrentTime(new Date())
 
@@ -57,7 +53,6 @@ const Layout = ({ user, onLogout, children }) => {
     }
   }, [])
 
-  // Handle click outside profile dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
@@ -71,7 +66,6 @@ const Layout = ({ user, onLogout, children }) => {
     }
   }, [])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) {
@@ -83,7 +77,6 @@ const Layout = ({ user, onLogout, children }) => {
     }
   }, [])
 
-  // Reset navigation state when location changes
   useEffect(() => {
     if (isNavigating) {
       setIsNavigating(false)
@@ -95,7 +88,6 @@ const Layout = ({ user, onLogout, children }) => {
     }
   }, [location.pathname])
 
-  // Format date for display (Indonesian)
   const formatDate = (date) => {
     const options = {
       weekday: 'short',
@@ -105,7 +97,6 @@ const Layout = ({ user, onLogout, children }) => {
     return date.toLocaleDateString('id-ID', options)
   }
 
-  // Format time for display
   const formatTime = (date) => {
     return date.toLocaleTimeString('id-ID', {
       hour: '2-digit',
@@ -113,7 +104,6 @@ const Layout = ({ user, onLogout, children }) => {
     })
   }
 
-  // Get current page from URL
   const getCurrentPage = () => {
     const path = location.pathname
     if (path === '/dashboard') return 'dashboard'
@@ -122,6 +112,8 @@ const Layout = ({ user, onLogout, children }) => {
     if (path === '/classes') return 'classes'
     if (path === '/attendance') return 'attendance'
     if (path === '/grades') return 'grades'
+    if (path === '/jadwal-saya') return 'jadwal-saya'
+    if (path === '/catatan-perkembangan') return 'catatan-perkembangan'
     if (path === '/konseling') return 'konseling'
     if (path === '/reports') return 'reports'
     if (path === '/easymodul') return 'easymodul'
@@ -130,7 +122,6 @@ const Layout = ({ user, onLogout, children }) => {
     return 'dashboard'
   }
 
-  // Get current page name for display
   const getCurrentPageName = () => {
     const pathMap = {
       '/dashboard': 'Dashboard',
@@ -139,6 +130,8 @@ const Layout = ({ user, onLogout, children }) => {
       '/classes': 'Data Kelas',
       '/attendance': 'Kehadiran',
       '/grades': 'Nilai Akademik',
+      '/jadwal-saya': 'Jadwal Saya',
+      '/catatan-perkembangan': 'Catatan Perkembangan',
       '/konseling': 'Konseling', 
       '/reports': 'Laporan',
       '/easymodul': 'EasyModul',
@@ -148,7 +141,6 @@ const Layout = ({ user, onLogout, children }) => {
     return pathMap[location.pathname] || 'Dashboard'
   }
 
-  // Get page subtitle based on role and current page
   const getPageSubtitle = () => {
     if (!user) return 'SMP Muslimin'
     
@@ -163,17 +155,20 @@ const Layout = ({ user, onLogout, children }) => {
         'Data Kelas': 'Kelola Data Kelas Sekolah',
         Kehadiran: 'Kelola Kehadiran Siswa',
         'Nilai Akademik': 'Kelola Nilai Akademik Siswa',
+        'Jadwal Saya': 'Lihat Jadwal Mengajar',
+        'Catatan Perkembangan': 'Kelola Catatan Perkembangan Siswa',
         Konseling: 'Kelola Data Konseling BK/BP',
         Laporan: 'Generate dan Kelola Laporan',
         EasyModul: 'Kelola Modul Pembelajaran',
         SPMB: 'Seleksi Penerimaan Murid Baru',
         Pengaturan: 'Pengaturan Sistem Sekolah',
       },
-      guru_bk: { // ✅ GURU BK
+      guru_bk: {
         Dashboard: 'Dashboard Bimbingan Konseling',
         'Data Siswa': 'Lihat Data Siswa Sekolah',
         'Data Guru': 'Lihat Data Guru Sekolah',
-        Laporan: 'Laporan BK/BP', // ✅ MENU LAPORAN DENGAN SUBTITLE KHUSUS
+        'Jadwal Saya': 'Lihat Jadwal Mengajar',
+        Laporan: 'Laporan BK/BP',
         Konseling: 'Kelola Data Konseling Siswa',
       },
       teacher: homeroom_class_id ? {
@@ -183,6 +178,8 @@ const Layout = ({ user, onLogout, children }) => {
         'Data Kelas': `Informasi Kelas`,
         Kehadiran: `Input kehadiran Kelas`,
         'Nilai Akademik': `Input Nilai Kelas`,
+        'Jadwal Saya': 'Lihat Jadwal Mengajar Kelas',
+        'Catatan Perkembangan': `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
         Laporan: `Laporan Kelas`,
         EasyModul: 'Akses Modul Pembelajaran',
         Pengaturan: 'Pengaturan Akun',
@@ -193,6 +190,7 @@ const Layout = ({ user, onLogout, children }) => {
         'Data Kelas': 'Lihat informasi kelas',
         Kehadiran: 'Input kehadiran mata pelajaran',
         'Nilai Akademik': 'Input nilai mata pelajaran',
+        'Jadwal Saya': 'Lihat Jadwal Mengajar',
         Laporan: 'Laporan mata pelajaran',
         EasyModul: 'Akses modul pembelajaran',
         Pengaturan: 'Pengaturan akun',
@@ -202,7 +200,6 @@ const Layout = ({ user, onLogout, children }) => {
     return subtitles[role]?.[currentPage] || 'SMP Muslimin'
   }
 
-  // Enhanced navigation handler with debouncing
   const handleNavigate = useCallback((page) => {
     if (isNavigating) return
 
@@ -213,8 +210,10 @@ const Layout = ({ user, onLogout, children }) => {
       'classes': '/classes',
       'attendance': '/attendance',
       'grades': '/grades',
+      'jadwal-saya': '/jadwal-saya',
+      'catatan-perkembangan': '/catatan-perkembangan',
       'konseling': '/konseling',
-      'reports': '/reports', // ✅ ROUTE LAPORAN
+      'reports': '/reports',
       'easymodul': '/easymodul',
       'spmb': '/spmb',
       'settings': '/settings'
@@ -223,7 +222,6 @@ const Layout = ({ user, onLogout, children }) => {
     const path = routes[page]
     if (!path) return
 
-    // Don't navigate if already on the same page
     if (location.pathname === path) return
 
     setIsNavigating(true)
@@ -231,7 +229,6 @@ const Layout = ({ user, onLogout, children }) => {
     try {
       navigate(path)
       
-      // Safety timeout to reset navigation state
       navigationTimeoutRef.current = setTimeout(() => {
         setIsNavigating(false)
       }, 2000)
@@ -241,17 +238,14 @@ const Layout = ({ user, onLogout, children }) => {
     }
   }, [isNavigating, location.pathname, navigate])
 
-  // Toggle mobile menu
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
   }
 
-  // Toggle profile dropdown
   const toggleProfileDropdown = () => {
     setProfileDropdownOpen(!profileDropdownOpen)
   }
 
-  // Get user role display
   const getUserRoleDisplay = () => {
     if (!user) return 'User'
     const { role, homeroom_class_id } = user
@@ -267,7 +261,6 @@ const Layout = ({ user, onLogout, children }) => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-white">
-      {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -275,17 +268,16 @@ const Layout = ({ user, onLogout, children }) => {
         />
       )}
 
-      {/* Sidebar - Laptop/Desktop */}
       <div className={`fixed inset-y-0 left-0 z-50 ${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 hidden lg:block`}>
         <Sidebar 
           currentPage={getCurrentPage()}
           onNavigate={handleNavigate}
           isOpen={isSidebarOpen}
           userRole={user?.role}
+          isWaliKelas={!!user?.homeroom_class_id}
         />
       </div>
 
-      {/* Sidebar - Mobile/Tablet */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 transform ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       } transition-transform duration-300 ease-in-out lg:hidden`}>
@@ -294,21 +286,17 @@ const Layout = ({ user, onLogout, children }) => {
           onNavigate={handleNavigate}
           isOpen={true}
           userRole={user?.role}
+          isWaliKelas={!!user?.homeroom_class_id}
           onClose={() => setMobileMenuOpen(false)}
         />
       </div>
       
-      {/* Main Content */}
       <main className={`flex-1 min-h-screen transition-all duration-300 ${isSidebarOpen && isLaptop ? 'lg:ml-64' : 'ml-0'}`}>
         
-        {/* Mobile-First Header */}
         <header className="bg-white shadow-md shadow-blue-100/50 border-b border-blue-100 sticky top-0 z-30">
-          {/* Mobile Header */}
           <div className="px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-4">
             <div className="flex justify-between items-center">
-              {/* Left Side */}
               <div className="flex items-center gap-2 sm:gap-3 flex-1">
-                {/* Menu Button */}
                 <button
                   onClick={isLaptop ? () => setIsSidebarOpen(!isSidebarOpen) : toggleMobileMenu}
                   className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors touch-manipulation"
@@ -317,7 +305,6 @@ const Layout = ({ user, onLogout, children }) => {
                   {isSidebarOpen && isLaptop ? <X size={20} /> : <Menu size={20} />}
                 </button>
 
-                {/* Page Info */}
                 <div className="flex flex-col min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h1 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
@@ -333,9 +320,7 @@ const Layout = ({ user, onLogout, children }) => {
                 </div>
               </div>
 
-              {/* Right Side */}
               <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
-                {/* Compact Time Display - Mobile */}
                 <div className="lg:hidden flex flex-col items-center min-w-[60px]">
                   <div className="flex items-center gap-1 text-blue-600">
                     <Clock size={14} className="text-blue-500 flex-shrink-0" />
@@ -348,7 +333,6 @@ const Layout = ({ user, onLogout, children }) => {
                   </span>
                 </div>
 
-                {/* Full Clock - Laptop */}
                 <div className="hidden lg:flex bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl px-4 py-3 min-w-[280px] shadow-sm">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2 text-blue-600 text-sm font-medium mb-1">
@@ -372,7 +356,6 @@ const Layout = ({ user, onLogout, children }) => {
                   </div>
                 </div>
 
-                {/* Profile Dropdown */}
                 <div className="relative" ref={profileDropdownRef}>
                   <button 
                     onClick={toggleProfileDropdown}
@@ -385,10 +368,8 @@ const Layout = ({ user, onLogout, children }) => {
                     </span>
                   </button>
                   
-                  {/* Dropdown */}
                   {profileDropdownOpen && (
                     <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white border border-blue-100 rounded-xl shadow-lg z-50">
-                      {/* User Info Header */}
                       <div className="px-4 py-3 border-b border-blue-50 bg-gradient-to-r from-blue-50 to-white">
                         <p className="font-semibold text-gray-900 text-sm truncate">
                           {user?.full_name || user?.username || 'User'}
@@ -406,7 +387,6 @@ const Layout = ({ user, onLogout, children }) => {
                         )}
                       </div>
                       
-                      {/* Menu Items */}
                       <div className="py-2">
                         <button
                           onClick={() => {
@@ -419,7 +399,6 @@ const Layout = ({ user, onLogout, children }) => {
                           <span className="font-medium">Dashboard</span>
                         </button>
                         
-                        {/* Pengaturan - Only for Admin */}
                         {user?.role === 'admin' && (
                           <button
                             onClick={() => {
@@ -452,7 +431,6 @@ const Layout = ({ user, onLogout, children }) => {
           </div>
         </header>
 
-        {/* Main Content */}
         <div className="bg-gradient-to-br from-blue-50 to-white min-h-screen p-3 sm:p-4 lg:p-6">
           {isNavigating ? (
             <div className="flex items-center justify-center h-32 sm:h-48">

@@ -1,9 +1,7 @@
 import React from "react";
 
-const Sidebar = ({ currentPage, onNavigate, isOpen, userRole }) => {
-  // ✅ Check if user is Guru BK
+const Sidebar = ({ currentPage, onNavigate, isOpen, userRole, isWaliKelas }) => {
   const isGuruBK = userRole === "guru_bk";
-  // ✅ Check if user is Admin
   const isAdmin = userRole === "admin";
 
   return (
@@ -56,7 +54,7 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, userRole }) => {
           </a>
         </div>
 
-        {/* Master Data - Tampil untuk semua kecuali conditional */}
+        {/* Master Data */}
         {!isGuruBK && (
           <div className="mb-5">
             <div className="px-6 pb-2 text-xs uppercase font-semibold text-blue-300 tracking-wider">
@@ -125,7 +123,7 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, userRole }) => {
           </div>
         )}
 
-        {/* ✅ GURU BK: Master Data Section - Hanya Data Guru & Data Siswa */}
+        {/* GURU BK: Master Data Section */}
         {isGuruBK && (
           <div className="mb-5">
             <div className="px-6 pb-2 text-xs uppercase font-semibold text-blue-300 tracking-wider">
@@ -174,7 +172,7 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, userRole }) => {
           </div>
         )}
 
-        {/* Akademik - Tampil untuk semua role, tapi isinya conditional */}
+        {/* Akademik */}
         <div className="mb-5">
           <div className="px-6 pb-2 text-xs uppercase font-semibold text-blue-300 tracking-wider">
             Akademik
@@ -224,7 +222,51 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, userRole }) => {
             </a>
           )}
 
-          {/* ✅ KONSELING - UNTUK ADMIN DAN GURU BK */}
+          {/* Jadwal Saya - Untuk Guru & Wali Kelas (bukan Guru BK) */}
+          {!isGuruBK && (userRole === "teacher" || userRole === "homeroom") && (
+            <a
+              href="#jadwal-saya"
+              className={`
+                flex items-center gap-3 px-6 py-2.5 text-white font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 hover:pl-8 rounded-r-full mr-4
+                ${currentPage === "jadwal-saya" 
+                  ? "bg-blue-800 border-r-4 border-blue-400 font-semibold text-blue-100 pl-8" 
+                  : "hover:text-blue-100"
+                }
+              `}
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate("jadwal-saya");
+              }}>
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="flex-1 text-sm">Jadwal Saya</span>
+            </a>
+          )}
+
+          {/* CATATAN SISWA - Khusus Wali Kelas */}
+          {isWaliKelas && !isGuruBK && (
+            <a
+              href="#catatan-perkembangan"
+              className={`
+                flex items-center gap-3 px-6 py-2.5 text-white font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 hover:pl-8 rounded-r-full mr-4
+                ${currentPage === "catatan-perkembangan" 
+                  ? "bg-blue-800 border-r-4 border-blue-400 font-semibold text-blue-100 pl-8" 
+                  : "hover:text-blue-100"
+                }
+              `}
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate("catatan-perkembangan");
+              }}>
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span className="flex-1 text-sm">Catatan Siswa</span>
+            </a>
+          )}
+
+          {/* Konseling - Untuk Admin & Guru BK */}
           {(isAdmin || isGuruBK) && (
             <a
               href="#konseling"
@@ -246,7 +288,7 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, userRole }) => {
             </a>
           )}
 
-          {/* 🔴 PERUBAHAN UTAMA DI SINI: Laporan - DITAMPILKAN UNTUK ADMIN, GURU, DAN GURU BK */}
+          {/* Laporan - Untuk Admin, Guru & Guru BK */}
           {(isAdmin || isGuruBK || userRole === "teacher") && (
             <a
               href="#reports"
@@ -296,7 +338,7 @@ const Sidebar = ({ currentPage, onNavigate, isOpen, userRole }) => {
           </div>
         )}
 
-        {/* Admin Settings - conditional, Hidden untuk Guru BK */}
+        {/* Admin Settings */}
         {userRole === "admin" && (
           <div className="mb-4">
             <div className="px-6 pb-2 text-xs uppercase font-semibold text-blue-300 tracking-wider">
