@@ -17,7 +17,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-// ✅ Import helpers and components
 import { exportToExcel } from "./ReportExcel";
 import ReportModal from "./ReportModal";
 import {
@@ -25,8 +24,8 @@ import {
   fetchAttendanceDailyData,
   fetchAttendanceRecapData,
   buildFilterDescription,
-  formatAttendanceStatus,
-  formatDate
+  calculateFinalGrades,
+  REPORT_HEADERS,
 } from './ReportHelpers';
 
 // ==================== COMPONENTS ====================
@@ -365,58 +364,57 @@ const TeacherReports = ({ user }) => {
         }
       }
 
-      // Fetch grades stats
       let avgGrade = 0;
       let totalGrades = 0;
-      const { data: grades, error: gradeError } = await supabase
+      const { data: allGrades, error: gradeError } = await supabase
         .from("grades")
-        .select("score, students!inner(nis, full_name, class_id)")
+        .select("*, students!inner(nis, full_name, class_id)")
         .eq("teacher_id", userUUID);
 
-      if (!gradeError && grades && grades.length > 0) {
-        totalGrades = grades.length;
-        const validScores = grades.filter(
-          (g) => g.score != null && !isNaN(g.score)
-        );
+      if (!gradeError && allGrades && allGrades.length > 0) {
+        const finalGrades = calculateFinalGrades(allGrades);
+        totalGrades = finalGrades.length;
+        
+        const validScores = finalGrades
+          .map(g => g.final_score)
+          .filter(score => score != null && !isNaN(score));
+        
         if (validScores.length > 0) {
           avgGrade = Math.round(
-            validScores.reduce((sum, g) => sum + (g.score || 0), 0) /
-              validScores.length
+            validScores.reduce((sum, score) => sum + score, 0) / validScores.length
           );
         }
 
-        // Alert for low performing students
-        const studentScores = {};
-        grades.forEach((g) => {
-          const studentId = g.students?.nis;
+        const studentFinalScores = {};
+        finalGrades.forEach((g) => {
+          const studentId = g.nis;
           if (!studentId) return;
 
-          if (!studentScores[studentId]) {
-            studentScores[studentId] = {
-              name: g.students.full_name,
+          if (!studentFinalScores[studentId]) {
+            studentFinalScores[studentId] = {
+              name: g.full_name,
               nis: studentId,
-              class_id: g.students.class_id,
-              scores: [],
+              class_id: g.class_id,
+              final_scores: [],
             };
           }
-          if (g.score != null && !isNaN(g.score)) {
-            studentScores[studentId].scores.push(g.score);
+          if (g.final_score != null && !isNaN(g.final_score)) {
+            studentFinalScores[studentId].final_scores.push(g.final_score);
           }
         });
 
-        const alerts = Object.values(studentScores)
+        const alerts = Object.values(studentFinalScores)
           .filter((student) => {
-            if (student.scores.length < 3) return false;
-            const avg =
-              student.scores.reduce((a, b) => a + b, 0) / student.scores.length;
+            if (student.final_scores.length < 1) return false;
+            const avg = student.final_scores.reduce((a, b) => a + b, 0) / student.final_scores.length;
             return avg < 75;
           })
           .map((student) => ({
             ...student,
             avgScore: Math.round(
-              student.scores.reduce((a, b) => a + b, 0) / student.scores.length
+              student.final_scores.reduce((a, b) => a + b, 0) / student.final_scores.length
             ),
-            totalGrades: student.scores.length,
+            totalGrades: student.final_scores.length,
           }))
           .sort((a, b) => a.avgScore - b.avgScore)
           .slice(0, 5);
@@ -424,7 +422,6 @@ const TeacherReports = ({ user }) => {
         setAlertStudents(alerts);
       }
 
-      // Fetch attendance stats (last 30 days)
       let attendanceRate = 0;
       if (classIds.length > 0) {
         const thirtyDaysAgo = new Date();
@@ -485,13 +482,11 @@ const TeacherReports = ({ user }) => {
     }
   };
 
-  // ✅ REFACTORED: Fetch Report Data using helpers
   const fetchReportData = async (reportType) => {
     if (!userUUID || !teacherId) {
       throw new Error("User ID atau Teacher ID tidak tersedia");
     }
 
-    // Get class IDs for teacher
     const { data: teacherAssignments } = await supabase
       .from("teacher_assignments")
       .select("class_id")
@@ -509,105 +504,132 @@ const TeacherReports = ({ user }) => {
 
     try {
       switch (reportType) {
-        case "grades":
-          reportTitle = `DATA NILAI ${
+        case "grades": {
+          reportTitle = `DATA NILAI AKHIR ${
             filters.subject || stats.subject || "MATA PELAJARAN"
           }`;
           
-          // ✅ Use helper with teacher ID filter
-          result = await fetchGradesData(filters, userUUID);
+          result = await fetchGradesData(filters, userUUID, true);
+          result.headers = REPORT_HEADERS.gradesFinalOnly;
           
-          // Override headers to exclude teacher column (it's the user itself)
-          result.headers = [
-            "Tahun Ajaran",
-            "Semester",
-            "NIS",
-            "Nama Siswa",
-            "Kelas",
-            "Mata Pelajaran",
-            "Jenis",
-            "Nilai"
-          ];
-          
-          // Add extra summary stat
-          const scores = result.fullData.map(d => d.score).filter(s => !isNaN(s) && s !== 0);
-          result.summary.push({
-            label: 'Di Bawah KKM (75)',
-            value: scores.filter(s => s < 75).length
-          });
           break;
+        }
 
-        case "attendance":
+        case "attendance": {
           reportTitle = "PRESENSI SISWA";
           
-          // ✅ Use helper but filter by class IDs
           const attendanceFilters = { ...filters };
-          if (!filters.class_id && classIds.length > 0) {
-            // If no specific class selected, just use first class for now
-            // In production, you might want to handle multiple classes differently
-            delete attendanceFilters.class_id;
-          }
+          delete attendanceFilters.class_id;
           
           result = await fetchAttendanceDailyData(attendanceFilters);
           
-          // Filter results to only include teacher's classes
-          result.fullData = result.fullData.filter(row => 
-            classIds.includes(row.class_id)
-          );
-          result.preview = result.fullData.slice(0, 100);
-          result.total = result.fullData.length;
+          if (result.fullData && result.fullData.length > 0) {
+            result.fullData = result.fullData.filter(row => {
+              const rowClass = row.kelas || row.class_id || row.Kelas;
+              return classIds.includes(rowClass);
+            });
+            
+            if (filters.class_id) {
+              result.fullData = result.fullData.filter(row => {
+                const rowClass = row.kelas || row.class_id || row.Kelas;
+                return rowClass === filters.class_id;
+              });
+            }
+            
+            result.preview = result.fullData.slice(0, 100);
+            result.total = result.fullData.length;
+          }
+          
+          if (!result.fullData || result.fullData.length === 0) {
+            throw new Error("Tidak ada data presensi untuk kelas yang Anda ajar");
+          }
+          
           break;
+        }
 
-        case "attendance-recap":
+        case "attendance-recap": {
           reportTitle = "REKAPITULASI KEHADIRAN";
           
-          // ✅ Use helper with class filter
           const recapFilters = { ...filters };
+          delete recapFilters.class_id;
+          
           result = await fetchAttendanceRecapData(recapFilters);
           
-          // Filter to teacher's classes only
-          result.fullData = result.fullData.filter(row => 
-            classIds.includes(row.class_id)
-          );
-          result.preview = result.fullData.slice(0, 100);
-          result.total = result.fullData.length;
+          if (result.fullData && result.fullData.length > 0) {
+            result.fullData = result.fullData.filter(row => {
+              const rowClass = row.kelas || row.class_id || row.Kelas;
+              return classIds.includes(rowClass);
+            });
+            
+            if (filters.class_id) {
+              result.fullData = result.fullData.filter(row => {
+                const rowClass = row.kelas || row.class_id || row.Kelas;
+                return rowClass === filters.class_id;
+              });
+            }
+            
+            result.preview = result.fullData.slice(0, 100);
+            result.total = result.fullData.length;
+            
+            const totalHadir = result.fullData.reduce((sum, r) => sum + (r.hadir || r.Hadir || 0), 0);
+            const totalPresensi = result.fullData.reduce((sum, r) => sum + (r.total || r.Total || 0), 0);
+            const avgAttendance = totalPresensi > 0 
+              ? Math.round((totalHadir / totalPresensi) * 100) 
+              : 0;
+            
+            result.summary = [
+              { label: 'Siswa Terekap', value: result.fullData.length },
+              { label: 'Rata-rata Hadir', value: `${avgAttendance}%` }
+            ];
+          }
           
-          // Recalculate summary for filtered data
-          const totalHadir = result.fullData.reduce((sum, r) => sum + (r.hadir || 0), 0);
-          const totalPresensi = result.fullData.reduce((sum, r) => sum + (r.total || 0), 0);
-          const avgAttendance = totalPresensi > 0 
-            ? Math.round((totalHadir / totalPresensi) * 100) 
-            : 0;
+          if (!result.fullData || result.fullData.length === 0) {
+            throw new Error("Tidak ada data rekapitulasi untuk kelas yang Anda ajar");
+          }
           
-          result.summary = [
-            { label: 'Siswa Terekap', value: result.fullData.length },
-            { label: 'Rata-rata Hadir', value: `${avgAttendance}%` }
-          ];
           break;
+        }
 
-        case "class-performance":
+        case "class-performance": {
           reportTitle = `PERFORMA PER KELAS - ${
             filters.subject || stats.subject
           }`;
           
-          // ✅ Custom fetch for class performance (can't use generic helper)
-          let query = supabase
-            .from("grades")
-            .select(`score, students!inner(nis, full_name, class_id)`)
-            .eq("teacher_id", userUUID);
-
-          if (filters.subject) query = query.eq("subject", filters.subject);
-          if (filters.academic_year) query = query.eq("academic_year", filters.academic_year);
-          if (filters.semester) query = query.eq("semester", filters.semester);
-
-          const { data: perfData, error: perfError } = await query;
-          if (perfError) throw perfError;
-
-          // Group by class
+          const performanceFilters = {
+            academic_year: filters.academic_year,
+            semester: filters.semester,
+          };
+          
+          const gradesResult = await fetchGradesData(performanceFilters, userUUID, true);
+          let finalGradesData = gradesResult.fullData || [];
+          
+          const targetSubject = filters.subject || stats.subject;
+          
+          if (targetSubject) {
+            finalGradesData = finalGradesData.filter(row => {
+              // ✅ CORRECT: use 'subject' not 'mata_pelajaran'
+              const rowSubject = row.subject || '';
+              return rowSubject.toLowerCase().trim() === targetSubject.toLowerCase().trim();
+            });
+          }
+          
+          // ✅ CORRECT: use 'class_id' not 'kelas'
+          finalGradesData = finalGradesData.filter(row => 
+            classIds.includes(row.class_id)
+          );
+          
+          if (finalGradesData.length === 0) {
+            throw new Error(
+              `Tidak ada data nilai akhir untuk ${targetSubject} di kelas Anda. ` +
+              `Pastikan ada nilai NH, UTS, dan UAS yang sudah diinput.`
+            );
+          }
+          
           const classSummary = {};
-          perfData.forEach((row) => {
-            const classId = row.students?.class_id;
-            if (!classId || !classIds.includes(classId)) return; // Only teacher's classes
+          finalGradesData.forEach((row) => {
+            // ✅ CORRECT: use 'class_id' not 'kelas'
+            const classId = row.class_id;
+            if (!classId) return;
 
             if (!classSummary[classId]) {
               classSummary[classId] = {
@@ -616,20 +638,20 @@ const TeacherReports = ({ user }) => {
                 students: new Set(),
               };
             }
-            classSummary[classId].scores.push(row.score);
-            classSummary[classId].students.add(row.students.nis);
+            
+            // ✅ CORRECT: use 'final_score' not 'nilai_akhir'
+            const finalScore = parseFloat(row.final_score);
+            if (!isNaN(finalScore)) {
+              classSummary[classId].scores.push(finalScore);
+              classSummary[classId].students.add(row.nis);
+            }
           });
 
           const classAnalysis = Object.values(classSummary).map((cls) => {
-            const validScores = cls.scores.filter(
-              (s) => s != null && !isNaN(s)
-            );
-            const avg =
-              validScores.length > 0
-                ? Math.round(
-                    validScores.reduce((a, b) => a + b, 0) / validScores.length
-                  )
-                : 0;
+            const validScores = cls.scores.filter(s => !isNaN(s));
+            const avg = validScores.length > 0
+              ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length)
+              : 0;
 
             return {
               class_id: cls.class_id,
@@ -638,7 +660,7 @@ const TeacherReports = ({ user }) => {
               average: avg,
               highest: validScores.length > 0 ? Math.max(...validScores) : 0,
               lowest: validScores.length > 0 ? Math.min(...validScores) : 0,
-              below_kkm: validScores.filter((s) => s < 75).length,
+              below_kkm: validScores.filter(s => s < 75).length,
             };
           });
 
@@ -652,25 +674,18 @@ const TeacherReports = ({ user }) => {
             "Di Bawah KKM",
           ];
 
-          const overallAvg =
-            classAnalysis.length > 0
-              ? Math.round(
-                  classAnalysis.reduce((sum, cls) => sum + cls.average, 0) /
-                    classAnalysis.length
-                )
-              : 0;
+          const overallAvg = classAnalysis.length > 0
+            ? Math.round(classAnalysis.reduce((sum, cls) => sum + cls.average, 0) / classAnalysis.length)
+            : 0;
 
           const summary = [
             { label: "Total Kelas", value: classAnalysis.length },
             { label: "Rata-rata Keseluruhan", value: overallAvg },
             {
               label: "Kelas Terbaik",
-              value:
-                classAnalysis.length > 0
-                  ? classAnalysis.reduce((best, cls) =>
-                      cls.average > best.average ? cls : best
-                    ).class_id
-                  : "-",
+              value: classAnalysis.length > 0
+                ? classAnalysis.reduce((best, cls) => cls.average > best.average ? cls : best).class_id
+                : "-",
             },
           ];
 
@@ -682,6 +697,7 @@ const TeacherReports = ({ user }) => {
             summary
           };
           break;
+        }
 
         default:
           throw new Error("Invalid report type");
@@ -745,8 +761,7 @@ const TeacherReports = ({ user }) => {
       const filterDescription = buildFilterDescription(filters);
 
       const metadata = {
-        title:
-          data.reportTitle || `LAPORAN ${stats.subject || "MATA PELAJARAN"}`,
+        title: data.reportTitle || `LAPORAN ${stats.subject || "MATA PELAJARAN"}`,
         academicYear: filters.academic_year,
         semester: filters.semester ? `Semester ${filters.semester}` : null,
         filters: filterDescription,
@@ -773,9 +788,9 @@ const TeacherReports = ({ user }) => {
     {
       id: "grades",
       icon: BarChart3,
-      title: "Laporan Nilai Akademik",
-      description: "Export semua data nilai mata pelajaran",
-      stats: `${stats.totalGrades || 0} nilai terinput`,
+      title: "Laporan Nilai Akhir",
+      description: "Export data nilai akhir mata pelajaran",
+      stats: `${stats.totalGrades || 0} nilai akhir`,
       color: "bg-purple-50 border-purple-200",
       iconColor: "text-purple-600",
     },
@@ -801,7 +816,7 @@ const TeacherReports = ({ user }) => {
       id: "class-performance",
       icon: TrendingUp,
       title: "Performa Per Kelas",
-      description: "Perbandingan nilai antar kelas",
+      description: "Perbandingan nilai akhir antar kelas",
       stats: `${stats.totalClasses || 0} kelas diampu`,
       color: "bg-blue-50 border-blue-200",
       iconColor: "text-blue-600",
@@ -824,7 +839,7 @@ const TeacherReports = ({ user }) => {
             </div>
           </div>
           <p className="text-slate-600">
-            Kelola laporan nilai dan kehadiran siswa di kelas yang Anda ajar
+            Kelola laporan nilai akhir dan kehadiran siswa di kelas yang Anda ajar
           </p>
         </div>
 
@@ -879,7 +894,7 @@ const TeacherReports = ({ user }) => {
           />
           <StatCard
             icon={BarChart3}
-            label="Rata-rata Nilai"
+            label="Rata-rata Nilai Akhir"
             value={stats.averageGrade > 0 ? stats.averageGrade : "N/A"}
             color="purple"
           />
@@ -888,7 +903,7 @@ const TeacherReports = ({ user }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <StatCard
             icon={FileText}
-            label="Total Nilai Terinput"
+            label="Total Nilai Akhir"
             value={stats.totalGrades || 0}
             color="cyan"
           />
@@ -920,8 +935,7 @@ const TeacherReports = ({ user }) => {
                   🎯 Siswa Perlu Perhatian Khusus
                 </h3>
                 <p className="text-sm text-orange-800 mb-3">
-                  Siswa dengan rata-rata nilai di bawah KKM (75) - perlu
-                  bimbingan tambahan
+                  Siswa dengan nilai akhir di bawah KKM (75) - perlu bimbingan tambahan
                 </p>
                 <div className="space-y-2">
                   {alertStudents.map((student, idx) => (
@@ -934,8 +948,7 @@ const TeacherReports = ({ user }) => {
                             {student.name} ({student.nis}) - {student.class_id}
                           </p>
                           <p className="text-xs text-slate-600">
-                            Rata-rata: {student.avgScore} • Total nilai:{" "}
-                            {student.totalGrades}
+                            Nilai Akhir: {student.avgScore}
                           </p>
                         </div>
                         <div className="text-right">
@@ -957,7 +970,6 @@ const TeacherReports = ({ user }) => {
           </div>
         )}
 
-        {/* ✅ COMPACT CARDS - 4 in 1 row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {reports.map((report) => {
             const Icon = report.icon;
@@ -1033,7 +1045,7 @@ const TeacherReports = ({ user }) => {
                 Cakupan Data
               </h4>
               <p className="text-sm text-slate-600">
-                Laporan mencakup data nilai dan kehadiran siswa di kelas yang
+                Laporan mencakup data <strong>nilai akhir</strong> dan kehadiran siswa di kelas yang
                 Anda ajar.
               </p>
             </div>
@@ -1059,8 +1071,7 @@ const TeacherReports = ({ user }) => {
               </h4>
               <ul className="text-sm text-indigo-700 space-y-1">
                 <li>
-                  • <strong>Laporan Nilai</strong> untuk export semua data nilai
-                  mata pelajaran Anda
+                  • <strong>Laporan Nilai Akhir</strong> untuk export data nilai akhir mata pelajaran Anda
                 </li>
                 <li>
                   • <strong>Presensi Harian</strong> untuk monitoring kehadiran
@@ -1072,7 +1083,7 @@ const TeacherReports = ({ user }) => {
                 </li>
                 <li>
                   • <strong>Performa Per Kelas</strong> untuk membandingkan
-                  performa antar kelas
+                  performa nilai akhir antar kelas
                 </li>
                 <li>
                   • Gunakan filter tanggal untuk laporan presensi periode

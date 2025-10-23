@@ -25,7 +25,7 @@ const EasyModul = () => {
 
   const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
   const GROQ_API_KEY =
-    "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";
+    "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";
 
   const semuaDimensi = [
     "Keimanan dan Ketakwaan",

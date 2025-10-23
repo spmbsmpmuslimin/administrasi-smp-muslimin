@@ -206,26 +206,19 @@ const HomeroomTeacherReports = ({ user }) => {
       setTeacherAssignments(data || []);
 
       if (data && data.length > 0) {
-        const classIds = data.map((a) => a.class_id);
-        const subjects = [...new Set(data.map((a) => a.subject))];
+        // ✅ GANTI dengan RPC call
+        const { data: stats, error: statsError } = await supabase.rpc(
+          "get_teacher_stats",
+          { p_teacher_uuid: user.id }
+        );
 
-        const { data: gradesData } = await supabase
-          .from("grades")
-          .select("id", { count: "exact" })
-          .eq("teacher_id", user.id)
-          .in("class_id", classIds);
-
-        const { data: attendanceData } = await supabase
-          .from("attendances")
-          .select("id", { count: "exact" })
-          .eq("teacher_id", user.id)
-          .in("class_id", classIds);
+        if (statsError) throw statsError;
 
         setTeacherStats({
-          totalClasses: classIds.length,
-          totalSubjects: subjects.length,
-          totalGrades: gradesData?.length || 0,
-          totalAttendances: attendanceData?.length || 0,
+          totalClasses: stats.total_classes || 0,
+          totalSubjects: stats.total_subjects || 0,
+          totalGrades: stats.total_grades || 0,
+          totalAttendances: stats.total_attendances || 0,
         });
       }
     } catch (err) {
@@ -255,67 +248,17 @@ const HomeroomTeacherReports = ({ user }) => {
 
   const fetchStats = async () => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-
-      const [studentsResult, attendanceResult] = await Promise.all([
-        supabase
-          .from("students")
-          .select("id, nis, full_name", { count: "exact" })
-          .eq("class_id", user.homeroom_class_id)
-          .eq("is_active", true),
-        supabase
-          .from("attendances")
-          .select("student_id, status")
-          .eq("date", today),
-      ]);
-
-      const totalStudents = studentsResult.count || 0;
-      const studentIds = studentsResult.data?.map((s) => s.id) || [];
-      const presentToday =
-        attendanceResult.data?.filter(
-          (a) =>
-            studentIds.includes(a.student_id) &&
-            a.status?.toLowerCase() === "hadir"
-        ).length || 0;
-
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const { data: attendanceData } = await supabase
-        .from("attendances")
-        .select("student_id, status, students!inner(nis, full_name, class_id)")
-        .eq("students.class_id", user.homeroom_class_id)
-        .gte("date", thirtyDaysAgo.toISOString().split("T")[0]);
-
-      const studentAttendance = {};
-      attendanceData?.forEach((record) => {
-        if (!studentAttendance[record.student_id]) {
-          studentAttendance[record.student_id] = {
-            name: record.students.full_name,
-            nis: record.students.nis,
-            total: 0,
-            present: 0,
-          };
-        }
-        studentAttendance[record.student_id].total++;
-        const status = record.status?.toLowerCase() || "";
-        if (status === "hadir") {
-          studentAttendance[record.student_id].present++;
-        }
+      // ✅ GANTI dengan RPC call
+      const { data, error } = await supabase.rpc("get_homeroom_stats", {
+        p_class_id: user.homeroom_class_id,
+        p_days_back: 30,
       });
 
-      const alerts = Object.entries(studentAttendance)
-        .filter(([_, data]) => {
-          if (data.total < 10) return false;
-          const rate = (data.present / data.total) * 100;
-          return rate < 75;
-        })
-        .map(([id, data]) => ({
-          ...data,
-          rate: Math.round((data.present / data.total) * 100),
-        }));
+      if (error) throw error;
 
-      setAlertStudents(alerts);
+      // ✅ Set state langsung dari result
+      const totalStudents = data.total_students || 0;
+      const presentToday = data.present_today || 0;
 
       setStats({
         totalStudents,
@@ -324,9 +267,11 @@ const HomeroomTeacherReports = ({ user }) => {
           totalStudents > 0
             ? Math.round((presentToday / totalStudents) * 100)
             : 0,
-        alerts: alerts.length,
+        alerts: data.alert_students?.length || 0,
         className: user.homeroom_class_id,
       });
+
+      setAlertStudents(data.alert_students || []);
     } catch (err) {
       console.error("Error fetching stats:", err);
       setError("Gagal memuat statistik");
@@ -481,74 +426,13 @@ const HomeroomTeacherReports = ({ user }) => {
           case "teacher-recap":
             reportTitle = "REKAPITULASI KELAS YANG DIAMPU";
 
-            const recapByClass = {};
+            // ✅ GANTI dengan RPC call
+            const { data: recapData, error: recapError } = await supabase.rpc(
+              "get_teacher_recap",
+              { p_teacher_uuid: user.id }
+            );
 
-            for (const assignment of teacherAssignments) {
-              // Ambil SEMUA grades (NH, UTS, UAS) untuk class & subject ini
-              const { data: allClassGrades } = await supabase
-                .from("grades")
-                .select(
-                  "*, students(nis, full_name, class_id), users(full_name)"
-                )
-                .eq("teacher_id", user.id)
-                .eq("class_id", assignment.class_id)
-                .eq("subject", assignment.subject);
-
-              console.log("DEBUG teacher-recap:", {
-                class: assignment.class_id,
-                subject: assignment.subject,
-                gradesCount: allClassGrades?.length || 0,
-                firstGrade: allClassGrades?.[0],
-              });
-
-              // Calculate final grades
-              const finalGrades = calculateFinalGrades(allClassGrades || []);
-              const finalScores = finalGrades
-                .map((g) => g.final_score)
-                .filter((s) => !isNaN(s));
-
-              console.log("DEBUG final grades:", {
-                finalGradesCount: finalGrades.length,
-                finalScoresCount: finalScores.length,
-                finalScores: finalScores,
-              });
-
-              const avgGrade =
-                finalScores.length > 0
-                  ? Math.round(
-                      (finalScores.reduce((a, b) => a + b, 0) /
-                        finalScores.length) *
-                        100
-                    ) / 100
-                  : 0;
-
-              const { data: classAtt } = await supabase
-                .from("attendances")
-                .select("status")
-                .eq("teacher_id", user.id)
-                .eq("class_id", assignment.class_id)
-                .eq("subject", assignment.subject);
-
-              const totalAtt = (classAtt || []).length;
-              const hadirAtt = (classAtt || []).filter(
-                (a) => a.status?.toLowerCase() === "hadir"
-              ).length;
-              const attRate =
-                totalAtt > 0 ? Math.round((hadirAtt / totalAtt) * 100) : 0;
-
-              recapByClass[assignment.class_id] = {
-                class_id: assignment.class_id,
-                subject: assignment.subject,
-                academic_year: assignment.academic_year,
-                semester: assignment.semester,
-                total_grades: finalScores.length,
-                avg_grade: avgGrade,
-                total_attendance: totalAtt,
-                attendance_rate: `${attRate}%`,
-              };
-            }
-
-            const recapArray = Object.values(recapByClass);
+            if (recapError) throw recapError;
 
             result = {
               headers: [
@@ -561,14 +445,14 @@ const HomeroomTeacherReports = ({ user }) => {
                 "Total Presensi",
                 "Tingkat Kehadiran",
               ],
-              preview: recapArray,
-              total: recapArray.length,
-              fullData: recapArray,
+              preview: recapData,
+              total: recapData.length,
+              fullData: recapData,
               summary: [
-                { label: "Total Kelas", value: recapArray.length },
+                { label: "Total Kelas", value: recapData.length },
                 {
                   label: "Total Mata Pelajaran",
-                  value: [...new Set(recapArray.map((r) => r.subject))].length,
+                  value: [...new Set(recapData.map((r) => r.subject))].length,
                 },
               ],
             };

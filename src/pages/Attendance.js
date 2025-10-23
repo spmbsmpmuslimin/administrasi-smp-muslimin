@@ -250,11 +250,21 @@ const Attendance = ({ user, onShowToast }) => {
           return;
         }
 
+        // ✅ FIX: AMBIL TAHUN AJARAN AKTIF
+        const { data: activeYear } = await supabase
+          .from("academic_years")
+          .select("year, semester")
+          .eq("is_active", true)
+          .single();
+
+        // ✅ FIX: TAMBAH FILTER TAHUN AJARAN & SEMESTER
         const { data: assignmentData, error: assignmentError } = await supabase
           .from("teacher_assignments")
           .select("class_id")
           .eq("teacher_id", teacherId)
-          .eq("subject", selectedSubject);
+          .eq("subject", selectedSubject)
+          .eq("academic_year", activeYear?.year)
+          .eq("semester", activeYear?.semester);
 
         if (assignmentError) throw assignmentError;
         if (!assignmentData?.length) {
@@ -291,10 +301,10 @@ const Attendance = ({ user, onShowToast }) => {
   }, [selectedSubject, teacherId, isHomeroomTeacher, homeroomClass]);
 
   useEffect(() => {
-    if (selectedClass && !isHomeroomDaily() && !studentsLoaded) {
+    if (selectedClass && !isHomeroomDaily()) {
       fetchStudentsForClass(selectedClass);
     }
-  }, [selectedClass, studentsLoaded]);
+  }, [selectedClass]);
 
   const fetchStudentsForClass = async (classId) => {
     if (!classId) {
@@ -705,7 +715,7 @@ const Attendance = ({ user, onShowToast }) => {
 
             <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border-l-4 border-red-500">
               <div className="flex items-center">
-                <div className="text-red-600 text-lg sm:text-xl mr-2 sm:mr-3">❌</div>
+                <div className="text-red-600 text-lg sm:text-xl mr-2 sm:mr-3">✖</div>
                 <div>
                   <div className="text-xl sm:text-2xl font-bold text-slate-800">
                     {stats.Alpa}
@@ -835,7 +845,7 @@ const Attendance = ({ user, onShowToast }) => {
                           onClick={() => handleStatusChange(student.id, "Alpa")}
                           disabled={loading}
                           style={{ minHeight: '44px' }}>
-                          ❌ Alpa
+                          ✖ Alpa
                         </button>
                       </div>
                     </div>
@@ -932,7 +942,7 @@ const Attendance = ({ user, onShowToast }) => {
                             }`}
                             onClick={() => handleStatusChange(student.id, "Alpa")}
                             disabled={loading}>
-                            ❌ Alpa
+                            ✖ Alpa
                           </button>
                         </div>
                       </td>

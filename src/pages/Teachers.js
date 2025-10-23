@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from '../supabaseClient';
+import { DataExcel } from './DataExcel'; // ✅ IMPORT DATAEXCEL
 
 export const Teachers = () => {
   const [guruData, setGuruData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [exportLoading, setExportLoading] = useState(false); // ✅ STATE LOADING EXPORT
 
   useEffect(() => {
     fetchDataGuru();
@@ -73,6 +75,19 @@ export const Teachers = () => {
     }
   };
 
+  // ✅ FUNCTION EXPORT GURU
+  const handleExportGuru = async () => {
+    setExportLoading(true);
+    try {
+      await DataExcel.exportTeachers(guruData);
+    } catch (error) {
+      console.error("Error exporting guru data:", error);
+      alert("Gagal mengexport data guru");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // Loading Component
   if (isLoading) {
     return (
@@ -93,8 +108,36 @@ export const Teachers = () => {
     <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-white min-h-screen">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Data Guru</h1>
-        <p className="text-sm sm:text-base text-slate-600">Manajemen Data Guru SMP Muslimin Cililin</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Data Guru</h1>
+            <p className="text-sm sm:text-base text-slate-600">Manajemen Data Guru SMP Muslimin Cililin</p>
+          </div>
+          
+          {/* ✅ TOMBOL EXPORT GURU */}
+          <div className="flex-shrink-0">
+            <button
+              onClick={handleExportGuru}
+              disabled={exportLoading || guruData.length === 0}
+              className={`px-4 sm:px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 min-w-[140px] ${
+                exportLoading || guruData.length === 0
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg"
+              }`}>
+              {exportLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Export...</span>
+                </>
+              ) : (
+                <>
+                  <span>📊</span>
+                  <span>Export Excel</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Main Table Container */}

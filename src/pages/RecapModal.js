@@ -22,16 +22,15 @@ const RecapModal = ({
 
   // Generate year options (from 2025 to 2030)
   const yearOptions = [];
-  const maxYear = 2030; // Batas tahun yang baru
+  const maxYear = 2030;
   for (let year = 2025; year <= maxYear; year++) {
     yearOptions.push(year);
   }
-  // Pastikan tahun saat ini (currentYear) ada jika lebih besar dari 2030
   const currentYear = new Date().getFullYear();
   if (currentYear > 2030 && !yearOptions.includes(currentYear)) {
       yearOptions.push(currentYear);
   }
-  yearOptions.sort((a, b) => a - b); // Urutkan ulang
+  yearOptions.sort((a, b) => a - b);
 
   // Month options
   const monthOptions = [
@@ -58,6 +57,15 @@ const RecapModal = ({
     fetchRekapData(formattedMonth);
   };
   const [attendanceDates, setAttendanceDates] = useState([]);
+
+  // ✅ FIX: Helper function untuk normalize status
+  const normalizeStatus = (status) => {
+    if (!status) return null;
+    const normalized = status.toString().toLowerCase().trim();
+    // Handle variations
+    if (normalized === 'alpha') return 'alpa';
+    return normalized;
+  };
 
   // Fetch rekap data dari database
   const fetchRekapData = async (month = rekapMonth) => {
@@ -95,15 +103,12 @@ const RecapModal = ({
 
       console.log("🔍 Fetching rekap data dengan filter:", {
         startDate,
-        filter: {
-          startDate,
-          endDate,
-          subjectFilter,
-          classFilter,
-          typeFilter,
-          attendanceMode,
-          studentsCount: students.length,
-        },
+        endDate,
+        subjectFilter,
+        classFilter,
+        typeFilter,
+        attendanceMode,
+        studentsCount: students.length,
       });
 
       const { data: attendanceData, error: attendanceError } = await supabase
@@ -120,6 +125,7 @@ const RecapModal = ({
       }
 
       console.log("📊 Raw attendance data:", attendanceData);
+      console.log("📊 Total records:", attendanceData?.length || 0);
 
       // Get unique dates dan sort
       const uniqueDates = [...new Set(attendanceData.map((r) => r.date))].sort();
@@ -136,28 +142,28 @@ const RecapModal = ({
           hadir: 0,
           sakit: 0,
           izin: 0,
-          alpa: 0, // <--- FIX: Diubah dari "alpha" menjadi "alpa"
+          alpa: 0,
           total: 0,
           percentage: "0%",
         };
       });
 
-      // Process attendance data
+      // ✅ FIX: Process attendance data dengan normalisasi status
       attendanceData.forEach((record) => {
         if (studentSummary[record.student_id]) {
-          const status = record.status.toLowerCase();
+          const status = normalizeStatus(record.status);
           
           // Simpan status per tanggal
           studentSummary[record.student_id].dailyStatus[record.date] = status;
           
-          // Count summary
+          // ✅ FIX: Count summary dengan normalisasi
           if (status === "hadir") {
             studentSummary[record.student_id].hadir++;
           } else if (status === "sakit") {
             studentSummary[record.student_id].sakit++;
           } else if (status === "izin") {
             studentSummary[record.student_id].izin++;
-          } else if (status === "alpa") { // <--- FIX: Diubah dari "alpha" menjadi "alpa"
+          } else if (status === "alpa") {
             studentSummary[record.student_id].alpa++;
           }
         }
@@ -205,18 +211,20 @@ const RecapModal = ({
     return `${day}/${month}`;
   };
 
-  // Helper untuk status badge
+  // ✅ FIX: Helper untuk status badge dengan normalisasi
   const getStatusBadge = (status) => {
     if (!status) return <span className="text-gray-400">-</span>;
+    
+    const normalized = normalizeStatus(status);
     
     const statusMap = {
       hadir: { text: "H", color: "bg-green-500 text-white" },
       sakit: { text: "S", color: "bg-yellow-500 text-white" },
       izin: { text: "I", color: "bg-blue-500 text-white" },
-      alpa: { text: "A", color: "bg-red-500 text-white" }, // <--- FIX: Diubah dari "alpha" menjadi "alpa"
+      alpa: { text: "A", color: "bg-red-500 text-white" },
     };
 
-    const statusInfo = statusMap[status.toLowerCase()] || { 
+    const statusInfo = statusMap[normalized] || { 
       text: "-", 
       color: "bg-gray-200 text-gray-500" 
     };

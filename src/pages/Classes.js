@@ -1,6 +1,7 @@
 // components/Classes.js
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { DataExcel } from "../pages/DataExcel";
 
 export const Classes = ({ user, onShowToast }) => {
   const [kelasData, setKelasData] = useState([]);
@@ -84,6 +85,26 @@ export const Classes = ({ user, onShowToast }) => {
   const totalLaki = kelasData.reduce((sum, kelas) => sum + kelas.laki_laki, 0);
   const totalPerempuan = kelasData.reduce((sum, kelas) => sum + kelas.perempuan, 0);
 
+  // Data untuk export Excel
+  const excelData = kelasData.map(kelas => ({
+    "Kelas": kelas.id,
+    "Tahun Ajaran": kelas.academic_year,
+    "Wali Kelas": kelas.wali_kelas ? kelas.wali_kelas.full_name : "Belum ditentukan",
+    "Jumlah Siswa": kelas.jumlah_siswa,
+    "Laki-laki": kelas.laki_laki,
+    "Perempuan": kelas.perempuan
+  }));
+
+  const handleExportExcel = async () => {
+    try {
+      await DataExcel.exportClasses(excelData);
+      onShowToast("Data kelas berhasil diexport", "success");
+    } catch (error) {
+      console.error("Error exporting kelas:", error);
+      onShowToast("Gagal mengexport data kelas", "error");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -133,9 +154,25 @@ export const Classes = ({ user, onShowToast }) => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">Data Kelas</h1>
-          <p className="text-gray-600">Manajemen Data Kelas SMP Muslimin Cililin</p>
+        {/* Header dengan tombol Export */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Data Kelas</h1>
+            <p className="text-gray-600">Manajemen Data Kelas SMP Muslimin Cililin</p>
+          </div>
+          
+          {/* Tombol Export Excel */}
+          {kelasData.length > 0 && (
+            <button
+              onClick={handleExportExcel}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export Excel
+            </button>
+          )}
         </div>
 
         {/* Table Data Kelas */}

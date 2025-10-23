@@ -12,7 +12,7 @@ import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import Grades from './pages/Grades';
 import TeacherSchedule from './pages/TeacherSchedule';
-import CatatanPerkembangan from './pages/CatatanPerkembangan';
+import CatatanSiswa from './pages/CatatanSiswa';
 import Setting from './setting/setting';
 
 // Import dari folder khusus
@@ -246,10 +246,11 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/catatan-perkembangan" element={
+        {/* FIX: GANTI PATH JADI LOWERCASE */}
+        <Route path="/catatan-siswa" element={
           <ProtectedRoute>
             <LayoutWrapper>
-              <CatatanPerkembangan user={user} onShowToast={handleShowToast} />
+              <CatatanSiswa user={user} onShowToast={handleShowToast} />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

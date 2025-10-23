@@ -113,7 +113,7 @@ const Layout = ({ user, onLogout, children }) => {
     if (path === '/attendance') return 'attendance'
     if (path === '/grades') return 'grades'
     if (path === '/jadwal-saya') return 'jadwal-saya'
-    if (path === '/catatan-perkembangan') return 'catatan-perkembangan'
+    if (path === '/catatan-siswa') return 'catatan-siswa'
     if (path === '/konseling') return 'konseling'
     if (path === '/reports') return 'reports'
     if (path === '/easymodul') return 'easymodul'
@@ -131,7 +131,7 @@ const Layout = ({ user, onLogout, children }) => {
       '/attendance': 'Kehadiran',
       '/grades': 'Nilai Akademik',
       '/jadwal-saya': 'Jadwal Saya',
-      '/catatan-perkembangan': 'Catatan Perkembangan',
+      '/catatan-siswa': 'Catatan Siswa',
       '/konseling': 'Konseling', 
       '/reports': 'Laporan',
       '/easymodul': 'EasyModul',
@@ -156,7 +156,7 @@ const Layout = ({ user, onLogout, children }) => {
         Kehadiran: 'Kelola Kehadiran Siswa',
         'Nilai Akademik': 'Kelola Nilai Akademik Siswa',
         'Jadwal Saya': 'Lihat Jadwal Mengajar',
-        'Catatan Perkembangan': 'Kelola Catatan Perkembangan Siswa',
+        'Catatan Siswa': 'Kelola Catatan Perkembangan Siswa',
         Konseling: 'Kelola Data Konseling BK/BP',
         Laporan: 'Generate dan Kelola Laporan',
         EasyModul: 'Kelola Modul Pembelajaran',
@@ -178,8 +178,8 @@ const Layout = ({ user, onLogout, children }) => {
         'Data Kelas': `Informasi Kelas`,
         Kehadiran: `Input kehadiran Kelas`,
         'Nilai Akademik': `Input Nilai Kelas`,
+        'Catatan Siswa': `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
         'Jadwal Saya': 'Lihat Jadwal Mengajar Kelas',
-        'Catatan Perkembangan': `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
         Laporan: `Laporan Kelas`,
         EasyModul: 'Akses Modul Pembelajaran',
         Pengaturan: 'Pengaturan Akun',
@@ -211,7 +211,7 @@ const Layout = ({ user, onLogout, children }) => {
       'attendance': '/attendance',
       'grades': '/grades',
       'jadwal-saya': '/jadwal-saya',
-      'catatan-perkembangan': '/catatan-perkembangan',
+      'catatan-siswa': '/catatan-siswa',
       'konseling': '/konseling',
       'reports': '/reports',
       'easymodul': '/easymodul',

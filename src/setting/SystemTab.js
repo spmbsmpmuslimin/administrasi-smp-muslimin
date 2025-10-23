@@ -173,7 +173,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         { name: 'konseling', display: 'Konseling' },
         { name: 'siswa_baru', display: 'Siswa Baru' },
         { name: 'school_settings', display: 'Pengaturan Sekolah' },
-        { name: 'announcement', display: 'Pengumuman' }
+        { name: 'announcement', display: 'Pengumuman' },
+        { name: 'teacher_schedules', display: 'Jadwal Guru' },
+        { name: 'student_development_notes', display: 'Catatan Perkembangan Siswa' }
       ];
       
       let exportedCount = 0;
@@ -249,7 +251,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         konselingRes,
         siswaBaruRes, 
         schoolSettingsRes,
-        announcementRes
+        announcementRes,
+        teacherSchedulesRes,
+        studentDevelopmentNotesRes
       ] = await Promise.all([
         supabase.from('academic_years').select('*'),
         supabase.from('users').select('*'),
@@ -261,7 +265,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         supabase.from('konseling').select('*'),
         supabase.from('siswa_baru').select('*'),
         supabase.from('school_settings').select('*'),
-        supabase.from('announcement').select('*')
+        supabase.from('announcement').select('*'),
+        supabase.from('teacher_schedules').select('*'),
+        supabase.from('student_development_notes').select('*')
       ]);
       
       const errors = [
@@ -275,7 +281,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         konselingRes.error,
         siswaBaruRes.error,
         schoolSettingsRes.error,
-        announcementRes.error
+        announcementRes.error,
+        teacherSchedulesRes.error,
+        studentDevelopmentNotesRes.error
       ].filter(Boolean);
 
       if (errors.length > 0) {
@@ -299,7 +307,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           konseling: konselingRes.data,
           siswa_baru: siswaBaruRes.data,
           school_settings: schoolSettingsRes.data,
-          announcement: announcementRes.data
+          announcement: announcementRes.data,
+          teacher_schedules: teacherSchedulesRes.data,
+          student_development_notes: studentDevelopmentNotesRes.data
         },
         stats: {
           total_academic_years: academicYearsRes.data?.length || 0,
@@ -311,7 +321,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           total_grades_records: gradesRes.data?.length || 0,
           total_konseling_records: konselingRes.data?.length || 0,
           total_siswa_baru: siswaBaruRes.data?.length || 0,
-          total_announcements: announcementRes.data?.length || 0
+          total_announcements: announcementRes.data?.length || 0,
+          total_teacher_schedules: teacherSchedulesRes.data?.length || 0,
+          total_development_notes: studentDevelopmentNotesRes.data?.length || 0
         }
       };
       
@@ -384,7 +396,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       `- ${restorePreview.stats?.total_students || 0} siswa\n` +
       `- ${restorePreview.stats?.total_attendance_records || 0} kehadiran\n` +
       `- ${restorePreview.stats?.total_grades_records || 0} nilai\n` +
-      `- ${restorePreview.stats?.total_konseling_records || 0} konseling\n\n` +
+      `- ${restorePreview.stats?.total_konseling_records || 0} konseling\n` +
+      `- ${restorePreview.stats?.total_teacher_schedules || 0} jadwal guru\n` +
+      `- ${restorePreview.stats?.total_development_notes || 0} catatan perkembangan\n\n` +
       `Tindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
     );
     
@@ -405,6 +419,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           await supabase.from('grades').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           await supabase.from('konseling').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           await supabase.from('teacher_assignments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          await supabase.from('teacher_schedules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          await supabase.from('student_development_notes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           
           setExportProgress('Menghapus data lama (2/3)...');
           
@@ -420,7 +436,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           await supabase.from('academic_years').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           
           let insertedTables = 0;
-          const totalTables = 11;
+          const totalTables = 13;
           
           if (backupData.data.academic_years?.length > 0) {
             setExportProgress(`Restore academic years (${++insertedTables}/${totalTables})...`);
@@ -486,6 +502,18 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             setExportProgress(`Restore announcements (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase.from('announcement').insert(backupData.data.announcement);
             if (error) console.error('Error inserting announcement:', error);
+          }
+          
+          if (backupData.data.teacher_schedules?.length > 0) {
+            setExportProgress(`Restore teacher schedules (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from('teacher_schedules').insert(backupData.data.teacher_schedules);
+            if (error) console.error('Error inserting teacher_schedules:', error);
+          }
+          
+          if (backupData.data.student_development_notes?.length > 0) {
+            setExportProgress(`Restore development notes (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from('student_development_notes').insert(backupData.data.student_development_notes);
+            if (error) console.error('Error inserting student_development_notes:', error);
           }
           
           showToast('✅ Database berhasil di-restore!', 'success');
@@ -641,14 +669,36 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             Export Pengumuman
           </button>
 
+          {/* TOMBOL BARU YANG DITAMBAHKAN */}
           <button
-            onClick={exportAllTablesToCSV}
+            onClick={() => exportTableToCSV('teacher_schedules', 'Jadwal Guru')}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-3 bg-lime-100 text-lime-700 rounded-lg hover:bg-lime-200 disabled:opacity-50 font-medium transition-colors"
           >
-            <FileText size={18} />
-            {loading ? 'Exporting...' : 'Export Semua Tabel ke CSV'}
+            <Table size={16} />
+            Export Jadwal Guru
           </button>
+
+          {/* Baris 5 */}
+          <button
+            onClick={() => exportTableToCSV('student_development_notes', 'Catatan Perkembangan')}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-3 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50 font-medium transition-colors"
+          >
+            <Table size={16} />
+            Export Catatan Perkembangan
+          </button>
+
+          <div className="md:col-span-2">
+            <button
+              onClick={exportAllTablesToCSV}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors w-full justify-center"
+            >
+              <FileText size={18} />
+              {loading ? 'Exporting...' : 'Export Semua Tabel ke CSV'}
+            </button>
+          </div>
         </div>
       </div>
       
@@ -682,6 +732,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             <li>Data siswa baru (siswa_baru table)</li>
             <li>Pengaturan sekolah (school_settings table)</li>
             <li>Pengumuman (announcement table)</li>
+            <li><strong>Jadwal guru</strong> (teacher_schedules table)</li>
+            <li><strong>Catatan perkembangan siswa</strong> (student_development_notes table)</li>
           </ul>
         </div>
       </div>
@@ -727,6 +779,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                       <li>{restorePreview.stats?.total_konseling_records || 0} data konseling</li>
                       <li>{restorePreview.stats?.total_siswa_baru || 0} siswa baru</li>
                       <li>{restorePreview.stats?.total_announcements || 0} pengumuman</li>
+                      <li>{restorePreview.stats?.total_teacher_schedules || 0} jadwal guru</li>
+                      <li>{restorePreview.stats?.total_development_notes || 0} catatan perkembangan</li>
                     </ul>
                   </div>
                 </div>
@@ -802,12 +856,13 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
         <h4 className="text-sm font-semibold text-green-800 mb-2">✅ Improvements Applied</h4>
         <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
-          <li>Added academic_years and konseling tables to export/backup</li>
-          <li>Reorganized export buttons into 4 rows × 3 columns layout</li>
-          <li>Total 11 tables now supported for complete backup</li>
+          <li>Added teacher_schedules and student_development_notes tables to export/backup</li>
+          <li>Reorganized export buttons into 5 rows layout with new tables</li>
+          <li>Total 13 tables now supported for complete backup</li>
           <li>No record limits - full data export for all tables</li>
           <li>Improved restore order respecting foreign key constraints</li>
           <li>Better progress indicators and error handling</li>
+          <li>Updated backup preview with new table statistics</li>
         </ul>
       </div>
     </div>
