@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SettingsIcon, User, School, Calendar, Building2, Database, X } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { SettingsIcon, User, School, Calendar, Building2, Database, Home, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import ProfileTab from './ProfileTab';
 import SchoolManagementTab from './SchoolManagementTab';
@@ -7,10 +8,35 @@ import AcademicYearTab from './AcademicYearTab';
 import SchoolSettingsTab from './SchoolSettingsTab';
 import SystemTab from './SystemTab';
 
-const Setting = ({ user, onShowToast }) => { // ✅ UBAH: userSession jadi user, tambah onShowToast
-  const [activeTab, setActiveTab] = useState('profile');
+const Setting = ({ user, onShowToast }) => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Get tab from URL query parameter, default to 'profile'
+  const tabFromURL = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromURL || 'profile');
+  
   const [loading, setLoading] = useState(false);
   const [schoolConfig, setSchoolConfig] = useState(null);
+
+  // ✅ Handle URL parameter changes & smooth scroll
+  useEffect(() => {
+    if (tabFromURL && tabFromURL !== activeTab) {
+      setActiveTab(tabFromURL);
+      
+      // Smooth scroll to tab content with delay
+      setTimeout(() => {
+        const element = document.getElementById(`${tabFromURL}-tab-content`);
+        if (element) {
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 150);
+    }
+  }, [tabFromURL]);
 
   useEffect(() => {
     if (user) {
@@ -79,13 +105,19 @@ const Setting = ({ user, onShowToast }) => { // ✅ UBAH: userSession jadi user,
     ] : [])
   ];
 
+  // ✅ Get current tab label for breadcrumb
+  const getCurrentTabLabel = () => {
+    const currentTab = tabs.find(tab => tab.id === activeTab);
+    return currentTab ? currentTab.label : 'Profile';
+  };
+
   const renderActiveTab = () => {
     const commonProps = {
       userId: user?.id,
       user,
       loading,
       setLoading,
-      showToast: onShowToast, // ✅ Pass onShowToast sebagai showToast
+      showToast: onShowToast,
       schoolConfig,
       refreshSchoolConfig: loadSchoolConfig
     };
@@ -121,6 +153,26 @@ const Setting = ({ user, onShowToast }) => { // ✅ UBAH: userSession jadi user,
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
+        {/* ✅ BREADCRUMB */}
+        <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+          >
+            <Home size={16} />
+            <span>Dashboard</span>
+          </button>
+          <ChevronRight size={16} className="text-gray-400" />
+          <span className="text-blue-600 font-medium">Pengaturan</span>
+          {activeTab !== 'profile' && (
+            <>
+              <ChevronRight size={16} className="text-gray-400" />
+              <span className="text-blue-600 font-medium">{getCurrentTabLabel()}</span>
+            </>
+          )}
+        </div>
+
+        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <SettingsIcon className="text-blue-600" size={28} />
           <div>
@@ -133,22 +185,24 @@ const Setting = ({ user, onShowToast }) => { // ✅ UBAH: userSession jadi user,
           </div>
         </div>
         
-        {/* Tab Navigation */}
+        {/* ✅ Tab Navigation with HIGHLIGHT */}
         <div className="flex overflow-x-auto border-b border-gray-200 mb-6">
           <div className="flex min-w-max space-x-1">
             {tabs.map(tab => {
               const IconComponent = tab.icon;
+              const isActive = activeTab === tab.id;
+              
               return (
                 <button
                   key={tab.id}
-                  className={`flex items-center gap-2 whitespace-nowrap py-3 px-4 font-medium text-sm transition-colors ${
-                    activeTab === tab.id 
-                      ? 'text-blue-600 border-b-2 border-blue-600' 
-                      : 'text-gray-500 hover:text-gray-700'
+                  className={`flex items-center gap-2 whitespace-nowrap py-3 px-4 font-medium text-sm transition-all duration-200 ${
+                    isActive
+                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50 scale-105' 
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                   onClick={() => setActiveTab(tab.id)}
                 >
-                  <IconComponent size={16} />
+                  <IconComponent size={16} className={isActive ? 'animate-pulse' : ''} />
                   {tab.label}
                 </button>
               );
@@ -156,7 +210,11 @@ const Setting = ({ user, onShowToast }) => { // ✅ UBAH: userSession jadi user,
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm">
+        {/* ✅ Tab Content with ID for smooth scroll */}
+        <div 
+          id={`${activeTab}-tab-content`}
+          className="bg-white rounded-lg shadow-sm transition-all duration-300"
+        >
           {renderActiveTab()}
         </div>
       </div>

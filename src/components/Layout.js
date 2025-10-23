@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Calendar, Clock, Settings, LogOut, Menu, X, User, Home } from 'lucide-react'
+import { Calendar, Clock, Settings, LogOut, Menu, X, User } from 'lucide-react'
 import Sidebar from './Sidebar'
 
 const Layout = ({ user, onLogout, children }) => {
@@ -388,17 +388,19 @@ const Layout = ({ user, onLogout, children }) => {
                       </div>
                       
                       <div className="py-2">
+                        {/* Menu Profile - Redirect ke Settings tab Profile */}
                         <button
                           onClick={() => {
-                            handleNavigate('dashboard')
+                            navigate('/settings?tab=profile')
                             setProfileDropdownOpen(false)
                           }}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 touch-manipulation"
                         >
-                          <Home size={16} className="flex-shrink-0" />
-                          <span className="font-medium">Dashboard</span>
+                          <User size={16} className="flex-shrink-0" />
+                          <span className="font-medium">Profile</span>
                         </button>
                         
+                        {/* Menu Pengaturan - Khusus Admin */}
                         {user?.role === 'admin' && (
                           <button
                             onClick={() => {
@@ -412,6 +414,7 @@ const Layout = ({ user, onLogout, children }) => {
                           </button>
                         )}
                         
+                        {/* Menu Logout */}
                         <button
                           onClick={() => {
                             onLogout()
