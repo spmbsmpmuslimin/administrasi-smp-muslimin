@@ -24,8 +24,7 @@ const EasyModul = () => {
   const [error, setError] = useState("");
 
   const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-  const GROQ_API_KEY =
-    "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";
+  const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
 
   const semuaDimensi = [
     "Keimanan dan Ketakwaan",
@@ -39,7 +38,7 @@ const EasyModul = () => {
   ];
 
   const gradeData = {
-    "7": {
+    7: {
       "Chapter 1 – About Me": {
         "Unit 1 – Galang from Kalimantan": {
           pages: "14-27",
@@ -156,7 +155,7 @@ const EasyModul = () => {
         },
       },
     },
-    "8": {
+    8: {
       "Chapter 1 – Celebrating Independence Day": {
         "Unit 1 – The Champion of Panjat Pinang": {
           pages: "14-27",
@@ -246,7 +245,8 @@ const EasyModul = () => {
           pages: "148-159",
           skills: "Reading, Writing, Environmental storytelling",
           grammar: "Past Tense, Passive voice, Descriptive language",
-          vocabulary: "Marine animals, pollution, rescue, conservation, ecosystem",
+          vocabulary:
+            "Marine animals, pollution, rescue, conservation, ecosystem",
           textType: "Recount Text",
         },
         "Unit 3 – You Can Help (Bye Bye Plastic Bags)": {
@@ -285,7 +285,7 @@ const EasyModul = () => {
         },
       },
     },
-    "9": {
+    9: {
       "Chapter 1 – Exploring Fauna of Indonesia": {
         "Unit 1 – Bekantan": {
           pages: "14-27",
@@ -931,7 +931,7 @@ PETUNJUK KHUSUS:
   const exportToWord = () => {
     // Fungsi ini memerlukan library eksternal seperti `html-to-docx` dan `file-saver`
     // Jalankan `npm install html-to-docx file-saver` terlebih dahulu di terminal
-    
+
     // Asumsi: htmlToDocx dan saveAs sudah diimpor.
     // import { htmlToDocx } from "html-to-docx";
     // import { saveAs } from "file-saver";
@@ -966,11 +966,15 @@ PETUNJUK KHUSUS:
           <div class="identity-table">
             <div class="identity-row">
               <div class="identity-cell-label">Nama Sekolah</div>
-              <div class="identity-cell-value">: ${hasilModul.informasiUmum.identitas.namaSekolah}</div>
+              <div class="identity-cell-value">: ${
+                hasilModul.informasiUmum.identitas.namaSekolah
+              }</div>
             </div>
             <div class="identity-row">
               <div class="identity-cell-label">Nama Penyusun</div>
-              <div class="identity-cell-value">: ${hasilModul.informasiUmum.identitas.namaGuru}</div>
+              <div class="identity-cell-value">: ${
+                hasilModul.informasiUmum.identitas.namaGuru
+              }</div>
             </div>
             <div class="identity-row">
               <div class="identity-cell-label">Mata Pelajaran</div>
@@ -978,11 +982,15 @@ PETUNJUK KHUSUS:
             </div>
             <div class="identity-row">
               <div class="identity-cell-label">Fase / Kelas / Semester</div>
-              <div class="identity-cell-value">: ${hasilModul.informasiUmum.identitas.fase} - ${hasilModul.informasiUmum.identitas.kelas} / 1</div>
+              <div class="identity-cell-value">: ${
+                hasilModul.informasiUmum.identitas.fase
+              } - ${hasilModul.informasiUmum.identitas.kelas} / 1</div>
             </div>
             <div class="identity-row">
               <div class="identity-cell-label">Alokasi Waktu</div>
-              <div class="identity-cell-value">: ${hasilModul.informasiUmum.identitas.alokasiWaktu}</div>
+              <div class="identity-cell-value">: ${
+                hasilModul.informasiUmum.identitas.alokasiWaktu
+              }</div>
             </div>
             <div class="identity-row">
               <div class="identity-cell-label">Tahun Penyusunan</div>
@@ -993,22 +1001,36 @@ PETUNJUK KHUSUS:
           <h2 class="section-header">II. CAPAIAN PEMBELAJARAN & TUJUAN</h2>
           <h3>Capaian Pembelajaran</h3>
           <ul>
-            <li><strong>Menyimak-Berbicara:</strong> ${hasilModul.capaianPembelajaran.capaianUtama.menyimakBerbicara}</li>
-            <li><strong>Membaca-Memirsa:</strong> ${hasilModul.capaianPembelajaran.capaianUtama.membacaMemirsa}</li>
-            <li><strong>Menulis-Mempresentasikan:</strong> ${hasilModul.capaianPembelajaran.capaianUtama.menulisMempresentasikan}</li>
+            <li><strong>Menyimak-Berbicara:</strong> ${
+              hasilModul.capaianPembelajaran.capaianUtama.menyimakBerbicara
+            }</li>
+            <li><strong>Membaca-Memirsa:</strong> ${
+              hasilModul.capaianPembelajaran.capaianUtama.membacaMemirsa
+            }</li>
+            <li><strong>Menulis-Mempresentasikan:</strong> ${
+              hasilModul.capaianPembelajaran.capaianUtama
+                .menulisMempresentasikan
+            }</li>
           </ul>
           <h3>Tujuan Pembelajaran</h3>
           <p>${hasilModul.tujuanPembelajaran.tujuanUmum}</p>
           <h3>Indikator Keberhasilan</h3>
           <ul>
-            ${hasilModul.tujuanPembelajaran.kriteriaKeberhasilan.map(item => `<li>${item}</li>`).join('')}
+            ${hasilModul.tujuanPembelajaran.kriteriaKeberhasilan
+              .map((item) => `<li>${item}</li>`)
+              .join("")}
           </ul>
 
           <h2 class="section-header">III. DIMENSI LULUSAN & PEMBELAJARAN MENDALAM</h2>
           <h3>Dimensi Profil Lulusan</h3>
           <p>${hasilModul.dimensiLulusan.dimensiUtama}</p>
           <ul>
-            ${hasilModul.dimensiLulusan.indikatorDimensi.map(dim => `<li><strong>${dim.dimensi}:</strong> ${dim.indikator}</li>`).join('')}
+            ${hasilModul.dimensiLulusan.indikatorDimensi
+              .map(
+                (dim) =>
+                  `<li><strong>${dim.dimensi}:</strong> ${dim.indikator}</li>`
+              )
+              .join("")}
           </ul>
           <h3>Pendekatan Pembelajaran Mendalam</h3>
           <p><em>Prinsip: Berkesadaran, Bermakna, dan Menggembirakan</em></p>
@@ -1017,42 +1039,69 @@ PETUNJUK KHUSUS:
           <h2 class="section-header">IV. KEGIATAN PEMBELAJARAN</h2>
           <h3>Pendahuluan</h3>
           <ul>
-            ${hasilModul.kegiatanPembelajaran.pendahuluan.kegiatan.map(keg => `<li>${keg}</li>`).join('')}
+            ${hasilModul.kegiatanPembelajaran.pendahuluan.kegiatan
+              .map((keg) => `<li>${keg}</li>`)
+              .join("")}
           </ul>
           <h3>Kegiatan Inti</h3>
-          ${Object.entries(hasilModul.kegiatanPembelajaran.inti.tahapan).map(([tahap, data]) => `
+          ${Object.entries(hasilModul.kegiatanPembelajaran.inti.tahapan)
+            .map(
+              ([tahap, data]) => `
             <h4>${tahap.charAt(0).toUpperCase() + tahap.slice(1)}</h4>
             <ul>
-              ${data.kegiatan.map(keg => `<li>${keg}</li>`).join('')}
+              ${data.kegiatan.map((keg) => `<li>${keg}</li>`).join("")}
             </ul>
-          `).join('')}
+          `
+            )
+            .join("")}
           <h3>Penutup</h3>
           <ul>
-            ${hasilModul.kegiatanPembelajaran.penutup.kegiatan.map(keg => `<li>${keg}</li>`).join('')}
+            ${hasilModul.kegiatanPembelajaran.penutup.kegiatan
+              .map((keg) => `<li>${keg}</li>`)
+              .join("")}
           </ul>
 
           <h2 class="section-header">V. DIFERENSIASI</h2>
           <h3>Diferensiasi Konten</h3>
           <ul>
-            <li><strong>Pemula:</strong> ${hasilModul.diferensiasi.diferensiasiKonten.pemula.materi}</li>
-            <li><strong>Menengah:</strong> ${hasilModul.diferensiasi.diferensiasiKonten.menengah.materi}</li>
-            <li><strong>Mahir:</strong> ${hasilModul.diferensiasi.diferensiasiKonten.mahir.materi}</li>
+            <li><strong>Pemula:</strong> ${
+              hasilModul.diferensiasi.diferensiasiKonten.pemula.materi
+            }</li>
+            <li><strong>Menengah:</strong> ${
+              hasilModul.diferensiasi.diferensiasiKonten.menengah.materi
+            }</li>
+            <li><strong>Mahir:</strong> ${
+              hasilModul.diferensiasi.diferensiasiKonten.mahir.materi
+            }</li>
           </ul>
           <h3>Diferensiasi Proses</h3>
-          <p>${hasilModul.diferensiasi.diferensiasiProses.visual}, ${hasilModul.diferensiasi.diferensiasiProses.auditori}, ${hasilModul.diferensiasi.diferensiasiProses.kinestetik}, ${hasilModul.diferensiasi.diferensiasiProses.readwrite}.</p>
+          <p>${hasilModul.diferensiasi.diferensiasiProses.visual}, ${
+      hasilModul.diferensiasi.diferensiasiProses.auditori
+    }, ${hasilModul.diferensiasi.diferensiasiProses.kinestetik}, ${
+      hasilModul.diferensiasi.diferensiasiProses.readwrite
+    }.</p>
           <h3>Diferensiasi Produk</h3>
           <ul>
-            ${Object.values(hasilModul.diferensiasi.diferensiasiProduk).map(item => `<li><strong>${item.jenis}:</strong> ${item.deskripsi}</li>`).join('')}
+            ${Object.values(hasilModul.diferensiasi.diferensiasiProduk)
+              .map(
+                (item) =>
+                  `<li><strong>${item.jenis}:</strong> ${item.deskripsi}</li>`
+              )
+              .join("")}
           </ul>
 
           <h2 class="section-header">VI. ASESMEN</h2>
           <h3>Asesmen Formatif</h3>
           <ul>
-            ${hasilModul.asesmen.asesmenFormatif.teknik.map(t => `<li>${t}</li>`).join('')}
+            ${hasilModul.asesmen.asesmenFormatif.teknik
+              .map((t) => `<li>${t}</li>`)
+              .join("")}
           </ul>
           <h3>Asesmen Sumatif</h3>
           <ul>
-            ${hasilModul.asesmen.asesmenSumatif.teknik.map(t => `<li>${t}</li>`).join('')}
+            ${hasilModul.asesmen.asesmenSumatif.teknik
+              .map((t) => `<li>${t}</li>`)
+              .join("")}
           </ul>
 
           <p style="page-break-before: always;"></p>
@@ -1060,41 +1109,61 @@ PETUNJUK KHUSUS:
           <h2 class="section-header">VII. SUMBER BELAJAR</h2>
           <h3>Sumber Utama</h3>
           <ul>
-            ${hasilModul.sumberBelajar.sumberUtama.map(s => `<li>${s}</li>`).join('')}
+            ${hasilModul.sumberBelajar.sumberUtama
+              .map((s) => `<li>${s}</li>`)
+              .join("")}
           </ul>
           <h3>Sumber Pendukung</h3>
           <ul>
-            ${hasilModul.sumberBelajar.sumberPendukung.map(s => `<li>${s}</li>`).join('')}
+            ${hasilModul.sumberBelajar.sumberPendukung
+              .map((s) => `<li>${s}</li>`)
+              .join("")}
           </ul>
           <h3>Teknologi Digital</h3>
           <ul>
-            ${hasilModul.sumberBelajar.teknologiDigital.map(s => `<li>${s}</li>`).join('')}
+            ${hasilModul.sumberBelajar.teknologiDigital
+              .map((s) => `<li>${s}</li>`)
+              .join("")}
           </ul>
 
           <h2 class="section-header">VIII. REFLEKSI GURU</h2>
           <h3>Evaluasi Pembelajaran</h3>
           <ul>
-            <li><strong>Kelebihan:</strong> ${hasilModul.refleksiGuru.evaluasiPembelajaran.kelebihan}</li>
-            <li><strong>Kendala:</strong> ${hasilModul.refleksiGuru.evaluasiPembelajaran.kendala}</li>
-            <li><strong>Strategi Mengatasi:</strong> ${hasilModul.refleksiGuru.evaluasiPembelajaran.strategiMengatasi}</li>
+            <li><strong>Kelebihan:</strong> ${
+              hasilModul.refleksiGuru.evaluasiPembelajaran.kelebihan
+            }</li>
+            <li><strong>Kendala:</strong> ${
+              hasilModul.refleksiGuru.evaluasiPembelajaran.kendala
+            }</li>
+            <li><strong>Strategi Mengatasi:</strong> ${
+              hasilModul.refleksiGuru.evaluasiPembelajaran.strategiMengatasi
+            }</li>
           </ul>
           <h3>Tindak Lanjut</h3>
           <ul>
-            <li><strong>Remedial:</strong> ${hasilModul.refleksiGuru.tindakLanjut.remedial}</li>
-            <li><strong>Pengayaan:</strong> ${hasilModul.refleksiGuru.tindakLanjut.pengayaan}</li>
-            <li><strong>Perbaikan RPP:</strong> ${hasilModul.refleksiGuru.tindakLanjut.perbaikanRPP}</li>
+            <li><strong>Remedial:</strong> ${
+              hasilModul.refleksiGuru.tindakLanjut.remedial
+            }</li>
+            <li><strong>Pengayaan:</strong> ${
+              hasilModul.refleksiGuru.tindakLanjut.pengayaan
+            }</li>
+            <li><strong>Perbaikan RPP:</strong> ${
+              hasilModul.refleksiGuru.tindakLanjut.perbaikanRPP
+            }</li>
           </ul>
         </body>
       </html>
     `;
-    
+
     // Ini adalah kode placeholder. Untuk membuatnya berfungsi, Anda perlu menginstal
     // pustaka `html-to-docx` dan `file-saver`.
     // htmlToDocx(docContent).then((blob) => {
     //   saveAs(blob, "Modul Ajar.docx");
     // });
 
-    alert("Fungsi ekspor ke Word memerlukan instalasi library eksternal (`html-to-docx` dan `file-saver`). Silakan lihat kode untuk panduan implementasinya.");
+    alert(
+      "Fungsi ekspor ke Word memerlukan instalasi library eksternal (`html-to-docx` dan `file-saver`). Silakan lihat kode untuk panduan implementasinya."
+    );
   };
 
   return (
@@ -1162,8 +1231,7 @@ PETUNJUK KHUSUS:
                 value={kelas}
                 onChange={(e) => handleGradeChange(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                disabled={loading}
-              >
+                disabled={loading}>
                 <option value="7">Kelas 7</option>
                 <option value="8">Kelas 8</option>
                 <option value="9">Kelas 9</option>
@@ -1195,8 +1263,7 @@ PETUNJUK KHUSUS:
                 value={chapter}
                 onChange={(e) => handleChapterChange(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                disabled={loading}
-              >
+                disabled={loading}>
                 {getAllChaptersForGrade(kelas).map((chap) => (
                   <option key={chap} value={chap}>
                     {" "}
@@ -1215,8 +1282,7 @@ PETUNJUK KHUSUS:
                 value={topik}
                 onChange={(e) => setTopik(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                disabled={loading}
-              >
+                disabled={loading}>
                 {getUnitsForChapter(chapter, kelas).map((unit) => (
                   <option key={unit} value={unit}>
                     {" "}
@@ -1255,8 +1321,7 @@ PETUNJUK KHUSUS:
                     dimensi.includes(d)
                       ? "border-blue-500 bg-blue-50 text-blue-900"
                       : "border-blue-200 bg-white text-blue-700"
-                  }`}
-                >
+                  }`}>
                   <input
                     type="checkbox"
                     checked={dimensi.includes(d)}
@@ -1281,16 +1346,16 @@ PETUNJUK KHUSUS:
                 !namaSekolah.trim() ||
                 !namaGuru.trim()
               }
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-4 px-8 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              <CheckCircle className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-4 px-8 rounded-lg transition-colors flex items-center justify-center gap-2">
+              <CheckCircle
+                className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
+              />
               {loading ? "Membangun Modul..." : "Buat Modul Ajar"}
             </button>
             <button
               onClick={resetModul}
               disabled={loading}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-800 font-bold py-4 px-8 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
+              className="flex-1 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-800 font-bold py-4 px-8 rounded-lg transition-colors flex items-center justify-center gap-2">
               <FileText className="w-5 h-5" />
               Reset
             </button>
@@ -1313,22 +1378,19 @@ PETUNJUK KHUSUS:
               <div className="flex gap-2">
                 <button
                   onClick={resetModul}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-                >
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
                   <FileText className="w-5 h-5" />
                   Buat Modul Baru
                 </button>
                 <button
                   onClick={printModul}
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-                >
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
                   <Printer className="w-5 h-5" />
                   Print/Save PDF
                 </button>
                 <button
                   onClick={exportToWord}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-                >
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
                   <FileText className="w-5 h-5" />
                   Export ke Word
                 </button>
@@ -1351,22 +1413,33 @@ PETUNJUK KHUSUS:
               </h3>
               <div className="text-sm text-blue-700 space-y-1">
                 <p>
-                  <strong>Nama Sekolah</strong>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {hasilModul.informasiUmum.identitas.namaSekolah}
+                  <strong>Nama Sekolah</strong>:
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{" "}
+                  {hasilModul.informasiUmum.identitas.namaSekolah}
                 </p>
                 <p>
-                  <strong>Nama Penyusun</strong>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {hasilModul.informasiUmum.identitas.namaGuru}
+                  <strong>Nama Penyusun</strong>:
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{" "}
+                  {hasilModul.informasiUmum.identitas.namaGuru}
                 </p>
                 <p>
-                  <strong>Mata Pelajaran</strong>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {hasilModul.informasiUmum.identitas.mataPelajaran.toUpperCase()}
+                  <strong>Mata Pelajaran</strong>:
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{" "}
+                  {hasilModul.informasiUmum.identitas.mataPelajaran.toUpperCase()}
                 </p>
                 <p>
-                  <strong>Fase / Kelas / Semester</strong>: &nbsp; {hasilModul.informasiUmum.identitas.fase} - {hasilModul.informasiUmum.identitas.kelas} / 1
+                  <strong>Fase / Kelas / Semester</strong>: &nbsp;{" "}
+                  {hasilModul.informasiUmum.identitas.fase} -{" "}
+                  {hasilModul.informasiUmum.identitas.kelas} / 1
                 </p>
                 <p>
-                  <strong>Alokasi Waktu</strong>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {hasilModul.informasiUmum.identitas.alokasiWaktu}
+                  <strong>Alokasi Waktu</strong>:
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{" "}
+                  {hasilModul.informasiUmum.identitas.alokasiWaktu}
                 </p>
                 <p>
-                  <strong>Tahun Penyusunan</strong>: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2025
+                  <strong>Tahun Penyusunan</strong>:
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2025
                 </p>
               </div>
             </section>
@@ -1389,10 +1462,7 @@ PETUNJUK KHUSUS:
                   </li>
                   <li>
                     <span className="font-semibold">Membaca-Memirsa:</span>{" "}
-                    {
-                      hasilModul.capaianPembelajaran.capaianUtama
-                        .membacaMemirsa
-                    }
+                    {hasilModul.capaianPembelajaran.capaianUtama.membacaMemirsa}
                   </li>
                   <li>
                     <span className="font-semibold">
@@ -1481,7 +1551,9 @@ PETUNJUK KHUSUS:
                 {Object.entries(
                   hasilModul.kegiatanPembelajaran.inti.tahapan
                 ).map(([tahap, data], index) => (
-                  <div key={index} className="pl-4 mb-2 border-l-2 border-blue-200">
+                  <div
+                    key={index}
+                    className="pl-4 mb-2 border-l-2 border-blue-200">
                     <h5 className="font-semibold text-blue-800 capitalize">
                       {tahap}
                     </h5>
@@ -1510,7 +1582,9 @@ PETUNJUK KHUSUS:
                 V. Diferensiasi
               </h3>
               <div className="mb-4">
-                <h4 className="font-semibold text-blue-900">Diferensiasi Konten</h4>
+                <h4 className="font-semibold text-blue-900">
+                  Diferensiasi Konten
+                </h4>
                 <ul className="list-disc pl-5 text-sm text-blue-700 space-y-1">
                   <li>
                     <span className="font-semibold">Pemula:</span>{" "}
@@ -1527,33 +1601,42 @@ PETUNJUK KHUSUS:
                 </ul>
               </div>
               <div className="mb-4">
-                <h4 className="font-semibold text-blue-900">Diferensiasi Proses</h4>
+                <h4 className="font-semibold text-blue-900">
+                  Diferensiasi Proses
+                </h4>
                 <p className="text-sm text-blue-700">
                   {hasilModul.diferensiasi.diferensiasiProses.visual}, &nbsp;
                   {hasilModul.diferensiasi.diferensiasiProses.auditori}, &nbsp;
-                  {hasilModul.diferensiasi.diferensiasiProses.kinestetik}, &nbsp;
+                  {hasilModul.diferensiasi.diferensiasiProses.kinestetik},
+                  &nbsp;
                   {hasilModul.diferensiasi.diferensiasiProses.readwrite}.
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold text-blue-900">Diferensiasi Produk</h4>
+                <h4 className="font-semibold text-blue-900">
+                  Diferensiasi Produk
+                </h4>
                 <ul className="list-disc pl-5 text-sm text-blue-700 space-y-1">
-                  {Object.values(hasilModul.diferensiasi.diferensiasiProduk).map(
-                    (item, index) => (
-                      <li key={index}>
-                        <span className="font-semibold">{item.jenis}:</span>{" "}
-                        {item.deskripsi}
-                      </li>
-                    )
-                  )}
+                  {Object.values(
+                    hasilModul.diferensiasi.diferensiasiProduk
+                  ).map((item, index) => (
+                    <li key={index}>
+                      <span className="font-semibold">{item.jenis}:</span>{" "}
+                      {item.deskripsi}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </section>
 
             <section className="mb-6">
-              <h3 className="text-lg font-bold text-blue-800 mb-2">VI. Asesmen</h3>
+              <h3 className="text-lg font-bold text-blue-800 mb-2">
+                VI. Asesmen
+              </h3>
               <div className="mb-4">
-                <h4 className="font-semibold text-blue-900">Asesmen Formatif</h4>
+                <h4 className="font-semibold text-blue-900">
+                  Asesmen Formatif
+                </h4>
                 <ul className="list-disc pl-5 text-sm text-blue-700 space-y-1">
                   {hasilModul.asesmen.asesmenFormatif.teknik.map((t, index) => (
                     <li key={index}>{t}</li>
@@ -1603,7 +1686,7 @@ PETUNJUK KHUSUS:
                 </ul>
               </div>
             </section>
-            
+
             <section className="mb-6 print:hidden">
               <h3 className="text-lg font-bold text-blue-800 mb-2">
                 VIII. Refleksi Guru
@@ -1654,21 +1737,18 @@ PETUNJUK KHUSUS:
             <div className="flex gap-4 pt-6 print:hidden">
               <button
                 onClick={resetModul}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-              >
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
                 Buat Modul Baru
               </button>
               <button
                 onClick={printModul}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2"
-              >
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2">
                 <Printer className="w-5 h-5" />
                 Print/Save PDF
               </button>
               <button
                 onClick={exportToWord}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2"
-              >
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2">
                 <FileText className="w-5 h-5" />
                 Export ke Word
               </button>
