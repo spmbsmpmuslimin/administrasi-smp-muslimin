@@ -119,6 +119,7 @@ const Layout = ({ user, onLogout, children }) => {
     if (path === '/easymodul') return 'easymodul'
     if (path === '/spmb') return 'spmb'
     if (path === '/settings') return 'settings'
+    if (path === '/monitor-sistem') return 'monitor-sistem' // ← BARU
     return 'dashboard'
   }
 
@@ -137,6 +138,7 @@ const Layout = ({ user, onLogout, children }) => {
       '/easymodul': 'EasyModul',
       '/spmb': 'SPMB',
       '/settings': 'Pengaturan',
+      '/monitor-sistem': 'Monitor Sistem', // ← BARU
     }
     return pathMap[location.pathname] || 'Dashboard'
   }
@@ -162,6 +164,7 @@ const Layout = ({ user, onLogout, children }) => {
         EasyModul: 'Kelola Modul Pembelajaran',
         SPMB: 'Seleksi Penerimaan Murid Baru',
         Pengaturan: 'Pengaturan Sistem Sekolah',
+        'Monitor Sistem': 'Pemeriksaan Kesehatan Sistem dan Integritas Data', // ← BARU
       },
       guru_bk: {
         Dashboard: 'Dashboard Bimbingan Konseling',
@@ -216,7 +219,8 @@ const Layout = ({ user, onLogout, children }) => {
       'reports': '/reports',
       'easymodul': '/easymodul',
       'spmb': '/spmb',
-      'settings': '/settings'
+      'settings': '/settings',
+      'monitor-sistem': '/monitor-sistem' // ← BARU
     }
     
     const path = routes[page]

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Download, Upload, AlertTriangle, RefreshCw, Table, FileText, Database } from 'lucide-react';
+import { Download, Upload, AlertTriangle, RefreshCw, Table, FileText, Database, Monitor } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const SystemTab = ({ user, loading, setLoading, showToast }) => {
   const [schoolSettings, setSchoolSettings] = useState({
@@ -14,6 +15,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
   const [restoreFile, setRestoreFile] = useState(null);
   const [restorePreview, setRestorePreview] = useState(null);
   const [exportProgress, setExportProgress] = useState('');
+  const navigate = useNavigate();
 
   const getCurrentAcademicYear = () => {
     const now = new Date();
@@ -175,7 +177,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         { name: 'school_settings', display: 'Pengaturan Sekolah' },
         { name: 'announcement', display: 'Pengumuman' },
         { name: 'teacher_schedules', display: 'Jadwal Guru' },
-        { name: 'student_development_notes', display: 'Catatan Perkembangan Siswa' }
+        { name: 'student_development_notes', display: 'Catatan Perkembangan Siswa' },
+        { name: 'system_health_logs', display: 'System Health Logs' }
       ];
       
       let exportedCount = 0;
@@ -253,7 +256,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         schoolSettingsRes,
         announcementRes,
         teacherSchedulesRes,
-        studentDevelopmentNotesRes
+        studentDevelopmentNotesRes,
+        systemHealthLogsRes
       ] = await Promise.all([
         supabase.from('academic_years').select('*'),
         supabase.from('users').select('*'),
@@ -267,7 +271,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         supabase.from('school_settings').select('*'),
         supabase.from('announcement').select('*'),
         supabase.from('teacher_schedules').select('*'),
-        supabase.from('student_development_notes').select('*')
+        supabase.from('student_development_notes').select('*'),
+        supabase.from('system_health_logs').select('*')
       ]);
       
       const errors = [
@@ -283,7 +288,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         schoolSettingsRes.error,
         announcementRes.error,
         teacherSchedulesRes.error,
-        studentDevelopmentNotesRes.error
+        studentDevelopmentNotesRes.error,
+        systemHealthLogsRes.error
       ].filter(Boolean);
 
       if (errors.length > 0) {
@@ -309,7 +315,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           school_settings: schoolSettingsRes.data,
           announcement: announcementRes.data,
           teacher_schedules: teacherSchedulesRes.data,
-          student_development_notes: studentDevelopmentNotesRes.data
+          student_development_notes: studentDevelopmentNotesRes.data,
+          system_health_logs: systemHealthLogsRes.data
         },
         stats: {
           total_academic_years: academicYearsRes.data?.length || 0,
@@ -323,7 +330,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           total_siswa_baru: siswaBaruRes.data?.length || 0,
           total_announcements: announcementRes.data?.length || 0,
           total_teacher_schedules: teacherSchedulesRes.data?.length || 0,
-          total_development_notes: studentDevelopmentNotesRes.data?.length || 0
+          total_development_notes: studentDevelopmentNotesRes.data?.length || 0,
+          total_system_health_logs: systemHealthLogsRes.data?.length || 0
         }
       };
       
@@ -393,12 +401,15 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       `Data yang akan di-restore:\n` +
       `- ${restorePreview.stats?.total_academic_years || 0} tahun ajaran\n` +
       `- ${restorePreview.stats?.total_users || 0} pengguna\n` +
+      `- ${restorePreview.stats?.total_teacher_assignments || 0} penugasan guru\n` +
+      `- ${restorePreview.stats?.total_classes || 0} kelas\n` +
       `- ${restorePreview.stats?.total_students || 0} siswa\n` +
       `- ${restorePreview.stats?.total_attendance_records || 0} kehadiran\n` +
       `- ${restorePreview.stats?.total_grades_records || 0} nilai\n` +
       `- ${restorePreview.stats?.total_konseling_records || 0} konseling\n` +
       `- ${restorePreview.stats?.total_teacher_schedules || 0} jadwal guru\n` +
-      `- ${restorePreview.stats?.total_development_notes || 0} catatan perkembangan\n\n` +
+      `- ${restorePreview.stats?.total_development_notes || 0} catatan perkembangan\n` +
+      `- ${restorePreview.stats?.total_system_health_logs || 0} system health logs\n\n` +
       `Tindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
     );
     
@@ -421,6 +432,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           await supabase.from('teacher_assignments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           await supabase.from('teacher_schedules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           await supabase.from('student_development_notes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          await supabase.from('system_health_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           
           setExportProgress('Menghapus data lama (2/3)...');
           
@@ -436,7 +448,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           await supabase.from('academic_years').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           
           let insertedTables = 0;
-          const totalTables = 13;
+          const totalTables = 14;
           
           if (backupData.data.academic_years?.length > 0) {
             setExportProgress(`Restore academic years (${++insertedTables}/${totalTables})...`);
@@ -516,6 +528,12 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             if (error) console.error('Error inserting student_development_notes:', error);
           }
           
+          if (backupData.data.system_health_logs?.length > 0) {
+            setExportProgress(`Restore system health logs (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from('system_health_logs').insert(backupData.data.system_health_logs);
+            if (error) console.error('Error inserting system_health_logs:', error);
+          }
+          
           showToast('✅ Database berhasil di-restore!', 'success');
           setRestoreFile(null);
           setRestorePreview(null);
@@ -542,6 +560,10 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
     }
   };
 
+  const navigateToSystemMonitor = () => {
+    navigate('/monitor-sistem');
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -556,6 +578,28 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* System Health Monitor Card */}
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 mb-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold mb-2">System Health Monitor</h3>
+            <p className="text-blue-100 mb-4">
+              Pantau kesehatan sistem, cek performa database, dan validasi integritas data
+            </p>
+            <button
+              onClick={navigateToSystemMonitor}
+              className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-semibold transition-colors"
+            >
+              <Monitor size={18} />
+              Buka System Health Monitor
+            </button>
+          </div>
+          <div className="text-right">
+            <Monitor size={48} className="text-blue-200 opacity-80" />
+          </div>
+        </div>
       </div>
       
       {/* Export Individual Tables to CSV */}
@@ -669,7 +713,6 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             Export Pengumuman
           </button>
 
-          {/* TOMBOL BARU YANG DITAMBAHKAN */}
           <button
             onClick={() => exportTableToCSV('teacher_schedules', 'Jadwal Guru')}
             disabled={loading}
@@ -689,14 +732,23 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             Export Catatan Perkembangan
           </button>
 
-          <div className="md:col-span-2">
+          <button
+            onClick={() => exportTableToCSV('system_health_logs', 'System Health Logs')}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-3 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 disabled:opacity-50 font-medium transition-colors"
+          >
+            <Table size={16} />
+            Export System Logs
+          </button>
+
+          <div className="md:col-span-1">
             <button
               onClick={exportAllTablesToCSV}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors w-full justify-center"
             >
               <FileText size={18} />
-              {loading ? 'Exporting...' : 'Export Semua Tabel ke CSV'}
+              {loading ? 'Exporting...' : 'Export Semua Tabel'}
             </button>
           </div>
         </div>
@@ -734,6 +786,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             <li>Pengumuman (announcement table)</li>
             <li><strong>Jadwal guru</strong> (teacher_schedules table)</li>
             <li><strong>Catatan perkembangan siswa</strong> (student_development_notes table)</li>
+            <li><strong>System health logs</strong> (system_health_logs table)</li>
           </ul>
         </div>
       </div>
@@ -781,6 +834,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                       <li>{restorePreview.stats?.total_announcements || 0} pengumuman</li>
                       <li>{restorePreview.stats?.total_teacher_schedules || 0} jadwal guru</li>
                       <li>{restorePreview.stats?.total_development_notes || 0} catatan perkembangan</li>
+                      <li>{restorePreview.stats?.total_system_health_logs || 0} system health logs</li>
                     </ul>
                   </div>
                 </div>
@@ -856,13 +910,13 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
         <h4 className="text-sm font-semibold text-green-800 mb-2">✅ Improvements Applied</h4>
         <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
-          <li>Added teacher_schedules and student_development_notes tables to export/backup</li>
-          <li>Reorganized export buttons into 5 rows layout with new tables</li>
-          <li>Total 13 tables now supported for complete backup</li>
-          <li>No record limits - full data export for all tables</li>
-          <li>Improved restore order respecting foreign key constraints</li>
-          <li>Better progress indicators and error handling</li>
-          <li>Updated backup preview with new table statistics</li>
+          <li><strong>Added System Health Monitor Card</strong> with direct navigation</li>
+          <li><strong>Added system_health_logs table</strong> to export/backup/restore</li>
+          <li>Total <strong>14 tables</strong> now supported for complete backup</li>
+          <li>New export button for System Health Logs</li>
+          <li>Updated backup preview with system health logs statistics</li>
+          <li>Improved restore process for new table</li>
+          <li>Better UI organization with gradient health monitor card</li>
         </ul>
       </div>
     </div>

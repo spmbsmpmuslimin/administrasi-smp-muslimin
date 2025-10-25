@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import { exportToExcel, exportToCSV } from './ReportExcel';
+import ReportModal from './modals/BKReportModal';
 
 const BKReportsEnhanced = ({ user, onShowToast }) => {
   const [konselingData, setKonselingData] = useState([]);

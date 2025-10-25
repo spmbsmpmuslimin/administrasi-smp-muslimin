@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
@@ -11,9 +11,25 @@ const TeacherDashboard = ({ user }) => {
     subjects: [],
     classesTaught: [],
   });
+  const [todaySchedule, setTodaySchedule] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
+  const getDayName = (dayIndex) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return days[dayIndex];
+  };
+
+  // Fungsi untuk format waktu
+  const formatTime = (time) => {
+    if (!time) return '-';
+    return time.substring(0, 5); // Format HH:MM
+  };
+
+  // Get current day name
+  const currentDay = getDayName(new Date().getDay());
 
   useEffect(() => {
     console.log("🎯 TeacherDashboard received user:", user);
@@ -27,6 +43,50 @@ const TeacherDashboard = ({ user }) => {
       setLoading(false);
     }
   }, [user]);
+
+  // Fetch jadwal hari ini
+  const fetchTodaySchedule = useCallback(async (teacherId) => {
+    try {
+      const today = new Date();
+      const dayName = getDayName(today.getDay());
+
+      const { data: schedules, error: scheduleError } = await supabase
+        .from('teacher_schedules')
+        .select(`
+          *,
+          classes:class_id (
+            id,
+            grade
+          )
+        `)
+        .eq('teacher_id', teacherId)
+        .eq('day', dayName)
+        .order('start_time', { ascending: true });
+
+      if (scheduleError) throw scheduleError;
+
+      // Get subject info from teacher_assignments
+      const scheduleIds = schedules?.map(s => s.class_id) || [];
+      const { data: assignments } = await supabase
+        .from('teacher_assignments')
+        .select('class_id, subject')
+        .eq('teacher_id', teacherId)
+        .in('class_id', scheduleIds);
+
+      // Merge schedule with subject data
+      const enrichedSchedules = schedules?.map(schedule => {
+        const assignment = assignments?.find(a => a.class_id === schedule.class_id);
+        return {
+          ...schedule,
+          subject: assignment?.subject || 'N/A'
+        };
+      }) || [];
+
+      setTodaySchedule(enrichedSchedules);
+    } catch (err) {
+      console.error("❌ Error fetching today's schedule:", err);
+    }
+  }, []);
 
   const fetchTeacherData = async (teacherId) => {
     try {
@@ -105,6 +165,9 @@ const TeacherDashboard = ({ user }) => {
       });
 
       setAnnouncements(announcementsData || []);
+
+      // Fetch today's schedule
+      await fetchTodaySchedule(teacherId);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -204,7 +267,7 @@ const TeacherDashboard = ({ user }) => {
           </div>
         </div>
 
-        {/* Stats Cards - Original with Better Mobile */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Total Siswa */}
           <div className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-xl shadow-lg hover:shadow-xl border border-blue-100 hover:border-blue-200 p-4 sm:p-6 transform hover:-translate-y-1 transition-all duration-300">
@@ -261,6 +324,51 @@ const TeacherDashboard = ({ user }) => {
           </div>
         </div>
 
+        {/* Quick Actions - Horizontal Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <button 
+            onClick={handleAttendance}
+            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                <span className="text-white text-lg">📋</span>
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-slate-800 text-sm">Presensi {primarySubject}</h4>
+                <p className="text-xs text-slate-600">Catat Kehadiran</p>
+              </div>
+            </div>
+          </button>
+
+          <button 
+            onClick={handleGrades}
+            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                <span className="text-white text-lg">📝</span>
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-slate-800 text-sm">Nilai {primarySubject}</h4>
+                <p className="text-xs text-slate-600">Input Nilai Siswa</p>
+              </div>
+            </div>
+          </button>
+
+          <button 
+            onClick={handleReports}
+            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                <span className="text-white text-lg">📊</span>
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-slate-800 text-sm">Lihat Laporan</h4>
+                <p className="text-xs text-slate-600">Nilai & Kehadiran</p>
+              </div>
+            </div>
+          </button>
+        </div>
+
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Mata Pelajaran & Kelas */}
@@ -269,6 +377,7 @@ const TeacherDashboard = ({ user }) => {
               <span className="mr-2 text-blue-600">📖</span>
               Mata Pelajaran & Kelas
             </h3>
+            
             <div className="space-y-4">
               {Object.entries(subjectBreakdown).map(([subject, classes]) => {
                 // Group classes by grade
@@ -315,65 +424,71 @@ const TeacherDashboard = ({ user }) => {
             </div>
           </div>
 
-          {/* Quick Actions - Enhanced with Working Navigation */}
-          <div className="bg-gradient-to-br from-white via-slate-50/30 to-emerald-50/30 rounded-xl shadow-lg border border-slate-200 p-4 sm:p-6 backdrop-blur-sm">
+          {/* Jadwal Hari Ini */}
+          <div className="bg-gradient-to-br from-white via-slate-50/30 to-indigo-50/30 rounded-xl shadow-lg border border-slate-200 p-4 sm:p-6 backdrop-blur-sm">
             <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 flex items-center">
-              <span className="mr-2 text-emerald-600">⚡</span>
-              Quick Actions
+              <span className="mr-2 text-indigo-600">🗓️</span>
+              Jadwal Hari Ini - {currentDay}
             </h3>
-            <div className="space-y-3">
-              <button 
-                onClick={handleAttendance}
-                className="group w-full text-left p-4 bg-gradient-to-br from-blue-50 via-white to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-100 hover:border-blue-200 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 min-h-[60px] focus:ring-4 focus:ring-blue-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                    <span className="text-white text-lg">📋</span>
+            
+            {todaySchedule.length > 0 ? (
+              <div className="space-y-3">
+                {todaySchedule.map((schedule, index) => (
+                  <div
+                    key={schedule.id}
+                    className="bg-white border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="text-center min-w-[60px]">
+                          <div className="text-xs text-slate-500 mb-1">Jam {index + 1}</div>
+                          <div className="font-semibold text-blue-700 text-xs sm:text-sm">
+                            {formatTime(schedule.start_time)}
+                          </div>
+                          <div className="text-xs text-slate-400">-</div>
+                          <div className="font-semibold text-blue-700 text-xs sm:text-sm">
+                            {formatTime(schedule.end_time)}
+                          </div>
+                        </div>
+                        <div className="h-16 w-px bg-slate-200"></div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-slate-800 text-sm sm:text-base mb-1">
+                            {schedule.subject}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <span className="flex items-center gap-1">
+                              <span>🏫</span>
+                              <span>Kelas {schedule.classes?.id || schedule.class_id}</span>
+                            </span>
+                            {schedule.room_number && (
+                              <>
+                                <span className="text-slate-400">•</span>
+                                <span className="flex items-center gap-1">
+                                  <span>📍</span>
+                                  <span>R.{schedule.room_number}</span>
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors text-sm sm:text-base">
-                      Presensi {primarySubject}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-slate-600 group-hover:text-blue-600 transition-colors">
-                      Catat Kehadiran Siswa
-                    </p>
-                  </div>
-                </div>
-              </button>
-
-              <button 
-                onClick={handleGrades}
-                className="group w-full text-left p-4 bg-gradient-to-br from-emerald-50 via-white to-green-50 hover:from-emerald-100 hover:to-green-100 border border-emerald-100 hover:border-emerald-200 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 min-h-[60px] focus:ring-4 focus:ring-emerald-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                    <span className="text-white text-lg">📝</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors text-sm sm:text-base">
-                      Nilai {primarySubject}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-slate-600 group-hover:text-emerald-600 transition-colors">Input Nilai Siswa</p>
-                  </div>
-                </div>
-              </button>
-
-              <button 
-                onClick={handleReports}
-                className="group w-full text-left p-4 bg-gradient-to-br from-purple-50 via-white to-violet-50 hover:from-purple-100 hover:to-violet-100 border border-purple-100 hover:border-purple-200 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 min-h-[60px] focus:ring-4 focus:ring-purple-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                    <span className="text-white text-lg">📊</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-800 group-hover:text-purple-700 transition-colors text-sm sm:text-base">
-                      Lihat Laporan
-                    </h4>
-                    <p className="text-xs sm:text-sm text-slate-600 group-hover:text-purple-600 transition-colors">
-                      Laporan Nilai & Kehadiran
-                    </p>
-                  </div>
-                </div>
-              </button>
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-4">📅</div>
+                <h4 className="font-semibold text-slate-800 mb-2 text-sm sm:text-base">
+                  Tidak Ada Jadwal
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-600">
+                  Anda Tidak Memiliki Jadwal Mengajar Hari Ini
+                </p>
+                <p className="text-xs text-slate-500 mt-2">
+                  Selamat Menikmati Hari Libur ! 🎉
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -397,7 +512,7 @@ const TeacherDashboard = ({ user }) => {
                     {announcement.content}
                   </p>
                   <p className="text-xs text-slate-500 mt-2 ml-6 flex items-center group-hover:text-orange-600 transition-colors">
-                    <span className="mr-1">🕒</span>
+                    <span className="mr-1">🕐</span>
                     {new Date(announcement.created_at).toLocaleDateString(
                       "id-ID",
                       {

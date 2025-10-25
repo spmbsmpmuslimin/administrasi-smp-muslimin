@@ -1,10 +1,6 @@
 // reports/ReportHelpers.js
 // ============================================
-// 🎯 CENTRALIZED REPORT HELPERS - ENHANCED
-// ============================================
-// Purpose: Single source of truth untuk semua report logic
-// Usage: Import functions yang dibutuhkan di setiap role component
-// Last Update: 2025-10-20
+// 🎯 CENTRALIZED REPORT HELPERS - FIXED
 // ============================================
 
 import { supabase } from '../supabaseClient';
@@ -19,6 +15,11 @@ export const ATTENDANCE_STATUS_MAP = {
   'alpa': 'Alpa',
   'sakit': 'Sakit',
   'izin': 'Izin'
+};
+
+export const ATTENDANCE_TYPES = {
+  HARIAN: 'harian',
+  MATA_PELAJARAN: 'mapel'
 };
 
 // ==================== DATE FORMATTERS ====================
@@ -90,7 +91,6 @@ export const formatAttendanceStatus = (status) => {
 // ==================== STANDARDIZED HEADERS ====================
 
 export const REPORT_HEADERS = {
-  // Teacher reports
   teachers: [
     'Kode Guru',
     'Username', 
@@ -101,7 +101,6 @@ export const REPORT_HEADERS = {
     'Tanggal Bergabung'
   ],
   
-  // Student reports
   students: [
     'NIS',
     'Nama Lengkap',
@@ -119,12 +118,20 @@ export const REPORT_HEADERS = {
     'Tahun Ajaran'
   ],
   
-  // Attendance reports
   attendance: [
     'Tanggal',
     'NIS',
     'Nama Siswa',
     'Kelas',
+    'Status Kehadiran'
+  ],
+  
+  attendanceWithSubject: [
+    'Tanggal',
+    'NIS',
+    'Nama Siswa',
+    'Kelas',
+    'Mata Pelajaran',
     'Status Kehadiran'
   ],
   
@@ -140,7 +147,6 @@ export const REPORT_HEADERS = {
     'Persentase'
   ],
   
-  // Grade reports
   grades: [
     'Tahun Ajaran',
     'Semester',
@@ -164,7 +170,6 @@ export const REPORT_HEADERS = {
     'Nilai'
   ],
 
-  // Grade final only (untuk homeroom)
   gradesFinalOnly: [
     'Tahun Ajaran',
     'Semester',
@@ -206,13 +211,22 @@ export const formatStudentRow = (row, includeGrade = true) => {
   return base;
 };
 
-export const formatAttendanceRow = (row) => ({
-  date: formatDate(row.date),
-  student_nis: row.students?.nis || row.nis || '-',
-  student_name: row.students?.full_name || row.full_name || '-',
-  class_id: row.students?.class_id || row.class_id || '-',
-  status: formatAttendanceStatus(row.status)
-});
+export const formatAttendanceRow = (row, includeSubject = false) => {
+  const base = {
+    date: formatDate(row.date),
+    student_nis: row.students?.nis || row.nis || '-',
+    student_name: row.students?.full_name || row.full_name || '-',
+    class_id: row.students?.class_id || row.class_id || '-'
+  };
+  
+  if (includeSubject) {
+    base.subject = row.subject || '-';
+  }
+  
+  base.status = formatAttendanceStatus(row.status);
+  
+  return base;
+};
 
 export const formatGradeRow = (row, teacherMap = {}) => ({
   academic_year: row.academic_year || '-',
@@ -239,9 +253,6 @@ export const formatFinalGradeRow = (row, teacherMap = {}) => ({
 
 // ==================== DATA FETCHERS ====================
 
-/**
- * Fetch teachers data
- */
 export const fetchTeachersData = async (filters = {}) => {
   let query = supabase
     .from('users')
@@ -265,9 +276,6 @@ export const fetchTeachersData = async (filters = {}) => {
   };
 };
 
-/**
- * Fetch students data
- */
 export const fetchStudentsData = async (filters = {}, includeGrade = true) => {
   let query = supabase
     .from('students')
@@ -293,10 +301,7 @@ export const fetchStudentsData = async (filters = {}, includeGrade = true) => {
   };
 };
 
-/**
- * Fetch attendance recap data
- */
-export const fetchAttendanceRecapData = async (filters = {}) => {
+export const fetchAttendanceRecapData = async (filters = {}, attendanceType = null) => {
   const startDate = filters.start_date || new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
   const endDate = filters.end_date || new Date().toISOString().split('T')[0];
 
@@ -306,18 +311,33 @@ export const fetchAttendanceRecapData = async (filters = {}) => {
     .gte('date', startDate)
     .lte('date', endDate);
 
+  // ✅ Filter by type
+  if (attendanceType === 'Mata Pelajaran') {
+    query = query.eq('type', 'mapel');
+  } else if (attendanceType === 'Harian') {
+    query = query.eq('type', 'harian');
+  }
+
+  // ✅ Filter by class_ids
+  if (filters.class_ids && filters.class_ids.length > 0) {
+    query = query.in('class_id', filters.class_ids);
+  } else if (filters.class_id) {
+    query = query.eq('class_id', filters.class_id);
+  }
+
+  // ✅ CRITICAL: Filter by subject
+  if (filters.subject) {
+    console.log('🔍 Filtering recap by subject:', filters.subject);
+    query = query.eq('subject', filters.subject);
+  }
+
   const { data: rawAttendance, error } = await query;
   if (error) throw error;
 
-  // Apply class filter after fetch (karena join issue)
-  let filteredData = rawAttendance || [];
-  if (filters.class_id) {
-    filteredData = filteredData.filter(a => a.students?.class_id === filters.class_id);
-  }
+  console.log('✅ Attendance recap data fetched:', rawAttendance?.length, 'records');
 
-  // Aggregate by student
   const recapData = {};
-  filteredData.forEach(record => {
+  (rawAttendance || []).forEach(record => {
     const key = record.student_id;
     if (!recapData[key]) {
       recapData[key] = {
@@ -355,18 +375,23 @@ export const fetchAttendanceRecapData = async (filters = {}) => {
   };
 };
 
-/**
- * Fetch grades data - NEW: Support both teacher (all assignment types) and homeroom (final grades only)
- */
 export const fetchGradesData = async (filters = {}, teacherId = null, isHomeroom = false) => {
   let query = supabase
     .from('grades')
     .select('*, students!inner(nis, full_name, class_id), users!inner(full_name)');
 
   if (teacherId) query = query.eq('teacher_id', teacherId);
-  if (filters.class_id) query = query.eq('students.class_id', filters.class_id);
+  
+  if (filters.class_ids && filters.class_ids.length > 0) {
+    query = query.in('students.class_id', filters.class_ids);
+  } else if (filters.class_id) {
+    query = query.eq('students.class_id', filters.class_id);
+  }
+  
   if (filters.academic_year) query = query.eq('academic_year', filters.academic_year);
   if (filters.semester) query = query.eq('semester', filters.semester);
+  
+  // ✅ CRITICAL: Filter by subject BEFORE query
   if (filters.subject) query = query.eq('subject', filters.subject);
 
   query = query
@@ -376,11 +401,11 @@ export const fetchGradesData = async (filters = {}, teacherId = null, isHomeroom
   const { data, error } = await query;
   if (error) throw error;
 
-  // HOMEROOM: Calculate final grades, show ONLY Nilai Akhir
+  console.log('✅ Grades fetched:', data?.length, 'records');
+
   if (isHomeroom) {
     const finalGrades = calculateFinalGrades(data || []);
     
-    // Build teacher map
     const teacherMap = {};
     (data || []).forEach(row => {
       if (row.teacher_id && row.users?.full_name) {
@@ -395,11 +420,11 @@ export const fetchGradesData = async (filters = {}, teacherId = null, isHomeroom
       preview: formattedData.slice(0, 100),
       fullData: formattedData,
       total: formattedData.length,
-      summary: calculateFinalGradeSummary(finalGrades)
+      summary: calculateFinalGradeSummary(finalGrades),
+      rawFinalGrades: finalGrades // ✅ Return raw final grades too
     };
   }
 
-  // TEACHER: Show all assignment types
   const formattedData = data?.map(row => formatGradeRow(row)) || [];
   
   return {
@@ -411,10 +436,7 @@ export const fetchGradesData = async (filters = {}, teacherId = null, isHomeroom
   };
 };
 
-/**
- * Fetch attendance daily data
- */
-export const fetchAttendanceDailyData = async (filters = {}) => {
+export const fetchAttendanceDailyData = async (filters = {}, attendanceType = null) => {
   const startDate = filters.start_date || (() => {
     const date = new Date();
     date.setDate(1);
@@ -424,22 +446,51 @@ export const fetchAttendanceDailyData = async (filters = {}) => {
 
   let query = supabase
     .from('attendances')
-    .select('date, student_id, status, students!inner(nis, full_name, class_id)')
+    .select('date, student_id, status, subject, type, class_id, students!inner(nis, full_name, class_id)')
     .gte('date', startDate)
     .lte('date', endDate)
     .order('date', { ascending: false });
 
-  // Apply class filter if provided
-  if (filters.class_id) {
-    query = query.eq('students.class_id', filters.class_id);
+  // ✅ Filter by type
+  if (attendanceType === 'Mata Pelajaran') {
+    console.log('🔍 Filtering by type: mapel');
+    query = query.eq('type', 'mapel');
+  } else if (attendanceType === 'Harian') {
+    console.log('🔍 Filtering by type: harian');
+    query = query.eq('type', 'harian');
+  }
+
+  // ✅ Filter by class_ids
+  if (filters.class_ids && filters.class_ids.length > 0) {
+    console.log('🔍 Filtering by class_ids:', filters.class_ids);
+    query = query.in('class_id', filters.class_ids);
+  } else if (filters.class_id) {
+    query = query.eq('class_id', filters.class_id);
+  }
+
+  // ✅ CRITICAL: Filter by subject for teacher
+  if (filters.subject) {
+    console.log('🔍 Filtering by subject:', filters.subject);
+    query = query.eq('subject', filters.subject);
   }
 
   const { data, error } = await query;
-  if (error) throw error;
-
-  const formattedData = data?.map(formatAttendanceRow) || [];
   
-  // Calculate summary
+  if (error) {
+    console.error('❌ Attendance query error:', error);
+    throw error;
+  }
+
+  console.log('✅ Attendance data fetched:', data?.length, 'records');
+  if (data && data.length > 0) {
+    console.log('🔍 Sample record:', data[0]);
+    console.log('🔍 Unique subjects:', [...new Set(data.map(d => d.subject))]);
+  }
+
+  const includeSubject = attendanceType === 'Mata Pelajaran';
+  
+  const formattedData = data?.map(row => formatAttendanceRow(row, includeSubject)) || [];
+  
   const totalRecords = data?.length || 0;
   const hadirCount = data?.filter(d => d.status?.toLowerCase() === 'hadir').length || 0;
   const hadirPercent = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
@@ -451,7 +502,7 @@ export const fetchAttendanceDailyData = async (filters = {}) => {
   ];
 
   return {
-    headers: REPORT_HEADERS.attendance,
+    headers: includeSubject ? REPORT_HEADERS.attendanceWithSubject : REPORT_HEADERS.attendance,
     preview: formattedData.slice(0, 100),
     fullData: formattedData,
     total: formattedData.length,
@@ -574,15 +625,9 @@ export const validateReportData = (data, headers) => {
   return { valid: true, message: 'Data valid' };
 };
 
-/**
- * Calculate final grades per student per subject
- * Formula: 40% Rata² NH + 30% UTS + 30% UAS
- * Group by: student_id + subject + semester + academic_year
- */
 export const calculateFinalGrades = (gradesData) => {
   const groupedByStudentSubject = {};
 
-  // Group by student_id + subject + semester + academic_year
   gradesData.forEach(grade => {
     const key = `${grade.student_id}_${grade.subject}_${grade.semester}_${grade.academic_year}`;
     
@@ -608,25 +653,20 @@ export const calculateFinalGrades = (gradesData) => {
     
     if (isNaN(score)) return;
     
-    // Collect NH (Nilai Harian)
     if (type.includes('nh') || type.includes('harian')) {
       groupedByStudentSubject[key].nh.push(score);
     }
-    // Collect UTS
     else if (type.includes('uts')) {
       groupedByStudentSubject[key].uts = score;
     }
-    // Collect UAS
     else if (type.includes('uas')) {
       groupedByStudentSubject[key].uas = score;
     }
   });
 
-  // Calculate final score
   const finalGrades = [];
   
   Object.values(groupedByStudentSubject).forEach(group => {
-    // Calculate rata-rata NH
     const avgNH = group.nh.length > 0
       ? group.nh.reduce((a, b) => a + b, 0) / group.nh.length
       : 0;
@@ -634,10 +674,8 @@ export const calculateFinalGrades = (gradesData) => {
     const uts = group.uts || 0;
     const uas = group.uas || 0;
 
-    // Formula: 40% NH + 30% UTS + 30% UAS
     const finalScore = (0.4 * avgNH) + (0.3 * uts) + (0.3 * uas);
 
-    // Only include if has some scores
     if (avgNH > 0 || uts > 0 || uas > 0) {
       finalGrades.push({
         ...group,
@@ -650,44 +688,32 @@ export const calculateFinalGrades = (gradesData) => {
   return finalGrades;
 };
 
-// ==================== EXPORT ALL ====================
-
 export default {
-  // Constants
   TEACHER_ROLES,
   ATTENDANCE_STATUS_MAP,
+  ATTENDANCE_TYPES,
   REPORT_HEADERS,
-  
-  // Formatters
   formatDate,
   formatDateTime,
   formatRole,
   formatGender,
   formatActiveStatus,
   formatAttendanceStatus,
-  
-  // Row Formatters
   formatTeacherRow,
   formatStudentRow,
   formatAttendanceRow,
   formatGradeRow,
   formatFinalGradeRow,
-  
-  // Data Fetchers
   fetchTeachersData,
   fetchStudentsData,
   fetchAttendanceRecapData,
   fetchGradesData,
   fetchAttendanceDailyData,
-  
-  // Summary Calculators
   calculateStudentSummary,
   calculateTeacherSummary,
   calculateAttendanceSummary,
   calculateGradeSummary,
   calculateFinalGradeSummary,
-  
-  // Utilities
   getDateRange,
   buildFilterDescription,
   validateReportData,

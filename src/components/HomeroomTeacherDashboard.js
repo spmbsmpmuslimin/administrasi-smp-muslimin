@@ -19,6 +19,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
     classesTaught: [],
     totalClassesTaught: 0,
   });
+  const [todaySchedule, setTodaySchedule] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,12 +31,70 @@ const HomeroomTeacherDashboard = ({ user }) => {
   const teacherId = user?.teacher_id;
   const userRole = user?.role;
 
+  // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
+  const getDayName = (dayIndex) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return days[dayIndex];
+  };
+
+  // Fungsi untuk format waktu
+  const formatTime = (time) => {
+    if (!time) return '-';
+    return time.substring(0, 5); // Format HH:MM
+  };
+
   // Debug log - HANYA sekali saat mount atau username berubah
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       console.log("🏠 HomeroomTeacherDashboard mounted with user:", username);
     }
   }, [username]);
+
+  // Fetch jadwal hari ini
+  const fetchTodaySchedule = useCallback(async () => {
+    if (!teacherId) return;
+
+    try {
+      const today = new Date();
+      const dayName = getDayName(today.getDay());
+
+      const { data: schedules, error: scheduleError } = await supabase
+        .from('teacher_schedules')
+        .select(`
+          *,
+          classes:class_id (
+            id,
+            grade
+          )
+        `)
+        .eq('teacher_id', teacherId)
+        .eq('day', dayName)
+        .order('start_time', { ascending: true });
+
+      if (scheduleError) throw scheduleError;
+
+      // Get subject info from teacher_assignments
+      const scheduleIds = schedules?.map(s => s.class_id) || [];
+      const { data: assignments } = await supabase
+        .from('teacher_assignments')
+        .select('class_id, subject')
+        .eq('teacher_id', teacherId)
+        .in('class_id', scheduleIds);
+
+      // Merge schedule with subject data
+      const enrichedSchedules = schedules?.map(schedule => {
+        const assignment = assignments?.find(a => a.class_id === schedule.class_id);
+        return {
+          ...schedule,
+          subject: assignment?.subject || 'N/A'
+        };
+      }) || [];
+
+      setTodaySchedule(enrichedSchedules);
+    } catch (err) {
+      console.error("❌ Error fetching today's schedule:", err);
+    }
+  }, [teacherId]);
 
   // Memoize fetchHomeroomDashboardData untuk prevent re-creation
   const fetchHomeroomDashboardData = useCallback(async () => {
@@ -195,13 +254,16 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
       setAnnouncements(announcementsResult.data || []);
       setError(null);
+
+      // Fetch today's schedule
+      await fetchTodaySchedule();
     } catch (err) {
       console.error("❌ Error fetching homeroom dashboard data:", err);
       setError("Gagal memuat data dashboard homeroom: " + err.message);
     } finally {
       setLoading(false);
     }
-  }, [homeroomClassId, teacherId, fullName, username]); // ✅ DEPENDENCY SPESIFIK!
+  }, [homeroomClassId, teacherId, fullName, username, fetchTodaySchedule]);
 
   // Fetch data - HANYA ketika dependency berubah
   useEffect(() => {
@@ -209,7 +271,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
       console.log("🏠 User has homeroom_class_id:", homeroomClassId);
     }
     fetchHomeroomDashboardData();
-  }, [fetchHomeroomDashboardData]); // ✅ Dependency pada memoized function
+  }, [fetchHomeroomDashboardData]);
 
   const handleRetry = () => {
     fetchHomeroomDashboardData();
@@ -252,6 +314,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
       teachingData.subjects[0] || ""
     );
   }, [subjectBreakdown, teachingData.subjects]);
+
+  // Get current day name
+  const currentDay = useMemo(() => {
+    const today = new Date();
+    return getDayName(today.getDay());
+  }, []);
 
   if (loading) {
     return (
@@ -396,6 +464,67 @@ const HomeroomTeacherDashboard = ({ user }) => {
           </div>
         </div>
 
+        {/* Quick Actions - Horizontal Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <button 
+            onClick={handleAttendance}
+            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                <span className="text-white text-lg">📋</span>
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-slate-800 text-sm">Presensi</h4>
+                <p className="text-xs text-slate-600">Kelas {stats.className}</p>
+              </div>
+            </div>
+          </button>
+
+          {primarySubject && (
+            <button 
+              onClick={handleGrades}
+              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <span className="text-white text-lg">📝</span>
+                </div>
+                <div className="text-left">
+                  <h4 className="font-semibold text-slate-800 text-sm">Input Nilai</h4>
+                  <p className="text-xs text-slate-600">{primarySubject}</p>
+                </div>
+              </div>
+            </button>
+          )}
+
+          <button 
+            onClick={handleStudents}
+            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                <span className="text-white text-lg">👨‍🎓</span>
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-slate-800 text-sm">Data Siswa</h4>
+                <p className="text-xs text-slate-600">Kelas {stats.className}</p>
+              </div>
+            </div>
+          </button>
+
+          <button 
+            onClick={handleReports}
+            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                <span className="text-white text-lg">📊</span>
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-slate-800 text-sm">Laporan</h4>
+                <p className="text-xs text-slate-600">Kelas {stats.className}</p>
+              </div>
+            </div>
+          </button>
+        </div>
+
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Mata Pelajaran & Kelas */}
@@ -405,6 +534,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 <span className="mr-2">📖</span>
                 Mata Pelajaran & Kelas
               </h3>
+              
               <div className="space-y-4">
                 {Object.entries(subjectBreakdown).map(([subject, classes]) => {
                   // Group classes by grade
@@ -459,85 +589,77 @@ const HomeroomTeacherDashboard = ({ user }) => {
             </div>
           )}
 
-          {/* Quick Actions */}
+          {/* Jadwal Hari Ini */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 flex items-center">
-              <span className="mr-2">⚡</span>
-              Quick Actions
+              <span className="mr-2">🗓️</span>
+              Jadwal Hari Ini - {currentDay}
             </h3>
-            <div className="space-y-3">
-              <button 
-                onClick={handleAttendance}
-                className="w-full text-left p-4 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors group min-h-[60px] focus:ring-4 focus:ring-blue-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                    <span className="text-white text-lg">📋</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-800 text-sm sm:text-base">
-                      Presensi Kelas {stats.className}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-slate-600">
-                      Catat Kehadiran Siswa Mapel & Walikelas
-                    </p>
-                  </div>
-                </div>
-              </button>
-
-              {primarySubject && (
-                <button 
-                  onClick={handleGrades}
-                  className="w-full text-left p-4 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors group min-h-[60px] focus:ring-4 focus:ring-blue-300">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                      <span className="text-white text-lg">📝</span>
+            
+            {todaySchedule.length > 0 ? (
+              <div className="space-y-3">
+                {todaySchedule.map((schedule, index) => (
+                  <div
+                    key={schedule.id}
+                    className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="text-center min-w-[60px]">
+                          <div className="text-xs text-slate-500 mb-1">Jam {index + 1}</div>
+                          <div className="font-semibold text-blue-700 text-xs sm:text-sm">
+                            {formatTime(schedule.start_time)}
+                          </div>
+                          <div className="text-xs text-slate-400">-</div>
+                          <div className="font-semibold text-blue-700 text-xs sm:text-sm">
+                            {formatTime(schedule.end_time)}
+                          </div>
+                        </div>
+                        <div className="h-16 w-px bg-slate-200"></div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-slate-800 text-sm sm:text-base mb-1">
+                            {schedule.subject}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <span className="flex items-center gap-1">
+                              <span>🏫</span>
+                              <span>Kelas {schedule.classes?.id || schedule.class_id}</span>
+                            </span>
+                            {schedule.room_number && (
+                              <>
+                                <span className="text-slate-400">•</span>
+                                <span className="flex items-center gap-1">
+                                  <span>📍</span>
+                                  <span>R.{schedule.room_number}</span>
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {schedule.class_id === stats.className && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">
+                          <span className="mr-1">👑</span>
+                          Wali
+                        </span>
+                      )}
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800 text-sm sm:text-base">
-                        Input Nilai {primarySubject}
-                      </h4>
-                      <p className="text-xs sm:text-sm text-slate-600">Input Nilai Siswa</p>
-                    </div>
                   </div>
-                </button>
-              )}
-
-              <button 
-                onClick={handleStudents}
-                className="w-full text-left p-4 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors group min-h-[60px] focus:ring-4 focus:ring-blue-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                    <span className="text-white text-lg">👨‍🎓</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-800 text-sm sm:text-base">
-                      Data Siswa {stats.className}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-slate-600">
-                      Kelola Data Siswa Kelas
-                    </p>
-                  </div>
-                </div>
-              </button>
-
-              <button 
-                onClick={handleReports}
-                className="w-full text-left p-4 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors group min-h-[60px] focus:ring-4 focus:ring-blue-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                    <span className="text-white text-lg">📊</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-800 text-sm sm:text-base">
-                      Laporan Kelas {stats.className}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-slate-600">
-                      Laporan Khusus Walikelas
-                    </p>
-                  </div>
-                </div>
-              </button>
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-4">📅</div>
+                <h4 className="font-semibold text-slate-800 mb-2 text-sm sm:text-base">
+                  Tidak Ada Jadwal
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-600">
+                  Anda Tidak Memiliki Jadwal Mengajar Hari Ini
+                </p>
+                <p className="text-xs text-slate-500 mt-2">
+                  Selamat Menikmati Hari Libur ! 🎉
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

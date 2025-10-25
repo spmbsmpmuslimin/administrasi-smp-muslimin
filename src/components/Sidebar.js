@@ -27,12 +27,22 @@ const Sidebar = ({
             </svg>
           </div>
           <div>
+            {/* PERBAIKAN: Menyamakan font dan ukuran untuk kedua baris */}
+            <div className="text-lg font-bold text-white leading-tight">
+              SMP Muslimin
+            </div>
+            <div className="text-lg font-bold text-white leading-tight mt-1">
+              Cililin
+            </div>
+            {/*
+            Kode sebelumnya:
             <div className="text-lg font-bold text-white leading-tight">
               SMP Muslimin
             </div>
             <div className="text-sm font-medium text-blue-200 leading-tight mt-1">
               Cililin
             </div>
+            */}
           </div>
         </div>
       </div>
@@ -486,6 +496,36 @@ const Sidebar = ({
                 />
               </svg>
               <span className="flex-1 text-sm">Pengaturan</span>
+            </a>
+
+            {/* BARU: Monitor Sistem */}
+            <a
+              href="#monitor-sistem"
+              className={`
+                flex items-center gap-3 px-6 py-2.5 text-white font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 hover:pl-8 rounded-r-full mr-4
+                ${
+                  currentPage === "monitor-sistem"
+                    ? "bg-blue-800 border-r-4 border-blue-400 font-semibold text-blue-100 pl-8"
+                    : "hover:text-blue-100"
+                }
+              `}
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate("monitor-sistem");
+              }}>
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                />
+              </svg>
+              <span className="flex-1 text-sm">Monitor Sistem</span>
             </a>
           </div>
         )}

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { exportToExcel } from "./ReportExcel";
-import ReportModal from "./ReportModal";
+import ReportModal from './modals/TeacherReportModal';
 import {
   fetchGradesData,
   fetchAttendanceDailyData,
@@ -26,34 +26,54 @@ import {
   buildFilterDescription,
   calculateFinalGrades,
   REPORT_HEADERS,
-} from './ReportHelpers';
+} from "./ReportHelpers";
+
+// ==================== CONSTANTS ====================
+
+// ✅ FIX: Tailwind color classes mapping
+const COLOR_CLASSES = {
+  indigo: { bg: "bg-indigo-100", text: "text-indigo-600" },
+  green: { bg: "bg-green-100", text: "text-green-600" },
+  blue: { bg: "bg-blue-100", text: "text-blue-600" },
+  purple: { bg: "bg-purple-100", text: "text-purple-600" },
+  cyan: { bg: "bg-cyan-100", text: "text-cyan-600" },
+  emerald: { bg: "bg-emerald-100", text: "text-emerald-600" },
+  yellow: { bg: "bg-yellow-100", text: "text-yellow-600" },
+  orange: { bg: "bg-orange-100", text: "text-orange-600" },
+  teal: { bg: "bg-teal-100", text: "text-teal-600" },
+};
 
 // ==================== COMPONENTS ====================
 
+// ✅ FIXED: StatCard with proper color classes
 const StatCard = ({
   icon: Icon,
   label,
   value,
   color = "indigo",
   alert = false,
-}) => (
-  <div
-    className={`bg-white rounded-lg shadow-sm border ${
-      alert ? "border-red-300" : "border-slate-200"
-    } p-4 hover:shadow-md transition-shadow`}>
-    <div className="flex items-center gap-3">
-      <div
-        className={`w-12 h-12 bg-${color}-100 rounded-lg flex items-center justify-center`}>
-        <Icon className={`w-6 h-6 text-${color}-600`} />
+}) => {
+  const colors = COLOR_CLASSES[color] || COLOR_CLASSES.indigo;
+
+  return (
+    <div
+      className={`bg-white rounded-lg shadow-sm border ${
+        alert ? "border-red-300" : "border-slate-200"
+      } p-4 hover:shadow-md transition-shadow`}>
+      <div className="flex items-center gap-3">
+        <div
+          className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
+          <Icon className={`w-6 h-6 ${colors.text}`} />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm text-slate-600">{label}</p>
+          <p className="text-2xl font-bold text-slate-800">{value}</p>
+        </div>
+        {alert && <AlertTriangle className="w-5 h-5 text-red-500" />}
       </div>
-      <div className="flex-1">
-        <p className="text-sm text-slate-600">{label}</p>
-        <p className="text-2xl font-bold text-slate-800">{value}</p>
-      </div>
-      {alert && <AlertTriangle className="w-5 h-5 text-red-500" />}
     </div>
-  </div>
-);
+  );
+};
 
 const FilterPanel = ({
   filters,
@@ -215,7 +235,7 @@ const FilterPanel = ({
 // ==================== MAIN COMPONENT ====================
 
 const TeacherReports = ({ user }) => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [downloadingReportId, setDownloadingReportId] = useState(null);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
@@ -237,102 +257,120 @@ const TeacherReports = ({ user }) => {
   });
   const [success, setSuccess] = useState(null);
   const [alertStudents, setAlertStudents] = useState([]);
+  const [teacherAssignments, setTeacherAssignments] = useState([]);
 
   const teacherId = user?.teacher_id;
   const userUUID = user?.id;
 
+  // ✅ FIX: Race condition dengan Promise.all
   useEffect(() => {
-    if (!teacherId || !userUUID) {
-      console.error("Teacher ID atau User ID tidak tersedia:", user);
-      setError("Data teacher tidak lengkap");
-      return;
-    }
+    const loadAllData = async () => {
+      if (!teacherId || !userUUID) {
+        console.error("Teacher ID atau User ID tidak tersedia:", user);
+        setError("Data teacher tidak lengkap");
+        setLoading(false);
+        return;
+      }
 
-    const fetchSubjects = async () => {
       try {
-        const { data, error } = await supabase
-          .from("teacher_assignments")
-          .select("subject, class_id")
-          .eq("teacher_id", teacherId)
-          .order("subject");
-
-        if (error) throw error;
-
-        const uniqueSubjects = [...new Set(data.map((item) => item.subject))];
-        const uniqueClasses = [...new Set(data.map((item) => item.class_id))];
-
-        setSubjectOptions(uniqueSubjects);
-        setClassOptions(uniqueClasses);
-
-        if (uniqueSubjects.length > 0) {
-          setFilters({ subject: uniqueSubjects[0] });
-        }
+        setLoading(true);
+        await Promise.all([
+          fetchSubjects(),
+          fetchAcademicYears(),
+          fetchStats(),
+        ]);
       } catch (err) {
-        console.error("Error fetching subjects:", err);
-        setError("Gagal memuat mata pelajaran");
+        console.error("Error loading initial data:", err);
+        setError("Gagal memuat data awal. Silakan refresh halaman.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    const fetchAcademicYears = async () => {
-      try {
-        const { data: assignmentData, error: assignmentError } = await supabase
-          .from("teacher_assignments")
+    loadAllData();
+  }, [teacherId, userUUID]);
+
+  const fetchSubjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("teacher_assignments")
+        .select("subject, class_id")
+        .eq("teacher_id", teacherId)
+        .order("subject");
+
+      if (error) throw error;
+
+      // ✅ FIX: Store assignments for validation
+      setTeacherAssignments(data || []);
+
+      const uniqueSubjects = [...new Set(data.map((item) => item.subject))];
+      const uniqueClasses = [...new Set(data.map((item) => item.class_id))];
+
+      setSubjectOptions(uniqueSubjects);
+      setClassOptions(uniqueClasses);
+
+      if (uniqueSubjects.length > 0) {
+        setFilters({ subject: uniqueSubjects[0] });
+      }
+    } catch (err) {
+      console.error("Error fetching subjects:", err);
+      setError("Gagal memuat mata pelajaran");
+      throw err;
+    }
+  };
+
+  const fetchAcademicYears = async () => {
+    try {
+      const { data: assignmentData, error: assignmentError } = await supabase
+        .from("teacher_assignments")
+        .select("academic_year")
+        .eq("teacher_id", teacherId)
+        .order("academic_year", { ascending: false });
+
+      if (assignmentError) throw assignmentError;
+
+      let uniqueYears = [];
+
+      if (assignmentData && assignmentData.length > 0) {
+        uniqueYears = [
+          ...new Set(assignmentData.map((item) => item.academic_year)),
+        ].filter(Boolean);
+      } else {
+        const { data: gradesData, error: gradesError } = await supabase
+          .from("grades")
           .select("academic_year")
-          .eq("teacher_id", teacherId)
+          .eq("teacher_id", userUUID)
           .order("academic_year", { ascending: false });
 
-        if (assignmentError) throw assignmentError;
+        if (gradesError) throw gradesError;
 
-        let uniqueYears = [];
-
-        if (assignmentData && assignmentData.length > 0) {
+        if (gradesData && gradesData.length > 0) {
           uniqueYears = [
-            ...new Set(assignmentData.map((item) => item.academic_year)),
+            ...new Set(gradesData.map((item) => item.academic_year)),
           ].filter(Boolean);
-        } else {
-          const { data: gradesData, error: gradesError } = await supabase
-            .from("grades")
-            .select("academic_year")
-            .eq("teacher_id", userUUID)
-            .order("academic_year", { ascending: false });
-
-          if (gradesError) throw gradesError;
-
-          if (gradesData && gradesData.length > 0) {
-            uniqueYears = [
-              ...new Set(gradesData.map((item) => item.academic_year)),
-            ].filter(Boolean);
-          }
         }
-
-        if (uniqueYears.length === 0) {
-          const { data: classesData, error: classesError } = await supabase
-            .from("classes")
-            .select("academic_year")
-            .order("academic_year", { ascending: false });
-
-          if (!classesError && classesData) {
-            uniqueYears = [
-              ...new Set(classesData.map((item) => item.academic_year)),
-            ].filter(Boolean);
-          }
-        }
-
-        if (uniqueYears.length > 0) {
-          setAcademicYears(uniqueYears);
-        } else {
-          setAcademicYears([]);
-        }
-      } catch (err) {
-        console.error("Error fetching academic years:", err);
-        setAcademicYears([]);
       }
-    };
 
-    fetchSubjects();
-    fetchAcademicYears();
-    fetchStats();
-  }, [teacherId, userUUID]);
+      if (uniqueYears.length === 0) {
+        const { data: classesData, error: classesError } = await supabase
+          .from("classes")
+          .select("academic_year")
+          .order("academic_year", { ascending: false });
+
+        if (!classesError && classesData) {
+          uniqueYears = [
+            ...new Set(classesData.map((item) => item.academic_year)),
+          ].filter(Boolean);
+        }
+      }
+
+      setAcademicYears(uniqueYears.length > 0 ? uniqueYears : []);
+    } catch (err) {
+      console.error("Error fetching academic years:", err);
+      setAcademicYears([]);
+      throw err;
+    }
+  };
 
   const fetchStats = async () => {
     if (!teacherId || !userUUID) return;
@@ -350,6 +388,9 @@ const TeacherReports = ({ user }) => {
         teacherAssignments?.map((ta) => ta.class_id).filter(Boolean) || [];
       const firstAssignment = teacherAssignments?.[0];
       const subject = firstAssignment?.subject || "Mata Pelajaran";
+      const teacherSubjects = [
+        ...new Set(teacherAssignments.map((ta) => ta.subject)),
+      ].filter(Boolean);
 
       let totalStudents = 0;
       if (classIds.length > 0) {
@@ -364,6 +405,7 @@ const TeacherReports = ({ user }) => {
         }
       }
 
+      // ✅ FIX: Alert students logic
       let avgGrade = 0;
       let totalGrades = 0;
       const { data: allGrades, error: gradeError } = await supabase
@@ -374,47 +416,32 @@ const TeacherReports = ({ user }) => {
       if (!gradeError && allGrades && allGrades.length > 0) {
         const finalGrades = calculateFinalGrades(allGrades);
         totalGrades = finalGrades.length;
-        
+
         const validScores = finalGrades
-          .map(g => g.final_score)
-          .filter(score => score != null && !isNaN(score));
-        
+          .map((g) => g.final_score)
+          .filter((score) => score != null && !isNaN(score));
+
         if (validScores.length > 0) {
           avgGrade = Math.round(
-            validScores.reduce((sum, score) => sum + score, 0) / validScores.length
+            validScores.reduce((sum, score) => sum + score, 0) /
+              validScores.length
           );
         }
 
-        const studentFinalScores = {};
-        finalGrades.forEach((g) => {
-          const studentId = g.nis;
-          if (!studentId) return;
-
-          if (!studentFinalScores[studentId]) {
-            studentFinalScores[studentId] = {
-              name: g.full_name,
-              nis: studentId,
-              class_id: g.class_id,
-              final_scores: [],
-            };
-          }
-          if (g.final_score != null && !isNaN(g.final_score)) {
-            studentFinalScores[studentId].final_scores.push(g.final_score);
-          }
-        });
-
-        const alerts = Object.values(studentFinalScores)
-          .filter((student) => {
-            if (student.final_scores.length < 1) return false;
-            const avg = student.final_scores.reduce((a, b) => a + b, 0) / student.final_scores.length;
-            return avg < 75;
-          })
-          .map((student) => ({
-            ...student,
-            avgScore: Math.round(
-              student.final_scores.reduce((a, b) => a + b, 0) / student.final_scores.length
-            ),
-            totalGrades: student.final_scores.length,
+        // ✅ FIXED: Simplified alert students logic
+        const alerts = finalGrades
+          .filter(
+            (g) =>
+              g.final_score != null &&
+              !isNaN(g.final_score) &&
+              g.final_score < 75
+          )
+          .map((g) => ({
+            name: g.full_name,
+            nis: g.nis,
+            class_id: g.class_id,
+            avgScore: Math.round(g.final_score),
+            totalGrades: 1,
           }))
           .sort((a, b) => a.avgScore - b.avgScore)
           .slice(0, 5);
@@ -422,34 +449,26 @@ const TeacherReports = ({ user }) => {
         setAlertStudents(alerts);
       }
 
+      // ✅ FIX: Attendance rate filtered by subject
       let attendanceRate = 0;
-      if (classIds.length > 0) {
+      if (classIds.length > 0 && teacherSubjects.length > 0) {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const { data: studentList } = await supabase
-          .from("students")
-          .select("id")
+        const { data: attendanceData } = await supabase
+          .from("attendances")
+          .select("status")
           .in("class_id", classIds)
-          .eq("is_active", true);
+          .in("subject", teacherSubjects) // ✅ FIX: Filter by teacher's subjects
+          .gte("date", thirtyDaysAgo.toISOString().split("T")[0]);
 
-        const studentIds = studentList?.map((s) => s.id) || [];
-
-        if (studentIds.length > 0) {
-          const { data: attendanceData } = await supabase
-            .from("attendances")
-            .select("status")
-            .in("student_id", studentIds)
-            .gte("date", thirtyDaysAgo.toISOString().split("T")[0]);
-
-          if (attendanceData && attendanceData.length > 0) {
-            const presentCount = attendanceData.filter(
-              (a) => a.status?.toLowerCase() === "hadir"
-            ).length;
-            attendanceRate = Math.round(
-              (presentCount / attendanceData.length) * 100
-            );
-          }
+        if (attendanceData && attendanceData.length > 0) {
+          const presentCount = attendanceData.filter(
+            (a) => a.status?.toLowerCase() === "hadir"
+          ).length;
+          attendanceRate = Math.round(
+            (presentCount / attendanceData.length) * 100
+          );
         }
       }
 
@@ -464,6 +483,7 @@ const TeacherReports = ({ user }) => {
     } catch (err) {
       console.error("Error in teacher stats:", err);
       setError("Gagal memuat statistik");
+      throw err;
     }
   };
 
@@ -480,6 +500,8 @@ const TeacherReports = ({ user }) => {
     } else {
       setFilters({});
     }
+    setError(null);
+    setSuccess(null);
   };
 
   const fetchReportData = async (reportType) => {
@@ -487,13 +509,16 @@ const TeacherReports = ({ user }) => {
       throw new Error("User ID atau Teacher ID tidak tersedia");
     }
 
-    const { data: teacherAssignments } = await supabase
-      .from("teacher_assignments")
-      .select("class_id")
-      .eq("teacher_id", teacherId);
+    // ✅ FIX: Validate assignments
+    if (!teacherAssignments || teacherAssignments.length === 0) {
+      throw new Error(
+        "Tidak ada penugasan kelas. Hubungi admin untuk setup penugasan."
+      );
+    }
 
-    const classIds =
-      teacherAssignments?.map((ta) => ta.class_id).filter(Boolean) || [];
+    const classIds = teacherAssignments
+      .map((ta) => ta.class_id)
+      .filter(Boolean);
 
     if (classIds.length === 0) {
       throw new Error("Tidak ada kelas yang diajar");
@@ -508,85 +533,69 @@ const TeacherReports = ({ user }) => {
           reportTitle = `DATA NILAI AKHIR ${
             filters.subject || stats.subject || "MATA PELAJARAN"
           }`;
-          
-          result = await fetchGradesData(filters, userUUID, true);
+
+          // ✅ FIX: Add class_ids to filters
+          const gradeFilters = { ...filters, class_ids: classIds };
+          result = await fetchGradesData(gradeFilters, userUUID, true);
           result.headers = REPORT_HEADERS.gradesFinalOnly;
-          
+
           break;
         }
 
         case "attendance": {
-          reportTitle = "PRESENSI SISWA";
-          
-          const attendanceFilters = { ...filters };
-          delete attendanceFilters.class_id;
-          
-          result = await fetchAttendanceDailyData(attendanceFilters);
-          
-          if (result.fullData && result.fullData.length > 0) {
-            result.fullData = result.fullData.filter(row => {
-              const rowClass = row.kelas || row.class_id || row.Kelas;
-              return classIds.includes(rowClass);
-            });
-            
-            if (filters.class_id) {
-              result.fullData = result.fullData.filter(row => {
-                const rowClass = row.kelas || row.class_id || row.Kelas;
-                return rowClass === filters.class_id;
-              });
-            }
-            
-            result.preview = result.fullData.slice(0, 100);
-            result.total = result.fullData.length;
-          }
-          
+          reportTitle = "PRESENSI MATA PELAJARAN";
+
+          const attendanceFilters = {
+            ...filters,
+            class_ids: classIds,
+            subject: filters.subject || stats.subject, // ✅ Tambahin ini
+          };
+
+          result = await fetchAttendanceDailyData(
+            attendanceFilters,
+            "Mata Pelajaran"
+          );
+
           if (!result.fullData || result.fullData.length === 0) {
-            throw new Error("Tidak ada data presensi untuk kelas yang Anda ajar");
+            throw new Error(
+              "Tidak ada data presensi mata pelajaran untuk kelas yang Anda ajar"
+            );
           }
-          
+
           break;
         }
 
         case "attendance-recap": {
           reportTitle = "REKAPITULASI KEHADIRAN";
-          
-          const recapFilters = { ...filters };
-          delete recapFilters.class_id;
-          
+
+          // ✅ FIX: Let helper handle filtering with class_ids
+          const recapFilters = { ...filters, class_ids: classIds };
           result = await fetchAttendanceRecapData(recapFilters);
-          
-          if (result.fullData && result.fullData.length > 0) {
-            result.fullData = result.fullData.filter(row => {
-              const rowClass = row.kelas || row.class_id || row.Kelas;
-              return classIds.includes(rowClass);
-            });
-            
-            if (filters.class_id) {
-              result.fullData = result.fullData.filter(row => {
-                const rowClass = row.kelas || row.class_id || row.Kelas;
-                return rowClass === filters.class_id;
-              });
-            }
-            
-            result.preview = result.fullData.slice(0, 100);
-            result.total = result.fullData.length;
-            
-            const totalHadir = result.fullData.reduce((sum, r) => sum + (r.hadir || r.Hadir || 0), 0);
-            const totalPresensi = result.fullData.reduce((sum, r) => sum + (r.total || r.Total || 0), 0);
-            const avgAttendance = totalPresensi > 0 
-              ? Math.round((totalHadir / totalPresensi) * 100) 
-              : 0;
-            
-            result.summary = [
-              { label: 'Siswa Terekap', value: result.fullData.length },
-              { label: 'Rata-rata Hadir', value: `${avgAttendance}%` }
-            ];
-          }
-          
+
           if (!result.fullData || result.fullData.length === 0) {
-            throw new Error("Tidak ada data rekapitulasi untuk kelas yang Anda ajar");
+            throw new Error(
+              "Tidak ada data rekapitulasi untuk kelas yang Anda ajar"
+            );
           }
-          
+
+          const totalHadir = result.fullData.reduce(
+            (sum, r) => sum + (r.hadir || r.Hadir || 0),
+            0
+          );
+          const totalPresensi = result.fullData.reduce(
+            (sum, r) => sum + (r.total || r.Total || 0),
+            0
+          );
+          const avgAttendance =
+            totalPresensi > 0
+              ? Math.round((totalHadir / totalPresensi) * 100)
+              : 0;
+
+          result.summary = [
+            { label: "Siswa Terekap", value: result.fullData.length },
+            { label: "Rata-rata Hadir", value: `${avgAttendance}%` },
+          ];
+
           break;
         }
 
@@ -594,40 +603,36 @@ const TeacherReports = ({ user }) => {
           reportTitle = `PERFORMA PER KELAS - ${
             filters.subject || stats.subject
           }`;
-          
+
           const performanceFilters = {
-            academic_year: filters.academic_year,
-            semester: filters.semester,
+            ...filters,
+            class_ids: classIds,
+            subject: filters.subject || stats.subject, // ✅ Pass subject here
           };
-          
-          const gradesResult = await fetchGradesData(performanceFilters, userUUID, true);
-          let finalGradesData = gradesResult.fullData || [];
-          
-          const targetSubject = filters.subject || stats.subject;
-          
-          if (targetSubject) {
-            finalGradesData = finalGradesData.filter(row => {
-              // ✅ CORRECT: use 'subject' not 'mata_pelajaran'
-              const rowSubject = row.subject || '';
-              return rowSubject.toLowerCase().trim() === targetSubject.toLowerCase().trim();
-            });
-          }
-          
-          // ✅ CORRECT: use 'class_id' not 'kelas'
-          finalGradesData = finalGradesData.filter(row => 
-            classIds.includes(row.class_id)
+
+          // ✅ Use isHomeroom=true to get final grades
+          const gradesResult = await fetchGradesData(
+            performanceFilters,
+            userUUID,
+            true
           );
-          
+          const finalGradesData =
+            gradesResult.rawFinalGrades || gradesResult.fullData || [];
+
+          console.log(
+            "✅ Final grades for performance:",
+            finalGradesData.length
+          );
+
           if (finalGradesData.length === 0) {
             throw new Error(
-              `Tidak ada data nilai akhir untuk ${targetSubject} di kelas Anda. ` +
-              `Pastikan ada nilai NH, UTS, dan UAS yang sudah diinput.`
+              `Tidak ada data nilai akhir. Pastikan ada nilai NH, UTS, dan UAS yang sudah diinput.`
             );
           }
-          
+
+          // Group by class
           const classSummary = {};
           finalGradesData.forEach((row) => {
-            // ✅ CORRECT: use 'class_id' not 'kelas'
             const classId = row.class_id;
             if (!classId) return;
 
@@ -638,29 +643,37 @@ const TeacherReports = ({ user }) => {
                 students: new Set(),
               };
             }
-            
-            // ✅ CORRECT: use 'final_score' not 'nilai_akhir'
+
             const finalScore = parseFloat(row.final_score);
-            if (!isNaN(finalScore)) {
+            if (!isNaN(finalScore) && finalScore > 0) {
               classSummary[classId].scores.push(finalScore);
               classSummary[classId].students.add(row.nis);
             }
           });
 
           const classAnalysis = Object.values(classSummary).map((cls) => {
-            const validScores = cls.scores.filter(s => !isNaN(s));
-            const avg = validScores.length > 0
-              ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length)
-              : 0;
+            const validScores = cls.scores;
+            const avg =
+              validScores.length > 0
+                ? Math.round(
+                    validScores.reduce((a, b) => a + b, 0) / validScores.length
+                  )
+                : 0;
 
             return {
               class_id: cls.class_id,
               total_students: cls.students.size,
               total_grades: cls.scores.length,
               average: avg,
-              highest: validScores.length > 0 ? Math.max(...validScores) : 0,
-              lowest: validScores.length > 0 ? Math.min(...validScores) : 0,
-              below_kkm: validScores.filter(s => s < 75).length,
+              highest:
+                validScores.length > 0
+                  ? Math.round(Math.max(...validScores))
+                  : 0,
+              lowest:
+                validScores.length > 0
+                  ? Math.round(Math.min(...validScores))
+                  : 0,
+              below_kkm: validScores.filter((s) => s < 75).length,
             };
           });
 
@@ -674,18 +687,25 @@ const TeacherReports = ({ user }) => {
             "Di Bawah KKM",
           ];
 
-          const overallAvg = classAnalysis.length > 0
-            ? Math.round(classAnalysis.reduce((sum, cls) => sum + cls.average, 0) / classAnalysis.length)
-            : 0;
+          const overallAvg =
+            classAnalysis.length > 0
+              ? Math.round(
+                  classAnalysis.reduce((sum, cls) => sum + cls.average, 0) /
+                    classAnalysis.length
+                )
+              : 0;
 
           const summary = [
             { label: "Total Kelas", value: classAnalysis.length },
             { label: "Rata-rata Keseluruhan", value: overallAvg },
             {
               label: "Kelas Terbaik",
-              value: classAnalysis.length > 0
-                ? classAnalysis.reduce((best, cls) => cls.average > best.average ? cls : best).class_id
-                : "-",
+              value:
+                classAnalysis.length > 0
+                  ? classAnalysis.reduce((best, cls) =>
+                      cls.average > best.average ? cls : best
+                    ).class_id
+                  : "-",
             },
           ];
 
@@ -694,7 +714,7 @@ const TeacherReports = ({ user }) => {
             preview: classAnalysis,
             total: classAnalysis.length,
             fullData: classAnalysis,
-            summary
+            summary,
           };
           break;
         }
@@ -705,9 +725,8 @@ const TeacherReports = ({ user }) => {
 
       return {
         ...result,
-        reportTitle
+        reportTitle,
       };
-
     } catch (err) {
       console.error("Error in fetchReportData:", err);
       throw err;
@@ -761,7 +780,8 @@ const TeacherReports = ({ user }) => {
       const filterDescription = buildFilterDescription(filters);
 
       const metadata = {
-        title: data.reportTitle || `LAPORAN ${stats.subject || "MATA PELAJARAN"}`,
+        title:
+          data.reportTitle || `LAPORAN ${stats.subject || "MATA PELAJARAN"}`,
         academicYear: filters.academic_year,
         semester: filters.semester ? `Semester ${filters.semester}` : null,
         filters: filterDescription,
@@ -791,8 +811,7 @@ const TeacherReports = ({ user }) => {
       title: "Laporan Nilai Akhir",
       description: "Export data nilai akhir mata pelajaran",
       stats: `${stats.totalGrades || 0} nilai akhir`,
-      color: "bg-purple-50 border-purple-200",
-      iconColor: "text-purple-600",
+      color: "purple",
     },
     {
       id: "attendance",
@@ -800,8 +819,7 @@ const TeacherReports = ({ user }) => {
       title: "Laporan Presensi Harian",
       description: "Data kehadiran siswa per hari",
       stats: "Data presensi kelas Anda",
-      color: "bg-yellow-50 border-yellow-200",
-      iconColor: "text-yellow-600",
+      color: "yellow",
     },
     {
       id: "attendance-recap",
@@ -809,8 +827,7 @@ const TeacherReports = ({ user }) => {
       title: "Rekapitulasi Kehadiran",
       description: "Ringkasan total kehadiran per siswa",
       stats: "Rekapitulasi dalam periode filter",
-      color: "bg-orange-50 border-orange-200",
-      iconColor: "text-orange-600",
+      color: "orange",
     },
     {
       id: "class-performance",
@@ -818,10 +835,25 @@ const TeacherReports = ({ user }) => {
       title: "Performa Per Kelas",
       description: "Perbandingan nilai akhir antar kelas",
       stats: `${stats.totalClasses || 0} kelas diampu`,
-      color: "bg-blue-50 border-blue-200",
-      iconColor: "text-blue-600",
+      color: "blue",
     },
   ];
+
+  // ✅ FIX: Loading state
+  if (loading && !stats.totalClasses) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-slate-600">Memuat data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -839,7 +871,8 @@ const TeacherReports = ({ user }) => {
             </div>
           </div>
           <p className="text-slate-600">
-            Kelola laporan nilai akhir dan kehadiran siswa di kelas yang Anda ajar
+            Kelola laporan nilai akhir dan kehadiran siswa di kelas yang Anda
+            ajar
           </p>
         </div>
 
@@ -869,6 +902,24 @@ const TeacherReports = ({ user }) => {
                 className="text-red-800 hover:text-red-900 font-bold">
                 ×
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ FIX: Empty state for no assignments */}
+        {teacherAssignments.length === 0 && (
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900 mb-2">
+                  Belum Ada Penugasan Kelas
+                </h3>
+                <p className="text-sm text-yellow-800">
+                  Anda belum memiliki penugasan mata pelajaran. Silakan hubungi
+                  admin untuk setup penugasan kelas dan mata pelajaran.
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -935,7 +986,8 @@ const TeacherReports = ({ user }) => {
                   🎯 Siswa Perlu Perhatian Khusus
                 </h3>
                 <p className="text-sm text-orange-800 mb-3">
-                  Siswa dengan nilai akhir di bawah KKM (75) - perlu bimbingan tambahan
+                  Siswa dengan nilai akhir di bawah KKM (75) - perlu bimbingan
+                  tambahan
                 </p>
                 <div className="space-y-2">
                   {alertStudents.map((student, idx) => (
@@ -974,15 +1026,16 @@ const TeacherReports = ({ user }) => {
           {reports.map((report) => {
             const Icon = report.icon;
             const isDownloading = downloadingReportId === report.id;
+            const colors = COLOR_CLASSES[report.color] || COLOR_CLASSES.indigo;
 
             return (
               <div
                 key={report.id}
-                className={`bg-white rounded-lg shadow-sm border-2 ${report.color} p-4 hover:shadow-md transition-all duration-200`}>
+                className={`bg-white rounded-lg shadow-sm border-2 border-${report.color}-200 p-4 hover:shadow-md transition-all duration-200`}>
                 <div className="flex items-start justify-between mb-3">
                   <div
-                    className={`w-11 h-11 rounded-xl ${report.color} flex items-center justify-center flex-shrink-0`}>
-                    <Icon className={`w-5 h-5 ${report.iconColor}`} />
+                    className={`w-11 h-11 rounded-xl ${colors.bg} flex items-center justify-center flex-shrink-0`}>
+                    <Icon className={`w-5 h-5 ${colors.text}`} />
                   </div>
                 </div>
 
@@ -1045,8 +1098,8 @@ const TeacherReports = ({ user }) => {
                 Cakupan Data
               </h4>
               <p className="text-sm text-slate-600">
-                Laporan mencakup data <strong>nilai akhir</strong> dan kehadiran siswa di kelas yang
-                Anda ajar.
+                Laporan mencakup data <strong>nilai akhir</strong> dan kehadiran
+                siswa di kelas yang Anda ajar.
               </p>
             </div>
             <div>
@@ -1071,7 +1124,8 @@ const TeacherReports = ({ user }) => {
               </h4>
               <ul className="text-sm text-indigo-700 space-y-1">
                 <li>
-                  • <strong>Laporan Nilai Akhir</strong> untuk export data nilai akhir mata pelajaran Anda
+                  • <strong>Laporan Nilai Akhir</strong> untuk export data nilai
+                  akhir mata pelajaran Anda
                 </li>
                 <li>
                   • <strong>Presensi Harian</strong> untuk monitoring kehadiran
@@ -1096,6 +1150,34 @@ const TeacherReports = ({ user }) => {
               </ul>
             </div>
           </div>
+        </div>
+
+        {/* ✅ FIXED & REFACTORED NOTE */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-green-800 mb-2">
+            ✅ Fixed & Refactored Version
+          </h4>
+          <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
+            <li>
+              ✅ Fixed Tailwind dynamic classes dengan COLOR_CLASSES mapping
+            </li>
+            <li>✅ Fixed race condition dengan Promise.all di useEffect</li>
+            <li>✅ Added validation untuk empty teacher assignments</li>
+            <li>
+              ✅ Fixed alert students logic (simplified, no redundant grouping)
+            </li>
+            <li>
+              ✅ Fixed attendance rate calculation (filtered by teacher's
+              subjects)
+            </li>
+            <li>
+              ✅ Fixed filter logic - let helpers handle filtering dengan
+              class_ids
+            </li>
+            <li>✅ Added loading state untuk initial data fetch</li>
+            <li>✅ Empty state untuk teacher tanpa penugasan</li>
+            <li>✅ Proper error handling dengan user feedback</li>
+          </ul>
         </div>
       </div>
 

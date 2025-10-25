@@ -18,7 +18,9 @@ import {
   Users,
 } from "lucide-react";
 import { exportToExcel } from "./ReportExcel";
-import ReportModal from "./ReportModal";
+// ✅ NEW: Import specific modals instead of universal modal
+import HomeroomReportModal from "./modals/HomeroomReportModal";
+import TeacherReportModal from "./modals/TeacherReportModal";
 
 // ✅ IMPORT HELPERS
 import {
@@ -27,36 +29,106 @@ import {
   fetchAttendanceRecapData,
   fetchGradesData,
   buildFilterDescription,
-  calculateFinalGrades, // ← TAMBAH INI
+  calculateFinalGrades,
   REPORT_HEADERS,
 } from "./ReportHelpers";
 
+// ==================== CONSTANTS ====================
+
+// ✅ FIX: Tailwind color classes mapping
+const COLOR_CLASSES = {
+  indigo: {
+    bg: "bg-indigo-100",
+    text: "text-indigo-600",
+    border: "border-indigo-200",
+    hover: "hover:bg-indigo-200",
+  },
+  green: {
+    bg: "bg-green-100",
+    text: "text-green-600",
+    border: "border-green-200",
+    hover: "hover:bg-green-200",
+  },
+  blue: {
+    bg: "bg-blue-100",
+    text: "text-blue-600",
+    border: "border-blue-200",
+    hover: "hover:bg-blue-200",
+  },
+  yellow: {
+    bg: "bg-yellow-100",
+    text: "text-yellow-600",
+    border: "border-yellow-200",
+    hover: "hover:bg-yellow-200",
+  },
+  orange: {
+    bg: "bg-orange-100",
+    text: "text-orange-600",
+    border: "border-orange-200",
+    hover: "hover:bg-orange-200",
+  },
+  purple: {
+    bg: "bg-purple-100",
+    text: "text-purple-600",
+    border: "border-purple-200",
+    hover: "hover:bg-purple-200",
+  },
+  red: {
+    bg: "bg-red-100",
+    text: "text-red-600",
+    border: "border-red-200",
+    hover: "hover:bg-red-200",
+  },
+  teal: {
+    bg: "bg-teal-100",
+    text: "text-teal-600",
+    border: "border-teal-200",
+    hover: "hover:bg-teal-200",
+  },
+};
+
+// ✅ FIX: Date helpers
+const getDefaultStartDate = () => {
+  const date = new Date();
+  date.setDate(1);
+  return date.toISOString().split("T")[0];
+};
+
+const getDefaultEndDate = () => {
+  return new Date().toISOString().split("T")[0];
+};
+
 // ==================== COMPONENTS ====================
 
+// ✅ FIXED: StatCard with proper color classes
 const StatCard = ({
   icon: Icon,
   label,
   value,
   color = "indigo",
   alert = false,
-}) => (
-  <div
-    className={`bg-white rounded-lg shadow-sm border ${
-      alert ? "border-red-300" : "border-slate-200"
-    } p-4 hover:shadow-md transition-shadow`}>
-    <div className="flex items-center gap-3">
-      <div
-        className={`w-12 h-12 bg-${color}-100 rounded-lg flex items-center justify-center`}>
-        <Icon className={`w-6 h-6 text-${color}-600`} />
+}) => {
+  const colors = COLOR_CLASSES[color] || COLOR_CLASSES.indigo;
+
+  return (
+    <div
+      className={`bg-white rounded-lg shadow-sm border ${
+        alert ? "border-red-300" : "border-slate-200"
+      } p-4 hover:shadow-md transition-shadow`}>
+      <div className="flex items-center gap-3">
+        <div
+          className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
+          <Icon className={`w-6 h-6 ${colors.text}`} />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm text-slate-600">{label}</p>
+          <p className="text-2xl font-bold text-slate-800">{value}</p>
+        </div>
+        {alert && <AlertTriangle className="w-5 h-5 text-red-500" />}
       </div>
-      <div className="flex-1">
-        <p className="text-sm text-slate-600">{label}</p>
-        <p className="text-2xl font-bold text-slate-800">{value}</p>
-      </div>
-      {alert && <AlertTriangle className="w-5 h-5 text-red-500" />}
     </div>
-  </div>
-);
+  );
+};
 
 const FilterPanel = ({
   filters,
@@ -172,13 +244,28 @@ const FilterPanel = ({
 
 const HomeroomTeacherReports = ({ user }) => {
   const [activeTab, setActiveTab] = useState("homeroom");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [downloadingReportId, setDownloadingReportId] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [stats, setStats] = useState({});
-  const [teacherStats, setTeacherStats] = useState({});
-  const [filters, setFilters] = useState({ class_id: user.homeroom_class_id });
+
+  // ✅ FIX: Initialize stats with default values
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    presentToday: 0,
+    attendanceRate: 0,
+    alerts: 0,
+    className: user?.homeroom_class_id || "",
+  });
+
+  const [teacherStats, setTeacherStats] = useState({
+    totalClasses: 0,
+    totalSubjects: 0,
+    totalGrades: 0,
+    totalAttendances: 0,
+  });
+
+  const [filters, setFilters] = useState({ class_id: user?.homeroom_class_id });
   const [previewModal, setPreviewModal] = useState({
     isOpen: false,
     data: null,
@@ -188,17 +275,60 @@ const HomeroomTeacherReports = ({ user }) => {
   const [academicYears, setAcademicYears] = useState([]);
   const [teacherAssignments, setTeacherAssignments] = useState([]);
 
+  // ✅ NEW: Track if initial data loaded
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // ✅ FIX: Race condition - load all data in parallel with better error handling
   useEffect(() => {
-    fetchAcademicYears();
-    fetchStats();
-    fetchTeacherAssignments();
+    const loadAllData = async () => {
+      if (!user?.homeroom_class_id) {
+        setError(
+          "Data user tidak lengkap. Pastikan Anda sudah ditugaskan sebagai wali kelas."
+        );
+        setLoading(false);
+        setDataLoaded(true);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // ✅ FIX: Use Promise.allSettled to handle partial failures
+        const results = await Promise.allSettled([
+          fetchAcademicYears(),
+          fetchStats(),
+          fetchTeacherAssignments(),
+        ]);
+
+        // ✅ Check for any failures
+        const failures = results.filter((r) => r.status === "rejected");
+        if (failures.length > 0) {
+          console.error("Some data failed to load:", failures);
+          setError(
+            `Peringatan: Beberapa data gagal dimuat. Coba refresh halaman.`
+          );
+        }
+
+        setDataLoaded(true);
+      } catch (err) {
+        console.error("Error loading initial data:", err);
+        setError("Gagal memuat data awal. Silakan refresh halaman.");
+        setDataLoaded(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAllData();
   }, [user]);
 
+  // ✅ FIX: Better error handling with try-catch
   const fetchTeacherAssignments = async () => {
     try {
       const { data, error } = await supabase
         .from("teacher_assignments")
-        .select("*, classes!inner(id, grade)")
+        .select("*, classes!inner(id)")
         .eq("teacher_id", user.teacher_id);
 
       if (error) throw error;
@@ -206,23 +336,48 @@ const HomeroomTeacherReports = ({ user }) => {
       setTeacherAssignments(data || []);
 
       if (data && data.length > 0) {
-        // ✅ GANTI dengan RPC call
-        const { data: stats, error: statsError } = await supabase.rpc(
-          "get_teacher_stats",
-          { p_teacher_uuid: user.id }
-        );
+        try {
+          const { data: stats, error: statsError } = await supabase.rpc(
+            "get_teacher_stats",
+            { p_teacher_uuid: user.id }
+          );
 
-        if (statsError) throw statsError;
+          if (statsError) throw statsError;
 
+          setTeacherStats({
+            totalClasses: stats?.total_classes || 0,
+            totalSubjects: stats?.total_subjects || 0,
+            totalGrades: stats?.total_grades || 0,
+            totalAttendances: stats?.total_attendances || 0,
+          });
+        } catch (statsErr) {
+          console.error("Error fetching teacher stats:", statsErr);
+          // Don't throw, just set empty stats
+          setTeacherStats({
+            totalClasses: 0,
+            totalSubjects: 0,
+            totalGrades: 0,
+            totalAttendances: 0,
+          });
+        }
+      } else {
         setTeacherStats({
-          totalClasses: stats.total_classes || 0,
-          totalSubjects: stats.total_subjects || 0,
-          totalGrades: stats.total_grades || 0,
-          totalAttendances: stats.total_attendances || 0,
+          totalClasses: 0,
+          totalSubjects: 0,
+          totalGrades: 0,
+          totalAttendances: 0,
         });
       }
     } catch (err) {
       console.error("Error fetching teacher assignments:", err);
+      setTeacherAssignments([]);
+      setTeacherStats({
+        totalClasses: 0,
+        totalSubjects: 0,
+        totalGrades: 0,
+        totalAttendances: 0,
+      });
+      throw err;
     }
   };
 
@@ -243,12 +398,12 @@ const HomeroomTeacherReports = ({ user }) => {
     } catch (err) {
       console.error("Error fetching academic years:", err);
       setAcademicYears([]);
+      throw err;
     }
   };
 
   const fetchStats = async () => {
     try {
-      // ✅ GANTI dengan RPC call
       const { data, error } = await supabase.rpc("get_homeroom_stats", {
         p_class_id: user.homeroom_class_id,
         p_days_back: 30,
@@ -256,9 +411,8 @@ const HomeroomTeacherReports = ({ user }) => {
 
       if (error) throw error;
 
-      // ✅ Set state langsung dari result
-      const totalStudents = data.total_students || 0;
-      const presentToday = data.present_today || 0;
+      const totalStudents = data?.total_students || 0;
+      const presentToday = data?.present_today || 0;
 
       setStats({
         totalStudents,
@@ -267,14 +421,23 @@ const HomeroomTeacherReports = ({ user }) => {
           totalStudents > 0
             ? Math.round((presentToday / totalStudents) * 100)
             : 0,
-        alerts: data.alert_students?.length || 0,
+        alerts: data?.alert_students?.length || 0,
         className: user.homeroom_class_id,
       });
 
-      setAlertStudents(data.alert_students || []);
+      setAlertStudents(data?.alert_students || []);
     } catch (err) {
       console.error("Error fetching stats:", err);
-      setError("Gagal memuat statistik");
+      // ✅ Set default stats on error
+      setStats({
+        totalStudents: 0,
+        presentToday: 0,
+        attendanceRate: 0,
+        alerts: 0,
+        className: user.homeroom_class_id,
+      });
+      setAlertStudents([]);
+      throw err;
     }
   };
 
@@ -282,15 +445,18 @@ const HomeroomTeacherReports = ({ user }) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  // ✅ FIX: Consistent filter reset
   const resetFilters = () => {
     if (activeTab === "homeroom") {
       setFilters({ class_id: user.homeroom_class_id });
     } else {
       setFilters({});
     }
+    setError(null);
+    setSuccess(null);
   };
 
-  // ✅ REFACTORED: Fetch Report Data using helpers
+  // ✅ FIXED: Fetch Report Data with proper validation
   const fetchReportData = async (reportType) => {
     try {
       let reportTitle = "";
@@ -306,7 +472,7 @@ const HomeroomTeacherReports = ({ user }) => {
         switch (reportType) {
           case "students":
             reportTitle = "DATA SISWA WALI KELAS";
-            result = await fetchStudentsData(homeroomFilters, false); // No grade column
+            result = await fetchStudentsData(homeroomFilters, false);
             break;
 
           case "attendance":
@@ -316,12 +482,26 @@ const HomeroomTeacherReports = ({ user }) => {
 
           case "attendance-recap":
             reportTitle = "REKAPITULASI KEHADIRAN WALI KELAS";
-            result = await fetchAttendanceRecapData(homeroomFilters);
+            result = await fetchAttendanceRecapData(homeroomFilters, "Harian");
             break;
 
           case "grades":
             reportTitle = "DATA NILAI AKADEMIK WALI KELAS";
             result = await fetchGradesData(homeroomFilters, null, true);
+
+            // ✅ SORT BY SUBJECT → STUDENT NAME
+            if (result && result.fullData && Array.isArray(result.fullData)) {
+              console.log("🔄 Sorting grades (homeroom)...");
+              result.fullData.sort((a, b) => {
+                const subjectCompare = (a.subject || "").localeCompare(
+                  b.subject || ""
+                );
+                if (subjectCompare !== 0) return subjectCompare;
+                return (a.full_name || "").localeCompare(b.full_name || "");
+              });
+              result.preview = result.fullData.slice(0, 100);
+              console.log("✅ Sorted! First item:", result.fullData[0]);
+            }
             break;
 
           default:
@@ -330,42 +510,82 @@ const HomeroomTeacherReports = ({ user }) => {
       }
       // 🔥 TAB TEACHER MAPEL REPORTS
       else if (activeTab === "teacher") {
+        if (!teacherAssignments || teacherAssignments.length === 0) {
+          throw new Error(
+            "Tidak ada penugasan kelas ditemukan. Hubungi admin untuk setup penugasan."
+          );
+        }
+
         const classIds = teacherAssignments.map((a) => a.class_id);
+        const teacherSubjects = teacherAssignments
+          .map((a) => a.subject)
+          .filter(Boolean);
 
         switch (reportType) {
           case "teacher-grades":
             reportTitle = "NILAI MATA PELAJARAN YANG DIAMPU";
-            result = await fetchGradesData(filters, user.id, true); // ← ADD parameter true
-            result.headers = REPORT_HEADERS.gradesFinalOnly; // ← UBAH jadi gradesFinalOnly
+
+            const gradeFilters = {
+              ...filters,
+              class_ids: classIds,
+            };
+
+            result = await fetchGradesData(gradeFilters, user.id, true);
+            result.headers = REPORT_HEADERS.gradesFinalOnly;
+
+            // ✅ SORT BY SUBJECT → STUDENT NAME
+            if (result && result.fullData && Array.isArray(result.fullData)) {
+              console.log("🔄 Sorting grades (teacher)...");
+              result.fullData.sort((a, b) => {
+                const subjectCompare = (a.subject || "").localeCompare(
+                  b.subject || ""
+                );
+                if (subjectCompare !== 0) return subjectCompare;
+                return (a.full_name || "").localeCompare(b.full_name || "");
+              });
+              result.preview = result.fullData.slice(0, 100);
+              console.log("✅ Sorted! First item:", result.fullData[0]);
+            }
             break;
 
           case "teacher-attendance":
             reportTitle = "PRESENSI MATA PELAJARAN";
 
-            const startDate =
-              filters.start_date ||
-              (() => {
-                const date = new Date();
-                date.setDate(1);
-                return date.toISOString().split("T")[0];
-              })();
-            const endDate =
-              filters.end_date || new Date().toISOString().split("T")[0];
+            if (teacherSubjects.length === 0) {
+              return {
+                headers: [
+                  "Tanggal",
+                  "NIS",
+                  "Nama Siswa",
+                  "Kelas",
+                  "Mata Pelajaran",
+                  "Status",
+                ],
+                preview: [],
+                total: 0,
+                fullData: [],
+                summary: [
+                  {
+                    label: "Info",
+                    value: "Tidak ada mata pelajaran yang diampu",
+                  },
+                ],
+                reportTitle,
+              };
+            }
 
-            // ✅ FIX: Ambil subjects yang guru ajar dari teacher_assignments
-            const teacherSubjects = teacherAssignments
-              .map((a) => a.subject)
-              .filter(Boolean);
+            const startDate = filters.start_date || getDefaultStartDate();
+            const endDate = filters.end_date || getDefaultEndDate();
 
-            // ✅ FIX: Filter by subjects yang diajar (exclude 'Harian')
             let query = supabase
               .from("attendances")
               .select(
                 "date, subject, status, class_id, students!inner(nis, full_name)"
               )
+              .eq("type", "mapel")
               .eq("teacher_id", user.id)
               .in("class_id", classIds)
-              .in("subject", teacherSubjects) // ✅ ONLY mata pelajaran yang diajar
+              .in("subject", teacherSubjects)
               .gte("date", startDate)
               .lte("date", endDate)
               .order("date", { ascending: false });
@@ -421,12 +641,9 @@ const HomeroomTeacherReports = ({ user }) => {
             };
             break;
 
-          // Di HomeroomTeacherReports.js, cari case "teacher-recap" dan ganti dengan ini:
-
           case "teacher-recap":
             reportTitle = "REKAPITULASI KELAS YANG DIAMPU";
 
-            // ✅ GANTI dengan RPC call
             const { data: recapData, error: recapError } = await supabase.rpc(
               "get_teacher_recap",
               { p_teacher_uuid: user.id }
@@ -507,6 +724,69 @@ const HomeroomTeacherReports = ({ user }) => {
         data = await fetchReportData(reportType);
       }
 
+      // ✅ SORTING BEFORE EXPORT - Apply sorting based on report type
+      if (data.fullData && Array.isArray(data.fullData)) {
+        // Sort NILAI AKADEMIK (grades) - By Subject → Student Name
+        if (reportType === "grades" || reportType === "teacher-grades") {
+          console.log("🔄 Sorting grades data before export...");
+          data.fullData.sort((a, b) => {
+            // Sort by subject first (A-Z)
+            const subjectCompare = (a.subject || "").localeCompare(
+              b.subject || ""
+            );
+            if (subjectCompare !== 0) return subjectCompare;
+
+            // Then sort by student name (A-Z)
+            return (a.full_name || "").localeCompare(b.full_name || "");
+          });
+          console.log("✅ Grades data sorted!");
+        }
+
+        // Sort PRESENSI - By Date (newest first)
+        else if (
+          reportType === "attendance" ||
+          reportType === "teacher-attendance"
+        ) {
+          console.log("🔄 Sorting attendance data before export...");
+          data.fullData.sort((a, b) => {
+            // Parse dates (format: "DD/MM/YYYY")
+            const parseDate = (dateStr) => {
+              if (!dateStr) return new Date(0);
+              const parts = dateStr.split("/");
+              if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+              }
+              return new Date(dateStr);
+            };
+
+            const dateA = parseDate(a.date);
+            const dateB = parseDate(b.date);
+
+            // Newest first
+            return dateB - dateA;
+          });
+          console.log("✅ Attendance data sorted!");
+        }
+
+        // Sort REKAP KEHADIRAN - By Name (A-Z)
+        else if (reportType === "attendance-recap") {
+          console.log("🔄 Sorting attendance recap before export...");
+          data.fullData.sort((a, b) => {
+            return (a.name || "").localeCompare(b.name || "");
+          });
+          console.log("✅ Attendance recap sorted!");
+        }
+
+        // Sort DATA SISWA - By NIS
+        else if (reportType === "students") {
+          console.log("🔄 Sorting students data before export...");
+          data.fullData.sort((a, b) => {
+            return (a.nis || "").localeCompare(b.nis || "");
+          });
+          console.log("✅ Students data sorted!");
+        }
+      }
+
       const filterDescription = buildFilterDescription(filters);
 
       const metadata = {
@@ -533,78 +813,119 @@ const HomeroomTeacherReports = ({ user }) => {
     }
   };
 
-  // Report cards config
-  const homeroomReports = [
-    {
-      id: "students",
-      icon: GraduationCap,
-      title: `Data Siswa`,
-      description: "Export data siswa kelas Anda",
-      stats: `${stats.totalStudents || 0} siswa`,
-      color: "bg-green-50 border-green-200",
-      iconColor: "text-green-600",
-    },
-    {
-      id: "attendance",
-      icon: Calendar,
-      title: "Presensi Harian",
-      description: "Data kehadiran per hari",
-      stats: `Kelas ${user.homeroom_class_id}`,
-      color: "bg-yellow-50 border-yellow-200",
-      iconColor: "text-yellow-600",
-    },
-    {
-      id: "attendance-recap",
-      icon: CheckCircle,
-      title: "Rekap Kehadiran",
-      description: "Ringkasan total kehadiran",
-      stats: "Per siswa",
-      color: "bg-orange-50 border-orange-200",
-      iconColor: "text-orange-600",
-    },
-    {
-      id: "grades",
-      icon: BarChart3,
-      title: "Nilai Akademik",
-      description: "Data nilai semua mapel",
-      stats: `Kelas ${user.homeroom_class_id}`,
-      color: "bg-purple-50 border-purple-200",
-      iconColor: "text-purple-600",
-    },
-  ];
+  // ✅ FIX: Define report cards using useMemo to prevent recreation on every render
+  const homeroomReports = useMemo(
+    () => [
+      {
+        id: "students",
+        icon: GraduationCap,
+        title: `Data Siswa`,
+        description: "Export data siswa kelas Anda",
+        stats: `${stats.totalStudents || 0} siswa`,
+        color: "green",
+      },
+      {
+        id: "attendance",
+        icon: Calendar,
+        title: "Presensi Harian",
+        description: "Data kehadiran per hari",
+        stats: `Kelas ${user?.homeroom_class_id || "-"}`,
+        color: "yellow",
+      },
+      {
+        id: "attendance-recap",
+        icon: CheckCircle,
+        title: "Rekap Kehadiran",
+        description: "Ringkasan total kehadiran",
+        stats: "Per siswa",
+        color: "orange",
+      },
+      {
+        id: "grades",
+        icon: BarChart3,
+        title: "Nilai Akademik",
+        description: "Data nilai semua mapel",
+        stats: `Kelas ${user?.homeroom_class_id || "-"}`,
+        color: "purple",
+      },
+    ],
+    [stats.totalStudents, user?.homeroom_class_id]
+  );
 
-  const teacherReports = [
-    {
-      id: "teacher-grades",
-      icon: BarChart3,
-      title: "Nilai Mata Pelajaran",
-      description: "Data nilai siswa di semua kelas yang Anda ajar",
-      stats: `${teacherStats.totalGrades || 0} nilai tercatat`,
-      color: "bg-blue-50 border-blue-200",
-      iconColor: "text-blue-600",
-    },
-    {
-      id: "teacher-attendance",
-      icon: Calendar,
-      title: "Presensi Mata Pelajaran",
-      description: "Data kehadiran siswa di mata pelajaran Anda",
-      stats: `${teacherStats.totalAttendances || 0} presensi tercatat`,
-      color: "bg-indigo-50 border-indigo-200",
-      iconColor: "text-indigo-600",
-    },
-    {
-      id: "teacher-recap",
-      icon: BookOpen,
-      title: "Rekapitulasi Per Kelas",
-      description: "Ringkasan performa per kelas yang Anda ajar",
-      stats: `${teacherStats.totalClasses || 0} kelas diampu`,
-      color: "bg-teal-50 border-teal-200",
-      iconColor: "text-teal-600",
-    },
-  ];
+  const teacherReports = useMemo(
+    () => [
+      {
+        id: "teacher-grades",
+        icon: BarChart3,
+        title: "Nilai Mata Pelajaran",
+        description: "Data nilai siswa di semua kelas yang Anda ajar",
+        stats: `${teacherStats.totalGrades || 0} nilai tercatat`,
+        color: "blue",
+      },
+      {
+        id: "teacher-attendance",
+        icon: Calendar,
+        title: "Presensi Mata Pelajaran",
+        description: "Data kehadiran siswa di mata pelajaran Anda",
+        stats: `${teacherStats.totalAttendances || 0} presensi tercatat`,
+        color: "indigo",
+      },
+      {
+        id: "teacher-recap",
+        icon: BookOpen,
+        title: "Rekapitulasi Per Kelas",
+        description: "Ringkasan performa per kelas yang Anda ajar",
+        stats: `${teacherStats.totalClasses || 0} kelas diampu`,
+        color: "teal",
+      },
+    ],
+    [teacherStats]
+  );
 
-  const currentReports =
-    activeTab === "homeroom" ? homeroomReports : teacherReports;
+  const currentReports = useMemo(
+    () => (activeTab === "homeroom" ? homeroomReports : teacherReports),
+    [activeTab, homeroomReports, teacherReports]
+  );
+
+  // ✅ FIX: Better loading state - only show spinner on initial load
+  if (loading && !dataLoaded) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-slate-600">Memuat data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ NEW: Handle case where user has no homeroom class assigned
+  if (!user?.homeroom_class_id && activeTab === "homeroom") {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900 mb-2">
+                  Belum Ditugaskan Sebagai Wali Kelas
+                </h3>
+                <p className="text-sm text-yellow-800">
+                  Anda belum memiliki penugasan sebagai wali kelas. Silakan
+                  hubungi admin untuk setup penugasan kelas.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -618,7 +939,8 @@ const HomeroomTeacherReports = ({ user }) => {
                 Laporan - Wali Kelas & Guru Mapel
               </h1>
               <p className="text-sm text-slate-500 mt-1">
-                {user.full_name} - Wali Kelas {user.homeroom_class_id}
+                {user?.full_name || "User"} - Wali Kelas{" "}
+                {user?.homeroom_class_id || "-"}
               </p>
             </div>
           </div>
@@ -674,7 +996,7 @@ const HomeroomTeacherReports = ({ user }) => {
               <Users className="w-5 h-5" />
               Laporan Wali Kelas
               <span className="ml-2 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">
-                Kelas {user.homeroom_class_id}
+                Kelas {user?.homeroom_class_id || "-"}
               </span>
             </button>
             <button
@@ -762,65 +1084,85 @@ const HomeroomTeacherReports = ({ user }) => {
           academicYears={academicYears}
         />
 
-        {/* Reports Grid */}
-        <div
-          className={`grid grid-cols-1 ${
-            activeTab === "homeroom"
-              ? "md:grid-cols-2 lg:grid-cols-4"
-              : "md:grid-cols-3"
-          } gap-4 mb-8`}>
-          {currentReports.map((report) => {
-            const Icon = report.icon;
-            const isDownloading = downloadingReportId === report.id;
+        {/* ✅ FIX: Reports Grid with proper defensive rendering */}
+        {currentReports && currentReports.length > 0 ? (
+          <div
+            className={`grid grid-cols-1 ${
+              activeTab === "homeroom"
+                ? "md:grid-cols-2 lg:grid-cols-4"
+                : "md:grid-cols-3"
+            } gap-4 mb-8`}>
+            {currentReports.map((report) => {
+              const Icon = report.icon;
+              const isDownloading = downloadingReportId === report.id;
+              const colors =
+                COLOR_CLASSES[report.color] || COLOR_CLASSES.indigo;
 
-            return (
-              <div
-                key={report.id}
-                className={`bg-white rounded-lg shadow-sm border-2 ${report.color} p-4 hover:shadow-md transition-all duration-200`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div
-                    className={`w-11 h-11 rounded-xl ${report.color} flex items-center justify-center`}>
-                    <Icon className={`w-5 h-5 ${report.iconColor}`} />
+              return (
+                <div
+                  key={report.id}
+                  className={`bg-white rounded-lg shadow-sm border-2 ${colors.border} p-4 hover:shadow-md transition-all duration-200`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div
+                      className={`w-11 h-11 rounded-xl ${colors.bg} flex items-center justify-center`}>
+                      <Icon className={`w-5 h-5 ${colors.text}`} />
+                    </div>
+                  </div>
+
+                  <h3 className="text-sm font-semibold text-slate-800 mb-1.5 leading-tight">
+                    {report.title}
+                  </h3>
+
+                  <p className="text-xs text-slate-600 mb-2 leading-tight">
+                    {report.description}
+                  </p>
+
+                  <p className="text-xs text-slate-500 mb-3 font-medium">
+                    {report.stats}
+                  </p>
+
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => previewReport(report.id)}
+                      disabled={loading || downloadingReportId}
+                      className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-gray-300 text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                      <Eye className="w-3.5 h-3.5" />
+                      {loading ? "Memuat..." : "Preview"}
+                    </button>
+
+                    <button
+                      onClick={() => downloadReport(report.id, "xlsx")}
+                      disabled={
+                        loading ||
+                        isDownloading ||
+                        (downloadingReportId && !isDownloading)
+                      }
+                      className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      {isDownloading ? "Exporting..." : "Export Excel"}
+                    </button>
                   </div>
                 </div>
-
-                <h3 className="text-sm font-semibold text-slate-800 mb-1.5 leading-tight">
-                  {report.title}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900 mb-2">
+                  Tidak Ada Laporan Tersedia
                 </h3>
-
-                <p className="text-xs text-slate-600 mb-2 leading-tight">
-                  {report.description}
+                <p className="text-sm text-yellow-800">
+                  {activeTab === "homeroom"
+                    ? "Data kelas belum tersedia. Pastikan Anda sudah ditugaskan sebagai wali kelas dan terdapat data siswa di kelas Anda."
+                    : "Tidak ada penugasan mata pelajaran. Silakan hubungi admin untuk setup penugasan."}
                 </p>
-
-                <p className="text-xs text-slate-500 mb-3 font-medium">
-                  {report.stats}
-                </p>
-
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => previewReport(report.id)}
-                    disabled={loading || downloadingReportId}
-                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-gray-300 text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
-                    <Eye className="w-3.5 h-3.5" />
-                    {loading ? "Memuat..." : "Preview"}
-                  </button>
-
-                  <button
-                    onClick={() => downloadReport(report.id, "xlsx")}
-                    disabled={
-                      loading ||
-                      isDownloading ||
-                      (downloadingReportId && !isDownloading)
-                    }
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    {isDownloading ? "Exporting..." : "Export Excel"}
-                  </button>
-                </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          </div>
+        )}
 
         {/* Alert Students Panel - Only show in homeroom tab */}
         {activeTab === "homeroom" && alertStudents.length > 0 && (
@@ -887,6 +1229,24 @@ const HomeroomTeacherReports = ({ user }) => {
           </div>
         )}
 
+        {/* Empty State for Teacher with no assignments */}
+        {activeTab === "teacher" && teacherAssignments.length === 0 && (
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900 mb-2">
+                  Belum Ada Penugasan Kelas
+                </h3>
+                <p className="text-sm text-yellow-800">
+                  Anda belum memiliki penugasan mata pelajaran. Silakan hubungi
+                  admin untuk setup penugasan kelas dan mata pelajaran.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Info Section */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">
@@ -910,7 +1270,9 @@ const HomeroomTeacherReports = ({ user }) => {
               </h4>
               <p className="text-sm text-slate-600">
                 {activeTab === "homeroom"
-                  ? `Laporan wali kelas mencakup data kelas ${user.homeroom_class_id}.`
+                  ? `Laporan wali kelas mencakup data kelas ${
+                      user?.homeroom_class_id || "-"
+                    }.`
                   : `Laporan guru mapel mencakup semua kelas yang Anda ajar.`}
               </p>
             </div>
@@ -941,37 +1303,65 @@ const HomeroomTeacherReports = ({ user }) => {
           </div>
         </div>
 
-        {/* ✅ REFACTORED NOTE */}
+        {/* ✅ CHANGELOG */}
         <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
           <h4 className="text-sm font-semibold text-green-800 mb-2">
-            ✅ Refactored with ReportHelpers
+            ✅ Fixed Version - Changelog
           </h4>
           <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
             <li>
-              Menggunakan centralized fetch functions dari ReportHelpers.js
+              ✅ Fixed cards tidak muncul di tab Wali Kelas (useMemo untuk
+              prevent re-creation)
             </li>
+            <li>✅ Fixed race condition dengan Promise.allSettled</li>
+            <li>✅ Added defensive stats initialization (default values)</li>
+            <li>✅ Fixed loading state logic (dataLoaded flag)</li>
+            <li>✅ Added proper empty state handling untuk semua cases</li>
             <li>
-              Konsisten dengan format data lowercase (hadir, sakit, izin, alpa)
+              ✅ Fixed Tailwind dynamic classes dengan COLOR_CLASSES mapping
             </li>
-            <li>Menghapus ~300 lines duplicated code</li>
-            <li>Semua formatters (date, status, gender) dari helpers</li>
-            <li>Summary calculations otomatis dari helpers</li>
+            <li>✅ Added validation untuk empty teacher assignments</li>
+            <li>
+              ✅ Fixed filter logic untuk teacher-grades (tambah class_ids)
+            </li>
+            <li>✅ Better error handling dengan user-friendly messages</li>
+            <li>✅ Extracted date helpers (getDefaultStartDate/EndDate)</li>
+            <li>✅ Consistent filter reset behavior per tab</li>
+            <li>✅ Added explicit check untuk user tanpa homeroom_class_id</li>
+            <li>
+              🆕 Migrated to role-specific modals (HomeroomReportModal &
+              TeacherReportModal)
+            </li>
+            <li>🆕 Removed universal ReportModal dependency</li>
+            <li>🆕 Cleaner modal props (no more role prop needed)</li>
           </ul>
         </div>
       </div>
 
-      {/* Preview Modal */}
-      <ReportModal
-        isOpen={previewModal.isOpen}
-        onClose={() =>
-          setPreviewModal({ isOpen: false, data: null, type: null })
-        }
-        reportData={previewModal.data || {}}
-        reportType={previewModal.type}
-        role={activeTab === "homeroom" ? "homeroom" : "teacher"}
-        onDownload={downloadReport}
-        loading={downloadingReportId !== null}
-      />
+      {/* ✅ UPDATED: Conditional Modal Rendering based on activeTab */}
+      {activeTab === "homeroom" ? (
+        <HomeroomReportModal
+          isOpen={previewModal.isOpen}
+          onClose={() =>
+            setPreviewModal({ isOpen: false, data: null, type: null })
+          }
+          reportData={previewModal.data || {}}
+          reportType={previewModal.type}
+          onDownload={downloadReport}
+          loading={downloadingReportId !== null}
+        />
+      ) : (
+        <TeacherReportModal
+          isOpen={previewModal.isOpen}
+          onClose={() =>
+            setPreviewModal({ isOpen: false, data: null, type: null })
+          }
+          reportData={previewModal.data || {}}
+          reportType={previewModal.type}
+          onDownload={downloadReport}
+          loading={downloadingReportId !== null}
+        />
+      )}
     </div>
   );
 };

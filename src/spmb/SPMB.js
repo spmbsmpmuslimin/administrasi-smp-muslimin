@@ -190,9 +190,10 @@ const useStudentsData = (userData, showToast) => {
           ? editingStudent.no_pendaftaran
           : await generateNoPendaftaran();
 
+        // ✅ FIX: Gunakan field yang benar dari studentData
         const combinedData = {
           no_pendaftaran: noPendaftaran,
-          nama_lengkap: studentData.nama,
+          nama_lengkap: studentData.nama_lengkap, // ✅ FIXED: dari "nama" jadi "nama_lengkap"
           nisn: studentData.nisn,
           jenis_kelamin: studentData.jenis_kelamin,
           tempat_lahir: studentData.tempat_lahir,
@@ -211,6 +212,8 @@ const useStudentsData = (userData, showToast) => {
           is_transferred: false,
           tanggal_daftar: new Date().toISOString(),
         };
+
+        console.log("Data yang akan disimpan:", combinedData); // ✅ Debug log
 
         let result;
         if (isEdit && editingStudent) {

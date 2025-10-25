@@ -63,7 +63,7 @@ const exportToExcel = async (data, headers, metadata, options = {}) => {
 
 // ==================== HELPER FUNCTIONS ====================
 
-// UPDATED: Dynamic column widths based on headers
+// ✅ FIXED: Added Class Performance column widths
 const getColumnWidths = (headers) => {
   const defaultWidth = 12;
   const headerWidthMap = {
@@ -100,7 +100,14 @@ const getColumnWidths = (headers) => {
     'Gender': 10,
     'Tingkat': 8,
     'Kode Guru': 10,
-    'Teacher ID': 10
+    'Teacher ID': 10,
+    
+    // ✅ ADD: Class Performance columns
+    'Jumlah Siswa': 12,
+    'Rata-rata': 12,
+    'Tertinggi': 10,
+    'Terendah': 10,
+    'Di Bawah KKM': 14
   };
 
   return headers.map(header => ({
@@ -243,7 +250,7 @@ const addDataRows = async (worksheet, startRow, data, headers, role, reportType)
     
     Object.values(row).forEach((value, colIdx) => {
       const cell = dataRow.getCell(colIdx + 1);
-      cell.value = value || '-';
+      cell.value = value !== undefined && value !== null ? value : '-';
       
       applyConditionalFormatting(cell, headers[colIdx], value, role, reportType);
       
@@ -272,7 +279,7 @@ const addDataRows = async (worksheet, startRow, data, headers, role, reportType)
   return currentRow;
 };
 
-// UPDATED: Support untuk Nilai Akhir dan semua header baru
+// ✅ FIXED: Support untuk Class Performance columns
 const applyConditionalFormatting = (cell, header, value, role, reportType) => {
   // Formatting untuk percentage (Persentase, Tingkat Kehadiran)
   if ((header === 'Persentase' || header === 'Tingkat Kehadiran') && typeof value === 'string' && value.includes('%')) {
@@ -289,8 +296,10 @@ const applyConditionalFormatting = (cell, header, value, role, reportType) => {
     }
   }
 
-  // Formatting untuk nilai/score (Nilai, Nilai Akhir, Rata-rata Nilai)
-  if ((header === 'Nilai' || header === 'Nilai Akhir' || header === 'Rata-rata Nilai' || header === 'score') && typeof value === 'number') {
+  // ✅ UPDATED: Formatting untuk semua kolom nilai (including class-performance)
+  if ((header === 'Nilai' || header === 'Nilai Akhir' || header === 'Rata-rata Nilai' || 
+       header === 'Rata-rata' || header === 'Tertinggi' || header === 'Terendah' || 
+       header === 'score') && typeof value === 'number') {
     if (value >= 85) {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
       cell.font = { color: { argb: 'FF065F46' }, bold: true };
@@ -300,6 +309,17 @@ const applyConditionalFormatting = (cell, header, value, role, reportType) => {
     } else {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } };
       cell.font = { color: { argb: 'FF991B1B' }, bold: true };
+    }
+  }
+
+  // ✅ ADD: Formatting untuk "Di Bawah KKM"
+  if (header === 'Di Bawah KKM' && typeof value === 'number') {
+    if (value > 0) {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } };
+      cell.font = { color: { argb: 'FF991B1B' }, bold: true };
+    } else {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+      cell.font = { color: { argb: 'FF065F46' }, bold: true };
     }
   }
 
@@ -460,7 +480,7 @@ const autoFitColumns = async (worksheet, headers, data, role) => {
   });
 };
 
-// UPDATED: Support untuk semua report types termasuk teacher reports
+// ✅ FIXED: Added class-performance filename
 const generateFilename = (metadata, role, reportType) => {
   const roleNames = {
     admin: 'Admin',
@@ -478,6 +498,7 @@ const generateFilename = (metadata, role, reportType) => {
     'teacher-grades': 'NilaiMapel',
     'teacher-attendance': 'PresensiMapel',
     'teacher-recap': 'RekapitulasiKelas',
+    'class-performance': 'PerformaPerKelas', // ✅ ADD
     'counseling': 'DataKonseling'
   };
   

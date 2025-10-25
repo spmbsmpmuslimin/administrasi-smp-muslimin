@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { exportAllStudents } from "./SpmbExcel"; // ✅ Import dari utility
+import { exportAllStudents } from "./SpmbExcel";
+import html2pdf from "html2pdf.js";
 
 const StudentList = ({
   students,
@@ -21,25 +22,13 @@ const StudentList = ({
   const [viewMode, setViewMode] = useState("table");
   const [isExporting, setIsExporting] = useState(false);
 
-  // ✅ FIXED: Fallback calculation untuk totalPages
   const effectiveTotalPages =
     totalPages > 0 ? totalPages : Math.ceil(totalStudents / rowsPerPage);
   const shouldShowPagination = effectiveTotalPages > 1;
 
-  console.log("🎯 PAGINATION DEBUG StudentList:", {
-    totalStudents,
-    currentPageNum,
-    totalPages,
-    effectiveTotalPages,
-    shouldShowPagination,
-    rowsPerPage,
-    studentsCount: students.length,
-  });
-
   // Helper function untuk format tanggal DD-MM-YYYY
   const formatDateToDDMMYYYY = useCallback((dateString) => {
     if (!dateString || dateString === "-") return "-";
-
     try {
       if (dateString.includes("-")) {
         const [year, month, day] = dateString.split("-");
@@ -52,7 +41,6 @@ const StudentList = ({
     }
   }, []);
 
-  // ✅ FIXED: Helper untuk get display number yang reliable
   const getDisplayNumber = useCallback(
     (index) => {
       const page = currentPageNum || 1;
@@ -60,6 +48,335 @@ const StudentList = ({
       return (page - 1) * perPage + index + 1;
     },
     [currentPageNum, rowsPerPage]
+  );
+
+  // Download Formulir as PDF - YANG SUDAH DIPERBAIKI JADI 1 HALAMAN
+  const handleDownloadFormulir = useCallback(
+    (student) => {
+      const formHTML = `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { 
+            margin: 8mm 15mm 8mm 15mm; 
+            size: A4; 
+        }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.3;
+            color: #333;
+            font-size: 10pt;
+            padding: 0;
+            background: white;
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #666;
+        }
+        .header h1 { 
+            font-size: 16pt; 
+            font-weight: bold; 
+            margin: 3px 0; 
+            letter-spacing: 0.5px;
+            color: #222;
+        }
+        .header h2 { 
+            font-size: 13pt; 
+            font-weight: bold; 
+            margin: 2px 0; 
+            color: #333;
+        }
+        .header p { 
+            font-size: 9pt; 
+            margin: 2px 0;
+            color: #555;
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 4px 0; 
+        }
+        td { 
+            padding: 4px 5px; 
+            vertical-align: top; 
+            font-size: 10pt; 
+        }
+        .label { 
+            width: 35%; 
+            color: #555;
+            font-weight: 500;
+        }
+        .colon { 
+            width: 2%; 
+        }
+        .value { 
+            width: 63%; 
+            border-bottom: 1px solid #ccc;
+            font-weight: normal;
+        }
+        .value strong {
+            font-weight: bold;
+            color: #222;
+        }
+        
+        .section-title {
+            color: #333;
+            padding: 3px 0;
+            font-weight: bold;
+            margin: 10px 0 6px 0;
+            font-size: 10pt;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #999;
+        }
+        
+        .parent-title {
+            font-weight: bold;
+            font-size: 9pt;
+            margin-top: 8px;
+            margin-bottom: 3px;
+            color: #444;
+            padding-left: 2px;
+        }
+        
+        .notes {
+            margin-top: 12px;
+            padding: 8px 10px;
+            border: 1px solid #999;
+            font-size: 8pt;
+            line-height: 1.4;
+            background: #f9f9f9;
+            border-radius: 3px;
+        }
+        
+        .notes strong {
+            font-size: 9pt;
+            color: #333;
+        }
+        
+        .signature-section {
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .signature-box {
+            text-align: center;
+            width: 45%;
+            font-size: 9pt;
+        }
+        
+        .signature-space {
+            height: 50px;
+            border-bottom: 1px solid #999;
+            margin-bottom: 5px;
+            margin-top: 8px;
+        }
+        
+        .signature-name {
+            display: inline-block;
+            min-width: 150px;
+            padding-top: 3px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .compact-section {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <div class="header">
+            <h1>SMP MUSLIMIN CILILIN</h1>
+            <h2>FORMULIR PENDAFTARAN CALON SISWA BARU</h2>
+            <h2>TAHUN AJARAN 2026/2027</h2>
+            <p>Jl. Raya Warungawi Cililin - Bandung Barat</p>
+        </div>
+        
+        <table>
+            <tr>
+                <td class="label">No. Pendaftaran</td>
+                <td class="colon">:</td>
+                <td class="value"><strong>${student.no_pendaftaran || "....................................."}</strong></td>
+            </tr>
+            <tr>
+                <td class="label">Tanggal Daftar</td>
+                <td class="colon">:</td>
+                <td class="value">${formatDateToDDMMYYYY(student.tanggal_daftar) || "....................................."}</td>
+            </tr>
+        </table>
+        
+        <div class="section-title compact-section">A. DATA CALON SISWA</div>
+        <table>
+            <tr>
+                <td class="label">Nama Lengkap</td>
+                <td class="colon">:</td>
+                <td class="value"><strong>${student.nama_lengkap || "....................................."}</strong></td>
+            </tr>
+            <tr>
+                <td class="label">NISN</td>
+                <td class="colon">:</td>
+                <td class="value">${student.nisn && student.nisn !== "-" ? student.nisn : "....................................."}</td>
+            </tr>
+            <tr>
+                <td class="label">Jenis Kelamin</td>
+                <td class="colon">:</td>
+                <td class="value">${student.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}</td>
+            </tr>
+            <tr>
+                <td class="label">Tempat, Tanggal Lahir</td>
+                <td class="colon">:</td>
+                <td class="value">${student.tempat_lahir || ""}, ${formatDateToDDMMYYYY(student.tanggal_lahir) || ""}</td>
+            </tr>
+            <tr>
+                <td class="label">Asal Sekolah (SD)</td>
+                <td class="colon">:</td>
+                <td class="value">${student.asal_sekolah || "....................................."}</td>
+            </tr>
+        </table>
+        
+        <div class="section-title compact-section">B. DATA ORANG TUA / WALI</div>
+        <table>
+            <tr><td colspan="3" class="parent-title">AYAH KANDUNG</td></tr>
+            <tr>
+                <td class="label">Nama Lengkap</td>
+                <td class="colon">:</td>
+                <td class="value">${student.nama_ayah || "....................................."}</td>
+            </tr>
+            <tr>
+                <td class="label">Pekerjaan</td>
+                <td class="colon">:</td>
+                <td class="value">${student.pekerjaan_ayah || "....................................."}</td>
+            </tr>
+            <tr>
+                <td class="label">Pendidikan Terakhir</td>
+                <td class="colon">:</td>
+                <td class="value">${student.pendidikan_ayah || "....................................."}</td>
+            </tr>
+            
+            <tr><td colspan="3" class="parent-title">IBU KANDUNG</td></tr>
+            <tr>
+                <td class="label">Nama Lengkap</td>
+                <td class="colon">:</td>
+                <td class="value">${student.nama_ibu || "....................................."}</td>
+            </tr>
+            <tr>
+                <td class="label">Pekerjaan</td>
+                <td class="colon">:</td>
+                <td class="value">${student.pekerjaan_ibu || "....................................."}</td>
+            </tr>
+            <tr>
+                <td class="label">Pendidikan Terakhir</td>
+                <td class="colon">:</td>
+                <td class="value">${student.pendidikan_ibu || "....................................."}</td>
+            </tr>
+        </table>
+        
+        <div class="section-title compact-section">C. KONTAK & ALAMAT</div>
+        <table>
+            <tr>
+                <td class="label">No. HP / WhatsApp</td>
+                <td class="colon">:</td>
+                <td class="value">${student.no_hp || "....................................."}</td>
+            </tr>
+            <tr>
+                <td class="label">Alamat Lengkap</td>
+                <td class="colon">:</td>
+                <td class="value">${student.alamat || "....................................."}</td>
+            </tr>
+        </table>
+        
+        <div class="notes">
+            <strong>CATATAN PENTING:</strong><br>
+            1. Formulir ini harus diisi dengan lengkap dan benar<br>
+            2. Lampirkan dokumen: Fotocopy Ijazah/SKHUN, Kartu Keluarga, Akta Kelahiran<br>
+            3. Pasfoto 4x6 berwarna sebanyak 3 lembar<br>
+            4. Formulir dikembalikan ke panitia PPDB paling lambat H-3 tes masuk
+        </div>
+        
+        <div class="signature-section">
+            <div class="signature-row">
+                <div class="signature-box">
+                    <p>Cililin, _________ 2027</p>
+                    <p>Orang Tua / Wali</p>
+                    <div class="signature-space"></div>
+                    <div class="signature-name">( ________________ )</div>
+                </div>
+                <div class="signature-box">
+                    <p>Mengetahui,</p>
+                    <p>Panitia PPDB</p>
+                    <div class="signature-space"></div>
+                    <div class="signature-name">( ________________ )</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+
+      const element = document.createElement("div");
+      element.innerHTML = formHTML;
+
+      const opt = {
+        margin: [8, 15, 8, 15], // Top, Right, Bottom, Left - lebih compact
+        filename: `formulir_${student.nama_lengkap}_${student.no_pendaftaran}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          letterRendering: true,
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+          compress: true,
+        },
+        pagebreak: { mode: ["avoid-all"] },
+      };
+
+      html2pdf()
+        .set(opt)
+        .from(element)
+        .save()
+        .then(() => {
+          if (showToast) {
+            showToast(
+              `PDF ${student.nama_lengkap} berhasil didownload!`,
+              "success"
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Error generating PDF:", error);
+          if (showToast) {
+            showToast("Gagal membuat PDF", "error");
+          }
+        });
+    },
+    [formatDateToDDMMYYYY, showToast]
   );
 
   const handleSort = (key) => {
@@ -114,7 +431,6 @@ const StudentList = ({
     }
   };
 
-  // ✅ UPDATED: Export menggunakan utility function
   const handleExportData = async () => {
     if (!allStudents || allStudents.length === 0) {
       if (showToast) {
@@ -124,7 +440,7 @@ const StudentList = ({
     }
 
     setIsExporting(true);
-    
+
     try {
       await exportAllStudents(allStudents, totalStudents, showToast);
     } catch (error) {
@@ -134,7 +450,6 @@ const StudentList = ({
     }
   };
 
-  // Render functions
   const renderPhoneNumber = (phoneNumber, parentName) => {
     if (!phoneNumber) return <div className="text-gray-400 text-sm">-</div>;
 
@@ -186,7 +501,6 @@ const StudentList = ({
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300">
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
-          {/* ✅ FIXED: Gunakan getDisplayNumber */}
           <div className="w-10 h-10 bg-gradient-to-r from-blue-800 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
             {getDisplayNumber(index)}
           </div>
@@ -206,16 +520,25 @@ const StudentList = ({
         </div>
         <div className="flex gap-2">
           <button
+            onClick={() => handleDownloadFormulir(student)}
+            className="bg-gradient-to-r from-green-600 to-green-400 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1"
+            title="Download Formulir PDF">
+            <i className="fas fa-file-pdf"></i>
+            <span className="hidden sm:inline">PDF</span>
+          </button>
+          <button
             onClick={() => handleEdit(student)}
-            className="bg-gradient-to-r from-yellow-600 to-yellow-400 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300"
+            className="bg-gradient-to-r from-yellow-600 to-yellow-400 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1"
             title="Edit Data">
             <i className="fas fa-edit"></i>
+            <span className="hidden sm:inline">Edit</span>
           </button>
           <button
             onClick={() => handleDelete(student.id)}
-            className="bg-gradient-to-r from-red-600 to-red-400 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300"
+            className="bg-gradient-to-r from-red-600 to-red-400 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1"
             title="Hapus Data">
             <i className="fas fa-trash"></i>
+            <span className="hidden sm:inline">Hapus</span>
           </button>
         </div>
       </div>
@@ -394,7 +717,7 @@ const StudentList = ({
                     className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 transition-colors text-sm"
                     onClick={() => handleSort("jenis_kelamin")}>
                     <div className="flex items-center gap-2">
-                      Jenis Kelamin
+                      JK
                       <i className={getSortIcon("jenis_kelamin")}></i>
                     </div>
                   </th>
@@ -412,7 +735,7 @@ const StudentList = ({
                       <i className={getSortIcon("asal_sekolah")}></i>
                     </div>
                   </th>
-                  <th className="p-3 text-left font-semibold text-sm min-w-[100px]">
+                  <th className="p-3 text-left font-semibold text-sm min-w-[180px]">
                     Aksi
                   </th>
                 </tr>
@@ -432,7 +755,6 @@ const StudentList = ({
                     <tr
                       key={student.id}
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                      {/* ✅ FIXED: Gunakan getDisplayNumber */}
                       <td className="p-3 text-gray-600 font-semibold">
                         {getDisplayNumber(index)}
                       </td>
@@ -486,18 +808,27 @@ const StudentList = ({
                         </div>
                       </td>
                       <td className="p-3">
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-wrap">
+                          <button
+                            onClick={() => handleDownloadFormulir(student)}
+                            className="bg-gradient-to-r from-green-600 to-green-400 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1"
+                            title="Download Formulir PDF">
+                            <i className="fas fa-file-pdf"></i>
+                            <span>PDF</span>
+                          </button>
                           <button
                             onClick={() => handleEdit(student)}
-                            className="bg-gradient-to-r from-yellow-600 to-yellow-400 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                            className="bg-gradient-to-r from-yellow-600 to-yellow-400 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1"
                             title="Edit Data">
                             <i className="fas fa-edit"></i>
+                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDelete(student.id)}
-                            className="bg-gradient-to-r from-red-600 to-red-400 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center justify-center"
+                            className="bg-gradient-to-r from-red-600 to-red-400 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1"
                             title="Hapus Data">
                             <i className="fas fa-trash"></i>
+                            <span>Hapus</span>
                           </button>
                         </div>
                       </td>
@@ -510,7 +841,7 @@ const StudentList = ({
         </div>
       )}
 
-      {/* ✅ FIXED: Pagination dengan effectiveTotalPages */}
+      {/* Pagination */}
       {shouldShowPagination && (
         <div className="flex flex-col sm:flex-row justify-between items-center p-4 mt-6 bg-white rounded-xl shadow-lg border border-gray-200 gap-4">
           <div className="text-sm text-gray-600 text-center sm:text-left">

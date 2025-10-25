@@ -18,7 +18,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { exportToExcel } from "./ReportExcel";
-import ReportModal from "./ReportModal";
+import ReportModal from './modals/AdminReportModal';
 
 import {
   fetchTeachersData,

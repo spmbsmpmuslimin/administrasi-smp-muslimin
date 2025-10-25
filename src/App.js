@@ -19,6 +19,7 @@ import Setting from './setting/setting';
 import Konseling from './konseling/Konseling';
 import Reports from './reports/Reports';
 import SPMB from './spmb/SPMB';
+import MonitorSistem from './system/MonitorSistem';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -27,22 +28,53 @@ function App() {
   const [showToast, setShowToast] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // CHECK localStorage saat app load - RESTORE USER KALAU ADA
+  // ✅ FIXED: CHECK localStorage dengan EXPIRY CHECK
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    
-    if (storedUser) {
+    const checkSession = () => {
       try {
+        const storedUser = localStorage.getItem('user');
+        
+        if (!storedUser) {
+          console.log('No stored user found');
+          setLoading(false);
+          return;
+        }
+
         const userData = JSON.parse(storedUser);
+        
+        // ✅ CEK EXPIRY TIME
+        if (userData.expiryTime) {
+          const currentTime = Date.now();
+          
+          if (currentTime > userData.expiryTime) {
+            // Session expired
+            console.log('Session expired, clearing storage');
+            localStorage.removeItem('user');
+            localStorage.removeItem('rememberMe');
+            setUser(null);
+            setToastMessage('Sesi Anda telah berakhir. Silakan login kembali.');
+            setToastType('warning');
+            setShowToast(true);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Session valid, restore user
         setUser(userData);
-        console.log('User restored from localStorage');
+        console.log('User restored from localStorage:', userData.username);
+        
       } catch (err) {
         console.error('Error parsing stored user:', err);
         localStorage.removeItem('user');
+        localStorage.removeItem('rememberMe');
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    }
-    
-    setLoading(false);
+    };
+
+    checkSession();
   }, []);
 
   // Auto hide toast setelah 3 detik
@@ -57,29 +89,42 @@ function App() {
     }
   }, [showToast]);
 
-  // Handler Login - SELALU SIMPAN ke localStorage
+  // ✅ FIXED: Handler Login dengan EXPIRY TIME
   const handleLogin = useCallback((userData, rememberMe = false) => {
-    setUser(userData);
+    // Generate expiry time
+    const loginTime = Date.now();
+    const expiryTime = rememberMe 
+      ? loginTime + (30 * 24 * 60 * 60 * 1000) // 30 hari jika remember me
+      : loginTime + (24 * 60 * 60 * 1000);     // 24 jam jika tidak
+
+    // Add expiry info to userData
+    const sessionData = {
+      ...userData,
+      loginTime: loginTime,
+      expiryTime: expiryTime
+    };
+
+    setUser(sessionData);
     
-    // SELALU simpan ke localStorage supaya refresh tetap login
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Simpan ke localStorage dengan expiry
+    localStorage.setItem('user', JSON.stringify(sessionData));
     
-    // Kalau rememberMe TRUE, set flag tambahan
+    // Set rememberMe flag
     if (rememberMe) {
       localStorage.setItem('rememberMe', 'true');
-      console.log('Remember Me enabled - will persist after browser close');
+      console.log('Remember Me enabled - session valid for 30 days');
     } else {
       localStorage.setItem('rememberMe', 'false');
-      console.log('Remember Me disabled - will logout after browser close');
+      console.log('Session valid for 24 hours');
     }
     
     setToastMessage(`Selamat datang, ${userData.full_name}! 👋`);
     setToastType('success');
     setShowToast(true);
-    console.log('User logged in:', userData);
+    console.log('User logged in:', userData.username);
   }, []);
 
-  // Handler Logout + HAPUS dari localStorage
+  // Handler Logout
   const handleLogout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('user');
@@ -120,7 +165,7 @@ function App() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Loading...</p>
+            <p className="text-gray-600 font-medium">Checking session...</p>
           </div>
         </div>
       );
@@ -157,7 +202,7 @@ function App() {
         v7_relativeSplatPath: true
       }}
     >
-      {/* TOAST HANYA MUNCUL 3 DETIK SAJA */}
+      {/* Toast notification */}
       {showToast && (
         <div className={getToastStyle()}>
           <div className="flex items-center gap-2">
@@ -246,7 +291,6 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* FIX: GANTI PATH JADI LOWERCASE */}
         <Route path="/catatan-siswa" element={
           <ProtectedRoute>
             <LayoutWrapper>
@@ -287,7 +331,15 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* Catch-all route untuk redirect */}
+        <Route path="/monitor-sistem" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <MonitorSistem user={user} onShowToast={handleShowToast} />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        {/* Catch-all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

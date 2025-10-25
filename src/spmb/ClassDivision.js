@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { exportClassDivision } from './SpmbExcel'; // ✅ Import dari utility
+import { generateClassDistribution, checkClassBalance, getClassStats, saveToHistory, handleUndo, handleRedo } from './ClassDistribution';
+import { saveClassAssignments, transferToStudents, resetClassAssignments, updateClassAssignment, handleMoveStudentSaved, handleExportClassDivision, handleExportSavedClasses, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleRemoveStudent, handleAddStudent, getAllStudentsInDistribution, handleSwapStudents } from './ClassOperations';
+import { exportClassDivision } from './SpmbExcel';
 
 const ClassDivision = ({ 
   allStudents, 
@@ -15,7 +17,24 @@ const ClassDivision = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [activeClassView, setActiveClassView] = useState(null);
-  const [isExporting, setIsExporting] = useState(false); // ✅ State untuk export
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const [editMode, setEditMode] = useState(false);
+  const [draggedStudent, setDraggedStudent] = useState(null);
+  const [dragOverClass, setDragOverClass] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingClass, setEditingClass] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterGender, setFilterGender] = useState('all');
+  const [showSwapModal, setShowSwapModal] = useState(false);
+  const [swapStudent1, setSwapStudent1] = useState(null);
+  const [swapStudent2, setSwapStudent2] = useState(null);
+  const [unbalancedClasses, setUnbalancedClasses] = useState([]);
+
+  const [savedClassDistribution, setSavedClassDistribution] = useState({});
+  const [showSavedClasses, setShowSavedClasses] = useState(false);
 
   // Load siswa yang belum dibagi kelas
   useEffect(() => {
@@ -25,237 +44,76 @@ const ClassDivision = ({
     setUnassignedStudents(unassigned);
   }, [allStudents]);
 
-  // Algoritma Pembagian Kelas Otomatis
-  const generateClassDistribution = useCallback(() => {
-    if (unassignedStudents.length === 0) {
-      showToast('Tidak ada siswa yang perlu dibagi kelas', 'error');
-      return;
+  useEffect(() => {
+    if (Object.keys(classDistribution).length > 0) {
+      const unbalanced = checkClassBalance(classDistribution);
+      setUnbalancedClasses(unbalanced);
     }
+  }, [classDistribution]);
 
+  const handleRefresh = useCallback(async () => {
     setIsLoading(true);
-
     try {
-      // 1. Kelompokkan berdasarkan gender
-      const maleStudents = unassignedStudents.filter(s => s.jenis_kelamin === 'L');
-      const femaleStudents = unassignedStudents.filter(s => s.jenis_kelamin === 'P');
-
-      // 2. Sort berdasarkan asal sekolah untuk distribusi merata
-      const sortBySchool = (students) => {
-        return [...students].sort((a, b) => 
-          (a.asal_sekolah || '').localeCompare(b.asal_sekolah || '')
-        );
-      };
-
-      const sortedMales = sortBySchool(maleStudents);
-      const sortedFemales = sortBySchool(femaleStudents);
-
-      // 3. Generate nama kelas (7A, 7B, dst)
-      const classNames = Array.from({ length: numClasses }, (_, i) => 
-        `7${String.fromCharCode(65 + i)}`
-      );
-
-      // 4. Inisialisasi distribusi kelas
-      const distribution = {};
-      classNames.forEach(className => {
-        distribution[className] = [];
-      });
-
-      // 5. Distribusi round-robin untuk balance
-      let classIndex = 0;
-
-      // Distribusi laki-laki
-      sortedMales.forEach(student => {
-        distribution[classNames[classIndex]].push(student);
-        classIndex = (classIndex + 1) % numClasses;
-      });
-
-      // Distribusi perempuan
-      classIndex = 0;
-      sortedFemales.forEach(student => {
-        distribution[classNames[classIndex]].push(student);
-        classIndex = (classIndex + 1) % numClasses;
-      });
-
-      setClassDistribution(distribution);
-      setShowPreview(true);
-      showToast(`Berhasil generate pembagian ${numClasses} kelas!`, 'success');
+      if (onRefreshData) {
+        await onRefreshData();
+      }
+      showToast('✅ Data berhasil di-refresh', 'success');
     } catch (error) {
-      console.error('Error generating distribution:', error);
-      showToast('Gagal generate pembagian kelas', 'error');
+      console.error('Error refreshing data:', error);
+      showToast('❌ Gagal refresh data', 'error');
     } finally {
       setIsLoading(false);
     }
+  }, [onRefreshData, showToast]);
+
+  const handleGenerateDistribution = useCallback(() => {
+    generateClassDistribution(
+      unassignedStudents,
+      numClasses,
+      setIsLoading,
+      setClassDistribution,
+      setShowPreview,
+      setShowSavedClasses,
+      setEditMode,
+      setHistory,
+      setHistoryIndex,
+      showToast
+    );
   }, [unassignedStudents, numClasses, showToast]);
 
-  // Simpan pembagian ke database
-  const saveClassAssignments = useCallback(async () => {
-    if (!window.confirm('Simpan pembagian kelas ini? Data tidak bisa diubah setelah disimpan.')) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const updates = [];
-
-      Object.entries(classDistribution).forEach(([className, students]) => {
-        students.forEach(student => {
-          updates.push({
-            id: student.id,
-            kelas: className
-          });
-        });
-      });
-
-      // Batch update
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('siswa_baru')
-          .update({ kelas: update.kelas })
-          .eq('id', update.id);
-
-        if (error) throw error;
-      }
-
-      showToast(`✅ Berhasil menyimpan pembagian ${updates.length} siswa!`, 'success');
-      setShowPreview(false);
-      setClassDistribution({});
-      
-      // Refresh data
-      if (onRefreshData) {
-        await onRefreshData();
-      }
-    } catch (error) {
-      console.error('Error saving assignments:', error);
-      showToast('❌ Gagal menyimpan pembagian kelas', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [classDistribution, supabase, showToast, onRefreshData]);
-
-  // Transfer ke tabel students
-  const transferToStudents = useCallback(async () => {
-    const studentsWithClass = allStudents.filter(s => 
-      s.kelas && !s.is_transferred && s.status === 'diterima'
-    );
-
-    if (studentsWithClass.length === 0) {
-      showToast('Tidak ada siswa dengan kelas yang bisa ditransfer', 'error');
-      return;
-    }
-
-    if (!window.confirm(`Transfer ${studentsWithClass.length} siswa ke tabel Students?`)) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const currentYear = getCurrentAcademicYear();
-
-      for (const siswa of studentsWithClass) {
-        // 1. Insert ke tabel students
-        const { error: insertError } = await supabase
-          .from('students')
-          .insert([{
-            full_name: siswa.nama_lengkap,
-            nis: siswa.nisn,
-            class_id: siswa.kelas,
-            academic_year: currentYear,
-            gender: siswa.jenis_kelamin,
-            is_active: true
-          }]);
-
-        if (insertError) throw insertError;
-
-        // 2. Update is_transferred di siswa_baru
-        const { error: updateError } = await supabase
-          .from('siswa_baru')
-          .update({
-            is_transferred: true,
-            transferred_at: new Date().toISOString()
-          })
-          .eq('id', siswa.id);
-
-        if (updateError) throw updateError;
-      }
-
-      showToast(`✅ Berhasil transfer ${studentsWithClass.length} siswa ke Students!`, 'success');
-      
-      // Refresh data
-      if (onRefreshData) {
-        await onRefreshData();
-      }
-    } catch (error) {
-      console.error('Error transferring students:', error);
-      showToast('❌ Gagal transfer siswa: ' + error.message, 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [allStudents, supabase, showToast, getCurrentAcademicYear, onRefreshData]);
-
-  // ✅ UPDATED: Export ke Excel dengan multi-sheet
-  const handleExportClassDivision = async () => {
-    if (!classDistribution || Object.keys(classDistribution).length === 0) {
-      showToast('Tidak ada pembagian kelas untuk di-export', 'error');
-      return;
-    }
-
-    setIsExporting(true);
-    try {
-      await exportClassDivision(classDistribution, showToast);
-    } catch (error) {
-      console.error('Error in handleExportClassDivision:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // ✅ NEW: Export kelas yang sudah tersimpan di database
-  const handleExportSavedClasses = async () => {
-    const studentsWithClass = allStudents.filter(s => 
-      s.kelas && !s.is_transferred && s.status === 'diterima'
-    );
-
-    if (studentsWithClass.length === 0) {
-      showToast('Tidak ada siswa dengan kelas yang bisa di-export', 'error');
-      return;
-    }
-
-    // Group students by class
+  const loadSavedClassDistribution = useCallback(() => {
     const distribution = {};
-    studentsWithClass.forEach(student => {
-      const className = student.kelas;
-      if (!distribution[className]) {
-        distribution[className] = [];
-      }
-      distribution[className].push(student);
-    });
-
-    setIsExporting(true);
-    try {
-      await exportClassDivision(distribution, showToast);
-    } catch (error) {
-      console.error('Error in handleExportSavedClasses:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  // Hitung statistik per kelas
-  const getClassStats = (students) => {
-    const males = students.filter(s => s.jenis_kelamin === 'L').length;
-    const females = students.filter(s => s.jenis_kelamin === 'P').length;
-    const schools = [...new Set(students.map(s => s.asal_sekolah))];
     
-    return {
-      total: students.length,
-      males,
-      females,
-      schoolCount: schools.length,
-      schools
-    };
+    allStudents
+      .filter(s => s.kelas && !s.is_transferred && s.status === 'diterima')
+      .forEach(student => {
+        const className = student.kelas;
+        if (!distribution[className]) {
+          distribution[className] = [];
+        }
+        distribution[className].push(student);
+      });
+    
+    setSavedClassDistribution(distribution);
+    setShowSavedClasses(true);
+    setShowPreview(false);
+    setEditMode(true);
+    
+    showToast('📚 Memuat kelas yang sudah tersimpan', 'info');
+  }, [allStudents, showToast]);
+
+  const getFilteredStudents = (students) => {
+    return students.filter(student => {
+      const matchSearch = student.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (student.asal_sekolah || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchGender = filterGender === 'all' || student.jenis_kelamin === filterGender;
+      return matchSearch && matchGender;
+    });
   };
 
   const studentsWithClass = allStudents.filter(s => s.kelas && !s.is_transferred);
+  const currentDistribution = showSavedClasses ? savedClassDistribution : classDistribution;
+  const isEditModeActive = showSavedClasses ? true : editMode;
 
   return (
     <div className="space-y-6">
@@ -289,7 +147,7 @@ const ClassDivision = ({
       </div>
 
       {/* Control Panel */}
-      {!showPreview && (
+      {!showPreview && !showSavedClasses && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold mb-4">⚙️ Pengaturan Pembagian</h3>
           
@@ -314,16 +172,24 @@ const ClassDivision = ({
 
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={generateClassDistribution}
+                onClick={handleGenerateDistribution}
                 disabled={isLoading || unassignedStudents.length === 0}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2"
               >
-                🎲 Generate Pembagian Otomatis
+                🎲 Generate Otomatis
               </button>
 
               <button
-                onClick={handleExportSavedClasses}
-                disabled={isLoading || isExporting || studentsWithClass.length === 0}
+                onClick={loadSavedClassDistribution}
+                disabled={isLoading || studentsWithClass.length === 0}
+                className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2"
+              >
+                ✏️ Edit Kelas Tersimpan ({studentsWithClass.length})
+              </button>
+
+              <button
+                onClick={() => handleExportSavedClasses(allStudents, setIsExporting, showToast)}
+                disabled={isExporting || studentsWithClass.length === 0}
                 className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2"
               >
                 <i className="fas fa-file-excel"></i>
@@ -331,7 +197,15 @@ const ClassDivision = ({
               </button>
 
               <button
-                onClick={transferToStudents}
+                onClick={() => resetClassAssignments(allStudents, supabase, setIsLoading, showToast, onRefreshData)}
+                disabled={isLoading || studentsWithClass.length === 0}
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2"
+              >
+                🔄 Reset Pembagian ({studentsWithClass.length})
+              </button>
+
+              <button
+                onClick={() => transferToStudents(allStudents, supabase, setIsLoading, showToast, getCurrentAcademicYear, onRefreshData)}
                 disabled={isLoading || studentsWithClass.length === 0}
                 className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2"
               >
@@ -340,7 +214,6 @@ const ClassDivision = ({
             </div>
           </div>
 
-          {/* Info Box */}
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex gap-2">
               <span className="text-blue-600 text-xl">ℹ️</span>
@@ -350,63 +223,210 @@ const ClassDivision = ({
                   <li>Sistem akan membagi siswa secara <strong>merata</strong> ke semua kelas</li>
                   <li>Menyeimbangkan <strong>jumlah laki-laki dan perempuan</strong> di setiap kelas</li>
                   <li>Mendistribusikan siswa dari <strong>SD yang sama</strong> ke kelas berbeda</li>
+                  <li>Setelah generate, aktifkan <strong>Mode Edit</strong> untuk adjustment manual</li>
+                  <li>Gunakan <strong>Edit Kelas Tersimpan</strong> untuk modifikasi setelah disimpan</li>
                   <li>Setelah puas dengan hasil, klik <strong>Simpan Pembagian</strong></li>
                 </ul>
               </div>
             </div>
           </div>
+
+          {studentsWithClass.length > 0 && (
+            <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex gap-2">
+                <span className="text-orange-600 text-xl">💡</span>
+                <div className="text-sm text-orange-800">
+                  <p className="font-semibold">Fitur Edit Kelas Tersimpan:</p>
+                  <ul className="list-disc list-inside space-y-1 mt-1">
+                    <li>Edit manual siswa yang <strong>sudah dibagi kelas</strong></li>
+                    <li>Pindahkan siswa antar kelas sesuai permintaan</li>
+                    <li>Perubahan langsung tersimpan ke database</li>
+                    <li>Cocok untuk penyesuaian permintaan orang tua/murid</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Toolbar Edit Mode */}
+      {(showPreview || showSavedClasses) && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {showPreview && (
+                <button
+                  onClick={() => setEditMode(!editMode)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    editMode 
+                      ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {editMode ? '🔓 Mode Edit: ON' : '🔒 Mode Edit: OFF'}
+                </button>
+              )}
+
+              {showSavedClasses && (
+                <span className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium">
+                  ✏️ Edit Kelas Tersimpan
+                </span>
+              )}
+
+              {(isEditModeActive) && (
+                <>
+                  {showPreview && (
+                    <>
+                      <button
+                        onClick={() => handleUndo(historyIndex, history, setHistoryIndex, setClassDistribution, showToast)}
+                        disabled={historyIndex <= 0}
+                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        title="Undo (Ctrl+Z)"
+                      >
+                        ↩️ Undo
+                      </button>
+                      
+                      <button
+                        onClick={() => handleRedo(historyIndex, history, setHistoryIndex, setClassDistribution, showToast)}
+                        disabled={historyIndex >= history.length - 1}
+                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        title="Redo (Ctrl+Y)"
+                      >
+                        ↪️ Redo
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    onClick={() => setShowSwapModal(true)}
+                    className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                  >
+                    🔄 Swap Siswa
+                  </button>
+                </>
+              )}
+            </div>
+
+            {unbalancedClasses.length > 0 && showPreview && (
+              <div className="flex items-center gap-2 bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-200">
+                <span className="text-yellow-600">⚠️</span>
+                <span className="text-sm text-yellow-800">
+                  {unbalancedClasses.length} kelas tidak seimbang
+                </span>
+              </div>
+            )}
+
+            {showSavedClasses && (
+              <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                <span className="text-green-600">💾</span>
+                <span className="text-sm text-green-800">
+                  Perubahan langsung tersimpan ke database
+                </span>
+              </div>
+            )}
+          </div>
+
+          {isEditModeActive && (
+            <div className="mt-3 bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <p className="text-sm text-orange-800">
+                <strong>Mode Edit Aktif:</strong> Drag & drop siswa antar kelas, klik "Edit" untuk tambah/hapus siswa, atau gunakan "Swap" untuk tukar siswa.
+                {showSavedClasses && " Perubahan langsung tersimpan ke database."}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Preview Hasil Pembagian */}
-      {showPreview && (
+      {(showPreview || showSavedClasses) && Object.keys(currentDistribution).length > 0 && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-              <h3 className="text-lg font-semibold">👁️ Preview Pembagian Kelas</h3>
+              <h3 className="text-lg font-semibold">
+                {showSavedClasses ? '✏️ Edit Kelas Tersimpan' : '👁️ Preview Pembagian Kelas'}
+              </h3>
               <div className="flex gap-2 flex-wrap">
-                {/* ✅ Tombol Export */}
-                <button
-                  onClick={handleExportClassDivision}
-                  disabled={isExporting || isLoading}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 font-medium text-sm flex items-center gap-2"
-                >
-                  <i className="fas fa-file-excel"></i>
-                  {isExporting ? 'Exporting...' : 'Export Excel'}
-                </button>
-                
-                <button
-                  onClick={saveClassAssignments}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 font-medium text-sm"
-                >
-                  💾 Simpan Pembagian
-                </button>
+                {showPreview && (
+                  <>
+                    <button
+                      onClick={() => handleExportClassDivision(classDistribution, setIsExporting, showToast)}
+                      disabled={isExporting || isLoading}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 font-medium text-sm flex items-center gap-2"
+                    >
+                      <i className="fas fa-file-excel"></i>
+                      {isExporting ? 'Exporting...' : 'Export Excel'}
+                    </button>
+                    
+                    <button
+                      onClick={() => saveClassAssignments(classDistribution, supabase, setIsLoading, showToast, onRefreshData, setShowPreview, setClassDistribution, setEditMode, setHistory, setHistoryIndex)}
+                      disabled={isLoading}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 font-medium text-sm"
+                    >
+                      💾 Simpan Pembagian
+                    </button>
+                  </>
+                )}
+
+                {showSavedClasses && (
+                  <button
+                    onClick={() => handleExportSavedClasses(allStudents, setIsExporting, showToast)}
+                    disabled={isExporting}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-sm flex items-center gap-2"
+                  >
+                    <i className="fas fa-file-excel"></i>
+                    {isExporting ? 'Exporting...' : 'Export Excel'}
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
-                    setShowPreview(false);
-                    setClassDistribution({});
+                    if (window.confirm(showSavedClasses 
+                      ? 'Tutup edit kelas tersimpan?' 
+                      : 'Batalkan pembagian? Semua perubahan akan hilang.'
+                    )) {
+                      setShowPreview(false);
+                      setShowSavedClasses(false);
+                      setClassDistribution({});
+                      setEditMode(false);
+                      setHistory([]);
+                      setHistoryIndex(-1);
+                    }
                   }}
                   disabled={isLoading}
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium text-sm"
                 >
-                  ❌ Batal
+                  {showSavedClasses ? '← Kembali' : '❌ Batal'}
                 </button>
               </div>
             </div>
 
             {/* Grid Kelas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(classDistribution).map(([className, students]) => {
+              {Object.entries(currentDistribution).map(([className, students]) => {
                 const stats = getClassStats(students);
+                const isUnbalanced = showPreview && unbalancedClasses.some(uc => uc.className === className);
+                const isDragOver = dragOverClass === className;
+                
                 return (
                   <div
                     key={className}
-                    className="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors cursor-pointer"
-                    onClick={() => setActiveClassView(className)}
+                    className={`border-2 rounded-lg p-4 transition-all ${
+                      isUnbalanced 
+                        ? 'border-yellow-400 bg-yellow-50' 
+                        : isDragOver 
+                        ? 'border-blue-500 bg-blue-50 scale-105' 
+                        : 'border-gray-200 hover:border-blue-400'
+                    } ${isEditModeActive ? 'cursor-pointer' : ''}`}
+                    onDragOver={isEditModeActive ? (e) => handleDragOver(e, className, setDragOverClass) : undefined}
+                    onDragLeave={isEditModeActive ? () => handleDragLeave(setDragOverClass) : undefined}
+                    onDrop={isEditModeActive ? (e) => handleDrop(e, className, draggedStudent, currentDistribution, showSavedClasses ? setSavedClassDistribution : setClassDistribution, showSavedClasses, saveToHistory, setDraggedStudent, setDragOverClass, showToast, setHistory, setHistoryIndex, historyIndex) : undefined}
                   >
                     <div className="text-center mb-3">
-                      <h4 className="text-2xl font-bold text-blue-600">{className}</h4>
+                      <div className="flex items-center justify-center gap-2">
+                        <h4 className="text-2xl font-bold text-blue-600">{className}</h4>
+                        {isUnbalanced && <span className="text-yellow-500 text-xl">⚠️</span>}
+                      </div>
                       <div className="text-3xl font-bold text-gray-800">{stats.total}</div>
                       <div className="text-sm text-gray-500">siswa</div>
                     </div>
@@ -426,9 +446,41 @@ const ClassDivision = ({
                       </div>
                     </div>
 
-                    <button className="w-full mt-3 text-xs text-blue-600 hover:text-blue-700 font-medium">
-                      Lihat Detail →
-                    </button>
+                    <div className="flex gap-2 mt-3">
+                      <button 
+                        onClick={() => {
+                          setActiveClassView(className);
+                          if (showSavedClasses) {
+                            setEditingClass(className);
+                          }
+                        }}
+                        className="flex-1 text-xs text-blue-600 hover:text-blue-700 font-medium py-1 px-2 border border-blue-300 rounded hover:bg-blue-50"
+                      >
+                        Lihat Detail →
+                      </button>
+                      {isEditModeActive && showPreview && (
+                        <button
+                          onClick={() => {
+                            setEditingClass(className);
+                            setShowEditModal(true);
+                          }}
+                          className="flex-1 text-xs text-orange-600 hover:text-orange-700 font-medium py-1 px-2 border border-orange-300 rounded hover:bg-orange-50"
+                        >
+                          ✏️ Edit
+                        </button>
+                      )}
+                      {showSavedClasses && (
+                        <button
+                          onClick={() => {
+                            setActiveClassView(className);
+                            setEditingClass(className);
+                          }}
+                          className="flex-1 text-xs text-orange-600 hover:text-orange-700 font-medium py-1 px-2 border border-orange-300 rounded hover:bg-orange-50"
+                        >
+                          ✏️ Edit Siswa
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -437,8 +489,264 @@ const ClassDivision = ({
         </div>
       )}
 
-      {/* Modal Detail Kelas */}
-      {activeClassView && classDistribution[activeClassView] && (
+      {/* Modal Edit Kelas (untuk preview baru) */}
+      {showEditModal && editingClass && classDistribution[editingClass] && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-orange-600 text-white p-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold">✏️ Edit Kelas {editingClass}</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingClass(null);
+                  setSearchTerm('');
+                  setFilterGender('all');
+                }}
+                className="text-white hover:bg-orange-700 rounded-full w-8 h-8 flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Current Students */}
+              <div className="mb-6">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <span>👥 Siswa di Kelas {editingClass}</span>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                    {classDistribution[editingClass].length} siswa
+                  </span>
+                </h4>
+                <div className="max-h-48 overflow-y-auto border rounded-lg">
+                  {classDistribution[editingClass].length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      Kelas kosong
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {classDistribution[editingClass].map((student) => (
+                        <div
+                          key={student.id}
+                          className="p-3 hover:bg-gray-50 flex justify-between items-center"
+                          draggable={editMode}
+                          onDragStart={(e) => handleDragStart(e, student, editingClass, setDraggedStudent)}
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium">{student.nama_lengkap}</div>
+                            <div className="text-xs text-gray-500">{student.asal_sekolah}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                              student.jenis_kelamin === 'L' 
+                                ? 'bg-blue-100 text-blue-700' 
+                                : 'bg-pink-100 text-pink-700'
+                            }`}>
+                              {student.jenis_kelamin}
+                            </span>
+                            <button
+                              onClick={() => handleRemoveStudent(student.id, editingClass, classDistribution, setClassDistribution, showSavedClasses, saveToHistory, showToast, historyIndex, setHistory, setHistoryIndex)}
+                              className="text-red-600 hover:text-red-700 px-2 py-1 text-xs"
+                              title="Keluarkan dari kelas"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Available Students */}
+              <div>
+                <h4 className="font-semibold mb-3">➕ Tambah Siswa</h4>
+                
+                {/* Search & Filter */}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    placeholder="Cari nama atau asal sekolah..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                  />
+                  <select
+                    value={filterGender}
+                    onChange={(e) => setFilterGender(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="all">Semua</option>
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+
+                <div className="max-h-64 overflow-y-auto border rounded-lg">
+                  {(() => {
+                    const availableStudents = getFilteredStudents(unassignedStudents);
+                    
+                    if (availableStudents.length === 0) {
+                      return (
+                        <div className="p-4 text-center text-gray-500">
+                          Tidak ada siswa tersedia
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="divide-y">
+                        {availableStudents.map((student) => (
+                          <div
+                            key={student.id}
+                            className="p-3 hover:bg-gray-50 flex justify-between items-center"
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium">{student.nama_lengkap}</div>
+                              <div className="text-xs text-gray-500">{student.asal_sekolah}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                student.jenis_kelamin === 'L' 
+                                  ? 'bg-blue-100 text-blue-700' 
+                                  : 'bg-pink-100 text-pink-700'
+                              }`}>
+                                {student.jenis_kelamin}
+                              </span>
+                              <button
+                                onClick={() => handleAddStudent(student, editingClass, classDistribution, setClassDistribution, showSavedClasses, saveToHistory, showToast, historyIndex, setHistory, setHistoryIndex)}
+                                className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
+                              >
+                                + Tambah
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Kelas Tersimpan */}
+      {showSavedClasses && activeClassView && savedClassDistribution[activeClassView] && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-orange-600 text-white p-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold">✏️ Edit Kelas {activeClassView} (Tersimpan)</h3>
+              <button
+                onClick={() => setActiveClassView(null)}
+                className="text-white hover:bg-orange-700 rounded-full w-8 h-8 flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>Info:</strong> Perubahan akan langsung tersimpan ke database. 
+                  Drag & drop siswa ke kelas lain untuk memindahkan.
+                </p>
+              </div>
+
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2 text-left">No</th>
+                    <th className="p-2 text-left">Nama</th>
+                    <th className="p-2 text-center">L/P</th>
+                    <th className="p-2 text-left">Asal Sekolah</th>
+                    <th className="p-2 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {savedClassDistribution[activeClassView].map((student, idx) => (
+                    <tr 
+                      key={student.id} 
+                      className="border-t hover:bg-gray-50"
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, student, activeClassView, setDraggedStudent)}
+                    >
+                      <td className="p-2">{idx + 1}</td>
+                      <td className="p-2 font-medium">{student.nama_lengkap}</td>
+                      <td className="p-2 text-center">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          student.jenis_kelamin === 'L' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-pink-100 text-pink-700'
+                        }`}>
+                          {student.jenis_kelamin}
+                        </span>
+                      </td>
+                      <td className="p-2 text-gray-600">{student.asal_sekolah}</td>
+                      <td className="p-2 text-center">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value && e.target.value !== activeClassView) {
+                              handleMoveStudentSaved(student.id, activeClassView, e.target.value, savedClassDistribution, allStudents, updateClassAssignment, setSavedClassDistribution, showToast, setIsLoading, supabase);
+                              e.target.value = '';
+                            }
+                          }}
+                          className="text-xs border rounded px-2 py-1"
+                        >
+                          <option value="">Pindah ke...</option>
+                          {Object.keys(savedClassDistribution)
+                            .filter(cls => cls !== activeClassView)
+                            .map(cls => (
+                              <option key={cls} value={cls}>
+                                {cls}
+                              </option>
+                            ))
+                          }
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Drop zones untuk kelas lain */}
+              <div className="mt-6">
+                <h4 className="font-semibold mb-3">Drag & Drop ke Kelas Lain:</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {Object.keys(savedClassDistribution)
+                    .filter(cls => cls !== activeClassView)
+                    .map(className => (
+                      <div
+                        key={className}
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                        onDragOver={(e) => handleDragOver(e, className, setDragOverClass)}
+                        onDragLeave={() => handleDragLeave(setDragOverClass)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedStudent) {
+                            handleMoveStudentSaved(draggedStudent.student.id, draggedStudent.fromClass, className, savedClassDistribution, allStudents, updateClassAssignment, setSavedClassDistribution, showToast, setIsLoading, supabase);
+                            setDraggedStudent(null);
+                            setDragOverClass(null);
+                          }
+                        }}
+                      >
+                        <div className="font-bold text-blue-600">{className}</div>
+                        <div className="text-xs text-gray-500">
+                          {savedClassDistribution[className].length} siswa
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Detail Kelas (untuk view saja) */}
+      {activeClassView && currentDistribution[activeClassView] && !showSavedClasses && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
@@ -454,7 +762,7 @@ const ClassDivision = ({
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
               <div className="mb-4 grid grid-cols-3 gap-4 text-center">
                 {(() => {
-                  const stats = getClassStats(classDistribution[activeClassView]);
+                  const stats = getClassStats(currentDistribution[activeClassView]);
                   return (
                     <>
                       <div className="bg-blue-50 rounded p-3">
@@ -481,11 +789,17 @@ const ClassDivision = ({
                     <th className="p-2 text-left">Nama</th>
                     <th className="p-2 text-center">L/P</th>
                     <th className="p-2 text-left">Asal Sekolah</th>
+                    {isEditModeActive && <th className="p-2 text-center">Aksi</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {classDistribution[activeClassView].map((student, idx) => (
-                    <tr key={student.id} className="border-t hover:bg-gray-50">
+                  {currentDistribution[activeClassView].map((student, idx) => (
+                    <tr 
+                      key={student.id} 
+                      className="border-t hover:bg-gray-50"
+                      draggable={isEditModeActive}
+                      onDragStart={isEditModeActive ? (e) => handleDragStart(e, student, activeClassView, setDraggedStudent) : undefined}
+                    >
                       <td className="p-2">{idx + 1}</td>
                       <td className="p-2 font-medium">{student.nama_lengkap}</td>
                       <td className="p-2 text-center">
@@ -498,10 +812,174 @@ const ClassDivision = ({
                         </span>
                       </td>
                       <td className="p-2 text-gray-600">{student.asal_sekolah}</td>
+                      {isEditModeActive && (
+                        <td className="p-2 text-center">
+                          <button
+                            onClick={() => handleRemoveStudent(student.id, activeClassView, currentDistribution, showSavedClasses ? setSavedClassDistribution : setClassDistribution, showSavedClasses, saveToHistory, showToast, historyIndex, setHistory, setHistoryIndex)}
+                            className="text-red-600 hover:text-red-700 text-xs px-2 py-1"
+                            title="Keluarkan dari kelas"
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Swap Siswa */}
+      {showSwapModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-indigo-600 text-white p-4 flex justify-between items-center">
+              <h3 className="text-xl font-bold">🔄 Tukar Posisi 2 Siswa</h3>
+              <button
+                onClick={() => {
+                  setShowSwapModal(false);
+                  setSwapStudent1(null);
+                  setSwapStudent2(null);
+                }}
+                className="text-white hover:bg-indigo-700 rounded-full w-8 h-8 flex items-center justify-center"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {/* Siswa 1 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Siswa 1 {swapStudent1 && `(${swapStudent1.className})`}
+                  </label>
+                  <select
+                    value={swapStudent1 ? swapStudent1.student.uniqueId : ''}
+                    onChange={(e) => {
+                      if (!e.target.value) {
+                        setSwapStudent1(null);
+                        return;
+                      }
+                      
+                      const selectedStudent = getAllStudentsInDistribution(currentDistribution, showSavedClasses);
+                      
+                      if (selectedStudent) {
+                        setSwapStudent1({ 
+                          student: selectedStudent, 
+                          className: selectedStudent.className 
+                        });
+                      } else {
+                        setSwapStudent1(null);
+                        console.error('Student not found:', e.target.value);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="">Pilih siswa...</option>
+                    {getAllStudentsInDistribution(currentDistribution, showSavedClasses).map(item => (
+                      <option 
+                        key={item.uniqueId} 
+                        value={item.uniqueId}
+                        disabled={swapStudent2 && swapStudent2.student?.id === item.id}
+                      >
+                        {item.className} - {item.nama_lengkap}
+                      </option>
+                    ))}
+                  </select>
+                  {swapStudent1 && swapStudent1.student && (
+                    <div className="mt-2 p-3 bg-gray-50 rounded border">
+                      <div className="font-medium">{swapStudent1.student.nama_lengkap}</div>
+                      <div className="text-sm text-gray-600">{swapStudent1.student.asal_sekolah}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {swapStudent1.student.jenis_kelamin === 'L' ? '👦 Laki-laki' : '👧 Perempuan'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Siswa 2 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Siswa 2 {swapStudent2 && `(${swapStudent2.className})`}
+                  </label>
+                  <select
+                    value={swapStudent2 ? swapStudent2.student.uniqueId : ''}
+                    onChange={(e) => {
+                      if (!e.target.value) {
+                        setSwapStudent2(null);
+                        return;
+                      }
+                      
+                      const selectedStudent = getAllStudentsInDistribution(currentDistribution, showSavedClasses);
+                      
+                      if (selectedStudent) {
+                        setSwapStudent2({ 
+                          student: selectedStudent, 
+                          className: selectedStudent.className 
+                        });
+                      } else {
+                        setSwapStudent2(null);
+                        console.error('Student not found:', e.target.value);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
+                    <option value="">Pilih siswa...</option>
+                    {getAllStudentsInDistribution(currentDistribution, showSavedClasses).map(item => (
+                      <option 
+                        key={item.uniqueId} 
+                        value={item.uniqueId}
+                        disabled={swapStudent1 && swapStudent1.student?.id === item.id}
+                      >
+                        {item.className} - {item.nama_lengkap}
+                      </option>
+                    ))}
+                  </select>
+                  {swapStudent2 && swapStudent2.student && (
+                    <div className="mt-2 p-3 bg-gray-50 rounded border">
+                      <div className="font-medium">{swapStudent2.student.nama_lengkap}</div>
+                      <div className="text-sm text-gray-600">{swapStudent2.student.asal_sekolah}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {swapStudent2.student.jenis_kelamin === 'L' ? '👦 Laki-laki' : '👧 Perempuan'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {swapStudent1 && swapStudent1.student && swapStudent2 && swapStudent2.student && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-center text-sm text-blue-800">
+                    <strong>{swapStudent1.student.nama_lengkap}</strong> ({swapStudent1.className})
+                    <span className="mx-2">⟷</span>
+                    <strong>{swapStudent2.student.nama_lengkap}</strong> ({swapStudent2.className})
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleSwapStudents(swapStudent1, swapStudent2, currentDistribution, showSavedClasses ? setSavedClassDistribution : setClassDistribution, showSavedClasses, saveToHistory, showToast, setShowSwapModal, setSwapStudent1, setSwapStudent2, setHistory, setHistoryIndex, historyIndex)}
+                  disabled={!swapStudent1 || !swapStudent2 || !swapStudent1.student || !swapStudent2.student}
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                >
+                  🔄 Tukar Sekarang
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSwapModal(false);
+                    setSwapStudent1(null);
+                    setSwapStudent2(null);
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                >
+                  Batal
+                </button>
+              </div>
             </div>
           </div>
         </div>
