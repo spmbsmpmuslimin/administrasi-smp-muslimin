@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import Logo from "./Logo";
-// Import background image - PERHATIKAN HURUF BESAR JPG
 import backgroundImage from "../assets/Background.JPG";
 
 export const Login = ({ onLogin, onShowToast }) => {
@@ -79,7 +78,6 @@ export const Login = ({ onLogin, onShowToast }) => {
   useEffect(() => {
     fetchStatsData();
 
-    // Preload image with animation trigger
     const img = new Image();
     img.src = backgroundImage;
     img.onload = () => {
@@ -87,7 +85,7 @@ export const Login = ({ onLogin, onShowToast }) => {
     };
     img.onerror = () => {
       console.error("Failed to load background image");
-      setImageLoaded(true); // Still show content even if image fails
+      setImageLoaded(true);
     };
   }, []);
 
@@ -108,8 +106,6 @@ export const Login = ({ onLogin, onShowToast }) => {
     }
 
     try {
-      console.log("🔍 Mencoba login dengan:", { username });
-
       const { data, error } = await supabase
         .from("users")
         .select("*")
@@ -118,7 +114,6 @@ export const Login = ({ onLogin, onShowToast }) => {
         .maybeSingle();
 
       if (error) {
-        console.error("❌ Error dari Supabase:", error);
         if (error.code === "PGRST116") {
           throw new Error("Username tidak ditemukan");
         }
@@ -132,8 +127,6 @@ export const Login = ({ onLogin, onShowToast }) => {
       if (data.password !== password) {
         throw new Error("Password salah");
       }
-
-      console.log("✅ Login sukses:", data);
 
       const userData = {
         id: data.id,
@@ -154,7 +147,6 @@ export const Login = ({ onLogin, onShowToast }) => {
         onShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
       }
     } catch (error) {
-      console.error("❌ Login error:", error.message);
       setErrors({ general: error.message });
 
       if (onShowToast) {
@@ -170,11 +162,53 @@ export const Login = ({ onLogin, onShowToast }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-blue-100">
-      <div className="flex-1 flex flex-col lg:flex-row">
-        {/* PHOTO SECTION - Kiri di desktop, Atas di mobile */}
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+      {/* Animated background patterns */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+        <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+      </div>
+
+      <style>{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        @keyframes shimmer {
+          0% { background-position: -1000px 0; }
+          100% { background-position: 1000px 0; }
+        }
+        .animate-shimmer {
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+          background-size: 1000px 100%;
+          animation: shimmer 3s infinite;
+        }
+        /* Fix browser autofill kuning */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.1) inset !important;
+          -webkit-text-fill-color: white !important;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+      `}</style>
+
+      <div className="flex-1 flex flex-col lg:flex-row relative z-10">
+        {/* PHOTO SECTION - Enhanced with overlays */}
         <div
-          className={`relative overflow-hidden bg-gradient-to-br from-blue-800 via-blue-700 to-blue-900 flex-shrink-0 h-[35vh] lg:h-auto lg:flex-[7] transition-all duration-1000 ${
+          className={`relative overflow-hidden flex-shrink-0 h-[35vh] lg:h-auto lg:flex-[7] transition-all duration-1000 ${
             imageLoaded ? "opacity-100" : "opacity-0"
           }`}
           style={{
@@ -185,172 +219,197 @@ export const Login = ({ onLogin, onShowToast }) => {
           }}>
           {/* Loading State */}
           {!imageLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 flex items-center justify-center">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
+                <div
+                  className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-purple-400/50 rounded-full animate-spin"
+                  style={{ animationDuration: "1.5s" }}></div>
+              </div>
             </div>
           )}
 
-          {/* Vignette overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-blue-900/40"></div>
+          {/* Multi-layer gradient overlays for depth */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-purple-900/30 to-pink-900/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.3)_100%)]"></div>
 
-          {/* BRANDING OVERLAY with Animation */}
-          <div
-            className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-1000 delay-300 ${
-              imageLoaded
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-8"
-            }`}>
-            <div className="text-center px-4">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white/25 tracking-wider drop-shadow-2xl leading-tight">
-                SMP MUSLIMIN
-              </h1>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white/20 mt-2 tracking-widest drop-shadow-xl">
-                CILILIN
-              </p>
-            </div>
+          {/* Shimmer effect overlay */}
+          <div className="absolute inset-0 animate-shimmer opacity-20"></div>
+
+          {/* Floating particles effect */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div
+              className="absolute top-1/4 left-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping"
+              style={{ animationDuration: "3s" }}></div>
+            <div
+              className="absolute top-3/4 right-1/3 w-2 h-2 bg-blue-300/30 rounded-full animate-ping"
+              style={{ animationDuration: "4s", animationDelay: "1s" }}></div>
+            <div
+              className="absolute top-1/2 right-1/4 w-2 h-2 bg-purple-300/30 rounded-full animate-ping"
+              style={{ animationDuration: "5s", animationDelay: "2s" }}></div>
           </div>
         </div>
 
-        {/* FORM SECTION - Kanan di desktop, Bawah di mobile */}
-        <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50/50 to-blue-100/50 relative overflow-hidden flex-1 lg:flex-[2]">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-blue-800/5"></div>
+        {/* FORM SECTION - Premium glassmorphism */}
+        <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden flex-1 lg:flex-[2] bg-gradient-to-br from-slate-900/50 to-blue-900/50 backdrop-blur-xl">
+          {/* Animated gradient orbs */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div
+            className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"
+            style={{ animationDelay: "1s" }}></div>
 
           <form
-            className={`bg-white/95 backdrop-blur-xl p-6 sm:p-7 lg:p-8 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md lg:max-w-sm relative z-10 border border-white/30 transition-all duration-700 delay-500 ${
+            className={`relative w-full max-w-md lg:max-w-sm transition-all duration-700 delay-500 ${
               imageLoaded
                 ? "opacity-100 translate-x-0"
                 : "opacity-0 translate-x-12"
-            } hover:shadow-3xl`}
+            }`}
             onSubmit={handleSubmit}>
-            <div className="text-center mb-6 sm:mb-8 relative">
-              <div className="mb-3 sm:mb-4 flex justify-center">
-                <Logo size="medium" className="opacity-90" />
-              </div>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-600 mb-1 sm:mb-2">
-                Selamat Datang
-              </h2>
-              <p className="text-gray-500 text-sm sm:text-base">
-                Silakan masuk ke akun Anda
-              </p>
-            </div>
+            {/* Glass card with enhanced effects */}
+            <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/20 shadow-2xl relative overflow-hidden group hover:bg-white/[0.12] transition-all duration-500 hover:scale-[1.02] hover:shadow-blue-500/20">
+              {/* Gradient border effect on hover */}
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/20 group-hover:via-purple-500/20 group-hover:to-pink-500/20 transition-all duration-500 -z-10"></div>
 
-            {/* Username Field */}
-            <div className="mb-4 sm:mb-5 relative">
-              <label
-                className="block font-semibold text-gray-700 mb-2 text-sm tracking-wide"
-                htmlFor="username">
-                Username
-              </label>
-              <input
-                type="text"
-                id="username"
-                className={`w-full px-4 py-3 sm:px-5 sm:py-3.5 border-2 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white/80 backdrop-blur-sm ${
-                  errors.username
-                    ? "border-red-500 shadow-red-100"
-                    : "border-gray-200 focus:border-blue-600 focus:shadow-blue-100"
-                } focus:outline-none focus:shadow-lg focus:bg-white`}
-                placeholder="Masukkan username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-              {errors.username && (
-                <div className="text-red-500 text-sm mt-2 flex items-center font-medium">
-                  <span className="mr-2">⚠️</span>
-                  {errors.username}
+              {/* Header with logo */}
+              <div className="text-center mb-8 relative">
+                <div className="mb-4 flex justify-center">
+                  <div className="relative group/logo">
+                    <Logo
+                      size="medium"
+                      className="opacity-90 drop-shadow-2xl transition-transform duration-300 group-hover/logo:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-blue-400/20 blur-xl rounded-full scale-150 group-hover/logo:bg-blue-400/30 transition-all duration-300"></div>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Password Field */}
-            <div className="mb-4 sm:mb-5 relative">
-              <label
-                className="block font-semibold text-gray-700 mb-2 text-sm tracking-wide"
-                htmlFor="password">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  className={`w-full px-4 py-3 sm:px-5 sm:py-3.5 pr-12 border-2 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white/80 backdrop-blur-sm ${
-                    errors.password
-                      ? "border-red-500 shadow-red-100"
-                      : "border-gray-200 focus:border-blue-600 focus:shadow-blue-100"
-                  } focus:outline-none focus:shadow-lg focus:bg-white`}
-                  placeholder="Masukkan password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600 transition-colors p-2"
-                  onClick={togglePasswordVisibility}>
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-lg">
+                  Selamat Datang
+                </h2>
+                <p className="text-blue-200/80 text-sm sm:text-base">
+                  Silakan Masuk Ke Akun Anda
+                </p>
+                <div className="mt-3 w-16 h-1 mx-auto bg-gradient-to-r from-transparent via-blue-400/50 to-transparent rounded-full"></div>
               </div>
-              {errors.password && (
-                <div className="text-red-500 text-sm mt-2 flex items-center font-medium">
-                  <span className="mr-2">⚠️</span>
-                  {errors.password}
-                </div>
-              )}
-            </div>
 
-            {/* Error Message */}
-            {errors.general && (
-              <div className="mb-4 sm:mb-5 p-3 sm:p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
-                ⚠️ {errors.general}
-              </div>
-            )}
-
-            {/* Remember Me & Forgot Password */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2 sm:gap-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 border-2 border-gray-300 rounded bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors cursor-pointer"
-                />
-                <label
-                  htmlFor="remember"
-                  className="text-sm text-gray-600 font-medium cursor-pointer select-none">
-                  Ingat saya
+              {/* Username Field - Enhanced */}
+              <div className="mb-5 relative group/input">
+                <label className="block font-semibold text-white/90 mb-2 text-sm tracking-wide">
+                  Username
                 </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="username"
+                    className={`w-full px-4 py-3.5 bg-white/10 backdrop-blur-sm border-2 rounded-xl text-white placeholder-white/40 transition-all duration-300 autofill:bg-white/10 autofill:text-white ${
+                      errors.username
+                        ? "border-red-400/50 shadow-lg shadow-red-500/20"
+                        : "border-white/20 focus:border-blue-400/50 focus:shadow-lg focus:shadow-blue-500/20"
+                    } focus:outline-none hover:border-white/30`}
+                    placeholder="Masukkan username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover/input:from-blue-500/5 group-hover/input:to-purple-500/5 transition-all duration-300 pointer-events-none"></div>
+                </div>
+                {errors.username && (
+                  <div className="text-red-300 text-sm mt-2 flex items-center font-medium animate-pulse">
+                    <span className="mr-2">⚠️</span>
+                    {errors.username}
+                  </div>
+                )}
               </div>
-              <a
-                href="#"
-                className="text-sm text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors">
-                Lupa password?
-              </a>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="w-full py-3 sm:py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-xl text-white text-sm sm:text-base font-bold cursor-pointer transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
-              disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
-                  <span>Memproses...</span>
-                </>
-              ) : (
-                <span>Masuk</span>
+              {/* Password Field - Enhanced */}
+              <div className="mb-5 relative group/input">
+                <label className="block font-semibold text-white/90 mb-2 text-sm tracking-wide">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    className={`w-full px-4 py-3.5 pr-12 bg-white/10 backdrop-blur-sm border-2 rounded-xl text-white placeholder-white/40 transition-all duration-300 autofill:bg-white/10 autofill:text-white ${
+                      errors.password
+                        ? "border-red-400/50 shadow-lg shadow-red-500/20"
+                        : "border-white/20 focus:border-purple-400/50 focus:shadow-lg focus:shadow-purple-500/20"
+                    } focus:outline-none hover:border-white/30`}
+                    placeholder="Masukkan password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-all duration-300 p-2 hover:bg-white/10 rounded-lg"
+                    onClick={togglePasswordVisibility}>
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-pink-500/0 group-hover/input:from-purple-500/5 group-hover/input:to-pink-500/5 transition-all duration-300 pointer-events-none"></div>
+                </div>
+                {errors.password && (
+                  <div className="text-red-300 text-sm mt-2 flex items-center font-medium animate-pulse">
+                    <span className="mr-2">⚠️</span>
+                    {errors.password}
+                  </div>
+                )}
+              </div>
+
+              {/* Error Message - Enhanced */}
+              {errors.general && (
+                <div className="mb-5 p-4 bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-red-200 rounded-xl text-sm font-medium shadow-lg shadow-red-500/10 animate-pulse">
+                  ⚠️ {errors.general}
+                </div>
               )}
-            </button>
 
-            {/* Footer */}
-            <div className="mt-6 pt-5 border-t border-gray-100 text-center">
-              <p className="text-xs text-gray-500 mb-1">
-                © 2025 SMP MUSLIMIN CILILIN
-              </p>
-              <p className="text-xs text-gray-400">
-                Sistem Administrasi Sekolah • v1.0.0
-              </p>
+              {/* Remember Me & Forgot Password */}
+              <div className="flex justify-between items-center mb-6">
+                <label className="flex items-center gap-2 cursor-pointer group/check">
+                  <input
+                    type="checkbox"
+                    id="remember"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded bg-white/10 border-2 border-white/30 checked:bg-blue-500 checked:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all cursor-pointer"
+                  />
+                  <span className="text-sm text-white/80 group-hover/check:text-white transition-colors select-none">
+                    Ingat saya
+                  </span>
+                </label>
+                <a
+                  href="#"
+                  className="text-sm text-blue-300 hover:text-blue-200 transition-colors font-medium hover:underline">
+                  Lupa password?
+                </a>
+              </div>
+
+              {/* Submit Button - Navy Classic */}
+              <button
+                type="submit"
+                className="relative w-full py-4 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 hover:from-blue-800 hover:via-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl text-white font-bold transition-all duration-500 flex items-center justify-center shadow-xl shadow-blue-900/40 hover:shadow-2xl hover:shadow-blue-800/60 hover:scale-[1.02] active:scale-[0.98] group/btn overflow-hidden"
+                disabled={isLoading}>
+                {/* Animated gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
+
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <span className="relative z-10">Login</span>
+                )}
+              </button>
+
+              {/* Footer */}
+              <div className="mt-6 pt-6 border-t border-white/10 text-center">
+                <p className="text-xs text-white/60 mb-1">
+                  © 2025 SMP MUSLIMIN CILILIN
+                </p>
+                <p className="text-xs text-white/40">
+                  Sistem Administrasi Sekolah • v1.0.0
+                </p>
+              </div>
             </div>
           </form>
         </div>
