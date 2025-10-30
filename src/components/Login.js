@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import Logo from "./Logo";
+// Import background image - PERHATIKAN HURUF BESAR JPG
+import backgroundImage from "../assets/Background.JPG";
 
 export const Login = ({ onLogin, onShowToast }) => {
   const [username, setUsername] = useState("");
@@ -79,7 +81,7 @@ export const Login = ({ onLogin, onShowToast }) => {
 
     // Preload image with animation trigger
     const img = new Image();
-    img.src = "/Background.jpg";
+    img.src = backgroundImage;
     img.onload = () => {
       setTimeout(() => setImageLoaded(true), 100);
     };
@@ -176,7 +178,7 @@ export const Login = ({ onLogin, onShowToast }) => {
             imageLoaded ? "opacity-100" : "opacity-0"
           }`}
           style={{
-            backgroundImage: imageLoaded ? 'url("/Background.jpg")' : "none",
+            backgroundImage: imageLoaded ? `url(${backgroundImage})` : "none",
             backgroundSize: "cover",
             backgroundPosition: "center 40%",
             backgroundRepeat: "no-repeat",
