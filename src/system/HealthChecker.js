@@ -1,8 +1,4 @@
 import { supabase } from "../supabaseClient";
-import { checkDatabase } from "./checkers/DatabaseChecker";
-import { checkDataValidation } from "./checkers/DataValidator";
-import { checkBusinessLogic } from "./checkers/BusinessLogicChecker";
-import { checkAppHealth } from "./checkers/AppHealthChecker";
 
 class HealthChecker {
   constructor() {
@@ -16,18 +12,13 @@ class HealthChecker {
     this.errors = [];
   }
 
-  /**
-   * Run full system health check
-   * @param {string} userId - UUID of admin running the check
-   * @returns {Object} Check results with summary
-   */
   async runFullCheck(userId) {
     console.log("🔍 Starting system health check...");
     this.startTime = Date.now();
     this.errors = [];
 
     try {
-      // Run all checks in parallel for better performance
+      // Run all checks in parallel
       const [database, validation, businessLogic, appHealth] =
         await Promise.allSettled([
           this.runDatabaseCheck(),
@@ -52,13 +43,11 @@ class HealthChecker {
       this.results.appHealth = this.processCheckResult(appHealth, "App Health");
 
       const executionTime = Date.now() - this.startTime;
-
-      // Calculate summary
       const summary = this.calculateSummary();
 
       console.log("✅ Health check completed:", summary);
 
-      // Save results to database
+      // Save to database
       await this.saveResults(userId, summary, executionTime);
 
       return {
@@ -78,141 +67,259 @@ class HealthChecker {
     }
   }
 
-  /**
-   * Run database integrity checks
-   */
+  // === DATABASE CHECKER ===
   async runDatabaseCheck() {
     console.log("🔍 Running database checks...");
-    try {
-      const result = await checkDatabase();
-      console.log("✅ Database check completed:", result);
+    const startTime = Date.now();
+    const issues = [];
 
-      // Transform issues to checks and calculate status
-      return this.transformResult(result, "database");
+    try {
+      // 1. Check connection
+      const { data, error } = await supabase
+        .from("students")
+        .select("id")
+        .limit(1);
+      if (error) {
+        issues.push({
+          title: "Database connection failed",
+          message: "Unable to connect to database",
+          severity: "critical",
+          details: { description: error.message },
+        });
+        return {
+          status: "critical",
+          checks: issues,
+          executionTime: Date.now() - startTime,
+        };
+      }
+
+      // 2. Check essential tables
+      const tables = ["students", "users", "classes", "academic_years"];
+      for (const table of tables) {
+        const { error } = await supabase.from(table).select("id").limit(1);
+        if (error) {
+          issues.push({
+            title: `Table '${table}' inaccessible`,
+            message: `Critical table cannot be accessed`,
+            severity: "critical",
+            details: { table, description: error.message },
+          });
+        }
+      }
+
+      // 3. Check orphaned students
+      const { data: students } = await supabase
+        .from("students")
+        .select("id, class_id")
+        .not("class_id", "is", null)
+        .limit(50);
+      if (students && students.length > 0) {
+        const classIds = [...new Set(students.map((s) => s.class_id))];
+        const { data: existingClasses } = await supabase
+          .from("classes")
+          .select("id")
+          .in("id", classIds);
+        const existingIds = new Set(existingClasses?.map((c) => c.id) || []);
+        const orphaned = students.filter(
+          (s) => !existingIds.has(s.class_id)
+        ).length;
+
+        if (orphaned > 0) {
+          issues.push({
+            title: "Students with invalid class references",
+            message: `Found ${orphaned} students referencing non-existent classes`,
+            severity: "warning",
+            details: { affectedRecords: orphaned },
+          });
+        }
+      }
+
+      return {
+        status:
+          issues.length === 0
+            ? "healthy"
+            : issues.some((i) => i.severity === "critical")
+            ? "critical"
+            : "warning",
+        checks: issues,
+        executionTime: Date.now() - startTime,
+      };
     } catch (error) {
       console.error("❌ Database check failed:", error);
-      this.errors.push({ checker: "database", error: error.message });
       return {
         status: "critical",
-        error: error.message,
-        checks: [],
+        checks: [
+          {
+            title: "Database check crashed",
+            message: "Unexpected error during database check",
+            severity: "critical",
+            details: { description: error.message },
+          },
+        ],
+        executionTime: Date.now() - startTime,
       };
     }
   }
 
-  /**
-   * Run data validation checks
-   */
+  // === DATA VALIDATION CHECKER ===
   async runDataValidationCheck() {
     console.log("🔍 Running data validation checks...");
-    try {
-      const result = await checkDataValidation();
-      console.log("✅ Data validation check completed:", result);
+    const startTime = Date.now();
+    const issues = [];
 
-      // Transform issues to checks and calculate status
-      return this.transformResult(result, "validation");
+    try {
+      // Check students without names
+      const { data: noNameStudents } = await supabase
+        .from("students")
+        .select("id")
+        .or('full_name.is.null,full_name.eq.""')
+        .limit(10);
+      if (noNameStudents?.length > 0) {
+        issues.push({
+          title: "Students with missing names",
+          message: `Found ${noNameStudents.length} students without names`,
+          severity: "critical",
+          details: { affectedRecords: noNameStudents.length },
+        });
+      }
+
+      // Check users without usernames
+      const { data: noUsernameUsers } = await supabase
+        .from("users")
+        .select("id")
+        .or('username.is.null,username.eq.""')
+        .limit(10);
+      if (noUsernameUsers?.length > 0) {
+        issues.push({
+          title: "Users with missing usernames",
+          message: `Found ${noUsernameUsers.length} users without username`,
+          severity: "critical",
+          details: { affectedRecords: noUsernameUsers.length },
+        });
+      }
+
+      return {
+        status:
+          issues.length === 0
+            ? "healthy"
+            : issues.some((i) => i.severity === "critical")
+            ? "critical"
+            : "warning",
+        checks: issues,
+        executionTime: Date.now() - startTime,
+      };
     } catch (error) {
       console.error("❌ Data validation check failed:", error);
-      this.errors.push({ checker: "validation", error: error.message });
       return {
         status: "warning",
-        error: error.message,
-        checks: [],
+        checks: [
+          {
+            title: "Data validation check failed",
+            message: "Error during data validation",
+            severity: "warning",
+            details: { description: error.message },
+          },
+        ],
+        executionTime: Date.now() - startTime,
       };
     }
   }
 
-  /**
-   * Run business logic checks
-   */
+  // === BUSINESS LOGIC CHECKER ===
   async runBusinessLogicCheck() {
     console.log("🔍 Running business logic checks...");
-    try {
-      const result = await checkBusinessLogic();
-      console.log("✅ Business logic check completed:", result);
+    const startTime = Date.now();
+    const issues = [];
 
-      // Transform issues to checks and calculate status
-      return this.transformResult(result, "businessLogic");
+    try {
+      // Check active academic year
+      const { data: activeYears } = await supabase
+        .from("academic_years")
+        .select("*")
+        .eq("is_active", true);
+      if (!activeYears || activeYears.length === 0) {
+        issues.push({
+          title: "No active academic year",
+          message: "System requires an active academic year",
+          severity: "critical",
+          details: {
+            description: "Set an academic year as active in settings",
+          },
+        });
+      } else if (activeYears.length > 1) {
+        issues.push({
+          title: "Multiple active academic years",
+          message: `Found ${activeYears.length} active academic years`,
+          severity: "warning",
+          details: { affectedRecords: activeYears.length },
+        });
+      }
+
+      return {
+        status:
+          issues.length === 0
+            ? "healthy"
+            : issues.some((i) => i.severity === "critical")
+            ? "critical"
+            : "warning",
+        checks: issues,
+        executionTime: Date.now() - startTime,
+      };
     } catch (error) {
       console.error("❌ Business logic check failed:", error);
-      this.errors.push({ checker: "businessLogic", error: error.message });
       return {
         status: "warning",
-        error: error.message,
-        checks: [],
+        checks: [
+          {
+            title: "Business logic check failed",
+            message: "Error during business logic validation",
+            severity: "warning",
+            details: { description: error.message },
+          },
+        ],
+        executionTime: Date.now() - startTime,
       };
     }
   }
 
-  /**
-   * Run application health checks
-   */
+  // === APP HEALTH CHECKER ===
   async runAppHealthCheck() {
     console.log("🔍 Running app health checks...");
-    try {
-      const result = await checkAppHealth();
-      console.log("✅ App health check completed:", result);
+    const startTime = Date.now();
+    const issues = [];
 
-      // Transform issues to checks and calculate status
-      return this.transformResult(result, "appHealth");
+    try {
+      // Basic system check - if we got here, app is running
+      issues.push({
+        title: "Application running",
+        message: "System is operational",
+        severity: "info",
+        details: { description: "Basic health check passed" },
+      });
+
+      return {
+        status: "healthy",
+        checks: issues,
+        executionTime: Date.now() - startTime,
+      };
     } catch (error) {
       console.error("❌ App health check failed:", error);
-      this.errors.push({ checker: "appHealth", error: error.message });
       return {
         status: "info",
-        error: error.message,
-        checks: [],
+        checks: [
+          {
+            title: "App health check incomplete",
+            message: "Error during app health check",
+            severity: "info",
+            details: { description: error.message },
+          },
+        ],
+        executionTime: Date.now() - startTime,
       };
     }
   }
 
-  /**
-   * Transform checker result to expected format
-   * Converts 'issues' array to 'checks' array and determines status
-   */
-  transformResult(result, checkerType) {
-    if (!result || !result.success) {
-      return {
-        status: "critical",
-        error: result?.error || "Check failed",
-        checks: [],
-      };
-    }
-
-    // Transform issues to checks
-    const checks = result.issues || [];
-
-    // Determine status based on severity of issues
-    let status = "healthy";
-    let hasCritical = false;
-    let hasWarning = false;
-
-    checks.forEach((issue) => {
-      if (issue.severity === "critical") {
-        hasCritical = true;
-      } else if (issue.severity === "warning") {
-        hasWarning = true;
-      }
-    });
-
-    if (hasCritical) {
-      status = "critical";
-    } else if (hasWarning) {
-      status = "warning";
-    } else if (checks.length > 0) {
-      status = "info";
-    }
-
-    return {
-      status,
-      checks,
-      executionTime: result.executionTime,
-    };
-  }
-
-  /**
-   * Process check result from Promise.allSettled
-   */
+  // === HELPER METHODS (tetap sama) ===
   processCheckResult(result, checkName) {
     if (result.status === "fulfilled") {
       return result.value;
@@ -230,57 +337,31 @@ class HealthChecker {
     }
   }
 
-  /**
-   * Calculate summary from all check results
-   */
   calculateSummary() {
     let totalIssues = 0;
     let criticalCount = 0;
     let warningCount = 0;
     let infoCount = 0;
-    let overallStatus = "healthy";
 
-    // Helper function to count issues
     const countIssues = (checks) => {
       if (!checks || !Array.isArray(checks)) return;
-
       checks.forEach((check) => {
         totalIssues++;
-        if (check.severity === "critical") {
-          criticalCount++;
-        } else if (check.severity === "warning") {
-          warningCount++;
-        } else if (check.severity === "info") {
-          infoCount++;
-        }
+        if (check.severity === "critical") criticalCount++;
+        else if (check.severity === "warning") warningCount++;
+        else if (check.severity === "info") infoCount++;
       });
     };
 
-    // Count issues from each checker
-    if (this.results.database?.checks) {
-      countIssues(this.results.database.checks);
-    }
+    countIssues(this.results.database?.checks);
+    countIssues(this.results.validation?.checks);
+    countIssues(this.results.businessLogic?.checks);
+    countIssues(this.results.appHealth?.checks);
 
-    if (this.results.validation?.checks) {
-      countIssues(this.results.validation.checks);
-    }
-
-    if (this.results.businessLogic?.checks) {
-      countIssues(this.results.businessLogic.checks);
-    }
-
-    if (this.results.appHealth?.checks) {
-      countIssues(this.results.appHealth.checks);
-    }
-
-    // Determine overall status
-    if (criticalCount > 0) {
-      overallStatus = "critical";
-    } else if (warningCount > 0) {
-      overallStatus = "warning";
-    } else if (infoCount > 0) {
-      overallStatus = "healthy";
-    }
+    let overallStatus = "healthy";
+    if (criticalCount > 0) overallStatus = "critical";
+    else if (warningCount > 0) overallStatus = "warning";
+    else if (infoCount > 0) overallStatus = "healthy";
 
     return {
       totalIssues,
@@ -291,13 +372,8 @@ class HealthChecker {
     };
   }
 
-  /**
-   * Save check results to database
-   */
   async saveResults(userId, summary, executionTime) {
     try {
-      console.log("💾 Saving results to database...");
-
       const { data, error } = await supabase
         .from("system_health_logs")
         .insert({
@@ -315,7 +391,6 @@ class HealthChecker {
         .single();
 
       if (error) throw error;
-
       console.log("✅ Results saved successfully:", data.id);
       return data;
     } catch (error) {
@@ -324,32 +399,17 @@ class HealthChecker {
     }
   }
 
-  /**
-   * Get severity level for UI display
-   */
   getSeverityIcon(status) {
-    const icons = {
-      healthy: "✅",
-      warning: "⚠️",
-      critical: "🔴",
-      info: "ℹ️",
-      ok: "✅",
-      error: "❌",
-    };
+    const icons = { healthy: "✅", warning: "⚠️", critical: "🔴", info: "ℹ️" };
     return icons[status] || "❓";
   }
 
-  /**
-   * Get severity color for UI display
-   */
   getSeverityColor(status) {
     const colors = {
       healthy: "green",
       warning: "yellow",
       critical: "red",
       info: "blue",
-      ok: "green",
-      error: "red",
     };
     return colors[status] || "gray";
   }

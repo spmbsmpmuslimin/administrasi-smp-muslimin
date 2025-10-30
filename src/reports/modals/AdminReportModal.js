@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 // ==================== ADMIN REPORT MODAL ====================
-// 👑 Modal khusus untuk preview laporan Admin
+// 💡 Modal khusus untuk preview laporan Admin
 // Supports: All Reports, Multi-Filter, Advanced Search
 
 const AdminReportModal = ({
@@ -142,19 +142,19 @@ const AdminReportModal = ({
 
   const colors = colorClasses[themeColor];
 
-  // ✅ Extract unique classes and statuses for filtering
+  // ✅ FIXED: Extract unique classes and statuses for filtering
   const uniqueClasses = useMemo(() => {
     const classes = new Set();
-    fullData.forEach((row) => {
+    dataToUse.forEach((row) => {  // ✅ Changed from fullData to dataToUse
       if (row.Kelas) classes.add(row.Kelas);
       if (row.class_id) classes.add(row.class_id);
     });
     return Array.from(classes).sort();
-  }, [fullData]);
+  }, [dataToUse]);  // ✅ Changed from fullData to dataToUse
 
   const uniqueStatuses = useMemo(() => {
     const statuses = new Set();
-    fullData.forEach((row) => {
+    dataToUse.forEach((row) => {  // ✅ Changed from fullData to dataToUse
       if (row.Status) statuses.add(row.Status);
       if (row.status) statuses.add(row.status);
       if (row.is_active !== undefined) {
@@ -162,11 +162,11 @@ const AdminReportModal = ({
       }
     });
     return Array.from(statuses).sort();
-  }, [fullData]);
+  }, [dataToUse]);  // ✅ Changed from fullData to dataToUse
 
-  // ✅ Filter data based on search and filters
+  // ✅ FIXED: Filter data based on search and filters
   const filteredData = useMemo(() => {
-    let filtered = fullData;
+    let filtered = dataToUse;  // ✅ Changed from fullData to dataToUse
 
     // Search filter
     if (searchQuery.trim()) {
@@ -205,7 +205,7 @@ const AdminReportModal = ({
     }
 
     return filtered;
-  }, [fullData, searchQuery, filterClass, filterStatus]);
+  }, [dataToUse, searchQuery, filterClass, filterStatus]);  // ✅ Changed from fullData to dataToUse
 
   // ✅ Pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -313,7 +313,7 @@ const AdminReportModal = ({
                   {reportTitle}
                 </h2>
                 <p className="text-sm text-slate-600 mt-1">
-                  Preview Data Administrator • {filteredData.length} dari {total}{" "}
+                  Preview Data Administrator • {filteredData.length} dari {total || dataToUse.length}{" "}
                   record
                 </p>
               </div>

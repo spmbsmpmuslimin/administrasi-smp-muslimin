@@ -8,8 +8,9 @@ export const Login = ({ onLogin, onShowToast }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false); // ✅ TAMBAH STATE INI
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [errors, setErrors] = useState({});
   const [stats, setStats] = useState({
     activeTeachers: 0,
@@ -19,7 +20,6 @@ export const Login = ({ onLogin, onShowToast }) => {
   });
   const [statsLoading, setStatsLoading] = useState(true);
 
-  // ✅ FIX: Optimized stats fetching
   const fetchStatsData = async () => {
     try {
       setStatsLoading(true);
@@ -76,9 +76,19 @@ export const Login = ({ onLogin, onShowToast }) => {
 
   useEffect(() => {
     fetchStatsData();
+
+    // Preload image with animation trigger
+    const img = new Image();
+    img.src = "/Background.jpg";
+    img.onload = () => {
+      setTimeout(() => setImageLoaded(true), 100);
+    };
+    img.onerror = () => {
+      console.error("Failed to load background image");
+      setImageLoaded(true); // Still show content even if image fails
+    };
   }, []);
 
-  // ✅ Login handler - MANUAL CHECK dari database
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -98,7 +108,6 @@ export const Login = ({ onLogin, onShowToast }) => {
     try {
       console.log("🔍 Mencoba login dengan:", { username });
 
-      // ✅ QUERY MANUAL - sesuaikan dengan structure database
       const { data, error } = await supabase
         .from("users")
         .select("*")
@@ -118,20 +127,12 @@ export const Login = ({ onLogin, onShowToast }) => {
         throw new Error("Username tidak ditemukan");
       }
 
-      // ✅ PASSWORD CHECK
-      console.log("Password check:", {
-        input: password,
-        stored: data.password,
-        match: data.password === password,
-      });
-
       if (data.password !== password) {
         throw new Error("Password salah");
       }
 
       console.log("✅ Login sukses:", data);
 
-      // ✅ PASS USER DATA YANG LENGKAP ke App.js + rememberMe flag
       const userData = {
         id: data.id,
         username: data.username,
@@ -145,18 +146,17 @@ export const Login = ({ onLogin, onShowToast }) => {
         created_at: data.created_at,
       };
 
-      // ✅ PASS rememberMe ke parent
       onLogin(userData, rememberMe);
-      
+
       if (onShowToast) {
-        onShowToast(`Selamat datang, ${userData.full_name}! 👋`, 'success');
+        onShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
       }
     } catch (error) {
       console.error("❌ Login error:", error.message);
       setErrors({ general: error.message });
-      
+
       if (onShowToast) {
-        onShowToast(error.message, 'error');
+        onShowToast(error.message, "error");
       }
     } finally {
       setIsLoading(false);
@@ -169,80 +169,58 @@ export const Login = ({ onLogin, onShowToast }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-blue-100">
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2">
-        {/* Brand Section */}
-        <div className="flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-600 to-blue-800 text-white text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-full h-full bg-gradient-radial from-white/10 to-transparent animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-4/5 h-4/5 bg-gradient-radial from-white/5 to-transparent animate-pulse delay-1000"></div>
-
-          <div className="mb-4 sm:mb-6 lg:mb-8 relative z-10 transition-transform duration-300 hover:scale-105">
-            <Logo size="xlarge" className="drop-shadow-2xl" variant="white" />
-          </div>
-
-          <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold mb-1 sm:mb-2 relative z-10 drop-shadow-lg">
-            SMP MUSLIMIN CILILIN
-          </h1>
-          <p className="text-sm sm:text-base lg:text-xl opacity-90 mb-4 sm:mb-6 lg:mb-8 relative z-10">
-            Sistem Administrasi Sekolah Digital
-          </p>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 w-full max-w-sm sm:max-w-lg lg:max-w-2xl mb-4 sm:mb-6 lg:mb-8 relative z-10">
-            <div className="text-center p-3 sm:p-4 lg:p-6 bg-white/10 rounded-lg sm:rounded-xl lg:rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300 hover:-translate-y-1 lg:hover:-translate-y-2 hover:bg-white/15 hover:shadow-xl hover:border-white/30">
-              <span className="text-lg sm:text-xl lg:text-3xl font-extrabold block mb-1 lg:mb-2 drop-shadow-md">
-                {statsLoading ? "-" : memoizedStats.activeTeachers}
-              </span>
-              <span className="text-xs sm:text-sm opacity-90 font-medium tracking-wide leading-tight">
-                Guru Aktif
-              </span>
+      <div className="flex-1 flex flex-col lg:flex-row">
+        {/* PHOTO SECTION - Kiri di desktop, Atas di mobile */}
+        <div
+          className={`relative overflow-hidden bg-gradient-to-br from-blue-800 via-blue-700 to-blue-900 flex-shrink-0 h-[35vh] lg:h-auto lg:flex-[7] transition-all duration-1000 ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            backgroundImage: imageLoaded ? 'url("/Background.jpg")' : "none",
+            backgroundSize: "cover",
+            backgroundPosition: "center 40%",
+            backgroundRepeat: "no-repeat",
+          }}>
+          {/* Loading State */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
             </div>
-            <div className="text-center p-3 sm:p-4 lg:p-6 bg-white/10 rounded-lg sm:rounded-xl lg:rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300 hover:-translate-y-1 lg:hover:-translate-y-2 hover:bg-white/15 hover:shadow-xl hover:border-white/30">
-              <span className="text-lg sm:text-xl lg:text-3xl font-extrabold block mb-1 lg:mb-2 drop-shadow-md">
-                {statsLoading ? "-" : memoizedStats.activeStudents}
-              </span>
-              <span className="text-xs sm:text-sm opacity-90 font-medium tracking-wide leading-tight">
-                Siswa Aktif
-              </span>
-            </div>
-            <div className="text-center p-3 sm:p-4 lg:p-6 bg-white/10 rounded-lg sm:rounded-xl lg:rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300 hover:-translate-y-1 lg:hover:-translate-y-2 hover:bg-white/15 hover:shadow-xl hover:border-white/30">
-              <span className="text-lg sm:text-xl lg:text-3xl font-extrabold block mb-1 lg:mb-2 drop-shadow-md">
-                {statsLoading ? "-" : memoizedStats.grades}
-              </span>
-              <span className="text-xs sm:text-sm opacity-90 font-medium tracking-wide leading-tight">
-                Jenjang
-              </span>
-            </div>
-            <div className="text-center p-3 sm:p-4 lg:p-6 bg-white/10 rounded-lg sm:rounded-xl lg:rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300 hover:-translate-y-1 lg:hover:-translate-y-2 hover:bg-white/15 hover:shadow-xl hover:border-white/30">
-              <span className="text-lg sm:text-xl lg:text-3xl font-extrabold block mb-1 lg:mb-2 drop-shadow-md">
-                {statsLoading ? "-" : memoizedStats.classes}
-              </span>
-              <span className="text-xs sm:text-sm opacity-90 font-medium tracking-wide leading-tight">
-                Kelas
-              </span>
-            </div>
-          </div>
+          )}
 
-          {/* School Vision */}
-          <div className="bg-white/8 rounded-xl sm:rounded-2xl p-4 sm:p-5 lg:p-7 max-w-sm sm:max-w-lg lg:max-w-2xl w-full backdrop-blur-lg border border-white/15 relative z-10">
-            <h3 className="text-sm sm:text-base lg:text-xl font-bold mb-2 sm:mb-3 lg:mb-4 text-center relative pb-2">
-              VISI SEKOLAH
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 sm:w-15 h-0.5 sm:h-1 bg-white rounded-full opacity-80"></div>
-            </h3>
-            <p className="text-xs sm:text-sm lg:text-base leading-relaxed text-center text-white/95 font-medium">
-              "Mewujudkan Peserta Didik yang Berakhlak Mulia, Moderat, Mandiri dan Berprestasi"
-            </p>
+          {/* Vignette overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-blue-900/40"></div>
+
+          {/* BRANDING OVERLAY with Animation */}
+          <div
+            className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-1000 delay-300 ${
+              imageLoaded
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8"
+            }`}>
+            <div className="text-center px-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white/25 tracking-wider drop-shadow-2xl leading-tight">
+                SMP MUSLIMIN
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white/20 mt-2 tracking-widest drop-shadow-xl">
+                CILILIN
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Login Form Section */}
-        <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50/30 to-blue-100/50 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-blue-800/5 animate-pulse"></div>
+        {/* FORM SECTION - Kanan di desktop, Bawah di mobile */}
+        <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50/50 to-blue-100/50 relative overflow-hidden flex-1 lg:flex-[2]">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-blue-800/5"></div>
 
           <form
-            className="bg-white/95 backdrop-blur-xl p-6 sm:p-8 lg:p-12 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm sm:max-w-md relative z-10 border border-white/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-3xl"
+            className={`bg-white/95 backdrop-blur-xl p-6 sm:p-7 lg:p-8 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md lg:max-w-sm relative z-10 border border-white/30 transition-all duration-700 delay-500 ${
+              imageLoaded
+                ? "opacity-100 translate-x-0"
+                : "opacity-0 translate-x-12"
+            } hover:shadow-3xl`}
             onSubmit={handleSubmit}>
-            
-            <div className="text-center mb-6 sm:mb-8 lg:mb-10 relative">
+            <div className="text-center mb-6 sm:mb-8 relative">
               <div className="mb-3 sm:mb-4 flex justify-center">
                 <Logo size="medium" className="opacity-90" />
               </div>
@@ -255,7 +233,7 @@ export const Login = ({ onLogin, onShowToast }) => {
             </div>
 
             {/* Username Field */}
-            <div className="mb-4 sm:mb-6 relative">
+            <div className="mb-4 sm:mb-5 relative">
               <label
                 className="block font-semibold text-gray-700 mb-2 text-sm tracking-wide"
                 htmlFor="username">
@@ -264,15 +242,14 @@ export const Login = ({ onLogin, onShowToast }) => {
               <input
                 type="text"
                 id="username"
-                className={`w-full px-4 py-3 sm:px-5 sm:py-4 border-2 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white/80 backdrop-blur-sm touch-manipulation ${
+                className={`w-full px-4 py-3 sm:px-5 sm:py-3.5 border-2 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white/80 backdrop-blur-sm ${
                   errors.username
-                    ? "border-red-500 shadow-red-100 animate-shake"
+                    ? "border-red-500 shadow-red-100"
                     : "border-gray-200 focus:border-blue-600 focus:shadow-blue-100"
-                } focus:outline-none focus:shadow-lg focus:bg-white focus:-translate-y-0.5`}
+                } focus:outline-none focus:shadow-lg focus:bg-white`}
                 placeholder="Masukkan username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                style={{ minHeight: "48px" }}
                 required
               />
               {errors.username && (
@@ -284,7 +261,7 @@ export const Login = ({ onLogin, onShowToast }) => {
             </div>
 
             {/* Password Field */}
-            <div className="mb-4 sm:mb-6 relative">
+            <div className="mb-4 sm:mb-5 relative">
               <label
                 className="block font-semibold text-gray-700 mb-2 text-sm tracking-wide"
                 htmlFor="password">
@@ -294,27 +271,21 @@ export const Login = ({ onLogin, onShowToast }) => {
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
-                  className={`w-full px-4 py-3 sm:px-5 sm:py-4 pr-12 sm:pr-14 border-2 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white/80 backdrop-blur-sm touch-manipulation ${
+                  className={`w-full px-4 py-3 sm:px-5 sm:py-3.5 pr-12 border-2 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white/80 backdrop-blur-sm ${
                     errors.password
-                      ? "border-red-500 shadow-red-100 animate-shake"
+                      ? "border-red-500 shadow-red-100"
                       : "border-gray-200 focus:border-blue-600 focus:shadow-blue-100"
-                  } focus:outline-none focus:shadow-lg focus:bg-white focus:-translate-y-0.5`}
+                  } focus:outline-none focus:shadow-lg focus:bg-white`}
                   placeholder="Masukkan password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ minHeight: "48px" }}
                   required
                 />
                 <button
                   type="button"
-                  className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 bg-white/80 border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-600 rounded-lg p-2 transition-all duration-200 hover:scale-105 backdrop-blur-sm w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center touch-manipulation"
-                  style={{ minWidth: "44px", minHeight: "44px" }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600 transition-colors p-2"
                   onClick={togglePasswordVisibility}>
-                  {showPassword ? (
-                    <EyeOff size={16} className="text-current" />
-                  ) : (
-                    <Eye size={16} className="text-current" />
-                  )}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.password && (
@@ -327,31 +298,30 @@ export const Login = ({ onLogin, onShowToast }) => {
 
             {/* Error Message */}
             {errors.general && (
-              <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
+              <div className="mb-4 sm:mb-5 p-3 sm:p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
                 ⚠️ {errors.general}
               </div>
             )}
 
             {/* Remember Me & Forgot Password */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-3 sm:gap-4">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2 sm:gap-4">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="remember"
-                  name="remember"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 border-2 border-gray-300 rounded bg-white checked:bg-blue-600 checked:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors cursor-pointer"
                 />
                 <label
                   htmlFor="remember"
-                  className="text-sm text-gray-600 font-medium cursor-pointer touch-manipulation">
+                  className="text-sm text-gray-600 font-medium cursor-pointer select-none">
                   Ingat saya
                 </label>
               </div>
               <a
                 href="#"
-                className="text-sm text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors touch-manipulation">
+                className="text-sm text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors">
                 Lupa password?
               </a>
             </div>
@@ -359,14 +329,11 @@ export const Login = ({ onLogin, onShowToast }) => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3 sm:py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-500 disabled:opacity-70 disabled:cursor-not-allowed border-none rounded-xl text-white text-sm sm:text-base font-bold cursor-pointer transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 tracking-wide relative overflow-hidden group touch-manipulation"
-              style={{ minHeight: "48px" }}
+              className="w-full py-3 sm:py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-xl text-white text-sm sm:text-base font-bold cursor-pointer transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
               disabled={isLoading}>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
-
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 sm:mr-3"></div>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
                   <span>Memproses...</span>
                 </>
               ) : (
@@ -375,7 +342,7 @@ export const Login = ({ onLogin, onShowToast }) => {
             </button>
 
             {/* Footer */}
-            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-100 text-center">
+            <div className="mt-6 pt-5 border-t border-gray-100 text-center">
               <p className="text-xs text-gray-500 mb-1">
                 © 2025 SMP MUSLIMIN CILILIN
               </p>

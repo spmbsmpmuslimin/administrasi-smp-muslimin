@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 
 const HomeroomTeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
-  
+
   const [stats, setStats] = useState({
     totalStudents: 0,
     maleStudents: 0,
@@ -28,79 +28,145 @@ const HomeroomTeacherDashboard = ({ user }) => {
   const username = user?.username;
   const fullName = user?.full_name;
   const homeroomClassId = user?.homeroom_class_id;
-  const teacherId = user?.teacher_id;
+  const teacherId = user?.teacher_id; // "G-12" untuk teacher_assignments
+  const userId = user?.id; // UUID untuk teacher_schedules
   const userRole = user?.role;
 
   // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
   const getDayName = (dayIndex) => {
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const days = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu",
+    ];
     return days[dayIndex];
   };
 
   // Fungsi untuk format waktu
   const formatTime = (time) => {
-    if (!time) return '-';
+    if (!time) return "-";
     return time.substring(0, 5); // Format HH:MM
+  };
+
+  // Fungsi untuk menggabungkan jadwal berurutan
+  const mergeConsecutiveSchedules = (schedules) => {
+    if (!schedules || schedules.length === 0) return [];
+
+    const merged = [];
+    let currentBlock = null;
+
+    schedules.forEach((schedule, index) => {
+      if (!currentBlock) {
+        // Mulai blok baru
+        currentBlock = {
+          ...schedule,
+          sessionCount: 1,
+          sessionNumbers: [index + 1],
+        };
+      } else {
+        // Cek apakah bisa digabung dengan blok sebelumnya
+        const canMerge =
+          currentBlock.class_id === schedule.class_id &&
+          currentBlock.subject === schedule.subject &&
+          currentBlock.end_time === schedule.start_time;
+
+        if (canMerge) {
+          // Gabungkan dengan blok sebelumnya
+          currentBlock.end_time = schedule.end_time;
+          currentBlock.sessionCount += 1;
+          currentBlock.sessionNumbers.push(index + 1);
+        } else {
+          // Simpan blok sebelumnya dan mulai blok baru
+          merged.push(currentBlock);
+          currentBlock = {
+            ...schedule,
+            sessionCount: 1,
+            sessionNumbers: [index + 1],
+          };
+        }
+      }
+    });
+
+    // Jangan lupa push blok terakhir
+    if (currentBlock) {
+      merged.push(currentBlock);
+    }
+
+    return merged;
   };
 
   // Debug log - HANYA sekali saat mount atau username berubah
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       console.log("🏠 HomeroomTeacherDashboard mounted with user:", username);
     }
   }, [username]);
 
   // Fetch jadwal hari ini
   const fetchTodaySchedule = useCallback(async () => {
-    if (!teacherId) return;
+    if (!userId) return;
 
     try {
       const today = new Date();
       const dayName = getDayName(today.getDay());
 
       const { data: schedules, error: scheduleError } = await supabase
-        .from('teacher_schedules')
-        .select(`
+        .from("teacher_schedules")
+        .select(
+          `
           *,
           classes:class_id (
             id,
             grade
           )
-        `)
-        .eq('teacher_id', teacherId)
-        .eq('day', dayName)
-        .order('start_time', { ascending: true });
+        `
+        )
+        .eq("teacher_id", userId)
+        .eq("day", dayName)
+        .order("start_time", { ascending: true });
 
       if (scheduleError) throw scheduleError;
 
       // Get subject info from teacher_assignments
-      const scheduleIds = schedules?.map(s => s.class_id) || [];
+      const scheduleIds = schedules?.map((s) => s.class_id) || [];
       const { data: assignments } = await supabase
-        .from('teacher_assignments')
-        .select('class_id, subject')
-        .eq('teacher_id', teacherId)
-        .in('class_id', scheduleIds);
+        .from("teacher_assignments")
+        .select("class_id, subject")
+        .eq("teacher_id", teacherId)
+        .in("class_id", scheduleIds);
 
       // Merge schedule with subject data
-      const enrichedSchedules = schedules?.map(schedule => {
-        const assignment = assignments?.find(a => a.class_id === schedule.class_id);
-        return {
-          ...schedule,
-          subject: assignment?.subject || 'N/A'
-        };
-      }) || [];
+      const enrichedSchedules =
+        schedules?.map((schedule) => {
+          const assignment = assignments?.find(
+            (a) => a.class_id === schedule.class_id
+          );
+          return {
+            ...schedule,
+            subject: assignment?.subject || "N/A",
+          };
+        }) || [];
 
-      setTodaySchedule(enrichedSchedules);
+      // Gabungkan jadwal berurutan
+      const mergedSchedules = mergeConsecutiveSchedules(enrichedSchedules);
+
+      setTodaySchedule(mergedSchedules);
     } catch (err) {
       console.error("❌ Error fetching today's schedule:", err);
     }
-  }, [teacherId]);
+  }, [userId, teacherId]);
 
   // Memoize fetchHomeroomDashboardData untuk prevent re-creation
   const fetchHomeroomDashboardData = useCallback(async () => {
     if (!homeroomClassId) {
       setError(
-        `Guru ${fullName || username || "ini"} bukan wali kelas. Dashboard ini khusus untuk wali kelas.`
+        `Guru ${
+          fullName || username || "ini"
+        } bukan wali kelas. Dashboard ini khusus untuk wali kelas.`
       );
       setLoading(false);
       return;
@@ -108,7 +174,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
     try {
       setLoading(true);
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         console.log("📊 Fetching data for homeroom class:", homeroomClassId);
       }
 
@@ -119,7 +185,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         .eq("id", homeroomClassId)
         .single();
 
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         console.log("🏫 Class info result:", { classInfo, classError });
       }
 
@@ -135,26 +201,30 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
       // Get today's date
       const today = new Date().toISOString().split("T")[0];
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         console.log("📅 Today:", today);
       }
 
       // Parallel fetch data
-      const [studentsResult, attendanceResult, announcementsResult, teachingResult] =
-        await Promise.all([
-          // Students in homeroom class
-          supabase
-            .from("students")
-            .select("id, full_name, gender")
-            .eq("class_id", homeroomClassId)
-            .eq("academic_year", classInfo.academic_year)
-            .eq("is_active", true),
+      const [
+        studentsResult,
+        attendanceResult,
+        announcementsResult,
+        teachingResult,
+      ] = await Promise.all([
+        // Students in homeroom class
+        supabase
+          .from("students")
+          .select("id, full_name, gender")
+          .eq("class_id", homeroomClassId)
+          .eq("academic_year", classInfo.academic_year)
+          .eq("is_active", true),
 
-          // Today's attendance for this class
-          supabase
-            .from("attendances")
-            .select(
-              `
+        // Today's attendance for this class
+        supabase
+          .from("attendances")
+          .select(
+            `
             id,
             student_id,
             status,
@@ -163,22 +233,22 @@ const HomeroomTeacherDashboard = ({ user }) => {
               class_id
             )
           `
-            )
-            .eq("date", today)
-            .eq("class_id", homeroomClassId),
+          )
+          .eq("date", today)
+          .eq("class_id", homeroomClassId),
 
-          // Recent Announcements
-          supabase
-            .from("announcement")
-            .select("id, title, content, created_at")
-            .order("created_at", { ascending: false })
-            .limit(5),
+        // Recent Announcements
+        supabase
+          .from("announcement")
+          .select("id, title, content, created_at")
+          .order("created_at", { ascending: false })
+          .limit(5),
 
-          // Teacher assignments (all classes taught by this teacher)
-          supabase
-            .from("teacher_assignments")
-            .select(
-              `
+        // Teacher assignments (all classes taught by this teacher)
+        supabase
+          .from("teacher_assignments")
+          .select(
+            `
               id,
               class_id,
               subject,
@@ -189,12 +259,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 academic_year
               )
             `
-            )
-            .eq("teacher_id", teacherId)
-            .eq("academic_year", currentYear),
-        ]);
+          )
+          .eq("teacher_id", teacherId)
+          .eq("academic_year", currentYear),
+      ]);
 
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         console.log("📊 Query results:", {
           students: studentsResult.data?.length,
           attendances: attendanceResult.data?.length,
@@ -263,11 +333,18 @@ const HomeroomTeacherDashboard = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  }, [homeroomClassId, teacherId, fullName, username, fetchTodaySchedule]);
+  }, [
+    homeroomClassId,
+    teacherId,
+    userId,
+    fullName,
+    username,
+    fetchTodaySchedule,
+  ]);
 
   // Fetch data - HANYA ketika dependency berubah
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       console.log("🏠 User has homeroom_class_id:", homeroomClassId);
     }
     fetchHomeroomDashboardData();
@@ -279,19 +356,19 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
   // Navigation handlers - Memoized untuk prevent re-creation
   const handleAttendance = useCallback(() => {
-    navigate('/attendance');
+    navigate("/attendance");
   }, [navigate]);
 
   const handleGrades = useCallback(() => {
-    navigate('/grades');
+    navigate("/grades");
   }, [navigate]);
 
   const handleStudents = useCallback(() => {
-    navigate('/students');
+    navigate("/students");
   }, [navigate]);
 
   const handleReports = useCallback(() => {
-    navigate('/reports');
+    navigate("/reports");
   }, [navigate]);
 
   // Memoize subject breakdown calculation
@@ -310,7 +387,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
   const primarySubject = useMemo(() => {
     if (Object.keys(subjectBreakdown).length === 0) return "";
     return Object.keys(subjectBreakdown).reduce(
-      (a, b) => (subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b),
+      (a, b) =>
+        subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b,
       teachingData.subjects[0] || ""
     );
   }, [subjectBreakdown, teachingData.subjects]);
@@ -466,7 +544,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
         {/* Quick Actions - Horizontal Layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <button 
+          <button
             onClick={handleAttendance}
             className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
             <div className="flex items-center gap-3">
@@ -474,14 +552,18 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 <span className="text-white text-lg">📋</span>
               </div>
               <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">Presensi</h4>
-                <p className="text-xs text-slate-600">Kelas {stats.className}</p>
+                <h4 className="font-semibold text-slate-800 text-sm">
+                  Presensi
+                </h4>
+                <p className="text-xs text-slate-600">
+                  Kelas {stats.className}
+                </p>
               </div>
             </div>
           </button>
 
           {primarySubject && (
-            <button 
+            <button
               onClick={handleGrades}
               className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
               <div className="flex items-center gap-3">
@@ -489,14 +571,16 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   <span className="text-white text-lg">📝</span>
                 </div>
                 <div className="text-left">
-                  <h4 className="font-semibold text-slate-800 text-sm">Input Nilai</h4>
+                  <h4 className="font-semibold text-slate-800 text-sm">
+                    Input Nilai
+                  </h4>
                   <p className="text-xs text-slate-600">{primarySubject}</p>
                 </div>
               </div>
             </button>
           )}
 
-          <button 
+          <button
             onClick={handleStudents}
             className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
             <div className="flex items-center gap-3">
@@ -504,13 +588,17 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 <span className="text-white text-lg">👨‍🎓</span>
               </div>
               <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">Data Siswa</h4>
-                <p className="text-xs text-slate-600">Kelas {stats.className}</p>
+                <h4 className="font-semibold text-slate-800 text-sm">
+                  Data Siswa
+                </h4>
+                <p className="text-xs text-slate-600">
+                  Kelas {stats.className}
+                </p>
               </div>
             </div>
           </button>
 
-          <button 
+          <button
             onClick={handleReports}
             className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
             <div className="flex items-center gap-3">
@@ -518,8 +606,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 <span className="text-white text-lg">📊</span>
               </div>
               <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">Laporan</h4>
-                <p className="text-xs text-slate-600">Kelas {stats.className}</p>
+                <h4 className="font-semibold text-slate-800 text-sm">
+                  Laporan
+                </h4>
+                <p className="text-xs text-slate-600">
+                  Kelas {stats.className}
+                </p>
               </div>
             </div>
           </button>
@@ -534,12 +626,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 <span className="mr-2">📖</span>
                 Mata Pelajaran & Kelas
               </h3>
-              
+
               <div className="space-y-4">
                 {Object.entries(subjectBreakdown).map(([subject, classes]) => {
                   // Group classes by grade
                   const classByGrade = {};
-                  classes.forEach(className => {
+                  classes.forEach((className) => {
                     const grade = className.charAt(0);
                     if (!classByGrade[grade]) {
                       classByGrade[grade] = [];
@@ -552,33 +644,35 @@ const HomeroomTeacherDashboard = ({ user }) => {
                       key={subject}
                       className="border border-slate-200 rounded-lg p-3 sm:p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-slate-800 text-sm sm:text-base">{subject}</h4>
+                        <h4 className="font-semibold text-slate-800 text-sm sm:text-base">
+                          {subject}
+                        </h4>
                         <span className="text-xs sm:text-sm text-slate-500">
                           {classes.length} kelas
                         </span>
                       </div>
-                      
+
                       <div className="space-y-2">
                         {Object.entries(classByGrade)
                           .sort(([a], [b]) => a.localeCompare(b))
                           .map(([grade, gradeClasses]) => (
                             <div key={grade} className="flex flex-wrap gap-2">
-                              {gradeClasses
-                                .sort()
-                                .map((className, index) => (
-                                  <span
-                                    key={index}
-                                    className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${
-                                      className === stats.className 
-                                        ? 'bg-green-50 text-green-700 border-green-200' 
-                                        : 'bg-blue-50 text-blue-700 border-blue-200'
-                                    }`}>
-                                    {className}
-                                    {className === stats.className && (
-                                      <span className="ml-1 text-green-600">👑</span>
-                                    )}
-                                  </span>
-                                ))}
+                              {gradeClasses.sort().map((className, index) => (
+                                <span
+                                  key={index}
+                                  className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${
+                                    className === stats.className
+                                      ? "bg-green-50 text-green-700 border-green-200"
+                                      : "bg-blue-50 text-blue-700 border-blue-200"
+                                  }`}>
+                                  {className}
+                                  {className === stats.className && (
+                                    <span className="ml-1 text-green-600">
+                                      👑
+                                    </span>
+                                  )}
+                                </span>
+                              ))}
                             </div>
                           ))}
                       </div>
@@ -595,17 +689,20 @@ const HomeroomTeacherDashboard = ({ user }) => {
               <span className="mr-2">🗓️</span>
               Jadwal Hari Ini - {currentDay}
             </h3>
-            
+
             {todaySchedule.length > 0 ? (
               <div className="space-y-3">
-                {todaySchedule.map((schedule, index) => (
+                {todaySchedule.map((schedule) => (
                   <div
                     key={schedule.id}
                     className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="text-center min-w-[60px]">
-                          <div className="text-xs text-slate-500 mb-1">Jam {index + 1}</div>
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="text-center min-w-[70px]">
+                          <div className="text-xs font-medium text-slate-500 mb-1">
+                            {schedule.sessionCount}JP (
+                            {schedule.sessionNumbers.join("-")})
+                          </div>
                           <div className="font-semibold text-blue-700 text-xs sm:text-sm">
                             {formatTime(schedule.start_time)}
                           </div>
@@ -614,7 +711,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                             {formatTime(schedule.end_time)}
                           </div>
                         </div>
-                        <div className="h-16 w-px bg-slate-200"></div>
+                        <div className="h-auto min-h-[60px] w-px bg-slate-200"></div>
                         <div className="flex-1">
                           <div className="font-semibold text-slate-800 text-sm sm:text-base mb-1">
                             {schedule.subject}
@@ -622,7 +719,10 @@ const HomeroomTeacherDashboard = ({ user }) => {
                           <div className="flex items-center gap-2 text-xs text-slate-600">
                             <span className="flex items-center gap-1">
                               <span>🏫</span>
-                              <span>Kelas {schedule.classes?.id || schedule.class_id}</span>
+                              <span>
+                                Kelas{" "}
+                                {schedule.classes?.id || schedule.class_id}
+                              </span>
                             </span>
                             {schedule.room_number && (
                               <>

@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 
 const TeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
-  
+
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalClasses: 0,
@@ -18,14 +18,69 @@ const TeacherDashboard = ({ user }) => {
 
   // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
   const getDayName = (dayIndex) => {
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const days = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu",
+    ];
     return days[dayIndex];
   };
 
   // Fungsi untuk format waktu
   const formatTime = (time) => {
-    if (!time) return '-';
+    if (!time) return "-";
     return time.substring(0, 5); // Format HH:MM
+  };
+
+  // Fungsi untuk menggabungkan jadwal berurutan
+  const mergeConsecutiveSchedules = (schedules) => {
+    if (!schedules || schedules.length === 0) return [];
+
+    const merged = [];
+    let currentBlock = null;
+
+    schedules.forEach((schedule, index) => {
+      if (!currentBlock) {
+        // Mulai blok baru
+        currentBlock = {
+          ...schedule,
+          sessionCount: 1,
+          sessionNumbers: [index + 1],
+        };
+      } else {
+        // Cek apakah bisa digabung dengan blok sebelumnya
+        const canMerge =
+          currentBlock.class_id === schedule.class_id &&
+          currentBlock.subject === schedule.subject &&
+          currentBlock.end_time === schedule.start_time;
+
+        if (canMerge) {
+          // Gabungkan dengan blok sebelumnya
+          currentBlock.end_time = schedule.end_time;
+          currentBlock.sessionCount += 1;
+          currentBlock.sessionNumbers.push(index + 1);
+        } else {
+          // Simpan blok sebelumnya dan mulai blok baru
+          merged.push(currentBlock);
+          currentBlock = {
+            ...schedule,
+            sessionCount: 1,
+            sessionNumbers: [index + 1],
+          };
+        }
+      }
+    });
+
+    // Jangan lupa push blok terakhir
+    if (currentBlock) {
+      merged.push(currentBlock);
+    }
+
+    return merged;
   };
 
   // Get current day name
@@ -34,9 +89,12 @@ const TeacherDashboard = ({ user }) => {
   useEffect(() => {
     console.log("🎯 TeacherDashboard received user:", user);
 
-    if (user?.teacher_id) {
-      console.log("✅ Found teacher_id:", user.teacher_id);
-      fetchTeacherData(user.teacher_id);
+    if (user?.teacher_id || user?.id) {
+      const teacherCode = user.teacher_id; // G-12
+      const teacherUUID = user.id; // UUID
+      console.log("✅ Found teacher_id:", teacherCode);
+      console.log("✅ Found user.id:", teacherUUID);
+      fetchTeacherData(teacherCode, teacherUUID);
     } else {
       console.log("❌ Teacher ID not found in user object:", user);
       setError("Teacher ID tidak ditemukan. Pastikan data guru sudah lengkap.");
@@ -45,50 +103,59 @@ const TeacherDashboard = ({ user }) => {
   }, [user]);
 
   // Fetch jadwal hari ini
-  const fetchTodaySchedule = useCallback(async (teacherId) => {
+  const fetchTodaySchedule = useCallback(async (teacherCode, teacherUUID) => {
     try {
       const today = new Date();
       const dayName = getDayName(today.getDay());
 
+      // Query menggunakan UUID (user.id)
       const { data: schedules, error: scheduleError } = await supabase
-        .from('teacher_schedules')
-        .select(`
+        .from("teacher_schedules")
+        .select(
+          `
           *,
           classes:class_id (
             id,
             grade
           )
-        `)
-        .eq('teacher_id', teacherId)
-        .eq('day', dayName)
-        .order('start_time', { ascending: true });
+        `
+        )
+        .eq("teacher_id", teacherUUID) // ✅ Pakai UUID
+        .eq("day", dayName)
+        .order("start_time", { ascending: true });
 
       if (scheduleError) throw scheduleError;
 
-      // Get subject info from teacher_assignments
-      const scheduleIds = schedules?.map(s => s.class_id) || [];
+      // Get subject info from teacher_assignments menggunakan teacher_id (G-12)
+      const scheduleIds = schedules?.map((s) => s.class_id) || [];
       const { data: assignments } = await supabase
-        .from('teacher_assignments')
-        .select('class_id, subject')
-        .eq('teacher_id', teacherId)
-        .in('class_id', scheduleIds);
+        .from("teacher_assignments")
+        .select("class_id, subject")
+        .eq("teacher_id", teacherCode) // ✅ Pakai teacher_id (G-12)
+        .in("class_id", scheduleIds);
 
       // Merge schedule with subject data
-      const enrichedSchedules = schedules?.map(schedule => {
-        const assignment = assignments?.find(a => a.class_id === schedule.class_id);
-        return {
-          ...schedule,
-          subject: assignment?.subject || 'N/A'
-        };
-      }) || [];
+      const enrichedSchedules =
+        schedules?.map((schedule) => {
+          const assignment = assignments?.find(
+            (a) => a.class_id === schedule.class_id
+          );
+          return {
+            ...schedule,
+            subject: assignment?.subject || "N/A",
+          };
+        }) || [];
 
-      setTodaySchedule(enrichedSchedules);
+      // ✅ Gabungkan jadwal berurutan
+      const mergedSchedules = mergeConsecutiveSchedules(enrichedSchedules);
+
+      setTodaySchedule(mergedSchedules);
     } catch (err) {
       console.error("❌ Error fetching today's schedule:", err);
     }
   }, []);
 
-  const fetchTeacherData = async (teacherId) => {
+  const fetchTeacherData = async (teacherCode, teacherUUID) => {
     try {
       setLoading(true);
       setError(null);
@@ -103,7 +170,7 @@ const TeacherDashboard = ({ user }) => {
 
       const currentYear = yearData?.academic_year || "2025/2026";
 
-      // Get teacher assignments with class details
+      // Get teacher assignments with class details (pakai teacher_id/G-12)
       const { data: assignments, error: assignError } = await supabase
         .from("teacher_assignments")
         .select(
@@ -119,7 +186,7 @@ const TeacherDashboard = ({ user }) => {
           )
         `
         )
-        .eq("teacher_id", teacherId)
+        .eq("teacher_id", teacherCode) // ✅ Pakai teacher_id (G-12)
         .eq("academic_year", currentYear);
 
       if (assignError) throw assignError;
@@ -167,7 +234,7 @@ const TeacherDashboard = ({ user }) => {
       setAnnouncements(announcementsData || []);
 
       // Fetch today's schedule
-      await fetchTodaySchedule(teacherId);
+      await fetchTodaySchedule(teacherCode, teacherUUID);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -176,22 +243,22 @@ const TeacherDashboard = ({ user }) => {
   };
 
   const handleRetry = () => {
-    if (user?.teacher_id) {
-      fetchTeacherData(user.teacher_id);
+    if (user?.teacher_id || user?.id) {
+      fetchTeacherData(user.teacher_id, user.id);
     }
   };
 
   // Navigation handlers for Quick Actions
   const handleAttendance = () => {
-    navigate('/attendance');
+    navigate("/attendance");
   };
 
   const handleGrades = () => {
-    navigate('/grades');
+    navigate("/grades");
   };
 
   const handleReports = () => {
-    navigate('/reports');
+    navigate("/reports");
   };
 
   if (loading) {
@@ -326,7 +393,7 @@ const TeacherDashboard = ({ user }) => {
 
         {/* Quick Actions - Horizontal Layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <button 
+          <button
             onClick={handleAttendance}
             className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
             <div className="flex items-center gap-3">
@@ -334,13 +401,15 @@ const TeacherDashboard = ({ user }) => {
                 <span className="text-white text-lg">📋</span>
               </div>
               <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">Presensi {primarySubject}</h4>
+                <h4 className="font-semibold text-slate-800 text-sm">
+                  Presensi {primarySubject}
+                </h4>
                 <p className="text-xs text-slate-600">Catat Kehadiran</p>
               </div>
             </div>
           </button>
 
-          <button 
+          <button
             onClick={handleGrades}
             className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
             <div className="flex items-center gap-3">
@@ -348,13 +417,15 @@ const TeacherDashboard = ({ user }) => {
                 <span className="text-white text-lg">📝</span>
               </div>
               <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">Nilai {primarySubject}</h4>
+                <h4 className="font-semibold text-slate-800 text-sm">
+                  Nilai {primarySubject}
+                </h4>
                 <p className="text-xs text-slate-600">Input Nilai Siswa</p>
               </div>
             </div>
           </button>
 
-          <button 
+          <button
             onClick={handleReports}
             className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
             <div className="flex items-center gap-3">
@@ -362,7 +433,9 @@ const TeacherDashboard = ({ user }) => {
                 <span className="text-white text-lg">📊</span>
               </div>
               <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">Lihat Laporan</h4>
+                <h4 className="font-semibold text-slate-800 text-sm">
+                  Lihat Laporan
+                </h4>
                 <p className="text-xs text-slate-600">Nilai & Kehadiran</p>
               </div>
             </div>
@@ -377,12 +450,12 @@ const TeacherDashboard = ({ user }) => {
               <span className="mr-2 text-blue-600">📖</span>
               Mata Pelajaran & Kelas
             </h3>
-            
+
             <div className="space-y-4">
               {Object.entries(subjectBreakdown).map(([subject, classes]) => {
                 // Group classes by grade
                 const classByGrade = {};
-                classes.forEach(className => {
+                classes.forEach((className) => {
                   const grade = className.charAt(0);
                   if (!classByGrade[grade]) {
                     classByGrade[grade] = [];
@@ -395,26 +468,26 @@ const TeacherDashboard = ({ user }) => {
                     key={subject}
                     className="bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-slate-800 text-sm sm:text-base">{subject}</h4>
+                      <h4 className="font-semibold text-slate-800 text-sm sm:text-base">
+                        {subject}
+                      </h4>
                       <span className="text-xs sm:text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                         {classes.length} kelas
                       </span>
                     </div>
-                    
+
                     <div className="space-y-2">
                       {Object.entries(classByGrade)
                         .sort(([a], [b]) => a.localeCompare(b))
                         .map(([grade, gradeClasses]) => (
                           <div key={grade} className="flex flex-wrap gap-2">
-                            {gradeClasses
-                              .sort()
-                              .map((className, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border border-blue-200 hover:scale-105 transition-transform">
-                                  {className}
-                                </span>
-                              ))}
+                            {gradeClasses.sort().map((className, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border border-blue-200 hover:scale-105 transition-transform">
+                                {className}
+                              </span>
+                            ))}
                           </div>
                         ))}
                     </div>
@@ -430,17 +503,20 @@ const TeacherDashboard = ({ user }) => {
               <span className="mr-2 text-indigo-600">🗓️</span>
               Jadwal Hari Ini - {currentDay}
             </h3>
-            
+
             {todaySchedule.length > 0 ? (
               <div className="space-y-3">
-                {todaySchedule.map((schedule, index) => (
+                {todaySchedule.map((schedule) => (
                   <div
                     key={schedule.id}
                     className="bg-white border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="text-center min-w-[60px]">
-                          <div className="text-xs text-slate-500 mb-1">Jam {index + 1}</div>
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="text-center min-w-[70px]">
+                          <div className="text-xs font-medium text-slate-500 mb-1">
+                            {schedule.sessionCount}JP (
+                            {schedule.sessionNumbers.join("-")})
+                          </div>
                           <div className="font-semibold text-blue-700 text-xs sm:text-sm">
                             {formatTime(schedule.start_time)}
                           </div>
@@ -449,7 +525,7 @@ const TeacherDashboard = ({ user }) => {
                             {formatTime(schedule.end_time)}
                           </div>
                         </div>
-                        <div className="h-16 w-px bg-slate-200"></div>
+                        <div className="h-auto min-h-[60px] w-px bg-slate-200"></div>
                         <div className="flex-1">
                           <div className="font-semibold text-slate-800 text-sm sm:text-base mb-1">
                             {schedule.subject}
@@ -457,7 +533,10 @@ const TeacherDashboard = ({ user }) => {
                           <div className="flex items-center gap-2 text-xs text-slate-600">
                             <span className="flex items-center gap-1">
                               <span>🏫</span>
-                              <span>Kelas {schedule.classes?.id || schedule.class_id}</span>
+                              <span>
+                                Kelas{" "}
+                                {schedule.classes?.id || schedule.class_id}
+                              </span>
                             </span>
                             {schedule.room_number && (
                               <>

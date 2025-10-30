@@ -21,6 +21,7 @@ import { exportToExcel } from "./ReportExcel";
 // ✅ NEW: Import specific modals instead of universal modal
 import HomeroomReportModal from "./modals/HomeroomReportModal";
 import TeacherReportModal from "./modals/TeacherReportModal";
+import AcademicGradesView from "./modals/AcademicGradesView";
 
 // ✅ IMPORT HELPERS
 import {
@@ -1301,40 +1302,6 @@ const HomeroomTeacherReports = ({ user }) => {
               </p>
             </div>
           </div>
-        </div>
-
-        {/* ✅ CHANGELOG */}
-        <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-green-800 mb-2">
-            ✅ Fixed Version - Changelog
-          </h4>
-          <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
-            <li>
-              ✅ Fixed cards tidak muncul di tab Wali Kelas (useMemo untuk
-              prevent re-creation)
-            </li>
-            <li>✅ Fixed race condition dengan Promise.allSettled</li>
-            <li>✅ Added defensive stats initialization (default values)</li>
-            <li>✅ Fixed loading state logic (dataLoaded flag)</li>
-            <li>✅ Added proper empty state handling untuk semua cases</li>
-            <li>
-              ✅ Fixed Tailwind dynamic classes dengan COLOR_CLASSES mapping
-            </li>
-            <li>✅ Added validation untuk empty teacher assignments</li>
-            <li>
-              ✅ Fixed filter logic untuk teacher-grades (tambah class_ids)
-            </li>
-            <li>✅ Better error handling dengan user-friendly messages</li>
-            <li>✅ Extracted date helpers (getDefaultStartDate/EndDate)</li>
-            <li>✅ Consistent filter reset behavior per tab</li>
-            <li>✅ Added explicit check untuk user tanpa homeroom_class_id</li>
-            <li>
-              🆕 Migrated to role-specific modals (HomeroomReportModal &
-              TeacherReportModal)
-            </li>
-            <li>🆕 Removed universal ReportModal dependency</li>
-            <li>🆕 Cleaner modal props (no more role prop needed)</li>
-          </ul>
         </div>
       </div>
 
