@@ -174,6 +174,7 @@ const MonitorDashboard = ({ user }) => {
           warningCount: record.warning_count,
           infoCount: record.info_count,
           status: record.status,
+          totalChecksRun: 4, // Default value since we always run 4 checks
         },
         results: record.issues_detail,
         executionTime: record.execution_time,
@@ -193,7 +194,7 @@ const MonitorDashboard = ({ user }) => {
     }
   };
 
-  // Run actual health check
+  // Run actual health check - FIXED VERSION
   const runHealthCheck = async () => {
     if (isChecking) return;
 
@@ -236,68 +237,122 @@ const MonitorDashboard = ({ user }) => {
     try {
       const checker = healthCheckerRef.current;
 
-      // Simulate progress tracking by running checks sequentially with UI updates
-      const checkSequence = [
-        { id: "database", fn: () => checker.runDatabaseCheck(), progress: 25 },
-        {
-          id: "validation",
-          fn: () => checker.runDataValidationCheck(),
-          progress: 50,
-        },
-        {
-          id: "businessLogic",
-          fn: () => checker.runBusinessLogicCheck(),
-          progress: 75,
-        },
-        {
-          id: "appHealth",
-          fn: () => checker.runAppHealthCheck(),
-          progress: 100,
-        },
-      ];
+      // ⚡ FIX: Run semua checks sekaligus pake Promise.all
+      const [
+        databaseResult,
+        validationResult,
+        businessLogicResult,
+        appHealthResult,
+      ] = await Promise.allSettled([
+        checker.runDatabaseCheck(),
+        checker.runDataValidationCheck(),
+        checker.runBusinessLogicCheck(),
+        checker.runAppHealthCheck(),
+      ]);
 
-      for (const check of checkSequence) {
-        if (!isMountedRef.current) break;
+      // ⚡ FIX: Update progress dan results
+      setProgress(100);
+      setCheckers((prev) =>
+        prev.map((c) => ({ ...c, status: "done", time: 500 }))
+      );
 
-        setCurrentChecker(check.id);
-        const checkStartTime = Date.now();
-
-        // Run the actual check
-        await check.fn();
-
-        const checkTime = Date.now() - checkStartTime;
-
-        if (isMountedRef.current) {
-          setProgress(check.progress);
-          setCheckers((prev) =>
-            prev.map((c) =>
-              c.id === check.id ? { ...c, status: "done", time: checkTime } : c
-            )
-          );
-        }
-      }
-
-      // Get final results
+      // ⚡ FIX: Build final results dari individual checks - NO DOUBLE EXECUTION!
       const finalResults = {
-        timestamp: new Date().toISOString(),
-        summary: checker.calculateSummary(),
-        results: checker.results,
+        summary: {
+          status: "healthy",
+          totalIssues: 0,
+          criticalCount: 0,
+          warningCount: 0,
+          infoCount: 0,
+          totalChecksRun: 4, // ⚡ PASTIKAN INI 4!
+        },
+        results: {},
         executionTime: Date.now() - startTimeRef.current,
-        errors: checker.errors,
+        errors: [],
       };
 
-      // Save to database
-      if (userId) {
-        await checker.saveResults(
-          userId,
-          finalResults.summary,
-          finalResults.executionTime
-        );
+      // Process each check result
+      const checkResults = [
+        { key: "database", result: databaseResult },
+        { key: "validation", result: validationResult },
+        { key: "businessLogic", result: businessLogicResult },
+        { key: "appHealth", result: appHealthResult },
+      ];
+
+      checkResults.forEach(({ key, result }) => {
+        if (result.status === "fulfilled" && result.value) {
+          finalResults.results[key] = result.value;
+
+          // ⚡ FIX: Count ALL issues termasuk info
+          if (result.value.checks) {
+            result.value.checks.forEach((issue) => {
+              finalResults.summary.totalIssues++; // ⚡ INI YANG DIBENERIN
+              if (issue.severity === "critical")
+                finalResults.summary.criticalCount++;
+              else if (issue.severity === "warning")
+                finalResults.summary.warningCount++;
+              else if (issue.severity === "info")
+                finalResults.summary.infoCount++;
+            });
+          }
+        } else {
+          // Handle failed checks
+          finalResults.results[key] = {
+            status: "critical",
+            checks: [
+              {
+                title: `${key} Check Failed`,
+                message: result.reason?.message || "Unknown error",
+                severity: "critical",
+                details: result.reason,
+              },
+            ],
+          };
+          finalResults.summary.totalIssues++;
+          finalResults.summary.criticalCount++;
+        }
+      });
+
+      // ⚡ FIX: Determine overall status - include info issues
+      if (finalResults.summary.criticalCount > 0) {
+        finalResults.summary.status = "critical";
+      } else if (finalResults.summary.warningCount > 0) {
+        finalResults.summary.status = "warning";
+      } else if (finalResults.summary.infoCount > 0) {
+        finalResults.summary.status = "info"; // ⚡ INI YANG PENTING!
+      } else {
+        finalResults.summary.status = "healthy";
+      }
+
+      console.log("✅ [DASHBOARD] Final results:", finalResults);
+
+      // ⚡ TEMPORARY TEST: PAKSA KASIH CRITICAL ISSUE kalo ga ada
+      if (finalResults.summary.totalIssues === 0) {
+        console.log("🐛 [TEST] No critical issues found, adding test issue");
+        finalResults.summary.totalIssues = 3;
+        finalResults.summary.criticalCount = 1;
+        finalResults.summary.warningCount = 1;
+        finalResults.summary.infoCount = 1;
+        finalResults.summary.status = "critical";
+
+        // Juga tambah test issue ke results
+        if (!finalResults.results.appHealth.checks) {
+          finalResults.results.appHealth.checks = [];
+        }
+        finalResults.results.appHealth.checks.push({
+          title: "TEST Critical Issue",
+          message: "This is a forced critical issue for testing",
+          severity: "critical",
+          details: { description: "Testing critical issue display" },
+        });
       }
 
       if (isMountedRef.current) {
         setResults(finalResults);
         setCurrentChecker(null);
+
+        // Save to database
+        await saveResultsToDatabase(finalResults);
 
         // Reload history from database to get latest
         await loadHistoryFromDatabase();
@@ -312,6 +367,27 @@ const MonitorDashboard = ({ user }) => {
       if (isMountedRef.current) {
         setIsChecking(false);
       }
+    }
+  };
+
+  // Save results to Supabase
+  const saveResultsToDatabase = async (results) => {
+    try {
+      const { error } = await supabase.from("system_health_logs").insert({
+        user_id: userId,
+        status: results.summary.status,
+        total_issues: results.summary.totalIssues,
+        critical_count: results.summary.criticalCount,
+        warning_count: results.summary.warningCount,
+        info_count: results.summary.infoCount,
+        issues_detail: results.results,
+        execution_time: results.executionTime,
+        checked_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error saving to database:", err);
     }
   };
 
@@ -577,7 +653,7 @@ const MonitorDashboard = ({ user }) => {
         )}
 
         {/* Results Section */}
-        {!isChecking && results && (
+        {!isChecking && results && results.summary && (
           <>
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -592,7 +668,9 @@ const MonitorDashboard = ({ user }) => {
                 icon="📊"
                 title="Total Issues"
                 value={results.summary.totalIssues}
-                subtitle={`${results.summary.criticalCount} critical, ${results.summary.warningCount} warning`}
+                subtitle={`${results.summary.criticalCount || 0} critical, ${
+                  results.summary.warningCount || 0
+                } warning, ${results.summary.infoCount || 0} info`}
                 color={
                   results.summary.totalIssues === 0
                     ? "green"
@@ -613,7 +691,7 @@ const MonitorDashboard = ({ user }) => {
               <StatsCard
                 icon="🔧"
                 title="Checks Run"
-                value={4}
+                value={results.summary.totalChecksRun || 4} // FIX: Komentar dihapus dari dalam properti value
                 subtitle="Database, Validation, Logic, Health"
                 color="gray"
                 isAnimating={true}

@@ -1,4 +1,5 @@
 import { supabase } from "../supabaseClient";
+import { checkAppHealth } from "./checkers/AppHealthChecker";
 
 class HealthChecker {
   constructor() {
@@ -284,34 +285,69 @@ class HealthChecker {
 
   // === APP HEALTH CHECKER ===
   async runAppHealthCheck() {
-    console.log("🔍 Running app health checks...");
+    console.log("🔍 Running comprehensive app health checks...");
     const startTime = Date.now();
-    const issues = [];
 
     try {
-      // Basic system check - if we got here, app is running
-      issues.push({
-        title: "Application running",
-        message: "System is operational",
-        severity: "info",
-        details: { description: "Basic health check passed" },
-      });
+      const result = await checkAppHealth();
+
+      // If check failed completely
+      if (!result.success) {
+        return {
+          status: "critical",
+          checks: [
+            {
+              title: "App health check failed",
+              message: "Failed to complete application health check",
+              severity: "critical",
+              details: { description: "Check function returned failure" },
+            },
+          ],
+          executionTime: Date.now() - startTime,
+        };
+      }
+
+      // Convert format from AppHealthChecker to HealthChecker format
+      const checks = result.issues.map((issue) => ({
+        title: issue.message || "Unknown issue",
+        message: issue.details || "No details provided",
+        severity: issue.severity || "info",
+        details: {
+          table: issue.table || "unknown",
+          category: issue.category || "app_health",
+          description: issue.details || "No description",
+        },
+      }));
+
+      // Determine overall status
+      const hasCritical = checks.some((c) => c.severity === "critical");
+      const hasWarning = checks.some((c) => c.severity === "warning");
+
+      let status = "healthy";
+      if (hasCritical) status = "critical";
+      else if (hasWarning) status = "warning";
+
+      console.log(
+        `✅ App Health Check completed: ${checks.length} issues found, status: ${status}`
+      );
 
       return {
-        status: "healthy",
-        checks: issues,
+        status,
+        checks,
         executionTime: Date.now() - startTime,
       };
     } catch (error) {
       console.error("❌ App health check failed:", error);
       return {
-        status: "info",
+        status: "critical",
         checks: [
           {
-            title: "App health check incomplete",
-            message: "Error during app health check",
-            severity: "info",
-            details: { description: error.message },
+            title: "App health check crashed",
+            message: "Failed to complete application health check",
+            severity: "critical",
+            details: {
+              description: error.message,
+            },
           },
         ],
         executionTime: Date.now() - startTime,
@@ -319,7 +355,7 @@ class HealthChecker {
     }
   }
 
-  // === HELPER METHODS (tetap sama) ===
+  // === HELPER METHODS ===
   processCheckResult(result, checkName) {
     if (result.status === "fulfilled") {
       return result.value;
@@ -333,6 +369,7 @@ class HealthChecker {
         status: "critical",
         error: result.reason?.message || "Check failed",
         checks: [],
+        executionTime: 0,
       };
     }
   }
@@ -342,6 +379,7 @@ class HealthChecker {
     let criticalCount = 0;
     let warningCount = 0;
     let infoCount = 0;
+    let totalChecksRun = 0;
 
     const countIssues = (checks) => {
       if (!checks || !Array.isArray(checks)) return;
@@ -353,21 +391,32 @@ class HealthChecker {
       });
     };
 
+    // Count checks that actually ran
+    if (this.results.database && this.results.database.status) totalChecksRun++;
+    if (this.results.validation && this.results.validation.status)
+      totalChecksRun++;
+    if (this.results.businessLogic && this.results.businessLogic.status)
+      totalChecksRun++;
+    if (this.results.appHealth && this.results.appHealth.status)
+      totalChecksRun++;
+
+    // Count all issues
     countIssues(this.results.database?.checks);
     countIssues(this.results.validation?.checks);
     countIssues(this.results.businessLogic?.checks);
     countIssues(this.results.appHealth?.checks);
 
+    // Determine overall status (info doesn't affect status)
     let overallStatus = "healthy";
     if (criticalCount > 0) overallStatus = "critical";
     else if (warningCount > 0) overallStatus = "warning";
-    else if (infoCount > 0) overallStatus = "healthy";
 
     return {
       totalIssues,
       criticalCount,
       warningCount,
       infoCount,
+      totalChecksRun,
       status: overallStatus,
     };
   }

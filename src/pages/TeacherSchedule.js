@@ -482,8 +482,7 @@ const TeacherSchedule = ({ user }) => {
                 JADWAL MENGAJAR
               </h1>
               <p className="text-slate-600 font-semibold">
-                {user?.full_name || "Loading..."} - TAHUN AJARAN 2025/2026
-                SEMESTER GANJIL
+                TAHUN AJARAN 2025/2026 SEMESTER GANJIL
               </p>
             </div>
           </div>
