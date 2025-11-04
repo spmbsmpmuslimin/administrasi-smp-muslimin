@@ -42,7 +42,11 @@ const getCurrentAcademicYear = () => {
  * 📊 Export ALL Students (Single Sheet)
  * Export semua data siswa baru ke Excel dengan format lengkap
  */
-export const exportAllStudents = async (allStudents, totalStudents, showToast) => {
+export const exportAllStudents = async (
+  allStudents,
+  totalStudents,
+  showToast
+) => {
   if (!allStudents || allStudents.length === 0) {
     if (showToast) {
       showToast("Tidak ada data untuk di-export", "error");
@@ -56,26 +60,28 @@ export const exportAllStudents = async (allStudents, totalStudents, showToast) =
 
     // Set column widths
     worksheet.columns = [
-      { width: 5 },   // No
-      { width: 30 },  // Nama
-      { width: 15 },  // JK
-      { width: 25 },  // Tempat Lahir
-      { width: 15 },  // Tanggal Lahir
-      { width: 25 },  // Asal SD
-      { width: 15 },  // NISN
-      { width: 25 },  // Nama Ayah
-      { width: 20 },  // Pekerjaan Ayah
-      { width: 20 },  // Pendidikan Ayah
-      { width: 25 },  // Nama Ibu
-      { width: 20 },  // Pekerjaan Ibu
-      { width: 20 },  // Pendidikan Ibu
-      { width: 18 },  // No HP
+      { width: 5 }, // No
+      { width: 30 }, // Nama
+      { width: 15 }, // JK
+      { width: 25 }, // Tempat Lahir
+      { width: 15 }, // Tanggal Lahir
+      { width: 25 }, // Asal SD
+      { width: 15 }, // NISN
+      { width: 25 }, // Nama Ayah
+      { width: 20 }, // Pekerjaan Ayah
+      { width: 20 }, // Pendidikan Ayah
+      { width: 25 }, // Nama Ibu
+      { width: 20 }, // Pekerjaan Ibu
+      { width: 20 }, // Pendidikan Ibu
+      { width: 18 }, // No HP
       { width: 100 }, // Alamat
     ];
 
     // Get statistics
     const totalLaki = allStudents.filter((s) => s.jenis_kelamin === "L").length;
-    const totalPerempuan = allStudents.filter((s) => s.jenis_kelamin === "P").length;
+    const totalPerempuan = allStudents.filter(
+      (s) => s.jenis_kelamin === "P"
+    ).length;
     const academicYear = getCurrentAcademicYear();
     const currentDate = new Date().toLocaleDateString("id-ID", {
       year: "numeric",
@@ -237,8 +243,8 @@ export const exportAllStudents = async (allStudents, totalStudents, showToast) =
 
 /**
  * 🎓 Export Class Division (Multi-Sheet)
- * Export pembagian kelas dengan format sederhana (multi-sheet per kelas)
- * Format: No | NIS (kosong) | Nama | Kelas | Jenis Kelamin
+ * Export pembagian kelas dengan NIS TERISI
+ * Format: No | NIS | Nama | Kelas | Jenis Kelamin
  */
 export const exportClassDivision = async (classDistribution, showToast) => {
   if (!classDistribution || Object.keys(classDistribution).length === 0) {
@@ -267,16 +273,18 @@ export const exportClassDivision = async (classDistribution, showToast) => {
 
       // Set column widths
       worksheet.columns = [
-        { width: 5 },   // No
-        { width: 15 },  // NIS (kosong)
-        { width: 35 },  // Nama
-        { width: 12 },  // Kelas
-        { width: 15 },  // Jenis Kelamin
+        { width: 5 }, // No
+        { width: 18 }, // NIS 🔥 TERISI
+        { width: 35 }, // Nama
+        { width: 12 }, // Kelas
+        { width: 15 }, // Jenis Kelamin
       ];
 
       // Calculate statistics
       const totalLaki = students.filter((s) => s.jenis_kelamin === "L").length;
-      const totalPerempuan = students.filter((s) => s.jenis_kelamin === "P").length;
+      const totalPerempuan = students.filter(
+        (s) => s.jenis_kelamin === "P"
+      ).length;
 
       // Header Sekolah
       worksheet.mergeCells("A1:E1");
@@ -336,7 +344,7 @@ export const exportClassDivision = async (classDistribution, showToast) => {
       });
 
       // Data rows - Sort berdasarkan nama
-      const sortedStudents = [...students].sort((a, b) => 
+      const sortedStudents = [...students].sort((a, b) =>
         (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "")
       );
 
@@ -345,7 +353,7 @@ export const exportClassDivision = async (classDistribution, showToast) => {
 
         row.values = [
           index + 1,
-          "", // NIS kosong
+          student.nis || "-", // 🔥 NIS TERISI DARI DATA SISWA
           student.nama_lengkap || "-",
           className,
           student.jenis_kelamin || "-",
@@ -371,10 +379,18 @@ export const exportClassDivision = async (classDistribution, showToast) => {
           }
 
           // Center alignment untuk kolom tertentu
-          if (colNumber === 1 || colNumber === 4 || colNumber === 5) {
+          if (
+            colNumber === 1 ||
+            colNumber === 2 ||
+            colNumber === 4 ||
+            colNumber === 5
+          ) {
             cell.alignment = { horizontal: "center", vertical: "middle" };
           }
         });
+
+        // 🔥 Format NIS sebagai TEXT (bukan number)
+        row.getCell(2).numFmt = "@"; // Format sebagai text
       });
 
       // Tambahkan baris kosong untuk tanda tangan
@@ -400,10 +416,9 @@ export const exportClassDivision = async (classDistribution, showToast) => {
     });
 
     // Download file
-    const fileName = `Pembagian_Kelas_7_TA_${academicYear.replace(
-      "/",
-      "-"
-    )}_${new Date().toISOString().split("T")[0]}.xlsx`;
+    const fileName = `Pembagian_Kelas_7_TA_${academicYear.replace("/", "-")}_${
+      new Date().toISOString().split("T")[0]
+    }.xlsx`;
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -415,7 +430,7 @@ export const exportClassDivision = async (classDistribution, showToast) => {
 
     if (showToast) {
       showToast(
-        `✅ Berhasil export ${sortedClasses.length} kelas: ${fileName}`,
+        `✅ Berhasil export ${sortedClasses.length} kelas dengan NIS: ${fileName}`,
         "success"
       );
     }

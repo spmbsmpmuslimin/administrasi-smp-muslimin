@@ -11,6 +11,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
     femaleStudents: 0,
     presentToday: 0,
     absentToday: 0,
+    sakitToday: 0,
+    izinToday: 0,
+    alpaToday: 0,
     className: "",
     grade: "",
   });
@@ -203,6 +206,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
       const today = new Date().toISOString().split("T")[0];
       if (process.env.NODE_ENV === "development") {
         console.log("📅 Today:", today);
+        console.log("🏫 Homeroom class ID:", homeroomClassId);
       }
 
       // Parallel fetch data
@@ -223,17 +227,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         // Today's attendance for this class
         supabase
           .from("attendances")
-          .select(
-            `
-            id,
-            student_id,
-            status,
-            students!inner (
-              id,
-              class_id
-            )
-          `
-          )
+          .select("id, student_id, date, status, type, class_id")
           .eq("date", today)
           .eq("class_id", homeroomClassId),
 
@@ -271,6 +265,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
           announcements: announcementsResult.data?.length,
           teaching: teachingResult.data?.length,
         });
+        console.log("📋 Attendance data:", attendanceResult.data);
+        console.log("❌ Attendance error:", attendanceResult.error);
       }
 
       const students = studentsResult.data || [];
@@ -281,21 +277,44 @@ const HomeroomTeacherDashboard = ({ user }) => {
       const maleCount = students.filter((s) => s.gender === "L").length;
       const femaleCount = students.filter((s) => s.gender === "P").length;
 
-      // Calculate attendance stats - hitung unique students yang hadir
+      // Calculate attendance stats - based on status column (note: "Hadir" with capital H)
       const uniqueStudentsPresent = new Set();
       const uniqueStudentsAbsent = new Set();
+      const sakitCount = new Set();
+      const izinCount = new Set();
+      const alpaCount = new Set();
 
       attendances.forEach((att) => {
-        if (att.status === "hadir") {
+        const status = att.status; // Keep original case
+
+        // Check if student is present (note: "Hadir" starts with capital H)
+        if (status === "Hadir") {
           uniqueStudentsPresent.add(att.student_id);
-        } else if (
-          att.status === "tidak_hadir" ||
-          att.status === "sakit" ||
-          att.status === "izin"
-        ) {
+        }
+        // Check if student is absent (Izin, Sakit, Alpa)
+        else if (status === "Sakit") {
           uniqueStudentsAbsent.add(att.student_id);
+          sakitCount.add(att.student_id);
+        } else if (status === "Izin") {
+          uniqueStudentsAbsent.add(att.student_id);
+          izinCount.add(att.student_id);
+        } else if (status === "Alpa") {
+          uniqueStudentsAbsent.add(att.student_id);
+          alpaCount.add(att.student_id);
         }
       });
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("✅ Students present:", uniqueStudentsPresent.size);
+        console.log("❌ Students absent:", uniqueStudentsAbsent.size);
+        console.log("🏥 Sakit:", sakitCount.size);
+        console.log("📋 Izin:", izinCount.size);
+        console.log("✖ Alpa:", alpaCount.size);
+        console.log("📊 Total attendance records:", attendances.length);
+        console.log("📊 Unique status values:", [
+          ...new Set(attendances.map((a) => a.status)),
+        ]);
+      }
 
       // Process teaching data
       const subjects = [...new Set(assignments.map((a) => a.subject))];
@@ -312,6 +331,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
         femaleStudents: femaleCount,
         presentToday: uniqueStudentsPresent.size,
         absentToday: uniqueStudentsAbsent.size,
+        sakitToday: sakitCount.size,
+        izinToday: izinCount.size,
+        alpaToday: alpaCount.size,
         className: homeroomClassId,
         grade: classInfo.grade,
       });
@@ -526,17 +548,39 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
           {/* Tidak Hadir */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">
                   Tidak Hadir
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-red-700">
+                <p className="text-xl sm:text-2xl font-bold text-red-700 mb-2">
                   {stats.absentToday}
                 </p>
+                {stats.absentToday > 0 && (
+                  <div className="space-y-0.5 text-xs text-slate-600">
+                    {stats.sakitToday > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-orange-500">🏥</span>
+                        <span>Sakit: {stats.sakitToday}</span>
+                      </div>
+                    )}
+                    {stats.izinToday > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-blue-500">📋</span>
+                        <span>Izin: {stats.izinToday}</span>
+                      </div>
+                    )}
+                    {stats.alpaToday > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-red-500">✖</span>
+                        <span>Alpa: {stats.alpaToday}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-lg sm:text-2xl">❌</span>
+                <span className="text-white text-lg sm:text-2xl">📊</span>
               </div>
             </div>
           </div>

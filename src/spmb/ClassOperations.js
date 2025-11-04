@@ -1,8 +1,8 @@
 // ClassOperations.js - Operations & Utilities untuk kelas management
 
-import { exportClassDivision } from './SpmbExcel';
+import { exportClassDivision } from "./SpmbExcel";
 
-// Simpan pembagian ke database
+// Simpan pembagian ke database (WITH NIS)
 export const saveClassAssignments = async (
   classDistribution,
   supabase,
@@ -15,7 +15,11 @@ export const saveClassAssignments = async (
   setHistory,
   setHistoryIndex
 ) => {
-  if (!window.confirm('Simpan pembagian kelas ini? Data tidak bisa diubah setelah disimpan.')) {
+  if (
+    !window.confirm(
+      "Simpan pembagian kelas ini? Data tidak bisa diubah setelah disimpan."
+    )
+  ) {
     return;
   }
 
@@ -24,36 +28,43 @@ export const saveClassAssignments = async (
     const updates = [];
 
     Object.entries(classDistribution).forEach(([className, students]) => {
-      students.forEach(student => {
+      students.forEach((student) => {
         updates.push({
           id: student.id,
-          kelas: className
+          kelas: className,
+          nis: student.nis, // 🔥 SIMPAN NIS
         });
       });
     });
 
     for (const update of updates) {
       const { error } = await supabase
-        .from('siswa_baru')
-        .update({ kelas: update.kelas })
-        .eq('id', update.id);
+        .from("siswa_baru")
+        .update({
+          kelas: update.kelas,
+          nis: update.nis, // 🔥 UPDATE NIS KE DATABASE
+        })
+        .eq("id", update.id);
 
       if (error) throw error;
     }
 
-    showToast(`✅ Berhasil menyimpan pembagian ${updates.length} siswa!`, 'success');
+    showToast(
+      `✅ Berhasil menyimpan pembagian ${updates.length} siswa dengan NIS!`,
+      "success"
+    );
     setShowPreview(false);
     setClassDistribution({});
     setEditMode(false);
     setHistory([]);
     setHistoryIndex(-1);
-    
+
     if (onRefreshData) {
       await onRefreshData();
     }
   } catch (error) {
-    console.error('Error saving assignments:', error);
-    showToast('❌ Gagal menyimpan pembagian kelas', 'error');
+    console.error("Error saving assignments:", error);
+    showToast("❌ Gagal menyimpan pembagian kelas", "error");
   } finally {
     setIsLoading(false);
   }
@@ -68,16 +79,20 @@ export const transferToStudents = async (
   getCurrentAcademicYear,
   onRefreshData
 ) => {
-  const studentsWithClass = allStudents.filter(s => 
-    s.kelas && !s.is_transferred && s.status === 'diterima'
+  const studentsWithClass = allStudents.filter(
+    (s) => s.kelas && !s.is_transferred && s.status === "diterima"
   );
 
   if (studentsWithClass.length === 0) {
-    showToast('Tidak ada siswa dengan kelas yang bisa ditransfer', 'error');
+    showToast("Tidak ada siswa dengan kelas yang bisa ditransfer", "error");
     return;
   }
 
-  if (!window.confirm(`Transfer ${studentsWithClass.length} siswa ke tabel Students?`)) {
+  if (
+    !window.confirm(
+      `Transfer ${studentsWithClass.length} siswa ke tabel Students?`
+    )
+  ) {
     return;
   }
 
@@ -86,38 +101,41 @@ export const transferToStudents = async (
     const currentYear = getCurrentAcademicYear();
 
     for (const siswa of studentsWithClass) {
-      const { error: insertError } = await supabase
-        .from('students')
-        .insert([{
+      const { error: insertError } = await supabase.from("students").insert([
+        {
           full_name: siswa.nama_lengkap,
           nis: siswa.nisn,
           class_id: siswa.kelas,
           academic_year: currentYear,
           gender: siswa.jenis_kelamin,
-          is_active: true
-        }]);
+          is_active: true,
+        },
+      ]);
 
       if (insertError) throw insertError;
 
       const { error: updateError } = await supabase
-        .from('siswa_baru')
+        .from("siswa_baru")
         .update({
           is_transferred: true,
-          transferred_at: new Date().toISOString()
+          transferred_at: new Date().toISOString(),
         })
-        .eq('id', siswa.id);
+        .eq("id", siswa.id);
 
       if (updateError) throw updateError;
     }
 
-    showToast(`✅ Berhasil transfer ${studentsWithClass.length} siswa ke Students!`, 'success');
-    
+    showToast(
+      `✅ Berhasil transfer ${studentsWithClass.length} siswa ke Students!`,
+      "success"
+    );
+
     if (onRefreshData) {
       await onRefreshData();
     }
   } catch (error) {
-    console.error('Error transferring students:', error);
-    showToast('❌ Gagal transfer siswa: ' + error.message, 'error');
+    console.error("Error transferring students:", error);
+    showToast("❌ Gagal transfer siswa: " + error.message, "error");
   } finally {
     setIsLoading(false);
   }
@@ -131,16 +149,20 @@ export const resetClassAssignments = async (
   showToast,
   onRefreshData
 ) => {
-  const studentsWithClass = allStudents.filter(s => 
-    s.kelas && !s.is_transferred && s.status === 'diterima'
+  const studentsWithClass = allStudents.filter(
+    (s) => s.kelas && !s.is_transferred && s.status === "diterima"
   );
 
   if (studentsWithClass.length === 0) {
-    showToast('Tidak ada pembagian kelas yang bisa direset', 'error');
+    showToast("Tidak ada pembagian kelas yang bisa direset", "error");
     return;
   }
 
-  if (!window.confirm(`Reset pembagian ${studentsWithClass.length} siswa? Semua kelas akan dikosongkan.`)) {
+  if (
+    !window.confirm(
+      `Reset pembagian ${studentsWithClass.length} siswa? Semua kelas akan dikosongkan.`
+    )
+  ) {
     return;
   }
 
@@ -148,24 +170,27 @@ export const resetClassAssignments = async (
   try {
     for (const siswa of studentsWithClass) {
       const { error } = await supabase
-        .from('siswa_baru')
-        .update({ 
+        .from("siswa_baru")
+        .update({
           kelas: null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', siswa.id);
+        .eq("id", siswa.id);
 
       if (error) throw error;
     }
 
-    showToast(`✅ Berhasil reset ${studentsWithClass.length} siswa!`, 'success');
-    
+    showToast(
+      `✅ Berhasil reset ${studentsWithClass.length} siswa!`,
+      "success"
+    );
+
     if (onRefreshData) {
       await onRefreshData();
     }
   } catch (error) {
-    console.error('Error resetting assignments:', error);
-    showToast('❌ Gagal reset pembagian kelas', 'error');
+    console.error("Error resetting assignments:", error);
+    showToast("❌ Gagal reset pembagian kelas", "error");
   } finally {
     setIsLoading(false);
   }
@@ -182,19 +207,19 @@ export const updateClassAssignment = async (
   setIsLoading(true);
   try {
     const { error } = await supabase
-      .from('siswa_baru')
-      .update({ 
+      .from("siswa_baru")
+      .update({
         kelas: newClass,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', studentId);
+      .eq("id", studentId);
 
     if (error) throw error;
-    
+
     return true;
   } catch (error) {
-    console.error('Error updating class:', error);
-    showToast('❌ Gagal update kelas', 'error');
+    console.error("Error updating class:", error);
+    showToast("❌ Gagal update kelas", "error");
     return false;
   } finally {
     setIsLoading(false);
@@ -216,23 +241,29 @@ export const handleMoveStudentSaved = async (
 ) => {
   if (!window.confirm(`Pindahkan siswa ke ${toClass}?`)) return;
 
-  const success = await updateClassAssignment(studentId, toClass, supabase, setIsLoading, showToast);
-  
+  const success = await updateClassAssignment(
+    studentId,
+    toClass,
+    supabase,
+    setIsLoading,
+    showToast
+  );
+
   if (success) {
     const newDistribution = JSON.parse(JSON.stringify(savedClassDistribution));
-    
+
     newDistribution[fromClass] = newDistribution[fromClass].filter(
-      s => s.id !== studentId
+      (s) => s.id !== studentId
     );
-    
+
     if (!newDistribution[toClass]) {
       newDistribution[toClass] = [];
     }
-    const student = allStudents.find(s => s.id === studentId);
+    const student = allStudents.find((s) => s.id === studentId);
     newDistribution[toClass].push(student);
-    
+
     setSavedClassDistribution(newDistribution);
-    showToast(`✅ Siswa dipindah ke ${toClass}`, 'success');
+    showToast(`✅ Siswa dipindah ke ${toClass}`, "success");
   }
 };
 
@@ -243,7 +274,7 @@ export const handleExportClassDivision = async (
   showToast
 ) => {
   if (!classDistribution || Object.keys(classDistribution).length === 0) {
-    showToast('Tidak ada pembagian kelas untuk di-export', 'error');
+    showToast("Tidak ada pembagian kelas untuk di-export", "error");
     return;
   }
 
@@ -251,7 +282,7 @@ export const handleExportClassDivision = async (
   try {
     await exportClassDivision(classDistribution, showToast);
   } catch (error) {
-    console.error('Error in handleExportClassDivision:', error);
+    console.error("Error in handleExportClassDivision:", error);
   } finally {
     setIsExporting(false);
   }
@@ -263,17 +294,17 @@ export const handleExportSavedClasses = async (
   setIsExporting,
   showToast
 ) => {
-  const studentsWithClass = allStudents.filter(s => 
-    s.kelas && !s.is_transferred && s.status === 'diterima'
+  const studentsWithClass = allStudents.filter(
+    (s) => s.kelas && !s.is_transferred && s.status === "diterima"
   );
 
   if (studentsWithClass.length === 0) {
-    showToast('Tidak ada siswa dengan kelas yang bisa di-export', 'error');
+    showToast("Tidak ada siswa dengan kelas yang bisa di-export", "error");
     return;
   }
 
   const distribution = {};
-  studentsWithClass.forEach(student => {
+  studentsWithClass.forEach((student) => {
     const className = student.kelas;
     if (!distribution[className]) {
       distribution[className] = [];
@@ -285,7 +316,7 @@ export const handleExportSavedClasses = async (
   try {
     await exportClassDivision(distribution, showToast);
   } catch (error) {
-    console.error('Error in handleExportSavedClasses:', error);
+    console.error("Error in handleExportSavedClasses:", error);
   } finally {
     setIsExporting(false);
   }
@@ -294,12 +325,12 @@ export const handleExportSavedClasses = async (
 // Drag & Drop Handlers
 export const handleDragStart = (e, student, fromClass, setDraggedStudent) => {
   setDraggedStudent({ student, fromClass });
-  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.effectAllowed = "move";
 };
 
 export const handleDragOver = (e, toClass, setDragOverClass) => {
   e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
+  e.dataTransfer.dropEffect = "move";
   setDragOverClass(toClass);
 };
 
@@ -330,23 +361,32 @@ export const handleDrop = (
   }
 
   const newDistribution = JSON.parse(JSON.stringify(currentDistribution));
-  
+
   // Remove dari kelas asal
-  newDistribution[draggedStudent.fromClass] = newDistribution[draggedStudent.fromClass].filter(
-    s => s.id !== draggedStudent.student.id
-  );
-  
+  newDistribution[draggedStudent.fromClass] = newDistribution[
+    draggedStudent.fromClass
+  ].filter((s) => s.id !== draggedStudent.student.id);
+
   // Tambah ke kelas tujuan
   newDistribution[toClass].push(draggedStudent.student);
-  
+
   setDistribution(newDistribution);
-  
+
   if (!showSavedClasses) {
-    saveToHistory(newDistribution, [], historyIndex, setHistory, setHistoryIndex);
+    saveToHistory(
+      newDistribution,
+      [],
+      historyIndex,
+      setHistory,
+      setHistoryIndex
+    );
   }
-  
-  showToast(`✅ ${draggedStudent.student.nama_lengkap} dipindah ke ${toClass}`, 'success');
-  
+
+  showToast(
+    `✅ ${draggedStudent.student.nama_lengkap} dipindah ke ${toClass}`,
+    "success"
+  );
+
   setDraggedStudent(null);
   setDragOverClass(null);
 };
@@ -364,20 +404,28 @@ export const handleRemoveStudent = (
   setHistory,
   setHistoryIndex
 ) => {
-  if (!window.confirm('Keluarkan siswa dari kelas ini?')) return;
+  if (!window.confirm("Keluarkan siswa dari kelas ini?")) return;
 
   const newDistribution = JSON.parse(JSON.stringify(currentDistribution));
-  const student = newDistribution[fromClass].find(s => s.id === studentId);
-  
-  newDistribution[fromClass] = newDistribution[fromClass].filter(s => s.id !== studentId);
-  
+  const student = newDistribution[fromClass].find((s) => s.id === studentId);
+
+  newDistribution[fromClass] = newDistribution[fromClass].filter(
+    (s) => s.id !== studentId
+  );
+
   setDistribution(newDistribution);
-  
+
   if (!showSavedClasses) {
-    saveToHistory(newDistribution, [], historyIndex, setHistory, setHistoryIndex);
+    saveToHistory(
+      newDistribution,
+      [],
+      historyIndex,
+      setHistory,
+      setHistoryIndex
+    );
   }
-  
-  showToast(`${student.nama_lengkap} dikeluarkan dari ${fromClass}`, 'info');
+
+  showToast(`${student.nama_lengkap} dikeluarkan dari ${fromClass}`, "info");
 };
 
 // Add student ke kelas
@@ -394,39 +442,48 @@ export const handleAddStudent = (
   setHistoryIndex
 ) => {
   const newDistribution = JSON.parse(JSON.stringify(currentDistribution));
-  
+
   // Check apakah siswa sudah ada di kelas lain
-  const existingClass = Object.entries(newDistribution).find(([_, students]) => 
-    students.some(s => s.id === student.id)
+  const existingClass = Object.entries(newDistribution).find(([_, students]) =>
+    students.some((s) => s.id === student.id)
   );
-  
+
   if (existingClass) {
     // Pindahkan dari kelas lama
-    newDistribution[existingClass[0]] = newDistribution[existingClass[0]].filter(
-      s => s.id !== student.id
+    newDistribution[existingClass[0]] = newDistribution[
+      existingClass[0]
+    ].filter((s) => s.id !== student.id);
+  }
+
+  newDistribution[toClass].push(student);
+
+  setDistribution(newDistribution);
+
+  if (!showSavedClasses) {
+    saveToHistory(
+      newDistribution,
+      [],
+      historyIndex,
+      setHistory,
+      setHistoryIndex
     );
   }
-  
-  newDistribution[toClass].push(student);
-  
-  setDistribution(newDistribution);
-  
-  if (!showSavedClasses) {
-    saveToHistory(newDistribution, [], historyIndex, setHistory, setHistoryIndex);
-  }
-  
-  showToast(`✅ ${student.nama_lengkap} ditambahkan ke ${toClass}`, 'success');
+
+  showToast(`✅ ${student.nama_lengkap} ditambahkan ke ${toClass}`, "success");
 };
 
 // Get all students in distribution (for swap modal)
-export const getAllStudentsInDistribution = (currentDistribution, showSavedClasses) => {
+export const getAllStudentsInDistribution = (
+  currentDistribution,
+  showSavedClasses
+) => {
   const allInClasses = [];
   Object.entries(currentDistribution).forEach(([className, students]) => {
-    students.forEach(student => {
-      allInClasses.push({ 
-        ...student, 
+    students.forEach((student) => {
+      allInClasses.push({
+        ...student,
         className,
-        uniqueId: `${className}-${student.id}`
+        uniqueId: `${className}-${student.id}`,
       });
     });
   });
@@ -450,54 +507,63 @@ export const handleSwapStudents = (
   historyIndex
 ) => {
   if (!swapStudent1 || !swapStudent2) {
-    showToast('Pilih 2 siswa untuk ditukar', 'error');
+    showToast("Pilih 2 siswa untuk ditukar", "error");
     return;
   }
 
   if (!swapStudent1.student || !swapStudent2.student) {
-    showToast('Data siswa tidak valid', 'error');
+    showToast("Data siswa tidak valid", "error");
     return;
   }
 
   if (swapStudent1.className === swapStudent2.className) {
-    showToast('Siswa berada di kelas yang sama', 'error');
+    showToast("Siswa berada di kelas yang sama", "error");
     return;
   }
 
   const newDistribution = JSON.parse(JSON.stringify(currentDistribution));
-  
+
   const student1Exists = newDistribution[swapStudent1.className]?.some(
-    s => s.id === swapStudent1.student.id
+    (s) => s.id === swapStudent1.student.id
   );
   const student2Exists = newDistribution[swapStudent2.className]?.some(
-    s => s.id === swapStudent2.student.id
+    (s) => s.id === swapStudent2.student.id
   );
 
   if (!student1Exists || !student2Exists) {
-    showToast('Salah satu siswa sudah tidak ada di kelasnya', 'error');
+    showToast("Salah satu siswa sudah tidak ada di kelasnya", "error");
     return;
   }
 
   // Remove both students
-  newDistribution[swapStudent1.className] = newDistribution[swapStudent1.className].filter(
-    s => s.id !== swapStudent1.student.id
-  );
-  newDistribution[swapStudent2.className] = newDistribution[swapStudent2.className].filter(
-    s => s.id !== swapStudent2.student.id
-  );
-  
+  newDistribution[swapStudent1.className] = newDistribution[
+    swapStudent1.className
+  ].filter((s) => s.id !== swapStudent1.student.id);
+  newDistribution[swapStudent2.className] = newDistribution[
+    swapStudent2.className
+  ].filter((s) => s.id !== swapStudent2.student.id);
+
   // Swap them
   newDistribution[swapStudent1.className].push(swapStudent2.student);
   newDistribution[swapStudent2.className].push(swapStudent1.student);
-  
+
   setDistribution(newDistribution);
-  
+
   if (!showSavedClasses) {
-    saveToHistory(newDistribution, [], historyIndex, setHistory, setHistoryIndex);
+    saveToHistory(
+      newDistribution,
+      [],
+      historyIndex,
+      setHistory,
+      setHistoryIndex
+    );
   }
-  
-  showToast(`🔄 ${swapStudent1.student.nama_lengkap} ↔ ${swapStudent2.student.nama_lengkap}`, 'success');
-  
+
+  showToast(
+    `🔄 ${swapStudent1.student.nama_lengkap} ↔ ${swapStudent2.student.nama_lengkap}`,
+    "success"
+  );
+
   setShowSwapModal(false);
   setSwapStudent1(null);
   setSwapStudent2(null);

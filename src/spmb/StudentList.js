@@ -218,12 +218,18 @@ const StudentList = ({
             <tr>
                 <td class="label">No. Pendaftaran</td>
                 <td class="colon">:</td>
-                <td class="value"><strong>${student.no_pendaftaran || "....................................."}</strong></td>
+                <td class="value"><strong>${
+                  student.no_pendaftaran ||
+                  "....................................."
+                }</strong></td>
             </tr>
             <tr>
                 <td class="label">Tanggal Daftar</td>
                 <td class="colon">:</td>
-                <td class="value">${formatDateToDDMMYYYY(student.tanggal_daftar) || "....................................."}</td>
+                <td class="value">${
+                  formatDateToDDMMYYYY(student.tanggal_daftar) ||
+                  "....................................."
+                }</td>
             </tr>
         </table>
         
@@ -232,27 +238,41 @@ const StudentList = ({
             <tr>
                 <td class="label">Nama Lengkap</td>
                 <td class="colon">:</td>
-                <td class="value"><strong>${student.nama_lengkap || "....................................."}</strong></td>
+                <td class="value"><strong>${
+                  student.nama_lengkap ||
+                  "....................................."
+                }</strong></td>
             </tr>
             <tr>
                 <td class="label">NISN</td>
                 <td class="colon">:</td>
-                <td class="value">${student.nisn && student.nisn !== "-" ? student.nisn : "....................................."}</td>
+                <td class="value">${
+                  student.nisn && student.nisn !== "-"
+                    ? student.nisn
+                    : "....................................."
+                }</td>
             </tr>
             <tr>
                 <td class="label">Jenis Kelamin</td>
                 <td class="colon">:</td>
-                <td class="value">${student.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}</td>
+                <td class="value">${
+                  student.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"
+                }</td>
             </tr>
             <tr>
                 <td class="label">Tempat, Tanggal Lahir</td>
                 <td class="colon">:</td>
-                <td class="value">${student.tempat_lahir || ""}, ${formatDateToDDMMYYYY(student.tanggal_lahir) || ""}</td>
+                <td class="value">${student.tempat_lahir || ""}, ${
+        formatDateToDDMMYYYY(student.tanggal_lahir) || ""
+      }</td>
             </tr>
             <tr>
                 <td class="label">Asal Sekolah (SD)</td>
                 <td class="colon">:</td>
-                <td class="value">${student.asal_sekolah || "....................................."}</td>
+                <td class="value">${
+                  student.asal_sekolah ||
+                  "....................................."
+                }</td>
             </tr>
         </table>
         
@@ -262,34 +282,50 @@ const StudentList = ({
             <tr>
                 <td class="label">Nama Lengkap</td>
                 <td class="colon">:</td>
-                <td class="value">${student.nama_ayah || "....................................."}</td>
+                <td class="value">${
+                  student.nama_ayah || "....................................."
+                }</td>
             </tr>
             <tr>
                 <td class="label">Pekerjaan</td>
                 <td class="colon">:</td>
-                <td class="value">${student.pekerjaan_ayah || "....................................."}</td>
+                <td class="value">${
+                  student.pekerjaan_ayah ||
+                  "....................................."
+                }</td>
             </tr>
             <tr>
                 <td class="label">Pendidikan Terakhir</td>
                 <td class="colon">:</td>
-                <td class="value">${student.pendidikan_ayah || "....................................."}</td>
+                <td class="value">${
+                  student.pendidikan_ayah ||
+                  "....................................."
+                }</td>
             </tr>
             
             <tr><td colspan="3" class="parent-title">IBU KANDUNG</td></tr>
             <tr>
                 <td class="label">Nama Lengkap</td>
                 <td class="colon">:</td>
-                <td class="value">${student.nama_ibu || "....................................."}</td>
+                <td class="value">${
+                  student.nama_ibu || "....................................."
+                }</td>
             </tr>
             <tr>
                 <td class="label">Pekerjaan</td>
                 <td class="colon">:</td>
-                <td class="value">${student.pekerjaan_ibu || "....................................."}</td>
+                <td class="value">${
+                  student.pekerjaan_ibu ||
+                  "....................................."
+                }</td>
             </tr>
             <tr>
                 <td class="label">Pendidikan Terakhir</td>
                 <td class="colon">:</td>
-                <td class="value">${student.pendidikan_ibu || "....................................."}</td>
+                <td class="value">${
+                  student.pendidikan_ibu ||
+                  "....................................."
+                }</td>
             </tr>
         </table>
         
@@ -298,12 +334,16 @@ const StudentList = ({
             <tr>
                 <td class="label">No. HP / WhatsApp</td>
                 <td class="colon">:</td>
-                <td class="value">${student.no_hp || "....................................."}</td>
+                <td class="value">${
+                  student.no_hp || "....................................."
+                }</td>
             </tr>
             <tr>
                 <td class="label">Alamat Lengkap</td>
                 <td class="colon">:</td>
-                <td class="value">${student.alamat || "....................................."}</td>
+                <td class="value">${
+                  student.alamat || "....................................."
+                }</td>
             </tr>
         </table>
         
@@ -339,7 +379,7 @@ const StudentList = ({
       element.innerHTML = formHTML;
 
       const opt = {
-        margin: [8, 15, 8, 15], // Top, Right, Bottom, Left - lebih compact
+        margin: [8, 15, 8, 15],
         filename: `formulir_${student.nama_lengkap}_${student.no_pendaftaran}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
@@ -544,6 +584,14 @@ const StudentList = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        {/* 🔥 NIS - BARU DITAMBAHKAN */}
+        <div>
+          <div className="text-gray-500 mb-1">🆔 NIS</div>
+          <div className="font-medium text-blue-700 font-mono">
+            {student.nis || <span className="text-gray-400">Belum ada</span>}
+          </div>
+        </div>
+
         <div>
           <div className="text-gray-500 mb-1">Tempat, Tanggal Lahir</div>
           <div className="font-medium">
@@ -705,6 +753,12 @@ const StudentList = ({
               <thead className="bg-gradient-to-r from-blue-800 to-blue-600 text-white">
                 <tr>
                   <th className="p-3 text-left font-semibold text-sm">No</th>
+
+                  {/* 🔥 KOLOM BARU: NIS */}
+                  <th className="p-3 text-left font-semibold text-sm min-w-[140px]">
+                    NIS
+                  </th>
+
                   <th
                     className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 transition-colors text-sm min-w-[150px]"
                     onClick={() => handleSort("nama_lengkap")}>
@@ -743,7 +797,7 @@ const StudentList = ({
               <tbody>
                 {sortedStudents.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="p-8 text-center text-gray-500">
+                    <td colSpan="8" className="p-8 text-center text-gray-500">
                       <i className="fas fa-inbox text-4xl mb-2 block"></i>
                       {searchTerm
                         ? "Tidak ada data yang sesuai dengan pencarian"
@@ -758,6 +812,20 @@ const StudentList = ({
                       <td className="p-3 text-gray-600 font-semibold">
                         {getDisplayNumber(index)}
                       </td>
+
+                      {/* 🔥 CELL BARU: NIS */}
+                      <td className="p-3">
+                        {student.nis ? (
+                          <div className="text-sm font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded inline-block">
+                            {student.nis}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">
+                            Belum ada
+                          </span>
+                        )}
+                      </td>
+
                       <td className="p-3">
                         <div className="font-semibold text-gray-800">
                           {student.nama_lengkap}

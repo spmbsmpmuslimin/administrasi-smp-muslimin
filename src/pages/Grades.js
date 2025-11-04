@@ -35,17 +35,18 @@ const Grades = ({ user, onShowToast }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Assignment types
-  const assignmentTypes = ["NH1", "NH2", "NH3", "UTS", "UAS"];
+  // Assignment types - UPDATED: UTS -> PSTS, UAS -> PSAS
+  const assignmentTypes = ["NH1", "NH2", "NH3", "PSTS", "PSAS"];
 
-  // Auth check
+  // Auth check - REVISI: Mengambil full_name dan teacher_id
   useEffect(() => {
     const checkAuth = async () => {
       try {
         if (user) {
           const { data: teacherData, error: teacherError } = await supabase
             .from("users")
-            .select("teacher_id")
+            // REVISI: Ambil teacher_id DAN full_name
+            .select("teacher_id, full_name")
             .eq("username", user.username)
             .single();
 
@@ -54,6 +55,7 @@ const Grades = ({ user, onShowToast }) => {
             setMessage("Error: Data guru tidak ditemukan");
           } else if (teacherData) {
             setTeacherId(teacherData.teacher_id);
+            setTeacherName(teacherData.full_name); // SIMPAN full_name
           }
         } else {
           setMessage("Silakan login terlebih dahulu");
@@ -277,8 +279,8 @@ const Grades = ({ user, onShowToast }) => {
           NH1: { score: "", id: null },
           NH2: { score: "", id: null },
           NH3: { score: "", id: null },
-          UTS: { score: "", id: null },
-          UAS: { score: "", id: null },
+          PSTS: { score: "", id: null },
+          PSAS: { score: "", id: null },
           na: 0,
         };
 
@@ -302,11 +304,11 @@ const Grades = ({ user, onShowToast }) => {
         const nh1 = parseFloat(grades.NH1.score) || 0;
         const nh2 = parseFloat(grades.NH2.score) || 0;
         const nh3 = parseFloat(grades.NH3.score) || 0;
-        const uts = parseFloat(grades.UTS.score) || 0;
-        const uas = parseFloat(grades.UAS.score) || 0;
+        const psts = parseFloat(grades.PSTS.score) || 0;
+        const psas = parseFloat(grades.PSAS.score) || 0;
 
         const nhAvg = (nh1 + nh2 + nh3) / 3;
-        const na = nhAvg * 0.4 + uts * 0.3 + uas * 0.3;
+        const na = nhAvg * 0.4 + psts * 0.3 + psas * 0.3;
         formattedGrades[student.id].na = na.toFixed(2);
       });
 
@@ -325,12 +327,12 @@ const Grades = ({ user, onShowToast }) => {
     }
   }, [selectedClass, selectedSubject, academicYear, semester]);
 
-  // Calculate NA
-  const calculateNA = (nh1, nh2, nh3, uts, uas) => {
+  // Calculate NA - UPDATED: UTS -> PSTS, UAS -> PSAS
+  const calculateNA = (nh1, nh2, nh3, psts, psas) => {
     const nhAvg =
       (parseFloat(nh1 || 0) + parseFloat(nh2 || 0) + parseFloat(nh3 || 0)) / 3;
     const na =
-      nhAvg * 0.4 + parseFloat(uts || 0) * 0.3 + parseFloat(uas || 0) * 0.3;
+      nhAvg * 0.4 + parseFloat(psts || 0) * 0.3 + parseFloat(psas || 0) * 0.3;
     return na.toFixed(2);
   };
 
@@ -345,8 +347,8 @@ const Grades = ({ user, onShowToast }) => {
         updated.NH1.score,
         updated.NH2.score,
         updated.NH3.score,
-        updated.UTS.score,
-        updated.UAS.score
+        updated.PSTS.score,
+        updated.PSAS.score
       );
 
       return { ...prev, [studentId]: updated };
@@ -531,7 +533,7 @@ const Grades = ({ user, onShowToast }) => {
     }
   };
 
-  // ===== HANDLER EXPORT TO EXCEL =====
+  // ===== HANDLER EXPORT TO EXCEL - REVISI: MENGIRIM teacherId =====
   const handleExport = async () => {
     if (!selectedClass || !selectedSubject || students.length === 0) {
       setMessage("Pilih mata pelajaran dan kelas terlebih dahulu!");
@@ -549,6 +551,7 @@ const Grades = ({ user, onShowToast }) => {
       className: classes.find((c) => c.id === selectedClass)?.displayName,
       academicYear,
       semester,
+      teacherId, // TAMBAHAN: Mengirim teacherId untuk fetch nama di GradesExcel.js
     });
 
     setMessage(result.message);
@@ -643,7 +646,7 @@ const Grades = ({ user, onShowToast }) => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠</div>
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <p className="text-gray-700">
             Anda harus login untuk mengakses halaman ini
           </p>
@@ -842,11 +845,12 @@ const Grades = ({ user, onShowToast }) => {
                   <p className="text-sm text-gray-600 mt-1">
                     {selectedSubject} • {academicYear} • Semester {semester}
                   </p>
+                  {/* FIX SYNTAX ERROR DI BAWAH INI: Hapus tag <p> yang berlebihan */}
                   <p className="text-xs text-gray-500 mt-1">
-                    NA = Rata-rata NH (40%) + UTS (30%) + UAS (30%)
+                    NA = Rata-rata NH (40%) + PSTS (30%) + PSAS (30%)
                   </p>
                 </div>
-                
+
                 {/* TOMBOL SIMPAN, EXPORT & IMPORT SEJAJAR */}
                 <div className="flex gap-2">
                   <button
@@ -910,10 +914,10 @@ const Grades = ({ user, onShowToast }) => {
                       NH3
                     </th>
                     <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      UTS
+                      PSTS
                     </th>
                     <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      UAS
+                      PSAS
                     </th>
                     <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-indigo-50">
                       NA

@@ -3,15 +3,17 @@ import ExcelJS from "exceljs";
 import { supabase } from "../supabaseClient";
 
 // Calculate NA
-const calculateNA = (nh1, nh2, nh3, uts, uas) => {
+// Perubahan: uts -> psts, uas -> psas
+const calculateNA = (nh1, nh2, nh3, psts, psas) => {
   const nhAvg =
     (parseFloat(nh1 || 0) + parseFloat(nh2 || 0) + parseFloat(nh3 || 0)) / 3;
+  // Perubahan: uts -> psts, uas -> psas
   const na =
-    nhAvg * 0.4 + parseFloat(uts || 0) * 0.3 + parseFloat(uas || 0) * 0.3;
+    nhAvg * 0.4 + parseFloat(psts || 0) * 0.3 + parseFloat(psas || 0) * 0.3;
   return na.toFixed(2);
 };
 
-// Export to Excel
+// Export to Excel - REVISI: Mengambil teacherId untuk fetch full_name
 export const exportToExcel = async (params) => {
   const {
     students,
@@ -21,11 +23,27 @@ export const exportToExcel = async (params) => {
     className,
     academicYear,
     semester,
-    teacherName,
-    isSubjectTeacher = true, // TAMBAHAN: default true untuk Guru Mapel
+    teacherId, // Terima teacherId
+    isSubjectTeacher = true,
   } = params;
 
   try {
+    // NEW LOGIC: Fetch teacher full name from 'users' table using teacherId
+    let teacherFullName = "";
+    if (teacherId) {
+      const { data: teacherUser, error: teacherError } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("teacher_id", teacherId)
+        .single();
+
+      if (teacherUser) {
+        teacherFullName = teacherUser.full_name;
+      } else if (teacherError) {
+        console.error("Error fetching teacher name for export:", teacherError);
+      }
+    }
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Nilai Siswa");
 
@@ -57,6 +75,7 @@ export const exportToExcel = async (params) => {
     worksheet.getRow(4).height = 20;
 
     // Headers Tabel - dimulai di row 5
+    // Perubahan: UTS -> PSTS, UAS -> PSAS
     const headers = [
       "No",
       "NIS",
@@ -64,8 +83,8 @@ export const exportToExcel = async (params) => {
       "NH1",
       "NH2",
       "NH3",
-      "UTS",
-      "UAS",
+      "PSTS",
+      "PSAS",
       "NA",
     ];
     const headerRow = worksheet.getRow(5);
@@ -93,8 +112,8 @@ export const exportToExcel = async (params) => {
       { width: 8 }, // D - NH1
       { width: 8 }, // E - NH2
       { width: 8 }, // F - NH3
-      { width: 8 }, // G - UTS
-      { width: 8 }, // H - UAS
+      { width: 8 }, // G - PSTS
+      { width: 8 }, // H - PSAS
       { width: 8 }, // I - NA
     ];
 
@@ -110,8 +129,8 @@ export const exportToExcel = async (params) => {
         studentGrades.NH1?.score || "",
         studentGrades.NH2?.score || "",
         studentGrades.NH3?.score || "",
-        studentGrades.UTS?.score || "",
-        studentGrades.UAS?.score || "",
+        studentGrades.PSTS?.score || "",
+        studentGrades.PSAS?.score || "",
         na,
       ]);
 
@@ -159,12 +178,12 @@ export const exportToExcel = async (params) => {
       });
     });
 
-    // FOOTER SECTION - TAMBAHAN FOOTER
+    // FOOTER SECTION - REVISI TINGGI BARIS DAN NAMA GURU
     const lastTableRow = 5 + students.length;
 
     // 2 BARIS KOSONG SETELAH TABEL
-    worksheet.getRow(lastTableRow + 1).height = 10;
-    worksheet.getRow(lastTableRow + 2).height = 10;
+    worksheet.getRow(lastTableRow + 1).height = 20;
+    worksheet.getRow(lastTableRow + 2).height = 20;
 
     // FOOTER - di kolom F
     const footerRow1 = worksheet.getRow(lastTableRow + 3);
@@ -186,10 +205,10 @@ export const exportToExcel = async (params) => {
     // BARIS KOSONG UNTUK TANDA TANGAN
     worksheet.getRow(lastTableRow + 5).height = 20;
 
-    // NAMA GURU/WALI KELAS
+    // NAMA GURU/WALI KELAS - MENGGUNAKAN NAMA YANG SUDAH DI-FETCH
     const footerRow3 = worksheet.getRow(lastTableRow + 6);
     const footerCell3 = footerRow3.getCell(6); // Kolom F
-    footerCell3.value = `(${teacherName})`;
+    footerCell3.value = `(${teacherFullName})`; // Menggunakan teacherFullName
     footerCell3.font = { bold: true };
 
     // Generate & download
@@ -273,11 +292,11 @@ export const importFromExcel = async (file, params) => {
       const nh1 = parseFloat(row.getCell(4).value) || 0;
       const nh2 = parseFloat(row.getCell(5).value) || 0;
       const nh3 = parseFloat(row.getCell(6).value) || 0;
-      const uts = parseFloat(row.getCell(7).value) || 0;
-      const uas = parseFloat(row.getCell(8).value) || 0;
+      const psts = parseFloat(row.getCell(7).value) || 0;
+      const psas = parseFloat(row.getCell(8).value) || 0;
 
       // Validate scores
-      const scores = { NH1: nh1, NH2: nh2, NH3: nh3, UTS: uts, UAS: uas };
+      const scores = { NH1: nh1, NH2: nh2, NH3: nh3, PSTS: psts, PSAS: psas };
       let hasValidScore = false;
 
       for (const [type, score] of Object.entries(scores)) {

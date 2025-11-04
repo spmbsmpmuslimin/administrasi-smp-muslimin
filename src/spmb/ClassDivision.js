@@ -6,6 +6,8 @@ import {
   saveToHistory,
   handleUndo,
   handleRedo,
+  getTahunAjaran, // 🔥 BARU
+  formatTahunAjaran, // 🔥 BARU
 } from "./ClassDistribution";
 import {
   saveClassAssignments,
