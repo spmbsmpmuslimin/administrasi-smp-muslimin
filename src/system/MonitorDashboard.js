@@ -2,21 +2,30 @@ import React, { useState, useEffect, useRef } from "react";
 import HealthChecker from "./HealthChecker";
 import { supabase } from "../supabaseClient";
 
-// Animated Counter Component
 const AnimatedCounter = ({ value, duration = 1000 }) => {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    let start = 0;
-    const end = parseInt(value);
-    if (start === end) return;
+    const end = parseInt(value) || 0;
 
-    const incrementTime = (duration / end) * 1000;
+    if (end === 0) {
+      setCount(0);
+      return;
+    }
+
+    let start = 0;
+    const increment = Math.ceil(end / 20);
+    const stepTime = duration / 20;
+
     const timer = setInterval(() => {
-      start += 1;
-      setCount(start);
-      if (start === end) clearInterval(timer);
-    }, incrementTime);
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(start);
+      }
+    }, stepTime);
 
     return () => clearInterval(timer);
   }, [value, duration]);
@@ -24,47 +33,167 @@ const AnimatedCounter = ({ value, duration = 1000 }) => {
   return <span>{count}</span>;
 };
 
-// Circular Progress Component
-const CircularProgress = ({ progress, size = 120, strokeWidth = 8 }) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (progress / 100) * circumference;
+const CheckerProgressBar = ({ checker, isActive, isDone }) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (isActive) {
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) return prev;
+          return prev + Math.random() * 10;
+        });
+      }, 100);
+      return () => clearInterval(interval);
+    } else if (isDone) {
+      setProgress(100);
+    } else {
+      setProgress(0);
+    }
+  }, [isActive, isDone]);
 
   return (
-    <div className="relative inline-flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          fill="none"
-          className="text-gray-200"
+    <div
+      className={`p-4 rounded-lg border-2 transition-all duration-300 ${
+        isActive
+          ? "border-blue-400 bg-blue-50 shadow-lg scale-105"
+          : isDone
+          ? "border-green-400 bg-green-50"
+          : "border-gray-200 bg-gray-50"
+      }`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">
+            {isActive ? "🔄" : isDone ? "✅" : "⏳"}
+          </span>
+          <span
+            className={`font-semibold text-sm ${
+              isActive
+                ? "text-blue-700"
+                : isDone
+                ? "text-green-700"
+                : "text-gray-500"
+            }`}>
+            {checker.name}
+          </span>
+        </div>
+        {isDone && checker.time && (
+          <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded">
+            {checker.time}ms
+          </span>
+        )}
+      </div>
+
+      <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className={`h-full transition-all duration-300 ease-out ${
+            isActive
+              ? "bg-gradient-to-r from-blue-500 to-blue-600 animate-pulse"
+              : isDone
+              ? "bg-gradient-to-r from-green-500 to-green-600"
+              : "bg-gray-300"
+          }`}
+          style={{ width: `${progress}%` }}
         />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="text-blue-600 transition-all duration-500 ease-out"
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute text-center">
-        <div className="text-2xl font-bold text-gray-700">
+      </div>
+
+      {isActive && (
+        <div className="text-xs text-blue-600 font-semibold mt-1 text-right">
           {Math.round(progress)}%
         </div>
+      )}
+      {isDone && (
+        <div className="text-xs text-green-600 font-semibold mt-1 text-right">
+          ✓ Complete
+        </div>
+      )}
+    </div>
+  );
+};
+
+const OverallProgressBar = ({ progress, elapsedTime, currentPhase }) => {
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-blue-200">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <span className="animate-pulse">🔍</span>
+            System Health Check in Progress
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {currentPhase || "Initializing system scan..."}
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-3xl font-bold text-blue-600">
+            {(elapsedTime / 1000).toFixed(1)}s
+          </div>
+          <div className="text-xs text-gray-500">Elapsed Time</div>
+        </div>
+      </div>
+
+      <div className="relative">
+        <div className="flex justify-between text-sm font-semibold text-gray-700 mb-2">
+          <span>Overall Progress</span>
+          <span className="text-blue-600">{Math.round(progress)}%</span>
+        </div>
+        <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+          <div
+            className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 transition-all duration-500 ease-out relative overflow-hidden"
+            style={{ width: `${progress}%` }}>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer" />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-bold text-white drop-shadow-lg">
+              {progress > 5 && `${Math.round(progress)}%`}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 mt-4">
+        {[
+          { stage: 1, label: "Database" },
+          { stage: 2, label: "Validation" },
+          { stage: 3, label: "Logic" },
+          { stage: 4, label: "Health" },
+        ].map((item) => {
+          const stageProgress = ((progress - (item.stage - 1) * 25) / 25) * 100;
+          const isComplete = progress >= item.stage * 25;
+          const isActive =
+            progress >= (item.stage - 1) * 25 && progress < item.stage * 25;
+
+          return (
+            <div
+              key={item.stage}
+              className={`text-center p-2 rounded-lg transition-all ${
+                isComplete
+                  ? "bg-green-50 border border-green-300"
+                  : isActive
+                  ? "bg-blue-50 border border-blue-300"
+                  : "bg-gray-50 border border-gray-200"
+              }`}>
+              <div
+                className={`text-xs font-semibold ${
+                  isComplete
+                    ? "text-green-700"
+                    : isActive
+                    ? "text-blue-700"
+                    : "text-gray-500"
+                }`}>
+                {item.label}
+              </div>
+              <div className="text-lg">
+                {isComplete ? "✅" : isActive ? "🔄" : "⏳"}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-// Stats Card Component
 const StatsCard = ({
   icon,
   title,
@@ -104,13 +233,12 @@ const StatsCard = ({
   );
 };
 
-// Main Dashboard Component
 const MonitorDashboard = ({ user }) => {
   const userId = user?.id;
   const [isChecking, setIsChecking] = useState(false);
   const [progress, setProgress] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [currentChecker, setCurrentChecker] = useState(null);
+  const [currentPhase, setCurrentPhase] = useState("");
   const [results, setResults] = useState(null);
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -137,14 +265,25 @@ const MonitorDashboard = ({ user }) => {
   const startTimeRef = useRef(null);
   const isMountedRef = useRef(true);
   const healthCheckerRef = useRef(null);
+  const isSavingRef = useRef(false); // Flag to prevent duplicate saves
 
-  // Initialize HealthChecker and load history
   useEffect(() => {
     healthCheckerRef.current = new HealthChecker();
     isMountedRef.current = true;
 
-    // Load history from database
     loadHistoryFromDatabase();
+
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      .animate-shimmer {
+        animation: shimmer 2s infinite;
+      }
+    `;
+    document.head.appendChild(style);
 
     return () => {
       isMountedRef.current = false;
@@ -152,7 +291,88 @@ const MonitorDashboard = ({ user }) => {
     };
   }, []);
 
-  // Load history from Supabase
+  const saveResultsToDatabase = async (finalResults) => {
+    // Log stack trace to see who's calling this
+    console.log("🔍 STACK TRACE:", new Error().stack);
+    console.log("🔍 isSavingRef.current:", isSavingRef.current);
+
+    // Prevent duplicate saves
+    if (isSavingRef.current) {
+      console.log("⚠️ Save already in progress, skipping...");
+      return;
+    }
+
+    try {
+      isSavingRef.current = true;
+      console.log("🔒 Locking save operation at:", new Date().toISOString());
+
+      // Map status to valid database values (healthy, warning, critical ONLY)
+      let dbStatus = String(
+        finalResults.summary?.status || "healthy"
+      ).toLowerCase();
+
+      // Database constraint: CHECK (status = ANY (ARRAY['healthy', 'warning', 'critical']))
+      const validStatuses = ["healthy", "warning", "critical"];
+
+      if (!validStatuses.includes(dbStatus)) {
+        console.log(
+          `ℹ️ Mapping invalid status "${dbStatus}" to "healthy" for database constraint`
+        );
+        dbStatus = "healthy"; // Default to 'healthy' for 'info', 'unknown', etc.
+      }
+
+      const logEntry = {
+        checked_by: user?.id || null,
+        checked_at: new Date().toISOString(),
+        status: dbStatus, // Use validated status
+        total_issues: parseInt(finalResults.summary?.totalIssues) || 0,
+        critical_count: parseInt(finalResults.summary?.criticalCount) || 0,
+        warning_count: parseInt(finalResults.summary?.warningCount) || 0,
+        info_count: parseInt(finalResults.summary?.infoCount) || 0,
+        issues_detail: {
+          database: finalResults.results?.database || {},
+          validation: finalResults.results?.validation || {},
+          businessLogic: finalResults.results?.businessLogic || {},
+          appHealth: finalResults.results?.appHealth || {},
+        },
+        execution_time: parseInt(finalResults.executionTime) || null,
+      };
+
+      console.log(
+        "📤 Saving to database at:",
+        new Date().toISOString(),
+        logEntry
+      );
+
+      const { data, error } = await supabase
+        .from("system_health_logs")
+        .insert([logEntry])
+        .select();
+
+      if (error) {
+        console.error("❌ Database error:", error);
+        throw error;
+      }
+
+      console.log(
+        "✅ Saved to database successfully at:",
+        new Date().toISOString(),
+        data
+      );
+    } catch (error) {
+      console.error("💥 Error saving to database:", error);
+    } finally {
+      // Reset flag after a delay to prevent immediate re-saves
+      setTimeout(() => {
+        isSavingRef.current = false;
+        console.log(
+          "🔓 Unlocking save operation at:",
+          new Date().toISOString()
+        );
+      }, 2000);
+    }
+  };
+
   const loadHistoryFromDatabase = async () => {
     try {
       setIsLoadingHistory(true);
@@ -165,7 +385,6 @@ const MonitorDashboard = ({ user }) => {
 
       if (error) throw error;
 
-      // Transform database records to match our format
       const transformedHistory = data.map((record) => ({
         timestamp: record.checked_at,
         summary: {
@@ -174,7 +393,6 @@ const MonitorDashboard = ({ user }) => {
           warningCount: record.warning_count,
           infoCount: record.info_count,
           status: record.status,
-          totalChecksRun: 4, // Default value since we always run 4 checks
         },
         results: record.issues_detail,
         executionTime: record.execution_time,
@@ -194,7 +412,6 @@ const MonitorDashboard = ({ user }) => {
     }
   };
 
-  // Run actual health check - FIXED VERSION
   const runHealthCheck = async () => {
     if (isChecking) return;
 
@@ -204,11 +421,10 @@ const MonitorDashboard = ({ user }) => {
     setResults(null);
     setError(null);
     startTimeRef.current = Date.now();
+    isSavingRef.current = false; // Reset save flag when starting new check
 
-    // Clear existing timer
     if (timerRef.current) clearInterval(timerRef.current);
 
-    // Reset checkers
     const initialCheckers = [
       { id: "database", name: "Database Check", status: "pending", time: null },
       {
@@ -227,7 +443,6 @@ const MonitorDashboard = ({ user }) => {
     ];
     setCheckers(initialCheckers);
 
-    // Start elapsed timer
     timerRef.current = setInterval(() => {
       if (isMountedRef.current) {
         setElapsedTime(Date.now() - startTimeRef.current);
@@ -237,124 +452,89 @@ const MonitorDashboard = ({ user }) => {
     try {
       const checker = healthCheckerRef.current;
 
-      // ⚡ FIX: Run semua checks sekaligus pake Promise.all
-      const [
-        databaseResult,
-        validationResult,
-        businessLogicResult,
-        appHealthResult,
-      ] = await Promise.allSettled([
-        checker.runDatabaseCheck(),
-        checker.runDataValidationCheck(),
-        checker.runBusinessLogicCheck(),
-        checker.runAppHealthCheck(),
-      ]);
-
-      // ⚡ FIX: Update progress dan results
-      setProgress(100);
-      setCheckers((prev) =>
-        prev.map((c) => ({ ...c, status: "done", time: 500 }))
-      );
-
-      // ⚡ FIX: Build final results dari individual checks - NO DOUBLE EXECUTION!
-      const finalResults = {
-        summary: {
-          status: "healthy",
-          totalIssues: 0,
-          criticalCount: 0,
-          warningCount: 0,
-          infoCount: 0,
-          totalChecksRun: 4, // ⚡ PASTIKAN INI 4!
+      // Simulate progress for each phase
+      const phases = [
+        {
+          progress: 25,
+          phase: "🗄️ Checking database connections and integrity...",
         },
-        results: {},
-        executionTime: Date.now() - startTimeRef.current,
-        errors: [],
-      };
-
-      // Process each check result
-      const checkResults = [
-        { key: "database", result: databaseResult },
-        { key: "validation", result: validationResult },
-        { key: "businessLogic", result: businessLogicResult },
-        { key: "appHealth", result: appHealthResult },
+        {
+          progress: 50,
+          phase: "✅ Validating data consistency and structure...",
+        },
+        { progress: 75, phase: "🧠 Verifying business rules and logic..." },
+        { progress: 100, phase: "📱 Analyzing application health metrics..." },
       ];
 
-      checkResults.forEach(({ key, result }) => {
-        if (result.status === "fulfilled" && result.value) {
-          finalResults.results[key] = result.value;
-
-          // ⚡ FIX: Count ALL issues termasuk info
-          if (result.value.checks) {
-            result.value.checks.forEach((issue) => {
-              finalResults.summary.totalIssues++; // ⚡ INI YANG DIBENERIN
-              if (issue.severity === "critical")
-                finalResults.summary.criticalCount++;
-              else if (issue.severity === "warning")
-                finalResults.summary.warningCount++;
-              else if (issue.severity === "info")
-                finalResults.summary.infoCount++;
-            });
-          }
+      let phaseIndex = 0;
+      const progressInterval = setInterval(() => {
+        if (phaseIndex < phases.length && isMountedRef.current) {
+          setProgress(phases[phaseIndex].progress);
+          setCurrentPhase(phases[phaseIndex].phase);
+          phaseIndex++;
         } else {
-          // Handle failed checks
-          finalResults.results[key] = {
-            status: "critical",
-            checks: [
-              {
-                title: `${key} Check Failed`,
-                message: result.reason?.message || "Unknown error",
-                severity: "critical",
-                details: result.reason,
-              },
-            ],
-          };
-          finalResults.summary.totalIssues++;
-          finalResults.summary.criticalCount++;
+          clearInterval(progressInterval);
         }
-      });
+      }, 3000);
 
-      // ⚡ FIX: Determine overall status - include info issues
-      if (finalResults.summary.criticalCount > 0) {
-        finalResults.summary.status = "critical";
-      } else if (finalResults.summary.warningCount > 0) {
-        finalResults.summary.status = "warning";
-      } else if (finalResults.summary.infoCount > 0) {
-        finalResults.summary.status = "info"; // ⚡ INI YANG PENTING!
-      } else {
-        finalResults.summary.status = "healthy";
+      // Run full check (calls all checkers internally)
+      const checkResult = await checker.runFullCheck(userId);
+
+      clearInterval(progressInterval);
+
+      if (!checkResult.success) {
+        throw new Error(checkResult.error || "Health check failed");
       }
 
-      console.log("✅ [DASHBOARD] Final results:", finalResults);
+      // Update checker status with execution times
+      const updatedCheckers = [
+        {
+          id: "database",
+          name: "Database Check",
+          status: "done",
+          time: checkResult.results?.database?.executionTime || 0,
+        },
+        {
+          id: "validation",
+          name: "Data Validation",
+          status: "done",
+          time: checkResult.results?.validation?.executionTime || 0,
+        },
+        {
+          id: "businessLogic",
+          name: "Business Logic",
+          status: "done",
+          time: checkResult.results?.businessLogic?.executionTime || 0,
+        },
+        {
+          id: "appHealth",
+          name: "App Health",
+          status: "done",
+          time: checkResult.results?.appHealth?.executionTime || 0,
+        },
+      ];
 
-      // ⚡ TEMPORARY TEST: PAKSA KASIH CRITICAL ISSUE kalo ga ada
-      if (finalResults.summary.totalIssues === 0) {
-        console.log("🐛 [TEST] No critical issues found, adding test issue");
-        finalResults.summary.totalIssues = 3;
-        finalResults.summary.criticalCount = 1;
-        finalResults.summary.warningCount = 1;
-        finalResults.summary.infoCount = 1;
-        finalResults.summary.status = "critical";
+      const finalResults = {
+        timestamp: new Date().toISOString(),
+        summary: checkResult.summary,
+        results: checkResult.results,
+        executionTime: checkResult.executionTime,
+        errors: checkResult.errors,
+      };
 
-        // Juga tambah test issue ke results
-        if (!finalResults.results.appHealth.checks) {
-          finalResults.results.appHealth.checks = [];
-        }
-        finalResults.results.appHealth.checks.push({
-          title: "TEST Critical Issue",
-          message: "This is a forced critical issue for testing",
-          severity: "critical",
-          details: { description: "Testing critical issue display" },
-        });
-      }
+      console.log("✅ Final Results:", finalResults);
+      console.log("✅ Summary:", finalResults.summary);
+
+      // Save to database (with duplicate prevention)
+      console.log("📝 Calling saveResultsToDatabase...");
+      await saveResultsToDatabase(finalResults);
+      console.log("📝 saveResultsToDatabase completed");
 
       if (isMountedRef.current) {
+        setProgress(100);
+        setCheckers(updatedCheckers);
         setResults(finalResults);
-        setCurrentChecker(null);
-
-        // Save to database
-        await saveResultsToDatabase(finalResults);
-
-        // Reload history from database to get latest
+        setCurrentPhase("");
         await loadHistoryFromDatabase();
       }
     } catch (err) {
@@ -367,27 +547,6 @@ const MonitorDashboard = ({ user }) => {
       if (isMountedRef.current) {
         setIsChecking(false);
       }
-    }
-  };
-
-  // Save results to Supabase
-  const saveResultsToDatabase = async (results) => {
-    try {
-      const { error } = await supabase.from("system_health_logs").insert({
-        user_id: userId,
-        status: results.summary.status,
-        total_issues: results.summary.totalIssues,
-        critical_count: results.summary.criticalCount,
-        warning_count: results.summary.warningCount,
-        info_count: results.summary.infoCount,
-        issues_detail: results.results,
-        execution_time: results.executionTime,
-        checked_at: new Date().toISOString(),
-      });
-
-      if (error) throw error;
-    } catch (err) {
-      console.error("Error saving to database:", err);
     }
   };
 
@@ -508,7 +667,7 @@ const MonitorDashboard = ({ user }) => {
                         const { error } = await supabase
                           .from("system_health_logs")
                           .delete()
-                          .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+                          .neq("id", "00000000-0000-0000-0000-000000000000");
 
                         if (error) throw error;
 
@@ -532,7 +691,7 @@ const MonitorDashboard = ({ user }) => {
               </div>
             ) : history.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-2">📭</div>
+                <div className="text-4xl mb-2">🔭</div>
                 No history available
               </div>
             ) : (
@@ -580,101 +739,57 @@ const MonitorDashboard = ({ user }) => {
 
         {/* Progress Section */}
         {isChecking && (
-          <div className="bg-white rounded-lg shadow-lg p-8 border-2 border-blue-200">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  Health Check in Progress
-                </h2>
-                <p className="text-gray-600">
-                  Running comprehensive system analysis...
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-blue-600">
-                  {formatTime(elapsedTime)}
-                </div>
-                <div className="text-sm text-gray-500">Elapsed Time</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center mb-6">
-              <CircularProgress progress={progress} />
-            </div>
+          <>
+            <OverallProgressBar
+              progress={progress}
+              elapsedTime={elapsedTime}
+              currentPhase={currentPhase}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {checkers.map((checker) => {
-                const isActive = currentChecker === checker.id;
+                const isActive =
+                  progress >= checkers.indexOf(checker) * 25 &&
+                  progress < (checkers.indexOf(checker) + 1) * 25;
                 const isDone = checker.status === "done";
 
                 return (
-                  <div
+                  <CheckerProgressBar
                     key={checker.id}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      isActive
-                        ? "border-blue-400 bg-blue-50 scale-105"
-                        : isDone
-                        ? "border-green-400 bg-green-50"
-                        : "border-gray-200 bg-gray-50"
-                    }`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">
-                        {isActive ? "🔄" : isDone ? "✅" : "⏳"}
-                      </span>
-                      <span
-                        className={`font-semibold ${
-                          isActive
-                            ? "text-blue-700"
-                            : isDone
-                            ? "text-green-700"
-                            : "text-gray-500"
-                        }`}>
-                        {checker.name}
-                      </span>
-                    </div>
-                    {isDone && checker.time && (
-                      <div className="text-sm text-gray-600">
-                        {checker.time}ms
-                      </div>
-                    )}
-                    {isActive && (
-                      <div className="mt-2 h-1 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-600 animate-pulse"
-                          style={{ width: "70%" }}
-                        />
-                      </div>
-                    )}
-                  </div>
+                    checker={checker}
+                    isActive={isActive}
+                    isDone={isDone}
+                  />
                 );
               })}
             </div>
-          </div>
+          </>
         )}
 
         {/* Results Section */}
-        {!isChecking && results && results.summary && (
+        {!isChecking && results && (
           <>
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
-                icon={getStatusIcon(results.summary.status)}
+                icon={getStatusIcon(results.summary?.status || "healthy")}
                 title="Overall Status"
-                value={results.summary.status.toUpperCase()}
-                color={getStatusColor(results.summary.status)}
+                value={(results.summary?.status || "unknown").toUpperCase()}
+                color={getStatusColor(results.summary?.status || "gray")}
                 isAnimating={true}
               />
               <StatsCard
                 icon="📊"
                 title="Total Issues"
-                value={results.summary.totalIssues}
-                subtitle={`${results.summary.criticalCount || 0} critical, ${
-                  results.summary.warningCount || 0
-                } warning, ${results.summary.infoCount || 0} info`}
+                value={Number(results.summary?.totalIssues) || 0}
+                subtitle={`${
+                  Number(results.summary?.criticalCount) || 0
+                } critical, ${
+                  Number(results.summary?.warningCount) || 0
+                } warning, ${Number(results.summary?.infoCount) || 0} info`}
                 color={
-                  results.summary.totalIssues === 0
+                  (Number(results.summary?.totalIssues) || 0) === 0
                     ? "green"
-                    : results.summary.criticalCount > 0
+                    : (Number(results.summary?.criticalCount) || 0) > 0
                     ? "red"
                     : "yellow"
                 }
@@ -683,7 +798,7 @@ const MonitorDashboard = ({ user }) => {
               <StatsCard
                 icon="⚡"
                 title="Execution Time"
-                value={formatTime(results.executionTime)}
+                value={formatTime(results.executionTime || 0)}
                 subtitle="Total scan duration"
                 color="blue"
                 isAnimating={false}
@@ -691,14 +806,13 @@ const MonitorDashboard = ({ user }) => {
               <StatsCard
                 icon="🔧"
                 title="Checks Run"
-                value={results.summary.totalChecksRun || 4} // FIX: Komentar dihapus dari dalam properti value
+                value={4}
                 subtitle="Database, Validation, Logic, Health"
                 color="gray"
                 isAnimating={true}
               />
             </div>
 
-            {/* Detailed Results */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Checker Results */}
               <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
@@ -706,39 +820,57 @@ const MonitorDashboard = ({ user }) => {
                   Checker Results
                 </h3>
                 <div className="space-y-3">
-                  {Object.entries(results.results || {})
-                    .filter(([_, value]) => value !== null)
-                    .map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">
-                            {getStatusIcon(value?.status || "info")}
-                          </span>
-                          <div>
-                            <div className="font-medium text-gray-800 capitalize">
-                              {key.replace(/([A-Z])/g, " $1").trim()}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {value?.checks?.length || 0} issues found
+                  {checkers
+                    .filter((c) => c.status === "done")
+                    .map((checker) => {
+                      const resultKey = checker.id;
+                      const value = results.results?.[resultKey];
+
+                      // Safely get issue count
+                      let issueCount = 0;
+                      if (value?.issues && Array.isArray(value.issues)) {
+                        issueCount = value.issues.length;
+                      } else if (value?.checks && Array.isArray(value.checks)) {
+                        issueCount = value.checks.length;
+                      }
+
+                      const status =
+                        value?.status ||
+                        (issueCount === 0 ? "healthy" : "info");
+
+                      return (
+                        <div
+                          key={checker.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">
+                              {getStatusIcon(status)}
+                            </span>
+                            <div>
+                              <div className="font-medium text-gray-800">
+                                {checker.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {issueCount} issue{issueCount !== 1 ? "s" : ""}{" "}
+                                found • {checker.time || 0}ms
+                              </div>
                             </div>
                           </div>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              status === "healthy"
+                                ? "bg-green-100 text-green-700"
+                                : status === "warning"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : status === "critical"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}>
+                            {String(status)}
+                          </span>
                         </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            value?.status === "healthy"
-                              ? "bg-green-100 text-green-700"
-                              : value?.status === "warning"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : value?.status === "critical"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}>
-                          {value?.status || "unknown"}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
 
@@ -788,60 +920,180 @@ const MonitorDashboard = ({ user }) => {
               </div>
             </div>
 
-            {/* Issues Detail (if any) */}
+            {/* Issues Detail */}
             {results.summary.totalIssues > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                  Issues Found
+                <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                  <span>🔍</span>
+                  Issues Found ({results.summary.totalIssues})
                 </h3>
                 <div className="space-y-3">
-                  {Object.entries(results.results || {}).map(
-                    ([checkerName, checkerResult]) =>
-                      checkerResult?.checks?.map((issue, idx) => (
-                        <div
-                          key={`${checkerName}-${idx}`}
-                          className={`p-4 rounded-lg border-l-4 ${
-                            issue.severity === "critical"
-                              ? "border-red-500 bg-red-50"
+                  {(() => {
+                    console.log(
+                      "🔍 DEBUG - Results structure:",
+                      results.results
+                    );
+
+                    const allIssues = [];
+
+                    Object.entries(results.results || {}).forEach(
+                      ([checkerName, checkerResult]) => {
+                        const issues =
+                          checkerResult?.issues || checkerResult?.checks || [];
+
+                        if (!Array.isArray(issues) || issues.length === 0)
+                          return;
+
+                        console.log(
+                          `🔍 DEBUG - ${checkerName} issues:`,
+                          issues
+                        );
+
+                        issues.forEach((issue, idx) => {
+                          console.log(
+                            `🔍 DEBUG - Issue ${idx}:`,
+                            issue,
+                            "Type:",
+                            typeof issue
+                          );
+
+                          // Handle different issue formats - ensure everything is a string or null
+                          let issueMessage = "Unknown issue";
+                          let issueDetails = null;
+                          let issueSeverity = "info";
+                          let issueTable = null;
+                          let issueCount = null;
+                          let issueCategory = null;
+
+                          if (typeof issue === "string") {
+                            issueMessage = issue;
+                          } else if (
+                            typeof issue === "object" &&
+                            issue !== null
+                          ) {
+                            // Safely extract message
+                            if (issue.message) {
+                              issueMessage = String(issue.message);
+                            } else if (issue.description) {
+                              issueMessage = String(issue.description);
+                            }
+
+                            // Safely extract other fields
+                            if (
+                              issue.details &&
+                              typeof issue.details === "string"
+                            ) {
+                              issueDetails = issue.details;
+                            } else if (
+                              issue.details &&
+                              typeof issue.details === "object"
+                            ) {
+                              issueDetails = JSON.stringify(issue.details);
+                            }
+
+                            if (issue.severity)
+                              issueSeverity = String(issue.severity);
+                            if (issue.table) issueTable = String(issue.table);
+                            if (issue.count) issueCount = Number(issue.count);
+
+                            // Handle category - could be string or object
+                            if (issue.category) {
+                              if (typeof issue.category === "string") {
+                                issueCategory = issue.category;
+                              } else if (typeof issue.category === "object") {
+                                issueCategory = JSON.stringify(issue.category);
+                              }
+                            }
+                          }
+
+                          const displayName =
+                            checkerName === "validation"
+                              ? "Data Validation"
+                              : checkerName === "businessLogic"
+                              ? "Business Logic"
+                              : checkerName === "appHealth"
+                              ? "App Health"
+                              : checkerName === "database"
+                              ? "Database Check"
+                              : String(checkerName);
+
+                          allIssues.push({
+                            key: `${checkerName}-${idx}`,
+                            message: issueMessage,
+                            details: issueDetails,
+                            severity: issueSeverity,
+                            table: issueTable,
+                            count: issueCount,
+                            category: issueCategory,
+                            source: displayName,
+                          });
+                        });
+                      }
+                    );
+
+                    return allIssues.map((issue) => (
+                      <div
+                        key={issue.key}
+                        className={`p-4 rounded-lg border-l-4 transition-all hover:shadow-md ${
+                          issue.severity === "critical"
+                            ? "border-red-500 bg-red-50"
+                            : issue.severity === "warning"
+                            ? "border-yellow-500 bg-yellow-50"
+                            : "border-blue-500 bg-blue-50"
+                        }`}>
+                        <div className="flex items-start gap-3">
+                          <span className="text-xl flex-shrink-0">
+                            {issue.severity === "critical"
+                              ? "🔴"
                               : issue.severity === "warning"
-                              ? "border-yellow-500 bg-yellow-50"
-                              : "border-blue-500 bg-blue-50"
-                          }`}>
-                          <div className="flex items-start gap-3">
-                            <span className="text-xl">
-                              {issue.severity === "critical"
-                                ? "🔴"
-                                : issue.severity === "warning"
-                                ? "⚠️"
-                                : "ℹ️"}
-                            </span>
-                            <div className="flex-1">
-                              <div className="font-semibold text-gray-800 capitalize">
-                                {checkerName.replace(/([A-Z])/g, " $1").trim()}
-                              </div>
-                              <div className="text-sm text-gray-700 mt-1">
-                                {issue.message}
-                              </div>
-                              {issue.details && (
-                                <div className="text-xs text-gray-600 mt-2 font-mono bg-white p-2 rounded">
-                                  {JSON.stringify(issue.details, null, 2)}
-                                </div>
-                              )}
+                              ? "⚠️"
+                              : "ℹ️"}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-gray-800 mb-1">
+                              {issue.message}
                             </div>
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-semibold ${
-                                issue.severity === "critical"
-                                  ? "bg-red-100 text-red-700"
-                                  : issue.severity === "warning"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-blue-100 text-blue-700"
-                              }`}>
-                              {issue.severity}
-                            </span>
+                            {issue.details && (
+                              <div className="text-sm text-gray-700">
+                                {issue.details}
+                              </div>
+                            )}
+                            {issue.table && (
+                              <div className="mt-2 text-xs text-gray-500">
+                                <span className="font-semibold">Table:</span>{" "}
+                                {issue.table}
+                                {issue.count && (
+                                  <span className="ml-2">
+                                    • {issue.count} affected
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {issue.category && (
+                              <div className="mt-1 text-xs text-gray-500">
+                                <span className="inline-block bg-white px-2 py-1 rounded border border-gray-300">
+                                  {issue.category}
+                                </span>
+                              </div>
+                            )}
+                            <div className="mt-1 text-xs text-gray-400">
+                              From: {issue.source}
+                            </div>
                           </div>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-semibold flex-shrink-0 ${
+                              issue.severity === "critical"
+                                ? "bg-red-100 text-red-700"
+                                : issue.severity === "warning"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}>
+                            {issue.severity}
+                          </span>
                         </div>
-                      ))
-                  )}
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
             )}

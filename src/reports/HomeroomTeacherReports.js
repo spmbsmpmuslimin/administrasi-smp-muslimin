@@ -18,12 +18,10 @@ import {
   Users,
 } from "lucide-react";
 import { exportToExcel } from "./ReportExcel";
-// ✅ NEW: Import specific modals instead of universal modal
 import HomeroomReportModal from "./modals/HomeroomReportModal";
 import TeacherReportModal from "./modals/TeacherReportModal";
-import AcademicGradesView from "./modals/AcademicGradesView";
 
-// ✅ IMPORT HELPERS
+// ✅ IMPORT HELPERS (with new month helpers)
 import {
   fetchStudentsData,
   fetchAttendanceDailyData,
@@ -32,11 +30,13 @@ import {
   buildFilterDescription,
   calculateFinalGrades,
   REPORT_HEADERS,
+  getMonthOptions,
+  getYearOptions,
+  getMonthDateRange,
 } from "./ReportHelpers";
 
 // ==================== CONSTANTS ====================
 
-// ✅ FIX: Tailwind color classes mapping
 const COLOR_CLASSES = {
   indigo: {
     bg: "bg-indigo-100",
@@ -88,20 +88,13 @@ const COLOR_CLASSES = {
   },
 };
 
-// ✅ FIX: Date helpers
-const getDefaultStartDate = () => {
-  const date = new Date();
-  date.setDate(1);
-  return date.toISOString().split("T")[0];
-};
-
-const getDefaultEndDate = () => {
-  return new Date().toISOString().split("T")[0];
-};
+// ✅ NEW: Get current month/year as default
+const getCurrentMonth = () =>
+  String(new Date().getMonth() + 1).padStart(2, "0");
+const getCurrentYear = () => String(new Date().getFullYear());
 
 // ==================== COMPONENTS ====================
 
-// ✅ FIXED: StatCard with proper color classes
 const StatCard = ({
   icon: Icon,
   label,
@@ -131,112 +124,101 @@ const StatCard = ({
   );
 };
 
+// ✅ FIXED: FilterPanel - 1 Row, Always Visible
 const FilterPanel = ({
   filters,
   onFilterChange,
   onReset,
   academicYears = [],
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const activeFilterCount = useMemo(() => {
-    let count = 0;
-    ["start_date", "end_date", "academic_year", "semester"].forEach((key) => {
-      if (filters[key] && filters[key] !== "") count++;
-    });
-    return count;
-  }, [filters]);
+  const monthOptions = getMonthOptions();
+  const yearOptions = getYearOptions();
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-slate-600" />
-          <h3 className="font-semibold text-slate-800">Filter Laporan</h3>
-          {activeFilterCount > 0 && (
-            <span className="ml-2 bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">
-              {activeFilterCount} Filter Aktif
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-slate-600 hover:text-slate-800">
-          <ChevronDown
-            className={`w-5 h-5 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
+      <div className="flex items-center gap-2 mb-3">
+        <Filter className="w-5 h-5 text-slate-600" />
+        <h3 className="font-semibold text-slate-800">Filter Laporan</h3>
       </div>
 
-      {isOpen && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-3 border-t border-slate-200">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Dari Tanggal
-            </label>
-            <input
-              type="date"
-              value={filters.start_date || ""}
-              onChange={(e) => onFilterChange("start_date", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Sampai Tanggal
-            </label>
-            <input
-              type="date"
-              value={filters.end_date || ""}
-              onChange={(e) => onFilterChange("end_date", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Tahun Ajaran
-            </label>
-            <select
-              value={filters.academic_year || ""}
-              onChange={(e) => onFilterChange("academic_year", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-              <option value="">Semua Tahun</option>
-              {academicYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Semester
-            </label>
-            <select
-              value={filters.semester || ""}
-              onChange={(e) => onFilterChange("semester", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-              <option value="">Semua Semester</option>
-              <option value="1">Semester 1</option>
-              <option value="2">Semester 2</option>
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={onReset}
-              className="w-full px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
-              <X className="w-4 h-4" />
-              Reset Filter
-            </button>
-          </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Month Dropdown */}
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+            Bulan
+          </label>
+          <select
+            value={filters.month || getCurrentMonth()}
+            onChange={(e) => onFilterChange("month", e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            {monthOptions.map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+
+        {/* Year Dropdown */}
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+            Tahun
+          </label>
+          <select
+            value={filters.year || getCurrentYear()}
+            onChange={(e) => onFilterChange("year", e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Academic Year */}
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+            Tahun Ajaran
+          </label>
+          <select
+            value={filters.academic_year || ""}
+            onChange={(e) => onFilterChange("academic_year", e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">Semua</option>
+            {academicYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Semester */}
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+            Semester
+          </label>
+          <select
+            value={filters.semester || ""}
+            onChange={(e) => onFilterChange("semester", e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">Semua</option>
+            <option value="1">Semester 1</option>
+            <option value="2">Semester 2</option>
+          </select>
+        </div>
+
+        {/* Reset Button */}
+        <div className="col-span-2 md:col-span-3 lg:col-span-2 flex items-end">
+          <button
+            onClick={onReset}
+            className="w-full px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors">
+            <X className="w-4 h-4" />
+            Reset Filter
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -250,7 +232,6 @@ const HomeroomTeacherReports = ({ user }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // ✅ FIX: Initialize stats with default values
   const [stats, setStats] = useState({
     totalStudents: 0,
     presentToday: 0,
@@ -266,7 +247,13 @@ const HomeroomTeacherReports = ({ user }) => {
     totalAttendances: 0,
   });
 
-  const [filters, setFilters] = useState({ class_id: user?.homeroom_class_id });
+  // ✅ FIXED: Initialize with month/year instead of date range
+  const [filters, setFilters] = useState({
+    class_id: user?.homeroom_class_id,
+    month: getCurrentMonth(),
+    year: getCurrentYear(),
+  });
+
   const [previewModal, setPreviewModal] = useState({
     isOpen: false,
     data: null,
@@ -275,11 +262,8 @@ const HomeroomTeacherReports = ({ user }) => {
   const [alertStudents, setAlertStudents] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
   const [teacherAssignments, setTeacherAssignments] = useState([]);
-
-  // ✅ NEW: Track if initial data loaded
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  // ✅ FIX: Race condition - load all data in parallel with better error handling
   useEffect(() => {
     const loadAllData = async () => {
       if (!user?.homeroom_class_id) {
@@ -295,14 +279,12 @@ const HomeroomTeacherReports = ({ user }) => {
         setLoading(true);
         setError(null);
 
-        // ✅ FIX: Use Promise.allSettled to handle partial failures
         const results = await Promise.allSettled([
           fetchAcademicYears(),
           fetchStats(),
           fetchTeacherAssignments(),
         ]);
 
-        // ✅ Check for any failures
         const failures = results.filter((r) => r.status === "rejected");
         if (failures.length > 0) {
           console.error("Some data failed to load:", failures);
@@ -324,7 +306,6 @@ const HomeroomTeacherReports = ({ user }) => {
     loadAllData();
   }, [user]);
 
-  // ✅ FIX: Better error handling with try-catch
   const fetchTeacherAssignments = async () => {
     try {
       const { data, error } = await supabase
@@ -353,7 +334,6 @@ const HomeroomTeacherReports = ({ user }) => {
           });
         } catch (statsErr) {
           console.error("Error fetching teacher stats:", statsErr);
-          // Don't throw, just set empty stats
           setTeacherStats({
             totalClasses: 0,
             totalSubjects: 0,
@@ -429,7 +409,6 @@ const HomeroomTeacherReports = ({ user }) => {
       setAlertStudents(data?.alert_students || []);
     } catch (err) {
       console.error("Error fetching stats:", err);
-      // ✅ Set default stats on error
       setStats({
         totalStudents: 0,
         presentToday: 0,
@@ -446,18 +425,24 @@ const HomeroomTeacherReports = ({ user }) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  // ✅ FIX: Consistent filter reset
+  // ✅ FIXED: Reset filters with month/year
   const resetFilters = () => {
     if (activeTab === "homeroom") {
-      setFilters({ class_id: user.homeroom_class_id });
+      setFilters({
+        class_id: user.homeroom_class_id,
+        month: getCurrentMonth(),
+        year: getCurrentYear(),
+      });
     } else {
-      setFilters({});
+      setFilters({
+        month: getCurrentMonth(),
+        year: getCurrentYear(),
+      });
     }
     setError(null);
     setSuccess(null);
   };
 
-  // ✅ FIXED: Fetch Report Data with proper validation
   const fetchReportData = async (reportType) => {
     try {
       let reportTitle = "";
@@ -488,11 +473,12 @@ const HomeroomTeacherReports = ({ user }) => {
 
           case "grades":
             reportTitle = "DATA NILAI AKADEMIK WALI KELAS";
+            // ✅ FIXED: isHomeroom = true to get final grades only
             result = await fetchGradesData(homeroomFilters, null, true);
 
             // ✅ SORT BY SUBJECT → STUDENT NAME
             if (result && result.fullData && Array.isArray(result.fullData)) {
-              console.log("🔄 Sorting grades (homeroom)...");
+              console.log("📄 Sorting grades (homeroom)...");
               result.fullData.sort((a, b) => {
                 const subjectCompare = (a.subject || "").localeCompare(
                   b.subject || ""
@@ -501,7 +487,7 @@ const HomeroomTeacherReports = ({ user }) => {
                 return (a.full_name || "").localeCompare(b.full_name || "");
               });
               result.preview = result.fullData.slice(0, 100);
-              console.log("✅ Sorted! First item:", result.fullData[0]);
+              console.log("✅ Sorted! Total records:", result.fullData.length);
             }
             break;
 
@@ -536,7 +522,7 @@ const HomeroomTeacherReports = ({ user }) => {
 
             // ✅ SORT BY SUBJECT → STUDENT NAME
             if (result && result.fullData && Array.isArray(result.fullData)) {
-              console.log("🔄 Sorting grades (teacher)...");
+              console.log("📄 Sorting grades (teacher)...");
               result.fullData.sort((a, b) => {
                 const subjectCompare = (a.subject || "").localeCompare(
                   b.subject || ""
@@ -545,7 +531,7 @@ const HomeroomTeacherReports = ({ user }) => {
                 return (a.full_name || "").localeCompare(b.full_name || "");
               });
               result.preview = result.fullData.slice(0, 100);
-              console.log("✅ Sorted! First item:", result.fullData[0]);
+              console.log("✅ Sorted! Total records:", result.fullData.length);
             }
             break;
 
@@ -575,8 +561,11 @@ const HomeroomTeacherReports = ({ user }) => {
               };
             }
 
-            const startDate = filters.start_date || getDefaultStartDate();
-            const endDate = filters.end_date || getDefaultEndDate();
+            // ✅ Use month/year from filters
+            const { startDate, endDate } = getMonthDateRange(
+              filters.month,
+              filters.year
+            );
 
             let query = supabase
               .from("attendances")
@@ -725,19 +714,16 @@ const HomeroomTeacherReports = ({ user }) => {
         data = await fetchReportData(reportType);
       }
 
-      // ✅ SORTING BEFORE EXPORT - Apply sorting based on report type
+      // ✅ SORTING BEFORE EXPORT
       if (data.fullData && Array.isArray(data.fullData)) {
         // Sort NILAI AKADEMIK (grades) - By Subject → Student Name
         if (reportType === "grades" || reportType === "teacher-grades") {
-          console.log("🔄 Sorting grades data before export...");
+          console.log("📄 Sorting grades data before export...");
           data.fullData.sort((a, b) => {
-            // Sort by subject first (A-Z)
             const subjectCompare = (a.subject || "").localeCompare(
               b.subject || ""
             );
             if (subjectCompare !== 0) return subjectCompare;
-
-            // Then sort by student name (A-Z)
             return (a.full_name || "").localeCompare(b.full_name || "");
           });
           console.log("✅ Grades data sorted!");
@@ -748,9 +734,8 @@ const HomeroomTeacherReports = ({ user }) => {
           reportType === "attendance" ||
           reportType === "teacher-attendance"
         ) {
-          console.log("🔄 Sorting attendance data before export...");
+          console.log("📄 Sorting attendance data before export...");
           data.fullData.sort((a, b) => {
-            // Parse dates (format: "DD/MM/YYYY")
             const parseDate = (dateStr) => {
               if (!dateStr) return new Date(0);
               const parts = dateStr.split("/");
@@ -762,8 +747,6 @@ const HomeroomTeacherReports = ({ user }) => {
 
             const dateA = parseDate(a.date);
             const dateB = parseDate(b.date);
-
-            // Newest first
             return dateB - dateA;
           });
           console.log("✅ Attendance data sorted!");
@@ -771,7 +754,7 @@ const HomeroomTeacherReports = ({ user }) => {
 
         // Sort REKAP KEHADIRAN - By Name (A-Z)
         else if (reportType === "attendance-recap") {
-          console.log("🔄 Sorting attendance recap before export...");
+          console.log("📄 Sorting attendance recap before export...");
           data.fullData.sort((a, b) => {
             return (a.name || "").localeCompare(b.name || "");
           });
@@ -780,7 +763,7 @@ const HomeroomTeacherReports = ({ user }) => {
 
         // Sort DATA SISWA - By NIS
         else if (reportType === "students") {
-          console.log("🔄 Sorting students data before export...");
+          console.log("📄 Sorting students data before export...");
           data.fullData.sort((a, b) => {
             return (a.nis || "").localeCompare(b.nis || "");
           });
@@ -814,7 +797,6 @@ const HomeroomTeacherReports = ({ user }) => {
     }
   };
 
-  // ✅ FIX: Define report cards using useMemo to prevent recreation on every render
   const homeroomReports = useMemo(
     () => [
       {
@@ -845,7 +827,7 @@ const HomeroomTeacherReports = ({ user }) => {
         id: "grades",
         icon: BarChart3,
         title: "Nilai Akademik",
-        description: "Data nilai semua mapel",
+        description: "Nilai akhir semua mata pelajaran",
         stats: `Kelas ${user?.homeroom_class_id || "-"}`,
         color: "purple",
       },
@@ -888,7 +870,6 @@ const HomeroomTeacherReports = ({ user }) => {
     [activeTab, homeroomReports, teacherReports]
   );
 
-  // ✅ FIX: Better loading state - only show spinner on initial load
   if (loading && !dataLoaded) {
     return (
       <div className="min-h-screen bg-slate-50 p-6">
@@ -904,7 +885,6 @@ const HomeroomTeacherReports = ({ user }) => {
     );
   }
 
-  // ✅ NEW: Handle case where user has no homeroom class assigned
   if (!user?.homeroom_class_id && activeTab === "homeroom") {
     return (
       <div className="min-h-screen bg-slate-50 p-6">
@@ -1085,7 +1065,7 @@ const HomeroomTeacherReports = ({ user }) => {
           academicYears={academicYears}
         />
 
-        {/* ✅ FIX: Reports Grid with proper defensive rendering */}
+        {/* Reports Grid */}
         {currentReports && currentReports.length > 0 ? (
           <div
             className={`grid grid-cols-1 ${
@@ -1297,7 +1277,7 @@ const HomeroomTeacherReports = ({ user }) => {
               <h4 className="font-medium text-indigo-900 mb-1">Tips:</h4>
               <p className="text-sm text-indigo-700">
                 {activeTab === "homeroom"
-                  ? "Export laporan presensi dan nilai secara berkala untuk monitoring performa siswa. Gunakan data ini untuk parent meeting dan evaluasi kelas."
+                  ? "Export laporan presensi dan nilai secara berkala untuk monitoring performa siswa. Nilai Akademik menampilkan NILAI AKHIR (NA) yang dihitung dari: NH×40% + PSTS×30% + PSAS×30%."
                   : "Gunakan laporan guru mapel untuk analisis performa siswa per mata pelajaran. Bandingkan hasil antar kelas untuk evaluasi metode pengajaran."}
               </p>
             </div>
@@ -1305,7 +1285,7 @@ const HomeroomTeacherReports = ({ user }) => {
         </div>
       </div>
 
-      {/* ✅ UPDATED: Conditional Modal Rendering based on activeTab */}
+      {/* Conditional Modal Rendering based on activeTab */}
       {activeTab === "homeroom" ? (
         <HomeroomReportModal
           isOpen={previewModal.isOpen}

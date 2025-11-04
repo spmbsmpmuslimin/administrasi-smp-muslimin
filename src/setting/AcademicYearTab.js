@@ -9,6 +9,9 @@ import {
   Plus,
   UserPlus,
   Users,
+  Clock,
+  PlayCircle,
+  PauseCircle,
 } from "lucide-react";
 
 const AcademicYearTab = ({
@@ -29,25 +32,59 @@ const AcademicYearTab = ({
     inProgress: false,
   });
 
+  // ✅ NEW: State untuk semester
+  const [semesters, setSemesters] = useState([]);
+  const [showAddSemester, setShowAddSemester] = useState(false);
+  const [newSemester, setNewSemester] = useState({
+    year: "",
+    semester: 1,
+    start_date: "",
+    end_date: "",
+  });
+
   // Default config jika schoolConfig belum loaded
   const config = {
     schoolName: schoolConfig?.schoolName || "SMP Muslimin Cililin",
     schoolLevel: schoolConfig?.schoolLevel || "SMP",
-    grades: ["7", "8", "9"], // ✅ FIXED: Paksa pake angka biasa (bukan romawi)
-    classesPerGrade: schoolConfig?.classesPerGrade || ["A", "B", "C", "D", "E", "F"],
+    grades: ["7", "8", "9"],
+    classesPerGrade: schoolConfig?.classesPerGrade || [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+    ],
   };
 
   const graduatingGrade = config.grades[config.grades.length - 1];
 
   useEffect(() => {
     loadSchoolData();
+    loadSemesters(); // ✅ Load semester data
   }, []);
+
+  // ✅ NEW: Load semesters from database
+  const loadSemesters = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("academic_years")
+        .select("*")
+        .order("year", { ascending: false })
+        .order("semester", { ascending: false });
+
+      if (error) throw error;
+      setSemesters(data || []);
+    } catch (error) {
+      console.error("Error loading semesters:", error);
+      showToast("Gagal memuat data semester: " + error.message, "error");
+    }
+  };
 
   const loadSchoolData = async () => {
     try {
       setLoading(true);
 
-      // Load school settings
       const { data: settingsData, error: settingsError } = await supabase
         .from("school_settings")
         .select("setting_key, setting_value")
@@ -57,7 +94,6 @@ const AcademicYearTab = ({
 
       const academicYear = settingsData?.[0]?.setting_value || "2025/2026";
 
-      // Load students dengan filter academic_year yang aktif
       const { data: studentsData, error: studentsError } = await supabase
         .from("students")
         .select(
@@ -82,7 +118,6 @@ const AcademicYearTab = ({
 
       if (studentsError) throw studentsError;
 
-      // Group students by class_id
       const studentsByClass = {};
 
       studentsData?.forEach((student) => {
@@ -113,13 +148,124 @@ const AcademicYearTab = ({
     }
   };
 
-  // Helper untuk group students by grade
+  // ✅ NEW: Add new semester
+  const handleAddSemester = async () => {
+    if (!newSemester.year || !newSemester.start_date || !newSemester.end_date) {
+      showToast("Semua field harus diisi!", "error");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("academic_years")
+        .insert([
+          {
+            year: newSemester.year,
+            semester: parseInt(newSemester.semester),
+            start_date: newSemester.start_date,
+            end_date: newSemester.end_date,
+            is_active: false, // Default nonaktif dulu
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+
+      showToast("✅ Semester berhasil ditambahkan!", "success");
+      setShowAddSemester(false);
+      setNewSemester({
+        year: "",
+        semester: 1,
+        start_date: "",
+        end_date: "",
+      });
+      loadSemesters();
+    } catch (error) {
+      console.error("Error adding semester:", error);
+      showToast("Gagal menambahkan semester: " + error.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Activate semester (nonaktifkan yang lain)
+  const handleActivateSemester = async (semesterId) => {
+    const confirmed = window.confirm(
+      "Aktifkan semester ini?\n\nSemester yang sedang aktif akan dinonaktifkan."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+
+      // 1. Nonaktifkan semua semester
+      const { error: deactivateError } = await supabase
+        .from("academic_years")
+        .update({ is_active: false })
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Update all
+
+      if (deactivateError) throw deactivateError;
+
+      // 2. Aktifkan semester yang dipilih
+      const { error: activateError } = await supabase
+        .from("academic_years")
+        .update({ is_active: true })
+        .eq("id", semesterId);
+
+      if (activateError) throw activateError;
+
+      showToast("✅ Semester berhasil diaktifkan!", "success");
+      loadSemesters();
+    } catch (error) {
+      console.error("Error activating semester:", error);
+      showToast("Gagal mengaktifkan semester: " + error.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Delete semester
+  const handleDeleteSemester = async (semesterId, isActive) => {
+    if (isActive) {
+      showToast("❌ Tidak bisa menghapus semester yang sedang aktif!", "error");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Hapus semester ini?\n\nTindakan ini tidak dapat dibatalkan."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+
+      const { error } = await supabase
+        .from("academic_years")
+        .delete()
+        .eq("id", semesterId);
+
+      if (error) throw error;
+
+      showToast("✅ Semester berhasil dihapus!", "success");
+      loadSemesters();
+    } catch (error) {
+      console.error("Error deleting semester:", error);
+      showToast("Gagal menghapus semester: " + error.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStudentsByGrade = () => {
-    const byGrade = { "7": 0, "8": 0, "9": 0 };
+    const byGrade = { 7: 0, 8: 0, 9: 0 };
 
     Object.entries(studentsByClass).forEach(([classId, classData]) => {
       const grade = String(classData.grade);
-      
+
       if (grade === "7" || grade === "8" || grade === "9") {
         byGrade[grade] += classData.students.length;
       }
@@ -139,22 +285,17 @@ const AcademicYearTab = ({
       const promotionPlan = {};
       const graduatingStudents = [];
 
-      // Process existing students by class_id
       Object.entries(studentsByClass).forEach(([classId, classData]) => {
         const { grade, students } = classData;
 
         if (grade == graduatingGrade) {
-          // Grade 9 → Lulus
           graduatingStudents.push(...students);
         } else {
-          // Grade 7 → 8, Grade 8 → 9
           const currentIndex = config.grades.indexOf(grade.toString());
           if (currentIndex < config.grades.length - 1) {
             const nextGrade = config.grades[currentIndex + 1];
-
-            // Extract huruf dari class_id (misal: "7A" → "A")
             const classLetter = classId.replace(/[0-9]/g, "");
-            const newClassId = `${nextGrade}${classLetter}`; // "7A" → "8A"
+            const newClassId = `${nextGrade}${classLetter}`;
 
             if (!promotionPlan[newClassId]) {
               promotionPlan[newClassId] = [];
@@ -164,19 +305,17 @@ const AcademicYearTab = ({
         }
       });
 
-      // ✅ FIXED: LOAD SISWA BARU DARI SPMB (yang udah dibagi kelas)
       const { data: siswaBaruData, error: siswaBaruError } = await supabase
         .from("siswa_baru")
         .select("*")
         .eq("is_transferred", false)
         .eq("academic_year", newYear)
-        .not("kelas", "is", null); // ✅ Hanya yang udah dibagi kelas
+        .not("kelas", "is", null);
 
       if (siswaBaruError) {
         console.warn("Error loading siswa baru:", siswaBaruError);
       }
 
-      // CHECK NISN CONFLICTS
       const { data: existingStudents } = await supabase
         .from("students")
         .select("nis");
@@ -197,9 +336,8 @@ const AcademicYearTab = ({
         }
       });
 
-      // ✅ FIXED: GUNAKAN KELAS YANG UDAH DI-ASSIGN DI ClassDivision
       const newStudentDistribution = {};
-      const firstGrade = config.grades[0]; // "7"
+      const firstGrade = config.grades[0];
       const classLetters = config.classesPerGrade || [
         "A",
         "B",
@@ -209,15 +347,13 @@ const AcademicYearTab = ({
         "F",
       ];
 
-      // Inisialisasi kelas 7A-7F
       classLetters.forEach((letter) => {
         newStudentDistribution[`${firstGrade}${letter}`] = [];
       });
 
-      // ✅ Pake kelas yang udah di-assign di ClassDivision
       validNewStudents.forEach((siswa) => {
-        const kelasAsli = siswa.kelas; // Ambil dari field `kelas`
-        if (kelasAsli && kelasAsli.startsWith('7')) {
+        const kelasAsli = siswa.kelas;
+        if (kelasAsli && kelasAsli.startsWith("7")) {
           if (!newStudentDistribution[kelasAsli]) {
             newStudentDistribution[kelasAsli] = [];
           }
@@ -253,7 +389,6 @@ const AcademicYearTab = ({
     }
   };
 
-  // Helper function untuk create kelas baru (18 kelas: 7A-7F, 8A-8F, 9A-9F)
   const createNewClasses = async (newYear) => {
     const classesToCreate = [];
     const classLetters = config.classesPerGrade || [
@@ -306,11 +441,9 @@ const AcademicYearTab = ({
       setLoading(true);
       setYearTransition((prev) => ({ ...prev, inProgress: true }));
 
-      // STEP 1: Create new classes untuk tahun ajaran baru (18 kelas)
       showToast("Membuat 18 kelas baru...", "info");
       const newClasses = await createNewClasses(yearTransition.newYear);
 
-      // STEP 2: Handle graduating students (Grade 9)
       if (preview.graduating.length > 0) {
         showToast(`Meluluskan ${preview.graduating.length} siswa...`, "info");
         const graduatingIds = preview.graduating.map((s) => s.id);
@@ -323,7 +456,6 @@ const AcademicYearTab = ({
         if (graduateError) throw graduateError;
       }
 
-      // STEP 3: Handle promotions - update class_id ke kelas baru (7A→8A, dst)
       for (const [newClassId, students] of Object.entries(preview.promotions)) {
         showToast(
           `Menaikkan ${students.length} siswa ke kelas ${newClassId}...`,
@@ -343,7 +475,6 @@ const AcademicYearTab = ({
         if (promoteError) throw promoteError;
       }
 
-      // ✅ FIXED: STEP 4 - TRANSFER SISWA BARU DENGAN KELAS YANG UDAH DI-ASSIGN
       if (preview.newStudents.length > 0) {
         showToast(
           `Memasukkan ${preview.newStudents.length} siswa baru...`,
@@ -358,8 +489,8 @@ const AcademicYearTab = ({
           const newStudentsData = siswaList.map((siswa) => ({
             nis: siswa.nisn || null,
             full_name: siswa.nama_lengkap,
-            gender: siswa.jenis_kelamin, // ✅ FIXED: Langsung pake "L" atau "P"
-            class_id: classId, // ✅ Pake kelas dari ClassDivision
+            gender: siswa.jenis_kelamin,
+            class_id: classId,
             academic_year: yearTransition.newYear,
             is_active: true,
           }));
@@ -371,7 +502,6 @@ const AcademicYearTab = ({
           if (insertError) throw insertError;
         }
 
-        // STEP 5: UPDATE FLAG IS_TRANSFERRED DI SISWA_BARU
         const siswaBaruIds = preview.newStudents.map((s) => s.id);
 
         const { error: updateSiswaBaruError } = await supabase
@@ -386,7 +516,6 @@ const AcademicYearTab = ({
         if (updateSiswaBaruError) throw updateSiswaBaruError;
       }
 
-      // STEP 6: Reset teacher assignments
       showToast("Mereset assignment guru...", "info");
       const { error: teacherResetError } = await supabase
         .from("teacher_assignments")
@@ -395,7 +524,6 @@ const AcademicYearTab = ({
 
       if (teacherResetError) throw teacherResetError;
 
-      // STEP 7: Update academic year in settings
       const { error: settingError } = await supabase
         .from("school_settings")
         .update({ setting_value: yearTransition.newYear })
@@ -429,6 +557,7 @@ const AcademicYearTab = ({
   };
 
   const studentsByGrade = getStudentsByGrade();
+  const activeSemester = semesters.find((s) => s.is_active);
 
   return (
     <div className="p-6">
@@ -483,11 +612,250 @@ const AcademicYearTab = ({
         </div>
       </div>
 
+      {/* ✅ NEW: Semester Management Section */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="text-purple-600" size={20} />
+              <h3 className="text-lg font-semibold text-gray-800">
+                Manajemen Semester
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Kelola semester dalam tahun ajaran aktif
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowAddSemester(!showAddSemester)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+            <Plus size={16} />
+            Tambah Semester
+          </button>
+        </div>
+
+        {/* Active Semester Highlight */}
+        {activeSemester && (
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg mb-4 border border-purple-200">
+            <div className="flex items-center gap-3">
+              <PlayCircle className="text-purple-600" size={24} />
+              <div>
+                <p className="text-sm text-purple-700 font-medium">
+                  Semester Aktif Sekarang
+                </p>
+                <p className="text-lg font-bold text-purple-900">
+                  {activeSemester.year} - Semester {activeSemester.semester}
+                </p>
+                <p className="text-xs text-purple-600">
+                  {new Date(activeSemester.start_date).toLocaleDateString(
+                    "id-ID",
+                    {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    }
+                  )}{" "}
+                  s/d{" "}
+                  {new Date(activeSemester.end_date).toLocaleDateString(
+                    "id-ID",
+                    {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    }
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Semester Form */}
+        {showAddSemester && (
+          <div className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
+            <h4 className="font-semibold text-gray-800 mb-3">
+              Tambah Semester Baru
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tahun Ajaran
+                </label>
+                <input
+                  type="text"
+                  placeholder="2025/2026"
+                  value={newSemester.year}
+                  onChange={(e) =>
+                    setNewSemester({ ...newSemester, year: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Semester
+                </label>
+                <select
+                  value={newSemester.semester}
+                  onChange={(e) =>
+                    setNewSemester({
+                      ...newSemester,
+                      semester: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                  <option value={1}>Semester 1</option>
+                  <option value={2}>Semester 2</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tanggal Mulai
+                </label>
+                <input
+                  type="date"
+                  value={newSemester.start_date}
+                  onChange={(e) =>
+                    setNewSemester({
+                      ...newSemester,
+                      start_date: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tanggal Selesai
+                </label>
+                <input
+                  type="date"
+                  value={newSemester.end_date}
+                  onChange={(e) =>
+                    setNewSemester({ ...newSemester, end_date: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleAddSemester}
+                disabled={loading}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium transition">
+                Simpan Semester
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddSemester(false);
+                  setNewSemester({
+                    year: "",
+                    semester: 1,
+                    start_date: "",
+                    end_date: "",
+                  });
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition">
+                Batal
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Semester List */}
+        <div className="space-y-3">
+          {semesters.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Clock size={48} className="mx-auto mb-3 opacity-50" />
+              <p>Belum ada data semester</p>
+              <p className="text-sm">Klik "Tambah Semester" untuk memulai</p>
+            </div>
+          ) : (
+            semesters.map((semester) => (
+              <div
+                key={semester.id}
+                className={`p-4 rounded-lg border-2 transition ${
+                  semester.is_active
+                    ? "bg-purple-50 border-purple-300"
+                    : "bg-white border-gray-200"
+                }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {semester.is_active ? (
+                      <PlayCircle className="text-purple-600" size={20} />
+                    ) : (
+                      <PauseCircle className="text-gray-400" size={20} />
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-800">
+                          {semester.year} - Semester {semester.semester}
+                        </span>
+                        {semester.is_active && (
+                          <span className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full font-medium">
+                            AKTIF
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {new Date(semester.start_date).toLocaleDateString(
+                          "id-ID",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )}{" "}
+                        -{" "}
+                        {new Date(semester.end_date).toLocaleDateString(
+                          "id-ID",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {!semester.is_active && (
+                      <button
+                        onClick={() => handleActivateSemester(semester.id)}
+                        disabled={loading}
+                        className="px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 disabled:opacity-50 transition">
+                        Aktifkan
+                      </button>
+                    )}
+                    {!semester.is_active && (
+                      <button
+                        onClick={() =>
+                          handleDeleteSemester(semester.id, semester.is_active)
+                        }
+                        disabled={loading}
+                        className="px-3 py-1.5 bg-red-100 text-red-600 text-sm rounded hover:bg-red-200 disabled:opacity-50 transition">
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       {/* Students by Grade */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {["7", "8", "9"].map((grade) => {
           const totalStudents = studentsByGrade[grade] || 0;
-          
+
           return (
             <div
               key={grade}
