@@ -1,72 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
-import { 
-  Plus, 
-  Search, 
-  Edit3, 
-  Trash2, 
+import React, { useState, useEffect } from "react";
+import { supabase } from "../supabaseClient";
+import {
+  Plus,
+  Search,
+  Edit3,
+  Trash2,
   Eye,
   Users,
   Clock,
   CheckCircle,
-  XCircle
-} from 'lucide-react';
-import StatsCards from './StatsCards';
-import FilterBar from './FilterBar';
-import KonselingTable from './KonselingTable';
-import KonselingModal from './KonselingModal';
-import { exportKonselingPDF } from './ExportPDF';
+  XCircle,
+} from "lucide-react";
+import StatsCards from "./StatsCards";
+import FilterBar from "./FilterBar";
+import KonselingTable from "./KonselingTable";
+import KonselingModal from "./KonselingModal";
+import { exportKonselingPDF } from "./ExportPDF";
 
 const Konseling = ({ user, onShowToast }) => {
   const [konselingData, setKonselingData] = useState([]);
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Modal states
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState('add');
+  const [modalMode, setModalMode] = useState("add");
   const [selectedKonseling, setSelectedKonseling] = useState(null);
-  
+
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState({
     show: false,
     id: null,
-    studentName: ''
+    studentName: "",
   });
 
   // Filters - ✅ UPDATED: Tambah filter urgensi & kategori
   const [filters, setFilters] = useState({
-    search: '',
-    kelas: '',
-    status: '',
-    tingkat_urgensi: '', // NEW
-    kategori_masalah: '', // NEW
-    perlu_followup: '', // NEW
-    tanggalAwal: '',
-    tanggalAkhir: ''
+    search: "",
+    kelas: "",
+    status: "",
+    tingkat_urgensi: "", // NEW
+    kategori_masalah: "", // NEW
+    perlu_followup: "", // NEW
+    tanggalAwal: "",
+    tanggalAkhir: "",
   });
 
   // Form data - ✅ UPDATED: Tambah field baru
   const [formData, setFormData] = useState({
-    student_id: '',
-    nis: '',
-    full_name: '',
-    gender: '',
-    class_id: '',
-    tanggal: new Date().toISOString().split('T')[0],
-    jenis_layanan: '',
-    bidang_bimbingan: '',
-    tingkat_urgensi: 'Sedang', // NEW - default Sedang
-    kategori_masalah: '', // NEW
-    permasalahan: '',
-    kronologi: '',
-    tindakan_layanan: '',
-    hasil_layanan: '',
-    rencana_tindak_lanjut: '',
+    student_id: "",
+    nis: "",
+    full_name: "",
+    gender: "",
+    class_id: "",
+    tanggal: new Date().toISOString().split("T")[0],
+    jenis_layanan: "",
+    bidang_bimbingan: "",
+    tingkat_urgensi: "", // NEW - default Sedang
+    kategori_masalah: "", // NEW
+    permasalahan: "",
+    kronologi: "",
+    tindakan_layanan: "",
+    hasil_layanan: "",
+    rencana_tindak_lanjut: "",
     perlu_followup: false, // NEW
-    tanggal_followup: '', // NEW
-    status_layanan: 'Dalam Proses'
+    tanggal_followup: "", // NEW
+    status_layanan: "Dalam Proses",
   });
 
   // Stats - ✅ UPDATED: Tambah stats urgensi & follow-up
@@ -75,7 +75,7 @@ const Konseling = ({ user, onShowToast }) => {
     dalam_proses: 0,
     selesai: 0,
     darurat: 0, // NEW
-    perlu_followup: 0 // NEW
+    perlu_followup: 0, // NEW
   });
 
   // Load data
@@ -89,16 +89,16 @@ const Konseling = ({ user, onShowToast }) => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('konseling')
-        .select('*')
-        .order('tanggal', { ascending: false });
+        .from("konseling")
+        .select("*")
+        .order("tanggal", { ascending: false });
 
       if (error) throw error;
       setKonselingData(data || []);
       calculateStats(data || []);
     } catch (error) {
-      console.error('Error loading konseling data:', error);
-      onShowToast('Error memuat data konseling', 'error');
+      console.error("Error loading konseling data:", error);
+      onShowToast("Error memuat data konseling", "error");
     } finally {
       setLoading(false);
     }
@@ -107,104 +107,128 @@ const Konseling = ({ user, onShowToast }) => {
   const loadStudents = async () => {
     try {
       const { data, error } = await supabase
-        .from('students')
-        .select('id, nis, full_name, gender, class_id')
-        .eq('is_active', true)
-        .order('full_name');
+        .from("students")
+        .select("id, nis, full_name, gender, class_id")
+        .eq("is_active", true)
+        .order("full_name");
 
       if (error) throw error;
       setStudents(data || []);
     } catch (error) {
-      console.error('Error loading students:', error);
+      console.error("Error loading students:", error);
     }
   };
 
   const loadClasses = async () => {
     try {
       const { data, error } = await supabase
-        .from('classes')
-        .select('id, grade')
-        .eq('academic_year', '2025/2026')
-        .order('id');
+        .from("classes")
+        .select("id, grade")
+        .eq("academic_year", "2025/2026")
+        .order("id");
 
       if (error) throw error;
       setClasses(data || []);
     } catch (error) {
-      console.error('Error loading classes:', error);
+      console.error("Error loading classes:", error);
     }
   };
 
   // ✅ UPDATED: Calculate stats dengan urgensi & follow-up
   const calculateStats = (data) => {
     const total = data.length;
-    const dalam_proses = data.filter(item => item.status_layanan === 'Dalam Proses').length;
-    const selesai = data.filter(item => item.status_layanan === 'Selesai').length;
-    const darurat = data.filter(item => item.tingkat_urgensi === 'Darurat').length;
-    const perlu_followup = data.filter(item => item.perlu_followup === true).length;
-    
+    const dalam_proses = data.filter(
+      (item) => item.status_layanan === "Dalam Proses"
+    ).length;
+    const selesai = data.filter(
+      (item) => item.status_layanan === "Selesai"
+    ).length;
+    const darurat = data.filter(
+      (item) => item.tingkat_urgensi === "Darurat"
+    ).length;
+    const perlu_followup = data.filter(
+      (item) => item.perlu_followup === true
+    ).length;
+
     setStats({ total, dalam_proses, selesai, darurat, perlu_followup });
   };
 
   // ✅ UPDATED: Filter functions dengan field baru
-  const filteredKonseling = konselingData.filter(item => {
-    const matchesSearch = !filters.search || 
+  const filteredKonseling = konselingData.filter((item) => {
+    const matchesSearch =
+      !filters.search ||
       item.full_name?.toLowerCase().includes(filters.search.toLowerCase()) ||
       item.nis?.includes(filters.search);
-    const matchesStatus = !filters.status || item.status_layanan === filters.status;
-    const matchesUrgensi = !filters.tingkat_urgensi || item.tingkat_urgensi === filters.tingkat_urgensi;
-    const matchesKategori = !filters.kategori_masalah || item.kategori_masalah === filters.kategori_masalah;
-    const matchesFollowup = !filters.perlu_followup || 
-      (filters.perlu_followup === 'true' && item.perlu_followup === true) ||
-      (filters.perlu_followup === 'false' && item.perlu_followup === false);
-    
-    const itemDate = new Date(item.tanggal);
-    const matchesTanggalAwal = !filters.tanggalAwal || itemDate >= new Date(filters.tanggalAwal);
-    const matchesTanggalAkhir = !filters.tanggalAkhir || itemDate <= new Date(filters.tanggalAkhir);
+    const matchesStatus =
+      !filters.status || item.status_layanan === filters.status;
+    const matchesUrgensi =
+      !filters.tingkat_urgensi ||
+      item.tingkat_urgensi === filters.tingkat_urgensi;
+    const matchesKategori =
+      !filters.kategori_masalah ||
+      item.kategori_masalah === filters.kategori_masalah;
+    const matchesFollowup =
+      !filters.perlu_followup ||
+      (filters.perlu_followup === "true" && item.perlu_followup === true) ||
+      (filters.perlu_followup === "false" && item.perlu_followup === false);
 
-    return matchesSearch && matchesStatus && matchesUrgensi && matchesKategori && 
-           matchesFollowup && matchesTanggalAwal && matchesTanggalAkhir;
+    const itemDate = new Date(item.tanggal);
+    const matchesTanggalAwal =
+      !filters.tanggalAwal || itemDate >= new Date(filters.tanggalAwal);
+    const matchesTanggalAkhir =
+      !filters.tanggalAkhir || itemDate <= new Date(filters.tanggalAkhir);
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesUrgensi &&
+      matchesKategori &&
+      matchesFollowup &&
+      matchesTanggalAwal &&
+      matchesTanggalAkhir
+    );
   });
 
   const resetFilters = () => {
     setFilters({
-      search: '',
-      kelas: '',
-      status: '',
-      tingkat_urgensi: '',
-      kategori_masalah: '',
-      perlu_followup: '',
-      tanggalAwal: '',
-      tanggalAkhir: ''
+      search: "",
+      kelas: "",
+      status: "",
+      tingkat_urgensi: "",
+      kategori_masalah: "",
+      perlu_followup: "",
+      tanggalAwal: "",
+      tanggalAkhir: "",
     });
   };
 
   const handleFilterChange = (field, value) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
+    setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   // ✅ UPDATED: Modal handlers dengan field baru
   const openAddModal = () => {
     setFormData({
-      student_id: '',
-      nis: '',
-      full_name: '',
-      gender: '',
-      class_id: '',
-      tanggal: new Date().toISOString().split('T')[0],
-      jenis_layanan: '',
-      bidang_bimbingan: '',
-      tingkat_urgensi: 'Sedang',
-      kategori_masalah: '',
-      permasalahan: '',
-      kronologi: '',
-      tindakan_layanan: '',
-      hasil_layanan: '',
-      rencana_tindak_lanjut: '',
+      student_id: "",
+      nis: "",
+      full_name: "",
+      gender: "",
+      class_id: "",
+      tanggal: new Date().toISOString().split("T")[0],
+      jenis_layanan: "",
+      bidang_bimbingan: "",
+      tingkat_urgensi: "Sedang",
+      kategori_masalah: "",
+      permasalahan: "",
+      kronologi: "",
+      tindakan_layanan: "",
+      hasil_layanan: "",
+      rencana_tindak_lanjut: "",
       perlu_followup: false,
-      tanggal_followup: '',
-      status_layanan: 'Dalam Proses'
+      tanggal_followup: "",
+      status_layanan: "Dalam Proses",
     });
-    setModalMode('add');
+    setModalMode("add");
     setShowModal(true);
   };
 
@@ -215,33 +239,33 @@ const Konseling = ({ user, onShowToast }) => {
       full_name: konseling.full_name,
       gender: konseling.gender,
       class_id: konseling.class_id,
-      tanggal: konseling.tanggal.split('T')[0],
+      tanggal: konseling.tanggal.split("T")[0],
       jenis_layanan: konseling.jenis_layanan,
       bidang_bimbingan: konseling.bidang_bimbingan,
-      tingkat_urgensi: konseling.tingkat_urgensi || 'Sedang',
-      kategori_masalah: konseling.kategori_masalah || '',
+      tingkat_urgensi: konseling.tingkat_urgensi || "",
+      kategori_masalah: konseling.kategori_masalah || "",
       permasalahan: konseling.permasalahan,
       kronologi: konseling.kronologi,
       tindakan_layanan: konseling.tindakan_layanan,
       hasil_layanan: konseling.hasil_layanan,
       rencana_tindak_lanjut: konseling.rencana_tindak_lanjut,
       perlu_followup: konseling.perlu_followup || false,
-      tanggal_followup: konseling.tanggal_followup || '',
-      status_layanan: konseling.status_layanan
+      tanggal_followup: konseling.tanggal_followup || "",
+      status_layanan: konseling.status_layanan,
     });
     setSelectedKonseling(konseling);
-    setModalMode('edit');
+    setModalMode("edit");
     setShowModal(true);
   };
 
   const openViewModal = (konseling) => {
     setSelectedKonseling(konseling);
-    setModalMode('view');
+    setModalMode("view");
     setShowModal(true);
   };
 
   const handleFormChange = (updates) => {
-    setFormData(prev => ({ ...prev, ...updates }));
+    setFormData((prev) => ({ ...prev, ...updates }));
   };
 
   // ✅ UPDATED: handleSubmit dengan field baru + validasi
@@ -249,45 +273,48 @@ const Konseling = ({ user, onShowToast }) => {
     try {
       // Validasi field wajib
       if (!formData.student_id) {
-        onShowToast('Pilih siswa terlebih dahulu', 'error');
+        onShowToast("Pilih siswa terlebih dahulu", "error");
         return;
       }
       if (!formData.tanggal) {
-        onShowToast('Tanggal konseling wajib diisi', 'error');
+        onShowToast("Tanggal konseling wajib diisi", "error");
         return;
       }
       if (!formData.jenis_layanan) {
-        onShowToast('Jenis layanan wajib dipilih', 'error');
+        onShowToast("Jenis layanan wajib dipilih", "error");
         return;
       }
       if (!formData.bidang_bimbingan) {
-        onShowToast('Bidang bimbingan wajib dipilih', 'error');
+        onShowToast("Bidang bimbingan wajib dipilih", "error");
         return;
       }
       if (!formData.tingkat_urgensi) {
-        onShowToast('Tingkat urgensi wajib dipilih', 'error');
+        onShowToast("Tingkat urgensi wajib dipilih", "error");
         return;
       }
       if (!formData.kategori_masalah) {
-        onShowToast('Kategori masalah wajib dipilih', 'error');
+        onShowToast("Kategori masalah wajib dipilih", "error");
         return;
       }
       if (!formData.permasalahan?.trim()) {
-        onShowToast('Permasalahan wajib diisi', 'error');
+        onShowToast("Permasalahan wajib diisi", "error");
         return;
       }
       if (!formData.kronologi?.trim()) {
-        onShowToast('Kronologi wajib diisi', 'error');
+        onShowToast("Kronologi wajib diisi", "error");
         return;
       }
       // Validasi: Jika perlu follow-up, tanggal follow-up wajib diisi
       if (formData.perlu_followup && !formData.tanggal_followup) {
-        onShowToast('Tanggal follow-up wajib diisi jika perlu follow-up', 'error');
+        onShowToast(
+          "Tanggal follow-up wajib diisi jika perlu follow-up",
+          "error"
+        );
         return;
       }
 
       setLoading(true);
-      
+
       // Data yang akan disimpan
       const konselingData = {
         student_id: formData.student_id,
@@ -310,42 +337,42 @@ const Konseling = ({ user, onShowToast }) => {
         status_layanan: formData.status_layanan,
         guru_bk_id: user.id,
         guru_bk_name: user.full_name,
-        academic_year: '2025/2026',
-        semester: '1'
+        academic_year: "2025/2026",
+        semester: "1",
       };
 
-      if (modalMode === 'add') {
+      if (modalMode === "add") {
         const { data, error } = await supabase
-          .from('konseling')
+          .from("konseling")
           .insert([konselingData])
           .select();
-        
+
         if (error) {
-          console.error('Supabase error:', error);
+          console.error("Supabase error:", error);
           throw error;
         }
-        
-        onShowToast('Data konseling berhasil ditambahkan', 'success');
+
+        onShowToast("Data konseling berhasil ditambahkan", "success");
       } else {
         const { data, error } = await supabase
-          .from('konseling')
+          .from("konseling")
           .update(konselingData)
-          .eq('id', selectedKonseling.id)
+          .eq("id", selectedKonseling.id)
           .select();
-        
+
         if (error) {
-          console.error('Supabase error:', error);
+          console.error("Supabase error:", error);
           throw error;
         }
-        
-        onShowToast('Data konseling berhasil diupdate', 'success');
+
+        onShowToast("Data konseling berhasil diupdate", "success");
       }
 
       setShowModal(false);
       await loadKonselingData();
     } catch (error) {
-      console.error('Error saving konseling data:', error);
-      onShowToast(`Error: ${error.message || 'Gagal menyimpan data'}`, 'error');
+      console.error("Error saving konseling data:", error);
+      onShowToast(`Error: ${error.message || "Gagal menyimpan data"}`, "error");
     } finally {
       setLoading(false);
     }
@@ -361,18 +388,18 @@ const Konseling = ({ user, onShowToast }) => {
     try {
       setLoading(true);
       const { error } = await supabase
-        .from('konseling')
+        .from("konseling")
         .delete()
-        .eq('id', deleteConfirm.id);
+        .eq("id", deleteConfirm.id);
       if (error) throw error;
-      onShowToast('Data konseling berhasil dihapus', 'success');
+      onShowToast("Data konseling berhasil dihapus", "success");
       await loadKonselingData();
     } catch (error) {
-      console.error('Error deleting konseling data:', error);
-      onShowToast('Error menghapus data konseling', 'error');
+      console.error("Error deleting konseling data:", error);
+      onShowToast("Error menghapus data konseling", "error");
     } finally {
       setLoading(false);
-      setDeleteConfirm({ show: false, id: null, studentName: '' });
+      setDeleteConfirm({ show: false, id: null, studentName: "" });
     }
   };
 
@@ -380,9 +407,9 @@ const Konseling = ({ user, onShowToast }) => {
   const handleExportPDF = async (item) => {
     try {
       await exportKonselingPDF(item);
-      onShowToast('PDF berhasil diunduh', 'success');
+      onShowToast("PDF berhasil diunduh", "success");
     } catch (error) {
-      onShowToast('Error membuat PDF', 'error');
+      onShowToast("Error membuat PDF", "error");
     }
   };
 
@@ -391,7 +418,9 @@ const Konseling = ({ user, onShowToast }) => {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Konseling BK/BP</h1>
-        <p className="text-gray-600 mt-2">Manajemen data konseling dan bimbingan siswa</p>
+        <p className="text-gray-600 mt-2">
+          Manajemen data konseling dan bimbingan siswa
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -435,30 +464,36 @@ const Konseling = ({ user, onShowToast }) => {
               <div className="flex items-center gap-3">
                 <XCircle className="text-red-600" size={24} />
                 <div>
-                  <h2 className="text-xl font-bold text-red-800">Konfirmasi Hapus</h2>
-                  <p className="text-red-600 text-sm">Data konseling akan dihapus permanen</p>
+                  <h2 className="text-xl font-bold text-red-800">
+                    Konfirmasi Hapus
+                  </h2>
+                  <p className="text-red-600 text-sm">
+                    Data konseling akan dihapus permanen
+                  </p>
                 </div>
               </div>
             </div>
             <div className="p-6">
               <p className="text-gray-700 mb-4">
-                Apakah Anda yakin ingin menghapus data konseling untuk siswa {' '}
+                Apakah Anda yakin ingin menghapus data konseling untuk siswa{" "}
                 <strong>{deleteConfirm.studentName}</strong>?
               </p>
-              <p className="text-sm text-red-600 mb-6">Tindakan ini tidak dapat dibatalkan!</p>
+              <p className="text-sm text-red-600 mb-6">
+                Tindakan ini tidak dapat dibatalkan!
+              </p>
               <div className="flex gap-3">
                 <button
                   onClick={confirmDelete}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
-                >
-                  {loading ? 'Menghapus...' : 'Ya, Hapus'}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium">
+                  {loading ? "Menghapus..." : "Ya, Hapus"}
                 </button>
                 <button
-                  onClick={() => setDeleteConfirm({ show: false, id: null, studentName: '' })}
+                  onClick={() =>
+                    setDeleteConfirm({ show: false, id: null, studentName: "" })
+                  }
                   disabled={loading}
-                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50"
-                >
+                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50">
                   Batal
                 </button>
               </div>

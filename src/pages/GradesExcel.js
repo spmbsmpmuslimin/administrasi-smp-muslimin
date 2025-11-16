@@ -108,7 +108,7 @@ export const exportToExcel = async (params) => {
     worksheet.columns = [
       { width: 6 }, // A - No
       { width: 15 }, // B - NIS
-      { width: 35 }, // C - Nama Siswa
+      { width: 38 }, // C - Nama Siswa
       { width: 8 }, // D - NH1
       { width: 8 }, // E - NH2
       { width: 8 }, // F - NH3

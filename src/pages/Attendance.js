@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
-import RecapModal from "./RecapModal";
+import AttendanceRecapModal from "./AttendanceRecapModal";
 import { exportAttendanceToExcel } from "./AttendanceExcel";
 
 const Attendance = ({ user, onShowToast }) => {
@@ -8,7 +8,7 @@ const Attendance = ({ user, onShowToast }) => {
   const [subjects, setSubjects] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
-  
+
   const getDefaultDate = () => {
     const options = {
       timeZone: "Asia/Jakarta",
@@ -18,7 +18,7 @@ const Attendance = ({ user, onShowToast }) => {
     };
     return new Intl.DateTimeFormat("en-CA", options).format(new Date());
   };
-  
+
   const [date, setDate] = useState(getDefaultDate());
   const [students, setStudents] = useState([]);
   const [attendanceStatus, setAttendanceStatus] = useState({});
@@ -69,7 +69,10 @@ const Attendance = ({ user, onShowToast }) => {
     setAttendanceStatus(newStatus);
 
     if (onShowToast) {
-      onShowToast(`Berhasil mengubah status ${students.length} siswa menjadi HADIR`, "success");
+      onShowToast(
+        `Berhasil mengubah status ${students.length} siswa menjadi HADIR`,
+        "success"
+      );
     }
   };
 
@@ -97,7 +100,10 @@ const Attendance = ({ user, onShowToast }) => {
       );
     } catch (error) {
       if (onShowToast) {
-        onShowToast("Gagal mengekspor data ke Excel: " + error.message, "error");
+        onShowToast(
+          "Gagal mengekspor data ke Excel: " + error.message,
+          "error"
+        );
       }
     }
   };
@@ -109,7 +115,10 @@ const Attendance = ({ user, onShowToast }) => {
   const handleShowRekap = () => {
     if (!selectedClass || !selectedSubject || students.length === 0) {
       if (onShowToast) {
-        onShowToast("Pilih mata pelajaran dan kelas terlebih dahulu untuk melihat rekap", "error");
+        onShowToast(
+          "Pilih mata pelajaran dan kelas terlebih dahulu untuk melihat rekap",
+          "error"
+        );
       }
       return;
     }
@@ -121,15 +130,19 @@ const Attendance = ({ user, onShowToast }) => {
 
     const channel = supabase
       .channel(`attendance-${teacherId}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "attendances",
-      }, () => {
-        if (onShowToast) {
-          onShowToast("Presensi Baru Ditambahkan", "info");
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "attendances",
+        },
+        () => {
+          if (onShowToast) {
+            onShowToast("Presensi Baru Ditambahkan", "info");
+          }
         }
-      })
+      )
       .subscribe();
 
     return () => {
@@ -217,11 +230,13 @@ const Attendance = ({ user, onShowToast }) => {
         if (isDailyMode) {
           if (!homeroomClass) return;
 
-          const formattedClasses = [{
-            id: homeroomClass,
-            grade: homeroomClass.charAt(0),
-            displayName: `Kelas ${homeroomClass}`,
-          }];
+          const formattedClasses = [
+            {
+              id: homeroomClass,
+              grade: homeroomClass.charAt(0),
+              displayName: `Kelas ${homeroomClass}`,
+            },
+          ];
 
           setClasses(formattedClasses);
           setSelectedClass(homeroomClass);
@@ -235,7 +250,9 @@ const Attendance = ({ user, onShowToast }) => {
             .order("full_name");
 
           if (studentsError) {
-            setMessage("Error: Gagal mengambil data siswa - " + studentsError.message);
+            setMessage(
+              "Error: Gagal mengambil data siswa - " + studentsError.message
+            );
           } else {
             setStudents(studentsData || []);
             setStudentsLoaded(true);
@@ -352,7 +369,10 @@ const Attendance = ({ user, onShowToast }) => {
         .eq("date", date)
         .eq("type", typeValue)
         .eq("class_id", selectedClass)
-        .in("student_id", students.map(s => s.id));
+        .in(
+          "student_id",
+          students.map((s) => s.id)
+        );
 
       if (error) {
         console.error("Error checking existing attendance:", error);
@@ -408,9 +428,12 @@ const Attendance = ({ user, onShowToast }) => {
     for (let i = 0; i < attendanceData.length; i += BATCH_SIZE) {
       const batch = attendanceData.slice(i, i + BATCH_SIZE);
       const { error } = await supabase.from("attendances").insert(batch);
-      
+
       if (error) {
-        console.error(`Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
+        console.error(
+          `Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`,
+          error
+        );
         errorCount += batch.length;
       } else {
         successCount += batch.length;
@@ -444,14 +467,18 @@ const Attendance = ({ user, onShowToast }) => {
         .eq("teacher_id", teacherId)
         .single();
 
-      if (teacherError) throw new Error("Gagal mengambil data guru: " + teacherError.message);
+      if (teacherError)
+        throw new Error("Gagal mengambil data guru: " + teacherError.message);
       if (!teacherUser) throw new Error("Data guru tidak ditemukan di sistem");
 
       const teacherUUID = teacherUser.id;
       const typeValue = isHomeroomDaily() ? "harian" : "mapel";
 
-      const existingData = await checkExistingAttendance(teacherUUID, typeValue);
-      
+      const existingData = await checkExistingAttendance(
+        teacherUUID,
+        typeValue
+      );
+
       if (existingData && existingData.length > 0) {
         const attendanceData = prepareAttendanceData(teacherUUID);
         setPendingAttendanceData(attendanceData);
@@ -462,14 +489,17 @@ const Attendance = ({ user, onShowToast }) => {
       }
 
       const attendanceData = prepareAttendanceData(teacherUUID);
-      const { successCount, errorCount } = await saveAttendanceData(attendanceData);
+      const { successCount, errorCount } = await saveAttendanceData(
+        attendanceData
+      );
 
       if (errorCount > 0) {
-        throw new Error(`Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.`);
+        throw new Error(
+          `Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.`
+        );
       }
 
       handleSaveSuccess(successCount);
-
     } catch (error) {
       console.error("Error saving attendance:", error);
       if (onShowToast) {
@@ -491,21 +521,25 @@ const Attendance = ({ user, onShowToast }) => {
         .eq("teacher_id", teacherId)
         .single();
 
-      if (teacherError) throw new Error("Gagal mengambil data guru: " + teacherError.message);
+      if (teacherError)
+        throw new Error("Gagal mengambil data guru: " + teacherError.message);
       if (!teacherUser) throw new Error("Data guru tidak ditemukan di sistem");
 
       const teacherUUID = teacherUser.id;
       const typeValue = isHomeroomDaily() ? "harian" : "mapel";
 
       await deleteExistingAttendance(teacherUUID, typeValue);
-      const { successCount, errorCount } = await saveAttendanceData(pendingAttendanceData);
+      const { successCount, errorCount } = await saveAttendanceData(
+        pendingAttendanceData
+      );
 
       if (errorCount > 0) {
-        throw new Error(`Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.`);
+        throw new Error(
+          `Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.`
+        );
       }
 
       handleSaveSuccess(successCount);
-
     } catch (error) {
       console.error("Error overwriting attendance:", error);
       if (onShowToast) {
@@ -522,7 +556,7 @@ const Attendance = ({ user, onShowToast }) => {
     setShowConfirmModal(false);
     setPendingAttendanceData(null);
     setExistingAttendanceData(null);
-    
+
     if (onShowToast) {
       onShowToast("Penyimpanan dibatalkan", "info");
     }
@@ -598,8 +632,6 @@ const Attendance = ({ user, onShowToast }) => {
           </div>
         </div>
       </div>
-
-
 
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm mb-4 sm:mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
@@ -679,7 +711,9 @@ const Attendance = ({ user, onShowToast }) => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border-l-4 border-green-500">
               <div className="flex items-center">
-                <div className="text-green-600 text-lg sm:text-xl mr-2 sm:mr-3">✓</div>
+                <div className="text-green-600 text-lg sm:text-xl mr-2 sm:mr-3">
+                  ✓
+                </div>
                 <div>
                   <div className="text-xl sm:text-2xl font-bold text-slate-800">
                     {stats.Hadir}
@@ -691,7 +725,9 @@ const Attendance = ({ user, onShowToast }) => {
 
             <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
               <div className="flex items-center">
-                <div className="text-yellow-600 text-lg sm:text-xl mr-2 sm:mr-3">🏥</div>
+                <div className="text-yellow-600 text-lg sm:text-xl mr-2 sm:mr-3">
+                  🏥
+                </div>
                 <div>
                   <div className="text-xl sm:text-2xl font-bold text-slate-800">
                     {stats.Sakit}
@@ -703,7 +739,9 @@ const Attendance = ({ user, onShowToast }) => {
 
             <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
               <div className="flex items-center">
-                <div className="text-blue-600 text-lg sm:text-xl mr-2 sm:mr-3">📋</div>
+                <div className="text-blue-600 text-lg sm:text-xl mr-2 sm:mr-3">
+                  📋
+                </div>
                 <div>
                   <div className="text-xl sm:text-2xl font-bold text-slate-800">
                     {stats.Izin}
@@ -715,7 +753,9 @@ const Attendance = ({ user, onShowToast }) => {
 
             <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border-l-4 border-red-500">
               <div className="flex items-center">
-                <div className="text-red-600 text-lg sm:text-xl mr-2 sm:mr-3">✖</div>
+                <div className="text-red-600 text-lg sm:text-xl mr-2 sm:mr-3">
+                  ✖
+                </div>
                 <div>
                   <div className="text-xl sm:text-2xl font-bold text-slate-800">
                     {stats.Alpa}
@@ -744,23 +784,30 @@ const Attendance = ({ user, onShowToast }) => {
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               onClick={setAllHadir}
               disabled={loading}
-              style={{ minHeight: '44px' }}>
+              style={{ minHeight: "44px" }}>
               ✅ Hadir Semua
             </button>
 
             <button
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-green-50 border border-green-200 text-green-700 rounded-lg hover:bg-green-100 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium touch-manipulation"
               onClick={processAttendanceSubmission}
-              disabled={loading || !selectedSubject || !selectedClass || students.length === 0}
-              style={{ minHeight: '44px' }}>
+              disabled={
+                loading ||
+                !selectedSubject ||
+                !selectedClass ||
+                students.length === 0
+              }
+              style={{ minHeight: "44px" }}>
               {loading ? "Menyimpan..." : "💾 Simpan Presensi"}
             </button>
 
             <button
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-purple-50 border border-purple-200 text-purple-700 rounded-lg hover:bg-purple-100 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               onClick={handleShowRekap}
-              disabled={!selectedClass || !selectedSubject || students.length === 0}
-              style={{ minHeight: '44px' }}>
+              disabled={
+                !selectedClass || !selectedSubject || students.length === 0
+              }
+              style={{ minHeight: "44px" }}>
               📊 Lihat Rekap
             </button>
 
@@ -768,7 +815,7 @@ const Attendance = ({ user, onShowToast }) => {
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-orange-50 border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-100 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               onClick={handleExportExcel}
               disabled={students.length === 0}
-              style={{ minHeight: '44px' }}>
+              style={{ minHeight: "44px" }}>
               📈 Export Excel
             </button>
           </div>
@@ -776,7 +823,8 @@ const Attendance = ({ user, onShowToast }) => {
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-4 sm:p-6 border-b border-slate-200">
               <h3 className="text-base sm:text-lg font-semibold text-slate-800">
-                Daftar Siswa - {classes.find((c) => c.id === selectedClass)?.displayName}
+                Daftar Siswa -{" "}
+                {classes.find((c) => c.id === selectedClass)?.displayName}
                 {searchTerm && (
                   <span className="text-sm text-slate-600 ml-2">
                     ({filteredStudents.length} siswa)
@@ -793,10 +841,12 @@ const Attendance = ({ user, onShowToast }) => {
                       <div className="font-medium text-slate-900 mb-1">
                         {index + 1}. {student.full_name}
                       </div>
-                      <div className="text-sm text-slate-600">NIS: {student.nis}</div>
+                      <div className="text-sm text-slate-600">
+                        NIS: {student.nis}
+                      </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs font-medium text-slate-700 mb-2 block">
@@ -809,9 +859,11 @@ const Attendance = ({ user, onShowToast }) => {
                               ? "bg-green-500 text-white"
                               : "bg-slate-100 text-slate-700 active:bg-slate-200"
                           }`}
-                          onClick={() => handleStatusChange(student.id, "Hadir")}
+                          onClick={() =>
+                            handleStatusChange(student.id, "Hadir")
+                          }
                           disabled={loading}
-                          style={{ minHeight: '44px' }}>
+                          style={{ minHeight: "44px" }}>
                           ✓ Hadir
                         </button>
                         <button
@@ -820,9 +872,11 @@ const Attendance = ({ user, onShowToast }) => {
                               ? "bg-yellow-500 text-white"
                               : "bg-slate-100 text-slate-700 active:bg-slate-200"
                           }`}
-                          onClick={() => handleStatusChange(student.id, "Sakit")}
+                          onClick={() =>
+                            handleStatusChange(student.id, "Sakit")
+                          }
                           disabled={loading}
-                          style={{ minHeight: '44px' }}>
+                          style={{ minHeight: "44px" }}>
                           🏥 Sakit
                         </button>
                         <button
@@ -833,7 +887,7 @@ const Attendance = ({ user, onShowToast }) => {
                           }`}
                           onClick={() => handleStatusChange(student.id, "Izin")}
                           disabled={loading}
-                          style={{ minHeight: '44px' }}>
+                          style={{ minHeight: "44px" }}>
                           📋 Izin
                         </button>
                         <button
@@ -844,12 +898,12 @@ const Attendance = ({ user, onShowToast }) => {
                           }`}
                           onClick={() => handleStatusChange(student.id, "Alpa")}
                           disabled={loading}
-                          style={{ minHeight: '44px' }}>
+                          style={{ minHeight: "44px" }}>
                           ✖ Alpa
                         </button>
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="text-xs font-medium text-slate-700 mb-2 block">
                         Keterangan
@@ -859,9 +913,11 @@ const Attendance = ({ user, onShowToast }) => {
                         className="w-full p-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                         placeholder="Tambahkan keterangan jika diperlukan..."
                         value={attendanceNotes[student.id] || ""}
-                        onChange={(e) => handleNotesChange(student.id, e.target.value)}
+                        onChange={(e) =>
+                          handleNotesChange(student.id, e.target.value)
+                        }
                         disabled={loading}
-                        style={{ minHeight: '44px' }}
+                        style={{ minHeight: "44px" }}
                       />
                     </div>
                   </div>
@@ -873,26 +929,38 @@ const Attendance = ({ user, onShowToast }) => {
               <table className="w-full">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap" style={{ width: '60px' }}>
+                    <th
+                      className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap"
+                      style={{ width: "60px" }}>
                       No
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap" style={{ width: '120px' }}>
+                    <th
+                      className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap"
+                      style={{ width: "120px" }}>
                       NIS
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700" style={{ minWidth: '200px' }}>
+                    <th
+                      className="px-4 py-3 text-left text-sm font-medium text-slate-700"
+                      style={{ minWidth: "200px" }}>
                       Nama Siswa
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700" style={{ minWidth: '280px' }}>
+                    <th
+                      className="px-4 py-3 text-left text-sm font-medium text-slate-700"
+                      style={{ minWidth: "280px" }}>
                       Status Kehadiran
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700" style={{ minWidth: '250px' }}>
+                    <th
+                      className="px-4 py-3 text-left text-sm font-medium text-slate-700"
+                      style={{ minWidth: "250px" }}>
                       Keterangan
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredStudents.map((student, index) => (
-                    <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <tr
+                      key={student.id}
+                      className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="px-4 py-3 text-sm text-slate-900">
                         {index + 1}
                       </td>
@@ -910,7 +978,9 @@ const Attendance = ({ user, onShowToast }) => {
                                 ? "bg-green-500 text-white"
                                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                             }`}
-                            onClick={() => handleStatusChange(student.id, "Hadir")}
+                            onClick={() =>
+                              handleStatusChange(student.id, "Hadir")
+                            }
                             disabled={loading}>
                             ✓ Hadir
                           </button>
@@ -920,7 +990,9 @@ const Attendance = ({ user, onShowToast }) => {
                                 ? "bg-yellow-500 text-white"
                                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                             }`}
-                            onClick={() => handleStatusChange(student.id, "Sakit")}
+                            onClick={() =>
+                              handleStatusChange(student.id, "Sakit")
+                            }
                             disabled={loading}>
                             🏥 Sakit
                           </button>
@@ -930,7 +1002,9 @@ const Attendance = ({ user, onShowToast }) => {
                                 ? "bg-blue-500 text-white"
                                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                             }`}
-                            onClick={() => handleStatusChange(student.id, "Izin")}
+                            onClick={() =>
+                              handleStatusChange(student.id, "Izin")
+                            }
                             disabled={loading}>
                             📋 Izin
                           </button>
@@ -940,7 +1014,9 @@ const Attendance = ({ user, onShowToast }) => {
                                 ? "bg-red-500 text-white"
                                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                             }`}
-                            onClick={() => handleStatusChange(student.id, "Alpa")}
+                            onClick={() =>
+                              handleStatusChange(student.id, "Alpa")
+                            }
                             disabled={loading}>
                             ✖ Alpa
                           </button>
@@ -952,9 +1028,11 @@ const Attendance = ({ user, onShowToast }) => {
                           className="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                           placeholder="Tambahkan keterangan..."
                           value={attendanceNotes[student.id] || ""}
-                          onChange={(e) => handleNotesChange(student.id, e.target.value)}
+                          onChange={(e) =>
+                            handleNotesChange(student.id, e.target.value)
+                          }
                           disabled={loading}
-                          style={{ minWidth: '220px' }}
+                          style={{ minWidth: "220px" }}
                         />
                       </td>
                     </tr>
@@ -972,11 +1050,14 @@ const Attendance = ({ user, onShowToast }) => {
         </div>
       )}
 
-      {!selectedClass && selectedSubject && classes.length === 0 && !isHomeroomDaily() && (
-        <div className="bg-white p-8 rounded-xl shadow-sm text-center text-slate-500">
-          <p>Tidak ada kelas untuk mata pelajaran ini</p>
-        </div>
-      )}
+      {!selectedClass &&
+        selectedSubject &&
+        classes.length === 0 &&
+        !isHomeroomDaily() && (
+          <div className="bg-white p-8 rounded-xl shadow-sm text-center text-slate-500">
+            <p>Tidak ada kelas untuk mata pelajaran ini</p>
+          </div>
+        )}
 
       {!selectedSubject && (
         <div className="bg-white p-8 rounded-xl shadow-sm text-center text-slate-500">
@@ -984,7 +1065,7 @@ const Attendance = ({ user, onShowToast }) => {
         </div>
       )}
 
-      <RecapModal
+      <AttendanceRecapModal
         showModal={showRekapModal}
         onClose={() => setShowRekapModal(false)}
         attendanceMode={isHomeroomDaily() ? "daily" : "subject"}
@@ -1003,20 +1084,23 @@ const Attendance = ({ user, onShowToast }) => {
                 ⚠️ Data Presensi Sudah Ada
               </h3>
             </div>
-            
+
             <div className="p-4 sm:p-6">
               <p className="text-sm sm:text-base text-slate-700 mb-4">
-                Presensi untuk <strong>{selectedSubject}</strong> pada tanggal <strong>{date}</strong> sudah tersimpan sebelumnya.
+                Presensi untuk <strong>{selectedSubject}</strong> pada tanggal{" "}
+                <strong>{date}</strong> sudah tersimpan sebelumnya.
               </p>
-              
+
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 mb-4">
                 <p className="text-sm text-yellow-800">
-                  <strong>Data yang sudah ada:</strong> {existingAttendanceData?.length} siswa
+                  <strong>Data yang sudah ada:</strong>{" "}
+                  {existingAttendanceData?.length} siswa
                 </p>
               </div>
 
               <p className="text-sm text-slate-600 mb-6">
-                Apakah Anda ingin <strong>menimpa data lama</strong> dengan data yang baru?
+                Apakah Anda ingin <strong>menimpa data lama</strong> dengan data
+                yang baru?
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3">
@@ -1024,14 +1108,14 @@ const Attendance = ({ user, onShowToast }) => {
                   onClick={handleCancelOverwrite}
                   disabled={loading}
                   className="w-full sm:flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition font-medium text-sm sm:text-base touch-manipulation disabled:opacity-50"
-                  style={{ minHeight: '44px' }}>
+                  style={{ minHeight: "44px" }}>
                   Batal
                 </button>
                 <button
                   onClick={handleOverwriteConfirmation}
                   disabled={loading}
                   className="w-full sm:flex-1 px-4 py-3 bg-red-500 border border-red-600 text-white rounded-lg hover:bg-red-600 active:bg-red-700 transition font-medium text-sm sm:text-base disabled:opacity-50 touch-manipulation"
-                  style={{ minHeight: '44px' }}>
+                  style={{ minHeight: "44px" }}>
                   {loading ? "Menimpa..." : "Ya, Timpa Data"}
                 </button>
               </div>

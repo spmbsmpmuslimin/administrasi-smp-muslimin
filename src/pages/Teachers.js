@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from '../supabaseClient';
-import { DataExcel } from './DataExcel'; // ✅ IMPORT DATAEXCEL
+import { supabase } from "../supabaseClient";
+import { DataExcel } from "./DataExcel"; // ✅ IMPORT DATAEXCEL
 
 export const Teachers = () => {
   const [guruData, setGuruData] = useState([]);
@@ -25,8 +25,8 @@ export const Teachers = () => {
 
       // Sort berdasarkan kode guru secara numerik (ekstrak angka dari teacher_id)
       const sortedGuruData = guruData.sort((a, b) => {
-        const numA = parseInt(a.teacher_id?.replace(/\D/g, '') || '0');
-        const numB = parseInt(b.teacher_id?.replace(/\D/g, '') || '0');
+        const numA = parseInt(a.teacher_id?.replace(/\D/g, "") || "0");
+        const numB = parseInt(b.teacher_id?.replace(/\D/g, "") || "0");
         return numA - numB;
       });
 
@@ -42,7 +42,7 @@ export const Teachers = () => {
       const guruWithMapel = sortedGuruData.map((guru) => {
         // ✅ Tentukan tugas/mapel berdasarkan role dan teacher_id
         let tugasMapel = [];
-        
+
         if (guru.teacher_id === "G-01") {
           // Kepala Sekolah
           tugasMapel = ["Kepala Sekolah"];
@@ -93,12 +93,18 @@ export const Teachers = () => {
     return (
       <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-white min-h-screen">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Data Guru</h1>
-          <p className="text-sm sm:text-base text-slate-600">Memuat data guru...</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+            Data Guru
+          </h1>
+          <p className="text-sm sm:text-base text-slate-600">
+            Memuat data guru...
+          </p>
         </div>
         <div className="text-center py-8 sm:py-12">
           <div className="inline-block w-6 h-6 sm:w-8 sm:h-8 border-2 sm:border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-          <p className="text-sm sm:text-base text-slate-500">Sedang memuat data...</p>
+          <p className="text-sm sm:text-base text-slate-500">
+            Sedang memuat data...
+          </p>
         </div>
       </div>
     );
@@ -110,10 +116,14 @@ export const Teachers = () => {
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Data Guru</h1>
-            <p className="text-sm sm:text-base text-slate-600">Manajemen Data Guru SMP Muslimin Cililin</p>
+            <h1 className="text-2xl sm:text-2xl font-bold text-slate-900 mb-2">
+              Data Guru
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600">
+              Manajemen Data Guru SMP Muslimin Cililin
+            </p>
           </div>
-          
+
           {/* ✅ TOMBOL EXPORT GURU */}
           <div className="flex-shrink-0">
             <button
@@ -168,30 +178,32 @@ export const Teachers = () => {
                 </th>
               </tr>
             </thead>
-            
+
             {/* Table Body */}
             <tbody className="bg-white divide-y divide-blue-100">
               {guruData.map((guru, index) => (
-                <tr key={guru.id} className="hover:bg-blue-50/50 transition-colors duration-150">
+                <tr
+                  key={guru.id}
+                  className="hover:bg-blue-50/50 transition-colors duration-150">
                   {/* Nomor */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-500 text-center font-medium">
                     {index + 1}
                   </td>
-                  
+
                   {/* Kode Guru */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
                     <div className="text-xs sm:text-sm font-bold text-blue-600">
                       {guru.teacher_id || "-"}
                     </div>
                   </td>
-                  
+
                   {/* Nama Guru */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <div className="text-xs sm:text-sm font-semibold text-slate-900">
                       {guru.full_name}
                     </div>
                   </td>
-                  
+
                   {/* Tugas/Mapel */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     {guru.mapel?.length > 0 ? (
@@ -204,7 +216,7 @@ export const Teachers = () => {
                       </span>
                     )}
                   </td>
-                  
+
                   {/* Wali Kelas */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
                     {guru.walikelas !== "-" ? (
@@ -212,10 +224,12 @@ export const Teachers = () => {
                         KELAS {guru.walikelas}
                       </div>
                     ) : (
-                      <span className="text-xs sm:text-sm text-slate-400 italic">-</span>
+                      <span className="text-xs sm:text-sm text-slate-400 italic">
+                        -
+                      </span>
                     )}
                   </td>
-                  
+
                   {/* Status */}
                   <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
                     {guru.is_active ? (
@@ -254,8 +268,8 @@ export const Teachers = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs sm:text-sm text-slate-600 space-y-2 sm:space-y-0">
             <span>Total: {guruData.length} guru</span>
             <span>
-              Aktif: {guruData.filter(g => g.is_active).length} | 
-              Non-aktif: {guruData.filter(g => !g.is_active).length}
+              Aktif: {guruData.filter((g) => g.is_active).length} | Non-aktif:{" "}
+              {guruData.filter((g) => !g.is_active).length}
             </span>
           </div>
         </div>

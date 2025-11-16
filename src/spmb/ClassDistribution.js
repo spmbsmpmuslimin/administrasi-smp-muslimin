@@ -33,7 +33,7 @@ export const generateNIS = (tahunAjaran, grade, nomorUrut) => {
   return `${tahunAjaran}.${gradeStr}.${nomorStr}`;
 };
 
-// Algoritma Pembagian Kelas Otomatis dengan NIS (MANUAL STYLE)
+// Algoritma Pembagian Kelas OPTIMAL untuk 200-250 siswa
 export const generateClassDistribution = (
   unassignedStudents,
   numClasses,
@@ -54,25 +54,69 @@ export const generateClassDistribution = (
   setIsLoading(true);
 
   try {
-    // Get tahun ajaran otomatis
     const tahunAjaran = getTahunAjaran();
 
-    const maleStudents = unassignedStudents.filter(
-      (s) => s.jenis_kelamin === "L"
-    );
-    const femaleStudents = unassignedStudents.filter(
-      (s) => s.jenis_kelamin === "P"
-    );
+    // STEP 1: Shuffle siswa by school untuk meratakan distribusi
+    const shuffleBySchool = (students) => {
+      // Group by school
+      const bySchool = {};
+      students.forEach((s) => {
+        const school = s.asal_sekolah || "Unknown";
+        if (!bySchool[school]) bySchool[school] = [];
+        bySchool[school].push(s);
+      });
 
-    const sortBySchool = (students) => {
-      return [...students].sort((a, b) =>
-        (a.asal_sekolah || "").localeCompare(b.asal_sekolah || "")
-      );
+      // Shuffle array untuk randomize urutan
+      const shuffle = (arr) => {
+        const shuffled = [...arr];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+      };
+
+      // Shuffle tiap sekolah
+      Object.keys(bySchool).forEach((school) => {
+        bySchool[school] = shuffle(bySchool[school]);
+      });
+
+      // Round-robin ambil dari tiap sekolah
+      const result = [];
+      const schools = Object.keys(bySchool);
+      let hasMore = true;
+      let idx = 0;
+
+      while (hasMore) {
+        hasMore = false;
+        schools.forEach((school) => {
+          if (bySchool[school][idx]) {
+            result.push(bySchool[school][idx]);
+            hasMore = true;
+          }
+        });
+        idx++;
+      }
+
+      return result;
     };
 
-    const sortedMales = sortBySchool(maleStudents);
-    const sortedFemales = sortBySchool(femaleStudents);
+    // Shuffle L dan P secara terpisah by school
+    const males = unassignedStudents.filter((s) => s.jenis_kelamin === "L");
+    const females = unassignedStudents.filter((s) => s.jenis_kelamin === "P");
 
+    const shuffledMales = shuffleBySchool(males);
+    const shuffledFemales = shuffleBySchool(females);
+
+    // Gabung zigzag L-P-L-P untuk balance gender
+    const balancedPool = [];
+    const maxLen = Math.max(shuffledMales.length, shuffledFemales.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < shuffledMales.length) balancedPool.push(shuffledMales[i]);
+      if (i < shuffledFemales.length) balancedPool.push(shuffledFemales[i]);
+    }
+
+    // STEP 2: Setup kelas & hitung target
     const classNames = Array.from(
       { length: numClasses },
       (_, i) => `7${String.fromCharCode(65 + i)}`
@@ -83,57 +127,30 @@ export const generateClassDistribution = (
       distribution[className] = [];
     });
 
-    // STEP 1: BAGI SISWA KE KELAS (merata: gender, asal sekolah)
     const totalStudents = unassignedStudents.length;
     const studentsPerClass = Math.floor(totalStudents / numClasses);
     const remainder = totalStudents % numClasses;
 
-    // Hitung target laki-laki dan perempuan per kelas
-    const malesPerClass = Math.floor(sortedMales.length / numClasses);
-    const femalesPerClass = Math.floor(sortedFemales.length / numClasses);
-    const malesRemainder = sortedMales.length % numClasses;
-    const femalesRemainder = sortedFemales.length % numClasses;
+    // STEP 3: SIMPLE ROUND-ROBIN distribusi
+    let poolIndex = 0;
 
-    let maleIndex = 0;
-    let femaleIndex = 0;
-
-    // Isi setiap kelas satu per satu (TANPA NIS dulu)
     classNames.forEach((className, classIdx) => {
-      // Kuota untuk kelas ini
-      const malesForThisClass =
-        malesPerClass + (classIdx < malesRemainder ? 1 : 0);
-      const femalesForThisClass =
-        femalesPerClass + (classIdx < femalesRemainder ? 1 : 0);
+      const targetTotal = studentsPerClass + (classIdx < remainder ? 1 : 0);
 
-      // Ambil laki-laki sesuai kuota
-      for (
-        let i = 0;
-        i < malesForThisClass && maleIndex < sortedMales.length;
-        i++
-      ) {
-        distribution[className].push(sortedMales[maleIndex]);
-        maleIndex++;
-      }
-
-      // Ambil perempuan sesuai kuota
-      for (
-        let i = 0;
-        i < femalesForThisClass && femaleIndex < sortedFemales.length;
-        i++
-      ) {
-        distribution[className].push(sortedFemales[femaleIndex]);
-        femaleIndex++;
+      for (let i = 0; i < targetTotal && poolIndex < balancedPool.length; i++) {
+        distribution[className].push(balancedPool[poolIndex]);
+        poolIndex++;
       }
     });
 
-    // STEP 2: SORT SETIAP KELAS BERDASARKAN NAMA (A-Z)
+    // STEP 5: SORT setiap kelas by NAMA (A-Z)
     Object.keys(distribution).forEach((className) => {
       distribution[className].sort((a, b) =>
         (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "")
       );
     });
 
-    // STEP 3: ASSIGN NIS BERURUTAN PER KELAS
+    // STEP 6: ASSIGN NIS berurutan per kelas (sesuai urutan nama)
     let nisCounter = 1;
 
     classNames.forEach((className) => {
@@ -157,7 +174,7 @@ export const generateClassDistribution = (
     setHistoryIndex(0);
 
     showToast(
-      `Berhasil generate pembagian ${numClasses} kelas dengan NIS berurutan per nama!`,
+      `✅ Berhasil generate ${numClasses} kelas seimbang (${totalStudents} siswa)!`,
       "success"
     );
   } catch (error) {

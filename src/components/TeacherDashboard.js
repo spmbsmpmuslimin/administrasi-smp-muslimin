@@ -103,57 +103,78 @@ const TeacherDashboard = ({ user }) => {
   }, [user]);
 
   // Fetch jadwal hari ini
-  const fetchTodaySchedule = useCallback(async (teacherCode, teacherUUID) => {
+  const fetchTodaySchedule = async () => {
     try {
-      const today = new Date();
-      const dayName = getDayName(today.getDay());
+      const todayDay = getTodayDayName();
 
-      // Query menggunakan UUID (user.id)
-      const { data: schedules, error: scheduleError } = await supabase
-        .from("teacher_schedules")
-        .select(
-          `
-          *,
-          classes:class_id (
-            id,
-            grade
-          )
-        `
-        )
-        .eq("teacher_id", teacherUUID) // ✅ Pakai UUID
-        .eq("day", dayName)
+      console.log("🔍 Hari ini:", todayDay);
+      console.log("🔍 Teacher ID:", userData.id);
+
+      // Weekend check
+      if (todayDay === "Sabtu" || todayDay === "Minggu") {
+        console.log("⚠️ Weekend - tidak ada jadwal");
+        return [];
+      }
+
+      // VERSI 1: Jika ada tabel classes (dengan JOIN)
+      let query = supabase
+        .from("class_schedules")
+        .select("*, classes(grade, class_name)")
+        .eq("day", todayDay)
         .order("start_time", { ascending: true });
 
-      if (scheduleError) throw scheduleError;
+      // Filter by teacher_id jika userData punya id
+      if (userData.id) {
+        query = query.eq("teacher_id", userData.id);
+      }
 
-      // Get subject info from teacher_assignments menggunakan teacher_id (G-12)
-      const scheduleIds = schedules?.map((s) => s.class_id) || [];
-      const { data: assignments } = await supabase
-        .from("teacher_assignments")
-        .select("class_id, subject")
-        .eq("teacher_id", teacherCode) // ✅ Pakai teacher_id (G-12)
-        .in("class_id", scheduleIds);
+      const { data: scheduleData, error: scheduleError } = await query;
 
-      // Merge schedule with subject data
-      const enrichedSchedules =
-        schedules?.map((schedule) => {
-          const assignment = assignments?.find(
-            (a) => a.class_id === schedule.class_id
-          );
-          return {
-            ...schedule,
-            subject: assignment?.subject || "N/A",
-          };
-        }) || [];
+      // Jika error join classes, coba tanpa join
+      if (scheduleError) {
+        console.log("⚠️ Error dengan JOIN, coba tanpa JOIN:", scheduleError);
 
-      // ✅ Gabungkan jadwal berurutan
-      const mergedSchedules = mergeConsecutiveSchedules(enrichedSchedules);
+        const { data: simpleData, error: simpleError } = await supabase
+          .from("class_schedules")
+          .select("*")
+          .eq("day", todayDay)
+          .eq("teacher_id", userData.id)
+          .order("start_time", { ascending: true });
 
-      setTodaySchedule(mergedSchedules);
-    } catch (err) {
-      console.error("❌ Error fetching today's schedule:", err);
+        if (simpleError) {
+          console.error("❌ ERROR:", simpleError);
+          return [];
+        }
+
+        // Format tanpa JOIN (langsung pake class_id)
+        const formatted = simpleData.map((item) => ({
+          mapel: item.subject || "Mata Pelajaran",
+          kelas: `Kelas ${item.class_id}`, // Langsung pake class_id
+          jam_mulai: item.start_time.substring(0, 5), // 07:00:00 → 07:00
+          jam_selesai: item.end_time.substring(0, 5),
+        }));
+
+        console.log("✅ Jadwal (tanpa JOIN):", formatted);
+        return formatted;
+      }
+
+      // Format dengan JOIN
+      const formatted = scheduleData.map((item) => ({
+        mapel: item.subject || "Mata Pelajaran",
+        kelas: item.classes
+          ? `${item.classes.grade}-${item.classes.class_name}`
+          : `Kelas ${item.class_id}`,
+        jam_mulai: item.start_time.substring(0, 5),
+        jam_selesai: item.end_time.substring(0, 5),
+      }));
+
+      console.log("✅ Jadwal ditemukan:", formatted);
+      return formatted;
+    } catch (error) {
+      console.error("❌ FATAL ERROR:", error);
+      return [];
     }
-  }, []);
+  };
 
   const fetchTeacherData = async (teacherCode, teacherUUID) => {
     try {

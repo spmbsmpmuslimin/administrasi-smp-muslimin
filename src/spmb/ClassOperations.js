@@ -2,7 +2,7 @@
 
 import { exportClassDivision } from "./SpmbExcel";
 
-// Simpan pembagian ke database (WITH NIS)
+// Simpan pembagian ke database (WITH NIS dari no_pendaftaran)
 export const saveClassAssignments = async (
   classDistribution,
   supabase,
@@ -32,7 +32,10 @@ export const saveClassAssignments = async (
         updates.push({
           id: student.id,
           kelas: className,
-          nis: student.nis, // 🔥 SIMPAN NIS
+          // 🔥 BARU: Convert no_pendaftaran ke NIS (format: 26.27.07.001)
+          nis: student.no_pendaftaran
+            ? student.no_pendaftaran.replace("SPMB-", "")
+            : "",
         });
       });
     });
@@ -42,7 +45,7 @@ export const saveClassAssignments = async (
         .from("siswa_baru")
         .update({
           kelas: update.kelas,
-          nis: update.nis, // 🔥 UPDATE NIS KE DATABASE
+          nis: update.nis, // 🔥 UPDATE NIS DARI NO_PENDAFTARAN
         })
         .eq("id", update.id);
 
@@ -70,7 +73,7 @@ export const saveClassAssignments = async (
   }
 };
 
-// Transfer ke tabel students
+// Transfer ke tabel students - JUGA PERLU DIMODIFIKASI
 export const transferToStudents = async (
   allStudents,
   supabase,
@@ -101,10 +104,15 @@ export const transferToStudents = async (
     const currentYear = getCurrentAcademicYear();
 
     for (const siswa of studentsWithClass) {
+      // 🔥 BARU: Convert no_pendaftaran ke NIS untuk transfer
+      const nisFromPendaftaran = siswa.no_pendaftaran
+        ? siswa.no_pendaftaran.replace("SPMB-", "")
+        : "";
+
       const { error: insertError } = await supabase.from("students").insert([
         {
           full_name: siswa.nama_lengkap,
-          nis: siswa.nisn,
+          nis: nisFromPendaftaran || siswa.nisn, // 🔥 Prioritaskan NIS dari no_pendaftaran
           class_id: siswa.kelas,
           academic_year: currentYear,
           gender: siswa.jenis_kelamin,
@@ -141,7 +149,7 @@ export const transferToStudents = async (
   }
 };
 
-// Reset class assignments
+// Reset class assignments + NIS
 export const resetClassAssignments = async (
   allStudents,
   supabase,
@@ -160,7 +168,7 @@ export const resetClassAssignments = async (
 
   if (
     !window.confirm(
-      `Reset pembagian ${studentsWithClass.length} siswa? Semua kelas akan dikosongkan.`
+      `Reset pembagian ${studentsWithClass.length} siswa? Semua kelas dan NIS akan direset.`
     )
   ) {
     return;
@@ -173,6 +181,7 @@ export const resetClassAssignments = async (
         .from("siswa_baru")
         .update({
           kelas: null,
+          nis: null, // 🔥 Reset NIS juga
           updated_at: new Date().toISOString(),
         })
         .eq("id", siswa.id);
@@ -181,7 +190,7 @@ export const resetClassAssignments = async (
     }
 
     showToast(
-      `✅ Berhasil reset ${studentsWithClass.length} siswa!`,
+      `✅ Berhasil reset ${studentsWithClass.length} siswa (kelas + NIS)!`,
       "success"
     );
 

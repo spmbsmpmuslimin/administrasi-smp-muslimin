@@ -17,10 +17,10 @@ import { exportToExcel, importFromExcel } from "./GradesExcel";
 const Grades = ({ user, onShowToast }) => {
   // States untuk auth dan user
   const [teacherId, setTeacherId] = useState(null);
-  const [teacherName, setTeacherName] = useState(""); // TAMBAHAN: nama guru
+  const [teacherName, setTeacherName] = useState("");
   const [authLoading, setAuthLoading] = useState(true);
 
-  // States untuk filter - IMPROVED WITH DYNAMIC DATA
+  // States untuk filter
   const [academicYears, setAcademicYears] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -35,17 +35,16 @@ const Grades = ({ user, onShowToast }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Assignment types - UPDATED: UTS -> PSTS, UAS -> PSAS
+  // Assignment types
   const assignmentTypes = ["NH1", "NH2", "NH3", "PSTS", "PSAS"];
 
-  // Auth check - REVISI: Mengambil full_name dan teacher_id
+  // Auth check
   useEffect(() => {
     const checkAuth = async () => {
       try {
         if (user) {
           const { data: teacherData, error: teacherError } = await supabase
             .from("users")
-            // REVISI: Ambil teacher_id DAN full_name
             .select("teacher_id, full_name")
             .eq("username", user.username)
             .single();
@@ -55,7 +54,7 @@ const Grades = ({ user, onShowToast }) => {
             setMessage("Error: Data guru tidak ditemukan");
           } else if (teacherData) {
             setTeacherId(teacherData.teacher_id);
-            setTeacherName(teacherData.full_name); // SIMPAN full_name
+            setTeacherName(teacherData.full_name);
           }
         } else {
           setMessage("Silakan login terlebih dahulu");
@@ -71,13 +70,12 @@ const Grades = ({ user, onShowToast }) => {
     checkAuth();
   }, [user]);
 
-  // NEW: Fetch Available Academic Years from Database
+  // Fetch Academic Years
   useEffect(() => {
     const fetchAcademicYears = async () => {
       if (!teacherId) return;
 
       try {
-        // Get unique academic years from teacher_assignments
         const { data: assignmentData, error: assignmentError } = await supabase
           .from("teacher_assignments")
           .select("academic_year")
@@ -90,18 +88,15 @@ const Grades = ({ user, onShowToast }) => {
         }
 
         if (!assignmentData || assignmentData.length === 0) {
-          console.log("No academic years found for teacher");
           setAcademicYears([]);
           setMessage("Tidak ada data tahun akademik untuk guru ini");
           return;
         }
 
-        // Get unique academic years and sort them
         const uniqueYears = [
           ...new Set(assignmentData.map((item) => item.academic_year)),
         ];
         const sortedYears = uniqueYears.sort((a, b) => {
-          // Sort by year desc (newest first)
           const yearA = parseInt(a.split("/")[0]);
           const yearB = parseInt(b.split("/")[0]);
           return yearB - yearA;
@@ -109,10 +104,8 @@ const Grades = ({ user, onShowToast }) => {
 
         setAcademicYears(sortedYears);
 
-        // Auto-select the latest academic year if none selected
         if (!academicYear && sortedYears.length > 0) {
-          const latestYear = sortedYears[0];
-          setAcademicYear(latestYear);
+          setAcademicYear(sortedYears[0]);
         }
       } catch (error) {
         console.error("Error in fetchAcademicYears:", error);
@@ -125,11 +118,10 @@ const Grades = ({ user, onShowToast }) => {
     fetchAcademicYears();
   }, [teacherId]);
 
-  // Fetch subjects berdasarkan teacher_assignments - UPDATED
+  // Fetch subjects
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!teacherId || !academicYear) {
-        console.log("Missing teacherId or academicYear for subjects");
         setSubjects([]);
         return;
       }
@@ -149,7 +141,6 @@ const Grades = ({ user, onShowToast }) => {
         }
 
         if (!data || data.length === 0) {
-          console.log("No subjects found");
           setSubjects([]);
           setMessage(
             `Tidak ada mata pelajaran untuk tahun ${academicYear} semester ${semester}`
@@ -160,7 +151,6 @@ const Grades = ({ user, onShowToast }) => {
         const uniqueSubjects = [...new Set(data.map((item) => item.subject))];
         setSubjects(uniqueSubjects);
 
-        // Clear message on success
         if (uniqueSubjects.length > 0 && message.includes("mata pelajaran")) {
           setMessage("");
         }
@@ -173,7 +163,7 @@ const Grades = ({ user, onShowToast }) => {
     fetchSubjects();
   }, [teacherId, academicYear, semester]);
 
-  // Fetch classes berdasarkan teacher_assignments
+  // Fetch classes
   useEffect(() => {
     const fetchClasses = async () => {
       if (!selectedSubject || !teacherId || !academicYear) {
@@ -233,7 +223,6 @@ const Grades = ({ user, onShowToast }) => {
     try {
       setLoading(true);
 
-      // Fetch students berdasarkan class_id dan academic_year
       const { data: studentsData, error: studentsError } = await supabase
         .from("students")
         .select("id, full_name, nis")
@@ -245,7 +234,6 @@ const Grades = ({ user, onShowToast }) => {
       if (studentsError) throw studentsError;
       setStudents(studentsData || []);
 
-      // Get teacher UUID untuk query grades
       const { data: teacherUser, error: teacherError } = await supabase
         .from("users")
         .select("id")
@@ -254,7 +242,6 @@ const Grades = ({ user, onShowToast }) => {
 
       if (teacherError) throw teacherError;
 
-      // Fetch existing grades untuk semua assignment types
       const { data: gradesData, error: gradesError } = await supabase
         .from("grades")
         .select("*")
@@ -272,7 +259,6 @@ const Grades = ({ user, onShowToast }) => {
         console.error("Error fetching grades:", gradesError);
       }
 
-      // Format grades data
       const formattedGrades = {};
       studentsData.forEach((student) => {
         formattedGrades[student.id] = {
@@ -284,7 +270,6 @@ const Grades = ({ user, onShowToast }) => {
           na: 0,
         };
 
-        // Fill existing grades
         if (gradesData) {
           assignmentTypes.forEach((type) => {
             const existingGrade = gradesData.find(
@@ -299,7 +284,6 @@ const Grades = ({ user, onShowToast }) => {
           });
         }
 
-        // Calculate NA
         const grades = formattedGrades[student.id];
         const nh1 = parseFloat(grades.NH1.score) || 0;
         const nh2 = parseFloat(grades.NH2.score) || 0;
@@ -327,7 +311,7 @@ const Grades = ({ user, onShowToast }) => {
     }
   }, [selectedClass, selectedSubject, academicYear, semester]);
 
-  // Calculate NA - UPDATED: UTS -> PSTS, UAS -> PSAS
+  // Calculate NA
   const calculateNA = (nh1, nh2, nh3, psts, psas) => {
     const nhAvg =
       (parseFloat(nh1 || 0) + parseFloat(nh2 || 0) + parseFloat(nh3 || 0)) / 3;
@@ -342,7 +326,6 @@ const Grades = ({ user, onShowToast }) => {
       const updated = { ...prev[studentId] };
       updated[assignmentType] = { ...updated[assignmentType], score: value };
 
-      // Recalculate NA
       updated.na = calculateNA(
         updated.NH1.score,
         updated.NH2.score,
@@ -358,12 +341,16 @@ const Grades = ({ user, onShowToast }) => {
   // Save grades function
   const saveGrades = async () => {
     if (!teacherId || !selectedSubject || !selectedClass) {
-      setMessage("Pilih mata pelajaran dan kelas terlebih dahulu!");
+      const msg = "Pilih mata pelajaran dan kelas terlebih dahulu!";
+      setMessage(msg);
+      if (onShowToast) onShowToast(msg, "error");
       return;
     }
 
     if (students.length === 0) {
-      setMessage("Tidak ada siswa untuk disimpan!");
+      const msg = "Tidak ada siswa untuk disimpan!";
+      setMessage(msg);
+      if (onShowToast) onShowToast(msg, "error");
       return;
     }
 
@@ -371,7 +358,6 @@ const Grades = ({ user, onShowToast }) => {
     setMessage("");
 
     try {
-      // Get teacher UUID
       const { data: teacherUser, error: teacherError } = await supabase
         .from("users")
         .select("id")
@@ -382,8 +368,6 @@ const Grades = ({ user, onShowToast }) => {
         throw new Error("Gagal mengambil data guru: " + teacherError.message);
 
       const teacherUUID = teacherUser.id;
-
-      // Prepare data untuk disimpan/update
       const gradesToSave = [];
       const gradesToUpdate = [];
 
@@ -395,7 +379,6 @@ const Grades = ({ user, onShowToast }) => {
             if (gradeData && gradeData.score !== "") {
               const scoreValue = parseFloat(gradeData.score);
 
-              // VALIDASI SCORE
               if (!isNaN(scoreValue) && scoreValue >= 0 && scoreValue <= 100) {
                 const gradeRecord = {
                   student_id: student.id,
@@ -408,7 +391,6 @@ const Grades = ({ user, onShowToast }) => {
                   academic_year: academicYear,
                 };
 
-                // Pastikan semua field required ada
                 if (
                   !gradeRecord.student_id ||
                   !gradeRecord.teacher_id ||
@@ -418,23 +400,16 @@ const Grades = ({ user, onShowToast }) => {
                   !gradeRecord.semester ||
                   !gradeRecord.academic_year
                 ) {
-                  console.error("Missing required fields:", gradeRecord);
                   throw new Error(
                     `Data tidak lengkap untuk siswa ${student.full_name}, assignment ${type}`
                   );
                 }
 
                 if (gradeData.id) {
-                  // Update existing record
                   gradesToUpdate.push({ ...gradeRecord, id: gradeData.id });
                 } else {
-                  // Insert new record
                   gradesToSave.push(gradeRecord);
                 }
-              } else {
-                console.warn(
-                  `Invalid score for student ${student.full_name}, ${type}: ${gradeData.score}`
-                );
               }
             }
           });
@@ -445,7 +420,6 @@ const Grades = ({ user, onShowToast }) => {
       let errorCount = 0;
       const errorDetails = [];
 
-      // Insert new grades dengan batch yang lebih kecil
       if (gradesToSave.length > 0) {
         const BATCH_SIZE = 5;
         for (let i = 0; i < gradesToSave.length; i += BATCH_SIZE) {
@@ -474,7 +448,6 @@ const Grades = ({ user, onShowToast }) => {
         }
       }
 
-      // Update existing grades
       if (gradesToUpdate.length > 0) {
         for (const grade of gradesToUpdate) {
           const { id, ...updateData } = grade;
@@ -513,11 +486,8 @@ const Grades = ({ user, onShowToast }) => {
 
       const successMsg = `Nilai berhasil disimpan! (${successCount} records)`;
       setMessage(successMsg);
-      if (onShowToast) {
-        onShowToast(successMsg);
-      }
+      if (onShowToast) onShowToast(successMsg, "success");
 
-      // Refresh data setelah save
       setTimeout(() => {
         fetchStudentsAndGrades(selectedClass);
         setMessage("");
@@ -525,18 +495,18 @@ const Grades = ({ user, onShowToast }) => {
     } catch (error) {
       const errorMsg = "Gagal menyimpan nilai: " + error.message;
       setMessage(errorMsg);
-      if (onShowToast) {
-        onShowToast(errorMsg, "error");
-      }
+      if (onShowToast) onShowToast(errorMsg, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // ===== HANDLER EXPORT TO EXCEL - REVISI: MENGIRIM teacherId =====
+  // Handler Export
   const handleExport = async () => {
     if (!selectedClass || !selectedSubject || students.length === 0) {
-      setMessage("Pilih mata pelajaran dan kelas terlebih dahulu!");
+      const msg = "Pilih mata pelajaran dan kelas terlebih dahulu!";
+      setMessage(msg);
+      if (onShowToast) onShowToast(msg, "error");
       return;
     }
 
@@ -551,7 +521,7 @@ const Grades = ({ user, onShowToast }) => {
       className: classes.find((c) => c.id === selectedClass)?.displayName,
       academicYear,
       semester,
-      teacherId, // TAMBAHAN: Mengirim teacherId untuk fetch nama di GradesExcel.js
+      teacherId,
     });
 
     setMessage(result.message);
@@ -561,13 +531,15 @@ const Grades = ({ user, onShowToast }) => {
     setLoading(false);
   };
 
-  // ===== HANDLER IMPORT FROM EXCEL =====
+  // Handler Import
   const handleImport = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     if (!selectedClass || !selectedSubject || students.length === 0) {
-      setMessage("Pilih mata pelajaran dan kelas terlebih dahulu!");
+      const msg = "Pilih mata pelajaran dan kelas terlebih dahulu!";
+      setMessage(msg);
+      if (onShowToast) onShowToast(msg, "error");
       event.target.value = "";
       return;
     }
@@ -609,7 +581,6 @@ const Grades = ({ user, onShowToast }) => {
     Object.values(grades).forEach((studentGrade) => {
       stats.total++;
 
-      // Check if any grade is filled
       const hasGrades = assignmentTypes.some(
         (type) => studentGrade[type] && studentGrade[type].score !== ""
       );
@@ -632,10 +603,12 @@ const Grades = ({ user, onShowToast }) => {
   // Loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <Calculator className="w-12 h-12 text-indigo-600 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-600">Memeriksa autentikasi...</p>
+          <Calculator className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-600 mx-auto mb-4 animate-spin" />
+          <p className="text-slate-600 text-sm sm:text-base">
+            Memeriksa autentikasi...
+          </p>
         </div>
       </div>
     );
@@ -644,10 +617,10 @@ const Grades = ({ user, onShowToast }) => {
   // Not authenticated
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <p className="text-gray-700">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 text-center max-w-md">
+          <div className="text-red-500 text-4xl sm:text-5xl mb-4">⚠️</div>
+          <p className="text-slate-700 text-sm sm:text-base">
             Anda harus login untuk mengakses halaman ini
           </p>
         </div>
@@ -658,28 +631,28 @@ const Grades = ({ user, onShowToast }) => {
   const stats = getGradeStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Calculator className="w-8 h-8 text-indigo-600" />
-                <h1 className="text-2xl font-bold text-gray-800">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                <Calculator className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
                   Input Nilai Siswa
                 </h1>
               </div>
-              <div className="text-gray-600">
-                <span>Kelola Nilai Siswa Untuk Mata Pelajaran</span>
-              </div>
+              <p className="text-sm sm:text-base text-slate-600">
+                Kelola Nilai Siswa Untuk Mata Pelajaran
+              </p>
             </div>
           </div>
 
           {/* Message */}
           {message && (
             <div
-              className={`mt-4 p-3 rounded-lg ${
+              className={`mt-3 sm:mt-4 p-2.5 sm:p-3 rounded-lg text-sm sm:text-base ${
                 message.includes("Error") || message.includes("Gagal")
                   ? "bg-red-100 text-red-700 border border-red-300"
                   : "bg-green-100 text-green-700 border border-green-300"
@@ -688,12 +661,12 @@ const Grades = ({ user, onShowToast }) => {
             </div>
           )}
 
-          {/* UPDATED FILTERS with Dynamic Academic Year */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-            {/* Academic Year - DYNAMIC FROM DATABASE */}
+          {/* Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
+            {/* Academic Year */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-2" />
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
                 Tahun Akademik
               </label>
               <select
@@ -705,8 +678,9 @@ const Grades = ({ user, onShowToast }) => {
                   setStudents([]);
                   setGrades({});
                 }}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                disabled={loading || academicYears.length === 0}>
+                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={loading || academicYears.length === 0}
+                style={{ minHeight: "44px" }}>
                 <option value="">Pilih Tahun Akademik</option>
                 {academicYears.map((year) => (
                   <option key={year} value={year}>
@@ -718,8 +692,8 @@ const Grades = ({ user, onShowToast }) => {
 
             {/* Semester */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <GraduationCap className="w-4 h-4 inline mr-2" />
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <GraduationCap className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
                 Semester
               </label>
               <select
@@ -731,8 +705,9 @@ const Grades = ({ user, onShowToast }) => {
                   setStudents([]);
                   setGrades({});
                 }}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                disabled={!academicYear}>
+                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={!academicYear}
+                style={{ minHeight: "44px" }}>
                 <option value="1">Semester 1</option>
                 <option value="2">Semester 2</option>
               </select>
@@ -740,8 +715,8 @@ const Grades = ({ user, onShowToast }) => {
 
             {/* Mata Pelajaran */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <BookOpen className="w-4 h-4 inline mr-2" />
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
                 Mata Pelajaran
               </label>
               <select
@@ -752,8 +727,9 @@ const Grades = ({ user, onShowToast }) => {
                   setStudents([]);
                   setGrades({});
                 }}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                disabled={loading || !academicYear || subjects.length === 0}>
+                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={loading || !academicYear || subjects.length === 0}
+                style={{ minHeight: "44px" }}>
                 <option value="">Pilih Mata Pelajaran</option>
                 {subjects.map((subject, index) => (
                   <option key={index} value={subject}>
@@ -765,15 +741,16 @@ const Grades = ({ user, onShowToast }) => {
 
             {/* Kelas */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Users className="w-4 h-4 inline mr-2" />
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <Users className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
                 Kelas
               </label>
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                disabled={!selectedSubject || loading || classes.length === 0}>
+                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={!selectedSubject || loading || classes.length === 0}
+                style={{ minHeight: "44px" }}>
                 <option value="">Pilih Kelas</option>
                 {classes.map((cls) => (
                   <option key={cls.id} value={cls.id}>
@@ -787,76 +764,82 @@ const Grades = ({ user, onShowToast }) => {
 
         {/* Stats Cards */}
         {selectedClass && selectedSubject && students.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center gap-4">
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-6">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="bg-blue-100 p-2.5 sm:p-3 rounded-lg">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-xl sm:text-2xl font-bold text-slate-800">
                     {stats.total}
                   </p>
-                  <p className="text-gray-600">Total Siswa</p>
+                  <p className="text-xs sm:text-sm text-slate-600">
+                    Total Siswa
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center gap-4">
-                <div className="bg-green-100 p-3 rounded-lg">
-                  <Eye className="w-6 h-6 text-green-600" />
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="bg-green-100 p-2.5 sm:p-3 rounded-lg">
+                  <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-xl sm:text-2xl font-bold text-slate-800">
                     {stats.completed}
                   </p>
-                  <p className="text-gray-600">Sudah Dinilai</p>
+                  <p className="text-xs sm:text-sm text-slate-600">
+                    Sudah Dinilai
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center gap-4">
-                <div className="bg-purple-100 p-3 rounded-lg">
-                  <BarChart3 className="w-6 h-6 text-purple-600" />
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="bg-purple-100 p-2.5 sm:p-3 rounded-lg">
+                  <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-xl sm:text-2xl font-bold text-slate-800">
                     {stats.average}
                   </p>
-                  <p className="text-gray-600">Rata-rata NA</p>
+                  <p className="text-xs sm:text-sm text-slate-600">
+                    Rata-rata NA
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Grades Table */}
+        {/* Grades Table/Cards */}
         {selectedClass && selectedSubject && students.length > 0 && (
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 sm:p-6 border-b border-slate-200">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-800">
+                  <h2 className="text-base sm:text-lg font-semibold text-slate-800">
                     Daftar Nilai -{" "}
                     {classes.find((c) => c.id === selectedClass)?.displayName}
                   </h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
                     {selectedSubject} • {academicYear} • Semester {semester}
                   </p>
-                  {/* FIX SYNTAX ERROR DI BAWAH INI: Hapus tag <p> yang berlebihan */}
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     NA = Rata-rata NH (40%) + PSTS (30%) + PSAS (30%)
                   </p>
                 </div>
 
-                {/* TOMBOL SIMPAN, EXPORT & IMPORT SEJAJAR */}
-                <div className="flex gap-2">
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <button
                     onClick={saveGrades}
                     disabled={loading || students.length === 0}
-                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors">
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation text-sm sm:text-base"
+                    style={{ minHeight: "44px" }}>
                     <Save className="w-4 h-4" />
                     {loading ? "Menyimpan..." : "Simpan Nilai"}
                   </button>
@@ -864,19 +847,21 @@ const Grades = ({ user, onShowToast }) => {
                   <button
                     onClick={handleExport}
                     disabled={loading || students.length === 0}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors"
-                    title="Export data nilai ke Excel">
+                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation text-sm sm:text-base"
+                    title="Export data nilai ke Excel"
+                    style={{ minHeight: "44px" }}>
                     <Download className="w-4 h-4" />
                     Export Excel
                   </button>
 
                   <label
-                    className={`${
+                    className={`w-full sm:w-auto ${
                       loading || students.length === 0
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-                    } text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-colors`}
-                    title="Import nilai dari file Excel">
+                    } text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation text-sm sm:text-base`}
+                    title="Import nilai dari file Excel"
+                    style={{ minHeight: "44px" }}>
                     <Upload className="w-4 h-4" />
                     Import Excel
                     <input
@@ -891,57 +876,203 @@ const Grades = ({ user, onShowToast }) => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile View - Card Layout */}
+            <div className="block lg:hidden">
+              {students.map((student, index) => {
+                const studentGrade = grades[student.id] || {};
+                return (
+                  <div
+                    key={student.id}
+                    className="border-b border-slate-100 p-4">
+                    <div className="mb-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <div className="font-medium text-slate-900 text-sm">
+                            {index + 1}. {student.full_name}
+                          </div>
+                          <div className="text-xs text-slate-600">
+                            NIS: {student.nis}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-slate-600 mb-1">
+                            Nilai Akhir
+                          </div>
+                          <div className="font-bold text-lg text-indigo-600 bg-indigo-50 rounded px-3 py-1">
+                            {studentGrade.na || "0.00"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Grade Inputs - Grid 2 Kolom */}
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* NH1 */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                            NH1
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={studentGrade.NH1?.score || ""}
+                            onChange={(e) =>
+                              updateGrade(student.id, "NH1", e.target.value)
+                            }
+                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            placeholder="0"
+                            disabled={loading}
+                            style={{ minHeight: "44px" }}
+                          />
+                        </div>
+
+                        {/* NH2 */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                            NH2
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={studentGrade.NH2?.score || ""}
+                            onChange={(e) =>
+                              updateGrade(student.id, "NH2", e.target.value)
+                            }
+                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            placeholder="0"
+                            disabled={loading}
+                            style={{ minHeight: "44px" }}
+                          />
+                        </div>
+
+                        {/* NH3 */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                            NH3
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={studentGrade.NH3?.score || ""}
+                            onChange={(e) =>
+                              updateGrade(student.id, "NH3", e.target.value)
+                            }
+                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            placeholder="0"
+                            disabled={loading}
+                            style={{ minHeight: "44px" }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* PSTS */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                            PSTS
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={studentGrade.PSTS?.score || ""}
+                            onChange={(e) =>
+                              updateGrade(student.id, "PSTS", e.target.value)
+                            }
+                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            placeholder="0"
+                            disabled={loading}
+                            style={{ minHeight: "44px" }}
+                          />
+                        </div>
+
+                        {/* PSAS */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                            PSAS
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={studentGrade.PSAS?.score || ""}
+                            onChange={(e) =>
+                              updateGrade(student.id, "PSAS", e.target.value)
+                            }
+                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            placeholder="0"
+                            disabled={loading}
+                            style={{ minHeight: "44px" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop View - Table */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       No
                     </th>
-                    <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       NIS
                     </th>
-                    <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Nama Siswa
                     </th>
-                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
                       NH1
                     </th>
-                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
                       NH2
                     </th>
-                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
                       NH3
                     </th>
-                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
                       PSTS
                     </th>
-                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
                       PSAS
                     </th>
-                    <th className="px-4 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-indigo-50">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider bg-indigo-50">
                       NA
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-slate-200">
                   {students.map((student, index) => {
                     const studentGrade = grades[student.id] || {};
                     return (
-                      <tr key={student.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 text-sm text-gray-900">
+                      <tr key={student.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 text-sm text-slate-900">
                           {index + 1}
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-900">
+                        <td className="px-4 py-3 text-sm text-slate-900 whitespace-nowrap">
                           {student.nis}
                         </td>
-                        <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                        <td className="px-4 py-3 text-sm font-medium text-slate-900">
                           {student.full_name}
                         </td>
 
                         {/* Input Fields */}
                         {assignmentTypes.map((type) => (
-                          <td key={type} className="px-4 py-4">
+                          <td key={type} className="px-4 py-3">
                             <input
                               type="number"
                               min="0"
@@ -951,7 +1082,7 @@ const Grades = ({ user, onShowToast }) => {
                               onChange={(e) =>
                                 updateGrade(student.id, type, e.target.value)
                               }
-                              className="w-20 p-2 text-center border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              className="w-24 p-2 text-center text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                               placeholder="0"
                               disabled={loading}
                             />
@@ -959,7 +1090,7 @@ const Grades = ({ user, onShowToast }) => {
                         ))}
 
                         {/* Nilai Akhir */}
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-3">
                           <div className="text-center font-bold text-indigo-600 bg-indigo-50 rounded px-3 py-2">
                             {studentGrade.na || "0.00"}
                           </div>
@@ -978,12 +1109,12 @@ const Grades = ({ user, onShowToast }) => {
           selectedSubject &&
           students.length === 0 &&
           !loading && (
-            <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-500 mb-2">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-12 text-center">
+              <Users className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-base sm:text-lg font-medium text-slate-500 mb-2">
                 Tidak ada siswa aktif
               </h3>
-              <p className="text-gray-400">
+              <p className="text-sm sm:text-base text-slate-400">
                 Tidak ada siswa aktif di kelas ini untuk tahun akademik{" "}
                 {academicYear}
               </p>
@@ -991,24 +1122,24 @@ const Grades = ({ user, onShowToast }) => {
           )}
 
         {!selectedClass && selectedSubject && classes.length === 0 && (
-          <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-            <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-500 mb-2">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-12 text-center">
+            <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-slate-500 mb-2">
               Tidak ada kelas
             </h3>
-            <p className="text-gray-400">
+            <p className="text-sm sm:text-base text-slate-400">
               Tidak ada kelas untuk mata pelajaran ini di semester {semester}
             </p>
           </div>
         )}
 
         {(!selectedClass || !selectedSubject) && (
-          <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-            <Calculator className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-500 mb-2">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-12 text-center">
+            <Calculator className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-slate-500 mb-2">
               Pilih Filter
             </h3>
-            <p className="text-gray-400">
+            <p className="text-sm sm:text-base text-slate-400">
               Silakan lengkapi semua filter untuk mulai input nilai
             </p>
           </div>

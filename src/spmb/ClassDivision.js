@@ -63,6 +63,19 @@ const ClassDivision = ({
 
   // Load siswa yang belum dibagi kelas
   useEffect(() => {
+    console.log("🔍 Total allStudents:", allStudents.length);
+    console.log("🔍 Status breakdown:", {
+      diterima: allStudents.filter((s) => s.status === "diterima").length,
+      transferred: allStudents.filter((s) => s.is_transferred).length,
+      sudahKelas: allStudents.filter((s) => s.kelas).length,
+      statusLain: allStudents
+        .filter((s) => s.status !== "diterima")
+        .map((s) => ({
+          nama: s.nama_lengkap,
+          status: s.status,
+        })),
+    });
+
     const unassigned = allStudents.filter(
       (s) => !s.is_transferred && !s.kelas && s.status === "diterima"
     );
@@ -279,61 +292,6 @@ const ClassDivision = ({
               </button>
             </div>
           </div>
-
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex gap-2">
-              <span className="text-blue-600 text-xl">ℹ️</span>
-              <div className="text-sm text-blue-800">
-                <p className="font-semibold mb-1">Cara Kerja:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>
-                    Sistem akan membagi siswa secara <strong>merata</strong> ke
-                    semua kelas
-                  </li>
-                  <li>
-                    Menyeimbangkan{" "}
-                    <strong>jumlah laki-laki dan perempuan</strong> di setiap
-                    kelas
-                  </li>
-                  <li>
-                    Mendistribusikan siswa dari <strong>SD yang sama</strong> ke
-                    kelas berbeda
-                  </li>
-                  <li>
-                    Setelah generate, aktifkan <strong>Mode Edit</strong> untuk
-                    adjustment manual
-                  </li>
-                  <li>
-                    Gunakan <strong>Edit Kelas Tersimpan</strong> untuk
-                    modifikasi setelah disimpan
-                  </li>
-                  <li>
-                    Setelah puas dengan hasil, klik{" "}
-                    <strong>Simpan Pembagian</strong>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {studentsWithClass.length > 0 && (
-            <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <div className="flex gap-2">
-                <span className="text-orange-600 text-xl">💡</span>
-                <div className="text-sm text-orange-800">
-                  <p className="font-semibold">Fitur Edit Kelas Tersimpan:</p>
-                  <ul className="list-disc list-inside space-y-1 mt-1">
-                    <li>
-                      Edit manual siswa yang <strong>sudah dibagi kelas</strong>
-                    </li>
-                    <li>Pindahkan siswa antar kelas sesuai permintaan</li>
-                    <li>Perubahan langsung tersimpan ke database</li>
-                    <li>Cocok untuk penyesuaian permintaan orang tua/murid</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
