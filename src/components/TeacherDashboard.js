@@ -103,12 +103,14 @@ const TeacherDashboard = ({ user }) => {
   }, [user]);
 
   // Fetch jadwal hari ini
-  const fetchTodaySchedule = async () => {
+  const fetchTodaySchedule = async (teacherCode, teacherUUID) => {
     try {
-      const todayDay = getTodayDayName();
+      // FIX: Gunakan getDayName() bukan getTodayDayName()
+      const todayDay = getDayName(new Date().getDay());
 
-      console.log("🔍 Hari ini:", todayDay);
-      console.log("🔍 Teacher ID:", userData.id);
+      console.log("📅 Hari ini:", todayDay);
+      // FIX: Gunakan teacherUUID parameter, bukan userData.id
+      console.log("🔍 Teacher ID:", teacherUUID);
 
       // Weekend check
       if (todayDay === "Sabtu" || todayDay === "Minggu") {
@@ -123,9 +125,9 @@ const TeacherDashboard = ({ user }) => {
         .eq("day", todayDay)
         .order("start_time", { ascending: true });
 
-      // Filter by teacher_id jika userData punya id
-      if (userData.id) {
-        query = query.eq("teacher_id", userData.id);
+      // FIX: Filter by teacher_id menggunakan teacherUUID parameter
+      if (teacherUUID) {
+        query = query.eq("teacher_id", teacherUUID);
       }
 
       const { data: scheduleData, error: scheduleError } = await query;
@@ -138,7 +140,8 @@ const TeacherDashboard = ({ user }) => {
           .from("class_schedules")
           .select("*")
           .eq("day", todayDay)
-          .eq("teacher_id", userData.id)
+          // FIX: Gunakan teacherUUID parameter
+          .eq("teacher_id", teacherUUID)
           .order("start_time", { ascending: true });
 
         if (simpleError) {
@@ -155,6 +158,7 @@ const TeacherDashboard = ({ user }) => {
         }));
 
         console.log("✅ Jadwal (tanpa JOIN):", formatted);
+        setTodaySchedule(formatted);
         return formatted;
       }
 
@@ -169,6 +173,7 @@ const TeacherDashboard = ({ user }) => {
       }));
 
       console.log("✅ Jadwal ditemukan:", formatted);
+      setTodaySchedule(formatted);
       return formatted;
     } catch (error) {
       console.error("❌ FATAL ERROR:", error);
@@ -527,47 +532,31 @@ const TeacherDashboard = ({ user }) => {
 
             {todaySchedule.length > 0 ? (
               <div className="space-y-3">
-                {todaySchedule.map((schedule) => (
+                {todaySchedule.map((schedule, index) => (
                   <div
-                    key={schedule.id}
+                    key={index}
                     className="bg-white border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1">
                         <div className="text-center min-w-[70px]">
-                          <div className="text-xs font-medium text-slate-500 mb-1">
-                            {schedule.sessionCount}JP (
-                            {schedule.sessionNumbers.join("-")})
-                          </div>
                           <div className="font-semibold text-blue-700 text-xs sm:text-sm">
-                            {formatTime(schedule.start_time)}
+                            {schedule.jam_mulai}
                           </div>
                           <div className="text-xs text-slate-400">-</div>
                           <div className="font-semibold text-blue-700 text-xs sm:text-sm">
-                            {formatTime(schedule.end_time)}
+                            {schedule.jam_selesai}
                           </div>
                         </div>
                         <div className="h-auto min-h-[60px] w-px bg-slate-200"></div>
                         <div className="flex-1">
                           <div className="font-semibold text-slate-800 text-sm sm:text-base mb-1">
-                            {schedule.subject}
+                            {schedule.mapel}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-slate-600">
                             <span className="flex items-center gap-1">
                               <span>🏫</span>
-                              <span>
-                                Kelas{" "}
-                                {schedule.classes?.id || schedule.class_id}
-                              </span>
+                              <span>{schedule.kelas}</span>
                             </span>
-                            {schedule.room_number && (
-                              <>
-                                <span className="text-slate-400">•</span>
-                                <span className="flex items-center gap-1">
-                                  <span>📍</span>
-                                  <span>R.{schedule.room_number}</span>
-                                </span>
-                              </>
-                            )}
                           </div>
                         </div>
                       </div>
