@@ -305,16 +305,29 @@ const AcademicYearTab = ({
         }
       });
 
+      // ✅ Ambil target year dari SPMB settings
+      const { data: spmb_settings } = await supabase
+        .from("spmb_settings")
+        .select("target_academic_year")
+        .eq("is_active", true)
+        .single();
+
+      const targetYear = spmb_settings?.target_academic_year || newYear;
+
+      console.log("🔍 Looking for siswa baru with academic_year:", targetYear);
+
       const { data: siswaBaruData, error: siswaBaruError } = await supabase
         .from("siswa_baru")
         .select("*")
         .eq("is_transferred", false)
-        .eq("academic_year", newYear)
+        .eq("academic_year", targetYear) // ✅ Pakai targetYear dari SPMB settings
         .not("kelas", "is", null);
 
       if (siswaBaruError) {
         console.warn("Error loading siswa baru:", siswaBaruError);
       }
+
+      console.log("📊 Siswa baru ditemukan:", siswaBaruData?.length || 0);
 
       const { data: existingStudents } = await supabase
         .from("students")
