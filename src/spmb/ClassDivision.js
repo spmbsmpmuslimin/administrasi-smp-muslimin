@@ -438,7 +438,8 @@ const ClassDivision = ({
                             setClassDistribution,
                             setEditMode,
                             setHistory,
-                            setHistoryIndex
+                            setHistoryIndex,
+                            getCurrentAcademicYear()
                           )
                         }
                         disabled={isLoading}

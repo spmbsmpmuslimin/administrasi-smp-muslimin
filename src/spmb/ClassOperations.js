@@ -1,8 +1,42 @@
 // ClassOperations.js - Operations & Utilities untuk kelas management
+// 🔥 FIX: NIS akan di-generate HANYA saat pembagian kelas, bukan saat pendaftaran
 
 import { exportClassDivision } from "./SpmbExcel";
 
-// Simpan pembagian ke database (WITH NIS dari no_pendaftaran)
+// 🔥 FUNGSI BARU: Generate NIS berurutan berdasarkan kelas
+const generateSequentialNIS = (classDistribution, academicYear) => {
+  const yearPrefix = academicYear.replace("/", ".").substring(2); // "2026/2027" → "26.27"
+  const gradePrefix = "07"; // Untuk kelas 7
+
+  let counter = 1;
+  const nisMapping = {};
+
+  // Sort kelas agar urut (7A, 7B, 7C, dst)
+  const sortedClasses = Object.keys(classDistribution).sort();
+
+  sortedClasses.forEach((className) => {
+    const students = classDistribution[className];
+
+    // Sort siswa dalam kelas (bisa by nama, gender, dll)
+    students.sort((a, b) => {
+      // Urutkan: L dulu, baru P, lalu by nama
+      if (a.jenis_kelamin !== b.jenis_kelamin) {
+        return a.jenis_kelamin === "L" ? -1 : 1;
+      }
+      return a.nama_lengkap.localeCompare(b.nama_lengkap);
+    });
+
+    students.forEach((student) => {
+      const nisNumber = counter.toString().padStart(3, "0"); // 001, 002, dst
+      nisMapping[student.id] = `${yearPrefix}.${gradePrefix}.${nisNumber}`;
+      counter++;
+    });
+  });
+
+  return nisMapping;
+};
+
+// Simpan pembagian ke database (WITH NIS BERURUTAN)
 export const saveClassAssignments = async (
   classDistribution,
   supabase,
@@ -13,11 +47,12 @@ export const saveClassAssignments = async (
   setClassDistribution,
   setEditMode,
   setHistory,
-  setHistoryIndex
+  setHistoryIndex,
+  academicYear // 🔥 WAJIB pass dari ClassDivision.js
 ) => {
   if (
     !window.confirm(
-      "Simpan pembagian kelas ini? Data tidak bisa diubah setelah disimpan."
+      "Simpan pembagian kelas ini? NIS akan digenerate otomatis berurutan per kelas."
     )
   ) {
     return;
@@ -25,6 +60,9 @@ export const saveClassAssignments = async (
 
   setIsLoading(true);
   try {
+    // 🔥 Generate NIS berurutan
+    const nisMapping = generateSequentialNIS(classDistribution, academicYear);
+
     const updates = [];
 
     Object.entries(classDistribution).forEach(([className, students]) => {
@@ -32,10 +70,7 @@ export const saveClassAssignments = async (
         updates.push({
           id: student.id,
           kelas: className,
-          // 🔥 BARU: Convert no_pendaftaran ke NIS (format: 26.27.07.001)
-          nis: student.no_pendaftaran
-            ? student.no_pendaftaran.replace("SPMB-", "")
-            : "",
+          nis: nisMapping[student.id], // 🔥 NIS BERURUTAN
         });
       });
     });
@@ -45,7 +80,7 @@ export const saveClassAssignments = async (
         .from("siswa_baru")
         .update({
           kelas: update.kelas,
-          nis: update.nis, // 🔥 UPDATE NIS DARI NO_PENDAFTARAN
+          nis: update.nis,
         })
         .eq("id", update.id);
 
@@ -53,7 +88,7 @@ export const saveClassAssignments = async (
     }
 
     showToast(
-      `✅ Berhasil menyimpan pembagian ${updates.length} siswa dengan NIS!`,
+      `✅ Berhasil menyimpan pembagian ${updates.length} siswa dengan NIS berurutan!`,
       "success"
     );
     setShowPreview(false);
@@ -73,7 +108,7 @@ export const saveClassAssignments = async (
   }
 };
 
-// Transfer ke tabel students - JUGA PERLU DIMODIFIKASI
+// Transfer ke tabel students
 export const transferToStudents = async (
   allStudents,
   supabase,
@@ -104,15 +139,10 @@ export const transferToStudents = async (
     const currentYear = getCurrentAcademicYear();
 
     for (const siswa of studentsWithClass) {
-      // 🔥 BARU: Convert no_pendaftaran ke NIS untuk transfer
-      const nisFromPendaftaran = siswa.no_pendaftaran
-        ? siswa.no_pendaftaran.replace("SPMB-", "")
-        : "";
-
       const { error: insertError } = await supabase.from("students").insert([
         {
           full_name: siswa.nama_lengkap,
-          nis: nisFromPendaftaran || siswa.nisn, // 🔥 Prioritaskan NIS dari no_pendaftaran
+          nis: siswa.nis, // 🔥 Gunakan NIS yang sudah digenerate
           class_id: siswa.kelas,
           academic_year: currentYear,
           gender: siswa.jenis_kelamin,
@@ -181,7 +211,7 @@ export const resetClassAssignments = async (
         .from("siswa_baru")
         .update({
           kelas: null,
-          nis: null, // 🔥 Reset NIS juga
+          nis: null, // 🔥 Reset NIS
           updated_at: new Date().toISOString(),
         })
         .eq("id", siswa.id);
