@@ -167,7 +167,7 @@ const ClassDivision = ({
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
         <h2 className="text-2xl font-bold mb-2">📚 Pembagian Kelas Otomatis</h2>
         <p className="text-purple-100">
-          Distribusi siswa baru ke kelas 7A - 7F secara seimbang
+          Distribusi Siswa Baru Ke Kelas 7A - 7F Secara Seimbang
         </p>
       </div>
 

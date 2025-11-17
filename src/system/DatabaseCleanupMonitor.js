@@ -33,7 +33,7 @@ const DatabaseCleanupMonitor = () => {
         "konseling",
         "student_development_notes",
         "users",
-        "teachers",
+        "teacher_schedules",
       ];
 
       const tableStats = {};
@@ -321,7 +321,7 @@ const DatabaseCleanupMonitor = () => {
       <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <Database className="w-5 h-5" />
-          Records per Table
+          Records Per Table
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {Object.entries(stats.tables || {}).map(([table, count]) => (
