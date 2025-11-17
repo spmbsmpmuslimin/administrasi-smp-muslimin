@@ -211,36 +211,42 @@ const ClassDivision = ({
             ⚙️ Pengaturan Pembagian
           </h3>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Jumlah Kelas
-              </label>
-              <select
-                value={numClasses}
-                onChange={(e) => setNumClasses(Number(e.target.value))}
-                className="w-full sm:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                disabled={isLoading}>
-                {[4, 5, 6, 7, 8].map((num) => (
-                  <option key={num} value={num}>
-                    {num} Kelas (7A - 7{String.fromCharCode(64 + num)})
-                  </option>
-                ))}
-              </select>
+          <div className="space-y-6">
+            {/* Row 1: Jumlah Kelas dan Generate */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Jumlah Kelas
+                </label>
+                <select
+                  value={numClasses}
+                  onChange={(e) => setNumClasses(Number(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  disabled={isLoading}>
+                  {[4, 5, 6, 7, 8].map((num) => (
+                    <option key={num} value={num}>
+                      {num} Kelas (7A - 7{String.fromCharCode(64 + num)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col justify-end">
+                <button
+                  onClick={handleGenerateDistribution}
+                  disabled={isLoading || unassignedStudents.length === 0}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2">
+                  🎲 Generate Otomatis
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleGenerateDistribution}
-                disabled={isLoading || unassignedStudents.length === 0}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2">
-                🎲 Generate Otomatis
-              </button>
-
+            {/* Row 2: Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
               <button
                 onClick={loadSavedClassDistribution}
                 disabled={isLoading || studentsWithClass.length === 0}
-                className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2">
+                className="px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2">
                 ✏️ Edit Kelas Tersimpan ({studentsWithClass.length})
               </button>
 
@@ -253,11 +259,9 @@ const ClassDivision = ({
                   )
                 }
                 disabled={isExporting || studentsWithClass.length === 0}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2">
+                className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2">
                 <i className="fas fa-file-excel"></i>
-                {isExporting
-                  ? "Exporting..."
-                  : `Export Kelas Tersimpan (${studentsWithClass.length})`}
+                {isExporting ? "Exporting..." : `Export Kelas`}
               </button>
 
               <button
@@ -271,8 +275,8 @@ const ClassDivision = ({
                   )
                 }
                 disabled={isLoading || studentsWithClass.length === 0}
-                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2">
-                🔄 Reset Pembagian ({studentsWithClass.length})
+                className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2">
+                🔄 Reset Pembagian
               </button>
 
               <button
@@ -287,8 +291,8 @@ const ClassDivision = ({
                   )
                 }
                 disabled={isLoading || studentsWithClass.length === 0}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2">
-                🚀 Transfer ke Students ({studentsWithClass.length})
+                className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2">
+                🚀 Transfer ke Students
               </button>
             </div>
           </div>
