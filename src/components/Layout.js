@@ -13,6 +13,7 @@ const Layout = ({ user, onLogout, children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isLaptop, setIsLaptop] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const timerRef = useRef(null);
   const navigationTimeoutRef = useRef(null);
@@ -121,7 +122,7 @@ const Layout = ({ user, onLogout, children }) => {
     if (path === "/reports") return "reports";
     if (path === "/spmb") return "spmb";
     if (path === "/settings") return "settings";
-    if (path === "/monitor-sistem") return "monitor-sistem"; // ← BARU
+    if (path === "/monitor-sistem") return "monitor-sistem";
     return "dashboard";
   };
 
@@ -139,7 +140,7 @@ const Layout = ({ user, onLogout, children }) => {
       "/reports": "Laporan",
       "/spmb": "SPMB",
       "/settings": "Pengaturan",
-      "/monitor-sistem": "Monitor Sistem", // ← BARU
+      "/monitor-sistem": "Monitor Sistem",
     };
     return pathMap[location.pathname] || "Dashboard";
   };
@@ -164,7 +165,7 @@ const Layout = ({ user, onLogout, children }) => {
         Laporan: "Generate dan Kelola Laporan",
         SPMB: "Seleksi Penerimaan Murid Baru",
         Pengaturan: "Pengaturan Sistem Sekolah",
-        "Monitor Sistem": "Pemeriksaan Kesehatan Sistem dan Integritas Data", // ← BARU
+        "Monitor Sistem": "Pemeriksaan Kesehatan Sistem dan Integritas Data",
       },
       guru_bk: {
         Dashboard: "Dashboard Bimbingan Konseling",
@@ -220,7 +221,7 @@ const Layout = ({ user, onLogout, children }) => {
         reports: "/reports",
         spmb: "/spmb",
         settings: "/settings",
-        "monitor-sistem": "/monitor-sistem", // ← BARU
+        "monitor-sistem": "/monitor-sistem",
       };
 
       const path = routes[page];
@@ -250,6 +251,20 @@ const Layout = ({ user, onLogout, children }) => {
 
   const toggleProfileDropdown = () => {
     setProfileDropdownOpen(!profileDropdownOpen);
+  };
+
+  const handleLogoutClick = () => {
+    setProfileDropdownOpen(false);
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutModal(false);
+    onLogout();
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   const getUserRoleDisplay = () => {
@@ -421,7 +436,6 @@ const Layout = ({ user, onLogout, children }) => {
                       </div>
 
                       <div className="py-2">
-                        {/* Menu Profile - Redirect ke Settings tab Profile */}
                         <button
                           onClick={() => {
                             navigate("/settings?tab=profile");
@@ -432,7 +446,6 @@ const Layout = ({ user, onLogout, children }) => {
                           <span className="font-medium">Profile</span>
                         </button>
 
-                        {/* Menu Pengaturan - Khusus Admin */}
                         {user?.role === "admin" && (
                           <button
                             onClick={() => {
@@ -445,12 +458,8 @@ const Layout = ({ user, onLogout, children }) => {
                           </button>
                         )}
 
-                        {/* Menu Logout */}
                         <button
-                          onClick={() => {
-                            onLogout();
-                            setProfileDropdownOpen(false);
-                          }}
+                          onClick={handleLogoutClick}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150 touch-manipulation">
                           <LogOut size={16} className="flex-shrink-0" />
                           <span className="font-medium">Logout</span>
@@ -479,6 +488,39 @@ const Layout = ({ user, onLogout, children }) => {
           )}
         </div>
       </main>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <LogOut className="w-8 h-8 text-blue-600" />
+              </div>
+
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Keluar dari Sistem?
+              </h3>
+              <p className="text-gray-600 text-sm mb-6">
+                Anda harus login kembali untuk mengakses sistem
+              </p>
+
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={handleCancelLogout}
+                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmLogout}
+                  className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg shadow-blue-600/30">
+                  Keluar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

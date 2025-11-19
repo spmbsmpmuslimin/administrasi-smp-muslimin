@@ -102,81 +102,113 @@ const TeacherDashboard = ({ user }) => {
     }
   }, [user]);
 
-  // Fetch jadwal hari ini
+  // Fetch jadwal hari ini - SIMPLIFIED & FIXED WITH MERGE
   const fetchTodaySchedule = async (teacherCode, teacherUUID) => {
     try {
-      // FIX: Gunakan getDayName() bukan getTodayDayName()
       const todayDay = getDayName(new Date().getDay());
-
-      console.log("📅 Hari ini:", todayDay);
-      // FIX: Gunakan teacherUUID parameter, bukan userData.id
-      console.log("🔍 Teacher ID:", teacherUUID);
+      console.log("📅 Hari ini:", todayDay, "| Teacher UUID:", teacherUUID);
 
       // Weekend check
       if (todayDay === "Sabtu" || todayDay === "Minggu") {
         console.log("⚠️ Weekend - tidak ada jadwal");
+        setTodaySchedule([]);
         return [];
       }
 
-      // VERSI 1: Jika ada tabel classes (dengan JOIN)
-      let query = supabase
-        .from("class_schedules")
-        .select("*, classes(grade, class_name)")
+      // ✅ QUERY KE TABEL YANG BENAR: teacher_schedules
+      const { data, error } = await supabase
+        .from("teacher_schedules")
+        .select(
+          `
+          *,
+          classes(id, grade)
+        `
+        )
+        .eq("teacher_id", teacherUUID)
         .eq("day", todayDay)
         .order("start_time", { ascending: true });
 
-      // FIX: Filter by teacher_id menggunakan teacherUUID parameter
-      if (teacherUUID) {
-        query = query.eq("teacher_id", teacherUUID);
+      if (error) {
+        console.error("❌ Error fetching schedule:", error);
+        setTodaySchedule([]);
+        return [];
       }
 
-      const { data: scheduleData, error: scheduleError } = await query;
+      if (!data || data.length === 0) {
+        console.log("ℹ️ Tidak ada jadwal untuk hari ini");
+        setTodaySchedule([]);
+        return [];
+      }
 
-      // Jika error join classes, coba tanpa join
-      if (scheduleError) {
-        console.log("⚠️ Error dengan JOIN, coba tanpa JOIN:", scheduleError);
+      // ✅ GET SUBJECT dari teacher_assignments
+      const classIds = [...new Set(data.map((d) => d.class_id))];
+      const { data: assignments } = await supabase
+        .from("teacher_assignments")
+        .select("class_id, subject")
+        .eq("teacher_id", teacherCode)
+        .in("class_id", classIds);
 
-        const { data: simpleData, error: simpleError } = await supabase
-          .from("class_schedules")
-          .select("*")
-          .eq("day", todayDay)
-          // FIX: Gunakan teacherUUID parameter
-          .eq("teacher_id", teacherUUID)
-          .order("start_time", { ascending: true });
+      // Create mapping class_id -> subject
+      const subjectMap = {};
+      assignments?.forEach((a) => {
+        subjectMap[a.class_id] = a.subject;
+      });
 
-        if (simpleError) {
-          console.error("❌ ERROR:", simpleError);
-          return [];
+      // ✅ MERGE CONSECUTIVE SCHEDULES (GABUNG YANG BERURUTAN)
+      const merged = [];
+      let current = null;
+
+      data.forEach((item) => {
+        const mapel = subjectMap[item.class_id] || "Mata Pelajaran";
+        // ✅ FIX: Pakai classes.id (7A, 7B) bukan classes.grade (7)
+        const kelas = item.classes?.id || `Kelas ${item.class_id}`;
+
+        if (!current) {
+          // Start new block
+          current = {
+            mapel,
+            kelas,
+            jam_mulai: formatTime(item.start_time),
+            jam_selesai: formatTime(item.end_time),
+            class_id: item.class_id,
+          };
+        } else {
+          // Check if can merge: same class + subject + consecutive time
+          const sameClass = current.class_id === item.class_id;
+          const sameSubject = current.mapel === mapel;
+          const consecutive =
+            current.jam_selesai === formatTime(item.start_time);
+
+          if (sameClass && sameSubject && consecutive) {
+            // Merge: extend end time
+            current.jam_selesai = formatTime(item.end_time);
+          } else {
+            // Save current block and start new one
+            merged.push({ ...current });
+            delete merged[merged.length - 1].class_id; // Remove helper field
+            current = {
+              mapel,
+              kelas,
+              jam_mulai: formatTime(item.start_time),
+              jam_selesai: formatTime(item.end_time),
+              class_id: item.class_id,
+            };
+          }
         }
+      });
 
-        // Format tanpa JOIN (langsung pake class_id)
-        const formatted = simpleData.map((item) => ({
-          mapel: item.subject || "Mata Pelajaran",
-          kelas: `Kelas ${item.class_id}`, // Langsung pake class_id
-          jam_mulai: item.start_time.substring(0, 5), // 07:00:00 → 07:00
-          jam_selesai: item.end_time.substring(0, 5),
-        }));
-
-        console.log("✅ Jadwal (tanpa JOIN):", formatted);
-        setTodaySchedule(formatted);
-        return formatted;
+      // Push last block
+      if (current) {
+        delete current.class_id;
+        merged.push(current);
       }
 
-      // Format dengan JOIN
-      const formatted = scheduleData.map((item) => ({
-        mapel: item.subject || "Mata Pelajaran",
-        kelas: item.classes
-          ? `${item.classes.grade}-${item.classes.class_name}`
-          : `Kelas ${item.class_id}`,
-        jam_mulai: item.start_time.substring(0, 5),
-        jam_selesai: item.end_time.substring(0, 5),
-      }));
-
-      console.log("✅ Jadwal ditemukan:", formatted);
-      setTodaySchedule(formatted);
-      return formatted;
+      console.log("✅ Jadwal merged:", merged);
+      setTodaySchedule(merged);
+      return merged;
     } catch (error) {
       console.error("❌ FATAL ERROR:", error);
+      setTodaySchedule([]);
       return [];
     }
   };
