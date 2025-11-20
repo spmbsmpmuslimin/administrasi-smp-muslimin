@@ -17,7 +17,7 @@ import {
 
 // ==================== ADMIN REPORT MODAL ====================
 // 💡 Modal khusus untuk preview laporan Admin
-// Supports: All Reports, Multi-Filter, Advanced Search
+// ✅ FIXED: Masalah Alpa kosong
 
 const AdminReportModal = ({
   isOpen,
@@ -33,7 +33,7 @@ const AdminReportModal = ({
   const [filterStatus, setFilterStatus] = useState("");
   const itemsPerPage = 50;
 
-  // ✅ Destructure report data safely
+  // ✅ Destructure report data safely dengan fallback yang lebih robust
   const {
     preview = [],
     fullData = [],
@@ -43,31 +43,231 @@ const AdminReportModal = ({
     total = 0,
   } = reportData;
 
+  // ✅ DEBUG: Log data untuk troubleshooting
+  React.useEffect(() => {
+    if (isOpen && reportType === "admin-attendance") {
+      console.log("🔍 ATTENDANCE DATA DEBUG:");
+      console.log("Full Data Sample:", fullData.slice(0, 2));
+      console.log("Headers:", headers);
+
+      // Debug khusus untuk kolom Alpa
+      if (fullData.length > 0) {
+        const firstRow = fullData[0];
+        console.log("📊 First Row Data:", firstRow);
+        console.log("🔍 Mencari kolom Alpa/Absen:");
+        Object.keys(firstRow).forEach((key) => {
+          if (
+            key.toLowerCase().includes("alp") ||
+            key.toLowerCase().includes("abs")
+          ) {
+            console.log(`📍 Key "${key}":`, firstRow[key]);
+          }
+        });
+      }
+    }
+  }, [isOpen, reportData, headers, preview, fullData, reportType]);
+
   // ✅ Use preview if fullData is empty (backward compatibility)
   const dataToUse = fullData.length > 0 ? fullData : preview;
 
-  // ✅ Header key mapping
+  // ✅ FIXED: Header key mapping dengan priority untuk attendance
   const headerKeyMap = {
-    NIS: ["nis", "student_nis"],
-    "Nama Siswa": ["name", "student_name", "full_name"],
-    "Nama Lengkap": ["full_name", "name"],
-    "Nama Guru": ["teacher_name", "name"],
-    "Nama User": ["username", "name"],
-    Kelas: ["class_id", "class"],
-    Tingkat: "grade",
-    "Jenis Kelamin": "gender",
-    Gender: "gender",
-    "Tahun Ajaran": "academic_year",
-    Status: ["is_active", "status"],
-    "Wali Kelas": "homeroom_teacher",
+    // ===== ATTENDANCE PRIORITY MAPPING =====
+    Alpa: ["alpa", "alpha", "absen", "absent", "missing", "bolos"],
+    Hadir: ["hadir", "present", "attended", "masuk", "h"],
+    Sakit: ["sakit", "sick", "ill", "s"],
+    Izin: ["izin", "permission", "excused", "i", "permit"],
+    Total: ["total", "count", "total_attendance", "jumlah"],
+    Persentase: ["percentage", "persentase", "percent", "rate"],
+
+    // ===== USERS TABLE MAPPING =====
+    "Kode Guru": ["teacher_id", "kode_guru", "teacher_code", "code"],
+    Username: ["username"],
+    "Nama Lengkap": ["full_name", "nama_lengkap", "name"],
+    "Nama Siswa": [
+      "full_name",
+      "student_name",
+      "nama_siswa",
+      "nama_lengkap",
+      "name",
+    ],
     Role: ["role", "user_role"],
-    Email: "email",
-    Telepon: ["phone", "phone_number"],
-    "Tanggal Daftar": ["created_at", "registration_date"],
-    "Total Siswa": "total_students",
-    "Total Guru": "total_teachers",
-    "Rata-rata": ["average", "avg"],
-    Persentase: ["percentage", "persentase"],
+    "Wali Kelas": [
+      "homeroom_class_id",
+      "wali_kelas",
+      "class_teacher",
+      "class_id",
+    ],
+    Status: ["is_active", "status", "active"],
+    "Tanggal Bergabung": [
+      "created_at",
+      "tanggal_bergabung",
+      "join_date",
+      "registration_date",
+    ],
+
+    // ===== STUDENTS DATA =====
+    No: ["no", "index", "number"],
+    NIS: ["nis", "student_nis", "nisn"],
+    NISN: ["nisn", "nis"],
+    Kelas: ["class_id", "kelas", "class", "homeroom_class_id"],
+
+    // ===== ACADEMIC DATA =====
+    "Tahun Ajaran": ["academic_year", "tahun_ajaran", "year"],
+    Semester: ["semester"],
+    "Mata Pelajaran": ["subject", "mata_pelajaran", "pelajaran"],
+    "Nilai Akhir": [
+      "nilai_akhir",
+      "final_score",
+      "score",
+      "nilai",
+      "grade_score",
+    ],
+    Guru: ["teacher_name", "guru", "full_name", "nama_guru", "username"],
+
+    // ===== SYSTEM =====
+    Email: ["email"],
+    Telepon: ["no_hp", "phone", "telepon"],
+    "Jenis Kelamin": ["gender", "jenis_kelamin"],
+  };
+
+  // ✅ IMPROVED: Function khusus untuk handle Alpa dan attendance data
+  const getCellValue = (row, header) => {
+    if (!row || !header) return "-";
+
+    // SPECIAL HANDLING FOR ATTENDANCE DATA
+    if (header === "Alpa") {
+      // Priority search untuk kolom Alpa
+      const alpaKeys = ["alpa", "alpha", "absen", "absent", "missing", "bolos"];
+
+      for (const key of alpaKeys) {
+        if (
+          row[key] !== undefined &&
+          row[key] !== null &&
+          row[key] !== "" &&
+          row[key] !== "-"
+        ) {
+          console.log(`✅ Found Alpa data in key "${key}":`, row[key]);
+          return row[key];
+        }
+      }
+
+      // Fallback: calculate from other attendance data jika available
+      if (row.hadir !== undefined && row.total !== undefined) {
+        const hadir = parseInt(row.hadir) || 0;
+        const sakit = parseInt(row.sakit) || 0;
+        const izin = parseInt(row.izin) || 0;
+        const total = parseInt(row.total) || 0;
+
+        const calculatedAlpa = total - hadir - sakit - izin;
+        if (calculatedAlpa >= 0) {
+          console.log(
+            `🧮 Calculated Alpa: ${calculatedAlpa} (Total: ${total} - Hadir: ${hadir} - Sakit: ${sakit} - Izin: ${izin})`
+          );
+          return calculatedAlpa;
+        }
+      }
+
+      console.log("❌ No Alpa data found in row:", row);
+      return "0"; // Default ke 0 jika tidak ada data
+    }
+
+    // Handle other attendance columns
+    if (
+      header === "Hadir" ||
+      header === "Sakit" ||
+      header === "Izin" ||
+      header === "Total"
+    ) {
+      const possibleKeys = headerKeyMap[header];
+      if (possibleKeys) {
+        for (const key of possibleKeys) {
+          if (
+            row[key] !== undefined &&
+            row[key] !== null &&
+            row[key] !== "" &&
+            row[key] !== "-"
+          ) {
+            return row[key];
+          }
+        }
+      }
+    }
+
+    // SPECIAL HANDLING FOR OTHER FIELDS
+    if (header === "Kode Guru") {
+      if (
+        row.teacher_id !== undefined &&
+        row.teacher_id !== null &&
+        row.teacher_id !== ""
+      ) {
+        return row.teacher_id;
+      }
+      return "-";
+    }
+
+    if (header === "Wali Kelas") {
+      if (
+        row.homeroom_class_id !== undefined &&
+        row.homeroom_class_id !== null &&
+        row.homeroom_class_id !== ""
+      ) {
+        return row.homeroom_class_id;
+      }
+      return "-";
+    }
+
+    if (header === "Status") {
+      if (row.is_active !== undefined && row.is_active !== null) {
+        return row.is_active ? "Aktif" : "Tidak Aktif";
+      }
+      if (
+        row.status !== undefined &&
+        row.status !== null &&
+        row.status !== ""
+      ) {
+        return row.status;
+      }
+      return "-";
+    }
+
+    if (header === "Tanggal Bergabung") {
+      if (
+        row.created_at !== undefined &&
+        row.created_at !== null &&
+        row.created_at !== ""
+      ) {
+        return row.created_at;
+      }
+      return "-";
+    }
+
+    // DEFAULT MAPPING untuk header lainnya
+    const possibleKeys = headerKeyMap[header];
+    if (possibleKeys) {
+      for (const key of possibleKeys) {
+        if (
+          row[key] !== undefined &&
+          row[key] !== null &&
+          row[key] !== "" &&
+          row[key] !== "-"
+        ) {
+          return row[key];
+        }
+      }
+    }
+
+    // Fallback: coba akses langsung
+    if (
+      row[header] !== undefined &&
+      row[header] !== null &&
+      row[header] !== "" &&
+      row[header] !== "-"
+    ) {
+      return row[header];
+    }
+
+    return "-";
   };
 
   // ✅ Get report icon based on type
@@ -81,6 +281,14 @@ const AdminReportModal = ({
         return BarChart3;
       case "admin-attendance":
         return Calendar;
+      case "admin-students":
+        return Users;
+      case "admin-teachers":
+        return Users;
+      case "admin-counseling":
+        return Shield;
+      case "admin-grades":
+        return BarChart3;
       default:
         return Shield;
     }
@@ -98,6 +306,14 @@ const AdminReportModal = ({
       case "admin-stats":
         return "purple";
       case "admin-attendance":
+        return "green";
+      case "admin-students":
+        return "blue";
+      case "admin-teachers":
+        return "indigo";
+      case "admin-counseling":
+        return "purple";
+      case "admin-grades":
         return "green";
       default:
         return "slate";
@@ -145,28 +361,25 @@ const AdminReportModal = ({
   // ✅ FIXED: Extract unique classes and statuses for filtering
   const uniqueClasses = useMemo(() => {
     const classes = new Set();
-    dataToUse.forEach((row) => {  // ✅ Changed from fullData to dataToUse
-      if (row.Kelas) classes.add(row.Kelas);
-      if (row.class_id) classes.add(row.class_id);
+    dataToUse.forEach((row) => {
+      const classValue = getCellValue(row, "Kelas");
+      if (classValue && classValue !== "-") classes.add(classValue);
     });
     return Array.from(classes).sort();
-  }, [dataToUse]);  // ✅ Changed from fullData to dataToUse
+  }, [dataToUse]);
 
   const uniqueStatuses = useMemo(() => {
     const statuses = new Set();
-    dataToUse.forEach((row) => {  // ✅ Changed from fullData to dataToUse
-      if (row.Status) statuses.add(row.Status);
-      if (row.status) statuses.add(row.status);
-      if (row.is_active !== undefined) {
-        statuses.add(row.is_active ? "Aktif" : "Tidak Aktif");
-      }
+    dataToUse.forEach((row) => {
+      const statusValue = getCellValue(row, "Status");
+      if (statusValue && statusValue !== "-") statuses.add(statusValue);
     });
     return Array.from(statuses).sort();
-  }, [dataToUse]);  // ✅ Changed from fullData to dataToUse
+  }, [dataToUse]);
 
   // ✅ FIXED: Filter data based on search and filters
   const filteredData = useMemo(() => {
-    let filtered = dataToUse;  // ✅ Changed from fullData to dataToUse
+    let filtered = dataToUse;
 
     // Search filter
     if (searchQuery.trim()) {
@@ -180,32 +393,22 @@ const AdminReportModal = ({
 
     // Class filter
     if (filterClass) {
-      filtered = filtered.filter(
-        (row) => row.Kelas === filterClass || row.class_id === filterClass
-      );
+      filtered = filtered.filter((row) => {
+        const classValue = getCellValue(row, "Kelas");
+        return String(classValue) === filterClass;
+      });
     }
 
     // Status filter
     if (filterStatus) {
       filtered = filtered.filter((row) => {
-        if (row.Status === filterStatus || row.status === filterStatus)
-          return true;
-        if (
-          filterStatus === "Aktif" &&
-          (row.is_active === true || row.is_active === 1)
-        )
-          return true;
-        if (
-          filterStatus === "Tidak Aktif" &&
-          (row.is_active === false || row.is_active === 0)
-        )
-          return true;
-        return false;
+        const statusValue = getCellValue(row, "Status");
+        return statusValue === filterStatus;
       });
     }
 
     return filtered;
-  }, [dataToUse, searchQuery, filterClass, filterStatus]);  // ✅ Changed from fullData to dataToUse
+  }, [dataToUse, searchQuery, filterClass, filterStatus]);
 
   // ✅ Pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -218,21 +421,50 @@ const AdminReportModal = ({
     setCurrentPage(1);
   }, [searchQuery, filterClass, filterStatus]);
 
-  // ✅ Render cell with conditional formatting
-  const renderCell = (header, value) => {
+  // ✅ FIXED: Render cell dengan handling khusus untuk Alpa
+  const renderCell = (header, value, row = {}) => {
+    // Gunakan getCellValue yang sudah difix
+    const cellValue = getCellValue(row, header);
+
+    // Special styling untuk Alpa
+    if (header === "Alpa" && cellValue !== "-" && cellValue !== "0") {
+      return (
+        <span className="font-medium text-red-600 bg-red-50 px-2 py-1 rounded">
+          {cellValue}
+        </span>
+      );
+    }
+
+    // Attendance numbers styling
+    if (
+      (header === "Hadir" || header === "Sakit" || header === "Izin") &&
+      cellValue !== "-"
+    ) {
+      const bgColor =
+        header === "Hadir"
+          ? "bg-green-50 text-green-700"
+          : header === "Sakit"
+          ? "bg-yellow-50 text-yellow-700"
+          : "bg-blue-50 text-blue-700";
+      return (
+        <span className={`font-medium ${bgColor} px-2 py-1 rounded`}>
+          {cellValue}
+        </span>
+      );
+    }
+
     // Status colors
-    if (header === "Status" || header === "is_active") {
+    if (header === "Status") {
       const isActive =
-        value === "Aktif" ||
-        value === "Active" ||
-        value === true ||
-        value === 1;
+        cellValue === "Aktif" ||
+        cellValue === "Active" ||
+        cellValue === true ||
+        cellValue === 1 ||
+        cellValue === "aktif";
       return (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            isActive
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
+            isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
           }`}>
           {isActive ? "Aktif" : "Tidak Aktif"}
         </span>
@@ -240,59 +472,82 @@ const AdminReportModal = ({
     }
 
     // Role colors
-    if (header === "Role" || header === "user_role") {
+    if (header === "Role") {
       const roleColors = {
         admin: "bg-purple-100 text-purple-800",
         teacher: "bg-blue-100 text-blue-800",
         bk: "bg-teal-100 text-teal-800",
         homeroom: "bg-green-100 text-green-800",
+        siswa: "bg-gray-100 text-gray-800",
+        student: "bg-gray-100 text-gray-800",
+        "guru bk": "bg-teal-100 text-teal-800",
+        guru: "bg-blue-100 text-blue-800",
       };
       const colorClass =
-        roleColors[String(value).toLowerCase()] ||
+        roleColors[String(cellValue).toLowerCase()] ||
         "bg-gray-100 text-gray-800";
       return (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
-          {value}
+          {cellValue}
         </span>
       );
     }
 
+    // Date formatting
+    if (
+      (header.includes("Tanggal") || header === "Tanggal Bergabung") &&
+      cellValue !== "-"
+    ) {
+      try {
+        const date = new Date(cellValue);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString("id-ID");
+        }
+      } catch (e) {
+        // Biarkan value asli jika parsing gagal
+      }
+    }
+
     // Percentage with color coding
     if (
-      (header === "Persentase" || header === "percentage") &&
-      typeof value === "string" &&
-      value.includes("%")
+      header === "Persentase" &&
+      typeof cellValue === "string" &&
+      cellValue.includes("%")
     ) {
-      const pct = parseFloat(value);
+      const pct = parseFloat(cellValue);
       let colorClass = "text-gray-600";
       if (pct >= 90) colorClass = "text-green-600 font-bold";
       else if (pct >= 75) colorClass = "text-yellow-600 font-bold";
       else colorClass = "text-red-600 font-bold";
 
-      return <span className={colorClass}>{value}</span>;
-    }
-
-    // Numbers with color coding
-    if (typeof value === "number" && header.includes("Rata")) {
-      let colorClass = "text-gray-600";
-      if (value >= 85) colorClass = "text-green-600 font-bold";
-      else if (value >= 70) colorClass = "text-yellow-600 font-bold";
-      else colorClass = "text-red-600 font-bold";
-
-      return <span className={colorClass}>{value}</span>;
+      return <span className={colorClass}>{cellValue}</span>;
     }
 
     // Highlight class columns
-    if (header === "Kelas" || header === "class_id") {
+    if ((header === "Kelas" || header === "Wali Kelas") && cellValue !== "-") {
       return (
         <span className="font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
-          {value}
+          {cellValue}
         </span>
       );
     }
 
-    return value !== undefined && value !== null ? value : "-";
+    // Handle empty values
+    if (
+      cellValue === "-" ||
+      cellValue === "" ||
+      cellValue === null ||
+      cellValue === undefined
+    ) {
+      // Untuk Alpa, tampilkan 0 jika kosong
+      if (header === "Alpa") {
+        return <span className="text-slate-400">0</span>;
+      }
+      return <span className="text-slate-400">-</span>;
+    }
+
+    return String(cellValue);
   };
 
   if (!isOpen) return null;
@@ -313,8 +568,10 @@ const AdminReportModal = ({
                   {reportTitle}
                 </h2>
                 <p className="text-sm text-slate-600 mt-1">
-                  Preview Data Administrator • {filteredData.length} dari {total || dataToUse.length}{" "}
-                  record
+                  Preview Data Administrator • {filteredData.length} dari{" "}
+                  {total || dataToUse.length} record
+                  {dataToUse.length === 0 &&
+                    " ⚠️ Data kosong - cek struktur data"}
                 </p>
               </div>
             </div>
@@ -328,14 +585,16 @@ const AdminReportModal = ({
 
         {/* ===== SUMMARY CARDS ===== */}
         {summary && summary.length > 0 && (
-          <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="px-6 py-3 bg-slate-50 border-b border-slate-200">
+            <div className="flex flex-wrap gap-4 justify-start">
               {summary.map((stat, idx) => (
                 <div
                   key={idx}
-                  className="bg-white rounded-lg border border-slate-200 p-3">
-                  <p className="text-xs text-slate-600 mb-1">{stat.label}</p>
-                  <p className="text-lg font-bold text-slate-800">
+                  className="bg-white rounded-lg border border-slate-200 p-3 min-w-[120px]">
+                  <p className="text-xs text-slate-600 mb-1 truncate">
+                    {stat.label}
+                  </p>
+                  <p className="text-lg font-bold text-slate-800 truncate">
                     {stat.value}
                   </p>
                 </div>
@@ -367,7 +626,9 @@ const AdminReportModal = ({
                 <option value="">Semua Kelas</option>
                 {uniqueClasses.map((kelas) => (
                   <option key={kelas} value={kelas}>
-                    Kelas {kelas}
+                    {String(kelas).startsWith("Kelas")
+                      ? kelas
+                      : `Kelas ${kelas}`}
                   </option>
                 ))}
               </select>
@@ -434,7 +695,8 @@ const AdminReportModal = ({
                       <th
                         key={idx}
                         className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider border-r border-slate-200">
-                        {header}
+                        {/* ✅ FIX: Replace "Absen" with "Alpa" in header display */}
+                        {header === "Absen" ? "Alpa" : header}
                       </th>
                     ))}
                   </tr>
@@ -451,7 +713,7 @@ const AdminReportModal = ({
                         <td
                           key={colIdx}
                           className="px-4 py-3 text-sm text-slate-700 border-r border-slate-200">
-                          {renderCell(header, row[header])}
+                          {renderCell(header, row[header], row)}
                         </td>
                       ))}
                     </tr>
@@ -463,11 +725,28 @@ const AdminReportModal = ({
             <div className="flex flex-col items-center justify-center py-12">
               <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
               <p className="text-slate-500 text-lg font-medium">
-                Tidak ada data yang sesuai
+                {dataToUse.length === 0
+                  ? "Data laporan kosong"
+                  : "Tidak ada data yang sesuai"}
               </p>
               <p className="text-slate-400 text-sm mt-2">
-                Coba ubah filter atau kata kunci pencarian
+                {dataToUse.length === 0
+                  ? "Periksa struktur data atau koneksi API"
+                  : "Coba ubah filter atau kata kunci pencarian"}
               </p>
+              {dataToUse.length === 0 && (
+                <button
+                  onClick={() =>
+                    console.log("Debug Data:", {
+                      reportData,
+                      headers,
+                      dataToUse,
+                    })
+                  }
+                  className="mt-4 px-4 py-2 bg-slate-200 text-slate-700 rounded text-sm">
+                  📋 Debug Data di Console
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -536,6 +815,11 @@ const AdminReportModal = ({
             <div className="text-sm text-slate-600">
               <span className="font-medium">💡 Tips:</span> Gunakan filter untuk
               analisis data yang lebih spesifik
+              {dataToUse.length === 0 && (
+                <span className="text-red-500 ml-2">
+                  ⚠️ Data kosong - periksa console untuk debug
+                </span>
+              )}
             </div>
             <div className="flex gap-3">
               <button
@@ -545,7 +829,7 @@ const AdminReportModal = ({
               </button>
               <button
                 onClick={() => onDownload(reportType, "xlsx")}
-                disabled={loading}
+                disabled={loading || dataToUse.length === 0}
                 className={`${colors.button} text-white px-5 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2`}>
                 <FileSpreadsheet className="w-4 h-4" />
                 {loading ? "Exporting..." : "Export ke Excel"}

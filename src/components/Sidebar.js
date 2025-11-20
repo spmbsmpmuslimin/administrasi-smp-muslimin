@@ -21,33 +21,26 @@ const Sidebar = ({
       {/* Header */}
       <div className="p-6 border-b border-blue-700">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6L23 9l-11-6zM18.82 9L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z" />
-            </svg>
+          {/* Logo Sekolah */}
+          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-lg">
+            <img
+              src="/logo_sekolah.PNG"
+              alt="Logo SMP Muslimin Cililin"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
-            {/* PERBAIKAN: Menyamakan font dan ukuran untuk kedua baris */}
             <div className="text-lg font-bold text-white leading-tight">
               SMP Muslimin
             </div>
             <div className="text-lg font-bold text-white leading-tight mt-1">
               Cililin
             </div>
-            {/*
-            Kode sebelumnya:
-            <div className="text-lg font-bold text-white leading-tight">
-              SMP Muslimin
-            </div>
-            <div className="text-sm font-medium text-blue-200 leading-tight mt-1">
-              Cililin
-            </div>
-            */}
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation - REST OF THE CODE REMAINS EXACTLY THE SAME */}
       <nav className="py-4">
         {/* Menu Utama */}
         <div className="mb-5">

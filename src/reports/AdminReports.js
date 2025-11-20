@@ -18,7 +18,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { exportToExcel } from "./ReportExcel";
-import ReportModal from './modals/AdminReportModal';
+import ReportModal from "./modals/AdminReportModal";
 
 import {
   fetchTeachersData,
@@ -28,8 +28,8 @@ import {
   calculateFinalGrades,
   buildFilterDescription,
   TEACHER_ROLES,
-  REPORT_HEADERS
-} from './ReportHelpers';
+  REPORT_HEADERS,
+} from "./ReportHelpers";
 
 // ==================== MONITORING HELPERS ====================
 
@@ -37,24 +37,24 @@ const calculateAtRiskStudents = async (classId = null) => {
   try {
     // Ambil attendance recap
     const filters = classId ? { class_id: classId } : {};
-    
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     let attendanceQuery = supabase
-      .from('attendances')
-      .select('student_id, status, students!inner(nis, full_name, class_id)')
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
-    
+      .from("attendances")
+      .select("student_id, status, students!inner(nis, full_name, class_id)")
+      .gte("date", thirtyDaysAgo.toISOString().split("T")[0]);
+
     if (classId) {
-      attendanceQuery = attendanceQuery.eq('students.class_id', classId);
+      attendanceQuery = attendanceQuery.eq("students.class_id", classId);
     }
 
     const { data: attendanceData } = await attendanceQuery;
 
     // Calculate attendance percentage per student
     const studentAttendance = {};
-    attendanceData?.forEach(record => {
+    attendanceData?.forEach((record) => {
       const key = record.student_id;
       if (!studentAttendance[key]) {
         studentAttendance[key] = {
@@ -66,24 +66,24 @@ const calculateAtRiskStudents = async (classId = null) => {
         };
       }
       studentAttendance[key].total++;
-      if (record.status?.toLowerCase() === 'hadir') {
+      if (record.status?.toLowerCase() === "hadir") {
         studentAttendance[key].present++;
       }
     });
 
     // Filter students dengan absensi < 75%
     const atRiskAttendance = Object.values(studentAttendance)
-      .filter(s => s.total >= 10 && (s.present / s.total) * 100 < 75)
-      .map(s => ({
+      .filter((s) => s.total >= 10 && (s.present / s.total) * 100 < 75)
+      .map((s) => ({
         ...s,
         attendanceRate: Math.round((s.present / s.total) * 100),
-        riskType: 'attendance'
+        riskType: "attendance",
       }))
       .sort((a, b) => a.attendanceRate - b.attendanceRate);
 
     return atRiskAttendance;
   } catch (err) {
-    console.error('Error calculating at-risk students:', err);
+    console.error("Error calculating at-risk students:", err);
     return [];
   }
 };
@@ -91,21 +91,21 @@ const calculateAtRiskStudents = async (classId = null) => {
 const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
   try {
     let gradesQuery = supabase
-      .from('grades')
-      .select('*, students!inner(nis, full_name, class_id)');
+      .from("grades")
+      .select("*, students!inner(nis, full_name, class_id)");
 
     if (classId) {
-      gradesQuery = gradesQuery.eq('students.class_id', classId);
+      gradesQuery = gradesQuery.eq("students.class_id", classId);
     }
 
     const { data: gradesData } = await gradesQuery;
-    
+
     // Calculate final grades
     const finalGrades = calculateFinalGrades(gradesData || []);
-    
+
     // Filter students dengan nilai < threshold di multiple subjects
     const studentGrades = {};
-    finalGrades.forEach(grade => {
+    finalGrades.forEach((grade) => {
       const key = grade.student_id;
       if (!studentGrades[key]) {
         studentGrades[key] = {
@@ -118,23 +118,28 @@ const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
       }
       studentGrades[key].subjects.push({
         subject: grade.subject,
-        score: grade.final_score
+        score: grade.final_score,
       });
     });
 
     // Calculate average dan filter
     const atRiskGrades = Object.values(studentGrades)
-      .map(s => ({
+      .map((s) => ({
         ...s,
-        averageGrade: Math.round((s.subjects.reduce((sum, subj) => sum + subj.score, 0) / s.subjects.length) * 100) / 100,
-        lowSubjects: s.subjects.filter(subj => subj.score < threshold).length,
+        averageGrade:
+          Math.round(
+            (s.subjects.reduce((sum, subj) => sum + subj.score, 0) /
+              s.subjects.length) *
+              100
+          ) / 100,
+        lowSubjects: s.subjects.filter((subj) => subj.score < threshold).length,
       }))
-      .filter(s => s.averageGrade < threshold || s.lowSubjects >= 2)
+      .filter((s) => s.averageGrade < threshold || s.lowSubjects >= 2)
       .sort((a, b) => a.averageGrade - b.averageGrade);
 
     return atRiskGrades;
   } catch (err) {
-    console.error('Error calculating low grade students:', err);
+    console.error("Error calculating low grade students:", err);
     return [];
   }
 };
@@ -142,9 +147,9 @@ const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
 const calculateHighRiskStudents = (atRiskAttendance, atRiskGrades) => {
   // Combine both lists: students yang ada di both lists
   const highRisk = [];
-  
-  atRiskAttendance.forEach(attStudent => {
-    const gradeStudent = atRiskGrades.find(g => g.nis === attStudent.nis);
+
+  atRiskAttendance.forEach((attStudent) => {
+    const gradeStudent = atRiskGrades.find((g) => g.nis === attStudent.nis);
     if (gradeStudent) {
       highRisk.push({
         nis: attStudent.nis,
@@ -152,7 +157,11 @@ const calculateHighRiskStudents = (atRiskAttendance, atRiskGrades) => {
         class_id: attStudent.class_id,
         attendanceRate: attStudent.attendanceRate,
         averageGrade: gradeStudent.averageGrade,
-        riskScore: Math.round((((75 - attStudent.attendanceRate) / 25) + ((70 - gradeStudent.averageGrade) / 70)) * 50), // 0-100
+        riskScore: Math.round(
+          ((75 - attStudent.attendanceRate) / 25 +
+            (70 - gradeStudent.averageGrade) / 70) *
+            50
+        ), // 0-100
       });
     }
   });
@@ -170,7 +179,9 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
           <Icon className="w-5 h-5" />
           <h3 className="font-semibold text-slate-800">{title}</h3>
         </div>
-        <p className="text-sm text-slate-500">Tidak ada data yang perlu perhatian</p>
+        <p className="text-sm text-slate-500">
+          Tidak ada data yang perlu perhatian
+        </p>
       </div>
     );
   }
@@ -193,23 +204,31 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
             <div className="flex justify-between items-start">
               <div>
                 <p className="font-semibold text-slate-800">{student.name}</p>
-                <p className="text-slate-600">{student.nis} • Kelas {student.class_id}</p>
+                <p className="text-slate-600">
+                  {student.nis} • Kelas {student.class_id}
+                </p>
               </div>
-              {type === 'attendance' && (
-                <span className={`px-2 py-1 rounded font-bold ${
-                  student.attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                }`}>
+              {type === "attendance" && (
+                <span
+                  className={`px-2 py-1 rounded font-bold ${
+                    student.attendanceRate >= 75
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-red-100 text-red-700"
+                  }`}>
                   {student.attendanceRate}%
                 </span>
               )}
-              {type === 'grades' && (
-                <span className={`px-2 py-1 rounded font-bold ${
-                  student.averageGrade >= 70 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                }`}>
+              {type === "grades" && (
+                <span
+                  className={`px-2 py-1 rounded font-bold ${
+                    student.averageGrade >= 70
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-red-100 text-red-700"
+                  }`}>
                   {student.averageGrade}
                 </span>
               )}
-              {type === 'highRisk' && (
+              {type === "highRisk" && (
                 <span className="px-2 py-1 rounded font-bold bg-red-100 text-red-700">
                   ⚠️ {student.riskScore}
                 </span>
@@ -233,7 +252,8 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
 const StatCard = ({ icon: Icon, label, value, subtitle, colorClass }) => (
   <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow">
     <div className="flex items-center gap-3">
-      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass}`}>
+      <div
+        className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass}`}>
         <Icon className="w-6 h-6" />
       </div>
       <div className="flex-1">
@@ -260,7 +280,7 @@ const AdminReports = ({ user, onShowToast }) => {
   });
   const [classOptions, setClassOptions] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
-  
+
   // Monitoring data
   const [atRiskAttendance, setAtRiskAttendance] = useState([]);
   const [atRiskGrades, setAtRiskGrades] = useState([]);
@@ -378,10 +398,15 @@ const AdminReports = ({ user, onShowToast }) => {
           : 0;
 
       const finalGrades = calculateFinalGrades(gradesResult.data || []);
-      const finalScores = finalGrades.map(g => g.final_score).filter(s => !isNaN(s));
-      const avgGrade = finalScores.length > 0
-        ? (finalScores.reduce((a, b) => a + b, 0) / finalScores.length).toFixed(1)
-        : 0;
+      const finalScores = finalGrades
+        .map((g) => g.final_score)
+        .filter((s) => !isNaN(s));
+      const avgGrade =
+        finalScores.length > 0
+          ? (
+              finalScores.reduce((a, b) => a + b, 0) / finalScores.length
+            ).toFixed(1)
+          : 0;
 
       setStats({
         totalTeachers: teachersResult.count || 0,
@@ -400,7 +425,7 @@ const AdminReports = ({ user, onShowToast }) => {
     setMonitoringLoading(true);
     try {
       const classId = filters.class_id || null;
-      
+
       const [attRisk, gradeRisk] = await Promise.all([
         calculateAtRiskStudents(classId),
         calculateLowGradeStudents(classId, 70),
@@ -480,11 +505,19 @@ const AdminReports = ({ user, onShowToast }) => {
           throw new Error("Tipe laporan tidak valid");
       }
 
+      // DEBUG: Log data structure
+      console.log(`📊 ${reportType} Data:`, {
+        fullData: result.fullData?.length || 0,
+        headers: result.headers?.length || 0,
+        summary: result.summary,
+        reportTitle,
+      });
+
       return {
         ...result,
-        reportTitle
+        reportTitle,
+        reportType,
       };
-
     } catch (err) {
       console.error("Error in fetchReportData:", err);
       throw err;
@@ -495,12 +528,27 @@ const AdminReports = ({ user, onShowToast }) => {
     setLoading(true);
     setError(null);
     try {
+      console.log(`🔄 Starting preview for: ${reportType}`);
+
       const data = await fetchReportData(reportType);
 
-      setTimeout(() => {
-        setPreviewModal({ isOpen: true, data, type: reportType });
-        setLoading(false);
-      }, 100);
+      // PASTIKAN data structure benar
+      const modalData = {
+        ...data,
+        fullData: data.fullData || [],
+        headers: data.headers || [],
+        summary: data.summary || {},
+        reportTitle: data.reportTitle || `LAPORAN ${reportType.toUpperCase()}`,
+        reportType: data.reportType || reportType,
+      };
+
+      console.log("📨 Sending to modal:", modalData);
+
+      setPreviewModal({
+        isOpen: true,
+        data: modalData,
+        type: reportType,
+      });
 
       if (onShowToast) {
         onShowToast("Preview berhasil dimuat", "success");
@@ -509,14 +557,15 @@ const AdminReports = ({ user, onShowToast }) => {
         setTimeout(() => setSuccess(null), 3000);
       }
     } catch (err) {
-      setLoading(false);
+      console.error("❌ Preview error:", err);
       const errorMsg = `Gagal memuat preview: ${err.message}`;
       if (onShowToast) {
         onShowToast(errorMsg, "error");
       } else {
         setError(errorMsg);
       }
-      console.error("Preview error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -524,6 +573,7 @@ const AdminReports = ({ user, onShowToast }) => {
     setLoading(true);
     setError(null);
     try {
+      // Gunakan data dari modal jika ada, atau fetch baru
       const data = previewModal.data || (await fetchReportData(reportType));
 
       if (!data.fullData || data.fullData.length === 0) {
@@ -578,6 +628,17 @@ const AdminReports = ({ user, onShowToast }) => {
   const handleApplyFilter = () => {
     fetchMonitoringData();
   };
+
+  // DEBUG: Log modal state changes
+  useEffect(() => {
+    if (previewModal.isOpen) {
+      console.log("🪟 Modal Opened:", {
+        isOpen: previewModal.isOpen,
+        data: previewModal.data,
+        type: previewModal.type,
+      });
+    }
+  }, [previewModal.isOpen]);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -672,7 +733,9 @@ const AdminReports = ({ user, onShowToast }) => {
                 </label>
                 <select
                   value={filters.class_id || ""}
-                  onChange={(e) => handleFilterChange("class_id", e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("class_id", e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg">
                   <option value="">Semua Kelas</option>
                   {classOptions.map((cls) => (
@@ -744,7 +807,8 @@ const AdminReports = ({ user, onShowToast }) => {
                 key={card.id}
                 className={`bg-white rounded-lg shadow-sm border-2 ${card.colorCard} p-4 hover:shadow-md transition-shadow`}>
                 <div className="flex items-center justify-between mb-3">
-                  <div className={`w-11 h-11 rounded-xl ${card.colorIcon} flex items-center justify-center`}>
+                  <div
+                    className={`w-11 h-11 rounded-xl ${card.colorIcon} flex items-center justify-center`}>
                     <Icon className="w-5 h-5" />
                   </div>
                 </div>
@@ -755,9 +819,7 @@ const AdminReports = ({ user, onShowToast }) => {
                 <p className="text-xs text-slate-600 mb-2 line-clamp-2">
                   {card.description}
                 </p>
-                <p className="text-xs text-slate-500 mb-3">
-                  {card.stats}
-                </p>
+                <p className="text-xs text-slate-500 mb-3">{card.stats}</p>
 
                 <div className="flex flex-col gap-2">
                   <button
