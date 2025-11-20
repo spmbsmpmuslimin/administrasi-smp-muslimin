@@ -208,7 +208,7 @@ export const Login = ({ onLogin, onShowToast }) => {
       <div className="flex-1 flex flex-col lg:flex-row relative z-10">
         {/* PHOTO SECTION - Enhanced with overlays */}
         <div
-          className={`relative overflow-hidden flex-shrink-0 h-[40vh] lg:h-auto lg:flex-[7] transition-all duration-1000 ${
+          className={`relative overflow-hidden flex-shrink-0 h-[35vh] lg:h-auto lg:flex-[7] transition-all duration-1000 ${
             imageLoaded ? "opacity-100" : "opacity-0"
           }`}
           style={{
@@ -249,17 +249,6 @@ export const Login = ({ onLogin, onShowToast }) => {
               className="absolute top-1/2 right-1/4 w-2 h-2 bg-purple-300/30 rounded-full animate-ping"
               style={{ animationDuration: "5s", animationDelay: "2s" }}></div>
           </div>
-
-          {/* MOTTO TEXT - Fully responsive */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 lg:p-6 text-center bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-            <div className="max-w-4xl mx-auto">
-              <p className="text-white text-sm sm:text-base lg:text-lg xl:text-xl font-semibold leading-tight drop-shadow-2xl">
-                Mewujudkan Peserta Didik yang Berakhlak Mulia, Moderat, Mandiri
-                dan Berprestasi
-              </p>
-              <div className="w-20 sm:w-24 lg:w-32 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent mx-auto mt-2 sm:mt-3 rounded-full"></div>
-            </div>
-          </div>
         </div>
 
         {/* FORM SECTION - Premium glassmorphism */}
@@ -278,44 +267,44 @@ export const Login = ({ onLogin, onShowToast }) => {
             }`}
             onSubmit={handleSubmit}>
             {/* Glass card with enhanced effects */}
-            <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-5 sm:p-6 lg:p-8 border border-white/20 shadow-2xl relative overflow-hidden group hover:bg-white/[0.12] transition-all duration-500 lg:hover:scale-[1.02] lg:hover:shadow-blue-500/20">
+            <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/20 shadow-2xl relative overflow-hidden group hover:bg-white/[0.12] transition-all duration-500 hover:scale-[1.02] hover:shadow-blue-500/20">
               {/* Gradient border effect on hover */}
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/20 group-hover:via-purple-500/20 group-hover:to-pink-500/20 transition-all duration-500 -z-10"></div>
 
               {/* Header with logo */}
-              <div className="text-center mb-6 sm:mb-8 relative">
-                <div className="mb-3 sm:mb-4 flex justify-center">
+              <div className="text-center mb-8 relative">
+                <div className="mb-4 flex justify-center">
                   <div className="relative group/logo">
                     <Logo
                       size="medium"
-                      className="opacity-90 drop-shadow-2xl transition-transform duration-300 lg:group-hover/logo:scale-110"
+                      className="opacity-90 drop-shadow-2xl transition-transform duration-300 group-hover/logo:scale-110"
                     />
-                    <div className="absolute inset-0 bg-blue-400/20 blur-xl rounded-full scale-150 lg:group-hover/logo:bg-blue-400/30 transition-all duration-300"></div>
+                    <div className="absolute inset-0 bg-blue-400/20 blur-xl rounded-full scale-150 group-hover/logo:bg-blue-400/30 transition-all duration-300"></div>
                   </div>
                 </div>
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 drop-shadow-lg">
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-lg">
                   Selamat Datang
                 </h2>
-                <p className="text-blue-200/80 text-xs sm:text-sm lg:text-base">
+                <p className="text-blue-200/80 text-sm sm:text-base">
                   Silakan Masuk Ke Akun Anda
                 </p>
-                <div className="mt-2 sm:mt-3 w-12 sm:w-16 h-1 mx-auto bg-gradient-to-r from-transparent via-blue-400/50 to-transparent rounded-full"></div>
+                <div className="mt-3 w-16 h-1 mx-auto bg-gradient-to-r from-transparent via-blue-400/50 to-transparent rounded-full"></div>
               </div>
 
               {/* Username Field - Enhanced */}
-              <div className="mb-4 sm:mb-5 relative group/input">
-                <label className="block font-semibold text-white/90 mb-2 text-xs sm:text-sm tracking-wide">
+              <div className="mb-5 relative group/input">
+                <label className="block font-semibold text-white/90 mb-2 text-sm tracking-wide">
                   Username
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     id="username"
-                    className={`w-full px-3 sm:px-4 py-3 sm:py-3.5 bg-white/10 backdrop-blur-sm border-2 rounded-xl text-white placeholder-white/40 transition-all duration-300 autofill:bg-white/10 autofill:text-white ${
+                    className={`w-full px-4 py-3.5 bg-white/10 backdrop-blur-sm border-2 rounded-xl text-white placeholder-white/40 transition-all duration-300 autofill:bg-white/10 autofill:text-white ${
                       errors.username
                         ? "border-red-400/50 shadow-lg shadow-red-500/20"
                         : "border-white/20 focus:border-blue-400/50 focus:shadow-lg focus:shadow-blue-500/20"
-                    } focus:outline-none hover:border-white/30 text-sm sm:text-base`}
+                    } focus:outline-none hover:border-white/30`}
                     placeholder="Masukkan username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -324,27 +313,27 @@ export const Login = ({ onLogin, onShowToast }) => {
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover/input:from-blue-500/5 group-hover/input:to-purple-500/5 transition-all duration-300 pointer-events-none"></div>
                 </div>
                 {errors.username && (
-                  <div className="text-red-300 text-xs sm:text-sm mt-1 sm:mt-2 flex items-center font-medium animate-pulse">
-                    <span className="mr-1 sm:mr-2">⚠️</span>
+                  <div className="text-red-300 text-sm mt-2 flex items-center font-medium animate-pulse">
+                    <span className="mr-2">⚠️</span>
                     {errors.username}
                   </div>
                 )}
               </div>
 
               {/* Password Field - Enhanced */}
-              <div className="mb-4 sm:mb-5 relative group/input">
-                <label className="block font-semibold text-white/90 mb-2 text-xs sm:text-sm tracking-wide">
+              <div className="mb-5 relative group/input">
+                <label className="block font-semibold text-white/90 mb-2 text-sm tracking-wide">
                   Password
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     id="password"
-                    className={`w-full px-3 sm:px-4 py-3 sm:py-3.5 pr-10 sm:pr-12 bg-white/10 backdrop-blur-sm border-2 rounded-xl text-white placeholder-white/40 transition-all duration-300 autofill:bg-white/10 autofill:text-white ${
+                    className={`w-full px-4 py-3.5 pr-12 bg-white/10 backdrop-blur-sm border-2 rounded-xl text-white placeholder-white/40 transition-all duration-300 autofill:bg-white/10 autofill:text-white ${
                       errors.password
                         ? "border-red-400/50 shadow-lg shadow-red-500/20"
                         : "border-white/20 focus:border-purple-400/50 focus:shadow-lg focus:shadow-purple-500/20"
-                    } focus:outline-none hover:border-white/30 text-sm sm:text-base`}
+                    } focus:outline-none hover:border-white/30`}
                     placeholder="Masukkan password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -352,15 +341,15 @@ export const Login = ({ onLogin, onShowToast }) => {
                   />
                   <button
                     type="button"
-                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-all duration-300 p-1 sm:p-2 hover:bg-white/10 rounded-lg"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-all duration-300 p-2 hover:bg-white/10 rounded-lg"
                     onClick={togglePasswordVisibility}>
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-pink-500/0 group-hover/input:from-purple-500/5 group-hover/input:to-pink-500/5 transition-all duration-300 pointer-events-none"></div>
                 </div>
                 {errors.password && (
-                  <div className="text-red-300 text-xs sm:text-sm mt-1 sm:mt-2 flex items-center font-medium animate-pulse">
-                    <span className="mr-1 sm:mr-2">⚠️</span>
+                  <div className="text-red-300 text-sm mt-2 flex items-center font-medium animate-pulse">
+                    <span className="mr-2">⚠️</span>
                     {errors.password}
                   </div>
                 )}
@@ -368,28 +357,28 @@ export const Login = ({ onLogin, onShowToast }) => {
 
               {/* Error Message - Enhanced */}
               {errors.general && (
-                <div className="mb-4 sm:mb-5 p-3 sm:p-4 bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-red-200 rounded-xl text-xs sm:text-sm font-medium shadow-lg shadow-red-500/10 animate-pulse">
+                <div className="mb-5 p-4 bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-red-200 rounded-xl text-sm font-medium shadow-lg shadow-red-500/10 animate-pulse">
                   ⚠️ {errors.general}
                 </div>
               )}
 
               {/* Remember Me & Forgot Password */}
-              <div className="flex justify-between items-center mb-4 sm:mb-6">
-                <label className="flex items-center gap-1 sm:gap-2 cursor-pointer group/check">
+              <div className="flex justify-between items-center mb-6">
+                <label className="flex items-center gap-2 cursor-pointer group/check">
                   <input
                     type="checkbox"
                     id="remember"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-white/10 border-2 border-white/30 checked:bg-blue-500 checked:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all cursor-pointer"
+                    className="w-4 h-4 rounded bg-white/10 border-2 border-white/30 checked:bg-blue-500 checked:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all cursor-pointer"
                   />
-                  <span className="text-xs sm:text-sm text-white/80 group-hover/check:text-white transition-colors select-none">
+                  <span className="text-sm text-white/80 group-hover/check:text-white transition-colors select-none">
                     Ingat saya
                   </span>
                 </label>
                 <a
                   href="#"
-                  className="text-xs sm:text-sm text-blue-300 hover:text-blue-200 transition-colors font-medium hover:underline">
+                  className="text-sm text-blue-300 hover:text-blue-200 transition-colors font-medium hover:underline">
                   Lupa password?
                 </a>
               </div>
@@ -397,14 +386,14 @@ export const Login = ({ onLogin, onShowToast }) => {
               {/* Submit Button - Navy Classic */}
               <button
                 type="submit"
-                className="relative w-full py-3 sm:py-4 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 hover:from-blue-800 hover:via-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl text-white font-bold transition-all duration-500 flex items-center justify-center shadow-xl shadow-blue-900/40 lg:hover:shadow-2xl lg:hover:shadow-blue-800/60 lg:hover:scale-[1.02] active:scale-[0.98] group/btn overflow-hidden text-sm sm:text-base"
+                className="relative w-full py-4 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 hover:from-blue-800 hover:via-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl text-white font-bold transition-all duration-500 flex items-center justify-center shadow-xl shadow-blue-900/40 hover:shadow-2xl hover:shadow-blue-800/60 hover:scale-[1.02] active:scale-[0.98] group/btn overflow-hidden"
                 disabled={isLoading}>
                 {/* Animated gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
 
                 {isLoading ? (
                   <>
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2 sm:mr-3"></div>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
                     <span>Memproses...</span>
                   </>
                 ) : (
@@ -413,7 +402,7 @@ export const Login = ({ onLogin, onShowToast }) => {
               </button>
 
               {/* Footer */}
-              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10 text-center">
+              <div className="mt-6 pt-6 border-t border-white/10 text-center">
                 <p className="text-xs text-white/60 mb-1">
                   © 2025 SMP MUSLIMIN CILILIN
                 </p>
