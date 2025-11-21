@@ -1,4 +1,4 @@
-// ClassDistribution.js - Logic untuk pembagian kelas dan management distribution
+// ClassDistribution.js - OPTIMIZED VERSION untuk distribusi asal SD lebih proporsional
 
 // Fungsi untuk format tampilan tahun ajaran (26.27 -> 2026/2027)
 export const formatTahunAjaran = (tahunAjaran) => {
@@ -10,16 +10,13 @@ export const formatTahunAjaran = (tahunAjaran) => {
 export const getTahunAjaran = () => {
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1; // 1-12
+  const month = now.getMonth() + 1;
 
-  // Januari - Juli: SPMB untuk masuk Juli tahun ini
   if (month >= 1 && month <= 7) {
     const tahun1 = year.toString().slice(-2);
     const tahun2 = (year + 1).toString().slice(-2);
     return `${tahun1}.${tahun2}`;
-  }
-  // Agustus - Desember: SPMB untuk masuk Juli tahun depan
-  else {
+  } else {
     const tahun1 = (year + 1).toString().slice(-2);
     const tahun2 = (year + 2).toString().slice(-2);
     return `${tahun1}.${tahun2}`;
@@ -28,12 +25,18 @@ export const getTahunAjaran = () => {
 
 // Fungsi untuk generate NIS dengan format: 26.27.07.001
 export const generateNIS = (tahunAjaran, grade, nomorUrut) => {
-  const gradeStr = grade.toString().padStart(2, "0"); // 7 -> "07"
-  const nomorStr = nomorUrut.toString().padStart(3, "0"); // 1 -> "001"
+  const gradeStr = grade.toString().padStart(2, "0");
+  const nomorStr = nomorUrut.toString().padStart(3, "0");
   return `${tahunAjaran}.${gradeStr}.${nomorStr}`;
 };
 
-// Algoritma Pembagian Kelas OPTIMAL - Maximum Balance
+// Helper function to sanitize school name
+const sanitizeSchoolName = (schoolName) => {
+  if (!schoolName || schoolName === "Unknown") return "Unknown";
+  return schoolName.trim().replace(/\s+/g, " ");
+};
+
+// Algoritma Pembagian Kelas OPTIMAL - Maximum Balance & School Distribution
 export const generateClassDistribution = (
   unassignedStudents,
   numClasses,
@@ -56,12 +59,19 @@ export const generateClassDistribution = (
   try {
     const tahunAjaran = getTahunAjaran();
 
+    // STEP 0: SANITIZE ALL STUDENT DATA
+    const sanitizedStudents = unassignedStudents.map((student) => ({
+      ...student,
+      asal_sekolah: sanitizeSchoolName(student.asal_sekolah),
+    }));
+
+    console.log("🧹 Data sanitized - school names normalized");
+
     // STEP 1: MAXIMUM DISTRIBUTION - Strict Round-Robin by School
     const distributeBySchool = (students) => {
-      // Group by school
       const bySchool = {};
       students.forEach((s) => {
-        const school = s.asal_sekolah || "Unknown";
+        const school = sanitizeSchoolName(s.asal_sekolah);
         if (!bySchool[school]) bySchool[school] = [];
         bySchool[school].push(s);
       });
@@ -80,7 +90,7 @@ export const generateClassDistribution = (
         bySchool[school] = shuffle(bySchool[school]);
       });
 
-      // ULTRA STRICT Round-Robin: ambil 1 dari tiap sekolah bergiliran
+      // ULTRA STRICT Round-Robin
       const result = [];
       const schools = Object.keys(bySchool).sort();
       const maxLength = Math.max(
@@ -99,8 +109,8 @@ export const generateClassDistribution = (
     };
 
     // Distribute L dan P secara terpisah by school
-    const males = unassignedStudents.filter((s) => s.jenis_kelamin === "L");
-    const females = unassignedStudents.filter((s) => s.jenis_kelamin === "P");
+    const males = sanitizedStudents.filter((s) => s.jenis_kelamin === "L");
+    const females = sanitizedStudents.filter((s) => s.jenis_kelamin === "P");
 
     const distributedMales = distributeBySchool(males);
     const distributedFemales = distributeBySchool(females);
@@ -115,10 +125,6 @@ export const generateClassDistribution = (
     classNames.forEach((className) => {
       distribution[className] = [];
     });
-
-    const totalStudents = unassignedStudents.length;
-    const studentsPerClass = Math.floor(totalStudents / numClasses);
-    const remainder = totalStudents % numClasses;
 
     // STEP 2: Distribute Males - Round Robin
     let maleIndex = 0;
@@ -159,7 +165,7 @@ export const generateClassDistribution = (
     classNames.forEach((className) => {
       schoolCountPerClass[className] = {};
       distribution[className].forEach((student) => {
-        const school = student.asal_sekolah || "Unknown";
+        const school = sanitizeSchoolName(student.asal_sekolah);
         if (!schoolCountPerClass[className][school]) {
           schoolCountPerClass[className][school] = 0;
         }
@@ -167,71 +173,72 @@ export const generateClassDistribution = (
       });
     });
 
-    // STEP 5: AGGRESSIVE MULTI-PHASE REBALANCING
-    const studentsWithSchool = unassignedStudents.filter(
+    // STEP 5: ENHANCED MULTI-PHASE REBALANCING
+    const studentsWithSchool = sanitizedStudents.filter(
       (s) => s.asal_sekolah && s.asal_sekolah !== "Unknown"
     );
     const uniqueSchools = [
-      ...new Set(studentsWithSchool.map((s) => s.asal_sekolah)),
+      ...new Set(
+        studentsWithSchool.map((s) => sanitizeSchoolName(s.asal_sekolah))
+      ),
     ];
 
     console.log("🔍 Rebalancing Stats:");
     console.log(`Total Schools: ${uniqueSchools.length}`);
     console.log(`Total Students with School: ${studentsWithSchool.length}`);
 
-    // Calculate thresholds
-    const avgSchoolPerClass = studentsWithSchool.length / numClasses;
+    // ⭐ OPTIMIZED THRESHOLDS - Lebih ketat!
     const avgSchoolsFromSameSchool =
       studentsWithSchool.length / uniqueSchools.length / numClasses;
-    const maxSchoolPerClass = Math.ceil(avgSchoolsFromSameSchool) + 1;
-    const minSchoolPerClass = Math.floor(avgSchoolsFromSameSchool) - 1;
+
+    // Threshold lebih ketat: maksimal hanya boleh 1 siswa lebih dari rata-rata
+    const maxSchoolPerClass = Math.ceil(avgSchoolsFromSameSchool);
+    const minSchoolPerClass = Math.floor(avgSchoolsFromSameSchool);
 
     console.log(
-      `Max students from same school per class: ${maxSchoolPerClass}`
+      `Target students per school per class: ${avgSchoolsFromSameSchool.toFixed(
+        2
+      )}`
     );
-    console.log(
-      `Min students from same school per class: ${minSchoolPerClass}`
-    );
+    console.log(`Max allowed: ${maxSchoolPerClass}`);
+    console.log(`Min target: ${minSchoolPerClass}`);
 
-    // PHASE 1: Reduce overloaded schools
+    // PHASE 1: Reduce overloaded schools (ENHANCED - lebih banyak iterasi)
     let phase1Swaps = 0;
-    for (let iteration = 0; iteration < 100; iteration++) {
+    for (let iteration = 0; iteration < 200; iteration++) {
       let swapped = false;
 
       for (const className of classNames) {
         for (const school in schoolCountPerClass[className]) {
           if (school === "Unknown") continue;
 
-          // If this class has too many from this school
           if (schoolCountPerClass[className][school] > maxSchoolPerClass) {
-            // Find class with fewer students from this school
             for (const targetClass of classNames) {
               if (targetClass === className) continue;
 
               const targetCount = schoolCountPerClass[targetClass][school] || 0;
 
               if (targetCount < maxSchoolPerClass) {
-                // Find student from overloaded school in source class
                 const sourceStudentIdx = distribution[className].findIndex(
-                  (s) => s.asal_sekolah === school
+                  (s) => sanitizeSchoolName(s.asal_sekolah) === school
                 );
 
                 if (sourceStudentIdx !== -1) {
                   const sourceStudent =
                     distribution[className][sourceStudentIdx];
 
-                  // Find swap candidate in target class (same gender, different school)
                   const targetStudentIdx = distribution[targetClass].findIndex(
                     (s) =>
                       s.jenis_kelamin === sourceStudent.jenis_kelamin &&
-                      s.asal_sekolah !== school
+                      sanitizeSchoolName(s.asal_sekolah) !== school
                   );
 
                   if (targetStudentIdx !== -1) {
                     const targetStudent =
                       distribution[targetClass][targetStudentIdx];
-                    const targetSchool =
-                      targetStudent.asal_sekolah || "Unknown";
+                    const targetSchool = sanitizeSchoolName(
+                      targetStudent.asal_sekolah
+                    );
 
                     // Perform swap
                     distribution[className][sourceStudentIdx] = targetStudent;
@@ -266,12 +273,13 @@ export const generateClassDistribution = (
       if (!swapped) break;
     }
 
-    // PHASE 2: Increase school diversity in underrepresented classes
+    // PHASE 2: Increase school diversity (ENHANCED - target 80-90% coverage)
     let phase2Swaps = 0;
-    for (let iteration = 0; iteration < 100; iteration++) {
+    const targetDiversityRatio = 0.85;
+
+    for (let iteration = 0; iteration < 200; iteration++) {
       let swapped = false;
 
-      // Find class with least school diversity
       let minDiversityClass = null;
       let minDiversity = Infinity;
 
@@ -289,12 +297,11 @@ export const generateClassDistribution = (
 
       if (
         !minDiversityClass ||
-        minDiversity >= Math.floor(uniqueSchools.length * 0.7)
+        minDiversity >= Math.floor(uniqueSchools.length * targetDiversityRatio)
       ) {
-        break; // Already good enough
+        break;
       }
 
-      // Find schools missing from this class
       const schoolsInMinClass = Object.keys(
         schoolCountPerClass[minDiversityClass]
       ).filter(
@@ -304,25 +311,20 @@ export const generateClassDistribution = (
         (s) => !schoolsInMinClass.includes(s)
       );
 
-      // Try to get student from missing school
       for (const missingSchool of missingSchools) {
-        // Find class that has this school
         for (const sourceClass of classNames) {
           if (sourceClass === minDiversityClass) continue;
 
           const sourceCount =
             schoolCountPerClass[sourceClass][missingSchool] || 0;
-          if (sourceCount > 1) {
-            // Only if they have more than 1
-            // Find student from missing school in source class
+          if (sourceCount > minSchoolPerClass) {
             const sourceStudentIdx = distribution[sourceClass].findIndex(
-              (s) => s.asal_sekolah === missingSchool
+              (s) => sanitizeSchoolName(s.asal_sekolah) === missingSchool
             );
 
             if (sourceStudentIdx !== -1) {
               const sourceStudent = distribution[sourceClass][sourceStudentIdx];
 
-              // Find swap in target (same gender, preferably from overrepresented school in target)
               const targetStudentIdx = distribution[
                 minDiversityClass
               ].findIndex(
@@ -332,7 +334,9 @@ export const generateClassDistribution = (
               if (targetStudentIdx !== -1) {
                 const targetStudent =
                   distribution[minDiversityClass][targetStudentIdx];
-                const targetSchool = targetStudent.asal_sekolah || "Unknown";
+                const targetSchool = sanitizeSchoolName(
+                  targetStudent.asal_sekolah
+                );
 
                 // Swap
                 distribution[sourceClass][sourceStudentIdx] = targetStudent;
@@ -366,8 +370,188 @@ export const generateClassDistribution = (
       if (!swapped) break;
     }
 
+    // ⭐ PHASE 3: BALANCE FINAL PASS - Ratakan variance asal SD antar kelas
+    let phase3Swaps = 0;
+    for (let iteration = 0; iteration < 100; iteration++) {
+      let swapped = false;
+
+      // Hitung variance jumlah asal SD per kelas
+      const schoolCounts = classNames.map((className) => {
+        return Object.keys(schoolCountPerClass[className]).filter(
+          (s) => s !== "Unknown" && schoolCountPerClass[className][s] > 0
+        ).length;
+      });
+
+      const avgSchoolCount =
+        schoolCounts.reduce((a, b) => a + b, 0) / schoolCounts.length;
+      const variance =
+        schoolCounts.reduce(
+          (sum, count) => sum + Math.pow(count - avgSchoolCount, 2),
+          0
+        ) / schoolCounts.length;
+
+      // Kalau variance sudah cukup kecil, stop
+      if (variance < 0.5) break;
+
+      // Cari kelas dengan diversity tertinggi dan terendah
+      const maxDiversityClass =
+        classNames[schoolCounts.indexOf(Math.max(...schoolCounts))];
+      const minDiversityClass =
+        classNames[schoolCounts.indexOf(Math.min(...schoolCounts))];
+
+      if (maxDiversityClass === minDiversityClass) break;
+
+      // Cari school yang ada di maxClass tapi tidak di minClass
+      const schoolsInMax = Object.keys(
+        schoolCountPerClass[maxDiversityClass]
+      ).filter(
+        (s) => s !== "Unknown" && schoolCountPerClass[maxDiversityClass][s] > 0
+      );
+      const schoolsInMin = Object.keys(
+        schoolCountPerClass[minDiversityClass]
+      ).filter(
+        (s) => s !== "Unknown" && schoolCountPerClass[minDiversityClass][s] > 0
+      );
+      const uniqueToMax = schoolsInMax.filter((s) => !schoolsInMin.includes(s));
+
+      for (const school of uniqueToMax) {
+        const sourceStudentIdx = distribution[maxDiversityClass].findIndex(
+          (s) => sanitizeSchoolName(s.asal_sekolah) === school
+        );
+
+        if (sourceStudentIdx !== -1) {
+          const sourceStudent =
+            distribution[maxDiversityClass][sourceStudentIdx];
+
+          const targetStudentIdx = distribution[minDiversityClass].findIndex(
+            (s) => s.jenis_kelamin === sourceStudent.jenis_kelamin
+          );
+
+          if (targetStudentIdx !== -1) {
+            const targetStudent =
+              distribution[minDiversityClass][targetStudentIdx];
+            const targetSchool = sanitizeSchoolName(targetStudent.asal_sekolah);
+
+            // Swap
+            distribution[maxDiversityClass][sourceStudentIdx] = targetStudent;
+            distribution[minDiversityClass][targetStudentIdx] = sourceStudent;
+
+            // Update tracking
+            schoolCountPerClass[maxDiversityClass][school]--;
+            if (schoolCountPerClass[maxDiversityClass][school] === 0) {
+              delete schoolCountPerClass[maxDiversityClass][school];
+            }
+
+            if (!schoolCountPerClass[minDiversityClass][school])
+              schoolCountPerClass[minDiversityClass][school] = 0;
+            schoolCountPerClass[minDiversityClass][school]++;
+
+            if (!schoolCountPerClass[maxDiversityClass][targetSchool])
+              schoolCountPerClass[maxDiversityClass][targetSchool] = 0;
+            schoolCountPerClass[maxDiversityClass][targetSchool]++;
+
+            if (!schoolCountPerClass[minDiversityClass][targetSchool])
+              schoolCountPerClass[minDiversityClass][targetSchool] = 0;
+            schoolCountPerClass[minDiversityClass][targetSchool]--;
+            if (schoolCountPerClass[minDiversityClass][targetSchool] === 0) {
+              delete schoolCountPerClass[minDiversityClass][targetSchool];
+            }
+
+            phase3Swaps++;
+            swapped = true;
+            break;
+          }
+        }
+      }
+
+      if (!swapped) break;
+    }
+
     console.log(`✅ Phase 1 (Reduce overload): ${phase1Swaps} swaps`);
     console.log(`✅ Phase 2 (Increase diversity): ${phase2Swaps} swaps`);
+    console.log(`✅ Phase 3 (Balance variance): ${phase3Swaps} swaps`);
+
+    // ⭐ PHASE 4: FORCE SPREAD DOMINANT SCHOOLS
+    let phase4Swaps = 0;
+    for (let iteration = 0; iteration < 100; iteration++) {
+      let swapped = false;
+
+      // Find schools with very uneven distribution
+      for (const school of uniqueSchools) {
+        const schoolDistribution = classNames.map(
+          (className) => schoolCountPerClass[className][school] || 0
+        );
+
+        const maxInClass = Math.max(...schoolDistribution);
+        const minInClass = Math.min(...schoolDistribution);
+
+        // If difference is more than 3, try to balance
+        if (maxInClass - minInClass > 3) {
+          const maxClassIdx = schoolDistribution.indexOf(maxInClass);
+          const minClassIdx = schoolDistribution.indexOf(minInClass);
+          const maxClassName = classNames[maxClassIdx];
+          const minClassName = classNames[minClassIdx];
+
+          // Find student from overloaded school in max class
+          const sourceStudentIdx = distribution[maxClassName].findIndex(
+            (s) => sanitizeSchoolName(s.asal_sekolah) === school
+          );
+
+          if (sourceStudentIdx !== -1) {
+            const sourceStudent = distribution[maxClassName][sourceStudentIdx];
+
+            // Find swap candidate in min class (same gender, different school)
+            const targetStudentIdx = distribution[minClassName].findIndex(
+              (s) =>
+                s.jenis_kelamin === sourceStudent.jenis_kelamin &&
+                sanitizeSchoolName(s.asal_sekolah) !== school
+            );
+
+            if (targetStudentIdx !== -1) {
+              const targetStudent =
+                distribution[minClassName][targetStudentIdx];
+              const targetSchool = sanitizeSchoolName(
+                targetStudent.asal_sekolah
+              );
+
+              // Check if swap won't create new imbalance
+              const targetSchoolInMax =
+                schoolCountPerClass[maxClassName][targetSchool] || 0;
+              const targetSchoolInMin =
+                schoolCountPerClass[minClassName][targetSchool] || 0;
+
+              // Only swap if it improves balance
+              if (targetSchoolInMax - targetSchoolInMin < 3) {
+                // Perform swap
+                distribution[maxClassName][sourceStudentIdx] = targetStudent;
+                distribution[minClassName][targetStudentIdx] = sourceStudent;
+
+                // Update tracking
+                schoolCountPerClass[maxClassName][school]--;
+                schoolCountPerClass[minClassName][school] =
+                  (schoolCountPerClass[minClassName][school] || 0) + 1;
+
+                if (!schoolCountPerClass[maxClassName][targetSchool])
+                  schoolCountPerClass[maxClassName][targetSchool] = 0;
+                schoolCountPerClass[maxClassName][targetSchool]++;
+
+                if (!schoolCountPerClass[minClassName][targetSchool])
+                  schoolCountPerClass[minClassName][targetSchool] = 0;
+                schoolCountPerClass[minClassName][targetSchool]--;
+
+                phase4Swaps++;
+                swapped = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (!swapped) break;
+    }
+
+    console.log(`✅ Phase 4 (Force spread dominant): ${phase4Swaps} swaps`);
 
     // STEP 6: SORT setiap kelas by NAMA (A-Z)
     Object.keys(distribution).forEach((className) => {
@@ -376,44 +560,50 @@ export const generateClassDistribution = (
       );
     });
 
-    // STEP 7: ASSIGN NIS berurutan per kelas (sesuai urutan nama)
+    // STEP 7: ASSIGN NIS berurutan per kelas
     let nisCounter = 1;
-
     classNames.forEach((className) => {
       distribution[className] = distribution[className].map((student) => {
         const nis = generateNIS(tahunAjaran, 7, nisCounter);
         nisCounter++;
-        return {
-          ...student,
-          nis,
-        };
+        return { ...student, nis };
       });
     });
 
-    // Log final distribution
+    // Log final distribution dengan detail
     console.log("\n📊 Final Distribution:");
     classNames.forEach((className) => {
       const schools = Object.keys(schoolCountPerClass[className]).filter(
         (s) => s !== "Unknown" && schoolCountPerClass[className][s] > 0
       );
+      const schoolDetails = schools
+        .map((s) => `${s}:${schoolCountPerClass[className][s]}`)
+        .join(", ");
       console.log(
-        `${className}: ${schools.length} schools - ${distribution[className].length} students`
+        `${className}: ${schools.length} schools (${schoolDetails}) - ${distribution[className].length} students`
       );
     });
+
+    // Log school distribution summary
+    const schoolSummary = {};
+    uniqueSchools.forEach((school) => {
+      schoolSummary[school] = sanitizedStudents.filter(
+        (s) => sanitizeSchoolName(s.asal_sekolah) === school
+      ).length;
+    });
+    console.log("\n📚 School Distribution Summary:", schoolSummary);
 
     setClassDistribution(distribution);
     setShowPreview(true);
     setShowSavedClasses(false);
     setEditMode(false);
 
-    // Initialize history
     setHistory([JSON.parse(JSON.stringify(distribution))]);
     setHistoryIndex(0);
 
+    const totalSwaps = phase1Swaps + phase2Swaps + phase3Swaps;
     showToast(
-      `✅ Generate ${numClasses} kelas seimbang (${totalStudents} siswa, ${
-        phase1Swaps + phase2Swaps
-      } optimizations)!`,
+      `✅ Generate ${numClasses} kelas seimbang (${sanitizedStudents.length} siswa, ${totalSwaps} optimizations)!`,
       "success"
     );
   } catch (error) {
@@ -438,7 +628,6 @@ export const checkClassBalance = (classDistribution) => {
     const females = students.filter((s) => s.jenis_kelamin === "P").length;
     const total = students.length;
 
-    // Check jika terlalu tidak seimbang
     const genderRatio = males / (females || 1);
     const isGenderUnbalanced = genderRatio > 2 || genderRatio < 0.5;
     const isSizeUnbalanced = Math.abs(total - avgStudentsPerClass) > 3;

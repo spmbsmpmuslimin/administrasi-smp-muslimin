@@ -614,7 +614,7 @@ const Attendance = ({ user, onShowToast }) => {
                 Input Presensi
               </h1>
               <p className="text-sm sm:text-base text-slate-600">
-                Kelola kehadiran siswa untuk mata pelajaran dan kelas
+                Kelola Kehadiran Siswa Untuk Mata Pelajaran Dan Kelas
               </p>
             </div>
             <div className="sm:text-right">

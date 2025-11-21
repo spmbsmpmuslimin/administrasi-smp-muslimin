@@ -11,7 +11,7 @@ export const Students = () => {
   const [selectedJenjang, setSelectedJenjang] = useState("");
   const [selectedKelas, setSelectedKelas] = useState("");
   const [selectedGender, setSelectedGender] = useState("");
-  
+
   // ✅ STATE MODAL EXPORT
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -95,7 +95,12 @@ export const Students = () => {
   const handleExportByFilter = async () => {
     setExportLoading(true);
     try {
-      await DataExcel.exportByFilter(filteredData, selectedKelas, selectedJenjang, selectedGender);
+      await DataExcel.exportByFilter(
+        filteredData,
+        selectedKelas,
+        selectedJenjang,
+        selectedGender
+      );
     } catch (error) {
       console.error("Export error:", error);
     } finally {
@@ -155,13 +160,10 @@ export const Students = () => {
               exportLoading || siswaData.length === 0
                 ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
                 : "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
-            }`}
-          >
+            }`}>
             <div className="text-left">
               <div className="font-semibold">Export Semua Data</div>
-              <div className="text-sm opacity-75">
-                {siswaData.length} siswa
-              </div>
+              <div className="text-sm opacity-75">{siswaData.length} siswa</div>
             </div>
             <div className="text-2xl">📋</div>
           </button>
@@ -174,15 +176,21 @@ export const Students = () => {
               exportLoading || filteredData.length === 0
                 ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
                 : "bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300"
-            }`}
-          >
+            }`}>
             <div className="text-left">
               <div className="font-semibold">Export Hasil Filter</div>
               <div className="text-sm opacity-75">
                 {filteredData.length} siswa
-                {(selectedJenjang || selectedKelas || selectedGender) && 
-                  ` • ${selectedJenjang ? `Kelas ${selectedJenjang}` : ''} ${selectedKelas ? selectedKelas : ''} ${selectedGender ? `• ${selectedGender === 'L' ? 'Laki-laki' : 'Perempuan'}` : ''}`
-                }
+                {(selectedJenjang || selectedKelas || selectedGender) &&
+                  ` • ${selectedJenjang ? `Kelas ${selectedJenjang}` : ""} ${
+                    selectedKelas ? selectedKelas : ""
+                  } ${
+                    selectedGender
+                      ? `• ${
+                          selectedGender === "L" ? "Laki-laki" : "Perempuan"
+                        }`
+                      : ""
+                  }`}
               </div>
             </div>
             <div className="text-2xl">🎯</div>
@@ -190,10 +198,14 @@ export const Students = () => {
 
           {/* Export Per Jenjang */}
           <div className="space-y-2">
-            <div className="font-semibold text-gray-700 text-sm">Export Per Jenjang:</div>
+            <div className="font-semibold text-gray-700 text-sm">
+              Export Per Jenjang:
+            </div>
             <div className="grid grid-cols-3 gap-2">
-              {['7', '8', '9'].map((jenjang) => {
-                const count = siswaData.filter(s => s.class_id?.startsWith(jenjang)).length;
+              {["7", "8", "9"].map((jenjang) => {
+                const count = siswaData.filter((s) =>
+                  s.class_id?.startsWith(jenjang)
+                ).length;
                 return (
                   <button
                     key={jenjang}
@@ -203,8 +215,7 @@ export const Students = () => {
                       exportLoading || count === 0
                         ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
                         : "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 hover:border-orange-300"
-                    }`}
-                  >
+                    }`}>
                     <div className="font-semibold">Kelas {jenjang}</div>
                     <div className="text-xs opacity-75">{count} siswa</div>
                   </button>
@@ -215,10 +226,14 @@ export const Students = () => {
 
           {/* Export Per Kelas */}
           <div className="space-y-2">
-            <div className="font-semibold text-gray-700 text-sm">Export Per Kelas:</div>
+            <div className="font-semibold text-gray-700 text-sm">
+              Export Per Kelas:
+            </div>
             <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
               {kelasOptions.map((kelas) => {
-                const count = siswaData.filter(s => s.class_id === kelas).length;
+                const count = siswaData.filter(
+                  (s) => s.class_id === kelas
+                ).length;
                 return (
                   <button
                     key={kelas}
@@ -228,8 +243,7 @@ export const Students = () => {
                       exportLoading || count === 0
                         ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
                         : "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300"
-                    }`}
-                  >
+                    }`}>
                     <div className="font-semibold">{kelas}</div>
                     <div className="text-xs opacity-75">{count} siswa</div>
                   </button>
@@ -244,8 +258,7 @@ export const Students = () => {
           <button
             onClick={() => setShowExportModal(false)}
             disabled={exportLoading}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium disabled:opacity-50"
-          >
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium disabled:opacity-50">
             {exportLoading ? "Mengexport..." : "Tutup"}
           </button>
         </div>
@@ -255,7 +268,9 @@ export const Students = () => {
           <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center rounded-xl">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-2"></div>
-              <div className="text-sm text-gray-600">Sedang mengexport data...</div>
+              <div className="text-sm text-gray-600">
+                Sedang mengexport data...
+              </div>
             </div>
           </div>
         )}
@@ -287,6 +302,59 @@ export const Students = () => {
         <p className="text-gray-600">
           Manajemen Data Siswa SMP Muslimin Cililin
         </p>
+      </div>
+
+      {/* ✅ STATS CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        {/* Total Kelas */}
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 shadow-sm">
+          <div className="text-blue-600 text-xs font-semibold mb-1">
+            Total Kelas
+          </div>
+          <div className="text-2xl font-bold text-blue-700">
+            {kelasOptions.length}
+          </div>
+        </div>
+
+        {/* Total Siswa */}
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200 shadow-sm">
+          <div className="text-purple-600 text-xs font-semibold mb-1">
+            Total Siswa
+          </div>
+          <div className="text-2xl font-bold text-purple-700">
+            {siswaData.length}
+          </div>
+        </div>
+
+        {/* Kelas 7 */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200 shadow-sm">
+          <div className="text-green-600 text-xs font-semibold mb-1">
+            Kelas 7
+          </div>
+          <div className="text-2xl font-bold text-green-700">
+            {siswaData.filter((s) => s.class_id?.startsWith("7")).length}
+          </div>
+        </div>
+
+        {/* Kelas 8 */}
+        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-lg border border-yellow-200 shadow-sm">
+          <div className="text-yellow-600 text-xs font-semibold mb-1">
+            Kelas 8
+          </div>
+          <div className="text-2xl font-bold text-yellow-700">
+            {siswaData.filter((s) => s.class_id?.startsWith("8")).length}
+          </div>
+        </div>
+
+        {/* Kelas 9 */}
+        <div className="bg-gradient-to-br from-pink-50 to-pink-100 p-4 rounded-lg border border-pink-200 shadow-sm">
+          <div className="text-pink-600 text-xs font-semibold mb-1">
+            Kelas 9
+          </div>
+          <div className="text-2xl font-bold text-pink-700">
+            {siswaData.filter((s) => s.class_id?.startsWith("9")).length}
+          </div>
+        </div>
       </div>
 
       {/* Filter Section */}
@@ -371,7 +439,8 @@ export const Students = () => {
           Menampilkan <strong>{filteredData.length} Siswa</strong>
           {searchTerm && ` dengan kata kunci "${searchTerm}"`}
           {selectedKelas && ` Di Kelas ${selectedKelas}`}
-          {selectedGender && ` ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}`}
+          {selectedGender &&
+            ` ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}`}
         </div>
       )}
 
