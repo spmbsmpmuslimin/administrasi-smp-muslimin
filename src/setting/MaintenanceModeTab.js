@@ -12,7 +12,7 @@ import { supabase } from "../supabaseClient";
 const MaintenanceModeTab = ({ showToast }) => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [customMessage, setCustomMessage] = useState(
-    "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"
+    "Aplikasi sedang dalam maintenance. Kami akan kembali nanti !"
   );
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
