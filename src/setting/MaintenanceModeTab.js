@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle, Power, Check, Trash2, Users, Search } from "lucide-react";
+import {
+  AlertCircle,
+  Power,
+  Check,
+  Trash2,
+  Users,
+  UserPlus,
+} from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 const MaintenanceModeTab = ({ showToast }) => {
@@ -14,8 +21,9 @@ const MaintenanceModeTab = ({ showToast }) => {
   // ✅ WHITELIST STATE
   const [allUsers, setAllUsers] = useState([]);
   const [whitelistUsers, setWhitelistUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState(""); // ✅ Dropdown selected user
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showWhitelistDetails, setShowWhitelistDetails] = useState(false); // ✅ Toggle show/hide whitelist
 
   // ✅ Load maintenance settings
   useEffect(() => {
@@ -152,11 +160,20 @@ const MaintenanceModeTab = ({ showToast }) => {
     }
   };
 
-  // ✅ Add user to whitelist
-  const handleAddUser = async (user) => {
+  // ✅ Add user to whitelist dari dropdown
+  const handleAddUserFromDropdown = async () => {
+    if (!selectedUserId) {
+      showToast?.("Pilih user terlebih dahulu", "warning");
+      return;
+    }
+
+    const user = allUsers.find((u) => u.id === selectedUserId);
+    if (!user) return;
+
     // Cek apakah user sudah ada di whitelist
     if (whitelistUsers.some((u) => u.id === user.id)) {
       showToast?.(`${user.full_name} sudah ada di whitelist`, "info");
+      setSelectedUserId(""); // Reset dropdown
       return;
     }
 
@@ -170,6 +187,7 @@ const MaintenanceModeTab = ({ showToast }) => {
     ];
 
     await saveWhitelist(newWhitelist);
+    setSelectedUserId(""); // Reset dropdown setelah sukses
   };
 
   // ✅ Remove user from whitelist
@@ -194,7 +212,7 @@ const MaintenanceModeTab = ({ showToast }) => {
       if (error) throw error;
 
       setWhitelistUsers(whitelist);
-      showToast?.("✓ Whitelist berhasil diperbarui", "success");
+      showToast?.("✔ Whitelist berhasil diperbarui", "success");
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -204,11 +222,9 @@ const MaintenanceModeTab = ({ showToast }) => {
     }
   };
 
-  // ✅ Filter users untuk search
-  const filteredUsers = allUsers.filter(
-    (user) =>
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.full_name.toLowerCase().includes(searchQuery.toLowerCase())
+  // ✅ Filter users yang belum ada di whitelist untuk dropdown
+  const availableUsers = allUsers.filter(
+    (user) => !whitelistUsers.some((u) => u.id === user.id)
   );
 
   if (loading) {
@@ -308,7 +324,7 @@ const MaintenanceModeTab = ({ showToast }) => {
       {/* WHITELIST SECTION - hanya saat maintenance aktif */}
       {maintenanceMode && (
         <div className="space-y-4">
-          {/* Add User Section */}
+          {/* Add User Section dengan DROPDOWN */}
           <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-5 h-5 text-purple-600" />
@@ -318,85 +334,81 @@ const MaintenanceModeTab = ({ showToast }) => {
               </span>
             </div>
 
-            {/* Search & Add User */}
-            <div className="mb-4">
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Cari user (username/nama)..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                />
-              </div>
-
-              {/* Available Users List */}
-              {loadingUsers ? (
-                <div className="text-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
-                </div>
-              ) : filteredUsers.length > 0 ? (
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-white">
-                  {filteredUsers.map((user) => (
-                    <button
-                      key={user.id}
-                      onClick={() => handleAddUser(user)}
-                      disabled={whitelistUsers.some((u) => u.id === user.id)}
-                      className={`w-full px-3 py-2 text-left text-sm border-b border-gray-100 hover:bg-purple-50 transition ${
-                        whitelistUsers.some((u) => u.id === user.id)
-                          ? "opacity-50 cursor-not-allowed bg-purple-100"
-                          : "cursor-pointer"
-                      }`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-800">
-                            {user.full_name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            @{user.username}
-                          </p>
-                        </div>
-                        {whitelistUsers.some((u) => u.id === user.id) && (
-                          <Check className="w-4 h-4 text-green-600" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-sm text-gray-500 py-4">
-                  Tidak ada user ditemukan
-                </p>
-              )}
+            {/* Dropdown + Button */}
+            <div className="flex gap-2">
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                disabled={loadingUsers}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white disabled:bg-gray-100 disabled:cursor-not-allowed">
+                <option value="">
+                  {loadingUsers ? "Loading..." : "-- Pilih User --"}
+                </option>
+                {availableUsers.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.full_name} (@{user.username})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleAddUserFromDropdown}
+                disabled={!selectedUserId || loadingUsers}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium">
+                <UserPlus className="w-4 h-4" />
+                Tambah
+              </button>
             </div>
+
+            {availableUsers.length === 0 && !loadingUsers && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Semua user sudah ada di whitelist
+              </p>
+            )}
           </div>
 
-          {/* Whitelisted Users */}
+          {/* Whitelisted Users - COLLAPSIBLE */}
           {whitelistUsers.length > 0 && (
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <h3 className="font-semibold text-gray-800 mb-3">
-                ✓ User yang Diwhitelist
-              </h3>
-              <div className="space-y-2">
-                {whitelistUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
-                    <div>
-                      <p className="font-medium text-gray-800">
-                        {user.full_name}
-                      </p>
-                      <p className="text-xs text-gray-500">@{user.username}</p>
+              <button
+                onClick={() => setShowWhitelistDetails(!showWhitelistDetails)}
+                className="w-full flex items-center justify-between hover:bg-green-100 p-2 rounded-lg transition">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-800">
+                    ✔ User yang Diwhitelist
+                  </h3>
+                  <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                    {whitelistUsers.length} user
+                  </span>
+                </div>
+                <span className="text-gray-500">
+                  {showWhitelistDetails ? "▲ Sembunyikan" : "▼ Tampilkan"}
+                </span>
+              </button>
+
+              {/* Detail List - Show/Hide */}
+              {showWhitelistDetails && (
+                <div className="space-y-2 mt-3">
+                  {whitelistUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          {user.full_name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          @{user.username}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveUser(user.id)}
+                        className="p-2 hover:bg-red-100 rounded-lg transition text-red-600">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleRemoveUser(user.id)}
-                      className="p-2 hover:bg-red-100 rounded-lg transition text-red-600">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -406,7 +418,7 @@ const MaintenanceModeTab = ({ showToast }) => {
       {maintenanceMode && (
         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
           <p className="text-sm font-semibold text-gray-700 mb-3">
-            📺 Preview Halaman Maintenance:
+            🔺 Preview Halaman Maintenance:
           </p>
           <div className="bg-white p-6 rounded-lg shadow-sm text-center border border-gray-200">
             <div className="text-6xl mb-3">🔧</div>
@@ -437,7 +449,7 @@ const MaintenanceModeTab = ({ showToast }) => {
         <div className="fixed bottom-6 right-6 p-4 bg-green-50 border border-green-300 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
           <Check className="w-5 h-5 text-green-600" />
           <span className="text-green-700 font-semibold text-sm">
-            ✓ Pengaturan disimpan
+            ✔ Pengaturan disimpan
           </span>
         </div>
       )}
