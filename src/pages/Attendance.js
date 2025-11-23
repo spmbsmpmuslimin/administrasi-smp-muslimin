@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import AttendanceRecapModal from "./AttendanceRecapModal";
-import { exportAttendanceToExcel } from "./AttendanceExcel";
+import {
+  exportAttendanceToExcel,
+  exportSemesterRecapFromComponent, // ✅ TAMBAHAN: Import fungsi export semester
+} from "./AttendanceExcel";
 
 const Attendance = ({ user, onShowToast }) => {
   const [classes, setClasses] = useState([]);
@@ -35,6 +38,9 @@ const Attendance = ({ user, onShowToast }) => {
   const [existingAttendanceData, setExistingAttendanceData] = useState(null);
   const [pendingAttendanceData, setPendingAttendanceData] = useState(null);
   const [studentsLoaded, setStudentsLoaded] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [showExportMonthlyModal, setShowExportMonthlyModal] = useState(false); // ✅ TAMBAHAN: Modal export bulanan
+  const [showExportSemesterModal, setShowExportSemesterModal] = useState(false); // ✅ TAMBAHAN: Modal export semester
 
   const isHomeroomDaily = useCallback(() => {
     return selectedSubject && selectedSubject.includes("PRESENSI HARIAN");
@@ -76,16 +82,37 @@ const Attendance = ({ user, onShowToast }) => {
     }
   };
 
-  const handleExportExcel = () => {
+  // ✅ PERBAIKAN: Handle Export Bulanan dengan Modal
+  const handleExportMonthly = () => {
     if (students.length === 0) {
       if (onShowToast) {
         onShowToast("Tidak ada data siswa untuk diekspor", "error");
       }
       return;
     }
+    setShowExportMonthlyModal(true);
+  };
+
+  // ✅ TAMBAHAN: Handle Export Semester dengan Modal
+  const handleExportSemester = () => {
+    if (!selectedClass || !selectedSubject || students.length === 0) {
+      if (onShowToast) {
+        onShowToast(
+          "Pilih mata pelajaran dan kelas terlebih dahulu untuk export semester",
+          "error"
+        );
+      }
+      return;
+    }
+    setShowExportSemesterModal(true);
+  };
+
+  // ✅ TAMBAHAN: Function untuk proses export bulanan
+  const processMonthlyExport = async (yearMonth) => {
+    if (!yearMonth) return;
 
     try {
-      exportAttendanceToExcel(
+      await exportAttendanceToExcel(
         students,
         selectedClass,
         selectedSubject,
@@ -96,7 +123,10 @@ const Attendance = ({ user, onShowToast }) => {
           if (onShowToast) {
             onShowToast(`Ekspor Excel berhasil: ${message}`, "success");
           }
-        }
+        },
+        null, // selectedMonth
+        user?.full_name || user?.username, // teacherName
+        homeroomClass
       );
     } catch (error) {
       if (onShowToast) {
@@ -105,6 +135,60 @@ const Attendance = ({ user, onShowToast }) => {
           "error"
         );
       }
+    }
+  };
+
+  // ✅ TAMBAHAN: Function untuk proses export semester
+  const processSemesterExport = async (semester, year) => {
+    setExportLoading(true);
+    try {
+      const classId = selectedClass;
+      const subject = isHomeroomDaily() ? "Harian" : selectedSubject;
+      const type = isHomeroomDaily() ? "harian" : "mapel";
+
+      // Convert semester format
+      const semesterNum = semester === "ganjil" ? 1 : 2;
+
+      console.log("📊 Export Semester Data:", {
+        classId,
+        semester: semesterNum,
+        year,
+        subject,
+        type,
+        studentCount: students.length,
+      });
+
+      const result = await exportSemesterRecapFromComponent(
+        classId,
+        semesterNum,
+        year,
+        students,
+        subject,
+        type,
+        user, // currentUser
+        homeroomClass
+      );
+
+      if (result.success) {
+        if (onShowToast) {
+          onShowToast(result.message, "success");
+        }
+      } else {
+        if (onShowToast) {
+          onShowToast(result.message, "error");
+        }
+      }
+    } catch (error) {
+      console.error("Error exporting semester data:", error);
+      if (onShowToast) {
+        onShowToast(
+          "Gagal mengekspor data semester: " + error.message,
+          "error"
+        );
+      }
+    } finally {
+      setExportLoading(false);
+      setShowExportSemesterModal(false);
     }
   };
 
@@ -580,6 +664,338 @@ const Attendance = ({ user, onShowToast }) => {
     setAttendanceNotes({});
   };
 
+  // ✅ TAMBAHAN: Modal untuk Export Bulanan
+  const ExportMonthlyModal = () => {
+    const [selectedMonth, setSelectedMonth] = useState("");
+    const [selectedYear, setSelectedYear] = useState("");
+
+    // Initialize with current month/year when modal opens
+    useEffect(() => {
+      if (showExportMonthlyModal) {
+        const now = new Date();
+        setSelectedYear(now.getFullYear().toString());
+        setSelectedMonth(String(now.getMonth() + 1).padStart(2, "0"));
+      }
+    }, [showExportMonthlyModal]);
+
+    const handleExport = () => {
+      if (!selectedMonth || !selectedYear) return;
+      const yearMonth = `${selectedYear}-${selectedMonth}`;
+      processMonthlyExport(yearMonth);
+      setShowExportMonthlyModal(false);
+    };
+
+    if (!showExportMonthlyModal) return null;
+
+    // Year options
+    const yearOptions = [];
+    for (let year = 2024; year <= 2030; year++) {
+      yearOptions.push(year);
+    }
+
+    // Month names
+    const monthNames = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+          {/* Header - Blue theme */}
+          <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-xl flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Export Bulanan</h2>
+                <p className="text-blue-100 text-sm">
+                  Pilih periode bulan untuk diunduh
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowExportMonthlyModal(false)}
+              className="p-2 hover:bg-blue-600 rounded-lg transition">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            {/* Month Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pilih Bulan
+              </label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <option value="">-- Pilih Bulan --</option>
+                {monthNames.map((name, index) => (
+                  <option
+                    key={index}
+                    value={String(index + 1).padStart(2, "0")}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Year Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pilih Tahun
+              </label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <option value="">-- Pilih Tahun --</option>
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowExportMonthlyModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">
+                Batal
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={!selectedMonth || !selectedYear}
+                className="flex-1 px-4 py-3 bg-blue-500 border border-blue-600 text-white rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
+                <span>Download</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ TAMBAHAN: Modal untuk Export Semester
+  const ExportSemesterModal = () => {
+    const [selectedSemester, setSelectedSemester] = useState("ganjil");
+    const [selectedYear, setSelectedYear] = useState("");
+
+    // Initialize with current year when modal opens
+    useEffect(() => {
+      if (showExportSemesterModal) {
+        const now = new Date();
+        setSelectedYear(now.getFullYear().toString());
+      }
+    }, [showExportSemesterModal]);
+
+    const handleExport = () => {
+      if (!selectedYear) return;
+      processSemesterExport(selectedSemester, parseInt(selectedYear));
+    };
+
+    if (!showExportSemesterModal) return null;
+
+    // Year options
+    const yearOptions = [];
+    for (let year = 2024; year <= 2030; year++) {
+      yearOptions.push(year);
+    }
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+          {/* Header - Indigo theme */}
+          <div className="sticky top-0 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-6 rounded-t-xl flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Export Semester</h2>
+                <p className="text-indigo-100 text-sm">
+                  Pilih semester untuk diunduh
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowExportSemesterModal(false)}
+              className="p-2 hover:bg-indigo-600 rounded-lg transition">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            {/* Semester Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pilih Semester
+              </label>
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <option value="ganjil">Semester Ganjil (Juli-Desember)</option>
+                <option value="genap">Semester Genap (Januari-Juni)</option>
+              </select>
+            </div>
+
+            {/* Year Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pilih Tahun
+              </label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <option value="">-- Pilih Tahun --</option>
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg
+                  className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <p className="text-sm text-indigo-700">
+                    Data akan diekspor dalam format Excel (.xlsx) untuk semester
+                    yang dipilih
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowExportSemesterModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">
+                Batal
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={!selectedYear || exportLoading}
+                className="flex-1 px-4 py-3 bg-indigo-500 border border-indigo-600 text-white rounded-lg hover:bg-indigo-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {exportLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Mengekspor...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    <span>Download</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (authLoading) {
     return (
       <div className="p-4 sm:p-6">
@@ -811,12 +1227,24 @@ const Attendance = ({ user, onShowToast }) => {
               📊 Lihat Rekap
             </button>
 
+            {/* ✅ PERBAIKAN: Export Bulanan dengan Modal */}
             <button
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-orange-50 border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-100 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-              onClick={handleExportExcel}
+              onClick={handleExportMonthly}
               disabled={students.length === 0}
               style={{ minHeight: "44px" }}>
-              📈 Export Excel
+              📅 Export Bulanan
+            </button>
+
+            {/* ✅ TAMBAHAN: Export Semester dengan Modal */}
+            <button
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-100 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              onClick={handleExportSemester}
+              disabled={
+                !selectedClass || !selectedSubject || students.length === 0
+              }
+              style={{ minHeight: "44px" }}>
+              📚 Export Semester
             </button>
           </div>
 
@@ -1075,6 +1503,12 @@ const Attendance = ({ user, onShowToast }) => {
         students={students}
         onShowToast={onShowToast}
       />
+
+      {/* ✅ TAMBAHAN: Modal Export Bulanan */}
+      <ExportMonthlyModal />
+
+      {/* ✅ TAMBAHAN: Modal Export Semester */}
+      <ExportSemesterModal />
 
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

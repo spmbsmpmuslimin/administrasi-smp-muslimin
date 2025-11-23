@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import React, { useState } from "react";
+import { supabase } from "../supabaseClient"; // ✅ IMPORT supabase
 
 /**
  * Modal component for month/year selection
@@ -781,4 +782,443 @@ const exportMonthlyAttendanceToExcel = async ({
     success: true,
     message: "Monthly export feature - to be implemented",
   };
+};
+
+// ====================================================================
+// ✅ TAMBAHAN: 2 FUNCTIONS UNTUK SEMESTER EXPORT (DARI FILE Export.js)
+// ====================================================================
+
+/**
+ * Export semester attendance recap to Excel (SEMESTER) - SMP VERSION
+ */
+export const exportSemesterRecapToExcel = async ({
+  classId,
+  semester, // 1 (Ganjil) or 2 (Genap)
+  year,
+  studentsData,
+  attendanceRecords,
+  subject,
+  namaSekolah = "SMP MUSLIMIN CILILIN",
+  namaGuru = "",
+  homeroomClass = null,
+}) => {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(
+      `Semester ${semester === 1 ? "Ganjil" : "Genap"} Kelas ${classId}`
+    );
+
+    const semesterText =
+      semester === 1 ? "Ganjil (Juli-Desember)" : "Genap (Januari-Juni)";
+
+    // Calculate hari efektif
+    const uniqueDates = [...new Set(attendanceRecords.map((r) => r.date))];
+    const totalHariEfektif = uniqueDates.length;
+
+    // Process student data
+    const studentMatrix = {};
+
+    studentsData.forEach((student) => {
+      studentMatrix[student.id] = {
+        nis: student.nis,
+        name: student.full_name,
+        summary: { hadir: 0, sakit: 0, izin: 0, alpa: 0 },
+      };
+    });
+
+    attendanceRecords.forEach((record) => {
+      if (studentMatrix[record.student_id]) {
+        const summary = studentMatrix[record.student_id].summary;
+        const status = record.status?.toLowerCase();
+
+        if (status === "hadir") {
+          summary.hadir++;
+        } else if (status === "sakit") {
+          summary.sakit++;
+        } else if (status === "izin") {
+          summary.izin++;
+        } else if (status === "alpa" || status === "alpha") {
+          summary.alpa++;
+        }
+      }
+    });
+
+    // Get category helper
+    const getCategory = (percentage) => {
+      if (percentage >= 90) return "Sangat Baik";
+      if (percentage >= 80) return "Baik";
+      if (percentage >= 70) return "Cukup";
+      return "Kurang";
+    };
+
+    const totalCols = 10;
+
+    // School name header
+    worksheet.mergeCells(1, 1, 1, totalCols);
+    const schoolCell = worksheet.getCell(1, 1);
+    schoolCell.value = namaSekolah;
+    schoolCell.font = { name: "Arial", size: 14, bold: true };
+    schoolCell.alignment = { horizontal: "center", vertical: "middle" };
+    worksheet.getRow(1).height = 25;
+
+    // Title row
+    worksheet.mergeCells(2, 1, 2, totalCols);
+    const titleCell = worksheet.getCell(2, 1);
+    titleCell.value = `Rekap Presensi - Kelas ${classId}`;
+    titleCell.font = { name: "Arial", size: 12, bold: true };
+    titleCell.alignment = { horizontal: "center", vertical: "middle" };
+    worksheet.getRow(2).height = 20;
+
+    // Subtitle row
+    worksheet.mergeCells(3, 1, 3, totalCols);
+    const subtitleCell = worksheet.getCell(3, 1);
+    subtitleCell.value = `${subject} | Semester ${semesterText} ${year}`;
+    subtitleCell.font = { name: "Arial", size: 11 };
+    subtitleCell.alignment = { horizontal: "center", vertical: "middle" };
+    worksheet.getRow(3).height = 20;
+
+    worksheet.getRow(4).height = 15;
+
+    // Header row
+    const headerRow = 5;
+    const headers = [
+      "No",
+      "NIS",
+      "Nama Siswa",
+      "Hadir",
+      "Sakit",
+      "Izin",
+      "Alpa",
+      "Total",
+      "%",
+      "Kategori",
+    ];
+
+    headers.forEach((header, index) => {
+      const cell = worksheet.getCell(headerRow, index + 1);
+      cell.value = header;
+      cell.font = {
+        name: "Arial",
+        size: 11,
+        bold: true,
+        color: { argb: "FFFFFFFF" },
+      };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF4472C4" },
+      };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    worksheet.getRow(headerRow).height = 25;
+
+    // Data rows
+    let rowIndex = headerRow + 1;
+    studentsData.forEach((student, index) => {
+      const studentData = studentMatrix[student.id];
+      const summary = studentData.summary;
+
+      const percentage =
+        totalHariEfektif > 0
+          ? Math.round((summary.hadir / totalHariEfektif) * 100)
+          : 0;
+      const category = getCategory(percentage);
+
+      const rowData = [
+        index + 1,
+        studentData.nis,
+        studentData.name,
+        summary.hadir,
+        summary.sakit,
+        summary.izin,
+        summary.alpa,
+        totalHariEfektif,
+        percentage,
+        category,
+      ];
+
+      rowData.forEach((value, colIndex) => {
+        const cell = worksheet.getCell(rowIndex, colIndex + 1);
+        cell.value = value;
+        cell.font = { name: "Arial", size: 10 };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+
+        if (colIndex === 0 || colIndex >= 3) {
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        } else {
+          cell.alignment = { horizontal: "left", vertical: "middle" };
+        }
+
+        // Category coloring
+        if (colIndex === 9) {
+          if (category === "Sangat Baik") {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFC6EFCE" },
+            };
+          } else if (category === "Baik") {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFF2CC" },
+            };
+          } else if (category === "Cukup") {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFCE4D6" },
+            };
+          } else {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFC7CE" },
+            };
+          }
+        }
+      });
+
+      worksheet.getRow(rowIndex).height = 20;
+      rowIndex++;
+    });
+
+    // Footer
+    rowIndex += 2;
+
+    // Determine role
+    const isHomeroomDaily = subject === "Harian";
+    const isHomeroom = homeroomClass && homeroomClass === classId;
+
+    let roleTitle;
+    if (isHomeroomDaily) {
+      roleTitle = "Wali Kelas";
+    } else if (isHomeroom) {
+      roleTitle = "Wali Kelas & Guru Mata Pelajaran";
+    } else {
+      roleTitle = "Guru Mata Pelajaran";
+    }
+
+    worksheet.getCell(rowIndex, 8).value = "Mengetahui";
+    worksheet.getCell(rowIndex, 8).font = { name: "Arial", size: 11 };
+    worksheet.getCell(rowIndex, 8).alignment = { horizontal: "left" };
+
+    worksheet.getCell(rowIndex + 1, 8).value = roleTitle;
+    worksheet.getCell(rowIndex + 1, 8).font = { name: "Arial", size: 11 };
+    worksheet.getCell(rowIndex + 1, 8).alignment = { horizontal: "left" };
+
+    worksheet.getRow(rowIndex + 2).height = 30;
+
+    if (namaGuru) {
+      worksheet.getCell(rowIndex + 3, 8).value = namaGuru;
+      worksheet.getCell(rowIndex + 3, 8).font = {
+        name: "Arial",
+        size: 11,
+        bold: true,
+        underline: true,
+      };
+      worksheet.getCell(rowIndex + 3, 8).alignment = { horizontal: "left" };
+    }
+
+    // Column widths
+    worksheet.getColumn(1).width = 5;
+    worksheet.getColumn(2).width = 15;
+    worksheet.getColumn(3).width = 35;
+    worksheet.getColumn(4).width = 10;
+    worksheet.getColumn(5).width = 10;
+    worksheet.getColumn(6).width = 10;
+    worksheet.getColumn(7).width = 10;
+    worksheet.getColumn(8).width = 10;
+    worksheet.getColumn(9).width = 8;
+    worksheet.getColumn(10).width = 15;
+
+    // Generate file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Rekap_Presensi_Semester_${
+      semester === 1 ? "Ganjil" : "Genap"
+    }_Kelas_${classId}_${year}.xlsx`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    return {
+      success: true,
+      message: "File Excel semester berhasil di-download!",
+    };
+  } catch (error) {
+    console.error("Error creating semester Excel file:", error);
+    return { success: false, message: `Error: ${error.message}` };
+  }
+};
+
+/**
+ * Integration function for semester export - SMP VERSION
+ */
+export const exportSemesterRecapFromComponent = async (
+  classId,
+  semester, // 1 or 2
+  year,
+  studentsData,
+  subject,
+  type = "mapel",
+  currentUser = null,
+  homeroomClass = null
+) => {
+  try {
+    const students = studentsData || [];
+
+    if (students.length === 0) {
+      return {
+        success: false,
+        message: "Tidak ada data siswa untuk kelas ini",
+      };
+    }
+
+    console.log("=== EXPORT SEMESTER DATA (SMP) ===");
+
+    // Convert semester
+    const semesterType = semester === 1 ? "Ganjil" : "Genap";
+    const academicYear =
+      semester === 1 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
+
+    const months = semester === 1 ? [7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5, 6];
+
+    console.log({
+      classId,
+      academicYear,
+      semesterType,
+      subject,
+      type,
+      months,
+    });
+
+    // Date range
+    const [startYear, endYear] = academicYear.split("/").map(Number);
+    let startDate, endDate;
+
+    if (semesterType === "Ganjil") {
+      startDate = `${startYear}-07-01`;
+      endDate = `${startYear}-12-31`;
+    } else {
+      startDate = `${endYear}-01-01`;
+      endDate = `${endYear}-06-30`;
+    }
+
+    console.log("📅 Date range:", { startDate, endDate });
+
+    // FETCH WITH PAGINATION
+    console.log("🔍 Fetching with pagination...");
+
+    let allRecords = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from("attendances")
+        .select("student_id, status, date")
+        .eq("class_id", classId)
+        .eq("subject", subject)
+        .eq("type", type)
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .order("date", { ascending: true })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (error) {
+        console.error("❌ Query error:", error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        allRecords = [...allRecords, ...data];
+        console.log(
+          `📄 Page ${page + 1}: ${data.length} records (Total: ${
+            allRecords.length
+          })`
+        );
+
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    console.log("✅ Total records fetched:", allRecords.length);
+
+    if (allRecords.length === 0) {
+      return {
+        success: false,
+        message: "Tidak ada data kehadiran untuk semester yang dipilih",
+      };
+    }
+
+    // Filter by month
+    const filteredData = allRecords.filter((r) => {
+      const parts = r.date.split("-");
+      const month = parseInt(parts[1], 10);
+      return months.includes(month);
+    });
+
+    console.log("Data setelah filter:", filteredData.length);
+
+    if (filteredData.length === 0) {
+      return {
+        success: false,
+        message: "Tidak ada data kehadiran untuk semester yang dipilih",
+      };
+    }
+
+    // Get teacher name
+    let namaGuru = "";
+    if (currentUser && currentUser.full_name) {
+      namaGuru = currentUser.full_name;
+    } else if (currentUser && currentUser.username) {
+      namaGuru = currentUser.username;
+    }
+
+    // Export
+    const result = await exportSemesterRecapToExcel({
+      classId: classId,
+      semester: semester,
+      year: year,
+      studentsData: students,
+      attendanceRecords: filteredData,
+      subject: subject,
+      namaSekolah: "SMP MUSLIMIN CILILIN",
+      namaGuru: namaGuru,
+      homeroomClass: homeroomClass,
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error in exportSemesterRecapFromComponent:", error);
+    return { success: false, message: `Error: ${error.message}` };
+  }
 };
