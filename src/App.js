@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { supabase } from "./supabaseClient";
 import Login from "./components/Login";
 import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard";
 
-// Import pages dari folder pages
+// Import pages
 import Teachers from "./pages/Teachers";
 import Classes from "./pages/Classes";
 import Students from "./pages/Students";
@@ -14,54 +15,122 @@ import TeacherSchedule from "./pages/TeacherSchedule";
 import CatatanSiswa from "./pages/CatatanSiswa";
 import Setting from "./setting/setting";
 
-// Import dari folder khusus
+// Import modules
 import Konseling from "./konseling/Konseling";
 import Reports from "./reports/Reports";
 import SPMB from "./spmb/SPMB";
 import MonitorSistem from "./system/MonitorSistem";
 
+// Import components
+import MaintenancePage from "./setting/MaintenancePage";
+import AdminPanel from "./setting/AdminPanel";
+
 function App() {
+  // ========== STATE ==========
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("info");
   const [showToast, setShowToast] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  // ✅ FIXED: CHECK localStorage dengan EXPIRY CHECK
+  // ========== MAINTENANCE MODE STATE ==========
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState("");
+  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
+
+  // ========== 1. CHECK MAINTENANCE STATUS ==========
+  useEffect(() => {
+    checkMaintenanceStatus();
+
+    // Subscribe to real-time changes
+    const subscription = supabase
+      .channel("maintenance-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "school_settings",
+          filter: "setting_key=in.(maintenance_mode,maintenance_message)",
+        },
+        (payload) => {
+          loadMaintenanceSettings();
+        }
+      )
+      .subscribe();
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkMaintenanceStatus = async () => {
+    try {
+      await loadMaintenanceSettings();
+    } catch (error) {
+      console.error("Error checking maintenance:", error);
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  };
+
+  const loadMaintenanceSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("school_settings")
+        .select("setting_key, setting_value")
+        .in("setting_key", ["maintenance_mode", "maintenance_message"]);
+
+      if (error) throw error;
+
+      const settings = {};
+      data?.forEach((item) => {
+        settings[item.setting_key] = item.setting_value;
+      });
+
+      const isMaintenance =
+        settings.maintenance_mode === "true" ||
+        settings.maintenance_mode === true;
+
+      setIsMaintenanceMode(isMaintenance);
+      setMaintenanceMessage(
+        settings.maintenance_message ||
+          "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"
+      );
+    } catch (error) {
+      console.error("Error loading maintenance settings:", error);
+    }
+  };
+
+  // ========== 2. CHECK SESSION DARI localStorage ==========
   useEffect(() => {
     const checkSession = () => {
       try {
         const storedUser = localStorage.getItem("user");
 
         if (!storedUser) {
-          console.log("No stored user found");
           setLoading(false);
           return;
         }
 
         const userData = JSON.parse(storedUser);
 
-        // ✅ CEK EXPIRY TIME
+        // Check expiry time
         if (userData.expiryTime) {
           const currentTime = Date.now();
-
           if (currentTime > userData.expiryTime) {
-            // Session expired
-            console.log("Session expired, clearing storage");
+            console.log("Session expired");
             localStorage.removeItem("user");
             localStorage.removeItem("rememberMe");
             setUser(null);
-            setToastMessage("Sesi Anda telah berakhir. Silakan login kembali.");
-            setToastType("warning");
-            setShowToast(true);
+            handleShowToast(
+              "Sesi Anda telah berakhir. Silakan login kembali.",
+              "warning"
+            );
             setLoading(false);
             return;
           }
         }
 
-        // Session valid, restore user
         setUser(userData);
-        console.log("User restored from localStorage:", userData.username);
       } catch (err) {
         console.error("Error parsing stored user:", err);
         localStorage.removeItem("user");
@@ -75,27 +144,37 @@ function App() {
     checkSession();
   }, []);
 
-  // Auto hide toast setelah 3 detik
+  // ========== 3. AUTO HIDE TOAST ==========
   useEffect(() => {
     if (showToast) {
       const timer = setTimeout(() => {
         setShowToast(false);
         setToastMessage("");
       }, 3000);
-
       return () => clearTimeout(timer);
     }
   }, [showToast]);
 
-  // ✅ FIXED: Handler Login dengan EXPIRY TIME
+  // ========== 4. KEYBOARD SHORTCUT: Ctrl + Shift + M (ADMIN PANEL) ==========
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "M") {
+        e.preventDefault();
+        window.location.href = "/secret-admin-panel-2024";
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
+
+  // ========== 5. HANDLERS ==========
   const handleLogin = useCallback((userData, rememberMe = false) => {
-    // Generate expiry time
     const loginTime = Date.now();
     const expiryTime = rememberMe
-      ? loginTime + 30 * 24 * 60 * 60 * 1000 // 30 hari jika remember me
-      : loginTime + 24 * 60 * 60 * 1000; // 24 jam jika tidak
+      ? loginTime + 30 * 24 * 60 * 60 * 1000 // 30 hari
+      : loginTime + 24 * 60 * 60 * 1000; // 24 jam
 
-    // Add expiry info to userData
     const sessionData = {
       ...userData,
       loginTime: loginTime,
@@ -103,11 +182,8 @@ function App() {
     };
 
     setUser(sessionData);
-
-    // Simpan ke localStorage dengan expiry
     localStorage.setItem("user", JSON.stringify(sessionData));
 
-    // Set rememberMe flag
     if (rememberMe) {
       localStorage.setItem("rememberMe", "true");
       console.log("Remember Me enabled - session valid for 30 days");
@@ -116,31 +192,22 @@ function App() {
       console.log("Session valid for 24 hours");
     }
 
-    setToastMessage(`Selamat datang, ${userData.full_name}! 👋`);
-    setToastType("success");
-    setShowToast(true);
-    console.log("User logged in:", userData.username);
+    handleShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
   }, []);
 
-  // Handler Logout
   const handleLogout = useCallback(() => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("rememberMe");
-    setToastMessage("Logout berhasil! 👋");
-    setToastType("info");
-    setShowToast(true);
-    console.log("User logged out and storage cleared");
+    handleShowToast("Logout berhasil! 👋", "info");
   }, []);
 
   const handleShowToast = useCallback((message, type = "info") => {
     setToastMessage(message);
     setToastType(type);
     setShowToast(true);
-    console.log(`Toast (${type}):`, message);
   }, []);
 
-  // Toast styles berdasarkan type
   const getToastStyle = () => {
     const baseStyle =
       "fixed top-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform";
@@ -157,10 +224,10 @@ function App() {
     }
   };
 
-  // Protected Route
+  // ========== 6. PROTECTED ROUTE COMPONENT ==========
   const ProtectedRoute = useCallback(
     ({ children }) => {
-      if (loading) {
+      if (loading || maintenanceLoading) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
             <div className="text-center">
@@ -174,12 +241,18 @@ function App() {
       if (!user) {
         return <Navigate to="/" />;
       }
+
+      // ✅ CEK MAINTENANCE: Jika ON dan user bukan admin, redirect ke maintenance
+      if (isMaintenanceMode && user.role !== "admin") {
+        return <MaintenancePage message={maintenanceMessage} />;
+      }
+
       return children;
     },
-    [user, loading]
+    [user, loading, maintenanceLoading, isMaintenanceMode, maintenanceMessage]
   );
 
-  // Layout Wrapper
+  // ========== 7. LAYOUT WRAPPER ==========
   const LayoutWrapper = useCallback(
     ({ children }) => (
       <Layout user={user} onLogout={handleLogout}>
@@ -189,7 +262,24 @@ function App() {
     [user, handleLogout]
   );
 
-  if (loading) {
+  // ========== 8. RENDER ADMIN PANEL (SPECIAL ROUTE - BYPASS MAINTENANCE) ==========
+  const currentPath = window.location.pathname;
+  if (currentPath === "/secret-admin-panel-2024") {
+    return (
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}>
+        <Routes>
+          <Route path="/secret-admin-panel-2024" element={<AdminPanel />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // ========== 9. RENDER MAIN APP ==========
+  if (loading || maintenanceLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
@@ -206,7 +296,7 @@ function App() {
         v7_startTransition: true,
         v7_relativeSplatPath: true,
       }}>
-      {/* Toast notification */}
+      {/* Toast Notification */}
       {showToast && (
         <div className={getToastStyle()}>
           <div className="flex items-center gap-2">
@@ -220,7 +310,7 @@ function App() {
       )}
 
       <Routes>
-        {/* Public Route - Login */}
+        {/* ========== PUBLIC ROUTES ========== */}
         <Route
           path="/"
           element={
@@ -232,7 +322,7 @@ function App() {
           }
         />
 
-        {/* Protected Routes */}
+        {/* ========== PROTECTED ROUTES ========== */}
         <Route
           path="/dashboard"
           element={
@@ -376,7 +466,7 @@ function App() {
           }
         />
 
-        {/* Catch-all route */}
+        {/* ========== CATCH-ALL ROUTE ========== */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
