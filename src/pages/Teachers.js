@@ -67,7 +67,22 @@ export const Teachers = () => {
         };
       });
 
-      setGuruData(guruWithMapel);
+      // ✅ TAMBAHKAN DATA KEPALA SEKOLAH (HARDCODED)
+      const kepalaSekolah = {
+        id: "kepala-sekolah-001",
+        teacher_id: "G-01",
+        full_name: "ADE NURMUGHNI",
+        is_active: true,
+        homeroom_class_id: null,
+        role: "teacher",
+        mapel: ["KEPALA SEKOLAH"],
+        walikelas: "-",
+      };
+
+      // Gabungkan kepala sekolah di urutan pertama
+      const finalGuruData = [kepalaSekolah, ...guruWithMapel];
+
+      setGuruData(finalGuruData);
     } catch (error) {
       console.error("Error fetching guru data:", error);
     } finally {

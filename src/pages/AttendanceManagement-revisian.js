@@ -66,47 +66,107 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     return `${day}-${month}-${year}`;
   };
 
-  // Format date for input (YYYY-MM-DD)
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return "";
-    return dateString; // Already in YYYY-MM-DD format
-  };
-
-  // Check auth
+  // Check auth - EMERGENCY FIX: Deep inspection + all possible fields
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        if (user) {
+        if (!user) {
+          console.log("❌ No user found");
+          setAuthLoading(false);
+          return;
+        }
+
+        console.log("👤 User data:", user);
+        console.log("🔍 User keys:", Object.keys(user));
+        console.log("🔍 Possible IDs:", {
+          user_id: user.user_id,
+          id: user.id,
+          teacher_id: user.teacher_id,
+          teacherId: user.teacherId,
+          userId: user.userId,
+        });
+
+        // Try all possible ID fields
+        let foundTeacherId = null;
+
+        // Strategy 1: Direct fields
+        if (user.teacher_id) {
+          foundTeacherId = user.teacher_id;
+          console.log("✅ Found teacher_id:", foundTeacherId);
+        } else if (user.teacherId) {
+          foundTeacherId = user.teacherId;
+          console.log("✅ Found teacherId:", foundTeacherId);
+        } else if (user.id) {
+          foundTeacherId = user.id;
+          console.log("✅ Using user.id:", foundTeacherId);
+        } else if (user.user_id) {
+          foundTeacherId = user.user_id;
+          console.log("✅ Using user_id:", foundTeacherId);
+        }
+
+        if (foundTeacherId) {
+          setTeacherId(foundTeacherId);
+          setAuthLoading(false);
+          return;
+        }
+
+        // Strategy 2: Query database with username
+        if (user.username) {
+          console.log("🔍 Querying database with username:", user.username);
           const { data: teacherData, error: teacherError } = await supabase
             .from("users")
-            .select("teacher_id, homeroom_class_id")
+            .select("id, teacher_id, homeroom_class_id")
             .eq("username", user.username)
             .single();
 
           if (teacherError) {
-            console.error("Error fetching teacher data:", teacherError);
+            console.error("❌ Database error:", teacherError);
           } else if (teacherData) {
-            setTeacherId(teacherData.teacher_id);
+            console.log("✅ Database result:", teacherData);
+            const finalTeacherId = teacherData.teacher_id || teacherData.id;
+            setTeacherId(finalTeacherId);
+            console.log("✅ Teacher ID dari database:", finalTeacherId);
+
             if (teacherData.homeroom_class_id) {
               setIsHomeroomTeacher(true);
               setHomeroomClass(teacherData.homeroom_class_id);
+              console.log("✅ Homeroom class:", teacherData.homeroom_class_id);
             }
           }
         }
+
+        // Strategy 3: Query dengan email jika ada
+        if (!foundTeacherId && user.email) {
+          console.log("🔍 Trying with email:", user.email);
+          const { data: emailData, error: emailError } = await supabase
+            .from("users")
+            .select("id, teacher_id, homeroom_class_id")
+            .eq("email", user.email)
+            .single();
+
+          if (!emailError && emailData) {
+            console.log("✅ Found via email:", emailData);
+            const finalTeacherId = emailData.teacher_id || emailData.id;
+            setTeacherId(finalTeacherId);
+            console.log("✅ Teacher ID from email query:", finalTeacherId);
+          }
+        }
       } catch (error) {
-        console.error("Auth check error:", error);
+        console.error("❌ Auth check error:", error);
       } finally {
         setAuthLoading(false);
+        console.log("✅ Auth loading selesai");
       }
     };
 
     checkAuth();
   }, [user]);
 
-  // Fetch academic years and semesters
+  // Fetch academic years and semesters - PERBAIKAN: Pindah ke sini
   useEffect(() => {
     const fetchAcademicData = async () => {
       try {
+        console.log("📚 Fetching academic data...");
         const { data: academicData, error } = await supabase
           .from("academic_years")
           .select("year, semester")
@@ -122,6 +182,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           }));
 
           setSemesters(uniqueSemesters);
+          console.log("✅ Semesters loaded:", uniqueSemesters);
 
           // Set default to current active semester
           const { data: activeYear } = await supabase
@@ -134,7 +195,14 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             const activeSemester = `${activeYear.year}-${activeYear.semester}`;
             setSelectedSemester(activeSemester);
             setAcademicYear(activeYear.year);
+            console.log("✅ Active semester set:", activeSemester);
+          } else if (uniqueSemesters.length > 0) {
+            // Fallback: pilih semester pertama
+            setSelectedSemester(uniqueSemesters[0].value);
+            console.log("✅ First semester set:", uniqueSemesters[0].value);
           }
+        } else {
+          console.log("❌ No academic data found");
         }
       } catch (error) {
         console.error("Error fetching academic data:", error);
@@ -144,12 +212,19 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     fetchAcademicData();
   }, []);
 
-  // Fetch subjects based on semester
+  // Fetch subjects based on semester - PERBAIKAN: Tambah kondisi teacherId
   useEffect(() => {
     const fetchSubjects = async () => {
-      if (!teacherId || !selectedSemester) return;
+      if (!teacherId || !selectedSemester) {
+        console.log("⏳ Waiting for teacherId or semester...", {
+          teacherId,
+          selectedSemester,
+        });
+        return;
+      }
 
       try {
+        console.log("📝 Fetching subjects for teacher:", teacherId);
         const [year, semester] = selectedSemester.split("-");
 
         const { data, error } = await supabase
@@ -164,13 +239,17 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           return;
         }
 
+        console.log("📝 Raw subjects data:", data);
+
         const uniqueSubjects = [...new Set(data.map((item) => item.subject))];
 
         if (isHomeroomTeacher && homeroomClass) {
           uniqueSubjects.push(`PRESENSI HARIAN KELAS ${homeroomClass}`);
+          console.log("✅ Added homeroom daily attendance");
         }
 
         setSubjects(uniqueSubjects);
+        console.log("✅ Subjects loaded:", uniqueSubjects);
       } catch (error) {
         console.error("Error in fetchSubjects:", error);
       }
@@ -179,20 +258,29 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     fetchSubjects();
   }, [teacherId, isHomeroomTeacher, homeroomClass, selectedSemester]);
 
-  // Fetch classes based on semester
+  // Fetch classes based on semester - PERBAIKAN: Tambah debug log
   useEffect(() => {
     const fetchClasses = async () => {
       if (!selectedSubject || !teacherId || !selectedSemester) {
+        console.log("⏳ Waiting for subject/teacherId/semester...", {
+          selectedSubject,
+          teacherId,
+          selectedSemester,
+        });
         setClasses([]);
         return;
       }
 
       try {
+        console.log("🏫 Fetching classes for subject:", selectedSubject);
         const isDailyMode = selectedSubject.includes("PRESENSI HARIAN");
         const [year, semester] = selectedSemester.split("-");
 
         if (isDailyMode) {
-          if (!homeroomClass) return;
+          if (!homeroomClass) {
+            console.log("❌ No homeroom class for daily mode");
+            return;
+          }
 
           const formattedClasses = [
             {
@@ -204,6 +292,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
 
           setClasses(formattedClasses);
           setSelectedClass(homeroomClass);
+          console.log("✅ Homeroom classes set:", formattedClasses);
           return;
         }
 
@@ -216,8 +305,12 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           .eq("semester", semester);
 
         if (assignmentError) throw assignmentError;
+
+        console.log("🏫 Assignment data:", assignmentData);
+
         if (!assignmentData?.length) {
           setClasses([]);
+          console.log("❌ No classes found for this assignment");
           return;
         }
 
@@ -237,6 +330,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
 
         setClasses(formattedClasses);
         setSelectedClass("");
+        console.log("✅ Classes loaded:", formattedClasses);
       } catch (error) {
         console.error("Error fetching classes:", error);
       }
@@ -1241,11 +1335,30 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     );
   };
 
+  // PERBAIKAN: Debug info untuk troubleshooting
+  const debugInfo = {
+    teacherId,
+    selectedSemester,
+    selectedSubject,
+    selectedClass,
+    subjectsCount: subjects.length,
+    classesCount: classes.length,
+    isHomeroomTeacher,
+    homeroomClass,
+  };
+
+  console.log("🐛 Debug Info:", debugInfo);
+
   if (authLoading) {
     return (
       <div className="p-4 sm:p-6">
         <div className="flex justify-center items-center h-64">
-          <div className="text-blue-500 text-lg">Memeriksa autentikasi...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <div className="text-blue-500 text-lg">
+              Memeriksa autentikasi...
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1288,15 +1401,19 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                     Wali Kelas {homeroomClass}
                   </span>
                 )}
+                <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs sm:text-sm font-medium bg-green-50 text-green-700 border border-green-200">
+                  {user?.role === "admin" ? "Admin" : "Teacher"}
+                </span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* PERBAIKAN: Filters dengan disabled state yang benar */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm mb-4 sm:mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* Semester Select - PERBAIKAN: Hanya disabled saat auth loading */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">
               Semester
@@ -1310,8 +1427,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setAttendanceDates([]);
                 setCurrentPage(1);
               }}
-              disabled={loading || !teacherId}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              disabled={authLoading}
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-slate-100 disabled:cursor-not-allowed">
               <option value="">Pilih Semester</option>
               {semesters.map((semester, index) => (
                 <option key={index} value={semester.value}>
@@ -1319,8 +1436,12 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 </option>
               ))}
             </select>
+            {authLoading && (
+              <p className="text-xs text-blue-600 mt-1">Loading semester...</p>
+            )}
           </div>
 
+          {/* Subject Select - PERBAIKAN: Disabled condition diperbaiki */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">
               Mata Pelajaran
@@ -1333,8 +1454,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setAttendanceDates([]);
                 setCurrentPage(1);
               }}
-              disabled={loading || !teacherId || !selectedSemester}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              disabled={!selectedSemester || !teacherId}
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-slate-100 disabled:cursor-not-allowed">
               <option value="">Pilih Mata Pelajaran</option>
               {subjects.map((subject, index) => (
                 <option key={index} value={subject}>
@@ -1342,8 +1463,14 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 </option>
               ))}
             </select>
+            {!teacherId && selectedSemester && (
+              <p className="text-xs text-orange-600 mt-1">
+                Loading data guru...
+              </p>
+            )}
           </div>
 
+          {/* Class Select - PERBAIKAN: Disabled condition diperbaiki */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">
               Kelas
@@ -1354,8 +1481,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setSelectedClass(e.target.value);
                 setCurrentPage(1);
               }}
-              disabled={!selectedSubject || loading || isHomeroomDaily()}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-slate-50">
+              disabled={!selectedSubject || classes.length === 0}
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-slate-100 disabled:cursor-not-allowed">
               <option value="">Pilih Kelas</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>
@@ -1368,8 +1495,14 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 Kelas otomatis dipilih untuk presensi harian
               </p>
             )}
+            {selectedSubject && classes.length === 0 && (
+              <p className="text-xs text-orange-600 mt-1">
+                Tidak ada kelas untuk mata pelajaran ini
+              </p>
+            )}
           </div>
 
+          {/* Month Filter - PERBAIKAN: Disabled condition diperbaiki */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">
               Filter Bulan
@@ -1381,7 +1514,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={!selectedClass}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-slate-100 disabled:cursor-not-allowed">
               {months.map((month) => (
                 <option key={month.value} value={month.value}>
                   {month.label}
@@ -1390,6 +1523,20 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             </select>
           </div>
         </div>
+
+        {/* PERBAIKAN: Debug info untuk development */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mt-4 p-3 bg-gray-100 rounded-lg">
+            <details>
+              <summary className="cursor-pointer text-sm font-medium text-gray-700">
+                🐛 Debug Info (Development Only)
+              </summary>
+              <pre className="text-xs mt-2 text-gray-600">
+                {JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </details>
+          </div>
+        )}
       </div>
 
       {/* Attendance List */}
