@@ -19,6 +19,20 @@ const Layout = ({ user, onLogout, children }) => {
   const navigationTimeoutRef = useRef(null);
   const profileDropdownRef = useRef(null);
 
+  // Cek apakah user memiliki akses ke halaman saat ini
+  const hasAccessToCurrentPage = useCallback(() => {
+    // Jika tidak ada user data, return false
+    if (!user) return false;
+
+    // Jika path adalah /attendance-management, hanya admin yang boleh akses
+    if (location.pathname === "/attendance-management") {
+      return user.role === "admin";
+    }
+
+    // Untuk halaman lainnya, semua role boleh akses
+    return true;
+  }, [user, location.pathname]);
+
   useEffect(() => {
     const handleResize = () => {
       const isLaptopSize = window.innerWidth >= 1024;
@@ -115,6 +129,7 @@ const Layout = ({ user, onLogout, children }) => {
     if (path === "/students") return "students";
     if (path === "/classes") return "classes";
     if (path === "/attendance") return "attendance";
+    if (path === "/attendance-management") return "attendance-management";
     if (path === "/grades") return "grades";
     if (path === "/jadwal-saya") return "jadwal-saya";
     if (path === "/catatan-siswa") return "catatan-siswa";
@@ -133,6 +148,7 @@ const Layout = ({ user, onLogout, children }) => {
       "/teachers": "Data Guru",
       "/classes": "Data Kelas",
       "/attendance": "Kehadiran",
+      "/attendance-management": "Management Presensi",
       "/grades": "Nilai Akademik",
       "/jadwal-saya": "Jadwal Saya",
       "/catatan-siswa": "Catatan Siswa",
@@ -158,6 +174,7 @@ const Layout = ({ user, onLogout, children }) => {
         "Data Guru": "Kelola Data Guru Sekolah",
         "Data Kelas": "Kelola Data Kelas Sekolah",
         Kehadiran: "Kelola Kehadiran Siswa",
+        "Management Presensi": "Edit, Ubah Tanggal, atau Hapus Data Presensi",
         "Nilai Akademik": "Kelola Nilai Akademik Siswa",
         "Jadwal Saya": "Lihat Jadwal Mengajar",
         "Catatan Siswa": "Kelola Catatan Perkembangan Siswa",
@@ -182,6 +199,7 @@ const Layout = ({ user, onLogout, children }) => {
             "Data Guru": "Kelola Data Guru Sekolah",
             "Data Kelas": `Informasi Kelas`,
             Kehadiran: `Input kehadiran Kelas`,
+            "Management Presensi": "Kelola Data Presensi yang Sudah Diinput",
             "Nilai Akademik": `Input Nilai Kelas`,
             "Catatan Siswa": `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
             "Jadwal Saya": "Lihat Jadwal Mengajar Kelas",
@@ -194,6 +212,7 @@ const Layout = ({ user, onLogout, children }) => {
             "Data Guru": "Lihat data guru sekolah",
             "Data Kelas": "Lihat informasi kelas",
             Kehadiran: "Input kehadiran mata pelajaran",
+            "Management Presensi": "Kelola Data Presensi Mata Pelajaran",
             "Nilai Akademik": "Input nilai mata pelajaran",
             "Jadwal Saya": "Lihat Jadwal Mengajar",
             Laporan: "Laporan mata pelajaran",
@@ -214,6 +233,7 @@ const Layout = ({ user, onLogout, children }) => {
         students: "/students",
         classes: "/classes",
         attendance: "/attendance",
+        "attendance-management": "/attendance-management",
         grades: "/grades",
         "jadwal-saya": "/jadwal-saya",
         "catatan-siswa": "/catatan-siswa",
@@ -226,6 +246,13 @@ const Layout = ({ user, onLogout, children }) => {
 
       const path = routes[page];
       if (!path) return;
+
+      // Cek akses sebelum navigasi
+      if (path === "/attendance-management" && user?.role !== "admin") {
+        // Redirect ke dashboard jika bukan admin
+        navigate("/dashboard");
+        return;
+      }
 
       if (location.pathname === path) return;
 
@@ -242,7 +269,7 @@ const Layout = ({ user, onLogout, children }) => {
         setIsNavigating(false);
       }
     },
-    [isNavigating, location.pathname, navigate]
+    [isNavigating, location.pathname, navigate, user]
   );
 
   const toggleMobileMenu = () => {
@@ -280,6 +307,52 @@ const Layout = ({ user, onLogout, children }) => {
   };
 
   const currentPageName = getCurrentPageName();
+
+  // Render halaman "Akses Ditolak" jika user tidak memiliki akses
+  const renderContent = () => {
+    if (!hasAccessToCurrentPage()) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl shadow-sm border border-blue-100 p-6">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <svg
+              className="w-8 h-8 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-9a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Akses Ditolak
+          </h2>
+          <p className="text-gray-600 text-center mb-4">
+            Anda tidak memiliki izin untuk mengakses halaman ini.
+          </p>
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Kembali ke Dashboard
+          </button>
+        </div>
+      );
+    }
+
+    return isNavigating ? (
+      <div className="flex items-center justify-center h-32 sm:h-48">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-blue-600 font-medium text-sm">Loading...</p>
+        </div>
+      </div>
+    ) : (
+      children
+    );
+  };
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -474,18 +547,7 @@ const Layout = ({ user, onLogout, children }) => {
         </header>
 
         <div className="bg-gradient-to-br from-blue-50 to-white min-h-screen p-3 sm:p-4 lg:p-6">
-          {isNavigating ? (
-            <div className="flex items-center justify-center h-32 sm:h-48">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600"></div>
-                <p className="mt-2 text-blue-600 font-medium text-sm">
-                  Loading...
-                </p>
-              </div>
-            </div>
-          ) : (
-            children
-          )}
+          {renderContent()}
         </div>
       </main>
 

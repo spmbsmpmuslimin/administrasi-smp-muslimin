@@ -21,9 +21,9 @@ const MaintenanceModeTab = ({ showToast }) => {
   // ✅ WHITELIST STATE
   const [allUsers, setAllUsers] = useState([]);
   const [whitelistUsers, setWhitelistUsers] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState(""); // ✅ Dropdown selected user
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [showWhitelistDetails, setShowWhitelistDetails] = useState(false); // ✅ Toggle show/hide whitelist
+  const [showWhitelistDetails, setShowWhitelistDetails] = useState(false);
 
   // ✅ Load maintenance settings
   useEffect(() => {
@@ -79,7 +79,7 @@ const MaintenanceModeTab = ({ showToast }) => {
     }
   };
 
-  // ✅ Load all users dari database
+  // 🔥 FIX: Load users TANPA admin
   const loadAllUsers = async () => {
     try {
       setLoadingUsers(true);
@@ -87,6 +87,7 @@ const MaintenanceModeTab = ({ showToast }) => {
         .from("users")
         .select("id, username, full_name, role, is_active")
         .eq("is_active", true)
+        .neq("role", "admin") // 🔥 Filter admin
         .order("full_name", { ascending: true });
 
       if (error) throw error;
@@ -173,7 +174,7 @@ const MaintenanceModeTab = ({ showToast }) => {
     // Cek apakah user sudah ada di whitelist
     if (whitelistUsers.some((u) => u.id === user.id)) {
       showToast?.(`${user.full_name} sudah ada di whitelist`, "info");
-      setSelectedUserId(""); // Reset dropdown
+      setSelectedUserId("");
       return;
     }
 
@@ -187,7 +188,7 @@ const MaintenanceModeTab = ({ showToast }) => {
     ];
 
     await saveWhitelist(newWhitelist);
-    setSelectedUserId(""); // Reset dropdown setelah sukses
+    setSelectedUserId("");
   };
 
   // ✅ Remove user from whitelist
@@ -212,7 +213,7 @@ const MaintenanceModeTab = ({ showToast }) => {
       if (error) throw error;
 
       setWhitelistUsers(whitelist);
-      showToast?.("✔ Whitelist berhasil diperbarui", "success");
+      showToast?.("✅ Whitelist berhasil diperbarui", "success");
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -334,7 +335,7 @@ const MaintenanceModeTab = ({ showToast }) => {
               </span>
             </div>
 
-            {/* Dropdown + Button */}
+            {/* 🔥 Dropdown + Button - CLEAN VERSION */}
             <div className="flex gap-2">
               <select
                 value={selectedUserId}
@@ -346,7 +347,7 @@ const MaintenanceModeTab = ({ showToast }) => {
                 </option>
                 {availableUsers.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.full_name} (@{user.username})
+                    {user.full_name}
                   </option>
                 ))}
               </select>
@@ -374,7 +375,7 @@ const MaintenanceModeTab = ({ showToast }) => {
                 className="w-full flex items-center justify-between hover:bg-green-100 p-2 rounded-lg transition">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-gray-800">
-                    ✔ User yang Diwhitelist
+                    ✅ User yang Diwhitelist
                   </h3>
                   <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
                     {whitelistUsers.length} user
@@ -418,7 +419,7 @@ const MaintenanceModeTab = ({ showToast }) => {
       {maintenanceMode && (
         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
           <p className="text-sm font-semibold text-gray-700 mb-3">
-            🔺 Preview Halaman Maintenance:
+            🖼️ Preview Halaman Maintenance:
           </p>
           <div className="bg-white p-6 rounded-lg shadow-sm text-center border border-gray-200">
             <div className="text-6xl mb-3">🔧</div>
@@ -435,21 +436,12 @@ const MaintenanceModeTab = ({ showToast }) => {
         </div>
       )}
 
-      {/* Info Box */}
-      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-sm text-blue-900">
-          <strong>ℹ️ Informasi:</strong> Saat maintenance ON, hanya admin + user
-          di whitelist yang bisa akses. User lain akan melihat halaman
-          maintenance.
-        </p>
-      </div>
-
       {/* Save Indicator */}
       {saved && (
         <div className="fixed bottom-6 right-6 p-4 bg-green-50 border border-green-300 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
           <Check className="w-5 h-5 text-green-600" />
           <span className="text-green-700 font-semibold text-sm">
-            ✔ Pengaturan disimpan
+            ✅ Pengaturan disimpan
           </span>
         </div>
       )}

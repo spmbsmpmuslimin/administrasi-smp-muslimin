@@ -10,6 +10,7 @@ import Teachers from "./pages/Teachers";
 import Classes from "./pages/Classes";
 import Students from "./pages/Students";
 import Attendance from "./pages/Attendance";
+import AttendanceManagement from "./pages/AttendanceManagement";
 import Grades from "./pages/Grades";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import CatatanSiswa from "./pages/CatatanSiswa";
@@ -256,7 +257,7 @@ function App() {
 
   // ========== 6. PROTECTED ROUTE COMPONENT (UPDATED) ==========
   const ProtectedRoute = useCallback(
-    ({ children }) => {
+    ({ children, allowedRoles = [] }) => {
       if (loading || maintenanceLoading) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -270,6 +271,44 @@ function App() {
 
       if (!user) {
         return <Navigate to="/" />;
+      }
+
+      // ✅ CEK ROLE-BASED ACCESS
+      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        console.log(
+          `🔴 User ${user.username} tidak memiliki akses ke halaman ini`
+        );
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-9a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                Akses Ditolak
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Anda tidak memiliki izin untuk mengakses halaman ini.
+              </p>
+              <button
+                onClick={() => (window.location.href = "/dashboard")}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Kembali ke Dashboard
+              </button>
+            </div>
+          </div>
+        );
       }
 
       // ✅ CEK MAINTENANCE dengan WHITELIST
@@ -431,6 +470,21 @@ function App() {
             <ProtectedRoute>
               <LayoutWrapper>
                 <Attendance user={user} onShowToast={handleShowToast} />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 👇 ROUTE ATTENDANCE-MANAGEMENT HANYA UNTUK ADMIN */}
+        <Route
+          path="/attendance-management"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <LayoutWrapper>
+                <AttendanceManagement
+                  user={user}
+                  onShowToast={handleShowToast}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
