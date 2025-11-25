@@ -1,3 +1,4 @@
+//[file name]: TeacherDashboard.js
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -307,7 +308,11 @@ const TeacherDashboard = ({ user }) => {
   };
 
   // Navigation handlers for Quick Actions
-  const handleAttendance = () => {
+  const handleTeacherAttendance = () => {
+    navigate("/attendance-teacher");
+  };
+
+  const handleStudentAttendance = () => {
     navigate("/attendance");
   };
 
@@ -450,9 +455,27 @@ const TeacherDashboard = ({ user }) => {
         </div>
 
         {/* Quick Actions - Horizontal Layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          {/* Presensi Guru - TOMBOL BARU */}
           <button
-            onClick={handleAttendance}
+            onClick={handleTeacherAttendance}
+            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                <span className="text-white text-lg">👨‍🏫</span>
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-slate-800 text-sm">
+                  Presensi Guru
+                </h4>
+                <p className="text-xs text-slate-600">Absensi Diri Sendiri</p>
+              </div>
+            </div>
+          </button>
+
+          {/* Presensi Siswa */}
+          <button
+            onClick={handleStudentAttendance}
             className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">

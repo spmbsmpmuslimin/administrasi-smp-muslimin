@@ -1,7 +1,19 @@
 // src/attendance-teacher/ManualCheckIn.js
-import React, { useState } from "react";
-import { Calendar, Clock, Save, CheckCircle, XCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Calendar,
+  Clock,
+  Save,
+  CheckCircle,
+  XCircle,
+  MapPin,
+  AlertTriangle,
+} from "lucide-react";
 import { supabase } from "../supabaseClient";
+import {
+  validateAttendanceLocation,
+  validateTeacherSchedule,
+} from "./LocationValidator";
 
 const ManualCheckIn = ({ currentUser, onSuccess }) => {
   const today = new Date().toISOString().split("T")[0];
@@ -15,6 +27,8 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [locationStatus, setLocationStatus] = useState(null);
+  const [checkingLocation, setCheckingLocation] = useState(false);
 
   const statusOptions = [
     { value: "Hadir", label: "Hadir", color: "bg-green-500" },
@@ -23,12 +37,54 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     { value: "Alpa", label: "Alpha", color: "bg-red-500" },
   ];
 
+  // Pre-check location saat component mount (untuk status "Hadir" only)
+  useEffect(() => {
+    if (formData.status === "Hadir") {
+      checkLocation();
+    }
+  }, [formData.status]);
+
+  const checkLocation = async () => {
+    setCheckingLocation(true);
+    const locationCheck = await validateAttendanceLocation();
+    setLocationStatus(locationCheck);
+    setCheckingLocation(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
     try {
+      // VALIDASI GPS - HANYA UNTUK STATUS "HADIR"
+      if (formData.status === "Hadir") {
+        const locationCheck = await validateAttendanceLocation();
+        setLocationStatus(locationCheck);
+
+        if (!locationCheck.allowed) {
+          setMessage({
+            type: "error",
+            text: `❌ ${locationCheck.message}\n\n📍 Presensi dengan status "Hadir" hanya bisa dilakukan di area sekolah.`,
+          });
+          setLoading(false);
+          return;
+        }
+
+        // VALIDASI JADWAL (SOFT WARNING)
+        const scheduleCheck = await validateTeacherSchedule(currentUser.id);
+
+        if (scheduleCheck.suspicious) {
+          const confirmMessage = `⚠️ Perhatian!\n\n${scheduleCheck.message}\n\nTetap lanjutkan presensi?`;
+          const confirmed = window.confirm(confirmMessage);
+
+          if (!confirmed) {
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       // Get teacher_id
       const { data: userData, error: userError } = await supabase
         .from("users")
@@ -54,6 +110,24 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         throw checkError;
       }
 
+      // Prepare attendance metadata (untuk audit trail)
+      const attendanceMetadata = {
+        check_in_method: "manual",
+        notes: formData.notes || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Tambahkan GPS metadata jika status "Hadir"
+      if (formData.status === "Hadir" && locationStatus?.allowed) {
+        attendanceMetadata.gps_location = JSON.stringify({
+          lat: locationStatus.coords.lat,
+          lng: locationStatus.coords.lng,
+          distance: locationStatus.distance,
+          accuracy: locationStatus.accuracy,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       // Jika sudah ada, update. Jika belum, insert
       if (existingAttendance) {
         // UPDATE existing attendance
@@ -62,9 +136,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
           .update({
             status: formData.status,
             clock_in: formData.clockIn + ":00", // Format TIME: HH:MM:SS
-            check_in_method: "manual",
-            notes: formData.notes || null,
-            updated_at: new Date().toISOString(),
+            ...attendanceMetadata,
           })
           .eq("id", existingAttendance.id);
 
@@ -83,8 +155,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
             attendance_date: formData.date,
             status: formData.status,
             clock_in: formData.clockIn + ":00", // Format TIME: HH:MM:SS
-            check_in_method: "manual",
-            notes: formData.notes || null,
+            ...attendanceMetadata,
           });
 
         if (insertError) throw insertError;
@@ -105,6 +176,9 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         clockIn: now,
         notes: "",
       });
+
+      // Reset location status
+      setLocationStatus(null);
     } catch (error) {
       console.error("Error submitting attendance:", error);
       setMessage({
@@ -131,6 +205,57 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         </p>
       </div>
 
+      {/* GPS Status Indicator - HANYA MUNCUL JIKA STATUS "HADIR" */}
+      {formData.status === "Hadir" && (
+        <div
+          className={`p-4 rounded-lg flex items-start gap-3 border ${
+            checkingLocation
+              ? "bg-gray-50 border-gray-300"
+              : locationStatus?.allowed
+              ? "bg-green-50 border-green-200"
+              : locationStatus
+              ? "bg-red-50 border-red-200"
+              : "bg-yellow-50 border-yellow-200"
+          }`}>
+          <MapPin
+            className={`flex-shrink-0 ${
+              checkingLocation
+                ? "text-gray-500"
+                : locationStatus?.allowed
+                ? "text-green-600"
+                : "text-red-600"
+            }`}
+            size={24}
+          />
+          <div className="flex-1">
+            <p
+              className={`text-sm font-medium ${
+                checkingLocation
+                  ? "text-gray-700"
+                  : locationStatus?.allowed
+                  ? "text-green-800"
+                  : "text-red-800"
+              }`}>
+              {checkingLocation
+                ? "📍 Memeriksa lokasi Anda..."
+                : locationStatus?.allowed
+                ? `✅ Lokasi valid: ${locationStatus.distance}m dari sekolah`
+                : locationStatus
+                ? `❌ ${locationStatus.message}`
+                : "⚠️ Belum memeriksa lokasi"}
+            </p>
+            {locationStatus && !locationStatus.allowed && (
+              <button
+                type="button"
+                onClick={checkLocation}
+                className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium">
+                🔄 Cek Ulang Lokasi
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Message Alert */}
       {message && (
         <div
@@ -145,7 +270,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
             <XCircle className="text-red-600 flex-shrink-0" size={24} />
           )}
           <p
-            className={`text-sm font-medium ${
+            className={`text-sm font-medium whitespace-pre-line ${
               message.type === "success" ? "text-green-800" : "text-red-800"
             }`}>
             {message.text}
@@ -194,6 +319,12 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
               </button>
             ))}
           </div>
+          {formData.status !== "Hadir" && (
+            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+              <AlertTriangle size={14} />
+              Status selain "Hadir" tidak memerlukan validasi GPS
+            </p>
+          )}
         </div>
 
         {/* Jam Masuk */}
@@ -228,7 +359,9 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={
+            loading || (formData.status === "Hadir" && checkingLocation)
+          }
           className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg">
           {loading ? (
             <>
@@ -250,6 +383,15 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
           <strong>💡 Tips:</strong> Jika sudah ada presensi di tanggal yang
           dipilih, data akan diupdate. Jika belum ada, akan membuat presensi
           baru.
+        </p>
+      </div>
+
+      {/* GPS Security Info */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <p className="text-sm text-amber-800">
+          <strong>🔒 Keamanan:</strong> Presensi dengan status "Hadir"
+          memerlukan validasi lokasi GPS. Pastikan Anda berada di area sekolah
+          (radius 100m) saat mengisi presensi manual.
         </p>
       </div>
     </div>
