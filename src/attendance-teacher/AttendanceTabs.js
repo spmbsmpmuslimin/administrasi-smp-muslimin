@@ -1,93 +1,81 @@
 // src/attendance-teacher/AttendanceTabs.js
 import React, { useState } from "react";
-import { QrCode, Edit3, Sparkles, Activity, History } from "lucide-react";
+import { QrCode, Edit3, Sparkles } from "lucide-react";
 import QRScanner from "./QRScanner";
 import ManualCheckIn from "./ManualCheckIn";
 import QRCodeGenerator from "./QRCodeGenerator";
-import MyAttendanceStatus from "./MyAttendanceStatus";
-import MyMonthlyHistory from "./MyMonthlyHistory";
 
 const AttendanceTabs = ({ currentUser, onSuccess }) => {
   const [activeTab, setActiveTab] = useState("qr");
 
-  // Define tabs berdasarkan role
-  const tabs = [
-    {
-      id: "qr",
-      label: "Scan QR",
-      icon: QrCode,
-      roles: ["teacher", "guru_bk", "admin"], // Semua bisa scan
-    },
-    {
-      id: "manual",
-      label: "Input Manual",
-      icon: Edit3,
-      roles: ["admin"], // Hanya admin yang bisa input manual
-    },
-    {
-      id: "status",
-      label: "Status Hari Ini",
-      icon: Activity,
-      roles: ["teacher", "guru_bk", "admin"], // Semua bisa lihat status
-    },
-    {
-      id: "history",
-      label: "Riwayat",
-      icon: History,
-      roles: ["teacher", "guru_bk", "admin"], // Semua bisa lihat riwayat
-    },
-    {
-      id: "generate",
-      label: "Generate QR",
-      icon: Sparkles,
-      roles: ["admin"], // Hanya admin yang bisa generate QR
-    },
-  ];
-
-  // Filter tabs berdasarkan role user
-  const visibleTabs = tabs.filter((tab) =>
-    tab.roles.includes(currentUser?.role)
-  );
+  // Conditional tabs based on role
+  const isAdmin = currentUser?.role === "admin";
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      {/* Tab Navigation - Improved Design */}
-      <div className="flex border-b border-gray-200 overflow-x-auto">
-        {visibleTabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex items-center justify-center gap-2 px-6 py-4 
-                font-medium transition-all whitespace-nowrap
-                ${
-                  activeTab === tab.id
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }
-              `}>
-              <Icon size={18} />
-              <span className="text-sm">{tab.label}</span>
-            </button>
-          );
-        })}
+      {/* Tab Header - Mobile Responsive */}
+      <div className="flex gap-1 sm:gap-2 border-b border-gray-200 overflow-x-auto scrollbar-hide">
+        {/* TAB 1: SCAN QR */}
+        <button
+          onClick={() => setActiveTab("qr")}
+          className={`
+            flex-1 py-3 px-3 sm:px-4 font-semibold transition-all 
+            flex items-center justify-center gap-1.5 sm:gap-2
+            text-xs sm:text-sm whitespace-nowrap
+            ${
+              activeTab === "qr"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }
+          `}>
+          <QrCode size={16} className="sm:w-5 sm:h-5" />
+          Scan QR
+        </button>
+
+        {/* TAB 2: INPUT MANUAL - SEMUA BISA! */}
+        <button
+          onClick={() => setActiveTab("manual")}
+          className={`
+            flex-1 py-3 px-3 sm:px-4 font-semibold transition-all 
+            flex items-center justify-center gap-1.5 sm:gap-2
+            text-xs sm:text-sm whitespace-nowrap
+            ${
+              activeTab === "manual"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }
+          `}>
+          <Edit3 size={16} className="sm:w-5 sm:h-5" />
+          Input Manual
+        </button>
+
+        {/* TAB 3: GENERATE QR (ADMIN ONLY) */}
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab("generate")}
+            className={`
+              flex-1 py-3 px-3 sm:px-4 font-semibold transition-all 
+              flex items-center justify-center gap-1.5 sm:gap-2
+              text-xs sm:text-sm whitespace-nowrap
+              ${
+                activeTab === "generate"
+                  ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }
+            `}>
+            <Sparkles size={16} className="sm:w-5 sm:h-5" />
+            Generate QR
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {activeTab === "qr" && (
           <QRScanner currentUser={currentUser} onSuccess={onSuccess} />
         )}
         {activeTab === "manual" && (
           <ManualCheckIn currentUser={currentUser} onSuccess={onSuccess} />
-        )}
-        {activeTab === "status" && (
-          <MyAttendanceStatus currentUser={currentUser} />
-        )}
-        {activeTab === "history" && (
-          <MyMonthlyHistory currentUser={currentUser} />
         )}
         {activeTab === "generate" && <QRCodeGenerator />}
       </div>

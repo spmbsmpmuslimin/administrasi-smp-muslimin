@@ -196,7 +196,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
           </div>
         </div>
 
-        {/* Stats Summary - Compact */}
+        {/* Stats Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
           <div className="bg-green-50 rounded-lg p-3 border border-green-200">
             <div className="flex items-center gap-2 mb-1">
@@ -265,14 +265,14 @@ const MyMonthlyHistory = ({ currentUser }) => {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
+      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl shadow-lg p-4 md:p-6 border border-blue-100">
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p className="text-gray-600 mt-4">Memuat data...</p>
           </div>
         ) : viewMode === "list" ? (
-          /* List View - Mobile Friendly */
+          /* List View */
           <div className="space-y-2">
             {attendances.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
@@ -282,7 +282,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
               attendances.map((att) => (
                 <div
                   key={att.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
+                  className="flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-md transition-all border border-gray-100">
                   <div className="flex-1">
                     <p className="font-semibold text-gray-800 text-sm sm:text-base">
                       {formatDate(att.attendance_date)}
@@ -304,7 +304,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
                     )}
                   </div>
                   <div
-                    className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 ${getStatusColor(
+                    className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 shadow-sm ${getStatusColor(
                       att.status
                     )}`}>
                     {getStatusIcon(att.status)}
@@ -315,22 +315,24 @@ const MyMonthlyHistory = ({ currentUser }) => {
             )}
           </div>
         ) : (
-          /* Calendar View - Ultra Compact Date Picker Style */
+          /* Calendar View - IMPROVED */
           <>
-            <div className="max-w-sm mx-auto">
-              <div className="grid grid-cols-7 gap-1">
-                {/* Day Headers */}
-                {["M", "S", "S", "R", "K", "J", "S"].map((day, idx) => (
-                  <div
-                    key={idx}
-                    className="text-center font-bold text-gray-500 text-xs py-1">
-                    {day}
-                  </div>
-                ))}
+            <div className="max-w-md mx-auto bg-white rounded-xl p-4 shadow-md border border-gray-200">
+              <div className="grid grid-cols-7 gap-2">
+                {/* Day Headers - BOLD */}
+                {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(
+                  (day, idx) => (
+                    <div
+                      key={idx}
+                      className="text-center font-bold text-gray-700 text-xs py-2 bg-gradient-to-b from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      {day}
+                    </div>
+                  )
+                )}
 
                 {/* Empty cells */}
                 {Array.from({ length: firstDay }).map((_, index) => (
-                  <div key={`empty-${index}`}></div>
+                  <div key={`empty-${index}`} className="aspect-square"></div>
                 ))}
 
                 {/* Date cells */}
@@ -346,13 +348,17 @@ const MyMonthlyHistory = ({ currentUser }) => {
                   return (
                     <div
                       key={day}
-                      className={`relative aspect-square rounded flex items-center justify-center ${
-                        attendance
-                          ? getStatusColor(attendance.status)
-                          : isToday
-                          ? "bg-blue-100 border border-blue-300"
-                          : "bg-gray-50"
-                      }`}
+                      className={`
+                        relative aspect-square rounded-lg flex items-center justify-center
+                        transition-all cursor-pointer hover:scale-110 hover:shadow-lg
+                        ${
+                          attendance
+                            ? getStatusColor(attendance.status) + " shadow-md"
+                            : isToday
+                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg border-2 border-blue-300"
+                            : "bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 border border-gray-200"
+                        }
+                      `}
                       title={
                         attendance
                           ? `${attendance.status} - ${formatTime(
@@ -363,48 +369,55 @@ const MyMonthlyHistory = ({ currentUser }) => {
                           : ""
                       }>
                       <span
-                        className={`text-xs font-semibold ${
-                          attendance
-                            ? "text-white"
-                            : isToday
-                            ? "text-blue-600"
-                            : "text-gray-700"
+                        className={`text-sm font-bold ${
+                          attendance || isToday ? "text-white" : "text-gray-700"
                         }`}>
                         {day}
                       </span>
                       {attendance && (
-                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-white rounded-full border border-current"></div>
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-current shadow-sm"></div>
+                      )}
+                      {isToday && !attendance && (
+                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
                       )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* Legend - Mini */}
-              <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-4 gap-2 text-xs">
+              {/* Legend */}
+              <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-4 gap-2">
                 <div className="flex flex-col items-center gap-1">
-                  <div className="bg-green-500 w-6 h-6 rounded flex items-center justify-center">
-                    <CheckCircle size={12} className="text-white" />
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                    <CheckCircle size={14} className="text-white" />
                   </div>
-                  <span className="text-gray-600 text-[10px]">Hadir</span>
+                  <span className="text-gray-700 text-xs font-medium">
+                    Hadir
+                  </span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <div className="bg-blue-500 w-6 h-6 rounded flex items-center justify-center">
-                    <AlertCircle size={12} className="text-white" />
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                    <AlertCircle size={14} className="text-white" />
                   </div>
-                  <span className="text-gray-600 text-[10px]">Izin</span>
+                  <span className="text-gray-700 text-xs font-medium">
+                    Izin
+                  </span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <div className="bg-yellow-500 w-6 h-6 rounded flex items-center justify-center">
-                    <AlertCircle size={12} className="text-white" />
+                  <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                    <AlertCircle size={14} className="text-white" />
                   </div>
-                  <span className="text-gray-600 text-[10px]">Sakit</span>
+                  <span className="text-gray-700 text-xs font-medium">
+                    Sakit
+                  </span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <div className="bg-red-500 w-6 h-6 rounded flex items-center justify-center">
-                    <XCircle size={12} className="text-white" />
+                  <div className="bg-gradient-to-br from-red-500 to-red-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                    <XCircle size={14} className="text-white" />
                   </div>
-                  <span className="text-gray-600 text-[10px]">Alpha</span>
+                  <span className="text-gray-700 text-xs font-medium">
+                    Alpha
+                  </span>
                 </div>
               </div>
             </div>
