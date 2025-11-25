@@ -9,6 +9,7 @@ const Sidebar = ({
 }) => {
   const isGuruBK = userRole === "guru_bk";
   const isAdmin = userRole === "admin";
+  const isTeacher = userRole === "teacher";
 
   return (
     <div
@@ -186,7 +187,39 @@ const Sidebar = ({
             Akademik
           </div>
 
-          {/* Presensi - Untuk Admin dan non-Guru BK */}
+          {/* ✅ PRESENSI GURU - Untuk Admin, Teacher, dan Guru BK */}
+          {(isAdmin || isTeacher || isGuruBK) && (
+            <a
+              href="#attendance-teacher"
+              className={`
+                flex items-center gap-3 px-6 py-2.5 text-white font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 hover:pl-8 rounded-r-full mr-4
+                ${
+                  currentPage === "attendance-teacher"
+                    ? "bg-blue-800 border-r-4 border-blue-400 font-semibold text-blue-100 pl-8"
+                    : "hover:text-blue-100"
+                }
+              `}
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate("attendance-teacher");
+              }}>
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              <span className="flex-1 text-sm">Presensi Guru</span>
+            </a>
+          )}
+
+          {/* Presensi Siswa - Untuk Admin dan non-Guru BK */}
           {(isAdmin || !isGuruBK) && (
             <a
               href="#attendance"

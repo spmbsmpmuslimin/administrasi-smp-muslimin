@@ -26,6 +26,9 @@ import MonitorSistem from "./system/MonitorSistem";
 import MaintenancePage from "./setting/MaintenancePage";
 import AdminPanel from "./setting/AdminPanel";
 
+// ✅ IMPORT BARU: Presensi Guru
+import TeacherAttendance from "./attendance-teacher/TeacherAttendance";
+
 function App() {
   // ========== STATE ==========
   const [user, setUser] = useState(null);
@@ -470,6 +473,18 @@ function App() {
             <ProtectedRoute>
               <LayoutWrapper>
                 <Attendance user={user} onShowToast={handleShowToast} />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ ROUTE BARU: PRESENSI GURU - HANYA UNTUK GURU & ADMIN */}
+        <Route
+          path="/attendance-teacher"
+          element={
+            <ProtectedRoute allowedRoles={["teacher", "guru_bk", "admin"]}>
+              <LayoutWrapper>
+                <TeacherAttendance user={user} onShowToast={handleShowToast} />
               </LayoutWrapper>
             </ProtectedRoute>
           }

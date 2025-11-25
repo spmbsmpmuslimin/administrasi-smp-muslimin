@@ -130,6 +130,7 @@ const Layout = ({ user, onLogout, children }) => {
     if (path === "/classes") return "classes";
     if (path === "/attendance") return "attendance";
     if (path === "/attendance-management") return "attendance-management";
+    if (path === "/attendance-teacher") return "attendance-teacher";
     if (path === "/grades") return "grades";
     if (path === "/jadwal-saya") return "jadwal-saya";
     if (path === "/catatan-siswa") return "catatan-siswa";
@@ -149,6 +150,7 @@ const Layout = ({ user, onLogout, children }) => {
       "/classes": "Data Kelas",
       "/attendance": "Kehadiran",
       "/attendance-management": "Management Presensi",
+      "/attendance-teacher": "Presensi Guru",
       "/grades": "Nilai Akademik",
       "/jadwal-saya": "Jadwal Saya",
       "/catatan-siswa": "Catatan Siswa",
@@ -175,6 +177,7 @@ const Layout = ({ user, onLogout, children }) => {
         "Data Kelas": "Kelola Data Kelas Sekolah",
         Kehadiran: "Kelola Kehadiran Siswa",
         "Management Presensi": "Edit, Ubah Tanggal, atau Hapus Data Presensi",
+        "Presensi Guru": "Kelola Presensi dan Absensi Guru",
         "Nilai Akademik": "Kelola Nilai Akademik Siswa",
         "Jadwal Saya": "Lihat Jadwal Mengajar",
         "Catatan Siswa": "Kelola Catatan Perkembangan Siswa",
@@ -189,6 +192,7 @@ const Layout = ({ user, onLogout, children }) => {
         "Data Siswa": "Lihat Data Siswa Sekolah",
         "Data Guru": "Lihat Data Guru Sekolah",
         "Jadwal Saya": "Lihat Jadwal Mengajar",
+        "Presensi Guru": "Lihat Presensi Guru Sekolah",
         Laporan: "Laporan BK/BP",
         Konseling: "Kelola Data Konseling Siswa",
       },
@@ -200,6 +204,7 @@ const Layout = ({ user, onLogout, children }) => {
             "Data Kelas": `Informasi Kelas`,
             Kehadiran: `Input kehadiran Kelas`,
             "Management Presensi": "Kelola Data Presensi yang Sudah Diinput",
+            "Presensi Guru": "Input Presensi dan Absensi Guru",
             "Nilai Akademik": `Input Nilai Kelas`,
             "Catatan Siswa": `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
             "Jadwal Saya": "Lihat Jadwal Mengajar Kelas",
@@ -213,6 +218,7 @@ const Layout = ({ user, onLogout, children }) => {
             "Data Kelas": "Lihat informasi kelas",
             Kehadiran: "Input kehadiran mata pelajaran",
             "Management Presensi": "Kelola Data Presensi Mata Pelajaran",
+            "Presensi Guru": "Input Presensi dan Absensi Guru",
             "Nilai Akademik": "Input nilai mata pelajaran",
             "Jadwal Saya": "Lihat Jadwal Mengajar",
             Laporan: "Laporan mata pelajaran",
@@ -234,6 +240,7 @@ const Layout = ({ user, onLogout, children }) => {
         classes: "/classes",
         attendance: "/attendance",
         "attendance-management": "/attendance-management",
+        "attendance-teacher": "/attendance-teacher",
         grades: "/grades",
         "jadwal-saya": "/jadwal-saya",
         "catatan-siswa": "/catatan-siswa",
