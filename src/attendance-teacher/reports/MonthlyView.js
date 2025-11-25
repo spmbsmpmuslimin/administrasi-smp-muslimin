@@ -52,7 +52,7 @@ const MonthlyView = ({ currentUser }) => {
       // Fetch all active teachers
       const { data: teachersData, error: teachersError } = await supabase
         .from("users")
-        .select("id, full_name, role")
+        .select("id, full_name, role, teacher_id")
         .in("role", ["teacher", "guru_bk", "homeroom_teacher"])
         .eq("is_active", true)
         .order("full_name");
@@ -92,10 +92,10 @@ const MonthlyView = ({ currentUser }) => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      hadir: { bg: "bg-green-500", text: "H", title: "Hadir" },
-      izin: { bg: "bg-blue-500", text: "I", title: "Izin" },
-      sakit: { bg: "bg-yellow-500", text: "S", title: "Sakit" },
-      alpha: { bg: "bg-red-500", text: "A", title: "Alpha" },
+      Hadir: { bg: "bg-green-500", text: "H", title: "Hadir" },
+      Izin: { bg: "bg-blue-500", text: "I", title: "Izin" },
+      Sakit: { bg: "bg-yellow-500", text: "S", title: "Sakit" },
+      Alpa: { bg: "bg-red-500", text: "A", title: "Alpha" },
     };
     return (
       badges[status] || {
@@ -111,10 +111,10 @@ const MonthlyView = ({ currentUser }) => {
       (att) => att.teacher_id === teacherId
     );
     return {
-      hadir: teacherAttendances.filter((a) => a.status === "hadir").length,
-      izin: teacherAttendances.filter((a) => a.status === "izin").length,
-      sakit: teacherAttendances.filter((a) => a.status === "sakit").length,
-      alpha: teacherAttendances.filter((a) => a.status === "alpha").length,
+      hadir: teacherAttendances.filter((a) => a.status === "Hadir").length,
+      izin: teacherAttendances.filter((a) => a.status === "Izin").length,
+      sakit: teacherAttendances.filter((a) => a.status === "Sakit").length,
+      alpa: teacherAttendances.filter((a) => a.status === "Alpa").length,
       total: teacherAttendances.length,
     };
   };
@@ -236,14 +236,17 @@ const MonthlyView = ({ currentUser }) => {
                 </tr>
               ) : (
                 filteredTeachers.map((teacher) => {
-                  const stats = calculateTeacherStats(teacher.id);
+                  const stats = calculateTeacherStats(teacher.teacher_id);
                   return (
                     <tr key={teacher.id} className="hover:bg-gray-50">
                       <td className="border border-gray-300 px-4 py-3 font-medium text-gray-800 sticky left-0 bg-white z-10">
                         {teacher.full_name}
                       </td>
                       {days.map((day) => {
-                        const attendance = getAttendanceForDay(teacher.id, day);
+                        const attendance = getAttendanceForDay(
+                          teacher.teacher_id,
+                          day
+                        );
                         const badge = attendance
                           ? getStatusBadge(attendance.status)
                           : {
@@ -268,7 +271,7 @@ const MonthlyView = ({ currentUser }) => {
                         <span className="text-green-600">{stats.hadir}</span>/
                         <span className="text-blue-600">{stats.izin}</span>/
                         <span className="text-yellow-600">{stats.sakit}</span>/
-                        <span className="text-red-600">{stats.alpha}</span>
+                        <span className="text-red-600">{stats.alpa}</span>
                       </td>
                     </tr>
                   );

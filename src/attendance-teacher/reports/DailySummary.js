@@ -15,7 +15,7 @@ const DailySummary = ({ refreshTrigger }) => {
     hadir: 0,
     izin: 0,
     sakit: 0,
-    alpha: 0,
+    alpa: 0,
     belumAbsen: 0,
     attendanceRate: 0,
   });
@@ -47,11 +47,11 @@ const DailySummary = ({ refreshTrigger }) => {
 
       if (attendanceError) throw attendanceError;
 
-      // Calculate stats
-      const hadir = attendances.filter((a) => a.status === "hadir").length;
-      const izin = attendances.filter((a) => a.status === "izin").length;
-      const sakit = attendances.filter((a) => a.status === "sakit").length;
-      const alpha = attendances.filter((a) => a.status === "alpha").length;
+      // Calculate stats - CASE SENSITIVE!
+      const hadir = attendances.filter((a) => a.status === "Hadir").length;
+      const izin = attendances.filter((a) => a.status === "Izin").length;
+      const sakit = attendances.filter((a) => a.status === "Sakit").length;
+      const alpa = attendances.filter((a) => a.status === "Alpa").length;
       const belumAbsen = (totalTeachers || 0) - attendances.length;
       const attendanceRate =
         totalTeachers > 0 ? ((hadir / totalTeachers) * 100).toFixed(1) : 0;
@@ -61,7 +61,7 @@ const DailySummary = ({ refreshTrigger }) => {
         hadir,
         izin,
         sakit,
-        alpha,
+        alpa,
         belumAbsen,
         attendanceRate,
       });
@@ -114,8 +114,8 @@ const DailySummary = ({ refreshTrigger }) => {
       bgLight: "bg-yellow-50",
     },
     {
-      title: "Belum Absen",
-      value: stats.belumAbsen,
+      title: "Alpha / Belum Absen",
+      value: `${stats.alpa} / ${stats.belumAbsen}`,
       icon: XCircle,
       color: "bg-red-500",
       textColor: "text-red-600",

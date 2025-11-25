@@ -13,7 +13,7 @@ import { supabase } from "../supabaseClient";
 const TodayAttendance = ({ refreshTrigger }) => {
   const [attendances, setAttendances] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all, hadir, izin, sakit, alpha
+  const [filter, setFilter] = useState("all"); // all, Hadir, Izin, Sakit, Alpa
 
   useEffect(() => {
     fetchTodayAttendances();
@@ -24,23 +24,37 @@ const TodayAttendance = ({ refreshTrigger }) => {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const { data, error } = await supabase
+      // Fetch attendances
+      const { data: attendancesData, error: attendancesError } = await supabase
         .from("teacher_attendance")
-        .select(
-          `
-          *,
-          users:teacher_id (
-            id,
-            full_name,
-            role
-          )
-        `
-        )
+        .select("*")
         .eq("attendance_date", today)
-        .order("clock_in", { ascending: false, nullsFirst: false });
+        .order("clock_in", { ascending: false });
 
-      if (error) throw error;
-      setAttendances(data || []);
+      if (attendancesError) throw attendancesError;
+
+      // Fetch teachers data
+      const teacherIds = attendancesData.map((a) => a.teacher_id);
+      const { data: teachersData, error: teachersError } = await supabase
+        .from("users")
+        .select("teacher_id, full_name, role")
+        .in("teacher_id", teacherIds);
+
+      if (teachersError) throw teachersError;
+
+      // Merge data
+      const mergedData = attendancesData.map((attendance) => {
+        const teacher = teachersData.find(
+          (t) => t.teacher_id === attendance.teacher_id
+        );
+        return {
+          ...attendance,
+          teacher_name: teacher?.full_name || "Unknown",
+          teacher_role: teacher?.role || "N/A",
+        };
+      });
+
+      setAttendances(mergedData);
     } catch (error) {
       console.error("Error fetching today attendances:", error);
     } finally {
@@ -50,25 +64,25 @@ const TodayAttendance = ({ refreshTrigger }) => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      hadir: {
+      Hadir: {
         bg: "bg-green-100",
         text: "text-green-800",
         icon: CheckCircle,
         label: "Hadir",
       },
-      izin: {
+      Izin: {
         bg: "bg-blue-100",
         text: "text-blue-800",
         icon: AlertCircle,
         label: "Izin",
       },
-      sakit: {
+      Sakit: {
         bg: "bg-yellow-100",
         text: "text-yellow-800",
         icon: AlertCircle,
         label: "Sakit",
       },
-      alpha: {
+      Alpa: {
         bg: "bg-red-100",
         text: "text-red-800",
         icon: XCircle,
@@ -76,7 +90,7 @@ const TodayAttendance = ({ refreshTrigger }) => {
       },
     };
 
-    const badge = badges[status] || badges.alpha;
+    const badge = badges[status] || badges.Alpa;
     const Icon = badge.icon;
 
     return (
@@ -89,13 +103,22 @@ const TodayAttendance = ({ refreshTrigger }) => {
   };
 
   const getMethodBadge = (method) => {
-    return method === "qr" ? (
-      <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">
-        QR Code
-      </span>
-    ) : (
-      <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-medium">
-        Manual
+    const badges = {
+      qr: { bg: "bg-purple-100", text: "text-purple-800", label: "QR Code" },
+      qr_link: {
+        bg: "bg-indigo-100",
+        text: "text-indigo-800",
+        label: "QR Link",
+      },
+      manual: { bg: "bg-gray-100", text: "text-gray-800", label: "Manual" },
+    };
+
+    const badge = badges[method] || badges.manual;
+
+    return (
+      <span
+        className={`${badge.bg} ${badge.text} px-2 py-1 rounded text-xs font-medium`}>
+        {badge.label}
       </span>
     );
   };
@@ -107,10 +130,10 @@ const TodayAttendance = ({ refreshTrigger }) => {
 
   const stats = {
     total: attendances.length,
-    hadir: attendances.filter((a) => a.status === "hadir").length,
-    izin: attendances.filter((a) => a.status === "izin").length,
-    sakit: attendances.filter((a) => a.status === "sakit").length,
-    alpha: attendances.filter((a) => a.status === "alpha").length,
+    Hadir: attendances.filter((a) => a.status === "Hadir").length,
+    Izin: attendances.filter((a) => a.status === "Izin").length,
+    Sakit: attendances.filter((a) => a.status === "Sakit").length,
+    Alpa: attendances.filter((a) => a.status === "Alpa").length,
   };
 
   return (
@@ -129,6 +152,30 @@ const TodayAttendance = ({ refreshTrigger }) => {
         </button>
       </div>
 
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        <div className="bg-gray-50 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+          <p className="text-xs text-gray-600">Total</p>
+        </div>
+        <div className="bg-green-50 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-green-600">{stats.Hadir}</p>
+          <p className="text-xs text-green-700">Hadir</p>
+        </div>
+        <div className="bg-blue-50 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-blue-600">{stats.Izin}</p>
+          <p className="text-xs text-blue-700">Izin</p>
+        </div>
+        <div className="bg-yellow-50 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-yellow-600">{stats.Sakit}</p>
+          <p className="text-xs text-yellow-700">Sakit</p>
+        </div>
+        <div className="bg-red-50 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-red-600">{stats.Alpa}</p>
+          <p className="text-xs text-red-700">Alpha</p>
+        </div>
+      </div>
+
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
         <button
@@ -138,43 +185,43 @@ const TodayAttendance = ({ refreshTrigger }) => {
               ? "bg-blue-600 text-white"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}>
-          Semua ({stats.total})
+          Semua
         </button>
         <button
-          onClick={() => setFilter("hadir")}
+          onClick={() => setFilter("Hadir")}
           className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-            filter === "hadir"
+            filter === "Hadir"
               ? "bg-green-600 text-white"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}>
-          Hadir ({stats.hadir})
+          Hadir
         </button>
         <button
-          onClick={() => setFilter("izin")}
+          onClick={() => setFilter("Izin")}
           className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-            filter === "izin"
+            filter === "Izin"
               ? "bg-blue-600 text-white"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}>
-          Izin ({stats.izin})
+          Izin
         </button>
         <button
-          onClick={() => setFilter("sakit")}
+          onClick={() => setFilter("Sakit")}
           className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-            filter === "sakit"
+            filter === "Sakit"
               ? "bg-yellow-600 text-white"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}>
-          Sakit ({stats.sakit})
+          Sakit
         </button>
         <button
-          onClick={() => setFilter("alpha")}
+          onClick={() => setFilter("Alpa")}
           className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-            filter === "alpha"
+            filter === "Alpa"
               ? "bg-red-600 text-white"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}>
-          Alpha ({stats.alpha})
+          Alpha
         </button>
       </div>
 
@@ -203,9 +250,9 @@ const TodayAttendance = ({ refreshTrigger }) => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-800 mb-1">
-                    {attendance.users?.full_name || "N/A"}
+                    {attendance.teacher_name}
                   </h3>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     {getStatusBadge(attendance.status)}
                     {getMethodBadge(attendance.check_in_method)}
                   </div>
@@ -213,13 +260,8 @@ const TodayAttendance = ({ refreshTrigger }) => {
                     <div className="flex items-center gap-1 text-sm text-gray-600">
                       <Clock size={14} />
                       <span>
-                        {new Date(attendance.clock_in).toLocaleTimeString(
-                          "id-ID",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
+                        {attendance.clock_in.slice(0, 5)}
+                        {/* Format HH:MM dari HH:MM:SS */}
                       </span>
                     </div>
                   )}
