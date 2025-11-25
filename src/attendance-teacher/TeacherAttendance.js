@@ -1,27 +1,33 @@
 // src/attendance-teacher/TeacherAttendance.js
 import React, { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
+
+// Teacher Components
 import AttendanceTabs from "./AttendanceTabs";
 import MyAttendanceStatus from "./MyAttendanceStatus";
 import MyMonthlyHistory from "./MyMonthlyHistory";
 
-const TeacherAttendance = () => {
+// Admin Component
+import AdminAttendanceView from "./AdminAttendanceView";
+
+const TeacherAttendance = ({ user }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeView, setActiveView] = useState("presensi"); // presensi, history
+  const [activeView, setActiveView] = useState("presensi");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get current user from localStorage
-    const user = JSON.parse(
-      localStorage.getItem("user") || sessionStorage.getItem("user")
-    );
-    setCurrentUser(user);
+    // Use user from props (from App.js) or fallback to localStorage
+    const userData =
+      user ||
+      JSON.parse(
+        localStorage.getItem("user") || sessionStorage.getItem("user")
+      );
+    setCurrentUser(userData);
     setLoading(false);
-  }, []);
+  }, [user]);
 
   const handleAttendanceSuccess = () => {
-    // Trigger refresh untuk MyAttendanceStatus
     setRefreshTrigger((prev) => prev + 1);
   };
 
@@ -44,6 +50,15 @@ const TeacherAttendance = () => {
     );
   }
 
+  // ✅ ROLE-BASED RENDERING
+  const isAdmin = currentUser.role === "admin";
+
+  // ========== ADMIN VIEW ==========
+  if (isAdmin) {
+    return <AdminAttendanceView currentUser={currentUser} />;
+  }
+
+  // ========== TEACHER VIEW ==========
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       {/* Header */}
