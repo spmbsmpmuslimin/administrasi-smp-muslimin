@@ -1,15 +1,13 @@
 // src/attendance-teacher/TeacherAttendance.js
 import React, { useState, useEffect } from "react";
-import { Calendar, Users, Clock, FileText } from "lucide-react";
+import { Clock } from "lucide-react";
 import AttendanceTabs from "./AttendanceTabs";
-import TodayAttendance from "./TodayAttendance";
-import DailySummary from "./reports/DailySummary";
-import MonthlyView from "./reports/MonthlyView";
-import { supabase } from "../supabaseClient";
+import MyAttendanceStatus from "./MyAttendanceStatus";
+import MyMonthlyHistory from "./MyMonthlyHistory";
 
 const TeacherAttendance = () => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeView, setActiveView] = useState("today"); // today, monthly
+  const [activeView, setActiveView] = useState("presensi"); // presensi, history
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +21,7 @@ const TeacherAttendance = () => {
   }, []);
 
   const handleAttendanceSuccess = () => {
-    // Trigger refresh untuk TodayAttendance dan DailySummary
+    // Trigger refresh untuk MyAttendanceStatus
     setRefreshTrigger((prev) => prev + 1);
   };
 
@@ -70,55 +68,48 @@ const TeacherAttendance = () => {
         </p>
       </div>
 
-      {/* View Switcher */}
+      {/* View Tabs */}
       <div className="mb-6 flex gap-2">
         <button
-          onClick={() => setActiveView("today")}
-          className={`px-6 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-            activeView === "today"
+          onClick={() => setActiveView("presensi")}
+          className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            activeView === "presensi"
               ? "bg-blue-600 text-white shadow-lg"
               : "bg-white text-gray-600 hover:bg-gray-50"
           }`}>
-          <Users size={20} />
-          Presensi Hari Ini
+          Presensi
         </button>
         <button
-          onClick={() => setActiveView("monthly")}
-          className={`px-6 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 ${
-            activeView === "monthly"
+          onClick={() => setActiveView("history")}
+          className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+            activeView === "history"
               ? "bg-blue-600 text-white shadow-lg"
               : "bg-white text-gray-600 hover:bg-gray-50"
           }`}>
-          <FileText size={20} />
-          Laporan Bulanan
+          Riwayat Saya
         </button>
       </div>
 
-      {/* Content berdasarkan view */}
-      {activeView === "today" ? (
-        <>
-          {/* Daily Summary Stats */}
-          <DailySummary refreshTrigger={refreshTrigger} />
+      {/* Content */}
+      {activeView === "presensi" ? (
+        <div className="space-y-6">
+          {/* Status Presensi Anda */}
+          <MyAttendanceStatus
+            currentUser={currentUser}
+            refreshTrigger={refreshTrigger}
+          />
 
-          {/* Main Content: Tabs + Today List */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            {/* Left: Attendance Tabs (QR Scanner / Manual) */}
-            <div>
-              <AttendanceTabs
-                currentUser={currentUser}
-                onSuccess={handleAttendanceSuccess}
-              />
-            </div>
-
-            {/* Right: Today's Attendance List */}
-            <div>
-              <TodayAttendance refreshTrigger={refreshTrigger} />
-            </div>
+          {/* Attendance Tabs (QR Scanner / Manual Input) */}
+          <div className="max-w-2xl mx-auto">
+            <AttendanceTabs
+              currentUser={currentUser}
+              onSuccess={handleAttendanceSuccess}
+            />
           </div>
-        </>
+        </div>
       ) : (
-        /* Monthly View */
-        <MonthlyView currentUser={currentUser} />
+        /* Monthly History */
+        <MyMonthlyHistory currentUser={currentUser} />
       )}
     </div>
   );
