@@ -1,3 +1,4 @@
+//[file name]: AdminDashboard.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -5,7 +6,7 @@ import { supabase } from "../supabaseClient";
 const AdminDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalTeachers: 0,        // ✅ 29 Guru (exclude Kepala Sekolah)
+    totalTeachers: 0, // ✅ 29 Guru (exclude Kepala Sekolah)
     totalClasses: 0,
     totalStudents: 0,
     studentsByGrade: [],
@@ -129,7 +130,7 @@ const AdminDashboard = ({ user }) => {
 
       // ✅ SET STATS dengan 29 Guru (exclude Kepala Sekolah)
       setStats({
-        totalTeachers: teachersResult.count || 0,         // ✅ 29 Guru
+        totalTeachers: teachersResult.count || 0, // ✅ 29 Guru
         totalClasses: classesResult.count || 0,
         totalStudents: studentsResult.count || 0,
         studentsByGrade,
@@ -321,16 +322,21 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
+  // Navigation handlers - TAMBAH handleTeacherAttendance
+  const handleTeacherAttendance = () => {
+    navigate("/attendance-teacher");
+  };
+
   const handleManageTeachers = () => {
-    navigate('/teachers');
+    navigate("/teachers");
   };
 
   const handleManageClasses = () => {
-    navigate('/classes');
+    navigate("/classes");
   };
 
   const handleManageStudents = () => {
-    navigate('/students');
+    navigate("/students");
   };
 
   if (loading) {
@@ -386,13 +392,17 @@ const AdminDashboard = ({ user }) => {
         <div className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-xl shadow-lg hover:shadow-xl border border-blue-100 hover:border-blue-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm text-blue-600 mb-1 font-medium">Total Guru</p>
+              <p className="text-xs sm:text-sm text-blue-600 mb-1 font-medium">
+                Total Guru
+              </p>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
                 {stats.totalTeachers}
               </p>
             </div>
             <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-2xl">👩‍🏫</span>
+              <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                👩‍🏫
+              </span>
             </div>
           </div>
         </div>
@@ -401,13 +411,17 @@ const AdminDashboard = ({ user }) => {
         <div className="group bg-gradient-to-br from-emerald-50 via-white to-green-50 rounded-xl shadow-lg hover:shadow-xl border border-emerald-100 hover:border-emerald-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm text-emerald-600 mb-1 font-medium">Total Kelas</p>
+              <p className="text-xs sm:text-sm text-emerald-600 mb-1 font-medium">
+                Total Kelas
+              </p>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
                 {stats.totalClasses}
               </p>
             </div>
             <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-2xl">🏫</span>
+              <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                🏫
+              </span>
             </div>
           </div>
         </div>
@@ -416,13 +430,17 @@ const AdminDashboard = ({ user }) => {
         <div className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 rounded-xl shadow-lg hover:shadow-xl border border-purple-100 hover:border-purple-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm text-purple-600 mb-1 font-medium">Total Siswa</p>
+              <p className="text-xs sm:text-sm text-purple-600 mb-1 font-medium">
+                Total Siswa
+              </p>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-purple-700 transition-colors">
                 {stats.totalStudents}
               </p>
             </div>
             <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-2xl">👨‍🎓</span>
+              <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                👨‍🎓
+              </span>
             </div>
           </div>
         </div>
@@ -430,7 +448,9 @@ const AdminDashboard = ({ user }) => {
         {/* Siswa per Jenjang */}
         <div className="group bg-gradient-to-br from-orange-50 via-white to-amber-50 rounded-xl shadow-lg hover:shadow-xl border border-orange-100 hover:border-orange-200 p-3 sm:p-4 lg:p-6 col-span-2 lg:col-span-1 transform hover:-translate-y-1 transition-all duration-300">
           <div>
-            <p className="text-xs sm:text-sm text-orange-600 mb-2 sm:mb-3 font-medium">Siswa per Jenjang</p>
+            <p className="text-xs sm:text-sm text-orange-600 mb-2 sm:mb-3 font-medium">
+              Siswa per Jenjang
+            </p>
             <div className="space-y-1.5 sm:space-y-2">
               {stats.studentsByGrade.length > 0 ? (
                 stats.studentsByGrade.map(({ grade, count }) => (
@@ -461,44 +481,61 @@ const AdminDashboard = ({ user }) => {
           Quick Actions
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <button 
+          {/* TOMBOL BARU: Presensi Guru */}
+          <button
+            onClick={handleTeacherAttendance}
+            className="group bg-gradient-to-br from-indigo-50 via-white to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-indigo-100 hover:border-indigo-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-white text-sm sm:text-lg">👨‍🏫</span>
+            </div>
+            <div className="font-semibold text-sm sm:text-base group-hover:text-indigo-700 transition-colors">
+              Presensi Guru
+            </div>
+            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-indigo-600 transition-colors">
+              Lihat absensi guru
+            </div>
+          </button>
+
+          <button
             onClick={handleManageTeachers}
             className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-blue-100 hover:border-blue-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
               <span className="text-white text-sm sm:text-lg">👩‍🏫</span>
             </div>
-            <div className="font-semibold text-sm sm:text-base group-hover:text-blue-700 transition-colors">Kelola Data Guru</div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-blue-600 transition-colors">Tambah, edit, hapus guru</div>
+            <div className="font-semibold text-sm sm:text-base group-hover:text-blue-700 transition-colors">
+              Kelola Data Guru
+            </div>
+            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-blue-600 transition-colors">
+              Tambah, edit, hapus guru
+            </div>
           </button>
 
-          <button 
+          <button
             onClick={handleManageClasses}
             className="group bg-gradient-to-br from-emerald-50 via-white to-green-50 hover:from-emerald-100 hover:to-green-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-emerald-100 hover:border-emerald-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
               <span className="text-white text-sm sm:text-lg">🏫</span>
             </div>
-            <div className="font-semibold text-sm sm:text-base group-hover:text-emerald-700 transition-colors">Kelola Kelas</div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-emerald-600 transition-colors">Atur kelas & tahun ajaran</div>
+            <div className="font-semibold text-sm sm:text-base group-hover:text-emerald-700 transition-colors">
+              Kelola Kelas
+            </div>
+            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-emerald-600 transition-colors">
+              Atur kelas & tahun ajaran
+            </div>
           </button>
 
-          <button 
+          <button
             onClick={handleManageStudents}
             className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 hover:from-purple-100 hover:to-violet-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-purple-100 hover:border-purple-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
               <span className="text-white text-sm sm:text-lg">👨‍🎓</span>
             </div>
-            <div className="font-semibold text-sm sm:text-base group-hover:text-purple-700 transition-colors">Kelola Siswa</div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-purple-600 transition-colors">Data siswa & enrollment</div>
-          </button>
-
-          <button
-            onClick={handleRetry}
-            className="group bg-gradient-to-br from-orange-50 via-white to-amber-50 hover:from-orange-100 hover:to-amber-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-orange-100 hover:border-orange-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-180 transition-all duration-500 shadow-lg">
-              <span className="text-white text-sm sm:text-lg">🔄</span>
+            <div className="font-semibold text-sm sm:text-base group-hover:text-purple-700 transition-colors">
+              Kelola Siswa
             </div>
-            <div className="font-semibold text-sm sm:text-base group-hover:text-orange-700 transition-colors">Refresh Data</div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-orange-600 transition-colors">Muat ulang dashboard</div>
+            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-purple-600 transition-colors">
+              Data siswa & enrollment
+            </div>
           </button>
         </div>
       </div>
@@ -563,7 +600,9 @@ const AdminDashboard = ({ user }) => {
                   type="submit"
                   disabled={submitting}
                   className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-blue-300 disabled:to-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none">
-                  <span className="mr-1">{submitting ? "⏳" : editData ? "💾" : "✨"}</span>
+                  <span className="mr-1">
+                    {submitting ? "⏳" : editData ? "💾" : "✨"}
+                  </span>
                   {submitting ? "Menyimpan..." : editData ? "Update" : "Simpan"}
                 </button>
                 <button
