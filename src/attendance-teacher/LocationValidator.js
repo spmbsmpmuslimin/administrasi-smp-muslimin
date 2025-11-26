@@ -6,12 +6,11 @@
 // ========================================
 
 const SCHOOL_COORDS = {
-  lat: -6.954636, // Koordinat sekolah
-  lng: 107.415489,
+  lat: -6.954415, // Koordinat sekolah
+  lng: 107.416188,
 };
 
-// Radius 500m - Buffer besar untuk antisipasi GPS accuracy ±128m
-const SCHOOL_RADIUS = 500; // 500 meter radius dari sekolah
+const SCHOOL_RADIUS = 300; // 200 meter radius
 
 // Debug mode - set true untuk lihat detail GPS di console
 const DEBUG_MODE = true;
