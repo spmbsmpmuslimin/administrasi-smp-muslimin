@@ -85,9 +85,22 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     setLoading(true);
 
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const now = new Date();
-      const clockInTime = now.toTimeString().split(" ")[0];
+      // FIX: Gunakan timezone Indonesia (WIB)
+      const jakartaDate = new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Jakarta",
+        })
+      );
+
+      const year = jakartaDate.getFullYear();
+      const month = String(jakartaDate.getMonth() + 1).padStart(2, "0");
+      const day = String(jakartaDate.getDate()).padStart(2, "0");
+      const today = `${year}-${month}-${day}`;
+
+      const hour = String(jakartaDate.getHours()).padStart(2, "0");
+      const minute = String(jakartaDate.getMinutes()).padStart(2, "0");
+      const second = String(jakartaDate.getSeconds()).padStart(2, "0");
+      const clockInTime = `${hour}:${minute}:${second}`;
 
       console.log("📅 Date:", today, "Time:", clockInTime);
 
@@ -156,10 +169,10 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
       setMessage({
         type: "success",
-        text: `✅ Presensi berhasil! Jam masuk: ${now.toLocaleTimeString(
-          "id-ID",
-          { hour: "2-digit", minute: "2-digit" }
-        )}`,
+        text: `✅ Presensi berhasil! Jam masuk: ${clockInTime.substring(
+          0,
+          5
+        )} WIB`,
       });
 
       // Trigger refresh di parent
