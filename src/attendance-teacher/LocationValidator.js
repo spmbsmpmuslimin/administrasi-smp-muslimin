@@ -22,10 +22,10 @@ const DEBUG_MODE = true;
 // ========================================
 // Manual input hanya bisa dilakukan dalam jam kerja (jam datang guru)
 const MANUAL_INPUT_ALLOWED = {
-  startHour: 6,
-  startMinute: 30,
-  endHour: 10,
-  endMinute: 0,
+  startHour: 7, // ← Ubah dari 6 jadi 7
+  startMinute: 0, // ← Ubah dari 30 jadi 0
+  endHour: 14, // ← Ubah dari 10 jadi 14
+  endMinute: 0, // Tetap 0
 };
 
 /**

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import TodaySchedule from "./TodaySchedule"; // ADDED: Import TodaySchedule
+// REMOVED: import TodaySchedule (biar nggak double)
 
 // Helper function untuk format metode check-in
 const formatCheckInMethod = (method) => {
@@ -49,15 +49,9 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-          <div className="h-10 bg-gray-200 rounded w-3/4"></div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
-        </div>
+      <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+        <div className="h-10 bg-gray-200 rounded w-3/4"></div>
       </div>
     );
   }
@@ -152,74 +146,66 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Status Presensi Card */}
-      <div
-        className={`bg-white rounded-xl shadow-lg p-6 border-l-4 ${config.borderColor}`}>
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">
-              Status Presensi Anda
-            </h3>
-            <p className="text-sm text-gray-500">
-              {new Date().toLocaleDateString("id-ID", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          </div>
-          <div className={`${config.bgLight} p-3 rounded-lg`}>
-            <Icon className={config.textColor} size={28} />
-          </div>
+    // REMOVED: space-y-4 wrapper karena TodaySchedule udah dipindah
+    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 ${config.borderColor}">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-gray-800 mb-1">
+            Status Presensi Anda
+          </h3>
+          <p className="text-sm text-gray-500">
+            {new Date().toLocaleDateString("id-ID", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
         </div>
-
-        <div className="space-y-3">
-          <div>
-            <p className={`text-2xl font-bold ${config.textColor}`}>
-              {config.title}
-            </p>
-            <p className="text-sm text-gray-600 mt-1">{config.message}</p>
-          </div>
-
-          {todayAttendance ? (
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-              <div>
-                <p className="text-sm font-bold text-gray-700 mb-1">
-                  Jam Masuk
-                </p>
-                <p className="text-sm font-semibold text-gray-800">
-                  {formatTime(todayAttendance.clock_in)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-700 mb-1">Metode</p>
-                <p className="text-sm font-semibold text-gray-800">
-                  {formatCheckInMethod(todayAttendance.check_in_method) || "-"}
-                </p>
-              </div>
-              {todayAttendance.notes && (
-                <div className="col-span-2">
-                  <p className="text-sm font-bold text-gray-700 mb-1">
-                    Catatan
-                  </p>
-                  <p className="text-sm text-gray-700 italic">
-                    {todayAttendance.notes}
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="pt-3 border-t border-gray-100">
-              <p className="text-sm text-gray-500">{config.detail}</p>
-            </div>
-          )}
+        <div className={`${config.bgLight} p-3 rounded-lg`}>
+          <Icon className={config.textColor} size={28} />
         </div>
       </div>
 
-      {/* Jadwal Hari Ini Widget - ADDED */}
-      <TodaySchedule currentUser={currentUser} />
+      <div className="space-y-3">
+        <div>
+          <p className={`text-2xl font-bold ${config.textColor}`}>
+            {config.title}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">{config.message}</p>
+        </div>
+
+        {todayAttendance ? (
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+            <div>
+              <p className="text-sm font-bold text-gray-700 mb-1">Jam Masuk</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {formatTime(todayAttendance.clock_in)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-700 mb-1">Metode</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {formatCheckInMethod(todayAttendance.check_in_method) || "-"}
+              </p>
+            </div>
+            {todayAttendance.notes && (
+              <div className="col-span-2">
+                <p className="text-sm font-bold text-gray-700 mb-1">Catatan</p>
+                <p className="text-sm text-gray-700 italic">
+                  {todayAttendance.notes}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-sm text-gray-500">{config.detail}</p>
+          </div>
+        )}
+      </div>
+
+      {/* REMOVED: TodaySchedule component - sudah dipindah ke TeacherAttendance.js */}
     </div>
   );
 };

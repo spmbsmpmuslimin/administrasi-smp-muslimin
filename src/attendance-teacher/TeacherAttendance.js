@@ -6,6 +6,7 @@ import { Clock } from "lucide-react";
 import AttendanceTabs from "./AttendanceTabs";
 import MyAttendanceStatus from "./MyAttendanceStatus";
 import MyMonthlyHistory from "./MyMonthlyHistory";
+import TodaySchedule from "./TodaySchedule"; // ← TAMBAHAN: Import komponen jadwal
 
 // Admin Component
 import AdminAttendanceView from "./AdminAttendanceView";
@@ -133,16 +134,22 @@ const TeacherAttendance = ({ user }) => {
         {/* Content */}
         {activeView === "presensi" ? (
           <div className="space-y-4 sm:space-y-6">
-            {/* Status Presensi Anda - TETAP DI ATAS! */}
+            {/* 1️⃣ Status Presensi Anda - TETAP DI ATAS! */}
             <MyAttendanceStatus
               currentUser={currentUser}
               refreshTrigger={refreshTrigger}
             />
 
-            {/* Attendance Tabs (QR Scanner / Manual Input) */}
+            {/* 2️⃣ Attendance Tabs (QR Scanner / Manual Input) - NAIK KE ATAS! */}
             <AttendanceTabs
               currentUser={currentUser}
               onSuccess={handleAttendanceSuccess}
+            />
+
+            {/* 3️⃣ Jadwal Mengajar Hari Ini - TURUN KE BAWAH! */}
+            <TodaySchedule
+              currentUser={currentUser}
+              refreshTrigger={refreshTrigger}
             />
           </div>
         ) : (

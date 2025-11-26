@@ -35,7 +35,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     { value: "Hadir", label: "Hadir", color: "bg-green-500" },
     { value: "Izin", label: "Izin", color: "bg-blue-500" },
     { value: "Sakit", label: "Sakit", color: "bg-yellow-500" },
-    { value: "Alpa", label: "Alpha", color: "bg-red-500" },
+    { value: "Alpa", label: "Alpa", color: "bg-red-500" },
   ];
 
   // Pre-check location saat component mount (untuk status "Hadir" only)
