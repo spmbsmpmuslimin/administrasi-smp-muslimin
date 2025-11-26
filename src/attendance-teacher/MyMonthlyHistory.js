@@ -39,20 +39,13 @@ const MyMonthlyHistory = ({ currentUser }) => {
   // ========================================
   // 🗓️ LIBUR NASIONAL 2025
   // ========================================
-  // ⚠️ UPDATE ARRAY INI SETIAP TAHUN BARU! ⚠️
-  // Sumber: Keputusan Bersama (SKB) 3 Menteri
-  // Last update: Desember 2024 untuk tahun 2025
-  //
-  // TODO 2026: Update array ini dengan libur nasional 2026
-  // (biasanya diumumkan sekitar Desember 2025)
-  // ========================================
   const nationalHolidays2025 = {
     "2025-01-01": "Tahun Baru Masehi",
     "2025-01-25": "Tahun Baru Imlek 2576",
     "2025-03-02": "Isra Miraj Nabi Muhammad SAW",
     "2025-03-12": "Hari Raya Nyepi (Tahun Baru Saka 1947)",
-    "2025-03-31": "Idul Fitri 1446 H", // Hari pertama
-    "2025-04-01": "Idul Fitri 1446 H", // Hari kedua
+    "2025-03-31": "Idul Fitri 1446 H",
+    "2025-04-01": "Idul Fitri 1446 H",
     "2025-04-18": "Wafat Yesus Kristus (Jumat Agung)",
     "2025-05-01": "Hari Buruh Internasional",
     "2025-05-29": "Kenaikan Yesus Kristus",
@@ -61,6 +54,21 @@ const MyMonthlyHistory = ({ currentUser }) => {
     "2025-08-17": "Hari Kemerdekaan RI",
     "2025-09-05": "Maulid Nabi Muhammad SAW",
     "2025-12-25": "Hari Raya Natal",
+  };
+
+  // ========================================
+  // 🔧 HELPER FUNCTIONS
+  // ========================================
+
+  // Format metode check-in jadi lebih readable
+  const formatCheckInMethod = (method) => {
+    const methodMap = {
+      qr_scan: "Scan QR",
+      qr: "Scan QR",
+      manual: "Manual",
+      nfc: "NFC",
+    };
+    return methodMap[method] || method || "-";
   };
 
   // Helper: Check if date is national holiday
@@ -72,7 +80,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
   const isWeekend = (year, month, day) => {
     const date = new Date(year, month, day);
     const dayOfWeek = date.getDay();
-    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+    return dayOfWeek === 0 || dayOfWeek === 6;
   };
 
   useEffect(() => {
@@ -314,8 +322,8 @@ const MyMonthlyHistory = ({ currentUser }) => {
                         {formatTime(att.clock_in)}
                       </p>
                       <span className="text-xs text-gray-400">•</span>
-                      <p className="text-xs text-gray-600 capitalize">
-                        {att.check_in_method}
+                      <p className="text-xs text-gray-600">
+                        {formatCheckInMethod(att.check_in_method)}
                       </p>
                     </div>
                     {att.notes && (
@@ -336,10 +344,10 @@ const MyMonthlyHistory = ({ currentUser }) => {
             )}
           </div>
         ) : (
-          /* Calendar View - BULAN & TAHUN DI ATAS + WEEKEND & HOLIDAYS */
+          /* Calendar View */
           <>
             <div className="max-w-md mx-auto bg-white rounded-xl p-4 shadow-md border border-gray-200">
-              {/* Month & Year Selector - DI ATAS KALENDER */}
+              {/* Month & Year Selector */}
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
                 <button
                   onClick={handlePrevMonth}
@@ -387,7 +395,6 @@ const MyMonthlyHistory = ({ currentUser }) => {
                     selectedMonth === now.getMonth() &&
                     selectedYear === now.getFullYear();
 
-                  // Check if weekend or holiday
                   const weekend = isWeekend(selectedYear, selectedMonth, day);
                   const holiday = isNationalHoliday(dateStr);
 
@@ -435,24 +442,20 @@ const MyMonthlyHistory = ({ currentUser }) => {
                         {day}
                       </span>
 
-                      {/* Indicator: Attendance dot */}
                       {attendance && (
                         <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-current shadow-sm"></div>
                       )}
 
-                      {/* Indicator: Today dot */}
                       {isToday && !attendance && (
                         <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
                       )}
 
-                      {/* Indicator: Holiday icon */}
                       {holiday && !attendance && (
                         <div className="absolute -top-1 -right-1 text-xs">
                           🎉
                         </div>
                       )}
 
-                      {/* Indicator: Weekend icon */}
                       {weekend && !holiday && !attendance && (
                         <div className="absolute -top-1 -right-1 text-xs">
                           🏠

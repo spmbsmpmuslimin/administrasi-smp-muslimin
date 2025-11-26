@@ -100,8 +100,7 @@ const QRCodeGenerator = () => {
         ctx.font = `bold ${fontSize}px Arial`;
 
         const textY = lineY + 40;
-        ctx.fillText("SMP MUSLIMIN", width / 2, textY);
-        ctx.fillText("CILILIN", width / 2, textY + fontSize + 5);
+        ctx.fillText("SMP MUSLIMIN CILILIN", width / 2, textY);
 
         setFinalQrUrl(canvas.toDataURL("image/png"));
       };
@@ -151,7 +150,7 @@ const QRCodeGenerator = () => {
               className="w-full max-w-md mx-auto"
             />
             <p className="text-center text-sm text-gray-600 mt-2">
-              QR Code SMP MUSLIMIN CILILIN - Siap di-scan!
+              QR CODE SMP MUSLIMIN CILILIN
             </p>
           </div>
 

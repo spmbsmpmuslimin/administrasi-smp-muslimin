@@ -65,17 +65,6 @@ const AdminAttendanceView = ({ currentUser }) => {
           </button>
 
           <button
-            onClick={() => setActiveView("monthly")}
-            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
-              activeView === "monthly"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-            }`}>
-            <FileText size={18} />
-            <span>Laporan</span>
-          </button>
-
-          <button
             onClick={() => setActiveView("manage")}
             className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
               activeView === "manage"
@@ -87,10 +76,14 @@ const AdminAttendanceView = ({ currentUser }) => {
           </button>
 
           <button
-            onClick={handleRefresh}
-            className="px-4 py-2.5 sm:py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-lg transition-all flex items-center gap-2 border border-gray-200">
-            <RefreshCw size={18} />
-            <span className="hidden sm:inline">Refresh</span>
+            onClick={() => setActiveView("monthly")}
+            className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
+              activeView === "monthly"
+                ? "bg-blue-600 text-white shadow-lg"
+                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+            }`}>
+            <FileText size={18} />
+            <span>Laporan</span>
           </button>
         </div>
 
