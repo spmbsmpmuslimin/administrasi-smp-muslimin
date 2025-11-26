@@ -1,121 +1,24 @@
 // src/attendance-teacher/QRCodeGenerator.js
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 
 const QRCodeGenerator = () => {
   const qrCode = "QR_PRESENSI_GURU_SMP_MUSLIMIN_CILILIN";
   const [qrUrl, setQrUrl] = useState("");
-  const [finalQrUrl, setFinalQrUrl] = useState("");
-  const canvasRef = useRef(null);
 
   const generateQR = () => {
-    // Using QR Server API to generate QR code - high resolution
-    const size = 600;
+    // Using QR Server API to generate QR code
+    const size = 300;
     const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
       qrCode
     )}`;
     setQrUrl(url);
   };
 
-  useEffect(() => {
-    if (qrUrl && canvasRef.current) {
-      addBorderAndBranding();
-    }
-  }, [qrUrl]);
-
-  const addBorderAndBranding = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const qrSize = 600;
-    const padding = 40;
-    const bottomSpace = 150; // Space for logo and text
-    const width = qrSize + padding * 2;
-    const height = qrSize + padding * 2 + bottomSpace;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    // Draw white background
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw outer border
-    ctx.strokeStyle = "#1e40af";
-    ctx.lineWidth = 6;
-    ctx.strokeRect(8, 8, width - 16, height - 16);
-
-    // Draw inner border (double border effect)
-    ctx.strokeStyle = "#3b82f6";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(16, 16, width - 32, height - 32);
-
-    const qrImg = new Image();
-    qrImg.crossOrigin = "anonymous";
-
-    qrImg.onload = () => {
-      // Draw QR code (no logo in center - clean for scanning)
-      ctx.drawImage(qrImg, padding, padding, qrSize, qrSize);
-
-      // Draw separator line
-      const lineY = padding + qrSize + 15;
-      ctx.strokeStyle = "#cbd5e1";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(40, lineY);
-      ctx.lineTo(width - 40, lineY);
-      ctx.stroke();
-
-      // Load and draw school logo at bottom
-      const logo = new Image();
-      logo.onload = () => {
-        const logoSize = 80;
-        const logoX = (width - logoSize) / 2;
-        const logoY = lineY + 20;
-
-        ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-
-        // Draw school name below logo
-        ctx.fillStyle = "#1e40af";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-
-        const fontSize = 20;
-        ctx.font = `bold ${fontSize}px Arial`;
-
-        const textY = logoY + logoSize + 8;
-        ctx.fillText("SMP MUSLIMIN CILILIN", width / 2, textY);
-
-        // Convert canvas to data URL
-        setFinalQrUrl(canvas.toDataURL("image/png"));
-      };
-
-      logo.onerror = () => {
-        console.error("Gagal load logo sekolah");
-        // Fallback: tampilkan text saja tanpa logo
-        ctx.fillStyle = "#1e40af";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-
-        const fontSize = 24;
-        ctx.font = `bold ${fontSize}px Arial`;
-
-        const textY = lineY + 40;
-        ctx.fillText("SMP MUSLIMIN", width / 2, textY);
-        ctx.fillText("CILILIN", width / 2, textY + fontSize + 5);
-
-        setFinalQrUrl(canvas.toDataURL("image/png"));
-      };
-
-      logo.src = "/logo_sekolah.PNG";
-    };
-
-    qrImg.src = qrUrl;
-  };
-
   const downloadQR = () => {
     const link = document.createElement("a");
-    link.href = finalQrUrl;
-    link.download = `QR_Presensi_Guru_SMP_MUSLIMIN.png`;
+    link.href = qrUrl;
+    link.download = `QR_Presensi_Guru.png`;
     link.click();
   };
 
@@ -126,7 +29,7 @@ const QRCodeGenerator = () => {
           🎯 Generator QR Presensi Guru
         </h1>
         <p className="text-gray-600">
-          Generate QR Code untuk sistem presensi guru SMP MUSLIMIN CILILIN
+          Generate QR Code untuk sistem presensi guru
         </p>
       </div>
 
@@ -138,21 +41,15 @@ const QRCodeGenerator = () => {
         Generate QR Code
       </button>
 
-      {/* Hidden canvas for processing */}
-      <canvas ref={canvasRef} style={{ display: "none" }} />
-
       {/* QR Code Display */}
-      {finalQrUrl && (
+      {qrUrl && (
         <div className="space-y-4">
           <div className="border-4 border-blue-500 rounded-lg p-4 bg-gray-50">
             <img
-              src={finalQrUrl}
+              src={qrUrl}
               alt="QR Code"
-              className="w-full max-w-md mx-auto"
+              className="w-full max-w-sm mx-auto"
             />
-            <p className="text-center text-sm text-gray-600 mt-2">
-              QR Code SMP MUSLIMIN CILILIN - Siap di-scan!
-            </p>
           </div>
 
           {/* Code Info */}
@@ -191,7 +88,6 @@ const QRCodeGenerator = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="font-semibold text-blue-800 mb-2">💡 Tips:</h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>✅ QR Code bersih tanpa logo di tengah - mudah di-scan</li>
               <li>• Print QR Code dan tempel di ruang guru</li>
               <li>• Pastikan pencahayaan cukup saat scan</li>
               <li>• QR Code dapat discan dari jarak 10-30 cm</li>
