@@ -38,12 +38,17 @@ const ExportExcel = ({
     const teacherAttendances = attendances.filter(
       (att) => att.teacher_id === teacherId
     );
+    const hadir = teacherAttendances.filter((a) => a.status === "hadir").length;
+    const total = teacherAttendances.length;
+    const percentage = total > 0 ? ((hadir / total) * 100).toFixed(1) : 0;
+
     return {
-      hadir: teacherAttendances.filter((a) => a.status === "hadir").length,
+      hadir: hadir,
       izin: teacherAttendances.filter((a) => a.status === "izin").length,
       sakit: teacherAttendances.filter((a) => a.status === "sakit").length,
       alpha: teacherAttendances.filter((a) => a.status === "alpha").length,
-      total: teacherAttendances.length,
+      total: total,
+      percentage: percentage,
     };
   };
 
@@ -56,20 +61,37 @@ const ExportExcel = ({
       const daysInMonth = getDaysInMonth();
       const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-      // Header Info
+      // Header Info - Nama Sekolah
       worksheet.mergeCells("A1:E1");
-      worksheet.getCell("A1").value = "LAPORAN PRESENSI GURU";
+      worksheet.getCell("A1").value = "SMP MUSLIMIN CILILIN";
       worksheet.getCell("A1").font = { bold: true, size: 16 };
       worksheet.getCell("A1").alignment = {
         horizontal: "center",
         vertical: "middle",
       };
 
+      // Header Info - Judul Daftar Hadir
       worksheet.mergeCells("A2:E2");
-      worksheet.getCell("A2").value = `Bulan: ${monthName} ${year}`;
-      worksheet.getCell("A2").font = { bold: true, size: 12 };
-      worksheet.getCell("A2").alignment = { horizontal: "center" };
+      worksheet.getCell("A2").value = "DAFTAR HADIR GURU/STAFF";
+      worksheet.getCell("A2").font = { bold: true, size: 14 };
+      worksheet.getCell("A2").alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
 
+      // Header Info - Bulan
+      worksheet.mergeCells("A3:E3");
+      worksheet.getCell(
+        "A3"
+      ).value = `BULAN : ${monthName.toUpperCase()} ${year}`;
+      worksheet.getCell("A3").font = { bold: true, size: 12 };
+      worksheet.getCell("A3").alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+
+      // Kosong 2 baris
+      worksheet.addRow([]);
       worksheet.addRow([]);
 
       // Table Header
@@ -82,6 +104,7 @@ const ExportExcel = ({
         "S",
         "A",
         "Total",
+        "%",
       ]);
 
       // Style header
@@ -116,6 +139,7 @@ const ExportExcel = ({
           stats.sakit,
           stats.alpha,
           stats.total,
+          `${stats.percentage}%`,
         ];
 
         const row = worksheet.addRow(rowData);
@@ -167,7 +191,7 @@ const ExportExcel = ({
             }
           }
 
-          // Bold stats columns
+          // Bold stats columns (H, I, S, A, Total, %)
           if (colNumber > 2 + daysInMonth) {
             cell.font = { bold: true };
           }
@@ -189,6 +213,7 @@ const ExportExcel = ({
       worksheet.getColumn(5 + daysInMonth).width = 5; // S
       worksheet.getColumn(6 + daysInMonth).width = 5; // A
       worksheet.getColumn(7 + daysInMonth).width = 7; // Total
+      worksheet.getColumn(8 + daysInMonth).width = 8; // %
 
       // Add legend
       const legendStartRow = worksheet.rowCount + 2;
@@ -272,6 +297,7 @@ const ExportExcel = ({
             <li>✓ Daftar kehadiran per hari</li>
             <li>✓ Statistik H/I/S/A per guru</li>
             <li>✓ Total presensi bulanan</li>
+            <li>✓ Persentase kehadiran</li>
             <li>✓ Color coding untuk status</li>
           </ul>
         </div>

@@ -3,6 +3,16 @@ import React, { useState, useEffect } from "react";
 import { CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
+// Helper function untuk format metode check-in
+const formatCheckInMethod = (method) => {
+  const methodMap = {
+    qr: "Scan QR",
+    manual: "Manual",
+    nfc: "NFC",
+  };
+  return methodMap[method] || method;
+};
+
 const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -107,21 +117,22 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
     if (!timeString) return "-";
 
     try {
-      // If format is HH:MM:SS, return HH:MM
+      // If format is HH:MM:SS, return HH.MM WIB
       if (
         typeof timeString === "string" &&
         timeString.match(/^\d{2}:\d{2}:\d{2}$/)
       ) {
-        return timeString.substring(0, 5); // Return HH:MM only
+        return timeString.substring(0, 5).replace(":", ".") + " WIB"; // Return HH.MM WIB
       }
 
       // If it's a full datetime
       const date = new Date(timeString);
       if (!isNaN(date.getTime())) {
-        return date.toLocaleTimeString("id-ID", {
+        const time = date.toLocaleTimeString("id-ID", {
           hour: "2-digit",
           minute: "2-digit",
         });
+        return time.replace(":", ".") + " WIB";
       }
 
       // Fallback: return as-is
@@ -165,20 +176,20 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
         {todayAttendance ? (
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
             <div>
-              <p className="text-xs text-gray-500 mb-1">Jam Masuk</p>
+              <p className="text-sm font-bold text-gray-700 mb-1">Jam Masuk</p>
               <p className="text-sm font-semibold text-gray-800">
                 {formatTime(todayAttendance.clock_in)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 mb-1">Metode</p>
-              <p className="text-sm font-semibold text-gray-800 capitalize">
-                {todayAttendance.check_in_method || "-"}
+              <p className="text-sm font-bold text-gray-700 mb-1">Metode</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {formatCheckInMethod(todayAttendance.check_in_method) || "-"}
               </p>
             </div>
             {todayAttendance.notes && (
               <div className="col-span-2">
-                <p className="text-xs text-gray-500 mb-1">Catatan</p>
+                <p className="text-sm font-bold text-gray-700 mb-1">Catatan</p>
                 <p className="text-sm text-gray-700 italic">
                   {todayAttendance.notes}
                 </p>
