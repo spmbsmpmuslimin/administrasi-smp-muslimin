@@ -25,11 +25,12 @@ const ExportExcel = ({
   };
 
   const getStatusLabel = (status) => {
+    // FIXED: Pake huruf besar (Hadir, Izin, Sakit, Alpa) sesuai database
     const labels = {
-      hadir: "H",
-      izin: "I",
-      sakit: "S",
-      alpha: "A",
+      Hadir: "H",
+      Izin: "I",
+      Sakit: "S",
+      Alpa: "A",
     };
     return labels[status] || "-";
   };
@@ -38,15 +39,16 @@ const ExportExcel = ({
     const teacherAttendances = attendances.filter(
       (att) => att.teacher_id === teacherId
     );
-    const hadir = teacherAttendances.filter((a) => a.status === "hadir").length;
+    // FIXED: Pake huruf besar (Hadir, Izin, Sakit, Alpa)
+    const hadir = teacherAttendances.filter((a) => a.status === "Hadir").length;
     const total = teacherAttendances.length;
     const percentage = total > 0 ? ((hadir / total) * 100).toFixed(1) : 0;
 
     return {
       hadir: hadir,
-      izin: teacherAttendances.filter((a) => a.status === "izin").length,
-      sakit: teacherAttendances.filter((a) => a.status === "sakit").length,
-      alpha: teacherAttendances.filter((a) => a.status === "alpha").length,
+      izin: teacherAttendances.filter((a) => a.status === "Izin").length,
+      sakit: teacherAttendances.filter((a) => a.status === "Sakit").length,
+      alpa: teacherAttendances.filter((a) => a.status === "Alpa").length,
       total: total,
       percentage: percentage,
     };
@@ -54,6 +56,52 @@ const ExportExcel = ({
 
   const handleExport = async () => {
     setExporting(true);
+
+    // ========================================
+    // 🔍 DEBUG LOGGING - CEK DI CONSOLE (F12)
+    // ========================================
+    console.log("========================================");
+    console.log("🔍 DEBUG EXPORT EXCEL");
+    console.log("========================================");
+    console.log("📅 Month:", month, "Year:", year, "MonthName:", monthName);
+    console.log("👥 Total Teachers:", teachers.length);
+    console.log("📋 Total Attendances:", attendances.length);
+    console.log("");
+    console.log("🔹 Sample Teacher (first):", teachers[0]);
+    console.log("🔹 Sample Attendance (first):", attendances[0]);
+    console.log("");
+
+    // Check specific date
+    const targetDate = "2025-11-26";
+    const attendancesOnDate = attendances.filter(
+      (a) => a.attendance_date === targetDate
+    );
+    console.log(`📆 Attendances on ${targetDate}:`, attendancesOnDate.length);
+    attendancesOnDate.forEach((att) => {
+      console.log(`  - Teacher: ${att.teacher_id}, Status: ${att.status}`);
+    });
+    console.log("");
+
+    // Check ELAN JAELANI specifically
+    const elanTeacher = teachers.find((t) => t.full_name?.includes("ELAN"));
+    if (elanTeacher) {
+      console.log("🎯 ELAN JAELANI Found:");
+      console.log("  - Full Name:", elanTeacher.full_name);
+      console.log("  - Teacher ID:", elanTeacher.teacher_id);
+      console.log("  - User ID:", elanTeacher.id);
+
+      const elanAttendances = attendances.filter(
+        (a) =>
+          a.teacher_id === elanTeacher.teacher_id ||
+          a.teacher_id === elanTeacher.id
+      );
+      console.log("  - Total Attendances:", elanAttendances.length);
+      console.log("  - Attendances:", elanAttendances);
+    } else {
+      console.log("❌ ELAN JAELANI NOT FOUND in teachers array");
+    }
+    console.log("========================================");
+
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(`Presensi ${monthName} ${year}`);
@@ -61,8 +109,30 @@ const ExportExcel = ({
       const daysInMonth = getDaysInMonth();
       const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+      // Calculate total columns dynamically
+      // No (1) + Nama (1) + Days (30) + H (1) + I (1) + S (1) + A (1) + Total (1) + % (1) = 38 columns for 30 days
+      const totalColumns = 2 + daysInMonth + 6; // 2 (No+Nama) + days + 6 (stats)
+
+      // Helper function to get Excel column letter (A, B, C, ... Z, AA, AB, ...)
+      const getColumnLetter = (colNumber) => {
+        let letter = "";
+        while (colNumber > 0) {
+          const remainder = (colNumber - 1) % 26;
+          letter = String.fromCharCode(65 + remainder) + letter;
+          colNumber = Math.floor((colNumber - 1) / 26);
+        }
+        return letter;
+      };
+
+      const lastColumnLetter = getColumnLetter(totalColumns);
+
+      console.log("📊 Excel Info:");
+      console.log("  Days in month:", daysInMonth);
+      console.log("  Total columns:", totalColumns);
+      console.log("  Last column letter:", lastColumnLetter);
+
       // Header Info - Nama Sekolah
-      worksheet.mergeCells("A1:E1");
+      worksheet.mergeCells(`A1:${lastColumnLetter}1`);
       worksheet.getCell("A1").value = "SMP MUSLIMIN CILILIN";
       worksheet.getCell("A1").font = { bold: true, size: 16 };
       worksheet.getCell("A1").alignment = {
@@ -71,7 +141,7 @@ const ExportExcel = ({
       };
 
       // Header Info - Judul Daftar Hadir
-      worksheet.mergeCells("A2:E2");
+      worksheet.mergeCells(`A2:${lastColumnLetter}2`);
       worksheet.getCell("A2").value = "DAFTAR HADIR GURU/STAFF";
       worksheet.getCell("A2").font = { bold: true, size: 14 };
       worksheet.getCell("A2").alignment = {
@@ -80,7 +150,7 @@ const ExportExcel = ({
       };
 
       // Header Info - Bulan
-      worksheet.mergeCells("A3:E3");
+      worksheet.mergeCells(`A3:${lastColumnLetter}3`);
       worksheet.getCell(
         "A3"
       ).value = `BULAN : ${monthName.toUpperCase()} ${year}`;
@@ -126,18 +196,37 @@ const ExportExcel = ({
 
       // Data Rows
       teachers.forEach((teacher, index) => {
-        const stats = calculateTeacherStats(teacher.id);
+        // DEBUG: Log setiap teacher yang diproses
+        console.log(
+          `Processing Teacher ${index + 1}: ${teacher.full_name} (ID: ${
+            teacher.teacher_id || teacher.id
+          })`
+        );
+
+        const stats = calculateTeacherStats(teacher.teacher_id || teacher.id); // Try both fields
+        console.log(`  Stats:`, stats);
+
         const rowData = [
           index + 1,
           teacher.full_name,
           ...days.map((day) => {
-            const attendance = getAttendanceForDay(teacher.id, day);
-            return attendance ? getStatusLabel(attendance.status) : "-";
+            const attendance = getAttendanceForDay(
+              teacher.teacher_id || teacher.id,
+              day
+            ); // Try both fields
+            const label = attendance ? getStatusLabel(attendance.status) : "-";
+
+            // DEBUG: Log attendance for day 26
+            if (day === 26 && attendance) {
+              console.log(`  ✅ Day 26 - Attendance found:`, attendance);
+            }
+
+            return label;
           }),
           stats.hadir,
           stats.izin,
           stats.sakit,
-          stats.alpha,
+          stats.alpa,
           stats.total,
           `${stats.percentage}%`,
         ];
@@ -286,20 +375,6 @@ const ExportExcel = ({
           <p className="text-xs text-blue-600 mt-2">
             Data: {teachers.length} guru, {attendances.length} presensi
           </p>
-        </div>
-
-        {/* Preview Info */}
-        <div className="space-y-2 mb-6">
-          <h4 className="font-semibold text-gray-700 text-sm">
-            Data yang akan diexport:
-          </h4>
-          <ul className="text-sm text-gray-600 space-y-1 ml-4">
-            <li>✓ Daftar kehadiran per hari</li>
-            <li>✓ Statistik H/I/S/A per guru</li>
-            <li>✓ Total presensi bulanan</li>
-            <li>✓ Persentase kehadiran</li>
-            <li>✓ Color coding untuk status</li>
-          </ul>
         </div>
 
         {/* Actions */}

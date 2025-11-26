@@ -34,6 +34,45 @@ const MonthlyView = ({ currentUser }) => {
     "Desember",
   ];
 
+  // ========================================
+  // 🗓️ LIBUR NASIONAL 2025
+  // ========================================
+  // ⚠️ UPDATE ARRAY INI SETIAP TAHUN BARU! ⚠️
+  // Sumber: Keputusan Bersama (SKB) 3 Menteri
+  // Last update: Desember 2024 untuk tahun 2025
+  //
+  // TODO 2026: Update array ini dengan libur nasional 2026
+  // (biasanya diumumkan sekitar Desember 2025)
+  // ========================================
+  const nationalHolidays2025 = {
+    "2025-01-01": "Tahun Baru Masehi",
+    "2025-01-25": "Tahun Baru Imlek 2576",
+    "2025-03-02": "Isra Miraj Nabi Muhammad SAW",
+    "2025-03-12": "Hari Raya Nyepi (Tahun Baru Saka 1947)",
+    "2025-03-31": "Idul Fitri 1446 H", // Hari pertama
+    "2025-04-01": "Idul Fitri 1446 H", // Hari kedua
+    "2025-04-18": "Wafat Yesus Kristus (Jumat Agung)",
+    "2025-05-01": "Hari Buruh Internasional",
+    "2025-05-29": "Kenaikan Yesus Kristus",
+    "2025-06-07": "Idul Adha 1446 H",
+    "2025-06-28": "Tahun Baru Islam 1447 H",
+    "2025-08-17": "Hari Kemerdekaan RI",
+    "2025-09-05": "Maulid Nabi Muhammad SAW",
+    "2025-12-25": "Hari Raya Natal",
+  };
+
+  // Helper: Check if date is national holiday
+  const isNationalHoliday = (dateStr) => {
+    return nationalHolidays2025[dateStr] || null;
+  };
+
+  // Helper: Check if day is weekend (Saturday = 6, Sunday = 0)
+  const isWeekend = (year, month, day) => {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+  };
+
   useEffect(() => {
     fetchMonthlyData();
   }, [selectedMonth, selectedYear]);
@@ -41,13 +80,13 @@ const MonthlyView = ({ currentUser }) => {
   const fetchMonthlyData = async () => {
     setLoading(true);
     try {
-      // Get date range for selected month
-      const startDate = new Date(selectedYear, selectedMonth, 1)
-        .toISOString()
-        .split("T")[0];
-      const endDate = new Date(selectedYear, selectedMonth + 1, 0)
-        .toISOString()
-        .split("T")[0];
+      // FIX: Format date untuk range dengan timezone WIB
+      const year = selectedYear;
+      const month = String(selectedMonth + 1).padStart(2, "0");
+      const startDate = `${year}-${month}-01`;
+
+      const lastDay = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      const endDate = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
 
       // Fetch all active teachers
       const { data: teachersData, error: teachersError } = await supabase
@@ -81,10 +120,13 @@ const MonthlyView = ({ currentUser }) => {
     return new Date(selectedYear, selectedMonth + 1, 0).getDate();
   };
 
+  // FIX: Format tanggal tanpa konversi timezone
   const getAttendanceForDay = (teacherId, day) => {
-    const dateStr = new Date(selectedYear, selectedMonth, day)
-      .toISOString()
-      .split("T")[0];
+    const year = selectedYear;
+    const month = String(selectedMonth + 1).padStart(2, "0");
+    const dayStr = String(day).padStart(2, "0");
+    const dateStr = `${year}-${month}-${dayStr}`;
+
     return attendances.find(
       (att) => att.teacher_id === teacherId && att.attendance_date === dateStr
     );
@@ -247,18 +289,59 @@ const MonthlyView = ({ currentUser }) => {
                           teacher.teacher_id,
                           day
                         );
+
+                        // Format date string untuk check holiday
+                        const year = selectedYear;
+                        const month = String(selectedMonth + 1).padStart(
+                          2,
+                          "0"
+                        );
+                        const dayStr = String(day).padStart(2, "0");
+                        const dateStr = `${year}-${month}-${dayStr}`;
+
+                        // Check if weekend or holiday
+                        const weekend = isWeekend(
+                          selectedYear,
+                          selectedMonth,
+                          day
+                        );
+                        const holiday = isNationalHoliday(dateStr);
+
+                        // 🐛 DEBUG LOG - Cek weekend detection (Hapus setelah berhasil!)
+                        if (
+                          teacher.teacher_id === teachers[0]?.teacher_id &&
+                          day >= 22 &&
+                          day <= 24 &&
+                          selectedMonth === 10
+                        ) {
+                          console.log(
+                            `🔍 Debug Day ${day} Nov 2025: weekend=${weekend}, holiday=${holiday}, bg=${
+                              weekend || holiday ? "bg-gray-100" : "TIDAK"
+                            }`
+                          );
+                        }
+
                         const badge = attendance
                           ? getStatusBadge(attendance.status)
                           : {
-                              bg: "bg-gray-200",
+                              bg:
+                                weekend || holiday
+                                  ? "bg-gray-300"
+                                  : "bg-gray-200",
                               text: "-",
-                              title: "Belum absen",
+                              title: holiday
+                                ? `🎉 ${holiday}`
+                                : weekend
+                                ? "🏠 Weekend (Libur)"
+                                : "Belum absen",
                             };
 
                         return (
                           <td
                             key={day}
-                            className="border border-gray-300 px-2 py-3 text-center">
+                            className={`border border-gray-300 px-2 py-3 text-center ${
+                              weekend || holiday ? "bg-red-100" : ""
+                            }`}>
                             <span
                               className={`${badge.bg} text-white font-bold text-xs px-2 py-1 rounded inline-block min-w-[24px]`}
                               title={badge.title}>
@@ -313,6 +396,12 @@ const MonthlyView = ({ currentUser }) => {
             -
           </span>
           <span className="text-gray-600">Belum Absen</span>
+        </div>
+        <div className="flex items-center gap-2 pl-4 border-l-2 border-gray-300">
+          <span className="bg-gray-300 text-gray-600 font-bold text-xs px-2 py-1 rounded">
+            🏠
+          </span>
+          <span className="text-gray-600">Weekend / Libur Nasional</span>
         </div>
       </div>
 

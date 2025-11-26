@@ -1,6 +1,8 @@
 // attendance-teacher/LocationValidator.js
 // Utility untuk validasi lokasi guru saat presensi manual
 
+import { supabase } from "../supabaseClient"; // ADDED: Import supabase
+
 // ========================================
 // 🔧 KONFIGURASI - DISESUAIKAN DENGAN SEKOLAH 🔧
 // ========================================
@@ -10,7 +12,7 @@ const SCHOOL_COORDS = {
   lng: 107.416188,
 };
 
-const SCHOOL_RADIUS = 300; // 200 meter radius
+const SCHOOL_RADIUS = 300; // 300 meter radius
 
 // Debug mode - set true untuk lihat detail GPS di console
 const DEBUG_MODE = true;
@@ -143,37 +145,71 @@ export const validateAttendanceLocation = async () => {
 
 /**
  * Check apakah guru punya jadwal hari ini
+ * UPDATED: Real query ke Supabase
  */
-export const validateTeacherSchedule = async (teacherId, date = new Date()) => {
+export const validateTeacherSchedule = async (userId) => {
   try {
-    // TODO: Ganti dengan actual API call ke backend
-    const response = await fetch(
-      `/api/schedules/teacher/${teacherId}?date=${date.toISOString()}`
-    );
-    const schedules = await response.json();
+    // Get current day name in Indonesian
+    const dayNames = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu",
+    ];
+    const today = dayNames[new Date().getDay()];
+
+    console.log("🔍 Checking schedule for user:", userId, "Day:", today);
+
+    // Query schedules for today
+    const { data: schedules, error } = await supabase
+      .from("teacher_schedules")
+      .select("*")
+      .eq("teacher_id", userId)
+      .eq("day", today)
+      .order("start_time", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching schedule:", error);
+      return {
+        hasSchedule: null,
+        suspicious: false,
+        error: "SCHEDULE_CHECK_FAILED",
+        message: "Tidak dapat memvalidasi jadwal",
+      };
+    }
+
+    console.log("📅 Schedules found:", schedules?.length || 0);
 
     if (!schedules || schedules.length === 0) {
       return {
         hasSchedule: false,
         suspicious: true,
         reason: "NO_SCHEDULE_TODAY",
-        message: "Anda tidak memiliki jadwal mengajar hari ini",
+        message: `Anda tidak memiliki jadwal mengajar hari ini (${today})`,
       };
     }
 
     // Check apakah presensi sebelum kelas pertama
     const now = new Date();
-    const firstClass = schedules[0];
-    const classStartTime = new Date(firstClass.startTime);
+    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes()
+    ).padStart(2, "0")}:00`;
 
-    if (now > classStartTime) {
+    const firstClass = schedules[0];
+
+    if (currentTime > firstClass.start_time) {
       return {
         hasSchedule: true,
         suspicious: true,
         reason: "LATE_CHECKIN",
-        message: `Kelas pertama Anda dimulai pukul ${firstClass.startTime
-          .split("T")[1]
-          .slice(0, 5)}`,
+        schedules: schedules,
+        message: `Kelas pertama Anda dimulai pukul ${firstClass.start_time.slice(
+          0,
+          5
+        )} (Kelas ${firstClass.class_id})`,
       };
     }
 
@@ -181,6 +217,8 @@ export const validateTeacherSchedule = async (teacherId, date = new Date()) => {
       hasSchedule: true,
       suspicious: false,
       schedules: schedules,
+      totalClasses: schedules.length,
+      message: `Hari ini Anda mengajar ${schedules.length} kelas`,
     };
   } catch (error) {
     console.error("Error validating schedule:", error);
