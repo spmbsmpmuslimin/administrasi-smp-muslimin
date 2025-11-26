@@ -36,6 +36,45 @@ const MyMonthlyHistory = ({ currentUser }) => {
     "Desember",
   ];
 
+  // ========================================
+  // 🗓️ LIBUR NASIONAL 2025
+  // ========================================
+  // ⚠️ UPDATE ARRAY INI SETIAP TAHUN BARU! ⚠️
+  // Sumber: Keputusan Bersama (SKB) 3 Menteri
+  // Last update: Desember 2024 untuk tahun 2025
+  //
+  // TODO 2026: Update array ini dengan libur nasional 2026
+  // (biasanya diumumkan sekitar Desember 2025)
+  // ========================================
+  const nationalHolidays2025 = {
+    "2025-01-01": "Tahun Baru Masehi",
+    "2025-01-25": "Tahun Baru Imlek 2576",
+    "2025-03-02": "Isra Miraj Nabi Muhammad SAW",
+    "2025-03-12": "Hari Raya Nyepi (Tahun Baru Saka 1947)",
+    "2025-03-31": "Idul Fitri 1446 H", // Hari pertama
+    "2025-04-01": "Idul Fitri 1446 H", // Hari kedua
+    "2025-04-18": "Wafat Yesus Kristus (Jumat Agung)",
+    "2025-05-01": "Hari Buruh Internasional",
+    "2025-05-29": "Kenaikan Yesus Kristus",
+    "2025-06-07": "Idul Adha 1446 H",
+    "2025-06-28": "Tahun Baru Islam 1447 H",
+    "2025-08-17": "Hari Kemerdekaan RI",
+    "2025-09-05": "Maulid Nabi Muhammad SAW",
+    "2025-12-25": "Hari Raya Natal",
+  };
+
+  // Helper: Check if date is national holiday
+  const isNationalHoliday = (dateStr) => {
+    return nationalHolidays2025[dateStr] || null;
+  };
+
+  // Helper: Check if day is weekend (Saturday = 6, Sunday = 0)
+  const isWeekend = (year, month, day) => {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+  };
+
   useEffect(() => {
     if (currentUser?.teacher_id) {
       fetchMyMonthlyData();
@@ -173,27 +212,9 @@ const MyMonthlyHistory = ({ currentUser }) => {
     <div className="space-y-4">
       {/* Header & Stats */}
       <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="text-blue-600" size={24} />
-            <h2 className="text-xl font-bold text-gray-800">Riwayat Saya</h2>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrevMonth}
-              className="p-2 hover:bg-gray-100 rounded transition-all">
-              <ChevronLeft size={20} />
-            </button>
-            <span className="px-3 py-1 font-semibold text-gray-800 text-sm sm:text-base">
-              {months[selectedMonth]} {selectedYear}
-            </span>
-            <button
-              onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded transition-all">
-              <ChevronRight size={20} />
-            </button>
-          </div>
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="text-blue-600" size={24} />
+          <h2 className="text-xl font-bold text-gray-800">Riwayat Saya</h2>
         </div>
 
         {/* Stats Summary */}
@@ -315,11 +336,28 @@ const MyMonthlyHistory = ({ currentUser }) => {
             )}
           </div>
         ) : (
-          /* Calendar View - IMPROVED */
+          /* Calendar View - BULAN & TAHUN DI ATAS + WEEKEND & HOLIDAYS */
           <>
             <div className="max-w-md mx-auto bg-white rounded-xl p-4 shadow-md border border-gray-200">
+              {/* Month & Year Selector - DI ATAS KALENDER */}
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                <button
+                  onClick={handlePrevMonth}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-all">
+                  <ChevronLeft size={20} className="text-gray-700" />
+                </button>
+                <span className="px-4 py-2 font-bold text-gray-800 text-lg">
+                  {months[selectedMonth]} {selectedYear}
+                </span>
+                <button
+                  onClick={handleNextMonth}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-all">
+                  <ChevronRight size={20} className="text-gray-700" />
+                </button>
+              </div>
+
               <div className="grid grid-cols-7 gap-2">
-                {/* Day Headers - BOLD */}
+                {/* Day Headers */}
                 {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(
                   (day, idx) => (
                     <div
@@ -339,11 +377,19 @@ const MyMonthlyHistory = ({ currentUser }) => {
                 {Array.from({ length: daysInMonth }).map((_, index) => {
                   const day = index + 1;
                   const attendance = getAttendanceForDate(day);
+                  const dateStr = `${selectedYear}-${String(
+                    selectedMonth + 1
+                  ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
                   const now = new Date();
                   const isToday =
                     day === now.getDate() &&
                     selectedMonth === now.getMonth() &&
                     selectedYear === now.getFullYear();
+
+                  // Check if weekend or holiday
+                  const weekend = isWeekend(selectedYear, selectedMonth, day);
+                  const holiday = isNationalHoliday(dateStr);
 
                   return (
                     <div
@@ -356,6 +402,10 @@ const MyMonthlyHistory = ({ currentUser }) => {
                             ? getStatusColor(attendance.status) + " shadow-md"
                             : isToday
                             ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg border-2 border-blue-300"
+                            : holiday
+                            ? "bg-gradient-to-br from-red-100 to-pink-100 border-2 border-red-300"
+                            : weekend
+                            ? "bg-gradient-to-br from-gray-200 to-gray-300 border border-gray-400"
                             : "bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 border border-gray-200"
                         }
                       `}
@@ -364,21 +414,49 @@ const MyMonthlyHistory = ({ currentUser }) => {
                           ? `${attendance.status} - ${formatTime(
                               attendance.clock_in
                             )}`
+                          : holiday
+                          ? `🎉 ${holiday}`
+                          : weekend
+                          ? "🏠 Weekend (Libur)"
                           : isToday
                           ? "Hari ini"
                           : ""
                       }>
                       <span
                         className={`text-sm font-bold ${
-                          attendance || isToday ? "text-white" : "text-gray-700"
+                          attendance || isToday
+                            ? "text-white"
+                            : holiday
+                            ? "text-red-700"
+                            : weekend
+                            ? "text-gray-600"
+                            : "text-gray-700"
                         }`}>
                         {day}
                       </span>
+
+                      {/* Indicator: Attendance dot */}
                       {attendance && (
                         <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-current shadow-sm"></div>
                       )}
+
+                      {/* Indicator: Today dot */}
                       {isToday && !attendance && (
                         <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
+                      )}
+
+                      {/* Indicator: Holiday icon */}
+                      {holiday && !attendance && (
+                        <div className="absolute -top-1 -right-1 text-xs">
+                          🎉
+                        </div>
+                      )}
+
+                      {/* Indicator: Weekend icon */}
+                      {weekend && !holiday && !attendance && (
+                        <div className="absolute -top-1 -right-1 text-xs">
+                          🏠
+                        </div>
                       )}
                     </div>
                   );
@@ -386,38 +464,61 @@ const MyMonthlyHistory = ({ currentUser }) => {
               </div>
 
               {/* Legend */}
-              <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-4 gap-2">
-                <div className="flex flex-col items-center gap-1">
-                  <div className="bg-gradient-to-br from-green-500 to-green-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
-                    <CheckCircle size={14} className="text-white" />
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                {/* Status Legend */}
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                      <CheckCircle size={14} className="text-white" />
+                    </div>
+                    <span className="text-gray-700 text-xs font-medium">
+                      Hadir
+                    </span>
                   </div>
-                  <span className="text-gray-700 text-xs font-medium">
-                    Hadir
-                  </span>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                      <AlertCircle size={14} className="text-white" />
+                    </div>
+                    <span className="text-gray-700 text-xs font-medium">
+                      Izin
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                      <AlertCircle size={14} className="text-white" />
+                    </div>
+                    <span className="text-gray-700 text-xs font-medium">
+                      Sakit
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="bg-gradient-to-br from-red-500 to-red-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                      <XCircle size={14} className="text-white" />
+                    </div>
+                    <span className="text-gray-700 text-xs font-medium">
+                      Alpha
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
-                    <AlertCircle size={14} className="text-white" />
+
+                {/* Non-Working Days Legend */}
+                <div className="flex items-center justify-center gap-4 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-gray-200 to-gray-300 w-6 h-6 rounded border border-gray-400 flex items-center justify-center">
+                      <span className="text-xs">🏠</span>
+                    </div>
+                    <span className="text-gray-600 text-xs font-medium">
+                      Weekend
+                    </span>
                   </div>
-                  <span className="text-gray-700 text-xs font-medium">
-                    Izin
-                  </span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
-                    <AlertCircle size={14} className="text-white" />
+                  <div className="flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-red-100 to-pink-100 w-6 h-6 rounded border-2 border-red-300 flex items-center justify-center">
+                      <span className="text-xs">🎉</span>
+                    </div>
+                    <span className="text-gray-600 text-xs font-medium">
+                      Libur Nasional
+                    </span>
                   </div>
-                  <span className="text-gray-700 text-xs font-medium">
-                    Sakit
-                  </span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="bg-gradient-to-br from-red-500 to-red-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
-                    <XCircle size={14} className="text-white" />
-                  </div>
-                  <span className="text-gray-700 text-xs font-medium">
-                    Alpha
-                  </span>
                 </div>
               </div>
             </div>

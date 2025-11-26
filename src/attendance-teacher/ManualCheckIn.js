@@ -13,6 +13,7 @@ import { supabase } from "../supabaseClient";
 import {
   validateAttendanceLocation,
   validateTeacherSchedule,
+  validateManualInputTime,
 } from "./LocationValidator";
 
 const ManualCheckIn = ({ currentUser, onSuccess }) => {
@@ -57,6 +58,17 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     setMessage(null);
 
     try {
+      // VALIDASI WAKTU - HANYA JAM 6:30-10:00
+      const timeCheck = validateManualInputTime();
+      if (!timeCheck.allowed) {
+        setMessage({
+          type: "error",
+          text: `⏰ ${timeCheck.message}\n\nDi luar jam tersebut, silakan gunakan QR Scan atau hubungi admin.`,
+        });
+        setLoading(false);
+        return;
+      }
+
       // VALIDASI GPS - HANYA UNTUK STATUS "HADIR"
       if (formData.status === "Hadir") {
         const locationCheck = await validateAttendanceLocation();

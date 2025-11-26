@@ -1,12 +1,31 @@
 // attendance-teacher/LocationValidator.js
 // Utility untuk validasi lokasi guru saat presensi manual
 
+// ========================================
+// 🔧 KONFIGURASI - DISESUAIKAN DENGAN SEKOLAH 🔧
+// ========================================
+
 const SCHOOL_COORDS = {
-  lat: -6.914744, // Ganti dengan koordinat sekolah lo
-  lng: 107.60981,
+  lat: -6.954636, // Koordinat sekolah
+  lng: 107.415489,
 };
 
-const SCHOOL_RADIUS = 100; // 100 meter radius dari sekolah
+// Radius 500m - Buffer besar untuk antisipasi GPS accuracy ±128m
+const SCHOOL_RADIUS = 500; // 500 meter radius dari sekolah
+
+// Debug mode - set true untuk lihat detail GPS di console
+const DEBUG_MODE = true;
+
+// ========================================
+// ⏰ TIME WINDOW untuk Manual Input
+// ========================================
+// Manual input hanya bisa dilakukan dalam jam kerja (jam datang guru)
+const MANUAL_INPUT_ALLOWED = {
+  startHour: 6,
+  startMinute: 30,
+  endHour: 10,
+  endMinute: 0,
+};
 
 /**
  * Hitung jarak antara 2 koordinat menggunakan Haversine formula
@@ -53,7 +72,7 @@ export const validateAttendanceLocation = async () => {
 
         const isWithinRadius = distance <= SCHOOL_RADIUS;
 
-        resolve({
+        const result = {
           allowed: isWithinRadius,
           distance: Math.round(distance),
           coords: {
@@ -67,7 +86,27 @@ export const validateAttendanceLocation = async () => {
             : `Anda berada ${Math.round(
                 distance
               )}m dari sekolah. Presensi manual hanya bisa dilakukan dalam radius ${SCHOOL_RADIUS}m`,
-        });
+        };
+
+        // Debug logging
+        if (DEBUG_MODE) {
+          console.log("🔍 GPS DEBUG INFO:");
+          console.log("📍 Lokasi Anda:", {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: `±${Math.round(position.coords.accuracy)}m`,
+          });
+          console.log("🏫 Lokasi Sekolah:", SCHOOL_COORDS);
+          console.log("📏 Jarak:", `${Math.round(distance)}m`);
+          console.log("✅ Radius Max:", `${SCHOOL_RADIUS}m`);
+          console.log("🎯 Status:", isWithinRadius ? "✅ VALID" : "❌ INVALID");
+          console.log(
+            "🗺️ Lihat di Maps:",
+            `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
+          );
+        }
+
+        resolve(result);
       },
       (error) => {
         let errorMessage = "Tidak dapat mengakses lokasi";
@@ -155,9 +194,48 @@ export const validateTeacherSchedule = async (teacherId, date = new Date()) => {
   }
 };
 
+/**
+ * Validasi waktu untuk manual input
+ * Manual input hanya bisa dilakukan jam 6:30 - 10:00 (jam datang guru)
+ */
+export const validateManualInputTime = () => {
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+
+  const currentMinutes = hour * 60 + minute;
+  const startMinutes =
+    MANUAL_INPUT_ALLOWED.startHour * 60 + MANUAL_INPUT_ALLOWED.startMinute;
+  const endMinutes =
+    MANUAL_INPUT_ALLOWED.endHour * 60 + MANUAL_INPUT_ALLOWED.endMinute;
+
+  const isWithinWindow =
+    currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+
+  if (!isWithinWindow) {
+    return {
+      allowed: false,
+      message: `Manual input hanya bisa dilakukan jam ${
+        MANUAL_INPUT_ALLOWED.startHour
+      }:${MANUAL_INPUT_ALLOWED.startMinute.toString().padStart(2, "0")} - ${
+        MANUAL_INPUT_ALLOWED.endHour
+      }:${MANUAL_INPUT_ALLOWED.endMinute
+        .toString()
+        .padStart(2, "0")} (jam datang guru)`,
+    };
+  }
+
+  return {
+    allowed: true,
+    message: "Waktu input valid",
+  };
+};
+
 export default {
   validateAttendanceLocation,
   validateTeacherSchedule,
+  validateManualInputTime,
   SCHOOL_COORDS,
   SCHOOL_RADIUS,
+  MANUAL_INPUT_ALLOWED,
 };
