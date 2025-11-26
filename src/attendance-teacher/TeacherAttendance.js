@@ -1,12 +1,13 @@
 // src/attendance-teacher/TeacherAttendance.js
 import React, { useState, useEffect } from "react";
-import { Clock } from "lucide-react";
+import { Clock, Bell, X } from "lucide-react";
+import { supabase } from "../supabaseClient";
 
 // Teacher Components
 import AttendanceTabs from "./AttendanceTabs";
 import MyAttendanceStatus from "./MyAttendanceStatus";
 import MyMonthlyHistory from "./MyMonthlyHistory";
-import TodaySchedule from "./TodaySchedule"; // ← TAMBAHAN: Import komponen jadwal
+import TodaySchedule from "./TodaySchedule";
 
 // Admin Component
 import AdminAttendanceView from "./AdminAttendanceView";
@@ -16,6 +17,8 @@ const TeacherAttendance = ({ user }) => {
   const [activeView, setActiveView] = useState("presensi");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showReminder, setShowReminder] = useState(false);
+  const [hasScheduleToday, setHasScheduleToday] = useState(false);
 
   useEffect(() => {
     // Use user from props (from App.js) or fallback to localStorage
@@ -28,8 +31,84 @@ const TeacherAttendance = ({ user }) => {
     setLoading(false);
   }, [user]);
 
+  useEffect(() => {
+    if (currentUser && currentUser.role !== "admin") {
+      checkAttendanceReminder();
+    }
+  }, [currentUser, refreshTrigger]);
+
+  const checkAttendanceReminder = async () => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const currentHour = new Date().getHours();
+
+      // Only show reminder after 10:00 AM
+      if (currentHour < 10) return;
+
+      // Check if already dismissed today
+      const dismissedKey = `reminder_dismissed_${today}`;
+      if (localStorage.getItem(dismissedKey)) return;
+
+      // Check if user has schedule today
+      const dayName = new Date().toLocaleDateString("id-ID", {
+        weekday: "long",
+      });
+
+      const { data: scheduleData, error: scheduleError } = await supabase
+        .from("teacher_schedules")
+        .select("*")
+        .eq("teacher_id", currentUser.id)
+        .eq("day", dayName);
+
+      if (scheduleError) throw scheduleError;
+
+      const hasSchedule = scheduleData && scheduleData.length > 0;
+      setHasScheduleToday(hasSchedule);
+
+      // Only check attendance if teacher has schedule today
+      if (!hasSchedule) return;
+
+      // Check if already attended today
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from("teacher_attendance")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("attendance_date", today);
+
+      if (attendanceError) throw attendanceError;
+
+      const hasAttended = attendanceData && attendanceData.length > 0;
+
+      // Show reminder if hasn't attended and has schedule
+      if (!hasAttended && hasSchedule) {
+        setShowReminder(true);
+      }
+    } catch (error) {
+      console.error("Error checking attendance reminder:", error);
+    }
+  };
+
+  const handleDismissReminder = () => {
+    const today = new Date().toISOString().split("T")[0];
+    localStorage.setItem(`reminder_dismissed_${today}`, "true");
+    setShowReminder(false);
+  };
+
+  const handleGoToAttendance = () => {
+    setShowReminder(false);
+    setActiveView("presensi");
+    // Scroll to attendance tabs
+    setTimeout(() => {
+      const element = document.getElementById("attendance-tabs");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 100);
+  };
+
   const handleAttendanceSuccess = () => {
     setRefreshTrigger((prev) => prev + 1);
+    setShowReminder(false); // Hide reminder after successful attendance
   };
 
   if (loading) {
@@ -62,6 +141,63 @@ const TeacherAttendance = ({ user }) => {
   // ========== TEACHER VIEW ==========
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50">
+      {/* Reminder Pop-up */}
+      {showReminder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-bounce-in">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-t-2xl p-6 relative">
+              <button
+                onClick={handleDismissReminder}
+                className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-all">
+                <X size={20} />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="bg-white bg-opacity-20 p-3 rounded-full">
+                  <Bell className="text-white" size={32} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    ⚠️ Reminder Presensi
+                  </h3>
+                  <p className="text-white text-sm opacity-90">
+                    Jangan lupa presensi hari ini!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-gray-700 text-center text-lg font-medium mb-6">
+                Sudahkah Anda Melakukan Presensi Hari ini?
+              </p>
+
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6">
+                <p className="text-blue-800 text-sm">
+                  <strong>📋 Info:</strong> Anda memiliki jadwal mengajar hari
+                  ini. Silakan lakukan presensi untuk mencatat kehadiran Anda.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDismissReminder}
+                  className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-all border border-gray-300">
+                  Nanti
+                </button>
+                <button
+                  onClick={handleGoToAttendance}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition-all shadow-lg">
+                  Presensi Sekarang
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header - Mobile Optimized */}
       <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
         <div className="px-3 sm:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
@@ -98,6 +234,18 @@ const TeacherAttendance = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {/* Reminder Badge - Fixed position */}
+      {showReminder && (
+        <div className="fixed top-20 right-4 z-40 animate-pulse">
+          <button
+            onClick={() => setShowReminder(true)}
+            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
+            <Bell size={16} />
+            <span className="text-sm font-semibold">Belum Presensi!</span>
+          </button>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="px-3 sm:px-6 py-4 sm:py-6 max-w-7xl mx-auto">
@@ -141,10 +289,12 @@ const TeacherAttendance = ({ user }) => {
             />
 
             {/* 2️⃣ Attendance Tabs (QR Scanner / Manual Input) - NAIK KE ATAS! */}
-            <AttendanceTabs
-              currentUser={currentUser}
-              onSuccess={handleAttendanceSuccess}
-            />
+            <div id="attendance-tabs">
+              <AttendanceTabs
+                currentUser={currentUser}
+                onSuccess={handleAttendanceSuccess}
+              />
+            </div>
 
             {/* 3️⃣ Jadwal Mengajar Hari Ini - TURUN KE BAWAH! */}
             <TodaySchedule
@@ -157,6 +307,29 @@ const TeacherAttendance = ({ user }) => {
           <MyMonthlyHistory currentUser={currentUser} />
         )}
       </div>
+
+      {/* CSS for animation */}
+      <style>{`
+        @keyframes bounce-in {
+          0% {
+            opacity: 0;
+            transform: scale(0.3);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        .animate-bounce-in {
+          animation: bounce-in 0.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

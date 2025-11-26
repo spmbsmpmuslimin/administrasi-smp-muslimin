@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react";
 import { supabase } from "../supabaseClient";
-// REMOVED: import TodaySchedule (biar nggak double)
 
 // Helper function untuk format metode check-in
 const formatCheckInMethod = (method) => {
@@ -28,7 +27,12 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
   const fetchMyAttendance = async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      // ✅ FIX: Get today's date in local timezone (Indonesia/WIB)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const today = `${year}-${month}-${day}`;
 
       const { data, error } = await supabase
         .from("teacher_attendance")
@@ -146,8 +150,8 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
   };
 
   return (
-    // REMOVED: space-y-4 wrapper karena TodaySchedule udah dipindah
-    <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 ${config.borderColor}">
+    <div
+      className={`bg-white rounded-xl shadow-lg p-6 border-l-4 ${config.borderColor}`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-800 mb-1">
@@ -204,8 +208,6 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
           </div>
         )}
       </div>
-
-      {/* REMOVED: TodaySchedule component - sudah dipindah ke TeacherAttendance.js */}
     </div>
   );
 };

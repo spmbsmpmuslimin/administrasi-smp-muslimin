@@ -591,97 +591,86 @@ const HomeroomTeacherDashboard = ({ user }) => {
           </div>
         </div>
 
-        {/* Quick Actions - Horizontal Layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          {/* Presensi Guru - TOMBOL BARU */}
-          <button
-            onClick={handleTeacherAttendance}
-            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                <span className="text-white text-lg">👨‍🏫</span>
-              </div>
-              <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">
-                  Presensi Guru
-                </h4>
-                <p className="text-xs text-slate-600">Absensi Diri Sendiri</p>
-              </div>
-            </div>
-          </button>
-
-          {/* Presensi Siswa */}
-          <button
-            onClick={handleStudentAttendance}
-            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                <span className="text-white text-lg">📋</span>
-              </div>
-              <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">
-                  Presensi Siswa
-                </h4>
-                <p className="text-xs text-slate-600">
-                  Kelas {stats.className}
-                </p>
-              </div>
-            </div>
-          </button>
-
-          {primarySubject && (
+        {/* Quick Actions */}
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
+            Aksi Cepat
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Presensi Guru */}
             <button
-              onClick={handleGrades}
-              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+              onClick={handleTeacherAttendance}
+              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                  <span className="text-white text-lg">📝</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <span className="text-white text-lg">👨‍🏫</span>
                 </div>
                 <div className="text-left">
                   <h4 className="font-semibold text-slate-800 text-sm">
-                    Input Nilai
+                    Presensi Guru
                   </h4>
-                  <p className="text-xs text-slate-600">{primarySubject}</p>
+                  <p className="text-xs text-slate-600">Presensi Sendiri</p>
                 </div>
               </div>
             </button>
-          )}
 
-          <button
-            onClick={handleStudents}
-            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                <span className="text-white text-lg">👨‍🎓</span>
+            {/* Presensi Siswa */}
+            <button
+              onClick={handleStudentAttendance}
+              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <span className="text-white text-lg">📋</span>
+                </div>
+                <div className="text-left">
+                  <h4 className="font-semibold text-slate-800 text-sm">
+                    Presensi Siswa
+                  </h4>
+                  <p className="text-xs text-slate-600">
+                    Kelas {stats.className}
+                  </p>
+                </div>
               </div>
-              <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">
-                  Data Siswa
-                </h4>
-                <p className="text-xs text-slate-600">
-                  Kelas {stats.className}
-                </p>
-              </div>
-            </div>
-          </button>
+            </button>
 
-          <button
-            onClick={handleReports}
-            className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                <span className="text-white text-lg">📊</span>
+            {/* Input Nilai */}
+            {primarySubject && (
+              <button
+                onClick={handleGrades}
+                className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                    <span className="text-white text-lg">📝</span>
+                  </div>
+                  <div className="text-left">
+                    <h4 className="font-semibold text-slate-800 text-sm">
+                      Input Nilai
+                    </h4>
+                    <p className="text-xs text-slate-600">{primarySubject}</p>
+                  </div>
+                </div>
+              </button>
+            )}
+
+            {/* Laporan */}
+            <button
+              onClick={handleReports}
+              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <span className="text-white text-lg">📊</span>
+                </div>
+                <div className="text-left">
+                  <h4 className="font-semibold text-slate-800 text-sm">
+                    Laporan
+                  </h4>
+                  <p className="text-xs text-slate-600">
+                    Kelas {stats.className}
+                  </p>
+                </div>
               </div>
-              <div className="text-left">
-                <h4 className="font-semibold text-slate-800 text-sm">
-                  Laporan
-                </h4>
-                <p className="text-xs text-slate-600">
-                  Kelas {stats.className}
-                </p>
-              </div>
-            </div>
-          </button>
+            </button>
+          </div>
         </div>
 
         {/* Content Grid */}

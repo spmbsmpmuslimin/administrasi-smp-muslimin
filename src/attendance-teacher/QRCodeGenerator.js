@@ -171,32 +171,6 @@ const QRCodeGenerator = () => {
             <Download size={20} />
             Download QR Code
           </button>
-
-          {/* Instructions */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h3 className="font-semibold text-yellow-800 mb-2">
-              📋 Cara Testing:
-            </h3>
-            <ol className="text-sm text-yellow-800 space-y-1 list-decimal list-inside">
-              <li>Download QR Code di atas</li>
-              <li>Buka di layar lain (PC/Print/HP lain)</li>
-              <li>Buka aplikasi presensi → Tab "Scan QR"</li>
-              <li>Arahkan kamera ke QR Code ini</li>
-              <li>Presensi akan otomatis tercatat!</li>
-            </ol>
-          </div>
-
-          {/* Tips */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-800 mb-2">💡 Tips:</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>✅ QR Code bersih tanpa logo di tengah - mudah di-scan</li>
-              <li>• Print QR Code dan tempel di ruang guru</li>
-              <li>• Pastikan pencahayaan cukup saat scan</li>
-              <li>• QR Code dapat discan dari jarak 10-30 cm</li>
-              <li>• Satu guru hanya bisa presensi 1x per hari</li>
-            </ul>
-          </div>
         </div>
       )}
 
