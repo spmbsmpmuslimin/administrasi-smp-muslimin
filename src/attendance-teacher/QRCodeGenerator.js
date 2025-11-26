@@ -1,24 +1,138 @@
 // src/attendance-teacher/QRCodeGenerator.js
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Download, RefreshCw } from "lucide-react";
 
 const QRCodeGenerator = () => {
   const qrCode = "QR_PRESENSI_GURU_SMP_MUSLIMIN_CILILIN";
   const [qrUrl, setQrUrl] = useState("");
+  const [finalQrUrl, setFinalQrUrl] = useState("");
+  const canvasRef = useRef(null);
 
   const generateQR = () => {
     // Using QR Server API to generate QR code
-    const size = 300;
+    const size = 500;
     const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
       qrCode
     )}`;
     setQrUrl(url);
   };
 
+  useEffect(() => {
+    if (qrUrl && canvasRef.current) {
+      addLogoToQR();
+    }
+  }, [qrUrl]);
+
+  const addLogoToQR = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const qrSize = 500;
+    const padding = 40; // Padding untuk border
+    const size = qrSize + padding * 2; // Total size dengan border
+
+    canvas.width = size;
+    canvas.height = size;
+
+    // Draw white background
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, size, size);
+
+    // Draw outer border
+    ctx.strokeStyle = "#1e40af";
+    ctx.lineWidth = 8;
+    ctx.strokeRect(10, 10, size - 20, size - 20);
+
+    // Draw inner border (double border effect)
+    ctx.strokeStyle = "#3b82f6";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(20, 20, size - 40, size - 40);
+
+    const qrImg = new Image();
+    qrImg.crossOrigin = "anonymous";
+
+    qrImg.onload = () => {
+      // Draw QR code with padding offset
+      ctx.drawImage(qrImg, padding, padding, qrSize, qrSize);
+
+      // Calculate center based on new size with padding
+      const centerSize = qrSize * 0.28;
+      const centerX = (size - centerSize) / 2;
+      const centerY = (size - centerSize) / 2;
+      const cornerRadius = 15;
+
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "#1e40af";
+      ctx.lineWidth = 5;
+
+      // Rounded rectangle
+      ctx.beginPath();
+      ctx.moveTo(centerX + cornerRadius, centerY);
+      ctx.lineTo(centerX + centerSize - cornerRadius, centerY);
+      ctx.quadraticCurveTo(
+        centerX + centerSize,
+        centerY,
+        centerX + centerSize,
+        centerY + cornerRadius
+      );
+      ctx.lineTo(centerX + centerSize, centerY + centerSize - cornerRadius);
+      ctx.quadraticCurveTo(
+        centerX + centerSize,
+        centerY + centerSize,
+        centerX + centerSize - cornerRadius,
+        centerY + centerSize
+      );
+      ctx.lineTo(centerX + cornerRadius, centerY + centerSize);
+      ctx.quadraticCurveTo(
+        centerX,
+        centerY + centerSize,
+        centerX,
+        centerY + centerSize - cornerRadius
+      );
+      ctx.lineTo(centerX, centerY + cornerRadius);
+      ctx.quadraticCurveTo(centerX, centerY, centerX + cornerRadius, centerY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Load and draw school logo
+      const logo = new Image();
+      logo.onload = () => {
+        const logoSize = centerSize * 0.75; // Logo 75% dari center box
+        const logoX = (size - logoSize) / 2;
+        const logoY = (size - logoSize) / 2;
+
+        ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+
+        // Convert canvas to data URL
+        setFinalQrUrl(canvas.toDataURL("image/png"));
+      };
+
+      logo.onerror = () => {
+        console.error("Gagal load logo sekolah");
+        // Fallback: tampilkan text jika logo gagal load
+        ctx.fillStyle = "#1e40af";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const fontSize = centerSize / 6.5;
+        ctx.font = `bold ${fontSize}px Arial`;
+        const lineSpacing = fontSize * 1.1;
+        ctx.fillText("SMP", size / 2, size / 2 - lineSpacing);
+        ctx.fillText("MUSLIMIN", size / 2, size / 2);
+        ctx.fillText("CILILIN", size / 2, size / 2 + lineSpacing);
+
+        setFinalQrUrl(canvas.toDataURL("image/png"));
+      };
+
+      logo.src = "/logo_sekolah.PNG";
+    };
+
+    qrImg.src = qrUrl;
+  };
+
   const downloadQR = () => {
     const link = document.createElement("a");
-    link.href = qrUrl;
-    link.download = `QR_Presensi_Guru.png`;
+    link.href = finalQrUrl;
+    link.download = `QR_Presensi_Guru_SMP_MUSLIMIN.png`;
     link.click();
   };
 
@@ -29,7 +143,7 @@ const QRCodeGenerator = () => {
           🎯 Generator QR Presensi Guru
         </h1>
         <p className="text-gray-600">
-          Generate QR Code untuk sistem presensi guru
+          Generate QR Code untuk sistem presensi guru SMP MUSLIMIN
         </p>
       </div>
 
@@ -41,15 +155,21 @@ const QRCodeGenerator = () => {
         Generate QR Code
       </button>
 
+      {/* Hidden canvas for processing */}
+      <canvas ref={canvasRef} style={{ display: "none" }} />
+
       {/* QR Code Display */}
-      {qrUrl && (
+      {finalQrUrl && (
         <div className="space-y-4">
           <div className="border-4 border-blue-500 rounded-lg p-4 bg-gray-50">
             <img
-              src={qrUrl}
+              src={finalQrUrl}
               alt="QR Code"
               className="w-full max-w-sm mx-auto"
             />
+            <p className="text-center text-sm text-gray-600 mt-2">
+              QR Code dengan logo SMP MUSLIMIN CILILIN
+            </p>
           </div>
 
           {/* Code Info */}
@@ -92,6 +212,7 @@ const QRCodeGenerator = () => {
               <li>• Pastikan pencahayaan cukup saat scan</li>
               <li>• QR Code dapat discan dari jarak 10-30 cm</li>
               <li>• Satu guru hanya bisa presensi 1x per hari</li>
+              <li>• Logo sekolah tidak mengganggu scanning</li>
             </ul>
           </div>
         </div>
