@@ -30,7 +30,12 @@ const DailySummary = ({ refreshTrigger }) => {
   const fetchDailySummary = async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      // ✅ FIX: Get today's date in local timezone (Indonesia/WIB)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const today = `${year}-${month}-${day}`;
 
       // Get total active teachers
       const { count: totalTeachers, error: teacherError } = await supabase
@@ -69,28 +74,38 @@ const DailySummary = ({ refreshTrigger }) => {
       });
 
       // ========== TAMBAHAN: Fetch attendance list with teacher info ==========
+      console.log("🔍 Fetching attendance list for date:", today);
+
       const { data: attendanceListData, error: listError } = await supabase
         .from("teacher_attendance")
         .select(
           `
           *,
-          users:user_id (
+          users!teacher_id (
             full_name
           )
         `
         )
         .eq("attendance_date", today)
-        .order("check_in_time", { ascending: true });
+        .order("clock_in", { ascending: true });
 
-      if (listError) throw listError;
+      console.log("📊 Attendance list data:", attendanceListData);
+      console.log("❌ List error:", listError);
+
+      if (listError) {
+        console.error("Error fetching attendance list:", listError);
+        // Jangan throw error, biar stats tetep muncul
+      }
 
       // Format attendance list
-      const formattedList = attendanceListData.map((att, index) => ({
+      const formattedList = (attendanceListData || []).map((att, index) => ({
         no: index + 1,
         name: att.users?.full_name || "Unknown",
-        time: att.check_in_time ? formatTime(att.check_in_time) : "-",
+        time: att.clock_in ? formatTime(att.clock_in) : "-",
         status: att.status,
       }));
+
+      console.log("✅ Formatted list:", formattedList);
 
       setAttendanceList(formattedList);
       // ========== END TAMBAHAN ==========
@@ -101,12 +116,33 @@ const DailySummary = ({ refreshTrigger }) => {
     }
   };
 
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const formatTime = (timeString) => {
+    if (!timeString) return "-";
+
+    try {
+      // If format is HH:MM:SS (time only), convert to HH:MM
+      if (
+        typeof timeString === "string" &&
+        timeString.match(/^\d{2}:\d{2}:\d{2}$/)
+      ) {
+        return timeString.substring(0, 5); // Return HH:MM
+      }
+
+      // If it's a full timestamp
+      const date = new Date(timeString);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      // Fallback
+      return timeString;
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "-";
+    }
   };
 
   const getStatusBadge = (status) => {

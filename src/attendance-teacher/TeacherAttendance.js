@@ -41,13 +41,41 @@ const TeacherAttendance = ({ user }) => {
     try {
       const today = new Date().toISOString().split("T")[0];
       const currentHour = new Date().getHours();
+      const currentMinute = new Date().getMinutes();
 
-      // Only show reminder after 10:00 AM
-      if (currentHour < 10) return;
+      // ⏰ SMART REMINDER LOGIC
+      // Reminder muncul jam 07:00 - 14:00 (sepanjang waktu input manual tersedia)
+      // - Jam 07:00 - 14:00: Muncul reminder (selama mereka buka app & belum presensi)
+      // - Setelah jam 14:00: Udah lewat batas waktu, ga perlu reminder lagi
+
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+      const reminderStartTime = 7 * 60; // 07:00
+      const reminderEndTime = 14 * 60; // 14:00
+
+      if (
+        currentTimeInMinutes < reminderStartTime ||
+        currentTimeInMinutes >= reminderEndTime
+      ) {
+        console.log(
+          `⏰ Outside reminder window (${currentHour}:${String(
+            currentMinute
+          ).padStart(2, "0")})`
+        );
+        return;
+      }
+
+      console.log(
+        `🔔 Within reminder window (${currentHour}:${String(
+          currentMinute
+        ).padStart(2, "0")})`
+      );
 
       // Check if already dismissed today
       const dismissedKey = `reminder_dismissed_${today}`;
-      if (localStorage.getItem(dismissedKey)) return;
+      if (localStorage.getItem(dismissedKey)) {
+        console.log("⏭️ Reminder already dismissed today");
+        return;
+      }
 
       // Check if user has schedule today
       const dayName = new Date().toLocaleDateString("id-ID", {
@@ -65,23 +93,39 @@ const TeacherAttendance = ({ user }) => {
       const hasSchedule = scheduleData && scheduleData.length > 0;
       setHasScheduleToday(hasSchedule);
 
+      console.log("📅 Has schedule today?", hasSchedule);
+
       // Only check attendance if teacher has schedule today
-      if (!hasSchedule) return;
+      if (!hasSchedule) {
+        console.log("⏭️ No schedule today, skipping reminder");
+        return;
+      }
 
       // Check if already attended today
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const todayLocal = `${year}-${month}-${day}`;
+
       const { data: attendanceData, error: attendanceError } = await supabase
         .from("teacher_attendance")
         .select("*")
-        .eq("user_id", currentUser.id)
-        .eq("attendance_date", today);
+        .eq("teacher_id", currentUser.teacher_id)
+        .eq("attendance_date", todayLocal);
 
       if (attendanceError) throw attendanceError;
 
       const hasAttended = attendanceData && attendanceData.length > 0;
 
+      console.log("✅ Already attended today?", hasAttended);
+
       // Show reminder if hasn't attended and has schedule
       if (!hasAttended && hasSchedule) {
+        console.log("🔔 SHOWING REMINDER!");
         setShowReminder(true);
+      } else {
+        console.log("⏭️ Already attended or no schedule, no reminder needed");
       }
     } catch (error) {
       console.error("Error checking attendance reminder:", error);
@@ -177,6 +221,14 @@ const TeacherAttendance = ({ user }) => {
                 <p className="text-blue-800 text-sm">
                   <strong>📋 Info:</strong> Anda memiliki jadwal mengajar hari
                   ini. Silakan lakukan presensi untuk mencatat kehadiran Anda.
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg mb-6">
+                <p className="text-amber-800 text-sm">
+                  <strong>⏰ Batas Waktu:</strong> Input manual presensi
+                  tersedia sampai jam 14:00. Pastikan Anda presensi sebelum
+                  batas waktu!
                 </p>
               </div>
 

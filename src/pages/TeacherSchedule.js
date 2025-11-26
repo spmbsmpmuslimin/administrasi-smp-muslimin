@@ -116,18 +116,93 @@ const TeacherSchedule = ({ user }) => {
     }
   };
 
-  // ✅ FETCH CLASSES - ambil id dan grade
+  // ✅ FETCH CLASSES - HANYA KELAS YANG DIAMPU GURU INI (FIXED: use teacher_id)
   const fetchClasses = async () => {
     try {
-      const { data, error } = await supabase
+      // CRITICAL FIX: Pastikan user punya teacher_id
+      if (!user.teacher_id) {
+        console.error("❌ User tidak memiliki teacher_id!");
+        // Fallback ke semua kelas
+        const { data: allClasses } = await supabase
+          .from("classes")
+          .select("id, grade")
+          .eq("is_active", true)
+          .order("id");
+        setClasses(allClasses || []);
+        return;
+      }
+
+      console.log("🔑 Using teacher_id:", user.teacher_id);
+
+      // Step 1: Ambil kelas yang diampu guru dari teacher_assignments
+      const { data: assignments, error: assignError } = await supabase
+        .from("teacher_assignments")
+        .select("class_id")
+        .eq("teacher_id", user.teacher_id); // ← FIX: Pakai user.teacher_id bukan user.id
+
+      if (assignError) {
+        console.error("❌ Error fetching assignments:", assignError);
+        throw assignError;
+      }
+
+      console.log("📋 Teacher assignments:", assignments);
+
+      // Step 2: Jika tidak ada assignment, fallback ke semua kelas
+      if (!assignments || assignments.length === 0) {
+        console.warn(
+          "⚠️ Guru belum memiliki penugasan kelas, menampilkan semua kelas"
+        );
+
+        // FALLBACK: Tampilkan semua kelas
+        const { data: allClasses, error: allClassError } = await supabase
+          .from("classes")
+          .select("id, grade")
+          .eq("is_active", true)
+          .order("id");
+
+        if (allClassError) throw allClassError;
+
+        setClasses(allClasses || []);
+        console.log(
+          `🔄 FALLBACK: Menampilkan ${allClasses?.length || 0} kelas`
+        );
+        return;
+      }
+
+      // Step 3: Extract class_id yang diampu
+      const assignedClassIds = assignments.map((a) => a.class_id);
+      console.log("🎯 Assigned class IDs:", assignedClassIds);
+
+      // Step 4: Ambil detail kelas dari tabel classes
+      const { data: classesData, error: classError } = await supabase
         .from("classes")
         .select("id, grade")
+        .in("id", assignedClassIds)
         .eq("is_active", true)
         .order("id");
-      if (error) throw error;
-      setClasses(data || []);
+
+      if (classError) throw classError;
+
+      setClasses(classesData || []);
+      console.log(
+        `✅ Guru mengampu ${classesData?.length || 0} kelas:`,
+        classesData
+      );
     } catch (err) {
-      console.error("Error fetching classes:", err);
+      console.error("❌ Error fetching classes:", err);
+      // ULTIMATE FALLBACK: Load semua kelas kalau ada error
+      try {
+        const { data: allClasses } = await supabase
+          .from("classes")
+          .select("id, grade")
+          .eq("is_active", true)
+          .order("id");
+        setClasses(allClasses || []);
+        console.log("🆘 EMERGENCY FALLBACK: Loaded all classes");
+      } catch (fallbackErr) {
+        console.error("💀 Complete failure:", fallbackErr);
+        setClasses([]);
+      }
     }
   };
 
