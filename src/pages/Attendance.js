@@ -209,8 +209,10 @@ const Attendance = ({ user, onShowToast }) => {
     setShowRekapModal(true);
   };
 
+  // ========== REALTIME SUBSCRIPTION (Baris ~205-225) ==========
   useEffect(() => {
-    if (!teacherId) return;
+    // ✅ Skip realtime untuk Admin
+    if (user?.role === "admin" || !teacherId) return;
 
     const channel = supabase
       .channel(`attendance-${teacherId}`)
@@ -232,12 +234,21 @@ const Attendance = ({ user, onShowToast }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teacherId]);
+  }, [teacherId, user, onShowToast]);
 
+  // ========== AUTH CHECK (Baris ~227-260) ==========
   useEffect(() => {
     const checkAuth = async () => {
       try {
         if (user) {
+          // ✅ ADMIN: Allow akses tanpa teacher_id
+          if (user.role === "admin") {
+            console.log("✅ Admin access granted to Attendance page");
+            setAuthLoading(false);
+            return;
+          }
+
+          // ✅ GURU: Check teacher_id seperti biasa
           const { data: teacherData, error: teacherError } = await supabase
             .from("users")
             .select("teacher_id, homeroom_class_id")
@@ -268,9 +279,17 @@ const Attendance = ({ user, onShowToast }) => {
     checkAuth();
   }, [user]);
 
+  // ========== FETCH SUBJECTS (Baris ~262-291) ==========
   useEffect(() => {
     const fetchSubjects = async () => {
+      // ✅ Admin: Skip fetch subjects
+      if (user?.role === "admin") {
+        console.log("ℹ️ Admin mode: Subjects not loaded");
+        return;
+      }
+
       if (!teacherId) return;
+
       try {
         const { data, error } = await supabase
           .from("teacher_assignments")
@@ -297,10 +316,17 @@ const Attendance = ({ user, onShowToast }) => {
     };
 
     fetchSubjects();
-  }, [teacherId, isHomeroomTeacher, homeroomClass]);
+  }, [teacherId, isHomeroomTeacher, homeroomClass, user]);
 
+  // ========== FETCH CLASSES (Baris ~293-380) ==========
   useEffect(() => {
     const fetchClasses = async () => {
+      // ✅ Admin: Skip fetch classes
+      if (user?.role === "admin") {
+        console.log("ℹ️ Admin mode: Classes not loaded");
+        return;
+      }
+
       if (!selectedSubject || !teacherId) {
         setClasses([]);
         return;
@@ -399,7 +425,7 @@ const Attendance = ({ user, onShowToast }) => {
     };
 
     fetchClasses();
-  }, [selectedSubject, teacherId, isHomeroomTeacher, homeroomClass]);
+  }, [selectedSubject, teacherId, isHomeroomTeacher, homeroomClass, user]);
 
   useEffect(() => {
     if (selectedClass && !isHomeroomDaily()) {

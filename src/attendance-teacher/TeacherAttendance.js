@@ -214,7 +214,8 @@ const TeacherAttendance = ({ user }) => {
             {/* Content */}
             <div className="p-6">
               <p className="text-gray-700 text-center text-lg font-medium mb-6">
-                Sudahkah Anda Melakukan Presensi Hari ini?
+                Anda Belum Melakukan Presensi Hari Ini. Silakan Lakukan Presensi
+                Sekarang.
               </p>
 
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6">
