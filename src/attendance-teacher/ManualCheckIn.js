@@ -60,12 +60,19 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     setMessage(null);
 
     try {
-      // VALIDASI WAKTU - HANYA JAM 07:00-14:00
+      // VALIDASI WAKTU - HANYA JAM 07:00-14.00
       const timeCheck = validateManualInputTime();
       if (!timeCheck.allowed) {
+        const currentTime = new Date().toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "Asia/Jakarta",
+          hour12: false,
+        });
+
         setMessage({
           type: "error",
-          text: `⏰ ${timeCheck.message}\n\nDi luar jam tersebut, silakan gunakan QR Scan atau hubungi admin.`,
+          text: `⏰ Presensi hanya dapat dilakukan pada jam 07:00 - 14:00 WIB.\nWaktu saat ini: ${currentTime} WIB`,
         });
         setLoading(false);
         return;

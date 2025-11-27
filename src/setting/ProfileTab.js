@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
+import ChangePasswordSection from "./ChangePasswordSection";
 import {
   User,
   Mail,
@@ -54,6 +55,11 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState(null);
+  const [newGeneratedPassword, setNewGeneratedPassword] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [passwordCopied, setPasswordCopied] = useState(false);
 
   const isInitialLoad = useRef(true);
 
@@ -542,7 +548,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
       showToast("Anda tidak bisa menghapus akun sendiri!", "error");
       return;
     }
-
     if (
       !window.confirm(
         `Yakin ingin menghapus user "${deleteUser.full_name}"? Tindakan ini tidak bisa dibatalkan!`
@@ -550,28 +555,22 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     ) {
       return;
     }
-
     try {
       setLoading(true);
-
       const { error: deleteError } = await supabase
         .from("users")
         .delete()
         .eq("id", deleteUser.id);
-
       if (deleteError) {
         showToast(`Gagal menghapus user: ${deleteError.message}`, "error");
         setLoading(false);
         return;
       }
-
       showToast("User berhasil dihapus!", "success");
       searchUsers("");
-
       if (targetUserId === deleteUser.id) {
         setTargetUserId(userId);
       }
-
       setLoading(false);
     } catch (err) {
       console.error("Error deleting user:", err);
@@ -579,6 +578,71 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
       setLoading(false);
     }
   };
+
+  // ========== FUNGSI BARU UNTUK RESET PASSWORD ==========
+  const generateRandomPassword = () => {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let password = "";
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
+  const openResetPasswordModal = (user) => {
+    setResetPasswordUser(user);
+    const generatedPass = generateRandomPassword();
+    setNewGeneratedPassword(generatedPass);
+    setPasswordCopied(false);
+    setShowResetPasswordModal(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser || !newGeneratedPassword) return;
+
+    try {
+      setResetting(true);
+
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({
+          password: newGeneratedPassword,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", resetPasswordUser.id);
+
+      if (updateError) {
+        showToast(`Gagal mereset password: ${updateError.message}`, "error");
+        setResetting(false);
+        return;
+      }
+
+      showToast(
+        `Password berhasil direset untuk ${resetPasswordUser.full_name}!`,
+        "success"
+      );
+      setResetting(false);
+    } catch (err) {
+      console.error("Error resetting password:", err);
+      showToast("Terjadi kesalahan saat mereset password", "error");
+      setResetting(false);
+    }
+  };
+
+  const copyPasswordToClipboard = () => {
+    navigator.clipboard.writeText(newGeneratedPassword);
+    setPasswordCopied(true);
+    setTimeout(() => setPasswordCopied(false), 2000);
+  };
+
+  const closeResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setResetPasswordUser(null);
+    setNewGeneratedPassword("");
+    setPasswordCopied(false);
+  };
+  // =====================================================
 
   const isViewingOtherProfile = targetUserId !== userId;
   const isAdmin = user?.role === "admin";
@@ -882,6 +946,167 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         </div>
       )}
 
+      {/* ========== MODAL RESET PASSWORD - BARU ========== */}
+      {showResetPasswordModal && resetPasswordUser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 rounded-t-xl">
+              <div className="flex items-center justify-between text-white">
+                <h3 className="text-xl font-bold flex items-center gap-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                  </svg>
+                  Reset Password
+                </h3>
+                <button
+                  onClick={closeResetPasswordModal}
+                  className="p-1 hover:bg-white/20 rounded transition"
+                  disabled={resetting}>
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {resetting ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Mereset password...</p>
+                </div>
+              ) : (
+                <div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-yellow-800 mb-2 flex items-center gap-2">
+                      <AlertCircle size={16} />
+                      <span className="font-semibold">Perhatian!</span>
+                    </p>
+                    <p className="text-xs text-yellow-700">
+                      Password baru akan ditampilkan{" "}
+                      <span className="font-bold">hanya sekali</span>. Pastikan
+                      Anda menyalin dan menyimpannya sebelum menutup modal ini.
+                    </p>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      User:{" "}
+                      <span className="font-bold">
+                        {resetPasswordUser.full_name}
+                      </span>
+                    </p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Username:{" "}
+                      <span className="font-mono font-bold">
+                        @{resetPasswordUser.username}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 mb-4">
+                    <p className="text-xs text-gray-500 mb-2 font-semibold uppercase">
+                      Password Baru:
+                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <code className="text-2xl font-mono font-bold text-gray-900 tracking-wider">
+                        {newGeneratedPassword}
+                      </code>
+                      <button
+                        onClick={copyPasswordToClipboard}
+                        className={`flex-shrink-0 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2 ${
+                          passwordCopied
+                            ? "bg-green-100 text-green-700 border-2 border-green-500"
+                            : "bg-blue-100 text-blue-700 border-2 border-blue-500 hover:bg-blue-200"
+                        }`}>
+                        {passwordCopied ? (
+                          <>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Tersalin!
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round">
+                              <rect
+                                x="9"
+                                y="9"
+                                width="13"
+                                height="13"
+                                rx="2"
+                                ry="2"></rect>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Salin
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <p className="text-xs text-blue-700">
+                      💡 <span className="font-semibold">Tips:</span> Segera
+                      berikan password ini kepada user melalui WhatsApp, email,
+                      atau komunikasi langsung yang aman.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={closeResetPasswordModal}
+                  className="flex-1 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition"
+                  disabled={resetting}>
+                  Tutup
+                </button>
+                <button
+                  onClick={handleResetPassword}
+                  disabled={resetting}
+                  className="flex-1 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  {resetting ? (
+                    "Mereset..."
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Reset Password
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ================================================== */}
+
       {/* Viewing Other Profile Banner */}
       {isViewingOtherProfile && (
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -1155,6 +1380,24 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                               title="Edit User">
                               <Edit2 size={16} />
                             </button>
+                            {/* TOMBOL RESET PASSWORD - BARU */}
+                            <button
+                              onClick={() => openResetPasswordModal(listUser)}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition"
+                              title="Reset Password">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round">
+                                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                              </svg>
+                            </button>
                             <button
                               onClick={() => handleDelete(listUser)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
@@ -1244,7 +1487,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               <User size={20} />
               Informasi Akun
             </h3>
-
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
@@ -1254,7 +1496,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   {profileData.username}
                 </p>
               </div>
-
               {profileData.teacher_id && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
@@ -1265,7 +1506,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   </p>
                 </div>
               )}
-
               {profileData.no_hp && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
@@ -1276,7 +1516,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   </p>
                 </div>
               )}
-
               <div>
                 <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
                   Bergabung Pada
@@ -1295,7 +1534,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   {accountAge} hari yang lalu
                 </p>
               </div>
-
               {profileData.role === "admin" && (
                 <div className="pt-4 border-t border-gray-200">
                   <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
@@ -1313,6 +1551,13 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               )}
             </div>
           </div>
+
+          {/* Card Ubah Password - BARU */}
+          {!isViewingOtherProfile && (
+            <div className="mt-6">
+              <ChangePasswordSection user={user} />
+            </div>
+          )}
         </div>
 
         {/* Right Column - Assignments */}
