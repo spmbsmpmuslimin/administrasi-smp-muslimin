@@ -397,7 +397,7 @@ function App() {
         v7_relativeSplatPath: true,
       }}>
       {/* Toast Notification */}
-      {showToast && (
+      {showToast && !isMaintenanceMode && (
         <div className={getToastStyle()}>
           <div className="flex items-center gap-2">
             {toastType === "success" && <span className="text-lg">✅</span>}
