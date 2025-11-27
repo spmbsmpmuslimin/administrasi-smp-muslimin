@@ -73,9 +73,7 @@ const DailySummary = ({ refreshTrigger }) => {
         attendanceRate,
       });
 
-      // ========== TAMBAHAN: Fetch attendance list with teacher info ==========
-      console.log("🔍 Fetching attendance list for date:", today);
-
+      // Fetch attendance list with teacher info
       const { data: attendanceListData, error: listError } = await supabase
         .from("teacher_attendance")
         .select(
@@ -89,12 +87,8 @@ const DailySummary = ({ refreshTrigger }) => {
         .eq("attendance_date", today)
         .order("clock_in", { ascending: true });
 
-      console.log("📊 Attendance list data:", attendanceListData);
-      console.log("❌ List error:", listError);
-
       if (listError) {
         console.error("Error fetching attendance list:", listError);
-        // Jangan throw error, biar stats tetep muncul
       }
 
       // Format attendance list
@@ -105,10 +99,7 @@ const DailySummary = ({ refreshTrigger }) => {
         status: att.status,
       }));
 
-      console.log("✅ Formatted list:", formattedList);
-
       setAttendanceList(formattedList);
-      // ========== END TAMBAHAN ==========
     } catch (error) {
       console.error("Error fetching daily summary:", error);
     } finally {
@@ -158,13 +149,14 @@ const DailySummary = ({ refreshTrigger }) => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 🔥 LOADING: 2 kolom di mobile, 4 di desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              className="bg-white rounded-xl shadow-lg p-4 sm:p-6 animate-pulse">
+              <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/2 mb-3 sm:mb-4"></div>
+              <div className="h-6 sm:h-8 bg-gray-200 rounded w-3/4"></div>
             </div>
           ))}
         </div>
@@ -177,64 +169,72 @@ const DailySummary = ({ refreshTrigger }) => {
       title: "Total Guru",
       value: stats.totalTeachers,
       icon: Users,
-      color: "bg-blue-500",
-      textColor: "text-blue-600",
-      bgLight: "bg-blue-50",
+      gradient: "from-blue-50 to-indigo-50",
+      iconBg: "bg-gradient-to-br from-blue-400 to-blue-600",
+      textColor: "text-blue-700",
+      borderColor: "border-blue-200",
     },
     {
       title: "Hadir",
       value: stats.hadir,
       icon: CheckCircle,
-      color: "bg-green-500",
-      textColor: "text-green-600",
-      bgLight: "bg-green-50",
+      gradient: "from-green-50 to-emerald-50",
+      iconBg: "bg-gradient-to-br from-green-400 to-emerald-600",
+      textColor: "text-green-700",
+      borderColor: "border-green-200",
       subtitle: `${stats.attendanceRate}% kehadiran`,
     },
     {
       title: "Izin / Sakit",
       value: `${stats.izin} / ${stats.sakit}`,
       icon: AlertCircle,
-      color: "bg-yellow-500",
-      textColor: "text-yellow-600",
-      bgLight: "bg-yellow-50",
+      gradient: "from-yellow-50 to-amber-50",
+      iconBg: "bg-gradient-to-br from-yellow-400 to-amber-500",
+      textColor: "text-yellow-700",
+      borderColor: "border-yellow-200",
     },
     {
       title: "Alpha / Belum Absen",
       value: `${stats.alpa} / ${stats.belumAbsen}`,
       icon: XCircle,
-      color: "bg-red-500",
-      textColor: "text-red-600",
-      bgLight: "bg-red-50",
+      gradient: "from-red-50 to-rose-50",
+      iconBg: "bg-gradient-to-br from-red-400 to-rose-600",
+      textColor: "text-red-700",
+      borderColor: "border-red-200",
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards - LOGIC ASLI TETAP SAMA! */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 🔥 STATS CARDS: 2 kolom di mobile, 4 di desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
             <div
               key={index}
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+              className={`bg-gradient-to-br ${card.gradient} rounded-xl shadow-lg border ${card.borderColor} p-4 sm:p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300`}>
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-600 mb-2">
+                <div className="flex-1 min-w-0">
+                  {/* 🔥 Text size responsive */}
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 truncate">
                     {card.title}
                   </p>
-                  <h3 className="text-3xl font-bold text-gray-800 mb-1">
+                  <h3
+                    className={`text-2xl sm:text-3xl font-bold ${card.textColor} mb-1`}>
                     {card.value}
                   </h3>
                   {card.subtitle && (
                     <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <TrendingUp size={12} />
-                      {card.subtitle}
+                      <TrendingUp size={10} className="sm:w-3 sm:h-3" />
+                      <span className="truncate">{card.subtitle}</span>
                     </p>
                   )}
                 </div>
-                <div className={`${card.bgLight} p-3 rounded-lg`}>
-                  <Icon className={card.textColor} size={24} />
+                {/* 🔥 Icon dengan gradient background */}
+                <div
+                  className={`${card.iconBg} p-2 sm:p-3 rounded-lg flex-shrink-0 shadow-md`}>
+                  <Icon className="text-white w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
             </div>
@@ -242,36 +242,37 @@ const DailySummary = ({ refreshTrigger }) => {
         })}
       </div>
 
-      {/* ========== TAMBAHAN BARU: Attendance List Table ========== */}
+      {/* 🔥 ATTENDANCE TABLE: Responsive dengan scroll horizontal di mobile */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <Users size={20} />
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 sm:px-6 py-3 sm:py-4">
+          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <Users size={18} className="sm:w-5 sm:h-5" />
             Daftar Guru yang Sudah Presensi Hari Ini
           </h3>
-          <p className="text-blue-100 text-sm mt-1">
+          <p className="text-blue-100 text-xs sm:text-sm mt-1">
             Total: {attendanceList.length} guru
           </p>
         </div>
 
         {attendanceList.length > 0 ? (
+          /* 🔥 Scroll horizontal di mobile */
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b-2 border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     No.
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                     Nama Guru
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    <div className="flex items-center gap-2">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
                       <Clock size={14} />
                       Jam Presensi
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Status
                   </th>
                 </tr>
@@ -281,21 +282,24 @@ const DailySummary = ({ refreshTrigger }) => {
                   <tr
                     key={item.no}
                     className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                       {item.no}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 font-medium">
                       {item.name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
                       <div className="flex items-center gap-2">
-                        <Clock size={14} className="text-gray-400" />
+                        <Clock
+                          size={14}
+                          className="text-gray-400 flex-shrink-0"
+                        />
                         {item.time}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(
+                        className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(
                           item.status
                         )}`}>
                         {item.status}
@@ -307,18 +311,20 @@ const DailySummary = ({ refreshTrigger }) => {
             </table>
           </div>
         ) : (
-          <div className="px-6 py-12 text-center">
-            <Users size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 font-medium">
+          <div className="px-4 sm:px-6 py-8 sm:py-12 text-center">
+            <Users
+              size={40}
+              className="sm:w-12 sm:h-12 mx-auto text-gray-300 mb-3 sm:mb-4"
+            />
+            <p className="text-sm sm:text-base text-gray-500 font-medium">
               Belum ada guru yang presensi hari ini
             </p>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">
               Data akan muncul setelah ada guru yang melakukan presensi
             </p>
           </div>
         )}
       </div>
-      {/* ========== END TAMBAHAN ========== */}
     </div>
   );
 };
