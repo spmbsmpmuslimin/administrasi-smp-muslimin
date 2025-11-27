@@ -55,14 +55,14 @@ const TeacherAttendance = ({ user }) => {
       const todayLocal = `${year}-${month}-${day}`;
 
       console.log(
-        `🕐 Current Indonesia Time: ${currentHour}:${String(
-          currentMinute
-        ).padStart(2, "0")}`
+        `🕐 Indonesia Time: ${currentHour}:${String(currentMinute).padStart(
+          2,
+          "0"
+        )}`
       );
-      console.log(`📅 Today (Indonesia): ${todayLocal}`);
+      console.log(`📅 Today: ${todayLocal}`);
 
-      // ⏰ SMART REMINDER LOGIC
-      // Reminder muncul jam 07:00 - 14:00 (sepanjang waktu input manual tersedia)
+      // ⏰ Reminder only shows between 07:00 - 14:00
       const currentTimeInMinutes = currentHour * 60 + currentMinute;
       const reminderStartTime = 7 * 60; // 07:00
       const reminderEndTime = 14 * 60; // 14:00
@@ -71,39 +71,26 @@ const TeacherAttendance = ({ user }) => {
         currentTimeInMinutes < reminderStartTime ||
         currentTimeInMinutes >= reminderEndTime
       ) {
-        console.log(
-          `⏰ Outside reminder window (${currentHour}:${String(
-            currentMinute
-          ).padStart(2, "0")})`
-        );
+        console.log(`⏰ Outside reminder window`);
+        setShowReminder(false);
         return;
       }
 
-      console.log(
-        `🔔 Within reminder window (${currentHour}:${String(
-          currentMinute
-        ).padStart(2, "0")})`
-      );
+      console.log(`🔔 Within reminder window`);
 
-      // Check if already dismissed today
-      const dismissedKey = `reminder_dismissed_${todayLocal}`;
-      if (localStorage.getItem(dismissedKey)) {
-        console.log("⏭️ Reminder already dismissed today");
-        return;
-      }
-
-      // Check if user has schedule today
+      // ✅ STEP 1: Check if user has schedule today
       const dayName = indonesiaDate.toLocaleDateString("id-ID", {
         weekday: "long",
         timeZone: "Asia/Jakarta",
       });
 
-      console.log(`📆 Day name (Indonesia): ${dayName}`);
+      console.log(`📆 Day: ${dayName}`);
+      console.log(`🔍 Teacher ID: ${currentUser.teacher_id}`);
 
       const { data: scheduleData, error: scheduleError } = await supabase
         .from("teacher_schedules")
         .select("*")
-        .eq("teacher_id", currentUser.id)
+        .eq("teacher_id", currentUser.teacher_id) // ✅ FIX: Pakai teacher_id bukan id
         .eq("day", dayName);
 
       if (scheduleError) throw scheduleError;
@@ -111,15 +98,15 @@ const TeacherAttendance = ({ user }) => {
       const hasSchedule = scheduleData && scheduleData.length > 0;
       setHasScheduleToday(hasSchedule);
 
-      console.log("📋 Has schedule today?", hasSchedule);
+      console.log(`📋 Has schedule? ${hasSchedule}`);
 
-      // Only check attendance if teacher has schedule today
       if (!hasSchedule) {
-        console.log("⏭️ No schedule today, skipping reminder");
+        console.log("⏭️ No schedule today, no reminder");
+        setShowReminder(false);
         return;
       }
 
-      // Check if already attended today
+      // ✅ STEP 2: Check if already attended today in DATABASE
       const { data: attendanceData, error: attendanceError } = await supabase
         .from("teacher_attendance")
         .select("*")
@@ -130,23 +117,26 @@ const TeacherAttendance = ({ user }) => {
 
       const hasAttended = attendanceData && attendanceData.length > 0;
 
-      console.log("✅ Already attended today?", hasAttended);
+      console.log(`✅ Already attended? ${hasAttended}`);
 
-      // Show reminder if hasn't attended and has schedule
-      if (!hasAttended && hasSchedule) {
-        console.log("🔔 SHOWING REMINDER!");
+      // 🎯 SIMPLE LOGIC: Database = Source of Truth
+      // - Belum presensi → SHOW REMINDER
+      // - Sudah presensi → HIDE REMINDER
+      if (!hasAttended) {
+        console.log("🔔 SHOWING REMINDER - Not attended yet!");
         setShowReminder(true);
       } else {
-        console.log("⏭️ Already attended or no schedule, no reminder needed");
+        console.log("✅ Already attended - No reminder");
+        setShowReminder(false);
       }
     } catch (error) {
-      console.error("Error checking attendance reminder:", error);
+      console.error("❌ Error checking reminder:", error);
+      setShowReminder(false);
     }
   };
 
   const handleDismissReminder = () => {
-    const today = new Date().toISOString().split("T")[0];
-    localStorage.setItem(`reminder_dismissed_${today}`, "true");
+    // ✅ Simple: Just hide, will show again on refresh if not attended
     setShowReminder(false);
   };
 
