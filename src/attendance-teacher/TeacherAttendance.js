@@ -39,15 +39,30 @@ const TeacherAttendance = ({ user }) => {
 
   const checkAttendanceReminder = async () => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const currentHour = new Date().getHours();
-      const currentMinute = new Date().getMinutes();
+      // ✅ FIX: Gunakan timezone Indonesia (WIB/GMT+7)
+      const nowIndonesia = new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Jakarta",
+      });
+      const indonesiaDate = new Date(nowIndonesia);
+
+      const currentHour = indonesiaDate.getHours();
+      const currentMinute = indonesiaDate.getMinutes();
+
+      // Get today's date in Indonesia timezone
+      const year = indonesiaDate.getFullYear();
+      const month = String(indonesiaDate.getMonth() + 1).padStart(2, "0");
+      const day = String(indonesiaDate.getDate()).padStart(2, "0");
+      const todayLocal = `${year}-${month}-${day}`;
+
+      console.log(
+        `🕐 Current Indonesia Time: ${currentHour}:${String(
+          currentMinute
+        ).padStart(2, "0")}`
+      );
+      console.log(`📅 Today (Indonesia): ${todayLocal}`);
 
       // ⏰ SMART REMINDER LOGIC
       // Reminder muncul jam 07:00 - 14:00 (sepanjang waktu input manual tersedia)
-      // - Jam 07:00 - 14:00: Muncul reminder (selama mereka buka app & belum presensi)
-      // - Setelah jam 14:00: Udah lewat batas waktu, ga perlu reminder lagi
-
       const currentTimeInMinutes = currentHour * 60 + currentMinute;
       const reminderStartTime = 7 * 60; // 07:00
       const reminderEndTime = 14 * 60; // 14:00
@@ -71,16 +86,19 @@ const TeacherAttendance = ({ user }) => {
       );
 
       // Check if already dismissed today
-      const dismissedKey = `reminder_dismissed_${today}`;
+      const dismissedKey = `reminder_dismissed_${todayLocal}`;
       if (localStorage.getItem(dismissedKey)) {
         console.log("⏭️ Reminder already dismissed today");
         return;
       }
 
       // Check if user has schedule today
-      const dayName = new Date().toLocaleDateString("id-ID", {
+      const dayName = indonesiaDate.toLocaleDateString("id-ID", {
         weekday: "long",
+        timeZone: "Asia/Jakarta",
       });
+
+      console.log(`📆 Day name (Indonesia): ${dayName}`);
 
       const { data: scheduleData, error: scheduleError } = await supabase
         .from("teacher_schedules")
@@ -93,7 +111,7 @@ const TeacherAttendance = ({ user }) => {
       const hasSchedule = scheduleData && scheduleData.length > 0;
       setHasScheduleToday(hasSchedule);
 
-      console.log("📅 Has schedule today?", hasSchedule);
+      console.log("📋 Has schedule today?", hasSchedule);
 
       // Only check attendance if teacher has schedule today
       if (!hasSchedule) {
@@ -102,12 +120,6 @@ const TeacherAttendance = ({ user }) => {
       }
 
       // Check if already attended today
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
-      const todayLocal = `${year}-${month}-${day}`;
-
       const { data: attendanceData, error: attendanceError } = await supabase
         .from("teacher_attendance")
         .select("*")
