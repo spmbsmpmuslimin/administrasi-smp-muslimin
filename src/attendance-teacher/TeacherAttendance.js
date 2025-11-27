@@ -85,12 +85,14 @@ const TeacherAttendance = ({ user }) => {
       });
 
       console.log(`📆 Day: ${dayName}`);
-      console.log(`🔍 Teacher ID: ${currentUser.teacher_id}`);
+      console.log(`🔍 User ID: ${currentUser.id}`);
+      console.log(`🔍 Teacher Code: ${currentUser.teacher_id}`);
 
+      // ✅ Query schedule pakai user.id (UUID)
       const { data: scheduleData, error: scheduleError } = await supabase
         .from("teacher_schedules")
         .select("*")
-        .eq("teacher_id", currentUser.teacher_id) // ✅ FIX: Pakai teacher_id bukan id
+        .eq("teacher_id", currentUser.id) // Pakai UUID
         .eq("day", dayName);
 
       if (scheduleError) throw scheduleError;
@@ -107,10 +109,11 @@ const TeacherAttendance = ({ user }) => {
       }
 
       // ✅ STEP 2: Check if already attended today in DATABASE
+      // Query attendance pakai teacher_id code (G-XX)
       const { data: attendanceData, error: attendanceError } = await supabase
         .from("teacher_attendance")
         .select("*")
-        .eq("teacher_id", currentUser.teacher_id)
+        .eq("teacher_id", currentUser.teacher_id) // Pakai kode guru (G-XX)
         .eq("attendance_date", todayLocal);
 
       if (attendanceError) throw attendanceError;
