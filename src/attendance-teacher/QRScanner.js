@@ -1,7 +1,7 @@
-// src/attendance-teacher/QRScanner.js - CAMERA ONLY
+// src/attendance-teacher/QRScanner.js - CAMERA ONLY + TIME VALIDATION
 import React, { useState, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { CheckCircle, XCircle, Camera, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Camera, AlertCircle, Clock } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 const QRScanner = ({ currentUser, onSuccess }) => {
@@ -30,7 +30,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       setHtml5QrCode(qrCode);
 
       await qrCode.start(
-        { facingMode: "environment" }, // Use back camera on mobile
+        { facingMode: "environment" },
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
@@ -68,7 +68,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     // Validasi QR Code
     const validQRCodes = [
       "QR_PRESENSI_GURU_SMP_MUSLIMIN_CILILIN",
-      "QR_PRESENSI_GURU_2024", // Backup untuk QR lama
+      "QR_PRESENSI_GURU_2024",
     ];
 
     if (!validQRCodes.includes(decodedText)) {
@@ -85,7 +85,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     setLoading(true);
 
     try {
-      // FIX: Gunakan timezone Indonesia (WIB)
+      // Get current time in Jakarta timezone
       const jakartaDate = new Date(
         new Date().toLocaleString("en-US", {
           timeZone: "Asia/Jakarta",
@@ -97,12 +97,31 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       const day = String(jakartaDate.getDate()).padStart(2, "0");
       const today = `${year}-${month}-${day}`;
 
-      const hour = String(jakartaDate.getHours()).padStart(2, "0");
-      const minute = String(jakartaDate.getMinutes()).padStart(2, "0");
+      const hour = jakartaDate.getHours();
+      const minute = jakartaDate.getMinutes();
+      const hourStr = String(hour).padStart(2, "0");
+      const minuteStr = String(minute).padStart(2, "0");
       const second = String(jakartaDate.getSeconds()).padStart(2, "0");
-      const clockInTime = `${hour}:${minute}:${second}`;
+      const clockInTime = `${hourStr}:${minuteStr}:${second}`;
 
       console.log("📅 Date:", today, "Time:", clockInTime);
+
+      // ✅ VALIDASI JAM OPERASIONAL: 07:00 - 14:00
+      const currentTimeInMinutes = hour * 60 + minute;
+      const startTime = 7 * 60; // 07:00 = 420 menit
+      const endTime = 14 * 60; // 14:00 = 840 menit
+
+      if (currentTimeInMinutes < startTime || currentTimeInMinutes > endTime) {
+        const startTimeStr = "07:00";
+        const endTimeStr = "14:00";
+
+        setMessage({
+          type: "error",
+          text: `⏰ Presensi hanya dapat dilakukan pada jam ${startTimeStr} - ${endTimeStr} WIB. Waktu saat ini: ${hourStr}:${minuteStr} WIB`,
+        });
+        setLoading(false);
+        return;
+      }
 
       // Get teacher_id dari users table
       const { data: userData, error: userError } = await supabase
@@ -141,7 +160,10 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       if (existingAttendance) {
         setMessage({
           type: "warning",
-          text: `Anda sudah melakukan presensi hari ini pada pukul ${existingAttendance.clock_in}`,
+          text: `Anda sudah melakukan presensi hari ini pada pukul ${existingAttendance.clock_in.substring(
+            0,
+            5
+          )} WIB`,
         });
         setLoading(false);
         return;
@@ -280,13 +302,24 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       )}
 
       {/* Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
-          <strong>💡 Tips:</strong> Pastikan pencahayaan cukup dan QR Code
-          terlihat jelas di kamera
-        </p>
+      <div className="space-y-3">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            <strong>💡 Tips:</strong> Pastikan pencahayaan cukup dan QR Code
+            terlihat jelas di kamera
+          </p>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+          <Clock className="text-amber-600 flex-shrink-0" size={20} />
+          <p className="text-sm text-amber-800">
+            <strong>⏰ Jam Operasional:</strong> Presensi hanya dapat dilakukan
+            pada pukul 07:00 - 14:00 WIB
+          </p>
+        </div>
       </div>
     </div>
   );
 };
+
 export default QRScanner;
