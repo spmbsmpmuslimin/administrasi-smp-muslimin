@@ -42,6 +42,8 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
   useEffect(() => {
     if (formData.status === "Hadir") {
       checkLocation();
+    } else {
+      setLocationStatus(null);
     }
   }, [formData.status]);
 
@@ -58,7 +60,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     setMessage(null);
 
     try {
-      // VALIDASI WAKTU - HANYA JAM 6:30-10:00
+      // VALIDASI WAKTU - HANYA JAM 07:00-14:00
       const timeCheck = validateManualInputTime();
       if (!timeCheck.allowed) {
         setMessage({
@@ -69,19 +71,11 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         return;
       }
 
-      // VALIDASI GPS - HANYA UNTUK STATUS "HADIR"
+      // VALIDASI GPS - HANYA UNTUK STATUS "HADIR" (Soft check, no blocking)
       if (formData.status === "Hadir") {
         const locationCheck = await validateAttendanceLocation();
         setLocationStatus(locationCheck);
-
-        if (!locationCheck.allowed) {
-          setMessage({
-            type: "error",
-            text: `❌ ${locationCheck.message}\n\n📍 Presensi dengan status "Hadir" hanya bisa dilakukan di area sekolah.`,
-          });
-          setLoading(false);
-          return;
-        }
+        // GPS cuma dicatet aja, ga blocking submit
 
         // VALIDASI JADWAL (SOFT WARNING)
         const scheduleCheck = await validateTeacherSchedule(currentUser.id);
@@ -129,13 +123,24 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         updated_at: new Date().toISOString(),
       };
 
-      // Tambahkan GPS metadata jika status "Hadir"
-      if (formData.status === "Hadir" && locationStatus?.allowed) {
+      // Tambahkan GPS metadata jika status "Hadir" DAN lokasi valid
+      if (
+        formData.status === "Hadir" &&
+        locationStatus?.allowed &&
+        locationStatus?.coords
+      ) {
         attendanceMetadata.gps_location = JSON.stringify({
           lat: locationStatus.coords.lat,
           lng: locationStatus.coords.lng,
           distance: locationStatus.distance,
           accuracy: locationStatus.accuracy,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (formData.status === "Hadir" && !locationStatus?.allowed) {
+        // GPS error tapi diizinkan submit
+        attendanceMetadata.gps_location = JSON.stringify({
+          error: locationStatus?.error || "GPS_UNAVAILABLE",
+          message: locationStatus?.message || "Lokasi tidak tersedia",
           timestamp: new Date().toISOString(),
         });
       }
@@ -178,10 +183,15 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         });
       }
 
+      // ✅ Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setMessage(null);
+      }, 3000);
+
       // Trigger refresh di parent
       if (onSuccess) onSuccess();
 
-      // Reset form to today
+      // ✅ FIX: Reset form AND re-check location
       setFormData({
         date: today,
         status: "Hadir",
@@ -189,8 +199,10 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         notes: "",
       });
 
-      // Reset location status
-      setLocationStatus(null);
+      // Re-check location after reset (karena status kembali ke "Hadir")
+      setTimeout(() => {
+        checkLocation();
+      }, 500);
     } catch (error) {
       console.error("Error submitting attendance:", error);
       setMessage({
@@ -217,64 +229,16 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         </p>
       </div>
 
-      {/* GPS Status Indicator - HANYA MUNCUL JIKA STATUS "HADIR" */}
-      {formData.status === "Hadir" && (
-        <div
-          className={`p-4 rounded-lg flex items-start gap-3 border ${
-            checkingLocation
-              ? "bg-gray-50 border-gray-300"
-              : locationStatus?.allowed
-              ? "bg-green-50 border-green-200"
-              : locationStatus
-              ? "bg-red-50 border-red-200"
-              : "bg-yellow-50 border-yellow-200"
-          }`}>
-          <MapPin
-            className={`flex-shrink-0 ${
-              checkingLocation
-                ? "text-gray-500"
-                : locationStatus?.allowed
-                ? "text-green-600"
-                : "text-red-600"
-            }`}
-            size={24}
-          />
-          <div className="flex-1">
-            <p
-              className={`text-sm font-medium ${
-                checkingLocation
-                  ? "text-gray-700"
-                  : locationStatus?.allowed
-                  ? "text-green-800"
-                  : "text-red-800"
-              }`}>
-              {checkingLocation
-                ? "📍 Memeriksa lokasi Anda..."
-                : locationStatus?.allowed
-                ? `✅ Lokasi valid: ${locationStatus.distance}m dari sekolah`
-                : locationStatus
-                ? `❌ ${locationStatus.message}`
-                : "⚠️ Belum memeriksa lokasi"}
-            </p>
-            {locationStatus && !locationStatus.allowed && (
-              <button
-                type="button"
-                onClick={checkLocation}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium">
-                🔄 Cek Ulang Lokasi
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      {/* GPS Status Indicator - REMOVED! Cuma dicatat di background aja */}
+      {/* GPS check tetep jalan tapi ga ditampilin ke user biar ga ganggu */}
 
       {/* Message Alert */}
       {message && (
         <div
-          className={`p-4 rounded-lg flex items-start gap-3 ${
+          className={`p-4 rounded-lg flex items-start gap-3 transition-all duration-500 ${
             message.type === "success"
-              ? "bg-green-50 border border-green-200"
-              : "bg-red-50 border border-red-200"
+              ? "bg-green-50 border border-green-200 animate-fade-in"
+              : "bg-red-50 border border-red-200 animate-fade-in"
           }`}>
           {message.type === "success" ? (
             <CheckCircle className="text-green-600 flex-shrink-0" size={24} />
@@ -371,9 +335,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={
-            loading || (formData.status === "Hadir" && checkingLocation)
-          }
+          disabled={loading}
           className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg">
           {loading ? (
             <>
@@ -389,23 +351,31 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         </button>
       </form>
 
-      {/* Info */}
+      {/* Info - Simple */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          <strong>💡 Tips:</strong> Jika sudah ada presensi di tanggal yang
-          dipilih, data akan diupdate. Jika belum ada, akan membuat presensi
-          baru.
+          <strong>ℹ️ Info:</strong> Input manual presensi hanya tersedia pada
+          jam 07:00 - 14:00. Jika sudah ada presensi di tanggal yang dipilih,
+          data akan diupdate.
         </p>
       </div>
 
-      {/* GPS Security Info */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-        <p className="text-sm text-amber-800">
-          <strong>🔒 Keamanan:</strong> Presensi dengan status "Hadir"
-          memerlukan validasi lokasi GPS. Pastikan Anda berada di area sekolah
-          (radius 100m) saat mengisi presensi manual.
-        </p>
-      </div>
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

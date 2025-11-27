@@ -1,7 +1,7 @@
 // attendance-teacher/LocationValidator.js
 // Utility untuk validasi lokasi guru saat presensi manual
 
-import { supabase } from "../supabaseClient"; // ADDED: Import supabase
+import { supabase } from "../supabaseClient";
 
 // ========================================
 // 🔧 KONFIGURASI - DISESUAIKAN DENGAN SEKOLAH 🔧
@@ -12,7 +12,7 @@ const SCHOOL_COORDS = {
   lng: 107.416371,
 };
 
-const SCHOOL_RADIUS = 300; // 200 meter radius
+const SCHOOL_RADIUS = 300; // 300 meter radius
 
 // Debug mode - set true untuk lihat detail GPS di console
 const DEBUG_MODE = true;
@@ -20,12 +20,11 @@ const DEBUG_MODE = true;
 // ========================================
 // ⏰ TIME WINDOW untuk Manual Input
 // ========================================
-// Manual input hanya bisa dilakukan dalam jam kerja (jam datang guru)
 const MANUAL_INPUT_ALLOWED = {
-  startHour: 7, // ← Ubah dari 6 jadi 7
-  startMinute: 0, // ← Ubah dari 30 jadi 0
-  endHour: 14, // ← Ubah dari 10 jadi 14
-  endMinute: 0, // Tetap 0
+  startHour: 7,
+  startMinute: 0,
+  endHour: 14,
+  endMinute: 0,
 };
 
 /**
@@ -47,21 +46,70 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 /**
+ * Check browser support & permission status
+ */
+const checkGeolocationSupport = async () => {
+  // Check basic support
+  if (!navigator.geolocation) {
+    return {
+      supported: false,
+      message:
+        "Browser Anda tidak mendukung GPS. Gunakan Chrome atau Firefox terbaru.",
+    };
+  }
+
+  // ✅ Check permission API (modern browsers)
+  if (navigator.permissions) {
+    try {
+      const permission = await navigator.permissions.query({
+        name: "geolocation",
+      });
+
+      if (permission.state === "denied") {
+        return {
+          supported: true,
+          permissionDenied: true,
+          message:
+            "Akses lokasi diblokir. Buka pengaturan browser → Site Settings → Location → Izinkan",
+        };
+      }
+
+      return { supported: true, permissionState: permission.state };
+    } catch (error) {
+      // Permission API tidak support (Safari iOS), lanjut aja
+      console.log("Permission API not supported, continuing...");
+    }
+  }
+
+  return { supported: true };
+};
+
+/**
  * Validasi lokasi guru untuk presensi manual
  * Returns: { allowed, distance, coords, error, message }
  */
 export const validateAttendanceLocation = async () => {
-  return new Promise((resolve) => {
-    // Check if geolocation is supported
-    if (!navigator.geolocation) {
-      resolve({
-        allowed: false,
-        error: "GEOLOCATION_NOT_SUPPORTED",
-        message: "Browser Anda tidak mendukung GPS",
-      });
-      return;
-    }
+  // ✅ Pre-check browser support & permission
+  const supportCheck = await checkGeolocationSupport();
 
+  if (!supportCheck.supported) {
+    return {
+      allowed: false,
+      error: "GEOLOCATION_NOT_SUPPORTED",
+      message: supportCheck.message,
+    };
+  }
+
+  if (supportCheck.permissionDenied) {
+    return {
+      allowed: false,
+      error: "GPS_PERMISSION_DENIED",
+      message: supportCheck.message,
+      help: getPermissionHelp(),
+    };
+  }
+
+  return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const distance = calculateDistance(
@@ -91,7 +139,7 @@ export const validateAttendanceLocation = async () => {
 
         // Debug logging
         if (DEBUG_MODE) {
-          console.log("🔍 GPS DEBUG INFO:");
+          console.log("📍 GPS DEBUG INFO:");
           console.log("📍 Lokasi Anda:", {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
@@ -112,31 +160,38 @@ export const validateAttendanceLocation = async () => {
       (error) => {
         let errorMessage = "Tidak dapat mengakses lokasi";
         let errorCode = "GPS_ERROR";
+        let help = null;
 
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = "Mohon izinkan akses lokasi di pengaturan browser";
+            errorMessage = "Akses lokasi ditolak";
             errorCode = "GPS_PERMISSION_DENIED";
+            help = getPermissionHelp();
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = "Lokasi tidak tersedia. Pastikan GPS aktif";
+            errorMessage =
+              "Lokasi tidak tersedia. Pastikan GPS HP aktif dan Anda berada di luar ruangan";
             errorCode = "GPS_UNAVAILABLE";
             break;
           case error.TIMEOUT:
-            errorMessage = "Timeout mendapatkan lokasi. Coba lagi";
+            errorMessage =
+              "Waktu habis saat mencari lokasi. Pastikan GPS aktif dan coba lagi";
             errorCode = "GPS_TIMEOUT";
             break;
         }
+
+        console.error("❌ GPS Error:", errorCode, error);
 
         resolve({
           allowed: false,
           error: errorCode,
           message: errorMessage,
+          help: help,
         });
       },
       {
         enableHighAccuracy: true, // Akurasi tinggi
-        timeout: 10000, // 10 detik timeout
+        timeout: 15000, // ✅ Naikin jadi 15 detik (mobile lebih lambat)
         maximumAge: 0, // Jangan pake cached location
       }
     );
@@ -144,12 +199,35 @@ export const validateAttendanceLocation = async () => {
 };
 
 /**
+ * Get help text based on user device
+ */
+const getPermissionHelp = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  if (userAgent.includes("android")) {
+    if (userAgent.includes("chrome")) {
+      return "📱 Cara Mengizinkan di Android Chrome:\n1. Tap ikon 🔒 di address bar\n2. Tap 'Permissions'\n3. Izinkan 'Location'\n4. Refresh halaman ini";
+    }
+    return "📱 Cara Mengizinkan di Android:\n1. Buka Settings HP\n2. Apps → Browser → Permissions\n3. Aktifkan Location\n4. Refresh halaman ini";
+  }
+
+  if (userAgent.includes("iphone") || userAgent.includes("ipad")) {
+    if (userAgent.includes("safari")) {
+      return "📱 Cara Mengizinkan di iPhone Safari:\n1. Buka Settings iPhone\n2. Safari → Location\n3. Pilih 'Ask' atau 'Allow'\n4. Refresh halaman ini";
+    }
+    if (userAgent.includes("crios")) {
+      return "📱 Cara Mengizinkan di iPhone Chrome:\n1. Buka Settings iPhone\n2. Chrome → Location\n3. Pilih 'While Using'\n4. Refresh halaman ini";
+    }
+  }
+
+  return "📱 Cara Mengizinkan:\n1. Buka pengaturan browser\n2. Cari 'Site Settings' atau 'Permissions'\n3. Izinkan akses lokasi untuk situs ini\n4. Refresh halaman";
+};
+
+/**
  * Check apakah guru punya jadwal hari ini
- * UPDATED: Real query ke Supabase
  */
 export const validateTeacherSchedule = async (userId) => {
   try {
-    // Get current day name in Indonesian
     const dayNames = [
       "Minggu",
       "Senin",
@@ -161,9 +239,8 @@ export const validateTeacherSchedule = async (userId) => {
     ];
     const today = dayNames[new Date().getDay()];
 
-    console.log("🔍 Checking schedule for user:", userId, "Day:", today);
+    console.log("📅 Checking schedule for user:", userId, "Day:", today);
 
-    // Query schedules for today
     const { data: schedules, error } = await supabase
       .from("teacher_schedules")
       .select("*")
@@ -192,7 +269,6 @@ export const validateTeacherSchedule = async (userId) => {
       };
     }
 
-    // Check apakah presensi sebelum kelas pertama
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(
       now.getMinutes()
@@ -233,7 +309,6 @@ export const validateTeacherSchedule = async (userId) => {
 
 /**
  * Validasi waktu untuk manual input
- * Manual input hanya bisa dilakukan jam 6:30 - 10:00 (jam datang guru)
  */
 export const validateManualInputTime = () => {
   const now = new Date();
