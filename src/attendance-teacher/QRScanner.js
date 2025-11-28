@@ -1,7 +1,14 @@
-// src/attendance-teacher/QRScanner.js - CAMERA ONLY + TIME VALIDATION
+// src/attendance-teacher/QRScanner.js - CAMERA + ADMIN MODE
 import React, { useState, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { CheckCircle, XCircle, Camera, AlertCircle, Clock } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Camera,
+  AlertCircle,
+  Clock,
+  Shield,
+} from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 const QRScanner = ({ currentUser, onSuccess }) => {
@@ -9,6 +16,22 @@ const QRScanner = ({ currentUser, onSuccess }) => {
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [html5QrCode, setHtml5QrCode] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showTeacherSelect, setShowTeacherSelect] = useState(false);
+  const [selectedTeacherId, setSelectedTeacherId] = useState(null);
+  const [teachersList, setTeachersList] = useState([]);
+
+  // Check if user is admin
+  useEffect(() => {
+    checkAdminStatus();
+  }, [currentUser]);
+
+  // Load teachers list for admin
+  useEffect(() => {
+    if (isAdmin) {
+      loadTeachers();
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     if (scanning) {
@@ -21,6 +44,37 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       stopCamera();
     };
   }, [scanning]);
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (error) throw error;
+      setIsAdmin(data.role === "admin");
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+    }
+  };
+
+  const loadTeachers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("teacher_id, full_name, username")
+        .eq("role", "teacher")
+        .eq("is_active", true)
+        .order("full_name");
+
+      if (error) throw error;
+      setTeachersList(data || []);
+    } catch (error) {
+      console.error("Error loading teachers:", error);
+    }
+  };
 
   const startCamera = async () => {
     try {
@@ -80,9 +134,23 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       return;
     }
 
-    console.log("✅ Valid QR Code, stopping scanner...");
-    setScanning(false);
+    console.log("✅ Valid QR Code");
+
+    // Jika Admin, tanya dulu mau input untuk siapa
+    if (isAdmin) {
+      console.log("👤 Admin detected, showing teacher selection...");
+      setScanning(false);
+      setShowTeacherSelect(true);
+      return;
+    }
+
+    // Jika bukan admin, langsung proses
+    await processAttendance();
+  };
+
+  const processAttendance = async (adminSelectedTeacherId = null) => {
     setLoading(true);
+    setShowTeacherSelect(false);
 
     try {
       // Get current time in Jakarta timezone
@@ -106,39 +174,60 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
       console.log("📅 Date:", today, "Time:", clockInTime);
 
-      // ✅ VALIDASI JAM OPERASIONAL: 07:00 - 14:00
-      const currentTimeInMinutes = hour * 60 + minute;
-      const startTime = 7 * 60; // 07:00 = 420 menit
-      const endTime = 14 * 60; // 14:00 = 840 menit
+      // ✅ VALIDASI JAM OPERASIONAL: 07:00 - 14:00 (HANYA UNTUK GURU BIASA)
+      if (!isAdmin) {
+        const currentTimeInMinutes = hour * 60 + minute;
+        const startTime = 7 * 60; // 07:00 = 420 menit
+        const endTime = 14 * 60; // 14:00 = 840 menit
 
-      if (currentTimeInMinutes < startTime || currentTimeInMinutes > endTime) {
-        const startTimeStr = "07:00";
-        const endTimeStr = "14:00";
+        if (
+          currentTimeInMinutes < startTime ||
+          currentTimeInMinutes > endTime
+        ) {
+          const startTimeStr = "07:00";
+          const endTimeStr = "14:00";
 
-        setMessage({
-          type: "error",
-          text: `⏰ Presensi hanya dapat dilakukan pada jam ${startTimeStr} - ${endTimeStr} WIB. Waktu saat ini: ${hourStr}:${minuteStr} WIB`,
-        });
-        setLoading(false);
-        return;
+          setMessage({
+            type: "error",
+            text: `⏰ Presensi hanya dapat dilakukan pada jam ${startTimeStr} - ${endTimeStr} WIB. Waktu saat ini: ${hourStr}:${minuteStr} WIB`,
+          });
+          setLoading(false);
+          return;
+        }
       }
 
-      // Get teacher_id dari users table
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("teacher_id")
-        .eq("id", currentUser.id)
-        .single();
+      // Get teacher_id
+      let targetTeacherId;
+      let targetTeacherName;
 
-      if (userError) {
-        console.error("❌ User error:", userError);
-        throw userError;
-      }
+      if (isAdmin && adminSelectedTeacherId) {
+        // Admin input untuk guru lain
+        targetTeacherId = adminSelectedTeacherId;
+        const teacher = teachersList.find(
+          (t) => t.teacher_id === adminSelectedTeacherId
+        );
+        targetTeacherName = teacher?.full_name || "Unknown";
+      } else {
+        // Guru input sendiri
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("teacher_id, full_name")
+          .eq("id", currentUser.id)
+          .single();
 
-      console.log("👨‍🏫 Teacher data:", userData);
+        if (userError) {
+          console.error("❌ User error:", userError);
+          throw userError;
+        }
 
-      if (!userData.teacher_id) {
-        throw new Error("Teacher ID tidak ditemukan di data guru");
+        console.log("👨‍🏫 Teacher data:", userData);
+
+        if (!userData.teacher_id) {
+          throw new Error("Teacher ID tidak ditemukan di data guru");
+        }
+
+        targetTeacherId = userData.teacher_id;
+        targetTeacherName = userData.full_name;
       }
 
       // Cek sudah absen hari ini atau belum
@@ -146,7 +235,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       const { data: existingAttendance, error: checkError } = await supabase
         .from("teacher_attendance")
         .select("*")
-        .eq("teacher_id", userData.teacher_id)
+        .eq("teacher_id", targetTeacherId)
         .eq("attendance_date", today)
         .maybeSingle();
 
@@ -160,27 +249,51 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       if (existingAttendance) {
         setMessage({
           type: "warning",
-          text: `Anda sudah melakukan presensi hari ini pada pukul ${existingAttendance.clock_in.substring(
-            0,
-            5
-          )} WIB`,
+          text: isAdmin
+            ? `${targetTeacherName} sudah melakukan presensi hari ini pada pukul ${existingAttendance.clock_in.substring(
+                0,
+                5
+              )} WIB`
+            : `Anda sudah melakukan presensi hari ini pada pukul ${existingAttendance.clock_in.substring(
+                0,
+                5
+              )} WIB`,
         });
         setLoading(false);
         return;
+      }
+
+      // Prepare attendance data
+      const attendanceData = {
+        teacher_id: targetTeacherId,
+        attendance_date: today,
+        status: "Hadir",
+        clock_in: clockInTime,
+        check_in_method: isAdmin ? "admin_qr" : "qr",
+        notes: null,
+      };
+
+      // Tambahkan admin_info jika di-input oleh admin
+      if (isAdmin) {
+        const { data: adminData } = await supabase
+          .from("users")
+          .select("full_name")
+          .eq("id", currentUser.id)
+          .single();
+
+        attendanceData.admin_info = JSON.stringify({
+          admin_id: currentUser.id,
+          admin_name: adminData?.full_name || "Admin",
+          input_time: new Date().toISOString(),
+          reason: "Scan QR oleh admin",
+        });
       }
 
       // Insert attendance
       console.log("💾 Inserting attendance...");
       const { error: insertError } = await supabase
         .from("teacher_attendance")
-        .insert({
-          teacher_id: userData.teacher_id,
-          attendance_date: today,
-          status: "Hadir",
-          clock_in: clockInTime,
-          check_in_method: "qr",
-          notes: null,
-        });
+        .insert(attendanceData);
 
       if (insertError) {
         console.error("❌ Insert error:", insertError);
@@ -191,11 +304,19 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
       setMessage({
         type: "success",
-        text: `✅ Presensi berhasil! Jam masuk: ${clockInTime.substring(
-          0,
-          5
-        )} WIB`,
+        text: isAdmin
+          ? `✅ Presensi ${targetTeacherName} berhasil! Jam: ${clockInTime.substring(
+              0,
+              5
+            )} WIB`
+          : `✅ Presensi berhasil! Jam masuk: ${clockInTime.substring(
+              0,
+              5
+            )} WIB`,
       });
+
+      // Reset selection
+      setSelectedTeacherId(null);
 
       // Trigger refresh di parent
       if (onSuccess) {
@@ -229,14 +350,39 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     setMessage(null);
   };
 
+  const handleTeacherSubmit = () => {
+    if (!selectedTeacherId) {
+      setMessage({
+        type: "error",
+        text: "Silakan pilih guru terlebih dahulu",
+      });
+      return;
+    }
+    processAttendance(selectedTeacherId);
+  };
+
+  const handleCancelTeacherSelect = () => {
+    setShowTeacherSelect(false);
+    setSelectedTeacherId(null);
+    setMessage(null);
+  };
+
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center justify-center gap-2">
+          {isAdmin && <Shield className="text-blue-600" size={20} />}
           Scan QR Code untuk Presensi
+          {isAdmin && (
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+              ADMIN MODE
+            </span>
+          )}
         </h3>
         <p className="text-sm text-gray-600">
-          Arahkan kamera ke QR Code Presensi Guru
+          {isAdmin
+            ? "Scan QR Code untuk input presensi guru (tanpa batasan waktu)"
+            : "Arahkan kamera ke QR Code Presensi Guru"}
         </p>
       </div>
 
@@ -270,11 +416,51 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         </div>
       )}
 
+      {/* Teacher Selection Modal (Admin Only) */}
+      {showTeacherSelect && isAdmin && (
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 space-y-4">
+          <div className="flex items-center gap-2 text-blue-800 font-semibold">
+            <Shield size={20} />
+            <span>Pilih Guru untuk Presensi</span>
+          </div>
+
+          <select
+            value={selectedTeacherId || ""}
+            onChange={(e) => setSelectedTeacherId(e.target.value)}
+            className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">-- Pilih Guru --</option>
+            {teachersList.map((teacher) => (
+              <option key={teacher.teacher_id} value={teacher.teacher_id}>
+                {teacher.full_name}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleTeacherSubmit}
+              disabled={!selectedTeacherId}
+              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all">
+              Submit Presensi
+            </button>
+            <button
+              onClick={handleCancelTeacherSelect}
+              className="flex-1 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all">
+              Batal
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* QR Scanner */}
-      {!scanning && !loading && (
+      {!scanning && !loading && !showTeacherSelect && (
         <button
           onClick={startScanning}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg">
+          className={`w-full py-4 ${
+            isAdmin
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-green-600 hover:bg-green-700"
+          } text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
           <Camera size={20} />
           Buka Kamera
         </button>
@@ -303,20 +489,37 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
       {/* Info */}
       <div className="space-y-3">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
+        <div
+          className={`${
+            isAdmin
+              ? "bg-blue-50 border-blue-200"
+              : "bg-green-50 border-green-200"
+          } border rounded-lg p-4`}>
+          <p className="text-sm text-gray-800">
             <strong>💡 Tips:</strong> Pastikan pencahayaan cukup dan QR Code
             terlihat jelas di kamera
           </p>
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-          <Clock className="text-amber-600 flex-shrink-0" size={20} />
-          <p className="text-sm text-amber-800">
-            <strong>⏰ Jam Operasional:</strong> Presensi hanya dapat dilakukan
-            pada pukul 07:00 - 14:00 WIB
-          </p>
-        </div>
+        {!isAdmin && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+            <Clock className="text-amber-600 flex-shrink-0" size={20} />
+            <p className="text-sm text-amber-800">
+              <strong>⏰ Jam Operasional:</strong> Presensi hanya dapat
+              dilakukan pada pukul 07:00 - 14:00 WIB
+            </p>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+            <Shield className="text-blue-600 flex-shrink-0" size={20} />
+            <p className="text-sm text-blue-800">
+              <strong>Admin Mode:</strong> Anda dapat scan QR kapan saja tanpa
+              batasan waktu untuk input presensi guru lain
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

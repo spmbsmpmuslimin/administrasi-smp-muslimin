@@ -8,6 +8,7 @@ import {
   XCircle,
   MapPin,
   AlertTriangle,
+  Shield,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import {
@@ -25,11 +26,14 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     status: "Hadir",
     clockIn: now,
     notes: "",
+    teacherId: null, // Untuk admin bisa pilih guru lain
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [locationStatus, setLocationStatus] = useState(null);
   const [checkingLocation, setCheckingLocation] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [teachersList, setTeachersList] = useState([]);
 
   const statusOptions = [
     { value: "Hadir", label: "Hadir", color: "bg-green-500" },
@@ -38,14 +42,58 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     { value: "Alpa", label: "Alpa", color: "bg-red-500" },
   ];
 
+  // Check if user is admin
+  useEffect(() => {
+    checkAdminStatus();
+  }, [currentUser]);
+
+  // Load teachers list for admin
+  useEffect(() => {
+    if (isAdmin) {
+      loadTeachers();
+    }
+  }, [isAdmin]);
+
   // Pre-check location saat component mount (untuk status "Hadir" only)
   useEffect(() => {
-    if (formData.status === "Hadir") {
+    if (formData.status === "Hadir" && !isAdmin) {
       checkLocation();
     } else {
       setLocationStatus(null);
     }
-  }, [formData.status]);
+  }, [formData.status, isAdmin]);
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (error) throw error;
+      setIsAdmin(data.role === "admin");
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+    }
+  };
+
+  const loadTeachers = async () => {
+    try {
+      // QUERY DARI TABLE USERS (bukan teachers)
+      const { data, error } = await supabase
+        .from("users")
+        .select("teacher_id, full_name, username")
+        .eq("role", "teacher")
+        .eq("is_active", true)
+        .order("full_name");
+
+      if (error) throw error;
+      setTeachersList(data || []);
+    } catch (error) {
+      console.error("Error loading teachers:", error);
+    }
+  };
 
   const checkLocation = async () => {
     setCheckingLocation(true);
@@ -60,29 +108,30 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     setMessage(null);
 
     try {
-      // VALIDASI WAKTU - HANYA JAM 07:00-14.00
-      const timeCheck = validateManualInputTime();
-      if (!timeCheck.allowed) {
-        const currentTime = new Date().toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Asia/Jakarta",
-          hour12: false,
-        });
+      // VALIDASI WAKTU - HANYA UNTUK GURU BIASA (BUKAN ADMIN)
+      if (!isAdmin) {
+        const timeCheck = validateManualInputTime();
+        if (!timeCheck.allowed) {
+          const currentTime = new Date().toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Asia/Jakarta",
+            hour12: false,
+          });
 
-        setMessage({
-          type: "error",
-          text: `⏰ Presensi hanya dapat dilakukan pada jam 07:00 - 14:00 WIB.\nWaktu saat ini: ${currentTime} WIB`,
-        });
-        setLoading(false);
-        return;
+          setMessage({
+            type: "error",
+            text: `⏰ Presensi hanya dapat dilakukan pada jam 07:00 - 14:00 WIB.\nWaktu saat ini: ${currentTime} WIB\n\n💡 Jika lupa input presensi, hubungi Admin untuk bantuan.`,
+          });
+          setLoading(false);
+          return;
+        }
       }
 
-      // VALIDASI GPS - HANYA UNTUK STATUS "HADIR" (Soft check, no blocking)
-      if (formData.status === "Hadir") {
+      // VALIDASI GPS - HANYA UNTUK GURU BIASA & STATUS "HADIR"
+      if (!isAdmin && formData.status === "Hadir") {
         const locationCheck = await validateAttendanceLocation();
         setLocationStatus(locationCheck);
-        // GPS cuma dicatet aja, ga blocking submit
 
         // VALIDASI JADWAL (SOFT WARNING)
         const scheduleCheck = await validateTeacherSchedule(currentUser.id);
@@ -99,23 +148,39 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
       }
 
       // Get teacher_id
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("teacher_id, full_name")
-        .eq("id", currentUser.id)
-        .single();
+      let targetTeacherId;
+      let targetTeacherName;
 
-      if (userError) throw userError;
+      if (isAdmin && formData.teacherId) {
+        // Admin input untuk guru lain (teacher_id udah langsung dari dropdown)
+        targetTeacherId = formData.teacherId;
+        const teacher = teachersList.find(
+          (t) => t.teacher_id === formData.teacherId
+        );
+        targetTeacherName = teacher?.full_name || "Unknown";
+      } else {
+        // Guru input sendiri atau admin input untuk diri sendiri
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("teacher_id, full_name")
+          .eq("id", currentUser.id)
+          .single();
 
-      if (!userData.teacher_id) {
-        throw new Error("Teacher ID tidak ditemukan");
+        if (userError) throw userError;
+
+        if (!userData.teacher_id) {
+          throw new Error("Teacher ID tidak ditemukan");
+        }
+
+        targetTeacherId = userData.teacher_id;
+        targetTeacherName = userData.full_name;
       }
 
       // Cek apakah sudah ada presensi di tanggal yang dipilih
       const { data: existingAttendance, error: checkError } = await supabase
         .from("teacher_attendance")
         .select("*")
-        .eq("teacher_id", userData.teacher_id)
+        .eq("teacher_id", targetTeacherId)
         .eq("attendance_date", formData.date)
         .maybeSingle();
 
@@ -125,13 +190,30 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
       // Prepare attendance metadata (untuk audit trail)
       const attendanceMetadata = {
-        check_in_method: "manual",
+        check_in_method: isAdmin ? "admin_manual" : "manual",
         notes: formData.notes || null,
         updated_at: new Date().toISOString(),
       };
 
-      // Tambahkan GPS metadata jika status "Hadir" DAN lokasi valid
+      // Tambahkan info admin jika di-input oleh admin
+      if (isAdmin) {
+        const { data: adminData } = await supabase
+          .from("users")
+          .select("full_name")
+          .eq("id", currentUser.id)
+          .single();
+
+        attendanceMetadata.admin_info = JSON.stringify({
+          admin_id: currentUser.id,
+          admin_name: adminData?.full_name || "Admin",
+          input_time: new Date().toISOString(),
+          reason: formData.notes || "Input manual oleh admin",
+        });
+      }
+
+      // Tambahkan GPS metadata jika bukan admin DAN status "Hadir" DAN lokasi valid
       if (
+        !isAdmin &&
         formData.status === "Hadir" &&
         locationStatus?.allowed &&
         locationStatus?.coords
@@ -143,7 +225,11 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
           accuracy: locationStatus.accuracy,
           timestamp: new Date().toISOString(),
         });
-      } else if (formData.status === "Hadir" && !locationStatus?.allowed) {
+      } else if (
+        !isAdmin &&
+        formData.status === "Hadir" &&
+        !locationStatus?.allowed
+      ) {
         // GPS error tapi diizinkan submit
         attendanceMetadata.gps_location = JSON.stringify({
           error: locationStatus?.error || "GPS_UNAVAILABLE",
@@ -168,14 +254,16 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
         setMessage({
           type: "success",
-          text: `✅ Presensi tanggal ${formData.date} berhasil diupdate!`,
+          text: isAdmin
+            ? `✅ Presensi ${targetTeacherName} tanggal ${formData.date} berhasil diupdate!`
+            : `✅ Presensi tanggal ${formData.date} berhasil diupdate!`,
         });
       } else {
         // INSERT new attendance
         const { error: insertError } = await supabase
           .from("teacher_attendance")
           .insert({
-            teacher_id: userData.teacher_id,
+            teacher_id: targetTeacherId,
             attendance_date: formData.date,
             status: formData.status,
             clock_in: formData.clockIn + ":00", // Format TIME: HH:MM:SS
@@ -186,11 +274,13 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
         setMessage({
           type: "success",
-          text: `✅ Presensi tanggal ${formData.date} berhasil disimpan!`,
+          text: isAdmin
+            ? `✅ Presensi ${targetTeacherName} tanggal ${formData.date} berhasil disimpan!`
+            : `✅ Presensi tanggal ${formData.date} berhasil disimpan!`,
         });
       }
 
-      // ✅ Auto-hide success message after 3 seconds
+      // Auto-hide success message after 3 seconds
       setTimeout(() => {
         setMessage(null);
       }, 3000);
@@ -198,18 +288,21 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
       // Trigger refresh di parent
       if (onSuccess) onSuccess();
 
-      // ✅ FIX: Reset form AND re-check location
+      // Reset form
       setFormData({
         date: today,
         status: "Hadir",
         clockIn: now,
         notes: "",
+        teacherId: null,
       });
 
-      // Re-check location after reset (karena status kembali ke "Hadir")
-      setTimeout(() => {
-        checkLocation();
-      }, 500);
+      // Re-check location after reset (hanya untuk non-admin)
+      if (!isAdmin) {
+        setTimeout(() => {
+          checkLocation();
+        }, 500);
+      }
     } catch (error) {
       console.error("Error submitting attendance:", error);
       setMessage({
@@ -228,16 +321,21 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center justify-center gap-2">
+          {isAdmin && <Shield className="text-blue-600" size={20} />}
           Input Presensi Manual
+          {isAdmin && (
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+              ADMIN MODE
+            </span>
+          )}
         </h3>
         <p className="text-sm text-gray-600">
-          Isi form di bawah untuk mencatat presensi
+          {isAdmin
+            ? "Mode Admin: Dapat input presensi kapan saja untuk semua guru"
+            : "Isi form di bawah untuk mencatat presensi"}
         </p>
       </div>
-
-      {/* GPS Status Indicator - REMOVED! Cuma dicatat di background aja */}
-      {/* GPS check tetep jalan tapi ga ditampilin ke user biar ga ganggu */}
 
       {/* Message Alert */}
       {message && (
@@ -263,6 +361,32 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Pilih Guru (Hanya untuk Admin) */}
+        {isAdmin && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <Shield size={18} className="text-blue-600" />
+              Pilih Guru (Opsional)
+            </label>
+            <select
+              value={formData.teacherId || ""}
+              onChange={(e) =>
+                handleChange("teacherId", e.target.value || null)
+              }
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">-- Pilih Guru --</option>
+              {teachersList.map((teacher) => (
+                <option key={teacher.teacher_id} value={teacher.teacher_id}>
+                  {teacher.full_name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              * Pilih guru yang akan diinputkan presensinya
+            </p>
+          </div>
+        )}
+
         {/* Tanggal */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
@@ -273,12 +397,14 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
             type="date"
             value={formData.date}
             onChange={(e) => handleChange("date", e.target.value)}
-            max={today}
+            max={isAdmin ? undefined : today} // Admin bisa pilih tanggal apa aja
             required
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <p className="text-xs text-gray-500 mt-1">
-            * Bisa pilih tanggal mundur untuk input presensi yang terlupa
+            {isAdmin
+              ? "* Admin dapat memilih tanggal kapan saja"
+              : "* Bisa pilih tanggal mundur untuk input presensi yang terlupa"}
           </p>
         </div>
 
@@ -325,25 +451,39 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
           />
         </div>
 
-        {/* Catatan (Optional) */}
+        {/* Catatan */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Catatan (Opsional)
+            Catatan {isAdmin && <span className="text-red-500">*</span>}
           </label>
           <textarea
             value={formData.notes}
             onChange={(e) => handleChange("notes", e.target.value)}
             rows={3}
-            placeholder="Contoh: Sakit demam, Ada keperluan keluarga, dll..."
+            required={isAdmin}
+            placeholder={
+              isAdmin
+                ? "Contoh: Lupa input presensi, konfirmasi via WA pukul 15.30"
+                : "Contoh: Sakit demam, Ada keperluan keluarga, dll..."
+            }
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
+          {isAdmin && (
+            <p className="text-xs text-red-500 mt-1">
+              * Wajib diisi untuk audit trail
+            </p>
+          )}
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg">
+          className={`w-full py-4 ${
+            isAdmin
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-green-600 hover:bg-green-700"
+          } disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
           {loading ? (
             <>
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -352,18 +492,24 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
           ) : (
             <>
               <Save size={20} />
-              Simpan Presensi
+              {isAdmin ? "Simpan Presensi (Admin)" : "Simpan Presensi"}
             </>
           )}
         </button>
       </form>
 
-      {/* Info - Simple */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
-          <strong>ℹ️ Info:</strong> Input manual presensi hanya tersedia pada
-          jam 07:00 - 14:00. Jika sudah ada presensi di tanggal yang dipilih,
-          data akan diupdate.
+      {/* Info */}
+      <div
+        className={`${
+          isAdmin
+            ? "bg-blue-50 border-blue-200"
+            : "bg-green-50 border-green-200"
+        } border rounded-lg p-4`}>
+        <p className="text-sm text-gray-800">
+          <strong>ℹ️ Info:</strong>{" "}
+          {isAdmin
+            ? "Sebagai Admin, Anda dapat input presensi kapan saja tanpa batasan waktu. Pastikan mengisi catatan untuk audit trail."
+            : "Input manual presensi hanya tersedia pada jam 07:00 - 14:00. Jika lupa input, hubungi Admin untuk bantuan."}
         </p>
       </div>
 
