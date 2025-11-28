@@ -5,7 +5,6 @@ import { supabase } from "../supabaseClient";
 
 const TeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
-  const [isMobile, setIsMobile] = useState(false);
 
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -17,20 +16,6 @@ const TeacherDashboard = ({ user }) => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Check if mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-
-    return () => {
-      window.removeEventListener("resize", checkMobile);
-    };
-  }, []);
 
   // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
   const getDayName = (dayIndex) => {
@@ -339,127 +324,6 @@ const TeacherDashboard = ({ user }) => {
     navigate("/reports");
   };
 
-  const handleDataGuru = () => {
-    navigate("/teachers");
-  };
-
-  const handleDataKelas = () => {
-    navigate("/classes");
-  };
-
-  const handleDataSiswa = () => {
-    navigate("/students");
-  };
-
-  const handleCatatanSiswa = () => {
-    navigate("/student-notes");
-  };
-
-  const handleJadwalSaya = () => {
-    navigate("/my-schedule");
-  };
-
-  // Quick Actions Component untuk Mobile - Layout 2x4
-  const QuickActionsMobile = () => (
-    <div className="mb-6">
-      <h2 className="text-lg font-semibold text-slate-800 mb-3">Aksi Cepat</h2>
-
-      {/* Baris 1 - 4 tombol */}
-      <div className="grid grid-cols-4 gap-2 mb-2">
-        <button
-          onClick={handleTeacherAttendance}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 shadow-sm">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
-            <span className="text-white text-sm">👨‍🏫</span>
-          </div>
-          <span className="text-xs font-medium text-slate-800 text-center leading-tight">
-            Presensi Guru
-          </span>
-        </button>
-
-        <button
-          onClick={handleStudentAttendance}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all duration-200 shadow-sm">
-          <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
-            <span className="text-white text-sm">👨‍🎓</span>
-          </div>
-          <span className="text-xs font-medium text-slate-800 text-center leading-tight">
-            Presensi Siswa
-          </span>
-        </button>
-
-        <button
-          onClick={handleGrades}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 shadow-sm">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
-            <span className="text-white text-sm">📊</span>
-          </div>
-          <span className="text-xs font-medium text-slate-800 text-center leading-tight">
-            Nilai Siswa
-          </span>
-        </button>
-
-        <button
-          onClick={handleDataGuru}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-all duration-200 shadow-sm">
-          <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
-            <span className="text-white text-sm">👥</span>
-          </div>
-          <span className="text-xs font-medium text-slate-800 text-center leading-tight">
-            Data Guru
-          </span>
-        </button>
-      </div>
-
-      {/* Baris 2 - 4 tombol */}
-      <div className="grid grid-cols-4 gap-2">
-        <button
-          onClick={handleDataKelas}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200 shadow-sm">
-          <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
-            <span className="text-white text-sm">🏫</span>
-          </div>
-          <span className="text-xs font-medium text-slate-800 text-center leading-tight">
-            Data Kelas
-          </span>
-        </button>
-
-        <button
-          onClick={handleDataSiswa}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition-all duration-200 shadow-sm">
-          <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
-            <span className="text-white text-sm">👤</span>
-          </div>
-          <span className="text-xs font-medium text-slate-800 text-center leading-tight">
-            Data Siswa
-          </span>
-        </button>
-
-        <button
-          onClick={handleCatatanSiswa}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 shadow-sm">
-          <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
-            <span className="text-white text-sm">📝</span>
-          </div>
-          <span className="text-xs font-medium text-slate-800 text-center leading-tight">
-            Catatan Siswa
-          </span>
-        </button>
-
-        <button
-          onClick={handleJadwalSaya}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 shadow-sm">
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
-            <span className="text-white text-sm">📅</span>
-          </div>
-          <span className="text-xs font-medium text-slate-800 text-center leading-tight">
-            Jadwal Saya
-          </span>
-        </button>
-      </div>
-    </div>
-  );
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -533,9 +397,6 @@ const TeacherDashboard = ({ user }) => {
           </div>
         </div>
 
-        {/* AKSI CEPAT MOBILE - Muncul hanya di HP dengan layout 2x4 */}
-        {isMobile && <QuickActionsMobile />}
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Total Siswa */}
@@ -593,87 +454,83 @@ const TeacherDashboard = ({ user }) => {
           </div>
         </div>
 
-        {/* Quick Actions Desktop - Muncul hanya di Desktop/Tablet */}
-        {!isMobile && (
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
-              Aksi Cepat
-            </h2>
+        {/* Quick Actions */}
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
+            Aksi Cepat
+          </h2>
 
-            {/* Quick Actions - Horizontal Layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {/* Presensi Guru - TOMBOL BARU */}
-              <button
-                onClick={handleTeacherAttendance}
-                className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <span className="text-white text-lg">👨‍🏫</span>
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-semibold text-slate-800 text-sm">
-                      Presensi Guru
-                    </h4>
-                    <p className="text-xs text-slate-600">
-                      Absensi Diri Sendiri
-                    </p>
-                  </div>
+          {/* Quick Actions - Horizontal Layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Presensi Guru - TOMBOL BARU */}
+            <button
+              onClick={handleTeacherAttendance}
+              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <span className="text-white text-lg">👨‍🏫</span>
                 </div>
-              </button>
+                <div className="text-left">
+                  <h4 className="font-semibold text-slate-800 text-sm">
+                    Presensi Guru
+                  </h4>
+                  <p className="text-xs text-slate-600">Absensi Diri Sendiri</p>
+                </div>
+              </div>
+            </button>
 
-              {/* Presensi Siswa */}
-              <button
-                onClick={handleStudentAttendance}
-                className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <span className="text-white text-lg">📋</span>
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-semibold text-slate-800 text-sm">
-                      Presensi {primarySubject}
-                    </h4>
-                    <p className="text-xs text-slate-600">Catat Kehadiran</p>
-                  </div>
+            {/* Presensi Siswa */}
+            <button
+              onClick={handleStudentAttendance}
+              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <span className="text-white text-lg">📋</span>
                 </div>
-              </button>
+                <div className="text-left">
+                  <h4 className="font-semibold text-slate-800 text-sm">
+                    Presensi {primarySubject}
+                  </h4>
+                  <p className="text-xs text-slate-600">Catat Kehadiran</p>
+                </div>
+              </div>
+            </button>
 
-              {/* Nilai Siswa */}
-              <button
-                onClick={handleGrades}
-                className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <span className="text-white text-lg">📝</span>
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-semibold text-slate-800 text-sm">
-                      Nilai {primarySubject}
-                    </h4>
-                    <p className="text-xs text-slate-600">Input Nilai Siswa</p>
-                  </div>
+            {/* Nilai Siswa */}
+            <button
+              onClick={handleGrades}
+              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <span className="text-white text-lg">📝</span>
                 </div>
-              </button>
+                <div className="text-left">
+                  <h4 className="font-semibold text-slate-800 text-sm">
+                    Nilai {primarySubject}
+                  </h4>
+                  <p className="text-xs text-slate-600">Input Nilai Siswa</p>
+                </div>
+              </div>
+            </button>
 
-              {/* Lihat Laporan */}
-              <button
-                onClick={handleReports}
-                className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <span className="text-white text-lg">📊</span>
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-semibold text-slate-800 text-sm">
-                      Lihat Laporan
-                    </h4>
-                    <p className="text-xs text-slate-600">Nilai & Kehadiran</p>
-                  </div>
+            {/* Lihat Laporan */}
+            <button
+              onClick={handleReports}
+              className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <span className="text-white text-lg">📊</span>
                 </div>
-              </button>
-            </div>
+                <div className="text-left">
+                  <h4 className="font-semibold text-slate-800 text-sm">
+                    Lihat Laporan
+                  </h4>
+                  <p className="text-xs text-slate-600">Nilai & Kehadiran</p>
+                </div>
+              </div>
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
