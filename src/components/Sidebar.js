@@ -6,17 +6,45 @@ const Sidebar = ({
   isOpen,
   userRole,
   isWaliKelas,
+  userData = {},
 }) => {
   const isGuruBK = userRole === "guru_bk";
   const isAdmin = userRole === "admin";
   const isTeacher = userRole === "teacher";
+
+  // Ambil data user
+  const fullName = userData.full_name || "User";
+  const roleName =
+    userRole === "admin"
+      ? "Administrator"
+      : userRole === "guru_bk"
+      ? "Guru BK"
+      : isWaliKelas
+      ? `Wali Kelas ${userData.homeroom_class_name || ""}`
+      : userRole === "teacher"
+      ? "Guru"
+      : "Pengguna";
+
+  // Generate initial dari nama depan dan belakang
+  const getInitials = (name) => {
+    const words = name
+      .trim()
+      .split(" ")
+      .filter((word) => word.length > 0);
+    if (words.length === 0) return "U";
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+    // Ambil huruf pertama dari kata pertama dan kata terakhir
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  };
+
+  const initials = getInitials(fullName);
 
   return (
     <div
       className={`
       h-screen w-64
       bg-blue-900 text-white border-r border-blue-800
-      overflow-y-auto transition-all duration-300
+      overflow-y-auto transition-all duration-300 flex flex-col
       ${isOpen ? "translate-x-0" : "-translate-x-full"}
     `}>
       {/* Header */}
@@ -42,7 +70,7 @@ const Sidebar = ({
       </div>
 
       {/* Navigation */}
-      <nav className="py-4">
+      <nav className="py-4 flex-1">
         {/* Menu Utama */}
         <div className="mb-5">
           <div className="px-6 pb-2 text-xs uppercase font-semibold text-blue-300 tracking-wider">
@@ -557,6 +585,23 @@ const Sidebar = ({
           </div>
         )}
       </nav>
+
+      {/* User Profile Section - DI BAWAH PALING BAWAH */}
+      <div className="mt-auto border-t border-blue-700 p-4 bg-blue-800">
+        <div className="flex items-center gap-3">
+          {/* Avatar */}
+          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+            <span className="text-white font-bold text-sm">{initials}</span>
+          </div>
+          {/* User Info */}
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-white truncate">
+              {fullName}
+            </div>
+            <div className="text-xs text-blue-200 truncate">{roleName}</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

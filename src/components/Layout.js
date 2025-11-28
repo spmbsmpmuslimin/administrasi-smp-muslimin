@@ -380,6 +380,10 @@ const Layout = ({ user, onLogout, children }) => {
           isOpen={isSidebarOpen}
           userRole={user?.role}
           isWaliKelas={!!user?.homeroom_class_id}
+          userData={{
+            full_name: user?.full_name || user?.username || "User",
+            homeroom_class_name: user?.homeroom_class_id || "",
+          }}
         />
       </div>
 
@@ -393,6 +397,10 @@ const Layout = ({ user, onLogout, children }) => {
           isOpen={true}
           userRole={user?.role}
           isWaliKelas={!!user?.homeroom_class_id}
+          userData={{
+            full_name: user?.full_name || user?.username || "User",
+            homeroom_class_name: user?.homeroom_class_id || "",
+          }}
           onClose={() => setMobileMenuOpen(false)}
         />
       </div>
