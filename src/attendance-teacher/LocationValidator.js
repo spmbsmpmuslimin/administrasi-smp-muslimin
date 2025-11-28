@@ -23,7 +23,7 @@ const DEBUG_MODE = true;
 const MANUAL_INPUT_ALLOWED = {
   startHour: 7,
   startMinute: 0,
-  endHour: 8,
+  endHour: 14,
   endMinute: 0,
 };
 
