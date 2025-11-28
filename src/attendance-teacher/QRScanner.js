@@ -38,13 +38,20 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
   // ✅ CAMERA CONTROL - FIXED dengan useRef
   useEffect(() => {
-    if (scanning && !isScanningRef.current) {
-      startCamera();
-    } else if (!scanning && isScanningRef.current) {
-      stopCamera();
-    }
+    let mounted = true;
+
+    const initCamera = async () => {
+      if (scanning && !isScanningRef.current && mounted) {
+        await startCamera();
+      } else if (!scanning && isScanningRef.current) {
+        await stopCamera();
+      }
+    };
+
+    initCamera();
 
     return () => {
+      mounted = false;
       stopCamera();
     };
   }, [scanning]);
