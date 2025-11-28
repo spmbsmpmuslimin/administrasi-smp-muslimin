@@ -1,4 +1,4 @@
-// src/attendance-teacher/QRScanner.js - CAMERA + ADMIN MODE
+// src/attendance-teacher/QRScanner.js - CAMERA + ADMIN MODE (Clean Version)
 import React, { useState, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import {
@@ -33,6 +33,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     }
   }, [isAdmin]);
 
+  // Camera control
   useEffect(() => {
     if (scanning) {
       startCamera();
@@ -76,15 +77,10 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     }
   };
 
+  // ==================== FUNGSI KAMERA (ORIGINAL - JANGAN DIUBAH) ====================
   const startCamera = async () => {
     try {
       console.log("🎥 Starting camera...");
-
-      // Pastikan ga ada instance sebelumnya
-      if (html5QrCode) {
-        console.log("⚠️ Camera instance already exists, skipping...");
-        return;
-      }
 
       const qrCode = new Html5Qrcode("qr-reader");
       setHtml5QrCode(qrCode);
@@ -121,6 +117,11 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       }
     }
   };
+
+  const onScanError = (error) => {
+    // Silent - normal scanning errors
+  };
+  // ==================== END FUNGSI KAMERA ====================
 
   const onScanSuccess = async (decodedText) => {
     console.log("📷 QR Detected:", decodedText);
@@ -183,19 +184,16 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       // ✅ VALIDASI JAM OPERASIONAL: 07:00 - 14:00 (HANYA UNTUK GURU BIASA)
       if (!isAdmin) {
         const currentTimeInMinutes = hour * 60 + minute;
-        const startTime = 7 * 60; // 07:00 = 420 menit
-        const endTime = 14 * 60; // 14:00 = 840 menit
+        const startTime = 7 * 60;
+        const endTime = 14 * 60;
 
         if (
           currentTimeInMinutes < startTime ||
           currentTimeInMinutes > endTime
         ) {
-          const startTimeStr = "07:00";
-          const endTimeStr = "14:00";
-
           setMessage({
             type: "error",
-            text: `⏰ Presensi hanya dapat dilakukan pada jam ${startTimeStr} - ${endTimeStr} WIB. Waktu saat ini: ${hourStr}:${minuteStr} WIB`,
+            text: `⏰ Presensi hanya dapat dilakukan pada jam 07:00 - 14:00 WIB. Waktu saat ini: ${hourStr}:${minuteStr} WIB`,
           });
           setLoading(false);
           return;
@@ -221,12 +219,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
           .eq("id", currentUser.id)
           .single();
 
-        if (userError) {
-          console.error("❌ User error:", userError);
-          throw userError;
-        }
-
-        console.log("👨‍🏫 Teacher data:", userData);
+        if (userError) throw userError;
 
         if (!userData.teacher_id) {
           throw new Error("Teacher ID tidak ditemukan di data guru");
@@ -246,11 +239,8 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         .maybeSingle();
 
       if (checkError && checkError.code !== "PGRST116") {
-        console.error("❌ Check error:", checkError);
         throw checkError;
       }
-
-      console.log("📋 Existing attendance:", existingAttendance);
 
       if (existingAttendance) {
         setMessage({
@@ -301,12 +291,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         .from("teacher_attendance")
         .insert(attendanceData);
 
-      if (insertError) {
-        console.error("❌ Insert error:", insertError);
-        throw insertError;
-      }
-
-      console.log("✅ Attendance saved successfully!");
+      if (insertError) throw insertError;
 
       setMessage({
         type: "success",
@@ -324,16 +309,13 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       // Reset selection
       setSelectedTeacherId(null);
 
-      // Auto-hide success message after 3 seconds
+      // Auto-hide success message
       setTimeout(() => {
         setMessage(null);
       }, 3000);
 
-      // Trigger refresh di parent
-      if (onSuccess) {
-        console.log("🔄 Triggering parent refresh...");
-        onSuccess();
-      }
+      // Trigger refresh
+      if (onSuccess) onSuccess();
     } catch (error) {
       console.error("❌ Error submitting attendance:", error);
       setMessage({
@@ -345,18 +327,12 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     }
   };
 
-  const onScanError = (error) => {
-    // Silent - normal scanning errors
-  };
-
   const startScanning = () => {
-    console.log("🚀 Start scanning button clicked");
     setMessage(null);
     setScanning(true);
   };
 
   const stopScanning = () => {
-    console.log("🛑 Stop scanning button clicked");
     setScanning(false);
     setMessage(null);
   };
