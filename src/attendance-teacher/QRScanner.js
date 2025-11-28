@@ -80,6 +80,12 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     try {
       console.log("🎥 Starting camera...");
 
+      // Pastikan ga ada instance sebelumnya
+      if (html5QrCode) {
+        console.log("⚠️ Camera instance already exists, skipping...");
+        return;
+      }
+
       const qrCode = new Html5Qrcode("qr-reader");
       setHtml5QrCode(qrCode);
 
@@ -317,6 +323,11 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
       // Reset selection
       setSelectedTeacherId(null);
+
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        setMessage(null);
+      }, 3000);
 
       // Trigger refresh di parent
       if (onSuccess) {

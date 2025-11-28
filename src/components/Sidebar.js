@@ -32,10 +32,10 @@ const Sidebar = ({
           </div>
           <div>
             <div className="text-lg font-bold text-white leading-tight">
-              SMP Muslimin
+              SMP MUSLIMIN
             </div>
             <div className="text-lg font-bold text-white leading-tight mt-1">
-              Cililin
+              CILILIN
             </div>
           </div>
         </div>
