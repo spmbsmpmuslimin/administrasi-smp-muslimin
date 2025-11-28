@@ -1,5 +1,5 @@
-// src/attendance-teacher/QRScanner.js - CAMERA + ADMIN MODE (Clean Version)
-import React, { useState, useEffect } from "react";
+// src/attendance-teacher/QRScanner.js - FIXED CAMERA FLICKERING
+import React, { useState, useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import {
   CheckCircle,
@@ -15,11 +15,14 @@ const QRScanner = ({ currentUser, onSuccess }) => {
   const [scanning, setScanning] = useState(false);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [html5QrCode, setHtml5QrCode] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showTeacherSelect, setShowTeacherSelect] = useState(false);
   const [selectedTeacherId, setSelectedTeacherId] = useState(null);
   const [teachersList, setTeachersList] = useState([]);
+
+  // ✅ USE REF INSTEAD OF STATE - mencegah re-render
+  const html5QrCodeRef = useRef(null);
+  const isScanningRef = useRef(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -33,11 +36,11 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     }
   }, [isAdmin]);
 
-  // Camera control
+  // ✅ CAMERA CONTROL - FIXED dengan useRef
   useEffect(() => {
-    if (scanning) {
+    if (scanning && !isScanningRef.current) {
       startCamera();
-    } else {
+    } else if (!scanning && isScanningRef.current) {
       stopCamera();
     }
 
@@ -77,13 +80,19 @@ const QRScanner = ({ currentUser, onSuccess }) => {
     }
   };
 
-  // ==================== FUNGSI KAMERA (ORIGINAL - JANGAN DIUBAH) ====================
+  // ✅ FUNGSI KAMERA - FIXED FLICKERING
   const startCamera = async () => {
+    // Cegah double start
+    if (isScanningRef.current) {
+      console.log("⚠️ Camera already running, skipping start");
+      return;
+    }
+
     try {
       console.log("🎥 Starting camera...");
 
       const qrCode = new Html5Qrcode("qr-reader");
-      setHtml5QrCode(qrCode);
+      html5QrCodeRef.current = qrCode;
 
       await qrCode.start(
         { facingMode: "environment" },
@@ -95,6 +104,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         onScanError
       );
 
+      isScanningRef.current = true;
       console.log("✅ Camera started!");
     } catch (err) {
       console.error("❌ Camera error:", err);
@@ -103,17 +113,21 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         text: "Gagal membuka kamera: " + err.message,
       });
       setScanning(false);
+      isScanningRef.current = false;
     }
   };
 
   const stopCamera = async () => {
-    if (html5QrCode && html5QrCode.isScanning) {
+    if (html5QrCodeRef.current && isScanningRef.current) {
       try {
         console.log("🛑 Stopping camera...");
-        await html5QrCode.stop();
+        await html5QrCodeRef.current.stop();
+        html5QrCodeRef.current = null;
+        isScanningRef.current = false;
         console.log("✅ Camera stopped");
       } catch (err) {
         console.error("❌ Error stopping camera:", err);
+        isScanningRef.current = false;
       }
     }
   };
@@ -121,7 +135,6 @@ const QRScanner = ({ currentUser, onSuccess }) => {
   const onScanError = (error) => {
     // Silent - normal scanning errors
   };
-  // ==================== END FUNGSI KAMERA ====================
 
   const onScanSuccess = async (decodedText) => {
     console.log("📷 QR Detected:", decodedText);
@@ -143,10 +156,13 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
     console.log("✅ Valid QR Code");
 
+    // Stop camera dulu sebelum proses lebih lanjut
+    await stopCamera();
+    setScanning(false);
+
     // Jika Admin, tanya dulu mau input untuk siapa
     if (isAdmin) {
       console.log("👤 Admin detected, showing teacher selection...");
-      setScanning(false);
       setShowTeacherSelect(true);
       return;
     }
