@@ -11,11 +11,7 @@ import {
   Shield,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import {
-  validateAttendanceLocation,
-  validateTeacherSchedule,
-  validateManualInputTime,
-} from "./LocationValidator";
+import { validateAttendance } from "./LocationValidator"; // 🎯 MASTER VALIDATOR
 
 const ManualCheckIn = ({ currentUser, onSuccess }) => {
   const today = new Date().toISOString().split("T")[0];
@@ -80,7 +76,6 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
   const loadTeachers = async () => {
     try {
-      // QUERY DARI TABLE USERS (bukan teachers)
       const { data, error } = await supabase
         .from("users")
         .select("teacher_id, full_name, username")
@@ -97,8 +92,14 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
   const checkLocation = async () => {
     setCheckingLocation(true);
-    const locationCheck = await validateAttendanceLocation();
-    setLocationStatus(locationCheck);
+
+    // 🎯 PANGGIL MASTER VALIDATOR
+    const validation = await validateAttendance({
+      method: "manual",
+      userId: currentUser.id,
+    });
+
+    setLocationStatus(validation);
     setCheckingLocation(false);
   };
 
@@ -108,51 +109,95 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
     setMessage(null);
 
     try {
-      // VALIDASI WAKTU - HANYA UNTUK GURU BIASA (BUKAN ADMIN)
+      // ========================================
+      // 🎯 VALIDASI MENGGUNAKAN MASTER VALIDATOR
+      // ========================================
+
+      // Admin bypass validasi
       if (!isAdmin) {
-        const timeCheck = validateManualInputTime();
-        if (!timeCheck.allowed) {
-          const currentTime = new Date().toLocaleTimeString("id-ID", {
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZone: "Asia/Jakarta",
-            hour12: false,
+        // Status "Hadir" perlu validasi lengkap
+        if (formData.status === "Hadir") {
+          const validation = await validateAttendance({
+            method: "manual",
+            userId: currentUser.id,
           });
 
-          setMessage({
-            type: "error",
-            text: `⏰ Presensi hanya dapat dilakukan pada jam 07:00 - 14:00 WIB.\nWaktu saat ini: ${currentTime} WIB\n\n💡 Jika lupa input presensi, hubungi Admin untuk bantuan.`,
-          });
-          setLoading(false);
-          return;
+          setLocationStatus(validation);
+
+          // ❌ Kalau ada error yang blocking
+          if (!validation.isValid) {
+            const errorMessages = validation.errors
+              .map((err) => `• ${err.message}`)
+              .join("\n");
+
+            // Cek apakah ada help text untuk GPS error
+            const gpsError = validation.errors.find((err) => err.help);
+            const helpText = gpsError?.help
+              ? `\n\n📱 Panduan:\n${gpsError.help}`
+              : "";
+
+            setMessage({
+              type: "error",
+              text: `❌ Presensi tidak dapat dilakukan:\n\n${errorMessages}${helpText}\n\n💡 Jika ada kendala, hubungi Admin untuk bantuan.`,
+            });
+            setLoading(false);
+            return;
+          }
+
+          // ⚠️ Tampilkan warning jika ada (jadwal)
+          if (validation.data.warnings && validation.data.warnings.length > 0) {
+            const warningMessages = validation.data.warnings
+              .map((warn) => warn.message)
+              .join("\n\n");
+
+            const confirmMessage = `⚠️ Perhatian!\n\n${warningMessages}\n\nTetap lanjutkan presensi?`;
+            const confirmed = window.confirm(confirmMessage);
+
+            if (!confirmed) {
+              setLoading(false);
+              return;
+            }
+          }
         }
-      }
+        // Status selain "Hadir" (Izin/Sakit/Alpa) - cuma cek waktu operational
+        else {
+          const validation = await validateAttendance({
+            method: "manual",
+            userId: currentUser.id,
+          });
 
-      // VALIDASI GPS - HANYA UNTUK GURU BIASA & STATUS "HADIR"
-      if (!isAdmin && formData.status === "Hadir") {
-        const locationCheck = await validateAttendanceLocation();
-        setLocationStatus(locationCheck);
+          // Cek error waktu saja
+          const timeError = validation.errors.find(
+            (err) => err.code === "TIME_NOT_ALLOWED"
+          );
+          if (timeError) {
+            const currentTime = new Date().toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: "Asia/Jakarta",
+              hour12: false,
+            });
 
-        // VALIDASI JADWAL (SOFT WARNING)
-        const scheduleCheck = await validateTeacherSchedule(currentUser.id);
-
-        if (scheduleCheck.suspicious) {
-          const confirmMessage = `⚠️ Perhatian!\n\n${scheduleCheck.message}\n\nTetap lanjutkan presensi?`;
-          const confirmed = window.confirm(confirmMessage);
-
-          if (!confirmed) {
+            setMessage({
+              type: "error",
+              text: `⏰ Presensi hanya dapat dilakukan pada jam 07:00 - 14:00 WIB.\nWaktu saat ini: ${currentTime} WIB\n\n💡 Jika lupa input presensi, hubungi Admin untuk bantuan.`,
+            });
             setLoading(false);
             return;
           }
         }
       }
 
+      // ========================================
+      // PROSES SUBMIT ATTENDANCE
+      // ========================================
+
       // Get teacher_id
       let targetTeacherId;
       let targetTeacherName;
 
       if (isAdmin && formData.teacherId) {
-        // Admin input untuk guru lain (teacher_id udah langsung dari dropdown)
+        // Admin input untuk guru lain
         targetTeacherId = formData.teacherId;
         const teacher = teachersList.find(
           (t) => t.teacher_id === formData.teacherId
@@ -211,29 +256,32 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         });
       }
 
-      // Tambahkan GPS metadata jika bukan admin DAN status "Hadir" DAN lokasi valid
-      if (
-        !isAdmin &&
-        formData.status === "Hadir" &&
-        locationStatus?.allowed &&
-        locationStatus?.coords
-      ) {
-        attendanceMetadata.gps_location = JSON.stringify({
-          lat: locationStatus.coords.lat,
-          lng: locationStatus.coords.lng,
-          distance: locationStatus.distance,
-          accuracy: locationStatus.accuracy,
-          timestamp: new Date().toISOString(),
-        });
+      // Tambahkan GPS metadata dari validation result
+      if (!isAdmin && formData.status === "Hadir" && locationStatus?.isValid) {
+        const locationData = locationStatus.data.location;
+
+        if (locationData.allowed && locationData.coords) {
+          attendanceMetadata.gps_location = JSON.stringify({
+            lat: locationData.coords.lat,
+            lng: locationData.coords.lng,
+            distance: locationData.distance,
+            accuracy: locationData.accuracy,
+            timestamp: new Date().toISOString(),
+          });
+        }
       } else if (
         !isAdmin &&
         formData.status === "Hadir" &&
-        !locationStatus?.allowed
+        !locationStatus?.isValid
       ) {
         // GPS error tapi diizinkan submit
+        const locationError = locationStatus?.errors?.find(
+          (err) => err.code.includes("GPS") || err.code.includes("LOCATION")
+        );
+
         attendanceMetadata.gps_location = JSON.stringify({
-          error: locationStatus?.error || "GPS_UNAVAILABLE",
-          message: locationStatus?.message || "Lokasi tidak tersedia",
+          error: locationError?.code || "GPS_UNAVAILABLE",
+          message: locationError?.message || "Lokasi tidak tersedia",
           timestamp: new Date().toISOString(),
         });
       }
@@ -397,7 +445,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
             type="date"
             value={formData.date}
             onChange={(e) => handleChange("date", e.target.value)}
-            max={isAdmin ? undefined : today} // Admin bisa pilih tanggal apa aja
+            max={isAdmin ? undefined : today}
             required
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -431,7 +479,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
           {formData.status !== "Hadir" && (
             <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
               <AlertTriangle size={14} />
-              Status selain "Hadir" tidak memerlukan validasi GPS
+              Status selain "Hadir" hanya memerlukan validasi waktu operational
             </p>
           )}
         </div>

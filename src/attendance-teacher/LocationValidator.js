@@ -1,5 +1,5 @@
 // attendance-teacher/LocationValidator.js
-// Utility untuk validasi lokasi guru saat presensi manual
+// MASTER VALIDATOR - Single Source of Truth untuk semua validasi presensi
 
 import { supabase } from "../supabaseClient";
 
@@ -18,14 +18,100 @@ const SCHOOL_RADIUS = 300; // 300 meter radius
 const DEBUG_MODE = true;
 
 // ========================================
-// ⏰ TIME WINDOW untuk Manual Input
+// ⏰ TIME WINDOW untuk Input Presensi (Manual & QR)
 // ========================================
-const MANUAL_INPUT_ALLOWED = {
+const OPERATIONAL_HOURS = {
   startHour: 7,
   startMinute: 0,
   endHour: 14,
   endMinute: 0,
 };
+
+// ========================================
+// 🎯 MASTER VALIDATOR - PANGGIL INI DARI MANUAL & QR
+// ========================================
+
+/**
+ * FUNGSI UTAMA - Validasi lengkap untuk presensi (Manual & QR)
+ *
+ * @param {Object} options - { method: 'manual' | 'qr', userId: string }
+ * @returns {Promise<Object>} - { isValid, errors: [], data: {}, message }
+ *
+ * Usage:
+ * - Manual: validateAttendance({ method: 'manual', userId })
+ * - QR: validateAttendance({ method: 'qr', userId })
+ */
+export const validateAttendance = async (options = {}) => {
+  const { method = "manual", userId } = options;
+
+  const errors = [];
+  const validationData = {
+    method,
+    timestamp: new Date().toISOString(),
+  };
+
+  // ========================================
+  // STEP 1: Validasi Waktu Operational (07:00-14:00)
+  // ========================================
+  const timeValidation = validateOperationalTime();
+  validationData.time = timeValidation;
+
+  if (!timeValidation.allowed) {
+    errors.push({
+      code: "TIME_NOT_ALLOWED",
+      message: timeValidation.message,
+    });
+  }
+
+  // ========================================
+  // STEP 2: Validasi Lokasi GPS (Semua Method)
+  // ========================================
+  const locationValidation = await validateLocation();
+  validationData.location = locationValidation;
+
+  if (!locationValidation.allowed) {
+    errors.push({
+      code: locationValidation.error || "LOCATION_NOT_ALLOWED",
+      message: locationValidation.message,
+      help: locationValidation.help,
+    });
+  }
+
+  // ========================================
+  // STEP 3: Validasi Jadwal Guru (Optional Warning)
+  // ========================================
+  if (userId) {
+    const scheduleValidation = await validateTeacherSchedule(userId);
+    validationData.schedule = scheduleValidation;
+
+    // Ini cuma warning, bukan blocking
+    if (scheduleValidation.suspicious) {
+      validationData.warnings = validationData.warnings || [];
+      validationData.warnings.push({
+        code: scheduleValidation.reason,
+        message: scheduleValidation.message,
+      });
+    }
+  }
+
+  // ========================================
+  // RESULT
+  // ========================================
+  const isValid = errors.length === 0;
+
+  return {
+    isValid,
+    errors,
+    data: validationData,
+    message: isValid
+      ? `✅ Validasi berhasil - Jarak ${validationData.location.distance}m dari sekolah`
+      : `❌ ${errors.map((e) => e.message).join(". ")}`,
+  };
+};
+
+// ========================================
+// 📍 VALIDASI LOKASI GPS
+// ========================================
 
 /**
  * Hitung jarak antara 2 koordinat menggunakan Haversine formula
@@ -49,7 +135,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
  * Check browser support & permission status
  */
 const checkGeolocationSupport = async () => {
-  // Check basic support
   if (!navigator.geolocation) {
     return {
       supported: false,
@@ -58,7 +143,6 @@ const checkGeolocationSupport = async () => {
     };
   }
 
-  // ✅ Check permission API (modern browsers)
   if (navigator.permissions) {
     try {
       const permission = await navigator.permissions.query({
@@ -76,7 +160,6 @@ const checkGeolocationSupport = async () => {
 
       return { supported: true, permissionState: permission.state };
     } catch (error) {
-      // Permission API tidak support (Safari iOS), lanjut aja
       console.log("Permission API not supported, continuing...");
     }
   }
@@ -85,11 +168,9 @@ const checkGeolocationSupport = async () => {
 };
 
 /**
- * Validasi lokasi guru untuk presensi manual
- * Returns: { allowed, distance, coords, error, message }
+ * Validasi lokasi GPS (dipakai oleh master validator)
  */
-export const validateAttendanceLocation = async () => {
-  // ✅ Pre-check browser support & permission
+const validateLocation = async () => {
   const supportCheck = await checkGeolocationSupport();
 
   if (!supportCheck.supported) {
@@ -134,10 +215,9 @@ export const validateAttendanceLocation = async () => {
             ? `Anda berada ${Math.round(distance)}m dari sekolah`
             : `Anda berada ${Math.round(
                 distance
-              )}m dari sekolah. Presensi manual hanya bisa dilakukan dalam radius ${SCHOOL_RADIUS}m`,
+              )}m dari sekolah. Presensi hanya bisa dilakukan dalam radius ${SCHOOL_RADIUS}m`,
         };
 
-        // Debug logging
         if (DEBUG_MODE) {
           console.log("📍 GPS DEBUG INFO:");
           console.log("📍 Lokasi Anda:", {
@@ -190,9 +270,9 @@ export const validateAttendanceLocation = async () => {
         });
       },
       {
-        enableHighAccuracy: true, // Akurasi tinggi
-        timeout: 15000, // ✅ Naikin jadi 15 detik (mobile lebih lambat)
-        maximumAge: 0, // Jangan pake cached location
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
       }
     );
   });
@@ -222,6 +302,58 @@ const getPermissionHelp = () => {
 
   return "📱 Cara Mengizinkan:\n1. Buka pengaturan browser\n2. Cari 'Site Settings' atau 'Permissions'\n3. Izinkan akses lokasi untuk situs ini\n4. Refresh halaman";
 };
+
+// ========================================
+// ⏰ VALIDASI WAKTU OPERATIONAL
+// ========================================
+
+/**
+ * Validasi waktu operational sekolah (07:00-14:00)
+ */
+const validateOperationalTime = () => {
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+
+  const currentMinutes = hour * 60 + minute;
+  const startMinutes =
+    OPERATIONAL_HOURS.startHour * 60 + OPERATIONAL_HOURS.startMinute;
+  const endMinutes =
+    OPERATIONAL_HOURS.endHour * 60 + OPERATIONAL_HOURS.endMinute;
+
+  const isWithinWindow =
+    currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+
+  if (!isWithinWindow) {
+    return {
+      allowed: false,
+      currentTime: `${String(hour).padStart(2, "0")}:${String(minute).padStart(
+        2,
+        "0"
+      )}`,
+      message: `Presensi hanya bisa dilakukan jam ${
+        OPERATIONAL_HOURS.startHour
+      }:${OPERATIONAL_HOURS.startMinute.toString().padStart(2, "0")} - ${
+        OPERATIONAL_HOURS.endHour
+      }:${OPERATIONAL_HOURS.endMinute
+        .toString()
+        .padStart(2, "0")} (jam operational sekolah)`,
+    };
+  }
+
+  return {
+    allowed: true,
+    currentTime: `${String(hour).padStart(2, "0")}:${String(minute).padStart(
+      2,
+      "0"
+    )}`,
+    message: "Waktu presensi valid",
+  };
+};
+
+// ========================================
+// 📅 VALIDASI JADWAL GURU
+// ========================================
 
 /**
  * Check apakah guru punya jadwal hari ini
@@ -307,47 +439,39 @@ export const validateTeacherSchedule = async (userId) => {
   }
 };
 
+// ========================================
+// 🔄 BACKWARD COMPATIBILITY (Optional - bisa dihapus nanti)
+// ========================================
+
 /**
- * Validasi waktu untuk manual input
+ * @deprecated Use validateAttendance() instead
+ * Legacy function - kept for backward compatibility
  */
-export const validateManualInputTime = () => {
-  const now = new Date();
-  const hour = now.getHours();
-  const minute = now.getMinutes();
+export const validateAttendanceLocation = validateLocation;
 
-  const currentMinutes = hour * 60 + minute;
-  const startMinutes =
-    MANUAL_INPUT_ALLOWED.startHour * 60 + MANUAL_INPUT_ALLOWED.startMinute;
-  const endMinutes =
-    MANUAL_INPUT_ALLOWED.endHour * 60 + MANUAL_INPUT_ALLOWED.endMinute;
+/**
+ * @deprecated Use validateAttendance() instead
+ * Legacy function - kept for backward compatibility
+ */
+export const validateManualInputTime = validateOperationalTime;
 
-  const isWithinWindow =
-    currentMinutes >= startMinutes && currentMinutes <= endMinutes;
-
-  if (!isWithinWindow) {
-    return {
-      allowed: false,
-      message: `Manual input hanya bisa dilakukan jam ${
-        MANUAL_INPUT_ALLOWED.startHour
-      }:${MANUAL_INPUT_ALLOWED.startMinute.toString().padStart(2, "0")} - ${
-        MANUAL_INPUT_ALLOWED.endHour
-      }:${MANUAL_INPUT_ALLOWED.endMinute
-        .toString()
-        .padStart(2, "0")} (jam datang guru)`,
-    };
-  }
-
-  return {
-    allowed: true,
-    message: "Waktu input valid",
-  };
-};
+// ========================================
+// 📤 EXPORTS
+// ========================================
 
 export default {
-  validateAttendanceLocation,
+  // 🎯 MASTER VALIDATOR - USE THIS
+  validateAttendance,
+
+  // Individual validators (jika perlu dipakai terpisah)
   validateTeacherSchedule,
-  validateManualInputTime,
+
+  // Config
   SCHOOL_COORDS,
   SCHOOL_RADIUS,
-  MANUAL_INPUT_ALLOWED,
+  OPERATIONAL_HOURS,
+
+  // Legacy (backward compatibility)
+  validateAttendanceLocation,
+  validateManualInputTime,
 };
