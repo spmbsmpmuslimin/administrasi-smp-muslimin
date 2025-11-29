@@ -1,7 +1,0 @@
-@echo off
-cd "D:\Aplikasi Produksi\Administrasi SMP Muslimin"
-git add .
-git commit -m "update terbaru"
-git push origin main
-pause
-
