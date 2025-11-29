@@ -26,3 +26,5 @@ yarn-error.log*
 
 # Deploy scripts
 *.bat
+.vercel
+.env*.local
