@@ -502,25 +502,15 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         {/* Catatan */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Catatan {isAdmin && <span className="text-red-500">*</span>}
+            Catatan (Opsional)
           </label>
           <textarea
             value={formData.notes}
             onChange={(e) => handleChange("notes", e.target.value)}
             rows={3}
-            required={isAdmin}
-            placeholder={
-              isAdmin
-                ? "Contoh: Lupa input presensi, konfirmasi via WA pukul 15.30"
-                : "Contoh: Sakit demam, Ada keperluan keluarga, dll..."
-            }
+            placeholder="Contoh: Sakit demam, Ada keperluan keluarga, dll..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
-          {isAdmin && (
-            <p className="text-xs text-red-500 mt-1">
-              * Wajib diisi untuk audit trail
-            </p>
-          )}
         </div>
 
         {/* Submit Button */}
