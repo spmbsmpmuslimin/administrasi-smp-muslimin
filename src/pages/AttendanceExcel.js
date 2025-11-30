@@ -864,7 +864,7 @@ export const exportSemesterRecapToExcel = async ({
     // Title row
     worksheet.mergeCells(2, 1, 2, totalCols);
     const titleCell = worksheet.getCell(2, 1);
-    titleCell.value = `Rekap Presensi - Kelas ${classId}`;
+    titleCell.value = `Rekap Presensi Harian - Kelas ${classId}`;
     titleCell.font = { name: "Arial", size: 12, bold: true };
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(2).height = 20;

@@ -9,7 +9,7 @@ import Dashboard from "./components/Dashboard";
 import Teachers from "./pages/Teachers";
 import Classes from "./pages/Classes";
 import Students from "./pages/Students";
-import Attendance from "./pages/Attendance";
+import Attendance from "./pages/attendance/Attendance";
 import AttendanceManagement from "./pages/AttendanceManagement";
 import Grades from "./pages/Grades";
 import TeacherSchedule from "./pages/TeacherSchedule";

@@ -280,7 +280,7 @@ const Sidebar = ({
           )}
 
           {/* Management Presensi - HANYA UNTUK ADMIN */}
-          {isAdmin && (
+          {false && isAdmin && (
             <a
               href="#attendance-management"
               className={`
