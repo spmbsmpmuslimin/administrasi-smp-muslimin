@@ -12,7 +12,7 @@ const SCHOOL_COORDS = {
   lng: 107.416448,
 };
 
-const SCHOOL_RADIUS = 1200; // 200 meter radius
+const SCHOOL_RADIUS = 200; // 200 meter radius
 // Quality Excellent - bisa pakai radius 150-200m
 
 // Debug mode - set true untuk lihat detail GPS di console
@@ -24,7 +24,7 @@ const DEBUG_MODE = true;
 const OPERATIONAL_HOURS = {
   startHour: 7,
   startMinute: 0,
-  endHour: 14,
+  endHour: 8,
   endMinute: 0,
 };
 
