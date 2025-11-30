@@ -576,12 +576,12 @@ const QRScanner = ({ currentUser, onSuccess }) => {
             <Clock className="text-amber-600 flex-shrink-0" size={20} />
             <div className="space-y-2">
               <p className="text-sm text-amber-800">
-                <strong>⏰ Jam Operasional:</strong> Presensi hanya dapat
-                dilakukan pada pukul 07:00 - 14:00 WIB
+                <strong>⏰ Jam Operasional:</strong> Presensi Hanya Dapat
+                Dilakukan Pada Pukul 07:00 - 14:00 WIB
               </p>
               <p className="text-sm text-amber-800">
-                <strong>📍 Validasi Lokasi:</strong> Pastikan GPS aktif dan Anda
-                berada dalam radius 200m dari sekolah
+                <strong>📍 Validasi Lokasi:</strong> Pastikan GPS Aktif dan Anda
+                Berada Dalam Radius 200m Dari Sekolah
               </p>
             </div>
           </div>
