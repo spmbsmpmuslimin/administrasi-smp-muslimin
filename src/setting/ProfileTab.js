@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
-import ChangePasswordSection from "./ChangePasswordSection";
+import ChangePasswordSection from "./ChangePasswordSection"; // Asumsi ChangePasswordSection ada
 import {
   User,
   Mail,
@@ -23,6 +23,7 @@ import {
   Save,
   AlertCircle,
   Phone,
+  List,
 } from "lucide-react";
 
 const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
@@ -63,6 +64,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
   const isInitialLoad = useRef(true);
 
+  // LOGIC: Fetch Active Academic Year
   const fetchActiveAcademicYear = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -83,6 +85,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     }
   }, []);
 
+  // LOGIC: Search Users (Admin)
   const searchUsers = useCallback(
     async (query) => {
       try {
@@ -124,6 +127,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     [showToast]
   );
 
+  // LOGIC: Load User Profile
   const loadUserProfile = useCallback(
     async (uid) => {
       try {
@@ -200,6 +204,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     [fetchActiveAcademicYear, setLoading, showToast]
   );
 
+  // LOGIC: Load Teaching Assignments
   const loadTeachingAssignments = useCallback(
     async (teacherId, activeYear, includeHistory = false) => {
       try {
@@ -319,14 +324,14 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     []
   );
 
-  // Auto-expand list on search
+  // LOGIC: Auto-expand list on search
   useEffect(() => {
     if (searchQuery.trim() && !showUserList) {
       setShowUserList(true);
     }
   }, [searchQuery, showUserList]);
 
-  // Filter users based on search
+  // LOGIC: Filter users based on search
   useEffect(() => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -342,14 +347,14 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     }
   }, [searchQuery, userSearchResults]);
 
-  // Load users on mount (only for admin)
+  // LOGIC: Load users on mount (only for admin)
   useEffect(() => {
     if (user?.role === "admin" && userSearchResults.length === 0) {
       searchUsers("");
     }
   }, [user?.role, userSearchResults.length, searchUsers]);
 
-  // Effects
+  // LOGIC: Effects for initial load and target user change
   useEffect(() => {
     if (targetUserId && isInitialLoad.current) {
       isInitialLoad.current = false;
@@ -363,6 +368,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     }
   }, [targetUserId]);
 
+  // LOGIC: Effects for loading assignments
   useEffect(() => {
     if (
       !isInitialLoad.current &&
@@ -382,7 +388,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     loadTeachingAssignments,
   ]);
 
-  // Debounced search
+  // LOGIC: Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       if (user?.role === "admin") {
@@ -393,6 +399,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     return () => clearTimeout(timer);
   }, [searchQuery, searchUsers, user?.role]);
 
+  // HANDLER: View Profile
   const handleViewProfile = (selectedUser) => {
     setTargetUserId(selectedUser.id);
     setShowUserList(false);
@@ -400,6 +407,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // HANDLER: Open Add Modal
   const openAddModal = () => {
     setModalMode("add");
     setEditingUser(null);
@@ -416,6 +424,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     setShowUserModal(true);
   };
 
+  // HANDLER: Open Edit Modal
   const openEditModal = (user) => {
     setModalMode("edit");
     setEditingUser(user);
@@ -432,6 +441,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     setShowUserModal(true);
   };
 
+  // LOGIC: Form Validation
   const validateForm = () => {
     const errors = {};
 
@@ -463,6 +473,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     return Object.keys(errors).length === 0;
   };
 
+  // HANDLER: Form Submit (Add/Edit)
   const handleSubmit = async () => {
     if (!validateForm()) {
       showToast("Mohon lengkapi semua field yang wajib diisi", "error");
@@ -543,6 +554,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     }
   };
 
+  // HANDLER: Delete User
   const handleDelete = async (deleteUser) => {
     if (deleteUser.id === userId) {
       showToast("Anda tidak bisa menghapus akun sendiri!", "error");
@@ -623,6 +635,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         "success"
       );
       setResetting(false);
+      // Optional: close modal after successful reset
+      setTimeout(() => setShowResetPasswordModal(false), 1500);
     } catch (err) {
       console.error("Error resetting password:", err);
       showToast("Terjadi kesalahan saat mereset password", "error");
@@ -670,623 +684,110 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
   if (!profileData) {
     return (
-      <div className="flex flex-col items-center justify-center p-12">
-        <div className="bg-gray-100 rounded-full p-6 mb-4">
-          <User size={56} className="text-gray-400" />
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
+        <div className="max-w-xl mx-auto bg-white rounded-xl shadow-lg p-8 text-center border border-red-200">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            Data Profil Hilang
+          </h2>
+          <p className="text-gray-600">
+            Terjadi kesalahan saat memuat data profil. Silakan coba *logout*
+            lalu *login* kembali.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            Refresh Halaman
+          </button>
         </div>
-        <p className="text-gray-500 text-xl font-semibold mb-2">
-          Data profil tidak tersedia
-        </p>
-        <p className="text-gray-400 text-sm mb-6">
-          Terjadi kesalahan saat memuat profil
-        </p>
-        <button
-          onClick={() => {
-            isInitialLoad.current = true;
-            loadUserProfile(targetUserId);
-          }}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
-          Coba Lagi
-        </button>
       </div>
     );
   }
 
-  const currentAssignments =
-    profileData.teaching_assignments?.filter(
-      (a) => a.academic_year === activeAcademicYear
-    ) || [];
+  const { teaching_assignments: assignments = [] } = profileData;
 
-  const historyAssignments =
-    profileData.teaching_assignments?.filter(
-      (a) => a.academic_year !== activeAcademicYear
-    ) || [];
-
-  const totalSubjects = currentAssignments.length;
-  const uniqueSubjects = [...new Set(currentAssignments.map((a) => a.subject))]
-    .length;
-  const totalClasses = [...new Set(currentAssignments.map((a) => a.class_id))]
-    .length;
-  const accountAge = Math.floor(
-    (new Date() - new Date(profileData.created_at)) / (1000 * 60 * 60 * 24)
+  // Filter current assignments
+  const currentAssignments = assignments.filter(
+    (a) => a.academic_year === activeAcademicYear
   );
 
-  const totalUsers = userSearchResults.length;
-  const displayCount = searchQuery ? filteredUsers.length : totalUsers;
+  // Calculate stats for current year
+  const totalSubjects = currentAssignments.length || 0;
+  const uniqueSubjects = [...new Set(currentAssignments?.map((a) => a.subject))]
+    .length;
+  const totalClasses = [...new Set(currentAssignments?.map((a) => a.class_id))]
+    .length;
+
+  // Group history by year and semester
+  const groupedAssignments = assignments.reduce((acc, assignment) => {
+    const year = assignment.academic_year;
+    const semester = assignment.semester;
+    if (!acc[year]) {
+      acc[year] = {
+        year,
+        semesters: {},
+      };
+    }
+    if (!acc[year].semesters[semester]) {
+      acc[year].semesters[semester] = [];
+    }
+    acc[year].semesters[semester].push(assignment);
+    return acc;
+  }, {});
+
+  const historyYears = Object.values(groupedAssignments).sort((a, b) =>
+    b.year > a.year ? 1 : b.year < a.year ? -1 : 0
+  );
+
+  // =======================================================================
+  // ========================== RENDER START ===============================
+  // =======================================================================
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Modal CRUD User */}
-      {showUserModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-xl">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                  {modalMode === "add" ? (
-                    <Plus size={24} />
-                  ) : (
-                    <Edit2 size={24} />
-                  )}
-                  {modalMode === "add" ? "Tambah User Baru" : "Edit User"}
-                </h3>
-                <button
-                  onClick={() => setShowUserModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition">
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
+      {" "}
+      {/* ✅ p-4 sm:p-6 md:p-8 for better mobile padding */}
+      <div className="max-w-7xl mx-auto">
+        {/* User Search & Management (Admin Only) */}
+        {isAdmin && (
+          <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 border border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Users size={24} className="text-blue-600" />
+              Manajemen Pengguna
+            </h2>
 
-            <div className="p-6 space-y-4">
-              {/* Username */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Username <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      username: e.target.value,
-                    }))
-                  }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formErrors.username ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Masukkan username"
-                  disabled={modalMode === "edit"}
-                />
-                {formErrors.username && (
-                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle size={14} />
-                    {formErrors.username}
-                  </p>
-                )}
-              </div>
-
-              {/* Full Name */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nama Lengkap <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      full_name: e.target.value,
-                    }))
-                  }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formErrors.full_name ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Masukkan nama lengkap"
-                />
-                {formErrors.full_name && (
-                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle size={14} />
-                    {formErrors.full_name}
-                  </p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Password{" "}
-                  {modalMode === "add" && (
-                    <span className="text-red-500">*</span>
-                  )}
-                  {modalMode === "edit" && (
-                    <span className="text-gray-500 text-xs font-normal">
-                      (Kosongkan jika tidak ingin mengubah)
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      password: e.target.value,
-                    }))
-                  }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formErrors.password ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder={
-                    modalMode === "add"
-                      ? "Masukkan password"
-                      : "Kosongkan jika tidak ingin mengubah"
-                  }
-                />
-                {formErrors.password && (
-                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle size={14} />
-                    {formErrors.password}
-                  </p>
-                )}
-              </div>
-
-              {/* Role */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Role <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.role}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, role: e.target.value }))
-                  }
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                  <option value="teacher">Teacher</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-
-              {/* Teacher ID */}
-              {formData.role === "teacher" && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    ID Guru <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.teacher_id}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        teacher_id: e.target.value,
-                      }))
-                    }
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      formErrors.teacher_id
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
-                    placeholder="Masukkan ID guru"
-                  />
-                  {formErrors.teacher_id && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle size={14} />
-                      {formErrors.teacher_id}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Nomor HP */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nomor HP
-                </label>
-                <input
-                  type="text"
-                  value={formData.no_hp}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, no_hp: e.target.value }))
-                  }
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Masukkan nomor HP (opsional)"
-                />
-              </div>
-
-              {/* Is Active */}
-              <div>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        is_active: e.target.checked,
-                      }))
-                    }
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-semibold text-gray-700">
-                    Akun Aktif
-                  </span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowUserModal(false)}
-                  className="flex-1 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition"
-                  disabled={submitting}>
-                  Batal
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="flex-1 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      Menyimpan...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18} />
-                      Simpan
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========== MODAL RESET PASSWORD - BARU ========== */}
-      {showResetPasswordModal && resetPasswordUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 rounded-t-xl">
-              <div className="flex items-center justify-between text-white">
-                <h3 className="text-xl font-bold flex items-center gap-3">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round">
-                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                  </svg>
-                  Reset Password
-                </h3>
-                <button
-                  onClick={closeResetPasswordModal}
-                  className="p-1 hover:bg-white/20 rounded transition"
-                  disabled={resetting}>
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {resetting ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Mereset password...</p>
-                </div>
-              ) : (
-                <div>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-yellow-800 mb-2 flex items-center gap-2">
-                      <AlertCircle size={16} />
-                      <span className="font-semibold">Perhatian!</span>
-                    </p>
-                    <p className="text-xs text-yellow-700">
-                      Password baru akan ditampilkan{" "}
-                      <span className="font-bold">hanya sekali</span>. Pastikan
-                      Anda menyalin dan menyimpannya sebelum menutup modal ini.
-                    </p>
-                  </div>
-
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600 mb-2">
-                      User:{" "}
-                      <span className="font-bold">
-                        {resetPasswordUser.full_name}
-                      </span>
-                    </p>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Username:{" "}
-                      <span className="font-mono font-bold">
-                        @{resetPasswordUser.username}
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 mb-4">
-                    <p className="text-xs text-gray-500 mb-2 font-semibold uppercase">
-                      Password Baru:
-                    </p>
-                    <div className="flex items-center justify-between gap-3">
-                      <code className="text-2xl font-mono font-bold text-gray-900 tracking-wider">
-                        {newGeneratedPassword}
-                      </code>
-                      <button
-                        onClick={copyPasswordToClipboard}
-                        className={`flex-shrink-0 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2 ${
-                          passwordCopied
-                            ? "bg-green-100 text-green-700 border-2 border-green-500"
-                            : "bg-blue-100 text-blue-700 border-2 border-blue-500 hover:bg-blue-200"
-                        }`}>
-                        {passwordCopied ? (
-                          <>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                            Tersalin!
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round">
-                              <rect
-                                x="9"
-                                y="9"
-                                width="13"
-                                height="13"
-                                rx="2"
-                                ry="2"></rect>
-                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                            Salin
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                    <p className="text-xs text-blue-700">
-                      💡 <span className="font-semibold">Tips:</span> Segera
-                      berikan password ini kepada user melalui WhatsApp, email,
-                      atau komunikasi langsung yang aman.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={closeResetPasswordModal}
-                  className="flex-1 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition"
-                  disabled={resetting}>
-                  Tutup
-                </button>
-                <button
-                  onClick={handleResetPassword}
-                  disabled={resetting}
-                  className="flex-1 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                  {resetting ? (
-                    "Mereset..."
-                  ) : (
-                    <>
-                      <Save size={18} />
-                      Reset Password
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* ================================================== */}
-
-      {/* Viewing Other Profile Banner */}
-      {isViewingOtherProfile && (
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Eye size={20} className="text-blue-600" />
-              <div>
-                <p className="font-semibold text-gray-900">
-                  Melihat Profil User Lain
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {profileData.full_name} ({profileData.role})
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setTargetUserId(userId)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium text-gray-700">
-              Kembali ke Profil Saya
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Profile Header - LinkedIn Style */}
-      <div className="mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-start justify-between gap-6">
-            {/* Left Side - User Info */}
-            <div className="flex items-start gap-4 flex-1">
-              {/* Avatar */}
-              <div className="relative flex-shrink-0">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center border-2 border-gray-200">
-                  <span className="text-2xl font-bold text-gray-600">
-                    {profileData.full_name?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div
-                  className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-4 border-white ${
-                    profileData.is_active ? "bg-green-500" : "bg-gray-400"
-                  }`}></div>
-              </div>
-
-              {/* Main Info */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                  {profileData.full_name}
-                </h1>
-                <p className="text-gray-600 mb-2">@{profileData.username}</p>
-
-                <div className="flex flex-wrap items-center gap-3 mb-3">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium ${
-                      profileData.role === "admin"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}>
-                    <Shield size={14} />
-                    {profileData.role === "admin" ? "Administrator" : "Guru"}
-                  </span>
-
-                  <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        profileData.is_active ? "bg-green-500" : "bg-gray-400"
-                      }`}></span>
-                    {profileData.is_active ? "Aktif" : "Nonaktif"}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                  {profileData.teacher_id && (
-                    <div className="flex items-center gap-1.5">
-                      <User size={14} />
-                      <span className="font-mono font-medium">
-                        {profileData.teacher_id}
-                      </span>
-                    </div>
-                  )}
-
-                  {profileData.no_hp && (
-                    <div className="flex items-center gap-1.5">
-                      <Phone size={14} />
-                      <span>{profileData.no_hp}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1.5">
-                    <Calendar size={14} />
-                    <span>Bergabung {accountAge} hari yang lalu</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Side - Academic Info */}
-            <div className="flex flex-col gap-3 flex-shrink-0">
-              {activeAcademicYear && (
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 min-w-[200px]">
-                  <p className="text-xs text-blue-600 font-semibold mb-1">
-                    Tahun Ajaran Aktif
-                  </p>
-                  <p className="text-xl font-bold text-gray-900">
-                    {activeAcademicYear}
-                  </p>
-                </div>
-              )}
-
-              {profileData.homeroom_class && (
-                <div className="bg-green-50 rounded-lg p-4 border border-green-200 min-w-[200px]">
-                  <p className="text-xs text-green-600 font-semibold mb-1">
-                    Wali Kelas
-                  </p>
-                  <p className="text-xl font-bold text-gray-900">
-                    {profileData.homeroom_class.id}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Admin Search Bar - Di bawah profile card */}
-      {isAdmin && !isViewingOtherProfile && (
-        <div className="mb-6">
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 relative">
+            <div className="mb-4 flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
                 <Search
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                   size={18}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                 />
                 <input
                   type="text"
-                  placeholder="Cari pengguna berdasarkan nama, username, atau ID guru..."
+                  placeholder="Cari pengguna (Nama, Username, ID Guru)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
-                {searching && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                  </div>
-                )}
               </div>
-
               <button
                 onClick={openAddModal}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex items-center gap-2 whitespace-nowrap">
+                className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition flex-shrink-0">
                 <Plus size={18} />
                 Tambah User
               </button>
             </div>
 
-            {searchQuery && (
-              <div className="mt-2 text-sm text-gray-600">
-                Menampilkan {displayCount} dari {totalUsers} pengguna
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Collapsible User List Section */}
-      {isAdmin && !isViewingOtherProfile && (
-        <div className="mb-6">
-          <div
-            className={`bg-white rounded-xl shadow-sm border transition-all ${
-              showUserList ? "border-blue-300" : "border-gray-200"
-            }`}>
+            {/* List Toggle */}
             <div
-              className="flex items-center justify-between p-5 cursor-pointer"
-              onClick={() => setShowUserList(!showUserList)}>
+              onClick={() => setShowUserList(!showUserList)}
+              className="flex items-center justify-between p-4 cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-lg transition border border-gray-200 mb-3">
               <div className="flex items-center gap-3">
                 <div
-                  className={`rounded-lg p-2 ${
-                    showUserList ? "bg-blue-600" : "bg-gray-200"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    showUserList ? "bg-blue-600" : "bg-gray-100"
                   }`}>
-                  <Users
+                  <List
                     size={18}
                     className={showUserList ? "text-white" : "text-gray-600"}
                   />
@@ -1294,7 +795,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 <div>
                   <h3 className="font-bold text-gray-900">Semua Pengguna</h3>
                   <p className="text-sm text-gray-600">
-                    {displayCount} {searchQuery ? "hasil" : "pengguna"}
+                    {filteredUsers.length}{" "}
+                    {searchQuery ? "hasil" : "pengguna terdaftar"}
                   </p>
                 </div>
               </div>
@@ -1309,6 +811,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 ) : (
                   <ChevronDown size={18} />
                 )}
+                {showUserList ? "Tutup" : "Lihat Semua"}
               </button>
             </div>
 
@@ -1325,12 +828,13 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {filteredUsers.map((listUser) => (
                         <div
                           key={listUser.id}
-                          className="group flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition">
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                          className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition border border-gray-200 shadow-sm" // ✅ Added flex-col sm:flex-row for responsiveness
+                        >
+                          <div className="flex items-start gap-4 flex-1 min-w-0">
                             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold flex-shrink-0">
                               {listUser.full_name[0]}
                             </div>
@@ -1338,24 +842,35 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                               <p className="font-semibold text-gray-900 truncate">
                                 {listUser.full_name}
                               </p>
-                              <p className="text-sm text-gray-500 truncate">
-                                @{listUser.username}
-                              </p>
+                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-0.5">
+                                {" "}
+                                {/* ✅ Added flex-wrap */}
+                                {listUser.teacher_id && (
+                                  <span className="font-mono">
+                                    ID: {listUser.teacher_id}
+                                  </span>
+                                )}
+                                <span>@{listUser.username}</span>
+                              </div>
                             </div>
                           </div>
-
-                          <div className="hidden md:block px-4">
-                            <span className="text-sm font-mono text-gray-600 bg-gray-100 px-3 py-1 rounded">
-                              {listUser.teacher_id || "-"}
-                            </span>
-                          </div>
-
-                          <div className="hidden sm:block px-4">
+                          <div className="flex flex-wrap gap-2 mt-3 sm:mt-0 flex-shrink-0 items-center">
+                            {" "}
+                            {/* ✅ Added flex-wrap and mt-3 sm:mt-0 */}
                             <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium ${
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                                listUser.role === "admin"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}>
+                              <Shield size={12} />
+                              {listUser.role === "admin" ? "Admin" : "Guru"}
+                            </span>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
                                 listUser.is_active
-                                  ? "bg-green-50 text-green-700"
-                                  : "bg-gray-100 text-gray-600"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-500"
                               }`}>
                               <span
                                 className={`w-2 h-2 rounded-full ${
@@ -1365,46 +880,44 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                                 }`}></span>
                               {listUser.is_active ? "Aktif" : "Nonaktif"}
                             </span>
-                          </div>
-
-                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => handleViewProfile(listUser)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                              title="Lihat Profil">
-                              <Eye size={16} />
-                            </button>
-                            <button
-                              onClick={() => openEditModal(listUser)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
-                              title="Edit User">
-                              <Edit2 size={16} />
-                            </button>
-                            {/* TOMBOL RESET PASSWORD - BARU */}
-                            <button
-                              onClick={() => openResetPasswordModal(listUser)}
-                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition"
-                              title="Reset Password">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round">
-                                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(listUser)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                              title="Hapus User"
-                              disabled={listUser.id === userId}>
-                              <Trash2 size={16} />
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewProfile(listUser);
+                                }}
+                                className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition"
+                                title="Lihat Profil">
+                                <Eye size={18} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditModal(listUser);
+                                }}
+                                className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition"
+                                title="Edit User">
+                                <Edit2 size={18} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openResetPasswordModal(listUser);
+                                }}
+                                className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition"
+                                title="Reset Password">
+                                <Shield size={18} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(listUser);
+                                }}
+                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition"
+                                title="Hapus User">
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1414,167 +927,119 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Stats Cards for Teachers */}
-      {profileData.role === "teacher" &&
-        profileData.teacher_id &&
-        currentAssignments.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-orange-50 rounded-lg p-2">
-                  <BookOpen size={18} className="text-orange-600" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {totalSubjects}
-                </p>
-              </div>
-              <p className="text-sm text-gray-600 font-medium">
-                Total Mengajar
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-purple-50 rounded-lg p-2">
-                  <Award size={18} className="text-purple-600" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {uniqueSubjects}
-                </p>
-              </div>
-              <p className="text-sm text-gray-600 font-medium">
-                Mata Pelajaran
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-blue-50 rounded-lg p-2">
-                  <Users size={18} className="text-blue-600" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {totalClasses}
-                </p>
-              </div>
-              <p className="text-sm text-gray-600 font-medium">Kelas Berbeda</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-green-50 rounded-lg p-2">
-                  <History size={18} className="text-green-600" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {historyAssignments.length}
-                </p>
-              </div>
-              <p className="text-sm text-gray-600 font-medium">
-                Riwayat Mengajar
-              </p>
-            </div>
-          </div>
         )}
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Basic Info */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <User size={20} />
-              Informasi Akun
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                  Username
-                </p>
-                <p className="text-gray-900 font-medium">
-                  {profileData.username}
-                </p>
+        {/* Main Profile Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
+            {" "}
+            {/* ✅ Added flex-col md:flex-row for stacking on mobile */}
+            {/* Left Side - Profile Picture & Main Info */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 flex-1 min-w-0 text-center sm:text-left">
+              {" "}
+              {/* ✅ Added flex-col sm:flex-row and text alignment fixes */}
+              {/* Avatar Placeholder */}
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-bold text-3xl flex-shrink-0">
+                {profileData.full_name[0]}
               </div>
-              {profileData.teacher_id && (
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                    ID Guru
-                  </p>
-                  <p className="text-gray-900 font-mono font-medium">
-                    {profileData.teacher_id}
-                  </p>
+              {/* Main Info */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                  {profileData.full_name}
+                </h1>
+                <p className="text-gray-600 mb-2">@{profileData.username}</p>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-3">
+                  {" "}
+                  {/* ✅ Added justify-center sm:justify-start */}
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium ${
+                      profileData.role === "admin"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}>
+                    <Shield size={14} />
+                    {profileData.role === "admin" ? "Administrator" : "Guru"}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        profileData.is_active ? "bg-green-500" : "bg-gray-400"
+                      }`}></span>
+                    {profileData.is_active ? "Aktif" : "Nonaktif"}
+                  </span>
                 </div>
-              )}
-              {profileData.no_hp && (
-                <div>
-                  <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                    Nomor HP
-                  </p>
-                  <p className="text-gray-900 font-medium">
-                    {profileData.no_hp}
-                  </p>
-                </div>
-              )}
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">
-                  Bergabung Pada
-                </p>
-                <p className="text-gray-900 font-medium">
-                  {new Date(profileData.created_at).toLocaleDateString(
-                    "id-ID",
-                    {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    }
+                <div className="flex flex-wrap gap-4 text-sm text-gray-600 justify-center sm:justify-start">
+                  {" "}
+                  {/* ✅ Added justify-center sm:justify-start */}
+                  {profileData.teacher_id && (
+                    <div className="flex items-center gap-1.5">
+                      <User size={14} />
+                      <span className="font-mono font-medium">
+                        {profileData.teacher_id}
+                      </span>
+                    </div>
                   )}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {accountAge} hari yang lalu
-                </p>
+                  {profileData.no_hp && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone size={14} />
+                      <span>{profileData.no_hp}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              {profileData.role === "admin" && (
-                <div className="pt-4 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
-                    Hak Akses
-                  </p>
-                  <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                    <p className="font-semibold text-purple-900 text-sm">
-                      Administrator Sistem
-                    </p>
-                    <p className="text-xs text-purple-600 mt-1">
-                      Akses penuh ke semua fitur
-                    </p>
+            </div>
+            {/* Right Side - Academic Info */}
+            <div className="flex flex-col gap-3 flex-shrink-0 mt-4 md:mt-0 w-full sm:w-auto">
+              {" "}
+              {/* ✅ Added mt-4 md:mt-0 and w-full sm:w-auto */}
+              {activeAcademicYear && (
+                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar size={16} className="text-blue-500" />
+                    <span className="font-medium">Tahun Ajaran:</span>
+                    <span className="font-bold text-gray-900">
+                      {activeAcademicYear}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {profileData.homeroom_class && (
+                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  <div className="flex items-center gap-2 text-sm text-blue-700">
+                    <School size={16} />
+                    <span className="font-medium">Wali Kelas:</span>
+                    <span className="font-bold text-blue-900">
+                      {profileData.homeroom_class.id}
+                    </span>
                   </div>
                 </div>
               )}
             </div>
           </div>
+          {/* End Header Section */}
 
-          {/* Card Ubah Password - BARU */}
-          {!isViewingOtherProfile && (
-            <div className="mt-6">
-              <ChangePasswordSection user={user} />
-            </div>
-          )}
-        </div>
-
-        {/* Right Column - Assignments */}
-        <div className="lg:col-span-2">
-          {profileData.role === "admin" ? (
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 text-center">
-              <div className="bg-purple-50 rounded-full p-4 w-fit mx-auto mb-4">
-                <Shield size={40} className="text-purple-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Administrator System
-              </h3>
-              <p className="text-gray-600 mb-6">
-                {isViewingOtherProfile
-                  ? `Anda sedang melihat profil ${profileData.full_name} sebagai Administrator`
-                  : "Anda memiliki akses penuh untuk mengelola semua data dan pengguna dalam sistem"}
-              </p>
+          {/* Role Description */}
+          <div className="mt-6 border-t pt-6 border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+              <Shield size={18} className="text-purple-600" />
+              Role:{" "}
+              <span
+                className={`text-xl font-bold ${
+                  profileData.role === "admin"
+                    ? "text-purple-700"
+                    : "text-blue-700"
+                }`}>
+                {profileData.role === "admin" ? "Administrator" : "Guru"}
+              </span>
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {profileData.role === "teacher"
+                ? "Bertanggung jawab atas pengajaran mata pelajaran, penilaian, dan presensi siswa di kelas yang ditugaskan."
+                : "Memiliki hak penuh untuk mengelola semua data dan pengguna dalam sistem"}
+            </p>
+            {/* Admin Privilege Details */}
+            {profileData.role === "admin" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <h4 className="font-bold text-gray-900 mb-2 text-sm">
@@ -1599,125 +1064,608 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   </ul>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content Grid (Assignments, Password, etc) */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Column 1: Password / Admin Management */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 mb-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Mail size={18} className="text-red-500" />
+                Ubah Password
+              </h3>
+              {/* Asumsi ChangePasswordSection ada */}
+              <ChangePasswordSection userId={userId} showToast={showToast} />
             </div>
-          ) : (
-            <>
-              {/* Current Assignments */}
-              {currentAssignments.length > 0 && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <BookOpen size={20} />
-                      Mata Pelajaran Aktif
-                    </h3>
-                    <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg font-medium">
-                      {activeAcademicYear}
-                    </span>
+
+            {/* Admin Actions (Jika Admin dan Melihat Profil Sendiri) */}
+            {isAdmin && !isViewingOtherProfile && (
+              <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users size={18} className="text-blue-500" />
+                  Aksi Admin
+                </h3>
+                <button
+                  onClick={openAddModal}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition shadow-md">
+                  <Plus size={18} />
+                  Tambah User Baru
+                </button>
+                <button
+                  onClick={() => setShowUserList(true)}
+                  className="w-full flex items-center justify-center gap-2 mt-3 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition shadow-sm">
+                  <List size={18} />
+                  Lihat Semua User
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Column 2/3: Teaching Assignments */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <BookOpen size={18} className="text-orange-600" />
+                  Penugasan Mengajar
+                </span>
+                {profileData.teacher_id && (
+                  <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    disabled={loadingHistory}
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition disabled:opacity-50">
+                    {loadingHistory ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-blue-600"></div>
+                    ) : showHistory ? (
+                      <ChevronUp size={16} />
+                    ) : (
+                      <ChevronDown size={16} />
+                    )}
+                    {showHistory ? "Sembunyikan Riwayat" : "Tampilkan Riwayat"}
+                  </button>
+                )}
+              </h3>
+
+              {/* Stats Bar - Current Year */}
+              {!showHistory && (
+                <>
+                  <p className="text-sm text-gray-500 mb-4 border-b pb-3">
+                    Statistik Penugasan Tahun Ajaran Aktif (
+                    {activeAcademicYear || "N/A"})
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    {" "}
+                    {/* ✅ Changed grid-cols-1 md:grid-cols-4 to grid-cols-2 md:grid-cols-4 */}
+                    {/* Stat Card: Total Mengajar */}
+                    <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200 shadow-sm">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-orange-50 rounded-lg p-2">
+                          <BookOpen size={18} className="text-orange-600" />
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                          {totalSubjects}
+                        </p>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                        Total Sesi
+                      </p>
+                    </div>
+                    {/* Stat Card: Mata Pelajaran */}
+                    <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200 shadow-sm">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-purple-50 rounded-lg p-2">
+                          <Award size={18} className="text-purple-600" />
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                          {uniqueSubjects}
+                        </p>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                        Mata Pelajaran
+                      </p>
+                    </div>
+                    {/* Stat Card: Kelas Berbeda */}
+                    <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200 shadow-sm">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-blue-50 rounded-lg p-2">
+                          <Users size={18} className="text-blue-600" />
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                          {totalClasses}
+                        </p>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                        Kelas Diajar
+                      </p>
+                    </div>
+                    {/* Stat Card: Homeroom Class */}
+                    <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200 shadow-sm">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-green-50 rounded-lg p-2">
+                          <History size={18} className="text-green-600" />
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                          {profileData.homeroom_class?.id || "-"}
+                        </p>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                        Wali Kelas
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {currentAssignments.map((assignment, index) => (
-                      <div
-                        key={assignment.id || index}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition">
-                        <h4 className="font-bold text-gray-900 mb-2">
-                          {assignment.subject}
+                  {/* Current Assignments List */}
+                  {currentAssignments.length > 0 ? (
+                    <div className="space-y-4">
+                      {currentAssignments.map((assignment) => (
+                        <div
+                          key={assignment.id}
+                          className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:shadow-md transition-all">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            {" "}
+                            {/* ✅ Added flex-col sm:flex-row for stacking on mobile */}
+                            <div>
+                              <p className="text-base font-bold text-gray-900">
+                                {assignment.subject}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                                <School size={14} />
+                                <span>{getClassName(assignment)}</span>
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs font-medium mt-2 sm:mt-0">
+                              {" "}
+                              {/* ✅ Added flex-wrap */}
+                              <span className="bg-white border border-gray-300 text-gray-600 px-2.5 py-1 rounded font-medium">
+                                Semester {assignment.semester}
+                              </span>
+                              <span className="bg-gray-200 text-gray-600 px-2.5 py-1 rounded font-medium flex items-center gap-1">
+                                <Clock size={12} />
+                                {assignment.academic_year}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
+                      <div className="bg-gray-100 rounded-full p-6 w-fit mx-auto mb-4">
+                        <BookOpen size={40} className="text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">
+                        Belum Ada Tugas Mengajar
+                      </h3>
+                      <p className="text-gray-500">
+                        {isViewingOtherProfile ? "User ini" : "Anda"} belum
+                        memiliki mata pelajaran untuk tahun ajaran ini.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* History Assignments List */}
+              {showHistory && (
+                <div className="mt-6 border-t pt-4 border-gray-100">
+                  <p className="text-sm font-semibold text-gray-700 mb-4">
+                    Riwayat Penugasan Mengajar
+                  </p>
+                  <div className="space-y-6">
+                    {historyYears.map((yearGroup) => (
+                      <div key={yearGroup.year}>
+                        <h4 className="text-base font-bold text-gray-800 mb-3 border-l-4 border-orange-400 pl-3">
+                          Tahun Ajaran {yearGroup.year}
                         </h4>
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          <span className="bg-white border border-gray-300 text-gray-700 px-2.5 py-1 rounded font-medium">
-                            {getClassName(assignment)}
-                          </span>
-                          <span className="bg-white border border-gray-300 text-gray-700 px-2.5 py-1 rounded font-medium">
-                            Semester {assignment.semester}
-                          </span>
+                        <div className="space-y-4 ml-2">
+                          {Object.entries(yearGroup.semesters).map(
+                            ([semester, assignments]) => (
+                              <div key={semester} className="space-y-2">
+                                <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+                                  <Calendar
+                                    size={14}
+                                    className="text-blue-500"
+                                  />
+                                  Semester {semester}
+                                </p>
+                                <div className="space-y-3 pl-4 border-l border-gray-200">
+                                  {assignments.map((assignment) => (
+                                    <div
+                                      key={assignment.id}
+                                      className="bg-white rounded-lg p-3 border border-gray-200 hover:bg-gray-50 transition-all">
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                        {" "}
+                                        {/* ✅ Added flex-col sm:flex-row */}
+                                        <div>
+                                          <p className="text-sm font-bold text-gray-900">
+                                            {assignment.subject}
+                                          </p>
+                                          <p className="text-xs text-gray-600 mt-0.5">
+                                            {getClassName(assignment)}
+                                          </p>
+                                        </div>
+                                        <span className="bg-gray-200 text-gray-600 px-2.5 py-1 rounded font-medium text-xs">
+                                          {assignment.academic_year}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
-
-                  {/* Toggle History Button */}
-                  {profileData.teacher_id && (
-                    <button
-                      onClick={() => setShowHistory(!showHistory)}
-                      disabled={loadingHistory}
-                      className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition font-medium disabled:opacity-50">
-                      {loadingHistory ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-gray-700"></div>
-                          <span>Memuat Riwayat...</span>
-                        </>
-                      ) : (
-                        <>
-                          <History size={18} />
-                          <span>
-                            {showHistory ? "Sembunyikan" : "Tampilkan"} Riwayat
-                            Mengajar
-                          </span>
-                          {showHistory ? (
-                            <ChevronUp size={18} />
-                          ) : (
-                            <ChevronDown size={18} />
-                          )}
-                        </>
-                      )}
-                    </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* =================================================================== */}
+      {/* ======================= MODAL: ADD/EDIT USER ====================== */}
+      {/* =================================================================== */}
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4 sm:p-6">
+          {" "}
+          {/* ✅ Added p-4 sm:p-6 */}
+          <div className="relative bg-white rounded-xl shadow-2xl max-w-lg w-full transform transition-all my-8">
+            {" "}
+            {/* ✅ max-w-lg w-full for better mobile display */}
+            <div className="sticky top-0 bg-white rounded-t-xl z-10 border-b border-gray-200">
+              <div className="flex items-center justify-between p-6">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                  {modalMode === "add" ? (
+                    <Plus size={24} className="text-green-600" />
+                  ) : (
+                    <Edit2 size={24} className="text-indigo-600" />
+                  )}
+                  {modalMode === "add" ? "Tambah User Baru" : "Edit User"}
+                </h3>
+                <button
+                  onClick={() => setShowUserModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Form Fields */}
+              {/* Username */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Username <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      username: e.target.value,
+                    }))
+                  }
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    formErrors.username ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="Masukkan username"
+                  disabled={modalMode === "edit"}
+                />
+                {formErrors.username && (
+                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle size={14} /> {formErrors.username}
+                  </p>
+                )}
+              </div>
+              {/* Full Name */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Nama Lengkap <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      full_name: e.target.value,
+                    }))
+                  }
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    formErrors.full_name ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="Masukkan nama lengkap"
+                />
+                {formErrors.full_name && (
+                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle size={14} /> {formErrors.full_name}
+                  </p>
+                )}
+              </div>
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      role: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <option value="teacher">Guru</option>
+                  <option value="guru_bk">Guru BK</option>
+                  <option value="admin" disabled>
+                    Administrator (TIDAK disarankan)
+                  </option>
+                </select>
+              </div>
+              {/* Password */}
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Password{" "}
+                  {modalMode === "add" && (
+                    <span className="text-red-500">*</span>
+                  )}
+                  {modalMode === "edit" && (
+                    <span className="text-gray-500 text-xs font-normal ml-2">
+                      (Kosongkan jika tidak diubah)
+                    </span>
+                  )}
+                </label>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    formErrors.password ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder={
+                    modalMode === "add"
+                      ? "Masukkan password awal"
+                      : "Password baru (opsional)"
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-[50%] p-1 text-gray-500 hover:text-gray-700 transition">
+                  <Eye size={20} />
+                </button>
+                {formErrors.password && (
+                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle size={14} /> {formErrors.password}
+                  </p>
+                )}
+              </div>
+              {/* Teacher ID (If role is teacher) */}
+              {formData.role === "teacher" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    ID Guru <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.teacher_id}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        teacher_id: e.target.value,
+                      }))
+                    }
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formErrors.teacher_id
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                    placeholder="Contoh: G-01, G-12, G-BK01"
+                  />
+                  {formErrors.teacher_id && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle size={14} /> {formErrors.teacher_id}
+                    </p>
                   )}
                 </div>
               )}
-
-              {/* History Assignments */}
-              {showHistory && historyAssignments.length > 0 && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <History size={20} />
-                    Riwayat Mengajar
-                  </h3>
-
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {historyAssignments.map((assignment, index) => (
-                      <div
-                        key={assignment.id || index}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200 opacity-75">
-                        <h4 className="font-bold text-gray-700 mb-2">
-                          {assignment.subject}
-                        </h4>
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          <span className="bg-white border border-gray-300 text-gray-600 px-2.5 py-1 rounded font-medium">
-                            {getClassName(assignment)}
-                          </span>
-                          <span className="bg-white border border-gray-300 text-gray-600 px-2.5 py-1 rounded font-medium">
-                            Semester {assignment.semester}
-                          </span>
-                          <span className="bg-gray-200 text-gray-600 px-2.5 py-1 rounded font-medium flex items-center gap-1">
-                            <Clock size={12} />
-                            {assignment.academic_year}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Empty State */}
-              {currentAssignments.length === 0 && (
-                <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
-                  <div className="bg-gray-100 rounded-full p-6 w-fit mx-auto mb-4">
-                    <BookOpen size={40} className="text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    Belum Ada Tugas Mengajar
-                  </h3>
-                  <p className="text-gray-500">
-                    {isViewingOtherProfile ? "User ini" : "Anda"} belum memiliki
-                    mata pelajaran untuk tahun ajaran ini.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
+              {/* Nomor HP */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Nomor HP
+                </label>
+                <input
+                  type="text"
+                  value={formData.no_hp}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, no_hp: e.target.value }))
+                  }
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Masukkan nomor HP (opsional)"
+                />
+              </div>
+              {/* Is Active */}
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_active}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        is_active: e.target.checked,
+                      }))
+                    }
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-semibold text-gray-700">
+                    Akun Aktif
+                  </span>
+                </label>
+              </div>
+            </div>
+            {/* Action Buttons */}
+            <div className="p-6 pt-4 border-t border-gray-200">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUserModal(false)}
+                  className="flex-1 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition"
+                  disabled={submitting}>
+                  Batal
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="flex-1 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={20} />
+                      Simpan User
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+      {/* =================================================================== */}
+      {/* ===================== MODAL: RESET PASSWORD ======================= */}
+      {/* =================================================================== */}
+      {showResetPasswordModal && resetPasswordUser && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4 sm:p-6">
+          {" "}
+          {/* ✅ Added p-4 sm:p-6 */}
+          <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all p-6 sm:p-8 my-8">
+            {" "}
+            {/* ✅ max-w-md w-full for better mobile display */}
+            <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                <Shield size={24} className="text-orange-600" />
+                Reset Password
+              </h3>
+              <button
+                onClick={closeResetPasswordModal}
+                className="p-2 hover:bg-gray-100 rounded-lg transition">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="text-center mb-6">
+              <p className="text-gray-700 mb-3">
+                Anda yakin ingin mereset password untuk user:
+              </p>
+              <p className="text-xl font-bold text-blue-700">
+                {resetPasswordUser.full_name}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                ({resetPasswordUser.teacher_id || resetPasswordUser.username})
+              </p>
+            </div>
+            <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 mb-4">
+              <p className="text-xs text-gray-500 mb-2 font-semibold uppercase">
+                Password Baru yang akan Digunakan:
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                {" "}
+                {/* ✅ Added flex-col sm:flex-row for responsiveness */}
+                <code className="text-xl sm:text-2xl font-mono font-bold text-gray-900 tracking-wider break-all text-center sm:text-left">
+                  {newGeneratedPassword}
+                </code>
+                <button
+                  onClick={copyPasswordToClipboard}
+                  className={`flex-shrink-0 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2 mt-2 sm:mt-0 ${
+                    // ✅ Added mt-2 sm:mt-0
+                    passwordCopied
+                      ? "bg-green-100 text-green-700 border-2 border-green-500"
+                      : "bg-blue-100 text-blue-700 border-2 border-blue-500 hover:bg-blue-200"
+                  }`}>
+                  {passwordCopied ? (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      Tersalin!
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round">
+                        <rect
+                          x="9"
+                          y="9"
+                          width="13"
+                          height="13"
+                          rx="2"
+                          ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                      Salin
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={closeResetPasswordModal}
+                className="flex-1 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition"
+                disabled={resetting}>
+                Batal
+              </button>
+              <button
+                onClick={handleResetPassword}
+                disabled={resetting}
+                className="flex-1 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {resetting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Mereset...
+                  </>
+                ) : (
+                  <>
+                    <Shield size={20} />
+                    Reset Sekarang
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

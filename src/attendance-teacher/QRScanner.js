@@ -1,4 +1,4 @@
-// src/attendance-teacher/QRScanner.js - WITH MASTER VALIDATOR
+// src/attendance-teacher/QRScanner.js - WITH MASTER VALIDATOR + GALLERY SUPPORT
 import React, { useState, useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import {
@@ -9,6 +9,7 @@ import {
   Clock,
   Shield,
   MapPin,
+  Image,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import { validateAttendance } from "./LocationValidator"; // 🎯 MASTER VALIDATOR
@@ -25,6 +26,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
   // ✅ USE REF INSTEAD OF STATE - mencegah re-render
   const html5QrCodeRef = useRef(null);
   const isScanningRef = useRef(false);
+  const fileInputRef = useRef(null); // 🎯 NEW: Ref for file input
 
   // Check if user is admin
   useEffect(() => {
@@ -107,7 +109,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: { width: 250, height: 250 },
+          qrbox: { width: 250, height: 300 }, // ✅ Lebar 250, Tinggi 300
         },
         onScanSuccess,
         onScanError
@@ -178,6 +180,63 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
     // Jika bukan admin, langsung proses
     await processAttendance();
+  };
+
+  // 🎯 NEW: Handle file upload from gallery
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const qrCode = new Html5Qrcode("qr-reader-file");
+
+      console.log("📷 Scanning QR from gallery...");
+      const decodedText = await qrCode.scanFile(file, true);
+
+      console.log("📷 QR dari Galeri:", decodedText);
+
+      // Validasi QR Code (sama seperti onScanSuccess)
+      const validQRCodes = [
+        "QR_PRESENSI_GURU_SMP_MUSLIMIN_CILILIN",
+        "QR_PRESENSI_GURU_2024",
+      ];
+
+      if (!validQRCodes.includes(decodedText)) {
+        console.log("❌ Invalid QR Code from gallery");
+        setMessage({
+          type: "error",
+          text: "QR Code tidak valid! Gunakan QR Code resmi presensi guru.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log("✅ Valid QR Code from gallery");
+
+      // Process attendance (sama seperti flow onScanSuccess)
+      if (isAdmin) {
+        console.log("👤 Admin detected, showing teacher selection...");
+        setShowTeacherSelect(true);
+        setLoading(false);
+        return;
+      }
+
+      await processAttendance();
+    } catch (err) {
+      console.error("❌ Error scanning file:", err);
+      setMessage({
+        type: "error",
+        text: "Tidak dapat mendeteksi QR Code dari gambar. Pastikan QR Code terlihat jelas dan tidak blur.",
+      });
+      setLoading(false);
+    } finally {
+      if (event.target) {
+        event.target.value = null; // Reset input
+      }
+    }
   };
 
   const processAttendance = async (adminSelectedTeacherId = null) => {
@@ -439,6 +498,18 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
   return (
     <div className="space-y-4">
+      {/* 🎯 NEW: Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        style={{ display: "none" }}
+      />
+
+      {/* 🎯 NEW: Hidden div for file scanning */}
+      <div id="qr-reader-file" style={{ display: "none" }}></div>
+
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center justify-center gap-2">
           {isAdmin && <Shield className="text-blue-600" size={20} />}
@@ -452,7 +523,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         <p className="text-sm text-gray-600">
           {isAdmin
             ? "Scan QR Code untuk input presensi guru (tanpa batasan waktu)"
-            : "Arahkan kamera ke QR Code Presensi Guru"}
+            : "Arahkan kamera ke QR Code atau pilih dari galeri"}
         </p>
       </div>
 
@@ -522,18 +593,33 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         </div>
       )}
 
-      {/* QR Scanner */}
+      {/* 🎯 UPDATED: 2 Buttons - Camera & Gallery */}
       {!scanning && !loading && !showTeacherSelect && (
-        <button
-          onClick={startScanning}
-          className={`w-full py-4 ${
-            isAdmin
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-green-600 hover:bg-green-700"
-          } text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
-          <Camera size={20} />
-          Buka Kamera
-        </button>
+        <div className="space-y-3">
+          {/* Button Scan dengan Kamera */}
+          <button
+            onClick={startScanning}
+            className={`w-full py-4 ${
+              isAdmin
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-green-600 hover:bg-green-700"
+            } text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
+            <Camera size={20} />
+            Scan dengan Kamera
+          </button>
+
+          {/* 🎯 NEW: Button Pilih dari Galeri */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className={`w-full py-4 ${
+              isAdmin
+                ? "bg-blue-500 hover:bg-blue-600"
+                : "bg-green-500 hover:bg-green-600"
+            } text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
+            <Image size={20} />
+            📷 Pilih dari Galeri
+          </button>
+        </div>
       )}
 
       {loading && (
@@ -567,7 +653,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
           } border rounded-lg p-4`}>
           <p className="text-sm text-gray-800">
             <strong>💡 Tips:</strong> Pastikan pencahayaan cukup dan QR Code
-            terlihat jelas di kamera
+            terlihat jelas, atau pilih screenshot/foto QR dari galeri
           </p>
         </div>
 
