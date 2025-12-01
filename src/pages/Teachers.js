@@ -165,116 +165,204 @@ export const Teachers = () => {
         </div>
       </div>
 
-      {/* Main Table Container */}
-      <div className="bg-white rounded-xl shadow-lg shadow-blue-100/50 overflow-hidden border border-blue-100">
-        {/* Table Wrapper - Responsive Scroll */}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[768px] sm:min-w-[900px]">
-            {/* Table Header */}
-            <thead className="bg-gradient-to-r from-blue-600 to-blue-700">
-              <tr>
-                <th className="w-12 sm:w-16 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
-                  No.
-                </th>
-                <th className="w-24 sm:w-32 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
-                  Kode Guru
-                </th>
-                <th className="w-40 sm:w-48 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                  Nama Guru
-                </th>
-                <th className="w-48 sm:w-72 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                  Tugas/Mapel {/* ✅ UPDATE: Mata Pelajaran -> Tugas/Mapel */}
-                </th>
-                <th className="w-28 sm:w-32 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
-                  Wali Kelas
-                </th>
-                <th className="w-20 sm:w-24 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
-                  Status
-                </th>
-              </tr>
-            </thead>
+      {/* Main Content Container - Menggunakan 2 Layout: Card (Default/HP) dan Table (sm: ke atas) */}
 
-            {/* Table Body */}
-            <tbody className="bg-white divide-y divide-blue-100">
-              {guruData.map((guru, index) => (
-                <tr
-                  key={guru.id}
-                  className="hover:bg-blue-50/50 transition-colors duration-150">
-                  {/* Nomor */}
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-500 text-center font-medium">
-                    {index + 1}
-                  </td>
-
-                  {/* Kode Guru */}
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
-                    <div className="text-xs sm:text-sm font-bold text-blue-600">
+      {/* ---------------------------------------------------- */}
+      {/* 🚀 LAYOUT MOBILE-FIRST (Card View) - Default/HP/Kecil */}
+      {/* ---------------------------------------------------- */}
+      <div className="sm:hidden space-y-3">
+        {guruData.length > 0 ? (
+          guruData.map((guru, index) => (
+            <div
+              key={guru.id}
+              className="bg-white rounded-xl shadow-lg shadow-blue-100/50 p-4 border border-blue-100 hover:shadow-xl transition-shadow duration-300">
+              {/* Header Card */}
+              <div className="flex justify-between items-start border-b border-blue-100/70 pb-3 mb-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-500 mb-1">
+                    No. {index + 1} | Kode:{" "}
+                    <span className="text-blue-600 font-bold">
                       {guru.teacher_id || "-"}
-                    </div>
-                  </td>
+                    </span>
+                  </p>
+                  <p className="text-base font-bold text-slate-900 truncate">
+                    {guru.full_name}
+                  </p>
+                </div>
+                {/* Status */}
+                <div className="flex-shrink-0 ml-3">
+                  {guru.is_active ? (
+                    <span className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">
+                      Aktif
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">
+                      Nonaktif
+                    </span>
+                  )}
+                </div>
+              </div>
 
-                  {/* Nama Guru */}
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="text-xs sm:text-sm font-semibold text-slate-900">
-                      {guru.full_name}
-                    </div>
-                  </td>
-
-                  {/* Tugas/Mapel */}
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+              {/* Body Card */}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-start">
+                  <span className="text-slate-500 font-medium w-2/5">
+                    Tugas/Mapel:
+                  </span>
+                  <div className="text-right flex-1 text-slate-900 font-semibold">
                     {guru.mapel?.length > 0 ? (
-                      <div className="text-xs sm:text-sm text-slate-900 font-medium">
-                        {guru.mapel.join(", ")}
-                      </div>
+                      guru.mapel.join(", ")
                     ) : (
-                      <span className="text-xs sm:text-sm text-slate-400 italic">
+                      <span className="text-slate-400 italic">
                         Belum ada tugas
                       </span>
                     )}
-                  </td>
-
-                  {/* Wali Kelas */}
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-blue-50/50">
+                  <span className="text-slate-500 font-medium w-2/5">
+                    Wali Kelas:
+                  </span>
+                  <div className="text-right flex-1 text-slate-900 font-semibold">
                     {guru.walikelas !== "-" ? (
-                      <div className="text-xs sm:text-sm text-slate-900 font-medium">
-                        KELAS {guru.walikelas}
-                      </div>
+                      `KELAS ${guru.walikelas}`
                     ) : (
-                      <span className="text-xs sm:text-sm text-slate-400 italic">
-                        -
-                      </span>
+                      <span className="text-slate-400 italic">-</span>
                     )}
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
-                    {guru.is_active ? (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                        Aktif
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                        Nonaktif
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Empty State */}
-        {guruData.length === 0 && (
-          <div className="text-center py-12 sm:py-16 bg-slate-50">
-            <div className="text-4xl sm:text-6xl mb-4">👨‍🏫</div>
-            <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-2">
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          /* Empty State untuk Mobile */
+          <div className="text-center py-12 bg-white rounded-xl shadow-lg border border-blue-100">
+            <div className="text-4xl mb-4">👨‍🏫</div>
+            <h3 className="text-base font-semibold text-slate-700 mb-2">
               Belum ada data guru
             </h3>
-            <p className="text-xs sm:text-sm text-slate-500">
+            <p className="text-sm text-slate-500">
               Silakan tambahkan data guru terlebih dahulu
             </p>
           </div>
         )}
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* 💻 LAYOUT TABLE - Tablet (sm: ke atas) & Laptop */}
+      {/* ---------------------------------------------------- */}
+      <div className="hidden sm:block bg-white rounded-xl shadow-lg shadow-blue-100/50 overflow-hidden border border-blue-100">
+        {/* Table Wrapper - Responsive Scroll (hanya jika memang tidak muat) */}
+        <div className="overflow-x-auto">
+          {guruData.length > 0 ? (
+            <table className="w-full">
+              {" "}
+              {/* Hapus min-w supaya lebih fleksibel */}
+              {/* Table Header */}
+              <thead className="bg-gradient-to-r from-blue-600 to-blue-700">
+                <tr>
+                  <th className="w-12 sm:w-16 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
+                    No.
+                  </th>
+                  <th className="w-24 sm:w-32 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
+                    Kode Guru
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                    Nama Guru
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider w-1/3">
+                    {" "}
+                    {/* Lebih fleksibel */}
+                    Tugas/Mapel
+                  </th>
+                  <th className="w-28 sm:w-32 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
+                    Wali Kelas
+                  </th>
+                  <th className="w-20 sm:w-24 px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white uppercase tracking-wider text-center">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              {/* Table Body */}
+              <tbody className="bg-white divide-y divide-blue-100">
+                {guruData.map((guru, index) => (
+                  <tr
+                    key={guru.id}
+                    className="hover:bg-blue-50/50 transition-colors duration-150">
+                    {/* Nomor */}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-500 text-center font-medium">
+                      {index + 1}
+                    </td>
+
+                    {/* Kode Guru */}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
+                      <div className="text-xs sm:text-sm font-bold text-blue-600">
+                        {guru.teacher_id || "-"}
+                      </div>
+                    </td>
+
+                    {/* Nama Guru */}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-xs sm:text-sm font-semibold text-slate-900">
+                        {guru.full_name}
+                      </div>
+                    </td>
+
+                    {/* Tugas/Mapel */}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      {guru.mapel?.length > 0 ? (
+                        <div className="text-xs sm:text-sm text-slate-900 font-medium">
+                          {guru.mapel.join(", ")}
+                        </div>
+                      ) : (
+                        <span className="text-xs sm:text-sm text-slate-400 italic">
+                          Belum ada tugas
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Wali Kelas */}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
+                      {guru.walikelas !== "-" ? (
+                        <div className="text-xs sm:text-sm text-slate-900 font-medium">
+                          KELAS {guru.walikelas}
+                        </div>
+                      ) : (
+                        <span className="text-xs sm:text-sm text-slate-400 italic">
+                          -
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
+                      {guru.is_active ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                          Aktif
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                          Nonaktif
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            /* Empty State untuk Tablet/Laptop */
+            <div className="text-center py-12 sm:py-16 bg-slate-50">
+              <div className="text-4xl sm:text-6xl mb-4">👨‍🏫</div>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-700 mb-2">
+                Belum ada data guru
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Silakan tambahkan data guru terlebih dahulu
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats Footer (Optional) */}

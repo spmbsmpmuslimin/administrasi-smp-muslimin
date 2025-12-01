@@ -30,7 +30,7 @@ const FormView = ({
   // JIKA ADMIN, JANGAN TAMPILKAN FORM
   if (isAdmin) {
     return (
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto p-4 sm:p-6">
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -59,23 +59,23 @@ const FormView = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="max-w-3xl mx-auto p-4 sm:p-6">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
         <div className="flex justify-between items-center mb-6 pb-4 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
             {editingNote ? "Edit Catatan" : "Tambah Catatan Baru"}
           </h2>
           <button
             type="button"
             onClick={onCancel}
-            className="bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-300 font-medium transition">
+            className="bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-300 font-medium transition text-sm">
             ← Kembali
           </button>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-1 md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Siswa <span className="text-red-500">*</span>
               </label>
@@ -84,7 +84,7 @@ const FormView = ({
                 value={formData.student_id}
                 onChange={handleInputChange}
                 disabled={editingNote}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed">
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-sm">
                 <option value="">Pilih Siswa</option>
                 {siswaList.map((siswa) => (
                   <option key={siswa.id} value={siswa.id}>
@@ -102,7 +102,7 @@ const FormView = ({
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                 <option value="">Pilih Kategori</option>
                 {kategoris.map((kategori) => (
                   <option key={kategori} value={kategori}>
@@ -116,11 +116,11 @@ const FormView = ({
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Label <span className="text-red-500">*</span>
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 text-sm">
                 <button
                   type="button"
                   onClick={() => handleLabelSelect("positif")}
-                  className={`flex-1 px-3 py-2.5 rounded-lg border font-medium transition ${
+                  className={`flex-1 px-2 py-2 rounded-lg border font-medium transition ${
                     formData.label === "positif"
                       ? "bg-green-100 border-green-500 text-green-800"
                       : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
@@ -130,7 +130,7 @@ const FormView = ({
                 <button
                   type="button"
                   onClick={() => handleLabelSelect("perhatian")}
-                  className={`flex-1 px-3 py-2.5 rounded-lg border font-medium transition ${
+                  className={`flex-1 px-2 py-2 rounded-lg border font-medium transition ${
                     formData.label === "perhatian"
                       ? "bg-red-100 border-red-500 text-red-800"
                       : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
@@ -140,7 +140,7 @@ const FormView = ({
                 <button
                   type="button"
                   onClick={() => handleLabelSelect("netral")}
-                  className={`flex-1 px-3 py-2.5 rounded-lg border font-medium transition ${
+                  className={`flex-1 px-2 py-2 rounded-lg border font-medium transition ${
                     formData.label === "netral"
                       ? "bg-gray-100 border-gray-500 text-gray-800"
                       : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
@@ -161,7 +161,7 @@ const FormView = ({
               onChange={handleInputChange}
               rows={6}
               placeholder="Tuliskan catatan perkembangan siswa secara detail..."
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
             />
           </div>
 
@@ -175,7 +175,7 @@ const FormView = ({
               onChange={handleInputChange}
               rows={3}
               placeholder="Tuliskan tindakan yang sudah atau akan dilakukan..."
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
             />
           </div>
 
@@ -183,7 +183,7 @@ const FormView = ({
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm">
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -199,7 +199,7 @@ const FormView = ({
               type="button"
               onClick={onCancel}
               disabled={loading}
-              className="bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg border border-gray-300 font-semibold hover:bg-gray-100 transition disabled:opacity-50">
+              className="bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg border border-gray-300 font-semibold hover:bg-gray-100 transition disabled:opacity-50 text-sm">
               Batal
             </button>
           </div>
@@ -209,7 +209,7 @@ const FormView = ({
   );
 };
 
-// Komponen DashboardView yang terpisah - UPDATE untuk admin
+// Komponen DashboardView yang terpisah
 const DashboardView = ({
   currentClass,
   academicYear,
@@ -226,19 +226,19 @@ const DashboardView = ({
 }) => {
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
             {isAdmin
               ? "Monitoring Catatan Perkembangan Siswa"
               : "Catatan Perkembangan Siswa"}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             {currentClass
               ? `Kelas ${currentClass} - ${academicYear} (${semester})`
               : `Semua Kelas - ${academicYear} (${semester})`}
             {isAdmin && (
-              <span className="ml-2 text-blue-600 font-semibold">
+              <span className="ml-2 text-blue-600 font-semibold text-sm">
                 (Mode Admin)
               </span>
             )}
@@ -248,35 +248,44 @@ const DashboardView = ({
         {!isAdmin && (
           <button
             onClick={onAddNote}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition">
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition mt-4 sm:mt-0 text-sm sm:text-base">
             <Plus className="w-5 h-5" />
             Tambah Catatan
           </button>
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-blue-500">
-          <p className="text-gray-600 text-sm mb-1">Total Siswa</p>
-          <p className="text-3xl font-bold text-gray-800">{stats.totalSiswa}</p>
-        </div>
-        <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-green-500">
-          <p className="text-gray-600 text-sm mb-1">Progress Positif</p>
-          <p className="text-3xl font-bold text-green-600">
-            {stats.progressPositif} Siswa
+      {/* Stats - ✅ REVISI RESPONSIVE GRID */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border-l-4 border-blue-500">
+          <p className="text-gray-600 text-xs sm:text-sm mb-1">Total Siswa</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-800">
+            {stats.totalSiswa}
           </p>
         </div>
-        <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-red-500">
-          <p className="text-gray-600 text-sm mb-1">Perlu Perhatian</p>
-          <p className="text-3xl font-bold text-red-600">
-            {stats.perluPerhatian} Siswa
+        <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border-l-4 border-green-500">
+          <p className="text-gray-600 text-xs sm:text-sm mb-1">
+            Progress Positif
+          </p>
+          <p className="text-2xl sm:text-3xl font-bold text-green-600">
+            {stats.progressPositif}
+            <span className="text-base font-normal ml-1">Siswa</span>
           </p>
         </div>
-        <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-gray-500">
-          <p className="text-gray-600 text-sm mb-1">Catatan Biasa</p>
-          <p className="text-3xl font-bold text-gray-600">
-            {stats.catatanBiasa} Siswa
+        <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border-l-4 border-red-500">
+          <p className="text-gray-600 text-xs sm:text-sm mb-1">
+            Perlu Perhatian
+          </p>
+          <p className="text-2xl sm:text-3xl font-bold text-red-600">
+            {stats.perluPerhatian}
+            <span className="text-base font-normal ml-1">Siswa</span>
+          </p>
+        </div>
+        <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border-l-4 border-gray-500">
+          <p className="text-gray-600 text-xs sm:text-sm mb-1">Catatan Biasa</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-600">
+            {stats.catatanBiasa}
+            <span className="text-base font-normal ml-1">Siswa</span>
           </p>
         </div>
       </div>
@@ -284,13 +293,13 @@ const DashboardView = ({
       {/* Info untuk Admin */}
       {isAdmin && (
         <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-          <div className="flex items-center gap-3">
-            <Info className="w-5 h-5 text-blue-600 flex-shrink-0" />
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-blue-900">
+              <p className="font-semibold text-blue-900 text-sm sm:text-base">
                 Mode Monitoring Admin
               </p>
-              <p className="text-sm text-blue-800">
+              <p className="text-xs sm:text-sm text-blue-800">
                 Anda dapat memantau semua catatan perkembangan siswa dari semua
                 kelas dan guru.
               </p>
@@ -307,120 +316,208 @@ const DashboardView = ({
           placeholder="Cari siswa berdasarkan nama atau NIS..."
           value={searchTerm}
           onChange={onSearchChange}
-          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
         />
       </div>
 
-      {/* Table */}
-      {loading ? (
-        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Memuat data...</p>
-        </div>
-      ) : siswaList.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-          <p className="text-gray-600 text-lg">
-            Tidak ada data siswa di kelas ini.
-          </p>
-          <p className="text-gray-500 text-sm mt-2">
-            Pastikan sudah ada siswa yang terdaftar di kelas Anda.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Nama Siswa
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  NIS
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Positif
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Perhatian
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Catatan Biasa
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Update Terakhir
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredSiswa.length === 0 ? (
+      {/* ---------------------------------------------------- */}
+      {/* 🚀 LAYOUT MOBILE-FIRST (Card View) - Default/HP/Kecil */}
+      {/* ---------------------------------------------------- */}
+      <div className="md:hidden space-y-4">
+        {loading ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-4 text-gray-600">Memuat data...</p>
+          </div>
+        ) : siswaList.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <p className="text-gray-600 text-lg">
+              Tidak ada data siswa di kelas ini.
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              Pastikan sudah ada siswa yang terdaftar di kelas Anda.
+            </p>
+          </div>
+        ) : filteredSiswa.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <p className="text-gray-600 text-lg">
+              Tidak ada siswa yang sesuai dengan pencarian "{searchTerm}"
+            </p>
+          </div>
+        ) : (
+          filteredSiswa.map((siswa) => (
+            <div
+              key={siswa.id}
+              className="bg-white rounded-xl shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+              {/* Header */}
+              <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-3">
+                <div className="flex-1 min-w-0 pr-2">
+                  <p className="text-sm font-bold text-gray-900 truncate">
+                    {siswa.nama}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    NIS: {siswa.nis}
+                  </p>
+                </div>
+                {/* Aksi */}
+                <button
+                  onClick={() => onViewDetail(siswa)}
+                  className="flex-shrink-0 text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium text-sm">
+                  <Eye className="w-4 h-4" />
+                  Detail
+                </button>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 divide-x divide-gray-100 text-sm text-center">
+                <div className="pr-3">
+                  <p className="text-gray-500 text-xs mb-1">Positif</p>
+                  <span className="inline-flex items-center gap-1 text-green-600 font-semibold text-base">
+                    <TrendingUp className="w-4 h-4" />
+                    {siswa.positif}
+                  </span>
+                </div>
+                <div className="px-3">
+                  <p className="text-gray-500 text-xs mb-1">Perhatian</p>
+                  {siswa.perhatian > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-red-600 font-semibold text-base">
+                      <TrendingDown className="w-4 h-4" />
+                      {siswa.perhatian}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 font-semibold text-base">
+                      -
+                    </span>
+                  )}
+                </div>
+                <div className="pl-3">
+                  <p className="text-gray-500 text-xs mb-1">Biasa</p>
+                  {siswa.netral > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-gray-600 font-semibold text-base">
+                      <Info className="w-4 h-4" />
+                      {siswa.netral}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 font-semibold text-base">
+                      -
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 text-right">
+                Update Terakhir: {siswa.lastUpdate}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* 💻 LAYOUT TABLE - Tablet (md: ke atas) & Laptop */}
+      {/* ---------------------------------------------------- */}
+      {/* Table - Hanya tampil di MD: ke atas */}
+      {/* Gunakan kondisi loading/empty dari Card View di atas */}
+
+      {!loading && siswaList.length > 0 && (
+        <div className="hidden md:block bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <td
-                    colSpan="7"
-                    className="px-6 py-8 text-center text-gray-500">
-                    Tidak ada siswa yang sesuai dengan pencarian "{searchTerm}"
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Nama Siswa
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    NIS
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Positif
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Perhatian
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Catatan Biasa
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Update Terakhir
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
-              ) : (
-                filteredSiswa.map((siswa) => (
-                  <tr key={siswa.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">
-                        {siswa.nama}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{siswa.nis}</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
-                        <TrendingUp className="w-4 h-4" />
-                        {siswa.positif}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {siswa.perhatian > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
-                          <TrendingDown className="w-4 h-4" />
-                          {siswa.perhatian}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {siswa.netral > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-gray-600 font-semibold">
-                          <Info className="w-4 h-4" />
-                          {siswa.netral}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">
-                      {siswa.lastUpdate}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => onViewDetail(siswa)}
-                        className="text-blue-600 hover:text-blue-800 flex items-center gap-1 mx-auto font-medium">
-                        <Eye className="w-4 h-4" />
-                        Detail
-                      </button>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredSiswa.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="7"
+                      className="px-6 py-8 text-center text-gray-500">
+                      Tidak ada siswa yang sesuai dengan pencarian "{searchTerm}
+                      "
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredSiswa.map((siswa) => (
+                    <tr key={siswa.id} className="hover:bg-gray-50 transition">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900">
+                          {siswa.nama}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">{siswa.nis}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
+                          <TrendingUp className="w-4 h-4" />
+                          {siswa.positif}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {siswa.perhatian > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
+                            <TrendingDown className="w-4 h-4" />
+                            {siswa.perhatian}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {siswa.netral > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-gray-600 font-semibold">
+                            <Info className="w-4 h-4" />
+                            {siswa.netral}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">
+                        {siswa.lastUpdate}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => onViewDetail(siswa)}
+                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 mx-auto font-medium">
+                          <Eye className="w-4 h-4" />
+                          Detail
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-// Komponen DetailView yang terpisah - UPDATE untuk admin
+// Komponen DetailView yang terpisah
 const DetailView = ({
   selectedSiswa,
   catatanList,
@@ -435,42 +532,45 @@ const DetailView = ({
   isAdmin,
 }) => {
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto p-4 sm:p-6">
       <button
         onClick={onBack}
-        className="bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-300 mb-6 font-medium transition">
+        className="bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-300 mb-6 font-medium transition text-sm">
         ← Kembali ke Dashboard
       </button>
 
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex justify-between items-start">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
               {selectedSiswa?.nama}
             </h2>
-            <p className="text-gray-600 mt-1">NIS: {selectedSiswa?.nis}</p>
+            <p className="text-gray-600 mt-1 text-sm">
+              NIS: {selectedSiswa?.nis}
+            </p>
             {isAdmin && (
-              <p className="text-sm text-blue-600 mt-1 font-semibold">
+              <p className="text-xs text-blue-600 mt-1 font-semibold">
                 Mode Monitoring Admin
               </p>
             )}
           </div>
-          <div className="flex gap-6">
+          {/* ✅ REVISI RESPONSIVE GRID UNTUK STATS DETAIL */}
+          <div className="grid grid-cols-3 gap-4 sm:gap-6 mt-4 sm:mt-0 w-full sm:w-auto">
             <div className="text-center">
-              <p className="text-sm text-gray-600 mb-1">Catatan Positif</p>
-              <p className="text-3xl font-bold text-green-600">
+              <p className="text-xs text-gray-600 mb-1">Catatan Positif</p>
+              <p className="text-xl sm:text-3xl font-bold text-green-600">
                 {selectedSiswa?.positif}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-600 mb-1">Perlu Perhatian</p>
-              <p className="text-3xl font-bold text-red-600">
+              <p className="text-xs text-gray-600 mb-1">Perlu Perhatian</p>
+              <p className="text-xl sm:text-3xl font-bold text-red-600">
                 {selectedSiswa?.perhatian}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-600 mb-1">Catatan Biasa</p>
-              <p className="text-3xl font-bold text-gray-600">
+              <p className="text-xs text-gray-600 mb-1">Catatan Biasa</p>
+              <p className="text-xl sm:text-3xl font-bold text-gray-600">
                 {selectedSiswa?.netral}
               </p>
             </div>
@@ -478,13 +578,15 @@ const DetailView = ({
         </div>
       </div>
 
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold text-gray-800">Timeline Catatan</h3>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-800">
+          Timeline Catatan
+        </h3>
         {/* HIDE TOMBOL TAMBAH CATATAN UNTUK ADMIN */}
         {!isAdmin && (
           <button
             onClick={onAddNote}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 font-medium">
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 font-medium text-sm mt-3 sm:mt-0">
             <Plus className="w-4 h-4" />
             Tambah Catatan
           </button>
@@ -511,7 +613,7 @@ const DetailView = ({
           {catatanList.map((catatan) => (
             <div
               key={catatan.id}
-              className="bg-white rounded-lg shadow-sm p-6 border-l-4"
+              className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border-l-4"
               style={{
                 borderLeftColor:
                   catatan.label === "positif"
@@ -521,9 +623,9 @@ const DetailView = ({
                     : "#6b7280",
               }}>
               <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                   <span
-                    className={`px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 ${getLabelBadge(
+                    className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2 ${getLabelBadge(
                       catatan.label
                     )}`}>
                     {getLabelIcon(catatan.label)}
@@ -533,16 +635,16 @@ const DetailView = ({
                       ? "Perlu Perhatian"
                       : "Catatan Biasa"}
                   </span>
-                  <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                  <span className="px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-semibold">
                     {catatan.category}
                   </span>
-                  <span className="text-sm text-gray-500 font-medium">
+                  <span className="text-xs sm:text-sm text-gray-500 font-medium">
                     {formatDate(catatan.created_at)}
                   </span>
                 </div>
                 {/* HIDE EDIT/DELETE BUTTONS UNTUK ADMIN */}
                 {!isAdmin && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <button
                       onClick={() => onEditNote(catatan)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
@@ -558,7 +660,7 @@ const DetailView = ({
                   </div>
                 )}
               </div>
-              <p className="text-gray-800 leading-relaxed mb-2 whitespace-pre-line">
+              <p className="text-sm sm:text-base text-gray-800 leading-relaxed mb-2 whitespace-pre-line">
                 {catatan.note_content}
               </p>
               {catatan.action_taken && (
@@ -580,14 +682,14 @@ const DetailView = ({
       )}
 
       {selectedSiswa?.perhatian > 0 && (
-        <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-500 p-5 rounded-lg">
+        <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 sm:p-5 rounded-lg">
           <div className="flex gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-yellow-900 mb-1">
+              <p className="font-semibold text-yellow-900 mb-1 text-sm sm:text-base">
                 Perhatian Khusus
               </p>
-              <p className="text-sm text-yellow-800">
+              <p className="text-xs sm:text-sm text-yellow-800">
                 Terdeteksi pola yang perlu diperhatikan. Pertimbangkan untuk
                 melakukan konsultasi lebih lanjut dengan guru BK.
               </p>
@@ -1190,14 +1292,14 @@ const CatatanSiswa = ({ user, onShowToast }) => {
     [siswaList, searchTerm]
   );
 
-  // MAIN RENDER
+  // MAIN RENDER - ✅ REVISI PADDING CONTAINER UTAMA
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       {error && (
         <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-600" />
-            <p className="text-red-800">{error}</p>
+            <p className="text-red-800 text-sm">{error}</p>
             <button
               onClick={() => setError(null)}
               className="ml-auto text-red-600 hover:text-red-800">
@@ -1208,7 +1310,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
       )}
 
       {initError ? (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto p-4 sm:p-0">
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -1227,7 +1329,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
               </button>
               <div className="text-sm text-gray-500">
                 <p>Jika masalah berlanjut, silakan:</p>
-                <ul className="mt-2 space-y-1">
+                <ul className="mt-2 space-y-1 text-left inline-block">
                   <li>• Pastikan Anda sudah login</li>
                   <li>• Periksa koneksi internet Anda</li>
                   <li>• Hubungi administrator untuk assign kelas wali</li>
@@ -1237,7 +1339,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
           </div>
         </div>
       ) : loading && !currentUser ? (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto p-4 sm:p-0">
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
             <p className="text-gray-600 text-lg">Memuat data pengguna...</p>

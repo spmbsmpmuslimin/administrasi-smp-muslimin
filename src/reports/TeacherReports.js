@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { exportToExcel } from "./ReportExcel";
-import ReportModal from './modals/TeacherReportModal';
+import ReportModal from "./modals/TeacherReportModal";
 import {
   fetchGradesData,
   fetchAttendanceDailyData,
@@ -1150,34 +1150,6 @@ const TeacherReports = ({ user }) => {
               </ul>
             </div>
           </div>
-        </div>
-
-        {/* ✅ FIXED & REFACTORED NOTE */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-green-800 mb-2">
-            ✅ Fixed & Refactored Version
-          </h4>
-          <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
-            <li>
-              ✅ Fixed Tailwind dynamic classes dengan COLOR_CLASSES mapping
-            </li>
-            <li>✅ Fixed race condition dengan Promise.all di useEffect</li>
-            <li>✅ Added validation untuk empty teacher assignments</li>
-            <li>
-              ✅ Fixed alert students logic (simplified, no redundant grouping)
-            </li>
-            <li>
-              ✅ Fixed attendance rate calculation (filtered by teacher's
-              subjects)
-            </li>
-            <li>
-              ✅ Fixed filter logic - let helpers handle filtering dengan
-              class_ids
-            </li>
-            <li>✅ Added loading state untuk initial data fetch</li>
-            <li>✅ Empty state untuk teacher tanpa penugasan</li>
-            <li>✅ Proper error handling dengan user feedback</li>
-          </ul>
         </div>
       </div>
 

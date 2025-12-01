@@ -544,32 +544,34 @@ const TeacherSchedule = ({ user }) => {
   const scheduleGrid = generateScheduleGrid();
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    // PADDING DIBUAT SEDIKIT LEBIH KECIL DI LAYAR SANGAT KECIL
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* ✅ CARD 1: Header Info */}
-        <div className="mb-4 bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <div className="mb-4 bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <Calendar className="w-7 h-7 text-indigo-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
                 JADWAL MENGAJAR
               </h1>
-              <p className="text-slate-600 font-semibold">
+              <p className="text-sm sm:text-base text-slate-600 font-semibold">
                 TAHUN AJARAN 2025/2026 SEMESTER GANJIL
               </p>
             </div>
           </div>
         </div>
 
-        {/* ✅ CARD 2: Action Buttons - FIXED: satu warna & lebar dinamis */}
+        {/* ✅ CARD 2: Action Buttons - Menggunakan flex-wrap untuk responsif */}
         <div className="mb-8 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
           <div className="flex gap-3 justify-center flex-wrap">
+            {/* Semua tombol menggunakan flex-1 min-w untuk wrapping yang baik */}
             {/* Tampilan Grid - TOMBOL TERPISAH */}
             <button
               onClick={() => setViewMode("grid")}
-              className={`flex-1 min-w-[140px] px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center border transition-all ${
+              className={`flex-1 min-w-[140px] px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border transition-all ${
                 viewMode === "grid"
                   ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                   : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
@@ -581,7 +583,7 @@ const TeacherSchedule = ({ user }) => {
             {/* Tampilan List - TOMBOL TERPISAH */}
             <button
               onClick={() => setViewMode("list")}
-              className={`flex-1 min-w-[140px] px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center border transition-all ${
+              className={`flex-1 min-w-[140px] px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border transition-all ${
                 viewMode === "list"
                   ? "bg-indigo-100 text-indigo-700 border-indigo-300"
                   : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
@@ -593,7 +595,7 @@ const TeacherSchedule = ({ user }) => {
             {/* Tambah Jadwal */}
             <button
               onClick={() => handleOpenModal()}
-              className="flex-1 min-w-[140px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center border border-slate-300 transition-all">
+              className="flex-1 min-w-[140px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border border-slate-300 transition-all">
               <Plus className="w-5 h-5" />
               Tambah Jadwal
             </button>
@@ -602,7 +604,7 @@ const TeacherSchedule = ({ user }) => {
             <button
               onClick={handleExportToExcel}
               disabled={schedules.length === 0}
-              className="flex-1 min-w-[140px] bg-slate-100 hover:bg-slate-200 disabled:bg-gray-100 disabled:text-gray-400 text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center border border-slate-300 transition-all">
+              className="flex-1 min-w-[140px] bg-slate-100 hover:bg-slate-200 disabled:bg-gray-100 disabled:text-gray-400 text-slate-700 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border border-slate-300 transition-all">
               <Download className="w-5 h-5" />
               Export Jadwal
             </button>
@@ -610,13 +612,13 @@ const TeacherSchedule = ({ user }) => {
             {/* Download Template */}
             <button
               onClick={handleDownloadTemplate}
-              className="flex-1 min-w-[140px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center border border-slate-300 transition-all">
+              className="flex-1 min-w-[140px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border border-slate-300 transition-all">
               <Download className="w-5 h-5" />
               Template Excel
             </button>
 
             {/* Import Excel */}
-            <label className="flex-1 min-w-[140px] bg-slate-100 hover:bg-slate-200 cursor-pointer text-slate-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center border border-slate-300 transition-all">
+            <label className="flex-1 min-w-[140px] bg-slate-100 hover:bg-slate-200 cursor-pointer text-slate-700 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border border-slate-300 transition-all">
               <Upload className="w-5 h-5" />
               Import Jadwal
               <input
@@ -648,32 +650,32 @@ const TeacherSchedule = ({ user }) => {
           </div>
         )}
 
-        {/* Today's Schedule - COMPACT VERSION - TIDAK DIUBAH */}
+        {/* Today's Schedule - COMPACT VERSION */}
         {getGroupedTodaySchedules().length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border-2 border-indigo-200 p-4 mb-8">
-            <h2 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
               <Clock className="w-5 h-5 text-indigo-600" />
               Jadwal Hari Ini ({days[new Date().getDay() - 1] || "Senin"})
             </h2>
 
-            {/* ✅ GRID DINAMIS BERDASARKAN JUMLAH CARD */}
+            {/* GRID DINAMIS BERDASARKAN JUMLAH CARD - Tetap responsif */}
             <div
               className={`
       grid gap-2
       ${
         getGroupedTodaySchedules().length <= 4
-          ? "grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
+          ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
           : ""
       }
       ${
         getGroupedTodaySchedules().length > 4 &&
         getGroupedTodaySchedules().length <= 6
-          ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-3"
+          ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3"
           : ""
       }
       ${
         getGroupedTodaySchedules().length > 6
-          ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+          ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
           : ""
       }
     `}>
@@ -685,16 +687,16 @@ const TeacherSchedule = ({ user }) => {
                 return (
                   <div
                     key={idx}
-                    className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 p-2 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="text-xs font-bold text-indigo-600 mb-1">
+                    className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 p-3 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-indigo-600 mb-1 truncate">
                           {first.start_time} - {last.end_time}
                         </p>
-                        <p className="font-semibold text-slate-800 text-sm mb-1">
+                        <p className="font-semibold text-slate-800 text-sm mb-1 truncate">
                           Kelas {first.class_id}
                         </p>
-                        <p className="text-xs text-slate-600">
+                        <p className="text-xs text-slate-600 truncate">
                           {totalJP}JP
                           {group.length > 1 &&
                             ` (${
@@ -710,7 +712,7 @@ const TeacherSchedule = ({ user }) => {
                             ).pop()})`}
                         </p>
                       </div>
-                      <div className="flex gap-1 ml-1">
+                      <div className="flex flex-shrink-0 gap-1 ml-2">
                         <button
                           onClick={() => handleOpenModal(first)}
                           className="text-blue-600 hover:text-blue-700 p-0.5"
@@ -742,11 +744,11 @@ const TeacherSchedule = ({ user }) => {
           </div>
         )}
 
-        {/* Schedule View - TIDAK DIUBAH SEPERTI PERINTAH */}
+        {/* Schedule View */}
         {viewMode === "grid" ? (
-          // GRID VIEW - TIDAK DIUBAH
+          // GRID VIEW - Menggunakan overflow-x-auto untuk responsif pada tabel
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-6 border-b border-slate-200">
+            <div className="p-4 sm:p-6 border-b border-slate-200">
               <h2 className="text-lg font-bold text-slate-800">
                 Jadwal Mengajar Mingguan (Tampilan Grid)
               </h2>
@@ -764,19 +766,19 @@ const TeacherSchedule = ({ user }) => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+                <table className="w-full border-collapse min-w-max">
                   <thead>
-                    <tr className="bg-blue-800 text-white">
-                      <th className="p-4 border border-slate-600 text-center font-semibold">
+                    <tr className="bg-blue-800 text-white text-xs sm:text-sm">
+                      <th className="p-3 border border-slate-600 text-center font-semibold">
                         JAM KE
                       </th>
-                      <th className="p-4 border border-slate-600 text-center font-semibold">
+                      <th className="p-3 border border-slate-600 text-center font-semibold">
                         WAKTU*
                       </th>
                       {days.map((day) => (
                         <th
                           key={day}
-                          className="p-4 border border-slate-600 text-center font-semibold">
+                          className="p-3 border border-slate-600 text-center font-semibold">
                           {day.toUpperCase()}
                         </th>
                       ))}
@@ -786,19 +788,19 @@ const TeacherSchedule = ({ user }) => {
                     {Object.entries(JAM_SCHEDULE.Selasa || {}).map(
                       ([period, time]) => (
                         <React.Fragment key={period}>
-                          <tr className="hover:bg-slate-50">
-                            <td className="p-3 border border-slate-300 text-center font-semibold bg-slate-100">
+                          <tr className="hover:bg-slate-50 text-sm">
+                            <td className="p-2 border border-slate-300 text-center font-semibold bg-slate-100">
                               {period}
                             </td>
                             <td
-                              className={`p-3 border border-slate-300 text-center text-sm ${
+                              className={`p-2 border border-slate-300 text-center text-xs ${
                                 period === "1"
                                   ? "bg-yellow-100 text-yellow-800"
                                   : "bg-slate-100"
                               }`}>
                               {time.start} - {time.end}
                               {period === "1" && (
-                                <div className="text-xs mt-1 text-yellow-600">
+                                <div className="text-[10px] mt-1 text-yellow-600">
                                   Senin: 07:00-08:00
                                 </div>
                               )}
@@ -806,26 +808,26 @@ const TeacherSchedule = ({ user }) => {
                             {days.map((day) => (
                               <td
                                 key={day}
-                                className="p-3 border border-slate-300 text-center">
+                                className="p-2 border border-slate-300 text-center">
                                 {day === "Jumat" ? (
                                   <div className="flex flex-col items-center">
                                     {scheduleGrid[day] &&
                                     scheduleGrid[day][period] ? (
                                       <>
-                                        <span className="font-bold text-slate-800 text-lg">
+                                        <span className="font-bold text-slate-800 text-sm sm:text-lg">
                                           {scheduleGrid[day][period].class_id}
                                         </span>
-                                        <div className="text-xs mt-1 text-blue-600 font-medium">
+                                        <div className="text-[10px] mt-1 text-blue-600 font-medium">
                                           {JAM_SCHEDULE.Jumat[period]?.start}-
                                           {JAM_SCHEDULE.Jumat[period]?.end}
                                         </div>
                                       </>
                                     ) : (
                                       <>
-                                        <span className="text-slate-400 text-lg">
+                                        <span className="text-slate-400 text-sm sm:text-lg">
                                           -
                                         </span>
-                                        <div className="text-xs mt-1 text-blue-600 font-medium">
+                                        <div className="text-[10px] mt-1 text-blue-600 font-medium">
                                           {JAM_SCHEDULE.Jumat[period]?.start}-
                                           {JAM_SCHEDULE.Jumat[period]?.end}
                                         </div>
@@ -834,15 +836,15 @@ const TeacherSchedule = ({ user }) => {
                                   </div>
                                 ) : scheduleGrid[day] &&
                                   scheduleGrid[day][period] ? (
-                                  <span className="font-bold text-slate-800 text-lg">
+                                  <span className="font-bold text-slate-800 text-sm sm:text-lg">
                                     {scheduleGrid[day][period].class_id}
                                   </span>
                                 ) : day === "Senin" && period === "1" ? (
-                                  <span className="font-bold text-slate-800 text-lg">
+                                  <span className="font-bold text-slate-800 text-sm sm:text-lg">
                                     UPACARA
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 text-lg">
+                                  <span className="text-slate-400 text-sm sm:text-lg">
                                     -
                                   </span>
                                 )}
@@ -855,7 +857,7 @@ const TeacherSchedule = ({ user }) => {
                             <tr>
                               <td
                                 colSpan={7}
-                                className="p-3 bg-orange-50 border border-orange-200 text-center text-orange-800 font-semibold">
+                                className="p-2 bg-orange-50 border border-orange-200 text-center text-orange-800 font-semibold text-xs sm:text-sm">
                                 🕛 ISTIRAHAT {time.end} - 10:10 (30 menit)
                               </td>
                             </tr>
@@ -866,7 +868,7 @@ const TeacherSchedule = ({ user }) => {
                             <tr>
                               <td
                                 colSpan={7}
-                                className="p-3 bg-orange-50 border border-orange-200 text-center text-orange-800 font-semibold">
+                                className="p-2 bg-orange-50 border border-orange-200 text-center text-orange-800 font-semibold text-xs sm:text-sm">
                                 🕛 ISTIRAHAT 12:10 - 13:00 (50 menit)
                               </td>
                             </tr>
@@ -876,8 +878,8 @@ const TeacherSchedule = ({ user }) => {
                     )}
                   </tbody>
                 </table>
-                <div className="p-4 bg-slate-50 border-t border-slate-200">
-                  <p className="text-sm md:text-base text-slate-600 text-center font-bold italic">
+                <div className="p-3 bg-slate-50 border-t border-slate-200">
+                  <p className="text-xs md:text-sm text-slate-600 text-center font-bold italic">
                     *Waktu Mengikuti Jadwal Masing-Masing Hari. Senin & Jumat
                     Memiliki Waktu Khusus.
                   </p>
@@ -886,9 +888,9 @@ const TeacherSchedule = ({ user }) => {
             )}
           </div>
         ) : (
-          // LIST VIEW - TIDAK DIUBAH
+          // LIST VIEW - Menggunakan overflow-x-auto untuk responsif pada tabel
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-6 border-b border-slate-200">
+            <div className="p-4 sm:p-6 border-b border-slate-200">
               <h2 className="text-lg font-bold text-slate-800">
                 Jadwal Mengajar Mingguan (Tampilan List)
               </h2>
@@ -906,22 +908,22 @@ const TeacherSchedule = ({ user }) => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-blue-800 text-white">
+                <table className="w-full min-w-max">
+                  <thead className="bg-blue-800 text-white text-xs sm:text-sm">
                     <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
                         Hari
                       </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
                         Jam Ke
                       </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
                         Waktu
                       </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
                         Kelas
                       </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
                         Aksi
                       </th>
                     </tr>
@@ -949,35 +951,35 @@ const TeacherSchedule = ({ user }) => {
                         return (
                           <tr
                             key={schedule.id}
-                            className="border-b border-slate-200 hover:bg-slate-50">
+                            className="border-b border-slate-200 hover:bg-slate-50 text-sm">
                             {idx === 0 && (
                               <td
-                                className="px-6 py-4 font-semibold text-slate-800"
+                                className="px-3 py-3 sm:px-6 font-semibold text-slate-800"
                                 rowSpan={daySchedules.length}>
                                 {day}
                               </td>
                             )}
-                            <td className="px-6 py-4 text-slate-700 font-medium">
+                            <td className="px-3 py-3 sm:px-6 text-slate-700 font-medium">
                               JP {jamKe}
                             </td>
-                            <td className="px-6 py-4 text-slate-700">
+                            <td className="px-3 py-3 sm:px-6 text-slate-700">
                               {schedule.start_time} - {schedule.end_time}
                             </td>
-                            <td className="px-6 py-4 font-semibold text-slate-800">
+                            <td className="px-3 py-3 sm:px-6 font-semibold text-slate-800">
                               Kelas {schedule.class_id}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-3 py-3 sm:px-6">
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleOpenModal(schedule)}
-                                  className="text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                  <Edit className="w-4 h-4" />
+                                  className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-xs sm:text-sm">
+                                  <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                                   Edit
                                 </button>
                                 <button
                                   onClick={() => handleDelete(schedule.id)}
-                                  className="text-red-600 hover:text-red-700 flex items-center gap-1">
-                                  <Trash2 className="w-4 h-4" />
+                                  className="text-red-600 hover:text-red-700 flex items-center gap-1 text-xs sm:text-sm">
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                   Hapus
                                 </button>
                               </div>
@@ -994,13 +996,13 @@ const TeacherSchedule = ({ user }) => {
         )}
       </div>
 
-      {/* Modal - TIDAK DIUBAH */}
+      {/* MODAL - **FIXED DIMENSION DENGAN RESPONSIVE MAX-WIDTH** */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          {/* ✅ LEBAR & TINGGI SEIMBANG - SQUARE LIKE */}
-          <div className="bg-white rounded-lg shadow-xl w-[500px] h-[500px] p-6 flex flex-col">
+          {/* CRITICAL FIX: Mengubah w-[500px] h-[500px] menjadi w-full max-w-lg dan max-h-full */}
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 flex flex-col">
             {/* HEADER */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h2 className="text-xl font-bold text-slate-800">
                 {editingId ? "Edit Jadwal" : "Tambah Jadwal"}
               </h2>
@@ -1012,8 +1014,11 @@ const TeacherSchedule = ({ user }) => {
             </div>
 
             {/* FORM - FLEXIBLE HEIGHT */}
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-              <div className="space-y-4 flex-1">
+            <form
+              onSubmit={handleSubmit}
+              className="flex-1 flex flex-col min-h-0">
+              {/* Tambahkan overflow-y-auto di sini jika form bisa sangat panjang */}
+              <div className="space-y-4 flex-1 overflow-y-auto pr-1 pb-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Hari
@@ -1091,7 +1096,7 @@ const TeacherSchedule = ({ user }) => {
               </div>
 
               {/* BUTTONS - DI BAWAH */}
-              <div className="flex gap-3 pt-6 mt-auto">
+              <div className="flex gap-3 pt-4 sm:pt-6 mt-auto flex-shrink-0">
                 <button
                   type="button"
                   onClick={handleCloseModal}
@@ -1101,7 +1106,7 @@ const TeacherSchedule = ({ user }) => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
+                  className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:bg-indigo-400">
                   {loading ? "Menyimpan..." : "Simpan"}
                 </button>
               </div>

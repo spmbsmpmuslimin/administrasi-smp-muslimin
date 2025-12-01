@@ -138,10 +138,10 @@ export const Students = () => {
 
   // ✅ MODAL COMPONENT
   const ExportModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-xl">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 sm:p-6 rounded-t-xl">
           <h2 className="text-xl font-bold text-white text-center">
             📊 Export Data Siswa
           </h2>
@@ -151,7 +151,7 @@ export const Students = () => {
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-4">
+        <div className="p-5 sm:p-6 space-y-4">
           {/* Export Semua Data */}
           <button
             onClick={handleExportAll}
@@ -229,7 +229,9 @@ export const Students = () => {
             <div className="font-semibold text-gray-700 text-sm">
               Export Per Kelas:
             </div>
-            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+              {" "}
+              {/* Grid responsif untuk kelas */}
               {kelasOptions.map((kelas) => {
                 const count = siswaData.filter(
                   (s) => s.class_id === kelas
@@ -279,11 +281,14 @@ export const Students = () => {
   );
 
   if (isLoading) {
+    // Revisi: Padding loading responsif
     return (
-      <div className="p-6">
+      <div className="min-h-screen p-4 sm:p-6 lg:p-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Data Siswa</h1>
-          <p className="text-gray-600">Memuat data siswa...</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            Data Siswa
+          </h1>
+          <p className="text-sm text-gray-600">Memuat data siswa...</p>
         </div>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -293,19 +298,23 @@ export const Students = () => {
   }
 
   return (
-    <div className="p-6">
+    // Revisi: Padding container utama responsif
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 bg-gray-50">
       {/* ✅ MODAL RENDER */}
       {showExportModal && <ExportModal />}
 
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Data Siswa</h1>
-        <p className="text-gray-600">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+          Data Siswa
+        </h1>
+        <p className="text-sm sm:text-base text-gray-600">
           Manajemen Data Siswa SMP Muslimin Cililin
         </p>
       </div>
 
       {/* ✅ STATS CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
         {/* Total Kelas */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 shadow-sm">
           <div className="text-blue-600 text-xs font-semibold mb-1">
@@ -357,9 +366,11 @@ export const Students = () => {
         </div>
       </div>
 
-      {/* Filter Section */}
-      <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
+      {/* Filter Section (Revisi: Penyesuaian padding) */}
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm mb-6">
+        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-center">
+          {" "}
+          {/* Gap responsif */}
           {/* Search Input */}
           <div className="flex-1 md:flex-[2] w-full">
             <input
@@ -367,30 +378,28 @@ export const Students = () => {
               placeholder="Cari siswa..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm sm:text-base"
             />
           </div>
-
           {/* Dropdown Jenjang */}
           <div className="flex-1 w-full">
             <select
               value={selectedJenjang}
               onChange={handleJenjangChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer transition">
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer transition text-sm sm:text-base">
               <option value="">Semua Jenjang</option>
               <option value="7">Kelas 7</option>
               <option value="8">Kelas 8</option>
               <option value="9">Kelas 9</option>
             </select>
           </div>
-
           {/* Dropdown Kelas */}
           <div className="flex-1 w-full">
             <select
               value={selectedKelas}
               onChange={(e) => setSelectedKelas(e.target.value)}
               disabled={!selectedJenjang}
-              className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+              className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm sm:text-base ${
                 !selectedJenjang
                   ? "bg-gray-100 cursor-not-allowed opacity-70"
                   : "bg-white cursor-pointer"
@@ -403,25 +412,23 @@ export const Students = () => {
               ))}
             </select>
           </div>
-
           {/* Dropdown Jenis Kelamin */}
           <div className="flex-1 w-full">
             <select
               value={selectedGender}
               onChange={(e) => setSelectedGender(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer transition">
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer transition text-sm sm:text-base">
               <option value="">Semua Jenis Kelamin</option>
               <option value="L">Laki-laki</option>
               <option value="P">Perempuan</option>
             </select>
           </div>
-
           {/* ✅ TOMBOL EXPORT MODAL */}
           <div className="flex-1 w-full">
             <button
               onClick={() => setShowExportModal(true)}
               disabled={siswaData.length === 0}
-              className={`w-full p-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
+              className={`w-full p-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 text-sm sm:text-base ${
                 siswaData.length === 0
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg"
@@ -433,9 +440,9 @@ export const Students = () => {
         </div>
       </div>
 
-      {/* Info Filter */}
+      {/* Info Filter (Revisi: Text size responsif) */}
       {(selectedJenjang || selectedKelas || searchTerm || selectedGender) && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100 text-sm inline-block">
+        <div className="mb-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-100 text-xs sm:text-sm inline-block">
           Menampilkan <strong>{filteredData.length} Siswa</strong>
           {searchTerm && ` dengan kata kunci "${searchTerm}"`}
           {selectedKelas && ` Di Kelas ${selectedKelas}`}
@@ -444,53 +451,184 @@ export const Students = () => {
         </div>
       )}
 
-      {/* Table Data Siswa */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-            <tr>
-              <th className="p-4 text-left w-1/12">No.</th>
-              <th className="p-4 text-left w-2/12">NIS</th>
-              <th className="p-4 text-left w-4/12">Nama</th>
-              <th className="p-4 text-left w-2/12">Kelas</th>
-              <th className="p-4 text-left w-2/12">Jenis Kelamin</th>
-              <th className="p-4 text-left w-1/12">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.map((siswa, index) => (
-              <tr
-                key={siswa.id}
-                className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                <td className="p-4 text-center">{index + 1}</td>
-                <td className="p-4 font-mono text-sm">{siswa.nis}</td>
-                <td className="p-4 font-medium">{siswa.full_name}</td>
-                <td className="p-4 font-semibold">{siswa.class_id}</td>
-                <td className="p-4">
-                  {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
-                </td>
-                <td className="p-4">
+      {/* ---------------------------------------------------- */}
+      {/* 🚀 LAYOUT MOBILE-FIRST (Card View) - Default/HP/Kecil */}
+      {/* ---------------------------------------------------- */}
+      {/* ✅ PERUBAHAN UTAMA: Ganti sm:hidden menjadi md:hidden */}
+      <div className="md:hidden space-y-3">
+        {filteredData.length > 0 ? (
+          filteredData.map((siswa, index) => (
+            <div
+              key={siswa.id}
+              className="bg-white rounded-xl shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+              {/* Header: Nama & Kelas */}
+              <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-3">
+                <div className="flex-1 min-w-0 pr-2">
+                  <p className="text-xs font-medium text-gray-500 mb-1">
+                    No. {index + 1} | Kelas:{" "}
+                    <span className="font-bold text-blue-600">
+                      {siswa.class_id}
+                    </span>
+                  </p>
+                  <p className="text-base font-bold text-gray-900 truncate">
+                    {siswa.full_name}
+                  </p>
+                </div>
+                {/* Status */}
+                <div className="flex-shrink-0 ml-3">
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                       siswa.is_active
-                        ? "bg-green-100 text-green-800 border border-green-200"
-                        : "bg-gray-100 text-gray-600 border border-gray-200"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-600"
                     }`}>
                     {siswa.is_active ? "Aktif" : "Non-Aktif"}
                   </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
 
-        {filteredData.length === 0 && (
-          <div className="p-12 text-center text-gray-500 text-lg">
-            {searchTerm || selectedJenjang || selectedKelas || selectedGender
-              ? "Tidak ada data siswa yang sesuai dengan filter"
-              : "Belum ada data siswa"}
+              {/* Body Card: Detail */}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 font-medium">NIS:</span>
+                  <span className="font-mono text-gray-900">{siswa.nis}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 font-medium">
+                    Jenis Kelamin:
+                  </span>
+                  <span className="text-gray-900">
+                    {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          /* Empty State untuk Mobile */
+          <div className="p-12 text-center text-gray-500 bg-white rounded-xl shadow-sm">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p className="mt-2 text-sm font-medium text-gray-900">
+              Tidak ada data siswa
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              {searchTerm || selectedJenjang || selectedKelas || selectedGender
+                ? "Siswa tidak ditemukan sesuai filter."
+                : "Belum ada data siswa di sistem."}
+            </p>
           </div>
         )}
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* 💻 LAYOUT TABLE - Tablet (md: ke atas) & Laptop */}
+      {/* ---------------------------------------------------- */}
+      {/* ✅ PERUBAHAN UTAMA: Ganti hidden sm:block menjadi hidden md:block */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm overflow-hidden">
+        {/* Table Data Siswa */}
+        <div className="overflow-x-auto">
+          {filteredData.length > 0 ? (
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                <tr>
+                  {/* Revisi: Menyesuaikan padding dan width untuk tampilan Tablet/Laptop */}
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left w-1/12 text-xs uppercase tracking-wider text-center">
+                    No.
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left w-2/12 text-xs uppercase tracking-wider">
+                    NIS
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left w-4/12 text-xs uppercase tracking-wider">
+                    Nama
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left w-2/12 text-xs uppercase tracking-wider">
+                    Kelas
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left w-2/12 text-xs uppercase tracking-wider">
+                    Jenis Kelamin
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left w-1/12 text-xs uppercase tracking-wider text-center">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredData.map((siswa, index) => (
+                  <tr
+                    key={siswa.id}
+                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                    {/* Revisi: Menyesuaikan padding dan text size untuk tampilan Tablet/Laptop */}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-center text-sm">
+                      {index + 1}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-sm">
+                      {siswa.nis}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-sm">
+                      {siswa.full_name}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-sm">
+                      {siswa.class_id}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm">
+                      {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          siswa.is_active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }`}>
+                        {siswa.is_active ? "Aktif" : "Non-Aktif"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            /* Empty State untuk Tablet/Laptop */
+            <div className="p-12 text-center text-gray-500">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="mt-2 text-sm font-medium text-gray-900">
+                Tidak ada data siswa
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm ||
+                selectedJenjang ||
+                selectedKelas ||
+                selectedGender
+                  ? "Siswa tidak ditemukan sesuai filter."
+                  : "Belum ada data siswa di sistem."}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

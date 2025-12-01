@@ -368,7 +368,8 @@ const TeacherDashboard = ({ user }) => {
       <div className="grid grid-cols-4 gap-2 mb-2">
         <button
           onClick={handleTeacherAttendance}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 shadow-sm">
+          // ✅ FIX: Tambahkan h-full untuk memastikan tinggi tombol sama rata
+          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 shadow-sm h-full">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
             <span className="text-white text-sm">👨‍🏫</span>
           </div>
@@ -379,7 +380,8 @@ const TeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleStudentAttendance}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all duration-200 shadow-sm">
+          // ✅ FIX: Tambahkan h-full untuk memastikan tinggi tombol sama rata
+          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all duration-200 shadow-sm h-full">
           <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
             <span className="text-white text-sm">👨‍🎓</span>
           </div>
@@ -390,7 +392,8 @@ const TeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleGrades}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 shadow-sm">
+          // ✅ FIX: Tambahkan h-full untuk memastikan tinggi tombol sama rata
+          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 shadow-sm h-full">
           <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
             <span className="text-white text-sm">📊</span>
           </div>
@@ -401,7 +404,8 @@ const TeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleDataGuru}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-all duration-200 shadow-sm">
+          // ✅ FIX: Tambahkan h-full untuk memastikan tinggi tombol sama rata
+          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-all duration-200 shadow-sm h-full">
           <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
             <span className="text-white text-sm">👥</span>
           </div>
@@ -415,7 +419,8 @@ const TeacherDashboard = ({ user }) => {
       <div className="grid grid-cols-4 gap-2">
         <button
           onClick={handleDataKelas}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200 shadow-sm">
+          // ✅ FIX: Tambahkan h-full untuk memastikan tinggi tombol sama rata
+          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200 shadow-sm h-full">
           <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
             <span className="text-white text-sm">🏫</span>
           </div>
@@ -426,7 +431,8 @@ const TeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleDataSiswa}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition-all duration-200 shadow-sm">
+          // ✅ FIX: Tambahkan h-full untuk memastikan tinggi tombol sama rata
+          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition-all duration-200 shadow-sm h-full">
           <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
             <span className="text-white text-sm">👤</span>
           </div>
@@ -437,7 +443,8 @@ const TeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleCatatanSiswa}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 shadow-sm">
+          // ✅ FIX: Tambahkan h-full untuk memastikan tinggi tombol sama rata
+          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 shadow-sm h-full">
           <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
             <span className="text-white text-sm">📝</span>
           </div>
@@ -448,7 +455,8 @@ const TeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleJadwalSaya}
-          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 shadow-sm">
+          // ✅ FIX: Tambahkan h-full untuk memastikan tinggi tombol sama rata
+          className="flex flex-col items-center justify-center p-2 bg-white border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 shadow-sm h-full">
           <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center mb-1 shadow-md">
             <span className="text-white text-sm">📅</span>
           </div>
