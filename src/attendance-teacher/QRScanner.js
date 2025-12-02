@@ -652,8 +652,8 @@ const QRScanner = ({ currentUser, onSuccess }) => {
               : "bg-green-50 border-green-200"
           } border rounded-lg p-4`}>
           <p className="text-sm text-gray-800">
-            <strong>💡 Tips:</strong> Pastikan pencahayaan cukup dan QR Code
-            terlihat jelas, atau pilih screenshot/foto QR dari galeri
+            <strong>💡 Tips:</strong> Pastikan Pencahayaan Cukup dan QR Code
+            Terlihat Jelas, atau Pilih Screenshot/foto QR Dari Galeri
           </p>
         </div>
 

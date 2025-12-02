@@ -180,7 +180,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
             setMessage({
               type: "error",
-              text: `⏰ Presensi hanya dapat dilakukan pada jam 07:00 - 14:00 WIB.\nWaktu saat ini: ${currentTime} WIB\n\n💡 Jika lupa input presensi, hubungi Admin untuk bantuan.`,
+              text: `⏰ Presensi Hanya Dapat Dilakukan Pada Jam 07:00 - 14:00 WIB.\nWaktu saat ini: ${currentTime} WIB\n\n💡 Jika Lupa Input Presensi, Harap Hubungi Admin Untuk Bantuan.`,
             });
             setLoading(false);
             return;
