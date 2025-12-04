@@ -4,8 +4,12 @@
 import { exportClassDivision } from "./SpmbExcel";
 
 // 🔥 FUNGSI BARU: Generate NIS berurutan berdasarkan kelas
+// 🔥 FIXED: Generate NIS berurutan berdasarkan kelas
 const generateSequentialNIS = (classDistribution, academicYear) => {
-  const yearPrefix = academicYear.replace("/", ".").substring(2); // "2026/2027" → "26.27"
+  // Convert "2026/2027" → "26.27"
+  const [tahun1, tahun2] = academicYear.split("/");
+  const yearPrefix = `${tahun1.slice(-2)}.${tahun2.slice(-2)}`; // ✅ FIX!
+
   const gradePrefix = "07"; // Untuk kelas 7
 
   let counter = 1;

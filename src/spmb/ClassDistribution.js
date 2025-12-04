@@ -6,28 +6,37 @@ export const formatTahunAjaran = (tahunAjaran) => {
   return `20${tahun1}/20${tahun2}`;
 };
 
-// Fungsi untuk auto-detect tahun ajaran
 export const getTahunAjaran = () => {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
-
+  let baseYear;
   if (month >= 1 && month <= 7) {
-    const tahun1 = year.toString().slice(-2);
-    const tahun2 = (year + 1).toString().slice(-2);
-    return `${tahun1}.${tahun2}`;
+    baseYear = year;
   } else {
-    const tahun1 = (year + 1).toString().slice(-2);
-    const tahun2 = (year + 2).toString().slice(-2);
-    return `${tahun1}.${tahun2}`;
+    baseYear = year + 1;
   }
+  const tahun1 = baseYear.toString().slice(-2);
+  const tahun1Int = parseInt(tahun1);
+  const tahun2 = (tahun1Int + 1).toString().padStart(2, "0");
+  const result = `${tahun1}.${tahun2}`;
+
+  console.log("🔥 getTahunAjaran() HASIL:", result); // ← TAMBAH INI
+
+  return result;
 };
 
 // Fungsi untuk generate NIS dengan format: 26.27.07.001
 export const generateNIS = (tahunAjaran, grade, nomorUrut) => {
+  console.log("🔥 generateNIS INPUT:", { tahunAjaran, grade, nomorUrut }); // ← TAMBAH INI
+
   const gradeStr = grade.toString().padStart(2, "0");
   const nomorStr = nomorUrut.toString().padStart(3, "0");
-  return `${tahunAjaran}.${gradeStr}.${nomorStr}`;
+  const result = `${tahunAjaran}.${gradeStr}.${nomorStr}`;
+
+  console.log("🔥 generateNIS HASIL:", result); // ← TAMBAH INI
+
+  return result;
 };
 
 // Helper function to sanitize school name
@@ -57,7 +66,7 @@ export const generateClassDistribution = (
   setIsLoading(true);
 
   try {
-    const tahunAjaran = getTahunAjaran();
+    const tahunAjaran = getTahunAjaran(); // AUTO-DETECT TAHUN AJARAN
 
     // STEP 0: SANITIZE ALL STUDENT DATA
     const sanitizedStudents = unassignedStudents.map((student) => ({
