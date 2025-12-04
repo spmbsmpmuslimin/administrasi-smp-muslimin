@@ -430,7 +430,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
               ))}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              * Pilih guru yang akan diinputkan presensinya
+              * Pilih Guru Yang Akan Diinputkan Presensinya
             </p>
           </div>
         )}

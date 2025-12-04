@@ -12,10 +12,7 @@ import {
   Clock,
   PlayCircle,
   PauseCircle,
-  Zap,
-  BarChart3,
 } from "lucide-react";
-import Simulator from "./Simulator"; // Import simulator
 
 const AcademicYearTab = ({
   user,
@@ -44,10 +41,6 @@ const AcademicYearTab = ({
     start_date: "",
     end_date: "",
   });
-
-  // ✅ NEW: State untuk simulator
-  const [simulationResult, setSimulationResult] = useState(null);
-  const [showSimulator, setShowSimulator] = useState(false);
 
   // Default config jika schoolConfig belum loaded
   const config = {
@@ -281,17 +274,6 @@ const AcademicYearTab = ({
     return byGrade;
   };
 
-  // ✅ NEW: Handler untuk simulator
-  const handleSimulate = (simulationData) => {
-    setSimulationResult(simulationData);
-    showToast("✅ Simulasi selesai! Lihat hasil di bawah.", "success");
-  };
-
-  const handleCloseSimulation = () => {
-    setSimulationResult(null);
-    setShowSimulator(false);
-  };
-
   const generateYearTransitionPreview = async () => {
     try {
       setLoading(true);
@@ -406,10 +388,6 @@ const AcademicYearTab = ({
         inProgress: false,
       });
 
-      // Reset simulator ketika generate preview baru
-      setSimulationResult(null);
-      setShowSimulator(true);
-
       if (conflictedNIS.length > 0) {
         showToast(
           `⚠️ ${conflictedNIS.length} siswa baru memiliki NIS yang sudah terdaftar!`,
@@ -457,46 +435,17 @@ const AcademicYearTab = ({
   const executeYearTransition = async () => {
     const { preview } = yearTransition;
 
-    // ✅ RE-FETCH data terbaru untuk summary akurat
-    const { data: latestSiswaBaruData } = await supabase
-      .from("siswa_baru")
-      .select("id", { count: "exact" })
-      .eq("is_transferred", false)
-      .eq("academic_year", yearTransition.newYear)
-      .not("kelas", "is", null);
-
-    const latestSiswaBaruCount = latestSiswaBaruData?.length || 0;
-    const previewSiswaBaruCount = preview.newStudents.length;
-
-    // ✅ Validasi simulasi
-    if (!simulationResult) {
-      const runSimulationFirst = window.confirm(
-        "⚠️ REKOMENDASI: Jalankan SIMULASI terlebih dahulu sebelum execute!\n\n" +
-          "Simulasi akan menampilkan detail lengkap perubahan tanpa mengubah database.\n\n" +
-          "Apakah Anda yakin ingin langsung execute tanpa simulasi?"
-      );
-
-      if (!runSimulationFirst) return;
-    }
-
     const totalPromotions = Object.values(preview.promotions).flat().length;
-
-    // ✅ Warning kalo data berubah
-    let warningMessage = "";
-    if (latestSiswaBaruCount !== previewSiswaBaruCount) {
-      warningMessage = `\n⚠️ PERHATIAN: Data siswa baru berubah!\n   Preview: ${previewSiswaBaruCount} siswa → Sekarang: ${latestSiswaBaruCount} siswa\n`;
-    }
 
     const confirmed = window.confirm(
       `PERINGATAN: Tindakan ini akan:\n\n` +
         `1. Membuat 18 kelas baru untuk tahun ajaran ${yearTransition.newYear}\n` +
         `2. Menaikkan ${totalPromotions} siswa ke kelas berikutnya\n` +
-        `3. Memasukkan ${latestSiswaBaruCount} siswa baru ke grade 7\n` +
+        `3. Memasukkan ${preview.newStudents.length} siswa baru ke grade 7\n` +
         `4. Meluluskan ${preview.graduating.length} siswa grade ${graduatingGrade}\n` +
         `5. Mereset assignment guru\n` +
-        `6. Mengubah tahun ajaran menjadi ${yearTransition.newYear}\n` +
-        warningMessage +
-        `\nTindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
+        `6. Mengubah tahun ajaran menjadi ${yearTransition.newYear}\n\n` +
+        `Tindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
     );
 
     if (!confirmed) return;
@@ -540,83 +489,44 @@ const AcademicYearTab = ({
       }
 
       if (preview.newStudents.length > 0) {
-        // ✅ RE-FETCH data terbaru dari database (bukan pakai preview lama)
-        const { data: latestSiswaBaruData, error: fetchError } = await supabase
+        showToast(
+          `Memasukkan ${preview.newStudents.length} siswa baru...`,
+          "info"
+        );
+
+        for (const [classId, siswaList] of Object.entries(
+          preview.newStudentDistribution
+        )) {
+          if (siswaList.length === 0) continue;
+
+          const newStudentsData = siswaList.map((siswa) => ({
+            nis: siswa.nisn || null,
+            full_name: siswa.nama_lengkap,
+            gender: siswa.jenis_kelamin,
+            class_id: classId,
+            academic_year: yearTransition.newYear,
+            is_active: true,
+          }));
+
+          const { error: insertError } = await supabase
+            .from("students")
+            .insert(newStudentsData);
+
+          if (insertError) throw insertError;
+        }
+
+        const siswaBaruIds = preview.newStudents.map((s) => s.id);
+
+        const { error: updateSiswaBaruError } = await supabase
           .from("siswa_baru")
-          .select("*")
-          .eq("is_transferred", false)
-          .eq("academic_year", yearTransition.newYear)
-          .not("kelas", "is", null);
+          .update({
+            is_transferred: true,
+            transferred_at: new Date().toISOString(),
+            transferred_by: user?.id || null,
+          })
+          .in("id", siswaBaruIds);
 
-        if (fetchError) throw fetchError;
-
-        const totalLatest = latestSiswaBaruData?.length || 0;
-        const totalPreview = preview.newStudents.length;
-
-        // ✅ Warning kalo data berubah, tapi tetep lanjut
-        if (totalLatest !== totalPreview) {
-          console.warn(
-            `⚠️ Data siswa baru berubah: Preview ${totalPreview} → Sekarang ${totalLatest}`
-          );
-          showToast(
-            `ℹ️ Data siswa baru diupdate: ${totalLatest} siswa akan dimasukkan`,
-            "info"
-          );
-        }
-
-        if (latestSiswaBaruData && latestSiswaBaruData.length > 0) {
-          showToast(
-            `Memasukkan ${latestSiswaBaruData.length} siswa baru...`,
-            "info"
-          );
-
-          // ✅ Group by kelas (sesuai assignment di SPMB)
-          const distributionByClass = {};
-
-          latestSiswaBaruData.forEach((siswa) => {
-            const kelas = siswa.kelas;
-            if (!distributionByClass[kelas]) {
-              distributionByClass[kelas] = [];
-            }
-            distributionByClass[kelas].push(siswa);
-          });
-
-          // ✅ Insert per kelas
-          for (const [classId, siswaList] of Object.entries(
-            distributionByClass
-          )) {
-            if (siswaList.length === 0) continue;
-
-            const newStudentsData = siswaList.map((siswa) => ({
-              nis: siswa.nisn || null,
-              full_name: siswa.nama_lengkap,
-              gender: siswa.jenis_kelamin,
-              class_id: classId,
-              academic_year: yearTransition.newYear,
-              is_active: true,
-            }));
-
-            const { error: insertError } = await supabase
-              .from("students")
-              .insert(newStudentsData);
-
-            if (insertError) throw insertError;
-          }
-
-          // ✅ Update status di siswa_baru
-          const siswaBaruIds = latestSiswaBaruData.map((s) => s.id);
-
-          const { error: updateSiswaBaruError } = await supabase
-            .from("siswa_baru")
-            .update({
-              is_transferred: true,
-              transferred_at: new Date().toISOString(),
-              transferred_by: user?.id || null,
-            })
-            .in("id", siswaBaruIds);
-
-          if (updateSiswaBaruError) throw updateSiswaBaruError;
-        }
+        if (updateSiswaBaruError) throw updateSiswaBaruError;
       }
 
       showToast("Mereset assignment guru...", "info");
@@ -650,8 +560,6 @@ const AcademicYearTab = ({
 
       await loadSchoolData();
       setYearTransition({ preview: null, newYear: "", inProgress: false });
-      setSimulationResult(null);
-      setShowSimulator(false);
     } catch (error) {
       console.error("Error executing year transition:", error);
       showToast("Error memulai tahun ajaran baru: " + error.message, "error");
@@ -995,15 +903,13 @@ const AcademicYearTab = ({
           </div>
 
           {!yearTransition.preview && (
-            <div className="flex gap-3">
-              <button
-                onClick={generateYearTransitionPreview}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
-                <Eye size={16} />
-                Preview Naik Kelas
-              </button>
-            </div>
+            <button
+              onClick={generateYearTransitionPreview}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
+              <Eye size={16} />
+              Preview Naik Kelas
+            </button>
           )}
         </div>
 
@@ -1140,20 +1046,6 @@ const AcademicYearTab = ({
               </div>
             )}
 
-            {/* 🟢🟢🟢 SIMULATOR TRANSIKSI SMP 🟢🟢🟢 */}
-            {showSimulator && (
-              <Simulator
-                schoolStats={schoolStats}
-                studentsByClass={studentsByClass}
-                yearTransition={yearTransition}
-                config={config}
-                loading={loading}
-                onSimulate={handleSimulate}
-                simulationResult={simulationResult}
-                onCloseSimulation={handleCloseSimulation}
-              />
-            )}
-
             {/* Summary Statistics */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
               <h5 className="font-medium text-blue-900 mb-3">
@@ -1236,15 +1128,13 @@ const AcademicYearTab = ({
                     </button>
 
                     <button
-                      onClick={() => {
+                      onClick={() =>
                         setYearTransition({
                           preview: null,
                           newYear: "",
                           inProgress: false,
-                        });
-                        setSimulationResult(null);
-                        setShowSimulator(false);
-                      }}
+                        })
+                      }
                       disabled={yearTransition.inProgress}
                       className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 font-medium transition">
                       Batal
