@@ -24,13 +24,8 @@ const generateSequentialNIS = (classDistribution, academicYear) => {
   sortedClasses.forEach((className) => {
     const students = classDistribution[className];
 
-    // Sort by Gender (L dulu) + Nama (A-Z)
-    students.sort((a, b) => {
-      if (a.jenis_kelamin !== b.jenis_kelamin) {
-        return a.jenis_kelamin === "L" ? -1 : 1;
-      }
-      return a.nama_lengkap.localeCompare(b.nama_lengkap);
-    });
+    // 🔥 JANGAN SORT! Biarkan urutan siswa TETAP seperti saat generate!
+    // students.sort(...) ← HAPUS INI
 
     console.log(`\n📚 ${className} (${students.length} siswa):`);
 
@@ -292,7 +287,8 @@ export const handleMoveStudentSaved = async (
   setSavedClassDistribution,
   showToast,
   setIsLoading,
-  supabase
+  supabase,
+  onRefreshData // 🔥 TAMBAH PARAMETER INI
 ) => {
   if (!window.confirm(`Pindahkan siswa ke ${toClass}?`)) return;
 
@@ -305,20 +301,12 @@ export const handleMoveStudentSaved = async (
   );
 
   if (success) {
-    const newDistribution = JSON.parse(JSON.stringify(savedClassDistribution));
-
-    newDistribution[fromClass] = newDistribution[fromClass].filter(
-      (s) => s.id !== studentId
-    );
-
-    if (!newDistribution[toClass]) {
-      newDistribution[toClass] = [];
-    }
-    const student = allStudents.find((s) => s.id === studentId);
-    newDistribution[toClass].push(student);
-
-    setSavedClassDistribution(newDistribution);
     showToast(`✅ Siswa dipindah ke ${toClass}`, "success");
+
+    // 🔥 REFRESH DATA dari database
+    if (onRefreshData) {
+      await onRefreshData();
+    }
   }
 };
 
@@ -332,7 +320,6 @@ export const handleExportClassDivision = async (
     showToast("Tidak ada pembagian kelas untuk di-export", "error");
     return;
   }
-
   setIsExporting(true);
   try {
     await exportClassDivision(classDistribution, showToast);
@@ -352,12 +339,10 @@ export const handleExportSavedClasses = async (
   const studentsWithClass = allStudents.filter(
     (s) => s.kelas && !s.is_transferred && s.status === "diterima"
   );
-
   if (studentsWithClass.length === 0) {
     showToast("Tidak ada siswa dengan kelas yang bisa di-export", "error");
     return;
   }
-
   const distribution = {};
   studentsWithClass.forEach((student) => {
     const className = student.kelas;
@@ -366,7 +351,6 @@ export const handleExportSavedClasses = async (
     }
     distribution[className].push(student);
   });
-
   setIsExporting(true);
   try {
     await exportClassDivision(distribution, showToast);

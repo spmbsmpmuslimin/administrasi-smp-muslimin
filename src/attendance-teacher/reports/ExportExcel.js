@@ -133,7 +133,8 @@ const ExportExcel = ({
 
       // Header Info - Nama Sekolah
       worksheet.mergeCells(`A1:${lastColumnLetter}1`);
-      worksheet.getCell("A1").value = "SMP MUSLIMIN CILILIN";
+      worksheet.getCell("A1").value =
+        "SEKOLAH MENENGAH PERTAMA MUSLIMIN CILILIN";
       worksheet.getCell("A1").font = { bold: true, size: 16 };
       worksheet.getCell("A1").alignment = {
         horizontal: "center",

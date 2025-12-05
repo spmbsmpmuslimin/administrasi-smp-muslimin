@@ -904,7 +904,8 @@ const ClassDivision = ({
                                     setSavedClassDistribution,
                                     showToast,
                                     setIsLoading,
-                                    supabase
+                                    supabase,
+                                    onRefreshData
                                   );
                                   e.target.value = "";
                                 }
@@ -954,7 +955,8 @@ const ClassDivision = ({
                                 setSavedClassDistribution,
                                 showToast,
                                 setIsLoading,
-                                supabase
+                                supabase,
+                                onRefreshData
                               );
                               setDraggedStudent(null);
                               setDragOverClass(null);
