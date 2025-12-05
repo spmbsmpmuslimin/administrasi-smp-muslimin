@@ -1340,7 +1340,7 @@ const ClassDivision = ({
             <p className="text-center font-semibold mb-4">
               APAKAH ANDA{" "}
               <span className="text-yellow-300 font-black">YAKIN</span> INGIN
-              MELANJUTKAN ?
+              MELANJUTKAN INI ?
             </p>
 
             <div className="flex gap-3">
