@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import StudentForm from "./StudentForm";
 import StudentList from "./StudentList";
@@ -44,7 +44,6 @@ const useSPMBTargetYear = () => {
         }
       } catch (error) {
         console.error("Error fetching SPMB target year:", error);
-        // Fallback: Calculate +1 year from current
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth();
@@ -65,7 +64,7 @@ const useSPMBTargetYear = () => {
   return { targetYear, isLoading };
 };
 
-// Custom hook untuk academic year (untuk display)
+// Custom hook untuk academic year
 const useAcademicYear = () => {
   const getCurrentAcademicYear = useCallback(() => {
     const now = new Date();
@@ -121,7 +120,7 @@ const useStudentsData = (userData, showToast, targetYear) => {
 
   const { convertDateFormat } = useDateFormatter();
 
-  // Load students data dengan PAGINATION
+  // Load students data
   const loadStudents = useCallback(
     async (page = 1, search = "") => {
       setIsLoading(true);
@@ -138,17 +137,17 @@ const useStudentsData = (userData, showToast, targetYear) => {
 
         setAllStudents(allData || []);
 
-        console.log("Loading students:", { page, from, to, search });
-
         let query = supabase
           .from("siswa_baru")
           .select("*", { count: "exact" })
           .order("created_at", { ascending: false })
           .range(from, to);
 
-        if (search.trim()) {
+        const searchString = String(search || "").trim();
+
+        if (searchString) {
           query = query.or(
-            `nama_lengkap.ilike.%${search}%,asal_sekolah.ilike.%${search}%,nama_ayah.ilike.%${search}%,nama_ibu.ilike.%${search}%,no_pendaftaran.ilike.%${search}%`
+            `nama_lengkap.ilike.%${searchString}%,asal_sekolah.ilike.%${searchString}%,nama_ayah.ilike.%${searchString}%,nama_ibu.ilike.%${searchString}%,no_pendaftaran.ilike.%${searchString}%`
           );
         }
 
@@ -160,16 +159,6 @@ const useStudentsData = (userData, showToast, targetYear) => {
         }
 
         const calculatedTotalPages = Math.ceil((count || 0) / rowsPerPage);
-
-        console.log("Pagination data:", {
-          dataLength: data?.length,
-          count: count,
-          from: from,
-          to: to,
-          rowsPerPage: rowsPerPage,
-          calculatedTotalPages: calculatedTotalPages,
-          currentPage: page,
-        });
 
         setTotalStudents(count || 0);
         setStudents(data || []);
@@ -190,12 +179,11 @@ const useStudentsData = (userData, showToast, targetYear) => {
     [showToast]
   );
 
-  // Save student - MENGGUNAKAN targetYear dari spmb_settings
+  // Save student
   const saveStudent = useCallback(
     async ({ studentData, parentData, isEdit, editingStudent }) => {
       setIsLoading(true);
       try {
-        // Validasi targetYear sudah tersedia
         if (!targetYear) {
           throw new Error("Target academic year belum dimuat");
         }
@@ -219,13 +207,11 @@ const useStudentsData = (userData, showToast, targetYear) => {
           pendidikan_ibu: parentData.pendidikan_ibu,
           no_hp: parentData.no_hp,
           alamat: parentData.alamat,
-          academic_year: targetYear, // Gunakan target year dari spmb_settings
+          academic_year: targetYear,
           status: "diterima",
           is_transferred: false,
           tanggal_daftar: new Date().toISOString(),
         };
-
-        console.log("Data yang akan disimpan:", combinedData);
 
         let result;
         if (isEdit && editingStudent) {
@@ -234,7 +220,6 @@ const useStudentsData = (userData, showToast, targetYear) => {
             .update(combinedData)
             .eq("id", editingStudent.id);
         } else {
-          // Untuk insert baru, trigger akan generate no_pendaftaran otomatis
           result = await supabase
             .from("siswa_baru")
             .insert([combinedData])
@@ -315,6 +300,7 @@ const SPMB = ({ user, onShowToast }) => {
   const [activeTab, setActiveTab] = useState("form");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [editingStudent, setEditingStudent] = useState(null);
 
@@ -332,6 +318,12 @@ const SPMB = ({ user, onShowToast }) => {
     deleteStudent,
   } = useStudentsData(user, onShowToast || showToast, targetYear);
 
+  // Handle search input - LANGSUNG UPDATE (SMOOTH!)
+  const handleSearchInput = useCallback((e) => {
+    const value = e.target.value;
+    setSearchInput(value);
+  }, []);
+
   // Initial load students
   useEffect(() => {
     const initializeData = async () => {
@@ -344,30 +336,75 @@ const SPMB = ({ user, onShowToast }) => {
     initializeData();
   }, [loadStudents]);
 
-  // Handle search dengan debounce
+  // Debounce search input -> searchTerm (300ms)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      console.log("Searching:", searchTerm);
-      loadStudents(1, searchTerm).then((result) => {
-        if (result && result.totalPages) {
-          setTotalPages(result.totalPages);
-          setCurrentPage(1);
-        }
-      });
-    }, 500);
+      setSearchTerm(searchInput);
+    }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, loadStudents]);
+  }, [searchInput]);
+
+  // Filter students berdasarkan searchTerm - CLIENT SIDE (SMOOTH!)
+  const { filteredStudents, filteredTotal, filteredTotalPages } =
+    useMemo(() => {
+      const rowsPerPage = 20;
+
+      if (!searchTerm.trim()) {
+        // Kalau kosong, pake data dari database
+        return {
+          filteredStudents: students,
+          filteredTotal: totalStudents,
+          filteredTotalPages: totalPages,
+        };
+      }
+
+      // Kalau ada search, filter client-side
+      const search = searchTerm.toLowerCase();
+      const filtered = allStudents.filter(
+        (s) =>
+          s.nama_lengkap?.toLowerCase().includes(search) ||
+          s.asal_sekolah?.toLowerCase().includes(search) ||
+          s.nama_ayah?.toLowerCase().includes(search) ||
+          s.nama_ibu?.toLowerCase().includes(search) ||
+          s.no_pendaftaran?.toLowerCase().includes(search)
+      );
+
+      const from = (currentPage - 1) * rowsPerPage;
+      const to = from + rowsPerPage;
+
+      return {
+        filteredStudents: filtered.slice(from, to),
+        filteredTotal: filtered.length,
+        filteredTotalPages: Math.ceil(filtered.length / rowsPerPage),
+      };
+    }, [
+      searchTerm,
+      students,
+      allStudents,
+      totalStudents,
+      totalPages,
+      currentPage,
+    ]);
+
+  // Reset page saat search berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Handle page change
   const handlePageChange = useCallback(
     async (page) => {
-      console.log("Changing to page:", page);
       setCurrentPage(page);
-      const result = await loadStudents(page, searchTerm);
-      if (result && result.totalPages) {
-        setTotalPages(result.totalPages);
+
+      if (!searchTerm.trim()) {
+        // Kalau tidak ada search, load dari database
+        const result = await loadStudents(page, "");
+        if (result && result.totalPages) {
+          setTotalPages(result.totalPages);
+        }
       }
+      // Kalau ada search, pagination otomatis handle di useMemo
     },
     [searchTerm, loadStudents]
   );
@@ -389,15 +426,16 @@ const SPMB = ({ user, onShowToast }) => {
 
       if (success) {
         setEditingStudent(null);
-        const result = await loadStudents(currentPage, searchTerm);
+        const result = await loadStudents(1, "");
         if (result && result.totalPages) {
           setTotalPages(result.totalPages);
+          setCurrentPage(1);
         }
       }
 
       return success;
     },
-    [saveStudent, editingStudent, loadStudents, currentPage, searchTerm]
+    [saveStudent, editingStudent, loadStudents]
   );
 
   // Handle delete student
@@ -405,23 +443,24 @@ const SPMB = ({ user, onShowToast }) => {
     async (id) => {
       const success = await deleteStudent(id);
       if (success) {
-        const result = await loadStudents(currentPage, searchTerm);
+        const result = await loadStudents(1, "");
         if (result && result.totalPages) {
           setTotalPages(result.totalPages);
+          setCurrentPage(1);
         }
       }
     },
-    [deleteStudent, loadStudents, currentPage, searchTerm]
+    [deleteStudent, loadStudents]
   );
 
   // Handle refresh data
   const handleRefreshData = useCallback(async () => {
-    console.log("Refreshing data...");
-    const result = await loadStudents(currentPage, searchTerm);
+    const result = await loadStudents(1, "");
     if (result && result.totalPages) {
       setTotalPages(result.totalPages);
+      setCurrentPage(1);
     }
-  }, [loadStudents, currentPage, searchTerm]);
+  }, [loadStudents]);
 
   // Calculate statistics
   const maleStudents = allStudents.filter(
@@ -486,7 +525,7 @@ const SPMB = ({ user, onShowToast }) => {
           </div>
         )}
 
-        {/* PAGE HEADER - Navy Gradient */}
+        {/* PAGE HEADER */}
         <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-600 rounded-xl p-8 sm:p-10 shadow-lg">
           <div className="text-center space-y-2">
             <h2 className="text-2xl sm:text-lg text-blue-200 font-semibold uppercase tracking-widest">
@@ -523,17 +562,19 @@ const SPMB = ({ user, onShowToast }) => {
 
         {/* Tab Content */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-          {/* Loading State */}
-          {(isLoading || isLoadingTargetYear) && activeTab !== "form" && (
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="animate-pulse bg-gray-200 h-20 rounded-lg"
-                />
-              ))}
-            </div>
-          )}
+          {/* Loading State untuk form tab */}
+          {(isLoading || isLoadingTargetYear) &&
+            activeTab !== "form" &&
+            activeTab !== "list" && (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="animate-pulse bg-gray-200 h-20 rounded-lg"
+                  />
+                ))}
+              </div>
+            )}
 
           {/* Content */}
           {!isLoadingTargetYear && (
@@ -548,9 +589,9 @@ const SPMB = ({ user, onShowToast }) => {
                 />
               )}
 
-              {activeTab === "list" && !isLoading && (
+              {activeTab === "list" && (
                 <>
-                  {students.length === 0 && !searchTerm ? (
+                  {filteredStudents.length === 0 && !searchInput ? (
                     <div className="text-center py-16">
                       <div className="text-6xl mb-4">🔭</div>
                       <p className="text-gray-500 text-lg font-medium">
@@ -560,7 +601,7 @@ const SPMB = ({ user, onShowToast }) => {
                         Mulai dengan mendaftarkan siswa baru
                       </p>
                     </div>
-                  ) : students.length === 0 && searchTerm ? (
+                  ) : filteredStudents.length === 0 && searchInput ? (
                     <div className="text-center py-16">
                       <div className="text-6xl mb-4">🔍</div>
                       <p className="text-gray-500 text-lg font-medium">
@@ -572,13 +613,13 @@ const SPMB = ({ user, onShowToast }) => {
                     </div>
                   ) : (
                     <StudentList
-                      students={students}
+                      students={filteredStudents}
                       allStudents={allStudents}
-                      totalStudents={totalStudents}
+                      totalStudents={filteredTotal}
                       currentPageNum={currentPage}
-                      totalPages={totalPages}
-                      searchTerm={searchTerm}
-                      onSearch={setSearchTerm}
+                      totalPages={filteredTotalPages}
+                      searchTerm={searchInput}
+                      onSearch={handleSearchInput}
                       onEditStudent={handleEditStudent}
                       onDeleteStudent={handleDeleteStudent}
                       onLoadStudents={handleRefreshData}

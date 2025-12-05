@@ -5,38 +5,50 @@ import { exportClassDivision } from "./SpmbExcel";
 
 // 🔥 FUNGSI BARU: Generate NIS berurutan berdasarkan kelas
 // 🔥 FIXED: Generate NIS berurutan berdasarkan kelas
+// 🔥 ROBUST: Handle berbagai format no_pendaftaran
+// 🔥 ROBUST VERSION - RECOMMENDED!
+// 🔥 FINAL: NIS terpisah dari No. Pendaftaran
 const generateSequentialNIS = (classDistribution, academicYear) => {
-  // Convert "2026/2027" → "26.27"
   const [tahun1, tahun2] = academicYear.split("/");
-  const yearPrefix = `${tahun1.slice(-2)}.${tahun2.slice(-2)}`; // ✅ FIX!
+  const yearPrefix = `${tahun1.slice(-2)}.${tahun2.slice(-2)}`;
+  const gradePrefix = "07";
 
-  const gradePrefix = "07"; // Untuk kelas 7
-
-  let counter = 1;
   const nisMapping = {};
+  let globalCounter = 1;
 
-  // Sort kelas agar urut (7A, 7B, 7C, dst)
+  // Sort kelas (7A, 7B, 7C, dst)
   const sortedClasses = Object.keys(classDistribution).sort();
+
+  console.log("🎯 Generating NIS...");
 
   sortedClasses.forEach((className) => {
     const students = classDistribution[className];
 
-    // Sort siswa dalam kelas (bisa by nama, gender, dll)
+    // Sort by Gender (L dulu) + Nama (A-Z)
     students.sort((a, b) => {
-      // Urutkan: L dulu, baru P, lalu by nama
       if (a.jenis_kelamin !== b.jenis_kelamin) {
         return a.jenis_kelamin === "L" ? -1 : 1;
       }
       return a.nama_lengkap.localeCompare(b.nama_lengkap);
     });
 
+    console.log(`\n📚 ${className} (${students.length} siswa):`);
+
     students.forEach((student) => {
-      const nisNumber = counter.toString().padStart(3, "0"); // 001, 002, dst
+      const nisNumber = globalCounter.toString().padStart(3, "0");
       nisMapping[student.id] = `${yearPrefix}.${gradePrefix}.${nisNumber}`;
-      counter++;
+
+      console.log(
+        `  ✅ ${globalCounter}. ${student.jenis_kelamin} - ${
+          student.nama_lengkap
+        }: ${nisMapping[student.id]}`
+      );
+
+      globalCounter++;
     });
   });
 
+  console.log(`\n🎉 Total ${globalCounter - 1} NIS berhasil di-generate!`);
   return nisMapping;
 };
 

@@ -343,14 +343,22 @@ export const exportClassDivision = async (classDistribution, showToast) => {
         };
       });
 
-      // Data rows - Sort berdasarkan nama
-      const sortedStudents = [...students].sort((a, b) =>
-        (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "")
-      );
+      // Data rows - Sort berdasarkan NIS dulu, kalau sama baru nama
+      const sortedStudents = [...students].sort((a, b) => {
+        // Sort NIS dulu
+        const nisA = a.nis || "";
+        const nisB = b.nis || "";
+
+        if (nisA !== nisB) {
+          return nisA.localeCompare(nisB, undefined, { numeric: true });
+        }
+
+        // Kalau NIS sama, sort berdasarkan nama
+        return (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "");
+      });
 
       sortedStudents.forEach((student, index) => {
         const row = worksheet.getRow(11 + index);
-
         row.values = [
           index + 1,
           student.nis || "-", // 🔥 NIS TERISI DARI DATA SISWA

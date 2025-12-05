@@ -210,13 +210,13 @@ export const processSimulation = (preview, schoolStats, config) => {
     // Analisis kapasitas
     if (avgGrade8 > SCHOOL_CONFIG.capacityRange.high) {
       recommendations.push(
-        `📊 **Catatan:** Kelas 8 rata² ${avgGrade8} siswa/kelas (cukup padat)`
+        `📊 **Catatan:** Kelas 8 rata² ${avgGrade8} Siswa/Kelas (Cukup Padat)`
       );
     }
 
     if (grade7Total < 100) {
       recommendations.push(
-        `💡 **Saran:** Jumlah siswa baru (${grade7Total}) di bawah ekspektasi normal`
+        `💡 **Saran:** Jumlah Siswa Baru (${grade7Total}) Dibawah Ekspektasi Normal`
       );
     }
 
@@ -468,7 +468,7 @@ export const SimulationResults = ({
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             <PieChart className="text-purple-600" size={18} />
-            Distribusi per Kelas
+            Distribusi Per Kelas
           </h4>
           <button
             onClick={() =>
@@ -515,7 +515,7 @@ export const SimulationResults = ({
                       {cls.totalStudents}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">
-                      {cls.existingStudents} ada + {cls.newStudents} baru
+                      {cls.existingStudents} Ada + {cls.newStudents} Baru
                     </p>
                     <div
                       className={`mt-2 text-xs px-2 py-1 rounded-full ${
@@ -537,8 +537,8 @@ export const SimulationResults = ({
         ) : (
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 text-center">
-              {classDistribution.length} kelas terdeteksi. Klik "Tampilkan
-              Detail" untuk melihat distribusi lengkap.
+              {classDistribution.length} Kelas Trdeteksi. Klik "Tampilkan
+              Detail" Untuk Melihat Distribusi Lengkap.
             </p>
           </div>
         )}
@@ -624,16 +624,16 @@ export const SimulationResults = ({
                 isValid ? "text-green-800" : "text-red-800"
               }`}>
               {isValid
-                ? "✅ SIMULASI VALID - Sistem siap untuk transisi"
-                : "⚠️ PERHATIAN - Ada masalah yang perlu ditinjau sebelum execute"}
+                ? "✅ SIMULASI VALID - Sistem Siap Untuk Transisi"
+                : "⚠️ PERHATIAN - Ada Masalah Yang Perlu Ditinjau Sebelum Eexecute"}
             </p>
             <p
               className={`text-sm mt-1 ${
                 isValid ? "text-green-700" : "text-red-700"
               }`}>
               {isValid
-                ? "Semua analisis menunjukkan sistem dapat melanjutkan transisi tahun ajaran."
-                : "Tinjau rekomendasi dan analisis di atas sebelum melanjutkan."}
+                ? "Semua Analisis Menunjukkan Sistem Dapat Melanjutkan Transisi Tahun Ajaran."
+                : "Tinjau Rekomendasi Dan Analisis Di Atas Sebelum Melanjutkan."}
             </p>
           </div>
         </div>

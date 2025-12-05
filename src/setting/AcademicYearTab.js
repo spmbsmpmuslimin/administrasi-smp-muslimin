@@ -955,8 +955,8 @@ const AcademicYearTab = ({
               Transisi Tahun Ajaran
             </h3>
             <p className="text-gray-600 text-sm">
-              Kelola perpindahan ke tahun ajaran berikutnya (termasuk siswa baru
-              dari SPMB)
+              Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru
+              Dari SPMB)
             </p>
           </div>
 

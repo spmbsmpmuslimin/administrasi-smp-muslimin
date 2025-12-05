@@ -132,7 +132,15 @@ const ClassDivision = ({
         distribution[className].push(student);
       });
 
-    setSavedClassDistribution(distribution);
+    // 🔥 SORT KELAS: 7A, 7B, 7C, dst
+    const sortedDistribution = {};
+    Object.keys(distribution)
+      .sort() // Sort alfabetis (7A, 7B, 7C, ...)
+      .forEach((className) => {
+        sortedDistribution[className] = distribution[className];
+      });
+
+    setSavedClassDistribution(sortedDistribution);
     setShowSavedClasses(true);
     setShowPreview(false);
     setEditMode(true);
@@ -837,15 +845,24 @@ const ClassDivision = ({
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="p-2 text-left">No</th>
+                      <th className="p-2 text-left">NIS</th>
                       <th className="p-2 text-left">Nama</th>
                       <th className="p-2 text-center">L/P</th>
                       <th className="p-2 text-left">Asal Sekolah</th>
-                      <th className="p-2 text-center">Aksi</th>
+                      {isEditModeActive && (
+                        <th className="p-2 text-center">Aksi</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {savedClassDistribution[activeClassView].map(
-                      (student, idx) => (
+                    {savedClassDistribution[activeClassView]
+                      .sort((a, b) => {
+                        if (a.nis && b.nis) {
+                          return a.nis.localeCompare(b.nis);
+                        }
+                        return a.nama_lengkap.localeCompare(b.nama_lengkap);
+                      })
+                      .map((student, idx) => (
                         <tr
                           key={student.id}
                           className="border-t hover:bg-gray-50"
@@ -859,6 +876,9 @@ const ClassDivision = ({
                             )
                           }>
                           <td className="p-2">{idx + 1}</td>
+                          <td className="p-2 font-mono text-sm text-blue-600">
+                            {student.nis || "-"}
+                          </td>
                           <td className="p-2 font-medium">
                             {student.nama_lengkap}
                           </td>
@@ -909,8 +929,7 @@ const ClassDivision = ({
                             </select>
                           </td>
                         </tr>
-                      )
-                    )}
+                      ))}
                   </tbody>
                 </table>
 
@@ -1018,6 +1037,7 @@ const ClassDivision = ({
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="p-2 text-left">No</th>
+                      <th className="p-2 text-left">NIS</th>
                       <th className="p-2 text-left">Nama</th>
                       <th className="p-2 text-center">L/P</th>
                       <th className="p-2 text-left">Asal Sekolah</th>
@@ -1027,8 +1047,14 @@ const ClassDivision = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {currentDistribution[activeClassView].map(
-                      (student, idx) => (
+                    {currentDistribution[activeClassView]
+                      .sort((a, b) => {
+                        if (a.nis && b.nis) {
+                          return a.nis.localeCompare(b.nis);
+                        }
+                        return a.nama_lengkap.localeCompare(b.nama_lengkap);
+                      })
+                      .map((student, idx) => (
                         <tr
                           key={student.id}
                           className="border-t hover:bg-gray-50"
@@ -1045,6 +1071,9 @@ const ClassDivision = ({
                               : undefined
                           }>
                           <td className="p-2">{idx + 1}</td>
+                          <td className="p-2 font-mono text-sm text-blue-600">
+                            {student.nis || "-"}
+                          </td>
                           <td className="p-2 font-medium">
                             {student.nama_lengkap}
                           </td>
@@ -1087,8 +1116,7 @@ const ClassDivision = ({
                             </td>
                           )}
                         </tr>
-                      )
-                    )}
+                      ))}
                   </tbody>
                 </table>
               </div>
