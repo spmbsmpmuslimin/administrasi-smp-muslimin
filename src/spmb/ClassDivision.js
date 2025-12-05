@@ -60,6 +60,7 @@ const ClassDivision = ({
 
   const [savedClassDistribution, setSavedClassDistribution] = useState({});
   const [showSavedClasses, setShowSavedClasses] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   // Load siswa yang belum dibagi kelas
   useEffect(() => {
@@ -288,16 +289,7 @@ const ClassDivision = ({
               </button>
 
               <button
-                onClick={() =>
-                  transferToStudents(
-                    allStudents,
-                    supabase,
-                    setIsLoading,
-                    showToast,
-                    getCurrentAcademicYear,
-                    onRefreshData
-                  )
-                }
+                onClick={() => setShowTransferModal(true)}
                 disabled={isLoading || studentsWithClass.length === 0}
                 className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2">
                 🚀 Transfer ke Students
@@ -1320,6 +1312,58 @@ const ClassDivision = ({
                   Batal
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🚨 MODAL MERAH TRANSFER */}
+      {showTransferModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-2xl max-w-md w-full p-6 text-white border-4 border-red-900">
+            <div className="text-center mb-4">
+              <div className="text-6xl mb-2">🚨</div>
+              <h3 className="text-2xl font-black">PERINGATAN KRITIS!</h3>
+            </div>
+
+            <div className="bg-white bg-opacity-20 rounded p-4 mb-4">
+              <p className="font-bold text-lg mb-2">
+                Transfer {studentsWithClass.length} Siswa ke Students?
+              </p>
+              <div className="text-sm space-y-1 text-red-100">
+                <p>⚠️ Proses TIDAK BISA DI-UNDO!</p>
+                <p>⚠️ Data menjadi PERMANEN di sistem!</p>
+                <p>⚠️ Pastikan pembagian kelas BENAR!</p>
+              </div>
+            </div>
+
+            <p className="text-center font-semibold mb-4">
+              APAKAH ANDA{" "}
+              <span className="text-yellow-300 font-black">YAKIN</span> INGIN
+              MELANJUTKAN ?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowTransferModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-bold">
+                ❌ BATAL
+              </button>
+              <button
+                onClick={() => {
+                  setShowTransferModal(false);
+                  transferToStudents(
+                    allStudents,
+                    supabase,
+                    setIsLoading,
+                    showToast,
+                    getCurrentAcademicYear,
+                    onRefreshData
+                  );
+                }}
+                className="flex-1 px-4 py-3 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-lg font-black">
+                ✅ YA, YAKIN!
+              </button>
             </div>
           </div>
         </div>
