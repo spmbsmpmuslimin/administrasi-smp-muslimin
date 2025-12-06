@@ -35,22 +35,20 @@ const MonthlyView = ({ currentUser }) => {
   ];
 
   // ========================================
-  // 🗓️ LIBUR NASIONAL 2025
+  // 🗓️ LIBUR NASIONAL 2025-2026
   // ========================================
   // ⚠️ UPDATE ARRAY INI SETIAP TAHUN BARU! ⚠️
   // Sumber: Keputusan Bersama (SKB) 3 Menteri
-  // Last update: Desember 2024 untuk tahun 2025
-  //
-  // TODO 2026: Update array ini dengan libur nasional 2026
-  // (biasanya diumumkan sekitar Desember 2025)
+  // Last update: Desember 2024 untuk tahun 2025-2026
   // ========================================
-  const nationalHolidays2025 = {
+  const nationalHolidays = {
+    // ===== 2025 =====
     "2025-01-01": "Tahun Baru Masehi",
     "2025-01-25": "Tahun Baru Imlek 2576",
     "2025-03-02": "Isra Miraj Nabi Muhammad SAW",
     "2025-03-12": "Hari Raya Nyepi (Tahun Baru Saka 1947)",
-    "2025-03-31": "Idul Fitri 1446 H", // Hari pertama
-    "2025-04-01": "Idul Fitri 1446 H", // Hari kedua
+    "2025-03-31": "Idul Fitri 1446 H",
+    "2025-04-01": "Idul Fitri 1446 H",
     "2025-04-18": "Wafat Yesus Kristus (Jumat Agung)",
     "2025-05-01": "Hari Buruh Internasional",
     "2025-05-29": "Kenaikan Yesus Kristus",
@@ -59,11 +57,29 @@ const MonthlyView = ({ currentUser }) => {
     "2025-08-17": "Hari Kemerdekaan RI",
     "2025-09-05": "Maulid Nabi Muhammad SAW",
     "2025-12-25": "Hari Raya Natal",
+    // ===== 2026 =====
+    "2026-01-01": "Tahun Baru Masehi",
+    "2026-01-16": "Isra Mi'raj Nabi Muhammad SAW",
+    "2026-02-17": "Tahun Baru Imlek 2577",
+    "2026-03-19": "Hari Suci Nyepi (Tahun Baru Saka 1948)",
+    "2026-03-21": "Idul Fitri 1447 H",
+    "2026-03-22": "Idul Fitri 1447 H",
+    "2026-04-03": "Wafat Yesus Kristus (Jumat Agung)",
+    "2026-04-05": "Hari Paskah",
+    "2026-05-01": "Hari Buruh Internasional",
+    "2026-05-14": "Kenaikan Yesus Kristus",
+    "2026-05-27": "Idul Adha 1447 H",
+    "2026-05-31": "Hari Raya Waisak 2570 BE",
+    "2026-06-01": "Hari Lahir Pancasila",
+    "2026-06-16": "Tahun Baru Islam 1448 H",
+    "2026-08-17": "Hari Kemerdekaan RI",
+    "2026-08-25": "Maulid Nabi Muhammad SAW",
+    "2026-12-25": "Hari Raya Natal",
   };
 
   // Helper: Check if date is national holiday
   const isNationalHoliday = (dateStr) => {
-    return nationalHolidays2025[dateStr] || null;
+    return nationalHolidays[dateStr] || null;
   };
 
   // Helper: Check if day is weekend (Saturday = 6, Sunday = 0)
@@ -306,20 +322,6 @@ const MonthlyView = ({ currentUser }) => {
                           day
                         );
                         const holiday = isNationalHoliday(dateStr);
-
-                        // 🐛 DEBUG LOG - Cek weekend detection (Hapus setelah berhasil!)
-                        if (
-                          teacher.teacher_id === teachers[0]?.teacher_id &&
-                          day >= 22 &&
-                          day <= 24 &&
-                          selectedMonth === 10
-                        ) {
-                          console.log(
-                            `🔍 Debug Day ${day} Nov 2025: weekend=${weekend}, holiday=${holiday}, bg=${
-                              weekend || holiday ? "bg-gray-100" : "TIDAK"
-                            }`
-                          );
-                        }
 
                         const badge = attendance
                           ? getStatusBadge(attendance.status)

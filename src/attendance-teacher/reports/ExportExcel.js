@@ -13,19 +13,73 @@ const ExportExcel = ({
 }) => {
   const [exporting, setExporting] = useState(false);
 
+  // ========================================
+  // 🗓️ LIBUR NASIONAL 2025-2026
+  // ========================================
+  const nationalHolidays = {
+    // ===== 2025 =====
+    "2025-01-01": "Tahun Baru Masehi",
+    "2025-01-25": "Tahun Baru Imlek 2576",
+    "2025-03-02": "Isra Miraj Nabi Muhammad SAW",
+    "2025-03-12": "Hari Raya Nyepi (Tahun Baru Saka 1947)",
+    "2025-03-31": "Idul Fitri 1446 H",
+    "2025-04-01": "Idul Fitri 1446 H",
+    "2025-04-18": "Wafat Yesus Kristus (Jumat Agung)",
+    "2025-05-01": "Hari Buruh Internasional",
+    "2025-05-29": "Kenaikan Yesus Kristus",
+    "2025-06-07": "Idul Adha 1446 H",
+    "2025-06-28": "Tahun Baru Islam 1447 H",
+    "2025-08-17": "Hari Kemerdekaan RI",
+    "2025-09-05": "Maulid Nabi Muhammad SAW",
+    "2025-12-25": "Hari Raya Natal",
+    // ===== 2026 =====
+    "2026-01-01": "Tahun Baru Masehi",
+    "2026-01-16": "Isra Mi'raj Nabi Muhammad SAW",
+    "2026-02-17": "Tahun Baru Imlek 2577",
+    "2026-03-19": "Hari Suci Nyepi (Tahun Baru Saka 1948)",
+    "2026-03-21": "Idul Fitri 1447 H",
+    "2026-03-22": "Idul Fitri 1447 H",
+    "2026-04-03": "Wafat Yesus Kristus (Jumat Agung)",
+    "2026-04-05": "Hari Paskah",
+    "2026-05-01": "Hari Buruh Internasional",
+    "2026-05-14": "Kenaikan Yesus Kristus",
+    "2026-05-27": "Idul Adha 1447 H",
+    "2026-05-31": "Hari Raya Waisak 2570 BE",
+    "2026-06-01": "Hari Lahir Pancasila",
+    "2026-06-16": "Tahun Baru Islam 1448 H",
+    "2026-08-17": "Hari Kemerdekaan RI",
+    "2026-08-25": "Maulid Nabi Muhammad SAW",
+    "2026-12-25": "Hari Raya Natal",
+  };
+
+  // Helper: Check if date is national holiday
+  const isNationalHoliday = (dateStr) => {
+    return nationalHolidays[dateStr] || null;
+  };
+
+  // Helper: Check if day is weekend (Saturday = 6, Sunday = 0)
+  const isWeekend = (year, month, day) => {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+  };
+
   const getDaysInMonth = () => {
     return new Date(year, month + 1, 0).getDate();
   };
 
   const getAttendanceForDay = (teacherId, day) => {
-    const dateStr = new Date(year, month, day).toISOString().split("T")[0];
+    const yearNum = year;
+    const monthNum = String(month + 1).padStart(2, "0");
+    const dayNum = String(day).padStart(2, "0");
+    const dateStr = `${yearNum}-${monthNum}-${dayNum}`;
+
     return attendances.find(
       (att) => att.teacher_id === teacherId && att.attendance_date === dateStr
     );
   };
 
   const getStatusLabel = (status) => {
-    // FIXED: Pake huruf besar (Hadir, Izin, Sakit, Alpa) sesuai database
     const labels = {
       Hadir: "H",
       Izin: "I",
@@ -39,7 +93,6 @@ const ExportExcel = ({
     const teacherAttendances = attendances.filter(
       (att) => att.teacher_id === teacherId
     );
-    // FIXED: Pake huruf besar (Hadir, Izin, Sakit, Alpa)
     const hadir = teacherAttendances.filter((a) => a.status === "Hadir").length;
     const total = teacherAttendances.length;
     const percentage = total > 0 ? ((hadir / total) * 100).toFixed(1) : 0;
@@ -57,51 +110,6 @@ const ExportExcel = ({
   const handleExport = async () => {
     setExporting(true);
 
-    // ========================================
-    // 🔍 DEBUG LOGGING - CEK DI CONSOLE (F12)
-    // ========================================
-    console.log("========================================");
-    console.log("🔍 DEBUG EXPORT EXCEL");
-    console.log("========================================");
-    console.log("📅 Month:", month, "Year:", year, "MonthName:", monthName);
-    console.log("👥 Total Teachers:", teachers.length);
-    console.log("📋 Total Attendances:", attendances.length);
-    console.log("");
-    console.log("🔹 Sample Teacher (first):", teachers[0]);
-    console.log("🔹 Sample Attendance (first):", attendances[0]);
-    console.log("");
-
-    // Check specific date
-    const targetDate = "2025-11-26";
-    const attendancesOnDate = attendances.filter(
-      (a) => a.attendance_date === targetDate
-    );
-    console.log(`📆 Attendances on ${targetDate}:`, attendancesOnDate.length);
-    attendancesOnDate.forEach((att) => {
-      console.log(`  - Teacher: ${att.teacher_id}, Status: ${att.status}`);
-    });
-    console.log("");
-
-    // Check ELAN JAELANI specifically
-    const elanTeacher = teachers.find((t) => t.full_name?.includes("ELAN"));
-    if (elanTeacher) {
-      console.log("🎯 ELAN JAELANI Found:");
-      console.log("  - Full Name:", elanTeacher.full_name);
-      console.log("  - Teacher ID:", elanTeacher.teacher_id);
-      console.log("  - User ID:", elanTeacher.id);
-
-      const elanAttendances = attendances.filter(
-        (a) =>
-          a.teacher_id === elanTeacher.teacher_id ||
-          a.teacher_id === elanTeacher.id
-      );
-      console.log("  - Total Attendances:", elanAttendances.length);
-      console.log("  - Attendances:", elanAttendances);
-    } else {
-      console.log("❌ ELAN JAELANI NOT FOUND in teachers array");
-    }
-    console.log("========================================");
-
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(`Presensi ${monthName} ${year}`);
@@ -109,11 +117,9 @@ const ExportExcel = ({
       const daysInMonth = getDaysInMonth();
       const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-      // Calculate total columns dynamically
-      // No (1) + Nama (1) + Days (30) + H (1) + I (1) + S (1) + A (1) + Total (1) + % (1) = 38 columns for 30 days
-      const totalColumns = 2 + daysInMonth + 6; // 2 (No+Nama) + days + 6 (stats)
+      const totalColumns = 2 + daysInMonth + 6;
 
-      // Helper function to get Excel column letter (A, B, C, ... Z, AA, AB, ...)
+      // Helper function to get Excel column letter
       const getColumnLetter = (colNumber) => {
         let letter = "";
         while (colNumber > 0) {
@@ -125,11 +131,6 @@ const ExportExcel = ({
       };
 
       const lastColumnLetter = getColumnLetter(totalColumns);
-
-      console.log("📊 Excel Info:");
-      console.log("  Days in month:", daysInMonth);
-      console.log("  Total columns:", totalColumns);
-      console.log("  Last column letter:", lastColumnLetter);
 
       // Header Info - Nama Sekolah
       worksheet.mergeCells(`A1:${lastColumnLetter}1`);
@@ -197,15 +198,7 @@ const ExportExcel = ({
 
       // Data Rows
       teachers.forEach((teacher, index) => {
-        // DEBUG: Log setiap teacher yang diproses
-        console.log(
-          `Processing Teacher ${index + 1}: ${teacher.full_name} (ID: ${
-            teacher.teacher_id || teacher.id
-          })`
-        );
-
-        const stats = calculateTeacherStats(teacher.teacher_id || teacher.id); // Try both fields
-        console.log(`  Stats:`, stats);
+        const stats = calculateTeacherStats(teacher.teacher_id || teacher.id);
 
         const rowData = [
           index + 1,
@@ -214,15 +207,8 @@ const ExportExcel = ({
             const attendance = getAttendanceForDay(
               teacher.teacher_id || teacher.id,
               day
-            ); // Try both fields
-            const label = attendance ? getStatusLabel(attendance.status) : "-";
-
-            // DEBUG: Log attendance for day 26
-            if (day === 26 && attendance) {
-              console.log(`  ✅ Day 26 - Attendance found:`, attendance);
-            }
-
-            return label;
+            );
+            return attendance ? getStatusLabel(attendance.status) : "-";
           }),
           stats.hadir,
           stats.izin,
@@ -247,38 +233,68 @@ const ExportExcel = ({
             right: { style: "thin" },
           };
 
-          // Color coding untuk status
+          // Color coding untuk kolom tanggal
           if (colNumber > 2 && colNumber <= 2 + daysInMonth) {
+            const day = colNumber - 2;
             const value = cell.value;
-            if (value === "H") {
+
+            // Format date string untuk check holiday
+            const yearNum = year;
+            const monthNum = String(month + 1).padStart(2, "0");
+            const dayNum = String(day).padStart(2, "0");
+            const dateStr = `${yearNum}-${monthNum}-${dayNum}`;
+
+            // Check weekend dan holiday
+            const weekend = isWeekend(year, month, day);
+            const holiday = isNationalHoliday(dateStr);
+
+            // Jika weekend atau holiday, kasih warna merah muda
+            if (weekend || holiday) {
               cell.fill = {
                 type: "pattern",
                 pattern: "solid",
-                fgColor: { argb: "FF92D050" },
+                fgColor: { argb: "FFFECACA" }, // Merah muda (red-100)
+              };
+              cell.font = { color: { argb: "FF991B1B" } }; // Text merah gelap
+
+              // Tambah comment/note
+              if (holiday) {
+                cell.note = `Libur Nasional: ${holiday}`;
+              } else {
+                cell.note = weekend ? "Weekend (Sabtu/Minggu)" : "";
+              }
+            }
+            // Jika ada data kehadiran (H/I/S/A), kasih warna sesuai status
+            else if (value === "H") {
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FF92D050" }, // Hijau
               };
               cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
             } else if (value === "I") {
               cell.fill = {
                 type: "pattern",
                 pattern: "solid",
-                fgColor: { argb: "FF5B9BD5" },
+                fgColor: { argb: "FF5B9BD5" }, // Biru
               };
               cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
             } else if (value === "S") {
               cell.fill = {
                 type: "pattern",
                 pattern: "solid",
-                fgColor: { argb: "FFFFC000" },
+                fgColor: { argb: "FFFFC000" }, // Kuning
               };
               cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
             } else if (value === "A") {
               cell.fill = {
                 type: "pattern",
                 pattern: "solid",
-                fgColor: { argb: "FFFF0000" },
+                fgColor: { argb: "FFFF0000" }, // Merah
               };
               cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
             }
+            // Jika belum absen (hari kerja biasa), biarkan putih default
           }
 
           // Bold stats columns (H, I, S, A, Total, %)
@@ -317,12 +333,23 @@ const ExportExcel = ({
         ["S", "Sakit"],
         ["A", "Alpha"],
         ["-", "Belum Absen"],
+        ["Merah Muda", "Weekend / Libur Nasional"],
       ];
 
       legends.forEach(([code, label]) => {
         const row = worksheet.addRow([code, label]);
         row.getCell(1).alignment = { horizontal: "center" };
         row.getCell(1).font = { bold: true };
+
+        // Kasih warna merah muda di keterangan juga
+        if (code === "Merah Muda") {
+          row.getCell(1).fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFECACA" }, // Merah muda
+          };
+          row.getCell(1).font = { bold: true, color: { argb: "FF991B1B" } };
+        }
       });
 
       // Generate file

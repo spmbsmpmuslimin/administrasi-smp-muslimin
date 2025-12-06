@@ -8,6 +8,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
+import { exportITMReportToExcel } from "./ITMReportExcel";
 
 // Jam schedule
 const JAM_SCHEDULE = {
@@ -388,87 +389,45 @@ const ITMReport = () => {
     return total;
   };
 
+  // Hitung total jam hadir (yang ada centang)
+  const calculateTotalHadir = () => {
+    if (!reportData) return 0;
+    let total = 0;
+    reportData.weeks.forEach((week) => {
+      week.schedule.forEach((jam) => {
+        DAYS.forEach((day) => {
+          const dayData = jam.days[day];
+          if (
+            dayData &&
+            dayData.hadir &&
+            dayData.kelas &&
+            dayData.kelas !== "" &&
+            dayData.kelas !== "UPACARA"
+          ) {
+            total++;
+          }
+        });
+      });
+    });
+    return total;
+  };
+
   // Print
   const handlePrint = () => {
     window.print();
   };
 
-  // Export ke CSV
-  const exportToCSV = () => {
+  // Export ke Excel
+  const exportToExcel = async () => {
     if (!reportData) return;
 
-    const csvData = [];
-    csvData.push(["LAPORAN TATAP MUKA GURU"]);
-    csvData.push([`Nama Guru: ${reportData.teacher.full_name}`]);
-    csvData.push([`Bulan: ${reportData.month} ${reportData.year}`]);
-    csvData.push([]);
-
-    const headers = ["JAM"];
-    DAYS.forEach((day) => {
-      headers.push("KLS");
-      headers.push(FULL_DAY_NAMES[DAYS.indexOf(day)]);
-    });
-    csvData.push(headers);
-
-    reportData.weeks.forEach((week) => {
-      csvData.push([`Minggu ${week.weekNumber}`]);
-      week.schedule.forEach((jam) => {
-        const row = [jam.jamKe];
-        DAYS.forEach((day) => {
-          const dayData = jam.days[day];
-          row.push(dayData?.kelas || "-");
-          row.push(
-            dayData?.hadir
-              ? "✓"
-              : dayData?.kelas && dayData.kelas !== ""
-              ? ""
-              : "-"
-          );
-        });
-        csvData.push(row);
-      });
-
-      // Row JUMLAH per hari
-      const jumlahRow = ["JUMLAH"];
-      DAYS.forEach((day) => {
-        const jamPerHari = calculateJamPerHari(week.schedule, day);
-        jumlahRow.push(jamPerHari);
-        jumlahRow.push("");
-      });
-      csvData.push(jumlahRow);
-      csvData.push([]);
-    });
-
-    csvData.push([
-      "TOTAL KESELURUHAN",
-      "",
-      calculateOverallTotal(),
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-    ]);
-
-    const csvContent = csvData.map((row) => row.join(",")).join("\n");
-    const blob = new Blob(["\uFEFF" + csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `Laporan_Tatap_Muka_${reportData.teacher.full_name.replace(
-        /\s+/g,
-        "_"
-      )}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      await exportITMReportToExcel(reportData);
+      alert("Export Excel berhasil!");
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      alert("Gagal export Excel: " + error.message);
+    }
   };
 
   return (
@@ -566,10 +525,10 @@ const ITMReport = () => {
               Print
             </button>
             <button
-              onClick={exportToCSV}
+              onClick={exportToExcel}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center gap-2">
               <FileSpreadsheet size={18} />
-              Export CSV
+              Export Excel
             </button>
           </div>
         )}
@@ -662,7 +621,12 @@ const ITMReport = () => {
                     {/* Row JUMLAH per hari */}
                     <tr className="bg-gray-100 font-bold">
                       <td className="border border-gray-800 px-2 py-2 text-center">
-                        JUMLAH
+                        JUMLAH :{" "}
+                        {DAYS.reduce(
+                          (total, day) =>
+                            total + calculateJamPerHari(week.schedule, day),
+                          0
+                        )}
                       </td>
                       {DAYS.map((day) => {
                         const jamPerHari = calculateJamPerHari(
@@ -692,26 +656,66 @@ const ITMReport = () => {
             <h3 className="text-xl font-bold text-blue-800 mb-4">
               TOTAL JAM TATAP MUKA
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-600">
-                  Bulan: {reportData.month} {reportData.year}
-                </p>
-                <p className="text-gray-600">
-                  Guru: {reportData.teacher.full_name}
-                </p>
-                <p className="text-gray-600">
-                  Total Minggu: {reportData.weeks.length} minggu
+            <div className="space-y-3">
+              <div className="flex justify-between items-center pb-3 border-b border-blue-200">
+                <p className="text-gray-600">Bulan:</p>
+                <p className="font-semibold text-gray-800">
+                  {reportData.month} {reportData.year}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-3xl font-bold text-blue-600">
-                  {calculateOverallTotal()} Jam
+              <div className="flex justify-between items-center pb-3 border-b border-blue-200">
+                <p className="text-gray-600">Guru:</p>
+                <p className="font-semibold text-gray-800">
+                  {reportData.teacher.full_name}
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  {reportData.totalScheduledHours} jam terjadwal •{" "}
-                  {reportData.totalAttendedHours} kehadiran tercatat
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-blue-200">
+                <p className="text-gray-600">Total Minggu:</p>
+                <p className="font-semibold text-gray-800">
+                  {reportData.weeks.length} minggu
                 </p>
+              </div>
+
+              <div className="pt-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-700 font-medium">Jam Terjadwal:</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {calculateOverallTotal()} Jam
+                  </p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-700 font-medium">Jam Hadir:</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {calculateTotalHadir()} Jam
+                    <span className="text-sm ml-2">
+                      (
+                      {calculateOverallTotal() > 0
+                        ? (
+                            (calculateTotalHadir() / calculateOverallTotal()) *
+                            100
+                          ).toFixed(1)
+                        : 0}
+                      %)
+                    </span>
+                  </p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-gray-700 font-medium">Jam Tidak Hadir:</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {calculateOverallTotal() - calculateTotalHadir()} Jam
+                    <span className="text-sm ml-2">
+                      (
+                      {calculateOverallTotal() > 0
+                        ? (
+                            ((calculateOverallTotal() - calculateTotalHadir()) /
+                              calculateOverallTotal()) *
+                            100
+                          ).toFixed(1)
+                        : 0}
+                      %)
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
