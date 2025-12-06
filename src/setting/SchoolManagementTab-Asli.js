@@ -1,4 +1,4 @@
-// SchoolManagementTab.js - REVISI LENGKAP ✅
+// SchoolManagementTab.js - FIXED INPUT LAG BUG ✅
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import {
@@ -12,43 +12,7 @@ import {
   X,
   Search,
   Filter,
-  Eye, // ✅ TAMBAH UNTUK TOGGLE PASSWORD
-  EyeOff, // ✅ TAMBAH UNTUK TOGGLE PASSWORD
 } from "lucide-react";
-
-// ✅ FUNGSI GENERATE TEACHER_ID SEQUENTIAL
-const generateNextTeacherId = async () => {
-  try {
-    // Ambil semua teacher_id yang ada
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("teacher_id")
-      .not("teacher_id", "is", null)
-      .like("teacher_id", "G-%");
-
-    if (error) throw error;
-
-    // Extract angka dari teacher_id (G-17 → 17)
-    const teacherNumbers = users
-      .map((user) => {
-        const match = user.teacher_id?.match(/G-(\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
-      })
-      .filter((num) => !isNaN(num) && num > 0);
-
-    // Cari angka tertinggi
-    const maxNumber =
-      teacherNumbers.length > 0 ? Math.max(...teacherNumbers) : 0;
-
-    // Generate berikutnya
-    const nextNumber = maxNumber + 1;
-    return `G-${nextNumber.toString().padStart(2, "0")}`;
-  } catch (error) {
-    console.error("❌ Error generating teacher_id:", error);
-    const timestamp = Date.now().toString().slice(-4);
-    return `G-${timestamp}`;
-  }
-};
 
 // ✅ OPTIMIZED MODAL COMPONENTS dengan React.memo
 const TeacherModal = React.memo(
@@ -63,7 +27,6 @@ const TeacherModal = React.memo(
     onCancel,
   }) => {
     const firstInputRef = React.useRef(null);
-    const [showPassword, setShowPassword] = useState(false);
 
     React.useEffect(() => {
       if (modal.show && firstInputRef.current) {
@@ -73,6 +36,15 @@ const TeacherModal = React.memo(
       }
     }, [modal.show]);
 
+    // ✅ FIX: Gunakan useCallback untuk handler dengan debounce effect
+    const handleChange = useCallback(
+      (field, value) => {
+        setForm((prev) => ({ ...prev, [field]: value }));
+      },
+      [setForm]
+    );
+
+    // ✅ FIX: Direct event handlers untuk setiap input
     const handleFullNameChange = useCallback(
       (e) => {
         setForm((prev) => ({ ...prev, full_name: e.target.value }));
@@ -108,10 +80,6 @@ const TeacherModal = React.memo(
       [setForm]
     );
 
-    const togglePasswordVisibility = useCallback(() => {
-      setShowPassword((prev) => !prev);
-    }, []);
-
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -126,7 +94,6 @@ const TeacherModal = React.memo(
               </div>
             </div>
             <button
-              type="button"
               onClick={onCancel}
               className="p-2 hover:bg-blue-600 rounded-lg">
               <X size={20} />
@@ -168,27 +135,14 @@ const TeacherModal = React.memo(
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Password *
                 </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={form.password}
-                    onChange={handlePasswordChange}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
-                    placeholder="Masukkan password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={togglePasswordVisibility}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors"
-                    title={
-                      showPassword
-                        ? "Sembunyikan password"
-                        : "Tampilkan password"
-                    }>
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={handlePasswordChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                  placeholder="Masukkan password"
+                  required
+                />
               </div>
             )}
 
@@ -201,7 +155,8 @@ const TeacherModal = React.memo(
                 onChange={handleRoleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                 required>
-                <option value="teacher">Guru Mata Pelajaran</option>
+                <option value="guru_mapel">Guru Mata Pelajaran</option>
+                <option value="guru_walikelas">Guru Wali Kelas</option>
                 <option value="guru_bk">Guru BK</option>
                 <option value="admin">Administrator</option>
               </select>
@@ -226,7 +181,6 @@ const TeacherModal = React.memo(
 
             <div className="flex gap-3 pt-4">
               <button
-                type="button"
                 onClick={onSubmit}
                 disabled={
                   loading ||
@@ -242,7 +196,6 @@ const TeacherModal = React.memo(
                   : "Update Guru"}
               </button>
               <button
-                type="button"
                 onClick={onCancel}
                 disabled={loading}
                 className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 transition-colors">
@@ -277,6 +230,7 @@ const StudentModal = React.memo(
       }
     }, [modal.show]);
 
+    // ✅ FIX: Direct event handlers untuk setiap input
     const handleNisChange = useCallback(
       (e) => {
         setForm((prev) => ({ ...prev, nis: e.target.value }));
@@ -326,7 +280,6 @@ const StudentModal = React.memo(
               </div>
             </div>
             <button
-              type="button"
               onClick={onCancel}
               className="p-2 hover:bg-green-600 rounded-lg">
               <X size={20} />
@@ -411,7 +364,6 @@ const StudentModal = React.memo(
 
             <div className="flex gap-3 pt-4">
               <button
-                type="button"
                 onClick={onSubmit}
                 disabled={
                   loading || !form.nis || !form.full_name || !form.class_id
@@ -424,7 +376,6 @@ const StudentModal = React.memo(
                   : "Update Siswa"}
               </button>
               <button
-                type="button"
                 onClick={onCancel}
                 disabled={loading}
                 className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 transition-colors">
@@ -469,14 +420,12 @@ const DeleteConfirmModal = React.memo(
 
           <div className="flex gap-3">
             <button
-              type="button"
               onClick={onConfirm}
               disabled={loading}
               className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium">
               {loading ? "Menghapus..." : "Ya, Hapus"}
             </button>
             <button
-              type="button"
               onClick={onCancel}
               disabled={loading}
               className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50">
@@ -506,7 +455,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
     schoolName: "SMP Muslimin Cililin",
     schoolLevel: "SMP",
     grades: ["7", "8", "9"],
-    teacherRoles: ["teacher", "guru_bk", "admin"],
+    teacherRoles: ["teacher", "guru_bk", "guru_mapel", "guru_walikelas"],
   };
 
   const [studentFilters, setStudentFilters] = useState({
@@ -537,7 +486,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
   const [teacherForm, setTeacherForm] = useState({
     username: "",
     full_name: "",
-    role: "teacher", // ✅ Ganti dari "guru_mapel" jadi "teacher"
+    role: "guru_mapel",
     kelas: "",
     password: "",
   });
@@ -552,6 +501,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
 
   const [availableClasses, setAvailableClasses] = useState([]);
 
+  // ✅ FIX: useCallback untuk semua function yang dipakai di dependencies
   const fetchActiveAcademicYear = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -609,9 +559,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
 
       const { data: teachersData, error: teachersError } = await supabase
         .from("users")
-        .select(
-          "id, username, full_name, role, homeroom_class_id, is_active, teacher_id"
-        )
+        .select("id, username, full_name, role, homeroom_class_id, is_active")
         .in("role", SMP_CONFIG.teacherRoles)
         .neq("teacher_id", "G-01")
         .order("full_name");
@@ -702,6 +650,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
     loadSchoolData();
   }, [loadSchoolData]);
 
+  // ✅ FIX: useCallback untuk semua handler functions
   const filteredStudents = useCallback(() => {
     return students.filter((student) => {
       const matchesKelas =
@@ -750,49 +699,12 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
     async (teacherId, newClassId) => {
       try {
         setLoading(true);
-
-        // ✅ CEK: Apakah kelas sudah punya wali kelas?
-        if (newClassId) {
-          const { data: existingWaliKelas, error: checkError } = await supabase
-            .from("users")
-            .select("id, full_name")
-            .eq("homeroom_class_id", newClassId)
-            .neq("id", teacherId) // Exclude guru yang sedang di-update
-            .maybeSingle();
-
-          if (checkError) throw checkError;
-
-          // Kalau sudah ada wali kelas lain
-          if (existingWaliKelas) {
-            const confirm = window.confirm(
-              `Kelas ${newClassId} sudah memiliki wali kelas: ${existingWaliKelas.full_name}.\n\n` +
-                `Apakah Anda yakin ingin mengganti wali kelas ini?\n` +
-                `(Wali kelas lama akan otomatis dilepas dari kelas ${newClassId})`
-            );
-
-            if (!confirm) {
-              setLoading(false);
-              return; // User cancel
-            }
-
-            // ✅ LEPAS wali kelas lama
-            const { error: removeError } = await supabase
-              .from("users")
-              .update({ homeroom_class_id: null })
-              .eq("id", existingWaliKelas.id);
-
-            if (removeError) throw removeError;
-          }
-        }
-
-        // ✅ ASSIGN wali kelas baru
         const { error } = await supabase
           .from("users")
           .update({ homeroom_class_id: newClassId || null })
           .eq("id", teacherId);
 
         if (error) throw error;
-
         showToast("Penugasan kelas guru berhasil diupdate!", "success");
         await loadSchoolData();
       } catch (error) {
@@ -832,7 +744,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
       setTeacherForm({
         username: teacherData.username || "",
         full_name: teacherData.full_name || "",
-        role: teacherData.role || "teacher",
+        role: teacherData.role || "guru_mapel",
         kelas: teacherData.homeroom_class_id || "",
         password: "",
       });
@@ -840,7 +752,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
       setTeacherForm({
         username: "",
         full_name: "",
-        role: "teacher",
+        role: "guru_mapel",
         kelas: "",
         password: "",
       });
@@ -849,7 +761,6 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
     setTeacherModal({ show: true, mode, data: teacherData });
   }, []);
 
-  // ✅ REVISI: handleAddTeacher dengan teacher_id sequential dan field lengkap
   const handleAddTeacher = useCallback(async () => {
     if (
       !teacherForm.username ||
@@ -862,82 +773,37 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
 
     try {
       setLoading(true);
+      const { error } = await supabase.from("users").insert([
+        {
+          username: teacherForm.username.trim(),
+          full_name: teacherForm.full_name.trim(),
+          role: teacherForm.role,
+          homeroom_class_id: teacherForm.kelas || null,
+          password: teacherForm.password,
+          is_active: true,
+        },
+      ]);
 
-      const teacher_id = await generateNextTeacherId();
-      console.log("🔢 Generated teacher_id:", teacher_id);
+      if (error) throw error;
 
-      // Di SchoolManagementTab.js, sekitar line 255
-      const teacherData = {
-        username: teacherForm.username,
-        password: teacherForm.password,
-        full_name: teacherForm.full_name.toUpperCase(),
-        role: "teacher",
-        teacher_id: teacher_id,
-        homeroom_class_id: teacherForm.kelas || null,
-        no_hp: "",
-        is_active: true,
-      };
-
-      console.log("📤 Inserting teacher data:", teacherData);
-
-      const { data, error } = await supabase
-        .from("users")
-        .insert([teacherData])
-        .select();
-
-      if (error) {
-        console.error("❌ Supabase error details:", error);
-
-        if (error.code === "23505" && error.message.includes("username")) {
-          showToast("Username sudah digunakan! Coba username lain.", "error");
-          return;
-        }
-
-        if (error.code === "23505" && error.message.includes("teacher_id")) {
-          const fallbackId = `G-${Math.floor(Math.random() * 900 + 100)}`;
-          teacherData.teacher_id = fallbackId;
-
-          const { error: retryError } = await supabase
-            .from("users")
-            .insert([teacherData]);
-
-          if (retryError) throw retryError;
-        } else {
-          throw error;
-        }
-      }
-
-      console.log("✅ Teacher added successfully:", data);
-
-      showToast(
-        `Guru berhasil ditambahkan dengan ID: ${teacher_id}`,
-        "success"
-      );
+      showToast("Guru berhasil ditambahkan!", "success");
       setTeacherModal({ show: false, mode: "add", data: null });
       setTeacherForm({
         username: "",
         full_name: "",
-        role: "teacher", // ✅ Ganti dari "guru_mapel" jadi "teacher"
+        role: "guru_mapel",
         kelas: "",
         password: "",
       });
       await loadSchoolData();
     } catch (error) {
-      console.error("❌ Error adding teacher:", error);
-
-      if (error.code) {
-        showToast(`Error ${error.code}: ${error.message}`, "error");
-      } else if (error.details) {
-        showToast(`Error: ${error.details}`, "error");
-      } else {
-        showToast("Error menambah guru: " + error.message, "error");
-      }
+      console.error("Error adding teacher:", error);
+      showToast("Error menambah guru: " + error.message, "error");
     } finally {
       setLoading(false);
     }
   }, [teacherForm, setLoading, showToast, loadSchoolData]);
 
-  // ✅ REVISI: handleEditTeacher dengan data lengkap
   const handleEditTeacher = useCallback(async () => {
     if (!teacherForm.username || !teacherForm.full_name) {
       showToast("Username dan nama lengkap harus diisi!", "error");
@@ -946,20 +812,16 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
 
     try {
       setLoading(true);
-
       const updateData = {
         username: teacherForm.username.trim(),
         full_name: teacherForm.full_name.trim(),
         role: teacherForm.role,
         homeroom_class_id: teacherForm.kelas || null,
-        no_hp: "",
       };
 
       if (teacherForm.password && teacherForm.password.trim()) {
         updateData.password = teacherForm.password.trim();
       }
-
-      console.log("📤 Updating teacher data:", updateData);
 
       const { error } = await supabase
         .from("users")
@@ -973,13 +835,13 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
       setTeacherForm({
         username: "",
         full_name: "",
-        role: "teacher",
+        role: "guru_mapel",
         kelas: "",
         password: "",
       });
       await loadSchoolData();
     } catch (error) {
-      console.error("❌ Error updating teacher:", error);
+      console.error("Error updating teacher:", error);
       showToast("Error mengupdate guru: " + error.message, "error");
     } finally {
       setLoading(false);
@@ -1147,6 +1009,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
 
   return (
     <div className="p-4 lg:p-6">
+      {/* Header dengan Mobile Menu */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div className="flex items-center justify-between">
           <div>
@@ -1193,6 +1056,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
         </div>
       </div>
 
+      {/* School Statistics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
         <div className="bg-blue-50 p-3 lg:p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
@@ -1257,6 +1121,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
         </div>
       </div>
 
+      {/* Management Guru */}
       <div className="mb-6 lg:mb-8">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">
           Management Guru
@@ -1371,6 +1236,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
         </div>
       </div>
 
+      {/* Student Management dengan Filter */}
       <div className="mb-6 lg:mb-8">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">
           Management Siswa
@@ -1549,6 +1415,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
         </div>
       </div>
 
+      {/* Student Distribution by Class */}
       <div>
         <h3 className="text-lg font-semibold text-gray-800 mb-4">
           Distribusi Siswa per Kelas
@@ -1580,6 +1447,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
         </div>
       </div>
 
+      {/* MODALS - ✅ SEKARANG SUDAH OPTIMIZED */}
       {teacherModal.show && (
         <TeacherModal
           modal={teacherModal}
@@ -1596,7 +1464,7 @@ const SchoolManagementTab = ({ user, loading, setLoading, showToast }) => {
             setTeacherForm({
               username: "",
               full_name: "",
-              role: "teacher", // ✅ Ganti dari "guru_mapel" jadi "teacher"
+              role: "guru_mapel",
               kelas: "",
               password: "",
             });

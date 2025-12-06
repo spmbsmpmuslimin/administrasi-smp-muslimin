@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import AnnouncementPopup from "./AnnouncementPopup";
 
 const HomeroomTeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
@@ -620,6 +621,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
+        {/* 🆕 Pop-up Pengumuman */}
+        <AnnouncementPopup userId={user?.id} userRole="walikelas" />
+
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 lg:p-8">

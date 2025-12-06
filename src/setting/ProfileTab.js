@@ -1403,10 +1403,17 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                   <option value="teacher">Guru</option>
                   <option value="guru_bk">Guru BK</option>
-                  <option value="admin" disabled>
-                    Administrator (TIDAK disarankan)
+                  <option value="admin" className="text-red-600 font-semibold">
+                    ⚠️ Administrator (Hati-hati!)
                   </option>
                 </select>
+                {formData.role === "admin" && (
+                  <p className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                    ⚠️ <span className="font-semibold">PERINGATAN:</span> Role
+                    admin memiliki akses penuh ke semua data dan fitur sistem.
+                    Hanya berikan ke pengguna yang benar-benar dipercaya.
+                  </p>
+                )}
               </div>
               {/* Password */}
               <div className="relative">

@@ -509,7 +509,7 @@ const ITMReport = () => {
               ) : (
                 <>
                   <Search size={18} />
-                  Generate Laporan
+                  Lihat Laporan
                 </>
               )}
             </button>
