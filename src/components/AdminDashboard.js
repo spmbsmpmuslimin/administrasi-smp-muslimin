@@ -52,101 +52,118 @@ const AdminDashboard = ({ user }) => {
   // 🆕 REVISED: Fetch teacher attendance for today - WORKING VERSION
   const fetchTeacherAttendance = async () => {
     try {
-      const today = "2025-12-06"; // Hardcode dulu biar pasti
+      // Gunakan tanggal hari ini
+      const today = new Date().toISOString().split("T")[0];
 
       console.log("🔄 Fetching data untuk tanggal:", today);
 
-      // 1. Cek apakah table attendance ada
-      const { data: tableCheck, error: tableError } = await supabase
-        .from("attendance")
-        .select("count")
-        .limit(1);
-
-      if (tableError) {
-        console.error("❌ Table tidak ditemukan:", tableError);
-        // Coba table teacher_attendance
-        const { data: altCheck } = await supabase
-          .from("teacher_attendance")
-          .select("count")
-          .limit(1);
-
-        if (altCheck) {
-          console.log("✅ Table teacher_attendance ditemukan");
-          // Gunakan teacher_attendance
-          const { data: attendanceData } = await supabase
-            .from("teacher_attendance")
-            .select("teacher_id, clock_in, full_name, attendance_date, status")
-            .eq("attendance_date", today)
-            .eq("status", "Hadir");
-
-          console.log("Data dari teacher_attendance:", attendanceData);
-        }
-        throw tableError;
-      }
-
-      console.log("✅ Table attendance ditemukan");
-
-      // 2. Ambil attendance hari ini - HAPUS .eq("is_active", true)
+      // 1. Coba ambil dari table teacher_attendance langsung
       const { data: attendanceData, error: attendanceError } = await supabase
-        .from("teacher_attendance") // GANTI DARI attendance KE teacher_attendance
-        .select("teacher_id, clock_in, full_name, attendance_date, status")
+        .from("teacher_attendance")
+        .select("*")
         .eq("attendance_date", today)
         .eq("status", "Hadir");
 
       if (attendanceError) {
-        console.error("❌ Query error:", attendanceError);
-        throw attendanceError;
+        console.error("❌ Error ambil presensi:", attendanceError);
+
+        // Coba alternatif: cek table attendance
+        const { data: altData } = await supabase
+          .from("attendance")
+          .select("*")
+          .eq("attendance_date", today)
+          .eq("status", "Hadir");
+
+        if (altData) {
+          console.log("✅ Data ditemukan di table attendance");
+        }
       }
 
       console.log("📊 Data attendance ditemukan:", attendanceData?.length || 0);
 
-      // 3. Total teachers - Versi simple
-      const { count: totalTeachers } = await supabase
+      // 2. Total teachers yang AKTIF
+      const { data: teachersData, error: teachersError } = await supabase
         .from("users")
-        .select("id", { count: "exact", head: true })
+        .select("id, full_name, username")
         .in("role", ["teacher", "guru_bk"])
         .eq("is_active", true)
         .neq("username", "adenurmughni");
 
-      // 4. Hitung statistik
+      if (teachersError) {
+        console.error("❌ Error ambil data guru:", teachersError);
+      }
+
+      const totalTeachers = teachersData?.length || 0;
       const hadirCount = attendanceData?.length || 0;
-      const total = totalTeachers || 0;
-      const belumAbsen = total - hadirCount;
-      const percentage = total > 0 ? Math.round((hadirCount / total) * 100) : 0;
+      const belumAbsen = totalTeachers - hadirCount;
+      const percentage =
+        totalTeachers > 0 ? Math.round((hadirCount / totalTeachers) * 100) : 0;
 
       console.log("📈 Hasil:", {
+        totalGuruAktif: totalTeachers,
         hadir: hadirCount,
-        total,
         belumAbsen,
         percentage,
+        teachersData: teachersData?.map((t) => t.full_name),
+        attendanceData: attendanceData?.map((a) => a.full_name),
       });
 
-      // 5. Buat list presensi (gunakan full_name dari attendance)
+      // 3. Buat list presensi dengan data lengkap
       const presensiList =
         attendanceData?.map((item, index) => ({
           id: index + 1,
           teacher_id: item.teacher_id || `T-${index + 1}`,
-          full_name: item.full_name || `Guru ${index + 1}`,
-          clock_in: item.clock_in ? item.clock_in.substring(0, 5) : "--:--",
+          full_name:
+            item.full_name ||
+            teachersData?.find((t) => t.id === item.teacher_id)?.full_name ||
+            `Guru ${index + 1}`,
+          clock_in: item.clock_in
+            ? item.clock_in.includes(":")
+              ? item.clock_in.substring(0, 5)
+              : "--:--"
+            : "--:--",
           status: item.status,
+          nis: item.nis || item.nik || "-",
         })) || [];
 
-      // 6. Set state
+      // 4. Set state
       setTeacherAttendance({
         hadir: hadirCount,
         belumAbsen: belumAbsen > 0 ? belumAbsen : 0,
-        total: total,
+        total: totalTeachers,
         percentage: percentage,
         loading: false,
         presensiList: presensiList,
         lastUpdated: new Date().toLocaleTimeString("id-ID"),
         todayDate: today,
-        debugInfo: `Data: ${hadirCount} dari ${total} guru`,
+        debugInfo: `Data: ${hadirCount} dari ${totalTeachers} guru (aktif)`,
       });
     } catch (err) {
       console.error("❌ Final error:", err);
 
-      // FALLBACK: Set data minimal
+      // FALLBACK: Coba query langsung tanpa filter kompleks
+      try {
+        // Coba ambil semua data dari teacher_attendance untuk debug
+        const { data: allAttendance } = await supabase
+          .from("teacher_attendance")
+          .select("*")
+          .limit(10);
+
+        console.log("🔍 Sample attendance data:", allAttendance);
+
+        // Cek tabel users
+        const { data: allUsers } = await supabase
+          .from("users")
+          .select("id, role, is_active, username, full_name")
+          .in("role", ["teacher", "guru_bk"])
+          .limit(10);
+
+        console.log("🔍 Sample users data:", allUsers);
+      } catch (debugErr) {
+        console.error("❌ Debug error:", debugErr);
+      }
+
+      // FALLBACK minimal
       setTeacherAttendance({
         hadir: 0,
         belumAbsen: 0,
