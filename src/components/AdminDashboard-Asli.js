@@ -1,4 +1,4 @@
-//[file name]: AdminDashboard.js
+//[file name]: AdminDashboard.js - UPDATED VERSION
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -6,7 +6,7 @@ import { supabase } from "../supabaseClient";
 const AdminDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalTeachers: 0, // ✅ 29 Guru (exclude Kepala Sekolah)
+    totalTeachers: 0,
     totalClasses: 0,
     totalStudents: 0,
     studentsByGrade: [],
@@ -17,22 +17,26 @@ const AdminDashboard = ({ user }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // 🆕 UPDATED: Form data dengan field baru
   const [formData, setFormData] = useState({
     title: "",
     content: "",
+    effective_from: "",
+    effective_until: "",
+    target_role: "semua",
+    is_active: true,
   });
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
-  // ✅ FIX: fetchDashboardData dengan query yang benar
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Get current academic year
       const { data: activeYear, error: yearError } = await supabase
         .from("classes")
         .select("academic_year")
@@ -46,7 +50,6 @@ const AdminDashboard = ({ user }) => {
 
       const currentYear = activeYear?.academic_year || "2025/2026";
 
-      // Parallel fetch semua data
       const [
         teachersResult,
         classesResult,
@@ -54,42 +57,33 @@ const AdminDashboard = ({ user }) => {
         gradesResult,
         announcementsResult,
       ] = await Promise.all([
-        // ✅ Query 1: Total Guru (29) = 27 teacher + 2 guru_bk, EXCLUDE Kepala Sekolah
         supabase
           .from("users")
           .select("id", { count: "exact", head: true })
           .in("role", ["teacher", "guru_bk"])
           .eq("is_active", true)
-          .neq("username", "adenurmughni"), // EXCLUDE Kepala Sekolah
-
-        // ✅ Query 2: Total Kelas
+          .neq("username", "adenurmughni"),
         supabase
           .from("classes")
           .select("id", { count: "exact", head: true })
           .eq("academic_year", currentYear),
-
-        // ✅ Query 3: Total Siswa Aktif
         supabase
           .from("students")
           .select("id, class_id", { count: "exact" })
           .eq("academic_year", currentYear)
           .eq("is_active", true),
-
-        // ✅ Query 4: Ambil grade data untuk students by grade
         supabase
           .from("classes")
           .select("id, grade")
           .eq("academic_year", currentYear),
-
-        // ✅ Query 5: Announcements
+        // 🆕 UPDATED: Query announcements dengan field baru
         supabase
           .from("announcement")
           .select("*")
           .order("created_at", { ascending: false })
-          .limit(5),
+          .limit(10),
       ]);
 
-      // Handle errors
       const hasErrors = [
         teachersResult,
         classesResult,
@@ -108,7 +102,6 @@ const AdminDashboard = ({ user }) => {
         });
       }
 
-      // ✅ Process students by grade
       const gradeStats = {};
       if (studentsResult.data && gradesResult.data) {
         studentsResult.data.forEach((student) => {
@@ -128,9 +121,8 @@ const AdminDashboard = ({ user }) => {
         .map(([grade, count]) => ({ grade: parseInt(grade), count }))
         .sort((a, b) => a.grade - b.grade);
 
-      // ✅ SET STATS dengan 29 Guru (exclude Kepala Sekolah)
       setStats({
-        totalTeachers: teachersResult.count || 0, // ✅ 29 Guru
+        totalTeachers: teachersResult.count || 0,
         totalClasses: classesResult.count || 0,
         totalStudents: studentsResult.count || 0,
         studentsByGrade,
@@ -145,19 +137,27 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // CREATE - Tambah announcement baru
-  const createAnnouncement = async (title, content) => {
+  // 🆕 UPDATED: Create dengan field baru
+  const createAnnouncement = async (data) => {
     try {
-      if (!title?.trim() || !content?.trim()) {
+      if (!data.title?.trim() || !data.content?.trim()) {
         throw new Error("Judul dan konten tidak boleh kosong");
       }
 
-      const { data, error } = await supabase
+      if (!data.effective_from || !data.effective_until) {
+        throw new Error("Tanggal efektif harus diisi");
+      }
+
+      const { data: newData, error } = await supabase
         .from("announcement")
         .insert([
           {
-            title: title.trim(),
-            content: content.trim(),
+            title: data.title.trim(),
+            content: data.content.trim(),
+            effective_from: data.effective_from,
+            effective_until: data.effective_until,
+            target_role: data.target_role,
+            is_active: data.is_active,
           },
         ])
         .select("*");
@@ -167,12 +167,12 @@ const AdminDashboard = ({ user }) => {
         throw new Error(`Gagal membuat pengumuman: ${error.message}`);
       }
 
-      if (!data || data.length === 0) {
+      if (!newData || newData.length === 0) {
         throw new Error("Gagal membuat pengumuman");
       }
 
-      const newRecord = data[0];
-      setAnnouncements((prev) => [newRecord, ...prev.slice(0, 4)]);
+      const newRecord = newData[0];
+      setAnnouncements((prev) => [newRecord, ...prev]);
 
       console.log("Create successful:", newRecord);
       return { data: newRecord, error: null };
@@ -182,12 +182,15 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // UPDATE - Edit announcement
+  // 🆕 UPDATED: Update dengan field baru
   const updateAnnouncement = async (id, updates) => {
     try {
       if (!id) throw new Error("ID pengumuman tidak valid");
       if (!updates.title?.trim() || !updates.content?.trim()) {
         throw new Error("Judul dan konten tidak boleh kosong");
+      }
+      if (!updates.effective_from || !updates.effective_until) {
+        throw new Error("Tanggal efektif harus diisi");
       }
 
       const { data, error } = await supabase
@@ -195,6 +198,10 @@ const AdminDashboard = ({ user }) => {
         .update({
           title: updates.title.trim(),
           content: updates.content.trim(),
+          effective_from: updates.effective_from,
+          effective_until: updates.effective_until,
+          target_role: updates.target_role,
+          is_active: updates.is_active,
         })
         .eq("id", id)
         .select("*");
@@ -209,7 +216,6 @@ const AdminDashboard = ({ user }) => {
       }
 
       const updatedRecord = data[0];
-
       setAnnouncements((prev) =>
         prev.map((item) => (item.id === id ? updatedRecord : item))
       );
@@ -222,7 +228,6 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // DELETE - Hapus announcement
   const deleteAnnouncement = async (id) => {
     try {
       if (!id) {
@@ -250,6 +255,27 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
+  // 🆕 UPDATED: Toggle active status
+  const toggleActiveStatus = async (id, currentStatus) => {
+    try {
+      const { error } = await supabase
+        .from("announcement")
+        .update({ is_active: !currentStatus })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setAnnouncements((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, is_active: !currentStatus } : item
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling active status:", error);
+      setError("Gagal mengubah status pengumuman");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -263,19 +289,29 @@ const AdminDashboard = ({ user }) => {
         if (result.data) {
           setShowAddForm(false);
           setEditData(null);
-          setFormData({ title: "", content: "" });
+          setFormData({
+            title: "",
+            content: "",
+            effective_from: "",
+            effective_until: "",
+            target_role: "semua",
+            is_active: true,
+          });
         } else {
           setError(result.error?.message || "Gagal mengupdate pengumuman");
         }
       } else {
-        const result = await createAnnouncement(
-          formData.title,
-          formData.content
-        );
+        const result = await createAnnouncement(formData);
         if (result.data) {
           setShowAddForm(false);
-          setEditData(null);
-          setFormData({ title: "", content: "" });
+          setFormData({
+            title: "",
+            content: "",
+            effective_from: "",
+            effective_until: "",
+            target_role: "semua",
+            is_active: true,
+          });
         } else {
           setError(result.error?.message || "Gagal membuat pengumuman");
         }
@@ -297,6 +333,10 @@ const AdminDashboard = ({ user }) => {
     setFormData({
       title: announcement.title || "",
       content: announcement.content || "",
+      effective_from: announcement.effective_from || "",
+      effective_until: announcement.effective_until || "",
+      target_role: announcement.target_role || "semua",
+      is_active: announcement.is_active ?? true,
     });
     setShowAddForm(true);
     setError(null);
@@ -305,13 +345,15 @@ const AdminDashboard = ({ user }) => {
   const handleCancel = () => {
     setShowAddForm(false);
     setEditData(null);
-    setFormData({ title: "", content: "" });
+    setFormData({
+      title: "",
+      content: "",
+      effective_from: "",
+      effective_until: "",
+      target_role: "semua",
+      is_active: true,
+    });
     setError(null);
-  };
-
-  const handleRetry = () => {
-    setError(null);
-    fetchDashboardData();
   };
 
   const handleDeleteClick = async (id) => {
@@ -322,7 +364,6 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // Navigation handlers - TAMBAH handleTeacherAttendance
   const handleTeacherAttendance = () => {
     navigate("/attendance-teacher");
   };
@@ -337,6 +378,26 @@ const AdminDashboard = ({ user }) => {
 
   const handleManageStudents = () => {
     navigate("/students");
+  };
+
+  // 🆕 Helper: Format tanggal untuk input datetime-local
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // 🆕 Helper: Cek apakah pengumuman masih aktif (dalam rentang tanggal)
+  const isAnnouncementActive = (announcement) => {
+    const now = new Date();
+    const effectiveFrom = new Date(announcement.effective_from);
+    const effectiveUntil = new Date(announcement.effective_until);
+    return now >= effectiveFrom && now <= effectiveUntil;
   };
 
   if (loading) {
@@ -481,7 +542,6 @@ const AdminDashboard = ({ user }) => {
           Quick Actions
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* TOMBOL BARU: Presensi Guru */}
           <button
             onClick={handleTeacherAttendance}
             className="group bg-gradient-to-br from-indigo-50 via-white to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-indigo-100 hover:border-indigo-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
@@ -540,32 +600,33 @@ const AdminDashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Pengumuman Terkini */}
+      {/* 🆕 UPDATED: Pengumuman Section dengan field baru */}
       <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 rounded-xl shadow-xl border border-blue-100 p-4 sm:p-6 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
           <h3 className="text-base sm:text-lg font-semibold text-slate-800 flex items-center">
             <span className="mr-2 text-blue-600">📢</span>
-            Pengumuman Terkini
+            Kelola Pengumuman
           </h3>
           <button
             onClick={() => setShowAddForm(true)}
             className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-105"
             disabled={submitting}>
-            <span className="mr-1">✨</span> Tambah
+            <span className="mr-1">✨</span> Tambah Pengumuman
           </button>
         </div>
 
-        {/* Form Tambah/Edit */}
+        {/* 🆕 Form dengan field lengkap */}
         {showAddForm && (
           <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 p-4 rounded-xl mb-4 border-2 border-blue-200 shadow-inner backdrop-blur-sm">
             <h4 className="font-semibold mb-3 text-slate-800 text-sm sm:text-base flex items-center">
               <span className="mr-2">{editData ? "✏️" : "➕"}</span>
               {editData ? "Edit Pengumuman" : "Tambah Pengumuman Baru"}
             </h4>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Judul */}
+              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Judul *
+                  Judul Pengumuman *
                 </label>
                 <input
                   type="text"
@@ -576,12 +637,14 @@ const AdminDashboard = ({ user }) => {
                   className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   required
                   disabled={submitting}
-                  placeholder="Masukkan judul pengumuman"
+                  placeholder="Contoh: Jadwal Pembagian Raport"
                 />
               </div>
-              <div className="mb-3">
+
+              {/* Konten */}
+              <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Konten *
+                  Isi Pengumuman *
                 </label>
                 <textarea
                   value={formData.content}
@@ -592,10 +655,99 @@ const AdminDashboard = ({ user }) => {
                   className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   required
                   disabled={submitting}
-                  placeholder="Masukkan isi pengumuman"
+                  placeholder="Masukkan detail pengumuman..."
                 />
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+
+              {/* Tanggal Efektif */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Mulai Tayang *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formatDateForInput(formData.effective_from)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        effective_from: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    required
+                    disabled={submitting}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Berakhir *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formatDateForInput(formData.effective_until)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        effective_until: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    required
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+
+              {/* Target Role & Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Target Penerima *
+                  </label>
+                  <select
+                    value={formData.target_role}
+                    onChange={(e) =>
+                      setFormData({ ...formData, target_role: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    disabled={submitting}>
+                    <option value="semua">Semua Guru</option>
+                    <option value="teacher">Guru Mapel</option>
+                    <option value="walikelas">Wali Kelas</option>
+                    <option value="guru_bk">Guru BK</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Status
+                  </label>
+                  <div className="flex items-center h-10">
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.is_active}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            is_active: e.target.checked,
+                          })
+                        }
+                        className="sr-only peer"
+                        disabled={submitting}
+                      />
+                      <div className="relative w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-slate-700">
+                        {formData.is_active ? "Aktif" : "Nonaktif"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tombol Action */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <button
                   type="submit"
                   disabled={submitting}
@@ -618,55 +770,132 @@ const AdminDashboard = ({ user }) => {
           </div>
         )}
 
-        {/* Daftar Pengumuman */}
+        {/* 🆕 Daftar Pengumuman dengan info lengkap */}
         <div>
           {announcements.length > 0 ? (
             <div className="space-y-4">
-              {announcements.map((announcement) => (
-                <div
-                  key={announcement.id}
-                  className="group border-l-4 border-blue-500 pl-4 py-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 rounded-r-xl hover:from-blue-100/80 hover:to-indigo-100/50 transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-slate-800 text-sm sm:text-base group-hover:text-blue-700 transition-colors flex items-start">
-                        <span className="mr-2 mt-0.5">📋</span>
-                        {announcement.title || "No Title"}
-                      </h4>
-                      <p className="text-sm text-slate-600 mt-2 ml-6 group-hover:text-slate-700 transition-colors">
-                        {announcement.content || "No content"}
+              {announcements.map((announcement) => {
+                const isActive = isAnnouncementActive(announcement);
+                const statusColor = announcement.is_active
+                  ? isActive
+                    ? "bg-green-100 text-green-800"
+                    : "bg-yellow-100 text-yellow-800"
+                  : "bg-slate-100 text-slate-600";
+
+                return (
+                  <div
+                    key={announcement.id}
+                    className="group border-l-4 border-blue-500 pl-4 py-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 rounded-r-xl hover:from-blue-100/80 hover:to-indigo-100/50 transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
+                    <div className="flex flex-col gap-3">
+                      {/* Header: Title + Status Badge */}
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-semibold text-slate-800 text-sm sm:text-base group-hover:text-blue-700 transition-colors flex items-start flex-1">
+                          <span className="mr-2 mt-0.5">📋</span>
+                          {announcement.title}
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
+                            {announcement.is_active
+                              ? isActive
+                                ? "🟢 Tayang"
+                                : "🟡 Dijadwalkan"
+                              : "⚫ Nonaktif"}
+                          </span>
+                          <button
+                            onClick={() =>
+                              toggleActiveStatus(
+                                announcement.id,
+                                announcement.is_active
+                              )
+                            }
+                            className="text-slate-500 hover:text-blue-600 transition-colors"
+                            title={
+                              announcement.is_active
+                                ? "Nonaktifkan"
+                                : "Aktifkan"
+                            }>
+                            {announcement.is_active ? "👁️" : "🚫"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <p className="text-sm text-slate-600 ml-6 group-hover:text-slate-700 transition-colors">
+                        {announcement.content}
                       </p>
-                      <p className="text-xs text-slate-500 mt-2 ml-6 flex items-center group-hover:text-blue-600 transition-colors">
-                        <span className="mr-1">🕐</span>
-                        {announcement.created_at
-                          ? new Date(
-                              announcement.created_at
-                            ).toLocaleDateString("id-ID", {
-                              day: "numeric",
-                              month: "long",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "Tanggal tidak tersedia"}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 ml-6 sm:ml-4">
-                      <button
-                        onClick={() => handleEdit(announcement)}
-                        disabled={submitting}
-                        className="text-blue-600 hover:text-blue-800 disabled:text-blue-400 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all duration-200 transform hover:scale-105 shadow-sm">
-                        <span className="mr-1">✏️</span>Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(announcement.id)}
-                        disabled={submitting}
-                        className="text-red-600 hover:text-red-800 disabled:text-red-400 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-100 transition-all duration-200 transform hover:scale-105 shadow-sm">
-                        <span className="mr-1">🗑️</span>Hapus
-                      </button>
+
+                      {/* Meta Info */}
+                      <div className="ml-6 space-y-1">
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <span>👥</span>
+                            <span className="font-medium">
+                              {announcement.target_role === "semua"
+                                ? "Semua Guru"
+                                : announcement.target_role === "teacher"
+                                ? "Guru Mapel"
+                                : announcement.target_role === "walikelas"
+                                ? "Wali Kelas"
+                                : announcement.target_role === "guru_bk"
+                                ? "Guru BK"
+                                : "Admin"}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span>📅</span>
+                            <span>
+                              {new Date(
+                                announcement.effective_from
+                              ).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                              })}{" "}
+                              -{" "}
+                              {new Date(
+                                announcement.effective_until
+                              ).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span>🕐</span>
+                            <span>
+                              {new Date(
+                                announcement.created_at
+                              ).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 ml-6">
+                        <button
+                          onClick={() => handleEdit(announcement)}
+                          disabled={submitting}
+                          className="text-blue-600 hover:text-blue-800 disabled:text-blue-400 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all duration-200 transform hover:scale-105 shadow-sm">
+                          <span className="mr-1">✏️</span>Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(announcement.id)}
+                          disabled={submitting}
+                          className="text-red-600 hover:text-red-800 disabled:text-red-400 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-100 transition-all duration-200 transform hover:scale-105 shadow-sm">
+                          <span className="mr-1">🗑️</span>Hapus
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12 bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-xl border-2 border-dashed border-blue-200">
@@ -675,11 +904,12 @@ const AdminDashboard = ({ user }) => {
                 Belum Ada Pengumuman
               </h4>
               <p className="text-sm text-slate-600 mb-4">
-                Klik tombol "✨ Tambah" untuk membuat pengumuman pertama
+                Klik tombol "✨ Tambah Pengumuman" untuk membuat pengumuman
+                pertama
               </p>
               <div className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                 <span className="mr-1">💡</span>
-                Tip: Pengumuman akan tampil di sini
+                Tip: Pengumuman akan tampil otomatis di dashboard guru
               </div>
             </div>
           )}

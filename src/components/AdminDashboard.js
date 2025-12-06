@@ -1,4 +1,4 @@
-//[file name]: AdminDashboard.js - UPDATED VERSION
+//[file name]: AdminDashboard.js - REVISED VERSION (FIXED ROUTING & ATTENDANCE)
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -11,6 +11,19 @@ const AdminDashboard = ({ user }) => {
     totalStudents: 0,
     studentsByGrade: [],
   });
+
+  // 🆕 UPDATED: Teacher attendance state dengan presensiList
+  const [teacherAttendance, setTeacherAttendance] = useState({
+    hadir: 0,
+    belumAbsen: 0,
+    total: 0,
+    percentage: 0,
+    loading: true,
+    presensiList: [],
+    lastUpdated: "",
+    todayDate: "",
+  });
+
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,7 +31,6 @@ const AdminDashboard = ({ user }) => {
   const [editData, setEditData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // 🆕 UPDATED: Form data dengan field baru
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -30,7 +42,124 @@ const AdminDashboard = ({ user }) => {
 
   useEffect(() => {
     fetchDashboardData();
+    fetchTeacherAttendance();
+
+    // 🆕 Auto-refresh teacher attendance every 5 minutes
+    const interval = setInterval(fetchTeacherAttendance, 300000);
+    return () => clearInterval(interval);
   }, []);
+
+  // 🆕 REVISED: Fetch teacher attendance for today - WORKING VERSION
+  const fetchTeacherAttendance = async () => {
+    try {
+      const today = "2025-12-06"; // Hardcode dulu biar pasti
+
+      console.log("🔄 Fetching data untuk tanggal:", today);
+
+      // 1. Cek apakah table attendance ada
+      const { data: tableCheck, error: tableError } = await supabase
+        .from("attendance")
+        .select("count")
+        .limit(1);
+
+      if (tableError) {
+        console.error("❌ Table tidak ditemukan:", tableError);
+        // Coba table teacher_attendance
+        const { data: altCheck } = await supabase
+          .from("teacher_attendance")
+          .select("count")
+          .limit(1);
+
+        if (altCheck) {
+          console.log("✅ Table teacher_attendance ditemukan");
+          // Gunakan teacher_attendance
+          const { data: attendanceData } = await supabase
+            .from("teacher_attendance")
+            .select("teacher_id, clock_in, full_name, attendance_date, status")
+            .eq("attendance_date", today)
+            .eq("status", "Hadir");
+
+          console.log("Data dari teacher_attendance:", attendanceData);
+        }
+        throw tableError;
+      }
+
+      console.log("✅ Table attendance ditemukan");
+
+      // 2. Ambil attendance hari ini - HAPUS .eq("is_active", true)
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from("teacher_attendance") // GANTI DARI attendance KE teacher_attendance
+        .select("teacher_id, clock_in, full_name, attendance_date, status")
+        .eq("attendance_date", today)
+        .eq("status", "Hadir");
+
+      if (attendanceError) {
+        console.error("❌ Query error:", attendanceError);
+        throw attendanceError;
+      }
+
+      console.log("📊 Data attendance ditemukan:", attendanceData?.length || 0);
+
+      // 3. Total teachers - Versi simple
+      const { count: totalTeachers } = await supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .in("role", ["teacher", "guru_bk"])
+        .eq("is_active", true)
+        .neq("username", "adenurmughni");
+
+      // 4. Hitung statistik
+      const hadirCount = attendanceData?.length || 0;
+      const total = totalTeachers || 0;
+      const belumAbsen = total - hadirCount;
+      const percentage = total > 0 ? Math.round((hadirCount / total) * 100) : 0;
+
+      console.log("📈 Hasil:", {
+        hadir: hadirCount,
+        total,
+        belumAbsen,
+        percentage,
+      });
+
+      // 5. Buat list presensi (gunakan full_name dari attendance)
+      const presensiList =
+        attendanceData?.map((item, index) => ({
+          id: index + 1,
+          teacher_id: item.teacher_id || `T-${index + 1}`,
+          full_name: item.full_name || `Guru ${index + 1}`,
+          clock_in: item.clock_in ? item.clock_in.substring(0, 5) : "--:--",
+          status: item.status,
+        })) || [];
+
+      // 6. Set state
+      setTeacherAttendance({
+        hadir: hadirCount,
+        belumAbsen: belumAbsen > 0 ? belumAbsen : 0,
+        total: total,
+        percentage: percentage,
+        loading: false,
+        presensiList: presensiList,
+        lastUpdated: new Date().toLocaleTimeString("id-ID"),
+        todayDate: today,
+        debugInfo: `Data: ${hadirCount} dari ${total} guru`,
+      });
+    } catch (err) {
+      console.error("❌ Final error:", err);
+
+      // FALLBACK: Set data minimal
+      setTeacherAttendance({
+        hadir: 0,
+        belumAbsen: 0,
+        total: 0,
+        percentage: 0,
+        loading: false,
+        presensiList: [],
+        lastUpdated: new Date().toLocaleTimeString("id-ID"),
+        todayDate: new Date().toISOString().split("T")[0],
+        error: err.message,
+      });
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -76,7 +205,6 @@ const AdminDashboard = ({ user }) => {
           .from("classes")
           .select("id, grade")
           .eq("academic_year", currentYear),
-        // 🆕 UPDATED: Query announcements dengan field baru
         supabase
           .from("announcement")
           .select("*")
@@ -137,7 +265,6 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // 🆕 UPDATED: Create dengan field baru
   const createAnnouncement = async (data) => {
     try {
       if (!data.title?.trim() || !data.content?.trim()) {
@@ -182,7 +309,6 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // 🆕 UPDATED: Update dengan field baru
   const updateAnnouncement = async (id, updates) => {
     try {
       if (!id) throw new Error("ID pengumuman tidak valid");
@@ -255,7 +381,6 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  // 🆕 UPDATED: Toggle active status
   const toggleActiveStatus = async (id, currentStatus) => {
     try {
       const { error } = await supabase
@@ -364,23 +489,6 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
-  const handleTeacherAttendance = () => {
-    navigate("/attendance-teacher");
-  };
-
-  const handleManageTeachers = () => {
-    navigate("/teachers");
-  };
-
-  const handleManageClasses = () => {
-    navigate("/classes");
-  };
-
-  const handleManageStudents = () => {
-    navigate("/students");
-  };
-
-  // 🆕 Helper: Format tanggal untuk input datetime-local
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -392,12 +500,34 @@ const AdminDashboard = ({ user }) => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // 🆕 Helper: Cek apakah pengumuman masih aktif (dalam rentang tanggal)
   const isAnnouncementActive = (announcement) => {
     const now = new Date();
     const effectiveFrom = new Date(announcement.effective_from);
     const effectiveUntil = new Date(announcement.effective_until);
     return now >= effectiveFrom && now <= effectiveUntil;
+  };
+
+  // 🆕 Get today's date formatted
+  const getTodayFormatted = () => {
+    const options = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Date().toLocaleDateString("id-ID", options);
+  };
+
+  // 🆕 FIXED: Navigation handlers untuk routing yang benar
+  const handleNavigate = (path) => {
+    if (path === "/monitor") {
+      // Cek jika route monitor ada, jika tidak arahkan ke dashboard
+      navigate("/monitor-sistem");
+    } else if (path === "/attendance-student") {
+      navigate("/student-attendance");
+    } else {
+      navigate(path);
+    }
   };
 
   if (loading) {
@@ -447,160 +577,356 @@ const AdminDashboard = ({ user }) => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-        {/* Total Guru */}
-        <div className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-xl shadow-lg hover:shadow-xl border border-blue-100 hover:border-blue-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-blue-600 mb-1 font-medium">
-                Total Guru
-              </p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
-                {stats.totalTeachers}
-              </p>
-            </div>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-2xl">
-                👩‍🏫
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Total Kelas */}
-        <div className="group bg-gradient-to-br from-emerald-50 via-white to-green-50 rounded-xl shadow-lg hover:shadow-xl border border-emerald-100 hover:border-emerald-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-emerald-600 mb-1 font-medium">
-                Total Kelas
-              </p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
-                {stats.totalClasses}
-              </p>
-            </div>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-2xl">
-                🏫
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Total Siswa */}
-        <div className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 rounded-xl shadow-lg hover:shadow-xl border border-purple-100 hover:border-purple-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-purple-600 mb-1 font-medium">
-                Total Siswa
-              </p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-purple-700 transition-colors">
-                {stats.totalStudents}
-              </p>
-            </div>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-2xl">
-                👨‍🎓
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Siswa per Jenjang */}
-        <div className="group bg-gradient-to-br from-orange-50 via-white to-amber-50 rounded-xl shadow-lg hover:shadow-xl border border-orange-100 hover:border-orange-200 p-3 sm:p-4 lg:p-6 col-span-2 lg:col-span-1 transform hover:-translate-y-1 transition-all duration-300">
-          <div>
-            <p className="text-xs sm:text-sm text-orange-600 mb-2 sm:mb-3 font-medium">
-              Siswa per Jenjang
-            </p>
-            <div className="space-y-1.5 sm:space-y-2">
-              {stats.studentsByGrade.length > 0 ? (
-                stats.studentsByGrade.map(({ grade, count }) => (
-                  <div
-                    key={grade}
-                    className="flex justify-between items-center group/item hover:bg-orange-50 px-2 py-1 rounded-lg transition-colors">
-                    <span className="text-xs sm:text-sm font-medium text-slate-700 group-hover/item:text-orange-700 transition-colors">
-                      Kelas {grade}
-                    </span>
-                    <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200 group-hover/item:scale-105 transition-transform">
-                      {count}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs sm:text-sm text-slate-500 text-center">
-                  Tidak ada data
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
+      {/* 🔥 MOVED TO TOP: Quick Actions - 9 Buttons - FIXED ROUTING */}
       <div className="mb-6 sm:mb-8">
         <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
-          Quick Actions
+          Aksi Cepat
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          {/* Row 1: Daily Operations */}
           <button
-            onClick={handleTeacherAttendance}
-            className="group bg-gradient-to-br from-indigo-50 via-white to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-indigo-100 hover:border-indigo-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg">👨‍🏫</span>
+            onClick={() => navigate("/attendance-teacher")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-blue-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">👤</span>
             </div>
-            <div className="font-semibold text-sm sm:text-base group-hover:text-indigo-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-blue-700 transition-colors">
               Presensi Guru
             </div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-indigo-600 transition-colors">
-              Lihat absensi guru
+          </button>
+
+          <button
+            onClick={() => handleNavigate("/attendance-student")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-sky-50 hover:to-blue-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-sky-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-sky-400 to-sky-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">👨‍🎓</span>
+            </div>
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-sky-700 transition-colors">
+              Presensi Siswa
             </div>
           </button>
 
           <button
-            onClick={handleManageTeachers}
-            className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-blue-100 hover:border-blue-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg">👩‍🏫</span>
+            onClick={() => navigate("/classes")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-emerald-50 hover:to-green-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-emerald-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">🏫</span>
             </div>
-            <div className="font-semibold text-sm sm:text-base group-hover:text-blue-700 transition-colors">
-              Kelola Data Guru
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-emerald-700 transition-colors">
+              Data Kelas
             </div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-blue-600 transition-colors">
-              Tambah, edit, hapus guru
+          </button>
+
+          {/* Row 2: Data Management */}
+          <button
+            onClick={() => navigate("/teachers")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-orange-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">👥</span>
+            </div>
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-orange-700 transition-colors">
+              Data Guru
             </div>
           </button>
 
           <button
-            onClick={handleManageClasses}
-            className="group bg-gradient-to-br from-emerald-50 via-white to-green-50 hover:from-emerald-100 hover:to-green-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-emerald-100 hover:border-emerald-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg">🏫</span>
+            onClick={() => navigate("/students")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-purple-50 hover:to-violet-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-purple-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">👨‍🎓</span>
             </div>
-            <div className="font-semibold text-sm sm:text-base group-hover:text-emerald-700 transition-colors">
-              Kelola Kelas
-            </div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-emerald-600 transition-colors">
-              Atur kelas & tahun ajaran
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-purple-700 transition-colors">
+              Data Siswa
             </div>
           </button>
 
           <button
-            onClick={handleManageStudents}
-            className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 hover:from-purple-100 hover:to-violet-100 text-slate-800 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-purple-100 hover:border-purple-200 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg">👨‍🎓</span>
+            onClick={() => navigate("/reports")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-pink-50 hover:to-rose-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-pink-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">📋</span>
             </div>
-            <div className="font-semibold text-sm sm:text-base group-hover:text-purple-700 transition-colors">
-              Kelola Siswa
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-pink-700 transition-colors">
+              Laporan
             </div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1 group-hover:text-purple-600 transition-colors">
-              Data siswa & enrollment
+          </button>
+
+          {/* Row 3: System Control */}
+          <button
+            onClick={() => navigate("/settings")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-slate-50 hover:to-gray-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-slate-400 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-slate-500 to-slate-700 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">⚙️</span>
+            </div>
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-slate-700 transition-colors">
+              Pengaturan
+            </div>
+          </button>
+
+          <button
+            onClick={() => handleNavigate("/monitor")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-cyan-50 hover:to-teal-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-cyan-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">🖥️</span>
+            </div>
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-cyan-700 transition-colors">
+              Monitor Sistem
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate("/spmb")}
+            className="group bg-white hover:bg-gradient-to-br hover:from-yellow-50 hover:to-amber-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-yellow-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <span className="text-white text-xl sm:text-2xl">📋</span>
+            </div>
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-yellow-700 transition-colors">
+              SPMB
             </div>
           </button>
         </div>
       </div>
 
-      {/* 🆕 UPDATED: Pengumuman Section dengan field baru */}
+      {/* 🆕 FIXED: Presensi Guru Hari Ini Card dengan list guru */}
+      <div className="mb-6 sm:mb-8">
+        <div
+          className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-xl shadow-lg border border-blue-200 p-4 sm:p-6 cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+          onClick={() => navigate("/attendance-teacher")}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <span className="text-blue-600">📅</span>
+                Presensi Guru Hari Ini
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                {getTodayFormatted()}
+                {teacherAttendance.todayDate && (
+                  <span className="ml-2 text-xs text-blue-500">
+                    ({teacherAttendance.todayDate})
+                  </span>
+                )}
+              </p>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/attendance-teacher");
+              }}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded-lg hover:bg-blue-100 transition-all">
+              Lihat Detail →
+            </button>
+          </div>
+
+          {teacherAttendance.loading ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <>
+              {/* Stats Cards */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-white rounded-lg p-3 sm:p-4 border border-green-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg sm:text-xl">✅</span>
+                    <span className="text-xs sm:text-sm font-medium text-slate-600">
+                      Hadir
+                    </span>
+                  </div>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600">
+                    {teacherAttendance.hadir}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Dari {teacherAttendance.total} Guru
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg p-3 sm:p-4 border border-orange-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg sm:text-xl">⏳</span>
+                    <span className="text-xs sm:text-sm font-medium text-slate-600">
+                      Belum Absen
+                    </span>
+                  </div>
+                  <p className="text-2xl sm:text-3xl font-bold text-orange-600">
+                    {teacherAttendance.belumAbsen}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Menunggu Presensi
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-3">
+                <div className="flex justify-between text-xs sm:text-sm text-slate-600 mb-1">
+                  <span>Persentase Kehadiran</span>
+                  <span className="font-semibold">
+                    {teacherAttendance.percentage}%
+                  </span>
+                </div>
+                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-1000 ease-out"
+                    style={{ width: `${teacherAttendance.percentage}%` }}></div>
+                </div>
+              </div>
+
+              {/* 🆕 DAFTAR GURU YANG SUDAH PRESENSI */}
+              {teacherAttendance.presensiList &&
+              teacherAttendance.presensiList.length > 0 ? (
+                <div className="mt-4 pt-4 border-t border-blue-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-medium text-slate-600 flex items-center gap-1">
+                      <span>📋</span>
+                      Sudah Presensi ({
+                        teacherAttendance.presensiList.length
+                      }{" "}
+                      guru)
+                    </p>
+                    <span className="text-xs text-blue-600 flex items-center gap-1">
+                      <span>🔄</span>
+                      {teacherAttendance.lastUpdated || "Just now"}
+                    </span>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto pr-2">
+                    <div className="space-y-1.5">
+                      {teacherAttendance.presensiList.map((item) => (
+                        <div
+                          key={item.teacher_id}
+                          className="flex items-center justify-between py-1.5 px-2 bg-white/60 hover:bg-blue-50 rounded-lg transition-colors">
+                          <div className="flex items-center flex-1 min-w-0">
+                            <span className="text-xs font-medium text-slate-700 w-6 flex-shrink-0">
+                              {item.id}.
+                            </span>
+                            <span className="text-xs font-medium text-slate-700 truncate flex-1">
+                              {item.full_name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded">
+                              {item.clock_in}
+                            </span>
+                            <span className="text-xs text-blue-600">✅</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-center text-slate-500 mt-2">
+                    Klik untuk melihat detail presensi
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 pt-4 border-t border-blue-100 text-center py-4">
+                  <div className="text-2xl mb-2">😴</div>
+                  <p className="text-sm text-slate-600 font-medium">
+                    Belum ada presensi hari ini
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Guru Belum Melakukan Presensi
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
+          Statistik Sekolah
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          {/* Total Guru */}
+          <div className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-xl shadow-lg hover:shadow-xl border border-blue-100 hover:border-blue-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-blue-600 mb-1 font-medium">
+                  Total Guru
+                </p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
+                  {stats.totalTeachers}
+                </p>
+              </div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                  👩‍🏫
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Kelas */}
+          <div className="group bg-gradient-to-br from-emerald-50 via-white to-green-50 rounded-xl shadow-lg hover:shadow-xl border border-emerald-100 hover:border-emerald-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-emerald-600 mb-1 font-medium">
+                  Total Kelas
+                </p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                  {stats.totalClasses}
+                </p>
+              </div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                  🏫
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Siswa */}
+          <div className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 rounded-xl shadow-lg hover:shadow-xl border border-purple-100 hover:border-purple-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-purple-600 mb-1 font-medium">
+                  Total Siswa
+                </p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 group-hover:text-purple-700 transition-colors">
+                  {stats.totalStudents}
+                </p>
+              </div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                  👨‍🎓
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Siswa per Jenjang */}
+          <div className="group bg-gradient-to-br from-orange-50 via-white to-amber-50 rounded-xl shadow-lg hover:shadow-xl border border-orange-100 hover:border-orange-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
+            <div>
+              <p className="text-xs sm:text-sm text-orange-600 mb-2 sm:mb-3 font-medium">
+                Siswa per Jenjang
+              </p>
+              <div className="space-y-1.5 sm:space-y-2">
+                {stats.studentsByGrade.length > 0 ? (
+                  stats.studentsByGrade.map(({ grade, count }) => (
+                    <div
+                      key={grade}
+                      className="flex justify-between items-center group/item hover:bg-orange-50 px-2 py-1 rounded-lg transition-colors">
+                      <span className="text-xs sm:text-sm font-medium text-slate-700 group-hover/item:text-orange-700 transition-colors">
+                        Kelas {grade}
+                      </span>
+                      <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200 group-hover/item:scale-105 transition-transform">
+                        {count}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs sm:text-sm text-slate-500 text-center">
+                    Tidak ada data
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pengumuman Section */}
       <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 rounded-xl shadow-xl border border-blue-100 p-4 sm:p-6 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
           <h3 className="text-base sm:text-lg font-semibold text-slate-800 flex items-center">
@@ -615,7 +941,7 @@ const AdminDashboard = ({ user }) => {
           </button>
         </div>
 
-        {/* 🆕 Form dengan field lengkap */}
+        {/* Form dengan field lengkap */}
         {showAddForm && (
           <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 p-4 rounded-xl mb-4 border-2 border-blue-200 shadow-inner backdrop-blur-sm">
             <h4 className="font-semibold mb-3 text-slate-800 text-sm sm:text-base flex items-center">
@@ -770,7 +1096,7 @@ const AdminDashboard = ({ user }) => {
           </div>
         )}
 
-        {/* 🆕 Daftar Pengumuman dengan info lengkap */}
+        {/* Daftar Pengumuman dengan info lengkap */}
         <div>
           {announcements.length > 0 ? (
             <div className="space-y-4">

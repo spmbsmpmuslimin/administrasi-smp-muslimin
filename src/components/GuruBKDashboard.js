@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import AnnouncementPopup from "./AnnouncementPopup";
 
 const GuruBKDashboard = ({ user }) => {
   const navigate = useNavigate();
@@ -231,6 +232,9 @@ const GuruBKDashboard = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+      {/* 🆕 Pop-up Pengumuman */}
+      <AnnouncementPopup userId={user?.id} userRole="guru_bk" />
+
       {/* Error Banner */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">

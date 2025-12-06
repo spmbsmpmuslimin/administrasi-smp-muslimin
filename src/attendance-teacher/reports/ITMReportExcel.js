@@ -39,7 +39,7 @@ export const exportITMReportToExcel = async (reportData) => {
     // ============ HEADER UTAMA (Hanya 1x di paling atas) ============
     worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
     const titleCell = worksheet.getCell(`A${currentRow}`);
-    titleCell.value = "JAM TATAP MUKA GURU SMP MUSLIMIN CILILIN";
+    titleCell.value = "JUMLAH JAM TATAP MUKA GURU SMP MUSLIMIN CILILIN";
     titleCell.font = { name: "Arial", size: 14, bold: true };
     titleCell.alignment = { vertical: "middle", horizontal: "center" };
     worksheet.getRow(currentRow).height = 25;
@@ -213,6 +213,15 @@ export const exportITMReportToExcel = async (reportData) => {
               size: 12,
               bold: true,
               color: { argb: "FF22C55E" },
+            };
+          } else if (dayData?.status && dayData.status !== "Hadir") {
+            // Tampilkan status: Sakit, Izin, Alpa
+            attendCell.value = dayData.status;
+            attendCell.font = {
+              name: "Arial",
+              size: 9,
+              bold: true,
+              color: { argb: "FFDC2626" }, // Merah
             };
           } else if (dayData?.kelas && dayData.kelas !== "") {
             attendCell.value = "☐";

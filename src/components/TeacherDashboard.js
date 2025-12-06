@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import AnnouncementPopup from "./AnnouncementPopup";
 
 const TeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
@@ -518,6 +519,9 @@ const TeacherDashboard = ({ user }) => {
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
+        {/* 🆕 Pop-up Pengumuman */}
+        <AnnouncementPopup userId={user?.id} userRole="teacher" />
+
         {/* Header - Original Style */}
         <div className="mb-6 sm:mb-8">
           <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 rounded-xl shadow-lg border border-slate-200 p-4 sm:p-6 lg:p-8 backdrop-blur-sm">

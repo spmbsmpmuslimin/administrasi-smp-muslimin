@@ -191,18 +191,41 @@ const ITMReport = () => {
 
     let currentWeek = [];
     let weekNum = 1;
+    let startDate = new Date(firstDay);
 
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-      const date = new Date(year, month, day);
-      const dayIndex = date.getDay();
+    // Cari Senin pertama di bulan ini atau sebelumnya (tapi tetap dalam range wajar)
+    const firstDayIndex = startDate.getDay();
+
+    if (firstDayIndex !== 1 && firstDayIndex !== 0 && firstDayIndex !== 6) {
+      // Kalau mulai Selasa-Jumat, mundur ke Senin
+      const daysToSubtract = firstDayIndex - 1;
+      startDate.setDate(startDate.getDate() - daysToSubtract);
+    } else if (firstDayIndex === 0 || firstDayIndex === 6) {
+      // Kalau mulai weekend, maju ke Senin berikutnya
+      const daysToAdd = firstDayIndex === 0 ? 1 : 2;
+      startDate.setDate(startDate.getDate() + daysToAdd);
+    }
+
+    let currentDate = new Date(startDate);
+
+    while (
+      currentDate <= lastDay ||
+      (currentWeek.length > 0 && currentWeek.length < 5)
+    ) {
+      const dayIndex = currentDate.getDay();
       const dayName =
         dayIndex >= 1 && dayIndex <= 5 ? DAYS[dayIndex - 1] : null;
 
-      if (dayName) {
-        currentWeek.push({ day, date, dayName });
+      // FIX: Hanya masukkan tanggal yang benar-benar di bulan target
+      if (dayName && currentDate.getMonth() === month) {
+        currentWeek.push({
+          day: currentDate.getDate(),
+          date: new Date(currentDate),
+          dayName: dayName,
+        });
       }
 
-      if (date.getDay() === 5 || day === lastDay.getDate()) {
+      if (currentDate.getDay() === 5) {
         if (currentWeek.length > 0) {
           weeks.push({
             weekNumber: weekNum++,
@@ -211,6 +234,20 @@ const ITMReport = () => {
           currentWeek = [];
         }
       }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+
+      if (currentDate.getMonth() > month && currentWeek.length === 0) {
+        break;
+      }
+    }
+
+    // Tambahkan sisa minggu kalau ada
+    if (currentWeek.length > 0) {
+      weeks.push({
+        weekNumber: weekNum++,
+        dates: [...currentWeek],
+      });
     }
 
     return weeks;
@@ -263,6 +300,10 @@ const ITMReport = () => {
 
       if (attendanceError) throw attendanceError;
 
+      // TAMBAHIN INI:
+      console.log("=== DEBUG ATTENDANCE ===");
+      console.log("Attendance Data:", attendance);
+
       const weeks = getWeeksInMonth(selectedYear, selectedMonth);
 
       const formattedSchedules =
@@ -292,19 +333,23 @@ const ITMReport = () => {
           const jamRow = { jamKe, days: {} };
 
           week.dates.forEach(({ day, date, dayName }) => {
-            // Format tanggal dengan benar (tanpa timezone offset)
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, "0");
             const dayNum = String(date.getDate()).padStart(2, "0");
             const dateStr = `${year}-${month}-${dayNum}`;
 
             const attendanceRecord = formattedAttendance[dateStr];
-            const hadir = attendanceRecord?.status === "Hadir";
 
-            console.log(
-              `Debug: ${dayName} ${dateStr} - hadir: ${hadir}, record:`,
-              attendanceRecord
-            );
+            // TAMBAHIN INI:
+            if (date.getDate() === 29 || date.getDate() === 30) {
+              console.log(
+                `DATE ${dateStr}: attendanceRecord =`,
+                attendanceRecord
+              );
+            }
+
+            // FIX: Hadir = status "Hadir" saja, tanpa validasi waktu
+            let hadir = attendanceRecord?.status === "Hadir";
 
             if (jamKe === 1 && dayName === "Senin") {
               jamRow.days[dayName] = {
@@ -343,12 +388,22 @@ const ITMReport = () => {
         return { ...week, schedule: weekData };
       });
 
+      // FIX: Hitung total JP terjadwal dengan benar
+      const totalScheduledHours = processedWeeks.reduce((total, week) => {
+        return (
+          total +
+          DAYS.reduce((weekTotal, day) => {
+            return weekTotal + calculateJamPerHari(week.schedule, day);
+          }, 0)
+        );
+      }, 0);
+
       setReportData({
         teacher: userData,
         month: MONTHS[selectedMonth],
         year: selectedYear,
         weeks: processedWeeks,
-        totalScheduledHours: formattedSchedules.length,
+        totalScheduledHours: totalScheduledHours,
         totalAttendedHours:
           attendance?.filter((a) => a.status === "Hadir").length || 0,
       });
@@ -360,13 +415,31 @@ const ITMReport = () => {
     }
   };
 
-  // Hitung JP per hari
+  // Hitung JP terjadwal per hari
   const calculateJamPerHari = (weekSchedule, dayName) => {
     let total = 0;
     weekSchedule.forEach((jam) => {
       const dayData = jam.days[dayName];
       if (
         dayData &&
+        dayData.kelas &&
+        dayData.kelas !== "" &&
+        dayData.kelas !== "UPACARA"
+      ) {
+        total++;
+      }
+    });
+    return total;
+  };
+
+  // FIX: Hitung JP yang HADIR per hari (yang ada centang)
+  const calculateJamHadirPerHari = (weekSchedule, dayName) => {
+    let total = 0;
+    weekSchedule.forEach((jam) => {
+      const dayData = jam.days[dayName];
+      if (
+        dayData &&
+        dayData.hadir &&
         dayData.kelas &&
         dayData.kelas !== "" &&
         dayData.kelas !== "UPACARA"
@@ -488,7 +561,7 @@ const ITMReport = () => {
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
               disabled={loading}>
-              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
+              {[2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
@@ -544,7 +617,7 @@ const ITMReport = () => {
               {/* Header */}
               <div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
                 <h2 className="text-lg font-bold uppercase tracking-wide">
-                  JAM TATAP MUKA GURU SMP MUSLIMIN CILILIN
+                  JUMLAH JAM TATAP MUKA GURU SMP MUSLIMIN CILILIN
                 </h2>
                 <p className="text-sm">TAHUN AJARAN 2025/2026</p>
                 <div className="mt-3 text-left">
@@ -571,16 +644,39 @@ const ITMReport = () => {
                       <th className="border border-gray-800 px-2 py-2 w-12">
                         JAM
                       </th>
-                      {DAYS.map((day, idx) => (
-                        <React.Fragment key={day}>
-                          <th className="border border-gray-800 px-2 py-2 w-16">
-                            KLS
-                          </th>
-                          <th className="border border-gray-800 px-2 py-2 w-20">
-                            {FULL_DAY_NAMES[idx]}
-                          </th>
-                        </React.Fragment>
-                      ))}
+                      {DAYS.map((day, idx) => {
+                        const dateInfo = week.dates.find(
+                          (d) => d.dayName === day
+                        );
+                        const tanggal = dateInfo ? dateInfo.day : "";
+                        const bulanAktual = dateInfo
+                          ? dateInfo.date.getMonth()
+                          : selectedMonth;
+                        const bulanSingkat = MONTHS[bulanAktual].substring(
+                          0,
+                          3
+                        );
+
+                        return (
+                          <React.Fragment key={day}>
+                            <th className="border border-gray-800 px-2 py-2 w-16">
+                              Kelas
+                            </th>
+                            <th className="border border-gray-800 px-2 py-2 w-20">
+                              <div className="text-center">
+                                <div className="font-bold">
+                                  {FULL_DAY_NAMES[idx]}
+                                </div>
+                                {tanggal && (
+                                  <div className="text-xs font-normal mt-0.5">
+                                    {tanggal} {bulanSingkat}
+                                  </div>
+                                )}
+                              </div>
+                            </th>
+                          </React.Fragment>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
@@ -600,11 +696,15 @@ const ITMReport = () => {
                               </td>
                               <td className="border border-gray-800 px-2 py-2 text-center">
                                 {isUpacara ? (
-                                  // UPACARA: KOSONG POLOS
                                   ""
                                 ) : dayData?.hadir ? (
                                   <span className="text-green-600 font-bold text-lg">
                                     ✓
+                                  </span>
+                                ) : dayData?.status &&
+                                  dayData.status !== "Hadir" ? (
+                                  <span className="text-xs font-semibold text-red-600">
+                                    {dayData.status}
                                   </span>
                                 ) : dayData?.kelas && dayData.kelas !== "" ? (
                                   <div className="w-6 h-6 border-2 border-gray-800 mx-auto"></div>
@@ -617,29 +717,29 @@ const ITMReport = () => {
                         })}
                       </tr>
                     ))}
-
                     {/* Row JUMLAH per hari */}
                     <tr className="bg-gray-100 font-bold">
                       <td className="border border-gray-800 px-2 py-2 text-center">
                         JUMLAH :{" "}
                         {DAYS.reduce(
                           (total, day) =>
-                            total + calculateJamPerHari(week.schedule, day),
+                            total +
+                            calculateJamHadirPerHari(week.schedule, day),
                           0
                         )}
                       </td>
                       {DAYS.map((day) => {
-                        const jamPerHari = calculateJamPerHari(
+                        const jamHadir = calculateJamHadirPerHari(
                           week.schedule,
                           day
                         );
+
                         return (
                           <React.Fragment key={day}>
-                            <td className="border border-gray-800 px-2 py-2 text-center">
-                              {jamPerHari}
-                            </td>
-                            <td className="border border-gray-800 px-2 py-2 text-center">
-                              {/* Kolom paraf kosong untuk JUMLAH */}
+                            <td
+                              className="border border-gray-800 px-2 py-2 text-center"
+                              colSpan="2">
+                              {jamHadir > 0 ? jamHadir : ""}
                             </td>
                           </React.Fragment>
                         );
@@ -710,7 +810,7 @@ const ITMReport = () => {
                             ((calculateOverallTotal() - calculateTotalHadir()) /
                               calculateOverallTotal()) *
                             100
-                          ).toFixed(1)
+                          ).toFixed(1) // <--- PERBAIKAN DILAKUKAN DI SINI
                         : 0}
                       %)
                     </span>
