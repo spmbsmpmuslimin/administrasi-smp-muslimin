@@ -69,11 +69,10 @@ const Setting = ({ user, onShowToast }) => {
   const loadSchoolConfig = async () => {
     try {
       setLoading(true);
-
       const { data: settings, error } = await supabase
         .from("school_settings")
         .select("setting_key, setting_value")
-        .in("setting_key", ["school_name", "school_level", "grades"]);
+        .in("setting_key", ["school_name", "school_level"]); // 🔧 Hapus "grades"
 
       if (error) throw error;
 
@@ -82,29 +81,36 @@ const Setting = ({ user, onShowToast }) => {
         config[item.setting_key] = item.setting_value;
       });
 
-      if (config.grades && typeof config.grades === "string") {
-        try {
-          config.grades = JSON.parse(config.grades);
-        } catch (e) {
-          config.grades = ["VII", "VIII", "IX"];
-        }
+      // 🔧 Generate grades otomatis berdasarkan school_level
+      const schoolLevel = config.school_level || "SMP";
+      let grades = ["7", "8", "9"]; // Default SMP
+
+      if (schoolLevel === "SMP" || schoolLevel === "MTs") {
+        grades = ["7", "8", "9"];
+      } else if (
+        schoolLevel === "SMA" ||
+        schoolLevel === "SMK" ||
+        schoolLevel === "MA"
+      ) {
+        grades = ["10", "11", "12"];
+      } else if (schoolLevel === "SD" || schoolLevel === "MI") {
+        grades = ["1", "2", "3", "4", "5", "6"];
       }
 
       setSchoolConfig({
         schoolName: config.school_name || "SMP Muslimin Cililin",
-        schoolLevel: config.school_level || "SMP",
-        grades: config.grades || ["VII", "VIII", "IX"],
+        schoolLevel: schoolLevel,
+        grades: grades,
       });
     } catch (error) {
       console.error("Error loading school config:", error);
       if (onShowToast) {
         onShowToast("Gagal memuat konfigurasi sekolah", "error");
       }
-
       setSchoolConfig({
         schoolName: "SMP Muslimin Cililin",
         schoolLevel: "SMP",
-        grades: ["VII", "VIII", "IX"],
+        grades: ["7", "8", "9"],
       });
     } finally {
       setLoading(false);

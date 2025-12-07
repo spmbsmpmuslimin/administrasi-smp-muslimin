@@ -1035,8 +1035,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             </h3>
             <p className="text-sm text-gray-600 mb-4">
               {profileData.role === "teacher"
-                ? "Bertanggung jawab atas pengajaran mata pelajaran, penilaian, dan presensi siswa di kelas yang ditugaskan."
-                : "Memiliki hak penuh untuk mengelola semua data dan pengguna dalam sistem"}
+                ? "Bertanggung Jawab Atas Pengajaran Mata Pelajaran, Penilaian, Dan Presensi Siswa Di Kelas Yang Ditugaskan."
+                : "Memiliki Hak Penuh Untuk Mengelola Semua Data Dan Pengguna Dalam Sistem"}
             </p>
             {/* Admin Privilege Details */}
             {profileData.role === "admin" && (
@@ -1077,10 +1077,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 <Mail size={18} className="text-red-500" />
                 Ubah Password
               </h3>
-              {/* Asumsi ChangePasswordSection ada */}
-              <ChangePasswordSection userId={userId} showToast={showToast} />
+              {/* ✅ FIXED: Pass user object instead of userId */}
+              <ChangePasswordSection user={user} />
             </div>
-
             {/* Admin Actions (Jika Admin dan Melihat Profil Sendiri) */}
             {isAdmin && !isViewingOtherProfile && (
               <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">

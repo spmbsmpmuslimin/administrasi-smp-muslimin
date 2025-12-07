@@ -35,11 +35,13 @@ const MonthlyView = ({ currentUser }) => {
   ];
 
   // ========================================
-  // 🗓️ LIBUR NASIONAL 2025-2026
+  // 🗓️ LIBUR NASIONAL 2025-2027
   // ========================================
   // ⚠️ UPDATE ARRAY INI SETIAP TAHUN BARU! ⚠️
+  // Tahun Ajaran: 2025/2026 & 2026/2027
   // Sumber: Keputusan Bersama (SKB) 3 Menteri
-  // Last update: Desember 2024 untuk tahun 2025-2026
+  // Last update: Desember 2024
+  // ⚠️ Data 2027 = PREDIKSI, tunggu SKB resmi!
   // ========================================
   const nationalHolidays = {
     // ===== 2025 =====
@@ -57,6 +59,7 @@ const MonthlyView = ({ currentUser }) => {
     "2025-08-17": "Hari Kemerdekaan RI",
     "2025-09-05": "Maulid Nabi Muhammad SAW",
     "2025-12-25": "Hari Raya Natal",
+
     // ===== 2026 =====
     "2026-01-01": "Tahun Baru Masehi",
     "2026-01-16": "Isra Mi'raj Nabi Muhammad SAW",
@@ -75,6 +78,26 @@ const MonthlyView = ({ currentUser }) => {
     "2026-08-17": "Hari Kemerdekaan RI",
     "2026-08-25": "Maulid Nabi Muhammad SAW",
     "2026-12-25": "Hari Raya Natal",
+
+    // ===== 2027 (PREDIKSI) =====
+    // ⚠️ UPDATE setelah SKB 2027 resmi keluar!
+    "2027-01-01": "Tahun Baru Masehi",
+    "2027-01-05": "Isra Mi'raj Nabi Muhammad SAW (prediksi)",
+    "2027-02-06": "Tahun Baru Imlek 2578 (prediksi)",
+    "2027-03-09": "Hari Suci Nyepi (Tahun Baru Saka 1949)",
+    "2027-03-10": "Idul Fitri 1448 H (prediksi)",
+    "2027-03-11": "Idul Fitri 1448 H (prediksi)",
+    "2027-03-26": "Wafat Yesus Kristus (Jumat Agung)",
+    "2027-03-28": "Hari Paskah",
+    "2027-05-01": "Hari Buruh Internasional",
+    "2027-05-06": "Kenaikan Yesus Kristus",
+    "2027-05-16": "Idul Adha 1448 H (prediksi)",
+    "2027-05-20": "Hari Raya Waisak 2571 BE",
+    "2027-06-01": "Hari Lahir Pancasila",
+    "2027-06-06": "Tahun Baru Islam 1449 H (prediksi)",
+    "2027-08-14": "Maulid Nabi Muhammad SAW (prediksi)",
+    "2027-08-17": "Hari Kemerdekaan RI",
+    "2027-12-25": "Hari Raya Natal",
   };
 
   // Helper: Check if date is national holiday
@@ -175,6 +198,11 @@ const MonthlyView = ({ currentUser }) => {
       alpa: teacherAttendances.filter((a) => a.status === "Alpa").length,
       total: teacherAttendances.length,
     };
+  };
+
+  // FIX: Hitung total hari yang ADA data presensi
+  const calculateTotalRecordedDays = (teacherId) => {
+    return attendances.filter((att) => att.teacher_id === teacherId).length;
   };
 
   const handlePrevMonth = () => {
@@ -281,13 +309,16 @@ const MonthlyView = ({ currentUser }) => {
                 <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 min-w-[80px]">
                   H/I/S/A
                 </th>
+                <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 min-w-[80px]">
+                  %
+                </th>
               </tr>
             </thead>
             <tbody>
               {filteredTeachers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={daysInMonth + 2}
+                    colSpan={daysInMonth + 3}
                     className="border border-gray-300 px-4 py-8 text-center text-gray-500">
                     Tidak ada data guru
                   </td>
@@ -357,6 +388,24 @@ const MonthlyView = ({ currentUser }) => {
                         <span className="text-blue-600">{stats.izin}</span>/
                         <span className="text-yellow-600">{stats.sakit}</span>/
                         <span className="text-red-600">{stats.alpa}</span>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center font-semibold">
+                        {(() => {
+                          const totalRecorded = calculateTotalRecordedDays(
+                            teacher.teacher_id
+                          );
+                          const percentage =
+                            totalRecorded > 0
+                              ? ((stats.hadir / totalRecorded) * 100).toFixed(1)
+                              : 0;
+                          const color =
+                            percentage >= 90
+                              ? "text-green-600"
+                              : percentage >= 75
+                              ? "text-yellow-600"
+                              : "text-red-600";
+                          return <span className={color}>{percentage}%</span>;
+                        })()}
                       </td>
                     </tr>
                   );

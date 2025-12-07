@@ -14,7 +14,7 @@ import AttendanceManagement from "./pages/AttendanceManagement";
 import Grades from "./pages/Grades";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import CatatanSiswa from "./pages/CatatanSiswa";
-import Setting from "./setting/setting";
+import Setting from "./setting/Setting";
 
 // Import modules
 import Konseling from "./konseling/Konseling";
