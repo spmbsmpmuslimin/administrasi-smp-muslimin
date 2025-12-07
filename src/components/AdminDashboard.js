@@ -684,7 +684,7 @@ const AdminDashboard = ({ user }) => {
 
           {/* 6. Laporan */}
           <button
-            onClick={() => navigate("/laporan")}
+            onClick={() => navigate("/reports")}
             className="group bg-gradient-to-br from-pink-50 via-white to-rose-50 hover:from-pink-100 hover:to-rose-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-pink-100 hover:border-pink-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
             <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
               <span className="text-lg sm:text-xl text-white">📊</span>
@@ -699,7 +699,7 @@ const AdminDashboard = ({ user }) => {
 
           {/* 7. Pengaturan */}
           <button
-            onClick={() => navigate("/pengaturan")}
+            onClick={() => navigate("/settings")}
             className="group bg-gradient-to-br from-slate-50 via-white to-gray-50 hover:from-slate-100 hover:to-gray-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-slate-200 hover:border-slate-400 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
             <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-500 to-slate-700 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
               <span className="text-lg sm:text-xl text-white">⚙️</span>
