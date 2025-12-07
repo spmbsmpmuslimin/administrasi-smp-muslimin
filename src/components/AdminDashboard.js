@@ -1,4 +1,4 @@
-//[file name]: AdminDashboard.js - REVISED VERSION (FIXED ROUTING & ATTENDANCE)
+//[file name]: AdminDashboard.js - REVISED VERSION (FIXED QUICK ACTIONS UI 3X3 FOR ALL DEVICES)
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -538,10 +538,15 @@ const AdminDashboard = ({ user }) => {
   // 🆕 FIXED: Navigation handlers untuk routing yang benar
   const handleNavigate = (path) => {
     if (path === "/monitor") {
-      // Cek jika route monitor ada, jika tidak arahkan ke dashboard
       navigate("/monitor-sistem");
     } else if (path === "/attendance-student") {
       navigate("/student-attendance");
+    } else if (path === "/spmb") {
+      navigate("/spmb-management");
+    } else if (path === "/reports") {
+      navigate("/laporan");
+    } else if (path === "/settings") {
+      navigate("/pengaturan");
     } else {
       navigate(path);
     }
@@ -574,7 +579,6 @@ const AdminDashboard = ({ user }) => {
           </button>
         </div>
       )}
-
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 lg:p-8">
@@ -593,117 +597,152 @@ const AdminDashboard = ({ user }) => {
           </div>
         </div>
       </div>
-
-      {/* 🔥 MOVED TO TOP: Quick Actions - 9 Buttons - FIXED ROUTING */}
+      {/* 🔥 REVISED: Quick Actions - 3x3 Grid for all devices (including HP)
+       * & Optimized element sizes for small screens */}
       <div className="mb-6 sm:mb-8">
         <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
           Aksi Cepat
         </h2>
+        {/* REVISI: Menggunakan grid-cols-3 sebagai default untuk semua ukuran layar */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          {/* Row 1: Daily Operations */}
+          {/* 1. Presensi Guru */}
           <button
             onClick={() => navigate("/attendance-teacher")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-blue-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">👤</span>
+            className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-blue-100 hover:border-blue-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            {/* Ukuran Ikon menyesuaikan: w-8 h-8 (HP) dan w-12 h-12 (Tablet/Laptop) */}
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">👨‍🏫</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-blue-700 transition-colors">
+            {/* Ukuran Teks menyesuaikan: text-xs (HP) dan sm:text-base (Tablet/Laptop) */}
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-blue-700 transition-colors mb-0.5">
               Presensi Guru
             </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-blue-600 transition-colors">
+              Lihat absensi guru
+            </div>
           </button>
 
+          {/* 2. Presensi Siswa */}
           <button
-            onClick={() => handleNavigate("/attendance-student")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-sky-50 hover:to-blue-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-sky-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-sky-400 to-sky-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">👨‍🎓</span>
+            onClick={() => navigate("/attendance")}
+            className="group bg-gradient-to-br from-sky-50 via-white to-blue-50 hover:from-sky-100 hover:to-blue-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-sky-100 hover:border-sky-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-sky-400 to-sky-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">👨‍🎓</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-sky-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-sky-700 transition-colors mb-0.5">
               Presensi Siswa
             </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-sky-600 transition-colors">
+              Absensi siswa harian
+            </div>
           </button>
 
+          {/* 3. Data Kelas */}
           <button
             onClick={() => navigate("/classes")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-emerald-50 hover:to-green-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-emerald-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">🏫</span>
+            className="group bg-gradient-to-br from-emerald-50 via-white to-green-50 hover:from-emerald-100 hover:to-green-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-emerald-100 hover:border-emerald-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">🏫</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-emerald-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-emerald-700 transition-colors mb-0.5">
               Data Kelas
             </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-emerald-600 transition-colors">
+              Kelola Kelas
+            </div>
           </button>
 
-          {/* Row 2: Data Management */}
+          {/* 4. Data Guru */}
           <button
             onClick={() => navigate("/teachers")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-orange-50 hover:to-amber-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-orange-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">👥</span>
+            className="group bg-gradient-to-br from-orange-50 via-white to-amber-50 hover:from-orange-100 hover:to-amber-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-orange-100 hover:border-orange-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">👩‍🏫</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-orange-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-orange-700 transition-colors mb-0.5">
               Data Guru
             </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-orange-600 transition-colors">
+              Kelola Guru
+            </div>
           </button>
 
+          {/* 5. Data Siswa */}
           <button
             onClick={() => navigate("/students")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-purple-50 hover:to-violet-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-purple-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">👨‍🎓</span>
+            className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 hover:from-purple-100 hover:to-violet-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-purple-100 hover:border-purple-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">📚</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-purple-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-purple-700 transition-colors mb-0.5">
               Data Siswa
             </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-purple-600 transition-colors">
+              Kelola Siswa
+            </div>
           </button>
 
+          {/* 6. Laporan */}
           <button
-            onClick={() => navigate("/reports")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-pink-50 hover:to-rose-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-pink-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">📋</span>
+            onClick={() => navigate("/laporan")}
+            className="group bg-gradient-to-br from-pink-50 via-white to-rose-50 hover:from-pink-100 hover:to-rose-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-pink-100 hover:border-pink-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">📊</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-pink-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-pink-700 transition-colors mb-0.5">
               Laporan
             </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-pink-600 transition-colors">
+              Analisis & Laporan
+            </div>
           </button>
 
-          {/* Row 3: System Control */}
+          {/* 7. Pengaturan */}
           <button
-            onClick={() => navigate("/settings")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-slate-50 hover:to-gray-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-slate-400 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-slate-500 to-slate-700 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">⚙️</span>
+            onClick={() => navigate("/pengaturan")}
+            className="group bg-gradient-to-br from-slate-50 via-white to-gray-50 hover:from-slate-100 hover:to-gray-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-slate-200 hover:border-slate-400 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-slate-500 to-slate-700 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">⚙️</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-slate-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-slate-700 transition-colors mb-0.5">
               Pengaturan
             </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-slate-600 transition-colors">
+              Konfigurasi Sistem
+            </div>
           </button>
 
+          {/* 8. Monitor Sistem */}
           <button
-            onClick={() => handleNavigate("/monitor")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-cyan-50 hover:to-teal-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-cyan-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">🖥️</span>
+            onClick={() => navigate("/monitor-sistem")}
+            className="group bg-gradient-to-br from-cyan-50 via-white to-teal-50 hover:from-cyan-100 hover:to-teal-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-cyan-100 hover:border-cyan-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">🖥️</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-cyan-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-cyan-700 transition-colors mb-0.5">
               Monitor Sistem
             </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-cyan-600 transition-colors">
+              Pantau Sistem
+            </div>
           </button>
 
+          {/* 9. SPMB */}
           <button
             onClick={() => navigate("/spmb")}
-            className="group bg-white hover:bg-gradient-to-br hover:from-yellow-50 hover:to-amber-50 text-slate-800 p-3 sm:p-4 rounded-xl text-center transition-all duration-300 border border-slate-200 hover:border-yellow-300 shadow-md hover:shadow-xl transform hover:-translate-y-1">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center mb-2 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-xl sm:text-2xl">📋</span>
+            className="group bg-gradient-to-br from-yellow-50 via-white to-amber-50 hover:from-yellow-100 hover:to-amber-100 text-slate-800 p-2 sm:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-yellow-100 hover:border-yellow-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
+              <span className="text-lg sm:text-xl text-white">🎓</span>
             </div>
-            <div className="font-semibold text-xs sm:text-sm group-hover:text-yellow-700 transition-colors">
+            <div className="font-semibold text-xs sm:text-sm group-hover:text-yellow-700 transition-colors mb-0.5">
               SPMB
+            </div>
+            <div className="text-[10px] sm:text-xs text-slate-600 group-hover:text-yellow-600 transition-colors">
+              Penerimaan Siswa Baru
             </div>
           </button>
         </div>
       </div>
-
       {/* 🆕 FIXED: Presensi Guru Hari Ini Card dengan list guru */}
       <div className="mb-6 sm:mb-8">
         <div
@@ -740,7 +779,7 @@ const AdminDashboard = ({ user }) => {
             </div>
           ) : (
             <>
-              {/* Stats Cards */}
+              {/* Stats Cards - REVISI: Pastikan grid-cols-2 stabil di HP */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="bg-white rounded-lg p-3 sm:p-4 border border-green-200">
                   <div className="flex items-center gap-2 mb-1">
@@ -848,12 +887,12 @@ const AdminDashboard = ({ user }) => {
           )}
         </div>
       </div>
-
-      {/* Stats Cards */}
+      {/* Stats Cards - REVISI: Optimized Grid */}
       <div className="mb-6 sm:mb-8">
         <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
           Statistik Sekolah
         </h2>
+        {/* REVISI: grid-cols-2 untuk HP/Tablet, lg:grid-cols-4 untuk Laptop */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {/* Total Guru */}
           <div className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-xl shadow-lg hover:shadow-xl border border-blue-100 hover:border-blue-200 p-3 sm:p-4 lg:p-6 transform hover:-translate-y-1 transition-all duration-300">
@@ -867,7 +906,7 @@ const AdminDashboard = ({ user }) => {
                 </p>
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                <span className="text-sm sm:text-lg lg:text-2xl text-white">
                   👩‍🏫
                 </span>
               </div>
@@ -886,7 +925,7 @@ const AdminDashboard = ({ user }) => {
                 </p>
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                <span className="text-sm sm:text-lg lg:text-2xl text-white">
                   🏫
                 </span>
               </div>
@@ -905,7 +944,7 @@ const AdminDashboard = ({ user }) => {
                 </p>
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <span className="text-white text-sm sm:text-lg lg:text-2xl">
+                <span className="text-sm sm:text-lg lg:text-2xl text-white">
                   👨‍🎓
                 </span>
               </div>
@@ -942,7 +981,6 @@ const AdminDashboard = ({ user }) => {
           </div>
         </div>
       </div>
-
       {/* Pengumuman Section */}
       <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 rounded-xl shadow-xl border border-blue-100 p-4 sm:p-6 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
@@ -1008,6 +1046,7 @@ const AdminDashboard = ({ user }) => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Mulai Tayang *
                   </label>
+                  {/* Perubahan kecil pada text-size input untuk konsistensi di HP */}
                   <input
                     type="datetime-local"
                     value={formatDateForInput(formData.effective_from)}
@@ -1017,7 +1056,7 @@ const AdminDashboard = ({ user }) => {
                         effective_from: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                     required
                     disabled={submitting}
                   />
@@ -1026,6 +1065,7 @@ const AdminDashboard = ({ user }) => {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Berakhir *
                   </label>
+                  {/* Perubahan kecil pada text-size input untuk konsistensi di HP */}
                   <input
                     type="datetime-local"
                     value={formatDateForInput(formData.effective_until)}
@@ -1035,7 +1075,7 @@ const AdminDashboard = ({ user }) => {
                         effective_until: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                     required
                     disabled={submitting}
                   />
@@ -1053,7 +1093,7 @@ const AdminDashboard = ({ user }) => {
                     onChange={(e) =>
                       setFormData({ ...formData, target_role: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                     disabled={submitting}>
                     <option value="semua">Semua Guru</option>
                     <option value="teacher">Guru Mapel</option>

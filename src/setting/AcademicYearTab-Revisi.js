@@ -12,10 +12,8 @@ import {
   Clock,
   PlayCircle,
   PauseCircle,
-  Zap,
-  BarChart3,
 } from "lucide-react";
-import Simulator from "./Simulator"; // Import simulator
+import Simulator from "./Simulator"; // Import simulator saja
 
 const AcademicYearTab = ({
   user,
@@ -35,7 +33,7 @@ const AcademicYearTab = ({
     inProgress: false,
   });
 
-  // ✅ NEW: State untuk semester
+  // ✅ State untuk semester
   const [semesters, setSemesters] = useState([]);
   const [showAddSemester, setShowAddSemester] = useState(false);
   const [newSemester, setNewSemester] = useState({
@@ -44,10 +42,6 @@ const AcademicYearTab = ({
     start_date: "",
     end_date: "",
   });
-
-  // ✅ NEW: State untuk simulator
-  const [simulationResult, setSimulationResult] = useState(null);
-  const [showSimulator, setShowSimulator] = useState(false);
 
   // Default config jika schoolConfig belum loaded
   const config = {
@@ -71,7 +65,7 @@ const AcademicYearTab = ({
     loadSemesters(); // ✅ Load semester data
   }, []);
 
-  // ✅ NEW: Load semesters from database
+  // ✅ Load semesters from database
   const loadSemesters = async () => {
     try {
       const { data, error } = await supabase
@@ -155,7 +149,7 @@ const AcademicYearTab = ({
     }
   };
 
-  // ✅ NEW: Add new semester
+  // ✅ Add new semester
   const handleAddSemester = async () => {
     if (!newSemester.year || !newSemester.start_date || !newSemester.end_date) {
       showToast("Semua field harus diisi!", "error");
@@ -197,7 +191,7 @@ const AcademicYearTab = ({
     }
   };
 
-  // ✅ NEW: Activate semester (nonaktifkan yang lain)
+  // ✅ Activate semester (nonaktifkan yang lain)
   const handleActivateSemester = async (semesterId) => {
     const confirmed = window.confirm(
       "Aktifkan semester ini?\n\nSemester yang sedang aktif akan dinonaktifkan."
@@ -234,7 +228,7 @@ const AcademicYearTab = ({
     }
   };
 
-  // ✅ NEW: Delete semester
+  // ✅ Delete semester
   const handleDeleteSemester = async (semesterId, isActive) => {
     if (isActive) {
       showToast("❌ Tidak bisa menghapus semester yang sedang aktif!", "error");
@@ -279,17 +273,6 @@ const AcademicYearTab = ({
     });
 
     return byGrade;
-  };
-
-  // ✅ NEW: Handler untuk simulator
-  const handleSimulate = (simulationData) => {
-    setSimulationResult(simulationData);
-    showToast("✅ Simulasi selesai! Lihat hasil di bawah.", "success");
-  };
-
-  const handleCloseSimulation = () => {
-    setSimulationResult(null);
-    setShowSimulator(false);
   };
 
   const generateYearTransitionPreview = async () => {
@@ -406,10 +389,6 @@ const AcademicYearTab = ({
         inProgress: false,
       });
 
-      // Reset simulator ketika generate preview baru
-      setSimulationResult(null);
-      setShowSimulator(true);
-
       if (conflictedNIS.length > 0) {
         showToast(
           `⚠️ ${conflictedNIS.length} siswa baru memiliki NIS yang sudah terdaftar!`,
@@ -454,31 +433,72 @@ const AcademicYearTab = ({
     return data;
   };
 
+  // ============================================
+  // REVISED executeYearTransition Function
+  // Replace your existing function (line ~415-600)
+  // ============================================
+
   const executeYearTransition = async () => {
-    const { preview } = yearTransition;
+    // ✅ NEW: VALIDATION - Check if target year exists
+    const { data: targetYearData, error: checkError } = await supabase
+      .from("academic_years")
+      .select("id, year, semester")
+      .eq("year", yearTransition.newYear)
+      .eq("semester", 1)
+      .single();
 
-    // ✅ Tambah validasi simulasi
-    if (!simulationResult) {
-      const runSimulationFirst = window.confirm(
-        "⚠️ REKOMENDASI: Jalankan SIMULASI terlebih dahulu sebelum execute!\n\n" +
-          "Simulasi akan menampilkan detail lengkap perubahan tanpa mengubah database.\n\n" +
-          "Apakah Anda yakin ingin langsung execute tanpa simulasi?"
+    if (checkError || !targetYearData) {
+      showToast(
+        `❌ VALIDASI GAGAL!\n\n` +
+          `Tahun ajaran ${yearTransition.newYear} Semester 1 belum dibuat!\n\n` +
+          `Silakan buat semester terlebih dahulu di bagian "Manajemen Semester".\n\n` +
+          `Langkah:\n` +
+          `1. Klik "Tambah Semester"\n` +
+          `2. Input: ${yearTransition.newYear}, Semester 1\n` +
+          `3. Tanggal: Juli - Desember ${
+            yearTransition.newYear.split("/")[0]
+          }\n` +
+          `4. Ulangi untuk Semester 2 (Januari - Juni ${
+            yearTransition.newYear.split("/")[1]
+          })`,
+        "error"
       );
-
-      if (!runSimulationFirst) return;
+      return;
     }
 
+    console.log("✅ Validation passed: Target year exists", targetYearData);
+
+    const { preview } = yearTransition;
+
+    // ✅ RE-FETCH data terbaru untuk summary akurat
+    const { data: latestSiswaBaruData } = await supabase
+      .from("siswa_baru")
+      .select("id", { count: "exact" })
+      .eq("is_transferred", false)
+      .eq("academic_year", yearTransition.newYear)
+      .not("kelas", "is", null);
+
+    const latestSiswaBaruCount = latestSiswaBaruData?.length || 0;
+    const previewSiswaBaruCount = preview.newStudents.length;
+
     const totalPromotions = Object.values(preview.promotions).flat().length;
+
+    // ✅ Warning kalo data berubah
+    let warningMessage = "";
+    if (latestSiswaBaruCount !== previewSiswaBaruCount) {
+      warningMessage = `\n⚠️ PERHATIAN: Data siswa baru berubah!\n   Preview: ${previewSiswaBaruCount} siswa → Sekarang: ${latestSiswaBaruCount} siswa\n`;
+    }
 
     const confirmed = window.confirm(
       `PERINGATAN: Tindakan ini akan:\n\n` +
         `1. Membuat 18 kelas baru untuk tahun ajaran ${yearTransition.newYear}\n` +
         `2. Menaikkan ${totalPromotions} siswa ke kelas berikutnya\n` +
-        `3. Memasukkan ${preview.newStudents.length} siswa baru ke grade 7\n` +
+        `3. Memasukkan ${latestSiswaBaruCount} siswa baru ke grade 7\n` +
         `4. Meluluskan ${preview.graduating.length} siswa grade ${graduatingGrade}\n` +
         `5. Mereset assignment guru\n` +
-        `6. Mengubah tahun ajaran menjadi ${yearTransition.newYear}\n\n` +
-        `Tindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
+        `6. Mengubah tahun ajaran menjadi ${yearTransition.newYear}\n` +
+        warningMessage +
+        `\nTindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
     );
 
     if (!confirmed) return;
@@ -522,44 +542,83 @@ const AcademicYearTab = ({
       }
 
       if (preview.newStudents.length > 0) {
-        showToast(
-          `Memasukkan ${preview.newStudents.length} siswa baru...`,
-          "info"
-        );
+        // ✅ RE-FETCH data terbaru dari database (bukan pakai preview lama)
+        const { data: latestSiswaBaruData, error: fetchError } = await supabase
+          .from("siswa_baru")
+          .select("*")
+          .eq("is_transferred", false)
+          .eq("academic_year", yearTransition.newYear)
+          .not("kelas", "is", null);
 
-        for (const [classId, siswaList] of Object.entries(
-          preview.newStudentDistribution
-        )) {
-          if (siswaList.length === 0) continue;
+        if (fetchError) throw fetchError;
 
-          const newStudentsData = siswaList.map((siswa) => ({
-            nis: siswa.nisn || null,
-            full_name: siswa.nama_lengkap,
-            gender: siswa.jenis_kelamin,
-            class_id: classId,
-            academic_year: yearTransition.newYear,
-            is_active: true,
-          }));
+        const totalLatest = latestSiswaBaruData?.length || 0;
+        const totalPreview = preview.newStudents.length;
 
-          const { error: insertError } = await supabase
-            .from("students")
-            .insert(newStudentsData);
-
-          if (insertError) throw insertError;
+        // ✅ Warning kalo data berubah, tapi tetep lanjut
+        if (totalLatest !== totalPreview) {
+          console.warn(
+            `⚠️ Data siswa baru berubah: Preview ${totalPreview} → Sekarang ${totalLatest}`
+          );
+          showToast(
+            `ℹ️ Data siswa baru diupdate: ${totalLatest} siswa akan dimasukkan`,
+            "info"
+          );
         }
 
-        const siswaBaruIds = preview.newStudents.map((s) => s.id);
+        if (latestSiswaBaruData && latestSiswaBaruData.length > 0) {
+          showToast(
+            `Memasukkan ${latestSiswaBaruData.length} siswa baru...`,
+            "info"
+          );
 
-        const { error: updateSiswaBaruError } = await supabase
-          .from("siswa_baru")
-          .update({
-            is_transferred: true,
-            transferred_at: new Date().toISOString(),
-            transferred_by: user?.id || null,
-          })
-          .in("id", siswaBaruIds);
+          // ✅ Group by kelas (sesuai assignment di SPMB)
+          const distributionByClass = {};
 
-        if (updateSiswaBaruError) throw updateSiswaBaruError;
+          latestSiswaBaruData.forEach((siswa) => {
+            const kelas = siswa.kelas;
+            if (!distributionByClass[kelas]) {
+              distributionByClass[kelas] = [];
+            }
+            distributionByClass[kelas].push(siswa);
+          });
+
+          // ✅ Insert per kelas
+          for (const [classId, siswaList] of Object.entries(
+            distributionByClass
+          )) {
+            if (siswaList.length === 0) continue;
+
+            const newStudentsData = siswaList.map((siswa) => ({
+              nis: siswa.nisn || null,
+              full_name: siswa.nama_lengkap,
+              gender: siswa.jenis_kelamin,
+              class_id: classId,
+              academic_year: yearTransition.newYear,
+              is_active: true,
+            }));
+
+            const { error: insertError } = await supabase
+              .from("students")
+              .insert(newStudentsData);
+
+            if (insertError) throw insertError;
+          }
+
+          // ✅ Update status di siswa_baru
+          const siswaBaruIds = latestSiswaBaruData.map((s) => s.id);
+
+          const { error: updateSiswaBaruError } = await supabase
+            .from("siswa_baru")
+            .update({
+              is_transferred: true,
+              transferred_at: new Date().toISOString(),
+              transferred_by: user?.id || null,
+            })
+            .in("id", siswaBaruIds);
+
+          if (updateSiswaBaruError) throw updateSiswaBaruError;
+        }
       }
 
       showToast("Mereset assignment guru...", "info");
@@ -570,6 +629,34 @@ const AcademicYearTab = ({
 
       if (teacherResetError) throw teacherResetError;
 
+      // ✅ NEW: SYNC academic_years.is_active
+      showToast("Mengupdate status semester...", "info");
+
+      // 1. Deactivate all semesters with old year
+      const { error: deactivateError } = await supabase
+        .from("academic_years")
+        .update({ is_active: false })
+        .eq("year", schoolStats.academic_year);
+
+      if (deactivateError) {
+        console.error("Error deactivating old year:", deactivateError);
+        // Continue anyway (non-critical)
+      }
+
+      // 2. Activate new year Semester 1
+      const { error: activateError } = await supabase
+        .from("academic_years")
+        .update({ is_active: true })
+        .eq("id", targetYearData.id);
+
+      if (activateError) {
+        console.error("Error activating new year:", activateError);
+        // Continue anyway (non-critical)
+      }
+
+      console.log("✅ Semester sync completed");
+
+      // ✅ EXISTING: Update school_settings
       const { error: settingError } = await supabase
         .from("school_settings")
         .update({ setting_value: yearTransition.newYear })
@@ -584,7 +671,7 @@ const AcademicYearTab = ({
 
       showToast(
         `✅ Tahun ajaran ${yearTransition.newYear} berhasil dimulai!\n\n` +
-          `📊 ${preview.newStudents.length} siswa baru masuk grade 7\n` +
+          `📊 ${latestSiswaBaruCount} siswa baru masuk grade 7\n` +
           `⬆️ ${totalPromotions} siswa naik kelas\n` +
           `🎓 ${preview.graduating.length} siswa lulus\n` +
           `👨‍🏫 Silakan assign guru ke kelas baru`,
@@ -592,9 +679,8 @@ const AcademicYearTab = ({
       );
 
       await loadSchoolData();
+      await loadSemesters(); // ✅ NEW: Reload semester list to show updated status
       setYearTransition({ preview: null, newYear: "", inProgress: false });
-      setSimulationResult(null);
-      setShowSimulator(false);
     } catch (error) {
       console.error("Error executing year transition:", error);
       showToast("Error memulai tahun ajaran baru: " + error.message, "error");
@@ -660,7 +746,7 @@ const AcademicYearTab = ({
         </div>
       </div>
 
-      {/* ✅ NEW: Semester Management Section */}
+      {/* ✅ Semester Management Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -932,8 +1018,8 @@ const AcademicYearTab = ({
               Transisi Tahun Ajaran
             </h3>
             <p className="text-gray-600 text-sm">
-              Kelola perpindahan ke tahun ajaran berikutnya (termasuk siswa baru
-              dari SPMB)
+              Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru
+              Dari SPMB)
             </p>
           </div>
 
@@ -950,7 +1036,7 @@ const AcademicYearTab = ({
           )}
         </div>
 
-        {/* Transition Preview */}
+        {/* 🟢🟢🟢 SIMULATOR PREVIEW OTOMATIS 🟢🟢🟢 */}
         {yearTransition.preview && (
           <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3 mb-6">
@@ -963,91 +1049,6 @@ const AcademicYearTab = ({
                   {yearTransition.preview.currentYear} →{" "}
                   {yearTransition.preview.newYear}
                 </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Promotions */}
-              <div>
-                <h5 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
-                  <Users size={16} className="text-blue-600" />
-                  Siswa Naik Kelas
-                </h5>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {Object.entries(yearTransition.preview.promotions).map(
-                    ([classId, students]) => (
-                      <div
-                        key={classId}
-                        className="bg-white p-3 rounded border border-blue-200">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-blue-600">
-                            → {classId}
-                          </span>
-                          <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            {students.length} siswa
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* NEW STUDENTS FROM SPMB */}
-              <div>
-                <h5 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
-                  <UserPlus size={16} className="text-green-600" />
-                  Siswa Baru (SPMB)
-                </h5>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {Object.entries(
-                    yearTransition.preview.newStudentDistribution || {}
-                  ).map(
-                    ([classId, siswaList]) =>
-                      siswaList.length > 0 && (
-                        <div
-                          key={classId}
-                          className="bg-white p-3 rounded border border-green-200">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-green-600">
-                              SPMB → {classId}
-                            </span>
-                            <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">
-                              {siswaList.length} siswa
-                            </span>
-                          </div>
-                        </div>
-                      )
-                  )}
-
-                  {(!yearTransition.preview.newStudents ||
-                    yearTransition.preview.newStudents.length === 0) && (
-                    <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
-                      <p className="text-xs text-yellow-700">
-                        ℹ️ Tidak ada siswa baru untuk tahun ajaran{" "}
-                        {yearTransition.preview.newYear}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Graduating */}
-              <div>
-                <h5 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
-                  <CheckCircle size={16} className="text-purple-600" />
-                  Siswa Lulus
-                </h5>
-                <div className="bg-white p-3 rounded border border-purple-200">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-purple-600">
-                      Kelas {graduatingGrade} → Lulus
-                    </span>
-                    <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                      {yearTransition.preview.graduating.length} siswa
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -1083,60 +1084,18 @@ const AcademicYearTab = ({
               </div>
             )}
 
-            {/* 🟢🟢🟢 SIMULATOR TRANSIKSI SMP 🟢🟢🟢 */}
-            {showSimulator && (
-              <Simulator
-                schoolStats={schoolStats}
-                studentsByClass={studentsByClass}
-                yearTransition={yearTransition}
-                config={config}
-                loading={loading}
-                onSimulate={handleSimulate}
-                simulationResult={simulationResult}
-                onCloseSimulation={handleCloseSimulation}
-              />
-            )}
-
-            {/* Summary Statistics */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <h5 className="font-medium text-blue-900 mb-3">
-                📊 Ringkasan Transisi
-              </h5>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="bg-white p-3 rounded">
-                  <p className="text-gray-600">Siswa Naik Kelas</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {
-                      Object.values(yearTransition.preview.promotions).flat()
-                        .length
-                    }
-                  </p>
-                </div>
-                <div className="bg-white p-3 rounded">
-                  <p className="text-gray-600">Siswa Baru</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {yearTransition.preview.newStudents?.length || 0}
-                  </p>
-                </div>
-                <div className="bg-white p-3 rounded">
-                  <p className="text-gray-600">Siswa Lulus</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {yearTransition.preview.graduating.length}
-                  </p>
-                </div>
-                <div className="bg-white p-3 rounded">
-                  <p className="text-gray-600">Total Aktif Baru</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {Object.values(yearTransition.preview.promotions).flat()
-                      .length +
-                      (yearTransition.preview.newStudents?.length || 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
+            {/* SIMULATOR PREVIEW AUTO-SHOW */}
+            <Simulator
+              mode="preview" // ✅ MODE PREVIEW = AUTO SHOW HASIL
+              preview={yearTransition.preview}
+              schoolStats={schoolStats}
+              config={config}
+              loading={loading}
+              onSimulate={() => {}} // Kosong karena mode preview tidak perlu callback
+            />
 
             {/* Execute Button */}
-            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mt-6">
               <div className="flex items-start gap-3">
                 <AlertTriangle
                   className="text-yellow-600 flex-shrink-0 mt-0.5"
@@ -1185,8 +1144,6 @@ const AcademicYearTab = ({
                           newYear: "",
                           inProgress: false,
                         });
-                        setSimulationResult(null);
-                        setShowSimulator(false);
                       }}
                       disabled={yearTransition.inProgress}
                       className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 font-medium transition">
