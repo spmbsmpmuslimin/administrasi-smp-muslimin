@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import React, { useState } from "react";
-import { supabase } from "../supabaseClient"; // ✅ IMPORT supabase
+import { supabase } from "../../supabaseClient";
 
 /**
  * Modal component for month/year selection

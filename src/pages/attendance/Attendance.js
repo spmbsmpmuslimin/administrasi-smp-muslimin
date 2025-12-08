@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../supabaseClient";
-import AttendanceRecapModal from "../AttendanceRecapModal";
+import AttendanceRecapModal from "./AttendanceRecapModal";
 import AttendanceFilters from "./AttendanceFilters";
 import AttendanceStats from "./AttendanceStats";
 import AttendanceTable from "./AttendanceTable";
@@ -8,7 +8,7 @@ import AttendanceModals from "./AttendanceModals";
 import {
   exportAttendanceToExcel,
   exportSemesterRecapFromComponent,
-} from "../AttendanceExcel";
+} from "./AttendanceExcel";
 
 // Utility function outside component
 const getDefaultDate = () => {

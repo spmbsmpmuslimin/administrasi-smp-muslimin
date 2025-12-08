@@ -10,7 +10,7 @@ import Teachers from "./pages/Teachers";
 import Classes from "./pages/Classes";
 import Students from "./pages/Students";
 import Attendance from "./pages/attendance/Attendance";
-import AttendanceManagement from "./pages/AttendanceManagement";
+import AttendanceManagement from "./pages/attendance/AttendanceManagement";
 import Grades from "./pages/Grades";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import CatatanSiswa from "./pages/CatatanSiswa";
