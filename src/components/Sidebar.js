@@ -1,4 +1,5 @@
 import React from "react";
+import logoSekolah from "../assets/logo_sekolah.png"; // ✅ BENAR
 
 const Sidebar = ({
   currentPage,
@@ -53,7 +54,7 @@ const Sidebar = ({
           {/* Logo Sekolah */}
           <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-lg">
             <img
-              src="/logo_sekolah.PNG"
+              src={logoSekolah} // ← Pake variable dari import
               alt="Logo SMP Muslimin Cililin"
               className="w-full h-full object-cover"
             />

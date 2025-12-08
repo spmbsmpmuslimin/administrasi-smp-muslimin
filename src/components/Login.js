@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import Logo from "./Logo";
+import Logo from "./Logo"; // ← ADD THIS
+import logoSekolah from "../assets/logo_sekolah.png";
 import backgroundImage from "../assets/Background.JPG";
 
 export const Login = ({ onLogin, onShowToast }) => {
