@@ -504,27 +504,27 @@ const ITMReport = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="print:hidden bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Calendar className="text-blue-600" size={28} />
-          <h1 className="text-2xl font-bold text-gray-800">
+      <div className="print:hidden bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
+          <Calendar className="text-blue-600 dark:text-blue-400 w-6 h-6 sm:w-7 sm:h-7" />
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100">
             Laporan Jam Tatap Muka Guru
           </h1>
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <User size={16} className="inline mr-1" />
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+              <User className="inline mr-1 w-4 h-4 sm:w-4 sm:h-4" />
               Pilih Guru
             </label>
             <select
               value={selectedTeacher}
               onChange={(e) => setSelectedTeacher(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
               disabled={loading}>
               <option value="">-- Pilih Guru --</option>
               {teachers.map((teacher) => (
@@ -536,13 +536,13 @@ const ITMReport = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
               Bulan
             </label>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
               disabled={loading}>
               {MONTHS.map((month, idx) => (
                 <option key={idx} value={idx}>
@@ -553,13 +553,13 @@ const ITMReport = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
               Tahun
             </label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
               disabled={loading}>
               {[2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
                 <option key={year} value={year}>
@@ -573,7 +573,7 @@ const ITMReport = () => {
             <button
               onClick={generateReport}
               disabled={loading || !selectedTeacher}
-              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2">
+              className="w-full px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base">
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
@@ -581,8 +581,8 @@ const ITMReport = () => {
                 </>
               ) : (
                 <>
-                  <Search size={18} />
-                  Lihat Laporan
+                  <Search className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="truncate">Lihat Laporan</span>
                 </>
               )}
             </button>
@@ -590,17 +590,17 @@ const ITMReport = () => {
         </div>
 
         {reportData && (
-          <div className="flex gap-3 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all flex items-center gap-2">
-              <Printer size={18} />
+              className="px-4 py-2.5 sm:py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base">
+              <Printer className="w-4 h-4 sm:w-4 sm:h-4" />
               Print
             </button>
             <button
               onClick={exportToExcel}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all flex items-center gap-2">
-              <FileSpreadsheet size={18} />
+              className="px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base">
+              <FileSpreadsheet className="w-4 h-4 sm:w-4 sm:h-4" />
               Export Excel
             </button>
           </div>
@@ -613,35 +613,52 @@ const ITMReport = () => {
           {reportData.weeks.map((week, weekIdx) => (
             <div
               key={weekIdx}
-              className="bg-white rounded-xl shadow-lg p-6 mb-6 print:shadow-none print:mb-8 print:break-after-page">
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 p-4 sm:p-6 mb-4 sm:mb-6 print:shadow-none print:mb-8 print:break-after-page">
               {/* Header */}
-              <div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
-                <h2 className="text-lg font-bold uppercase tracking-wide">
+              <div className="text-center mb-4 sm:mb-6 border-b-2 border-gray-800 dark:border-gray-600 pb-3 sm:pb-4">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold uppercase tracking-wide text-gray-800 dark:text-gray-100">
                   JUMLAH JAM TATAP MUKA GURU SMP MUSLIMIN CILILIN
                 </h2>
-                <p className="text-sm">TAHUN AJARAN 2025/2026</p>
-                <div className="mt-3 text-left">
-                  <p className="text-sm">
-                    <span className="font-semibold">MINGGU KE</span> :{" "}
-                    {week.weekNumber}
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  TAHUN AJARAN 2025/2026
+                </p>
+                <div className="mt-2 sm:mt-3 text-left space-y-1">
+                  <p className="text-xs sm:text-sm">
+                    <span className="font-semibold text-gray-700 dark:text-gray-300">
+                      MINGGU KE
+                    </span>{" "}
+                    :{" "}
+                    <span className="text-gray-800 dark:text-gray-200">
+                      {week.weekNumber}
+                    </span>
                   </p>
-                  <p className="text-sm">
-                    <span className="font-semibold">NAMA GURU</span> :{" "}
-                    {reportData.teacher.full_name}
+                  <p className="text-xs sm:text-sm">
+                    <span className="font-semibold text-gray-700 dark:text-gray-300">
+                      NAMA GURU
+                    </span>{" "}
+                    :{" "}
+                    <span className="text-gray-800 dark:text-gray-200">
+                      {reportData.teacher.full_name}
+                    </span>
                   </p>
-                  <p className="text-sm">
-                    <span className="font-semibold">BULAN</span> :{" "}
-                    {reportData.month} {reportData.year}
+                  <p className="text-xs sm:text-sm">
+                    <span className="font-semibold text-gray-700 dark:text-gray-300">
+                      BULAN
+                    </span>{" "}
+                    :{" "}
+                    <span className="text-gray-800 dark:text-gray-200">
+                      {reportData.month} {reportData.year}
+                    </span>
                   </p>
                 </div>
               </div>
 
               {/* Tabel */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border-2 border-gray-800 text-sm">
+              <div className="overflow-x-auto -mx-2 sm:-mx-0">
+                <table className="w-full border-collapse border-2 border-gray-800 dark:border-gray-600 text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border border-gray-800 px-2 py-2 w-12">
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <th className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 w-10 sm:w-12 text-gray-800 dark:text-gray-200">
                         JAM
                       </th>
                       {DAYS.map((day, idx) => {
@@ -659,16 +676,16 @@ const ITMReport = () => {
 
                         return (
                           <React.Fragment key={day}>
-                            <th className="border border-gray-800 px-2 py-2 w-16">
+                            <th className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 w-12 sm:w-16 text-gray-800 dark:text-gray-200">
                               Kelas
                             </th>
-                            <th className="border border-gray-800 px-2 py-2 w-20">
+                            <th className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 w-16 sm:w-20 text-gray-800 dark:text-gray-200">
                               <div className="text-center">
                                 <div className="font-bold">
                                   {FULL_DAY_NAMES[idx]}
                                 </div>
                                 {tanggal && (
-                                  <div className="text-xs font-normal mt-0.5">
+                                  <div className="text-xs font-normal mt-0.5 text-gray-600 dark:text-gray-400">
                                     {tanggal} {bulanSingkat}
                                   </div>
                                 )}
@@ -682,7 +699,7 @@ const ITMReport = () => {
                   <tbody>
                     {week.schedule.map((jamRow, idx) => (
                       <tr key={idx}>
-                        <td className="border border-gray-800 px-2 py-2 text-center font-semibold">
+                        <td className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 text-center font-semibold text-gray-800 dark:text-gray-200">
                           {jamRow.jamKe}
                         </td>
                         {DAYS.map((day) => {
@@ -691,25 +708,27 @@ const ITMReport = () => {
 
                           return (
                             <React.Fragment key={day}>
-                              <td className="border border-gray-800 px-2 py-2 text-center">
+                              <td className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 text-center text-gray-800 dark:text-gray-200">
                                 {dayData?.kelas || "-"}
                               </td>
-                              <td className="border border-gray-800 px-2 py-2 text-center">
+                              <td className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 text-center">
                                 {isUpacara ? (
                                   ""
                                 ) : dayData?.hadir ? (
-                                  <span className="text-green-600 font-bold text-lg">
+                                  <span className="text-green-600 dark:text-green-400 font-bold text-base sm:text-lg">
                                     ✓
                                   </span>
                                 ) : dayData?.status &&
                                   dayData.status !== "Hadir" ? (
-                                  <span className="text-xs font-semibold text-red-600">
+                                  <span className="text-xs font-semibold text-red-600 dark:text-red-400">
                                     {dayData.status}
                                   </span>
                                 ) : dayData?.kelas && dayData.kelas !== "" ? (
-                                  <div className="w-6 h-6 border-2 border-gray-800 mx-auto"></div>
+                                  <div className="w-4 h-4 sm:w-6 sm:h-6 border-2 border-gray-800 dark:border-gray-400 mx-auto"></div>
                                 ) : (
-                                  <span className="text-gray-400">-</span>
+                                  <span className="text-gray-400 dark:text-gray-500">
+                                    -
+                                  </span>
                                 )}
                               </td>
                             </React.Fragment>
@@ -718,8 +737,8 @@ const ITMReport = () => {
                       </tr>
                     ))}
                     {/* Row JUMLAH per hari */}
-                    <tr className="bg-gray-100 font-bold">
-                      <td className="border border-gray-800 px-2 py-2 text-center">
+                    <tr className="bg-gray-100 dark:bg-gray-700 font-bold">
+                      <td className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 text-center text-gray-800 dark:text-gray-200">
                         JUMLAH :{" "}
                         {DAYS.reduce(
                           (total, day) =>
@@ -737,7 +756,7 @@ const ITMReport = () => {
                         return (
                           <React.Fragment key={day}>
                             <td
-                              className="border border-gray-800 px-2 py-2 text-center"
+                              className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 text-center text-gray-800 dark:text-gray-200"
                               colSpan="2">
                               {jamHadir > 0 ? jamHadir : ""}
                             </td>
@@ -752,42 +771,52 @@ const ITMReport = () => {
           ))}
 
           {/* Total Keseluruhan */}
-          <div className="bg-blue-50 border border-blue-300 rounded-xl p-6 print:mt-6">
-            <h3 className="text-xl font-bold text-blue-800 mb-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-800 rounded-xl p-4 sm:p-6 print:mt-6">
+            <h3 className="text-lg sm:text-xl font-bold text-blue-800 dark:text-blue-300 mb-3 sm:mb-4">
               TOTAL JAM TATAP MUKA
             </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center pb-3 border-b border-blue-200">
-                <p className="text-gray-600">Bulan:</p>
-                <p className="font-semibold text-gray-800">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-blue-200 dark:border-blue-800">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Bulan:
+                </p>
+                <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                   {reportData.month} {reportData.year}
                 </p>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b border-blue-200">
-                <p className="text-gray-600">Guru:</p>
-                <p className="font-semibold text-gray-800">
+              <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-blue-200 dark:border-blue-800">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Guru:
+                </p>
+                <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                   {reportData.teacher.full_name}
                 </p>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b border-blue-200">
-                <p className="text-gray-600">Total Minggu:</p>
-                <p className="font-semibold text-gray-800">
+              <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-blue-200 dark:border-blue-800">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Total Minggu:
+                </p>
+                <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                   {reportData.weeks.length} minggu
                 </p>
               </div>
 
-              <div className="pt-3 space-y-2">
+              <div className="pt-2 sm:pt-3 space-y-1.5 sm:space-y-2">
                 <div className="flex justify-between items-center">
-                  <p className="text-gray-700 font-medium">Jam Terjadwal:</p>
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-gray-700 dark:text-gray-300 font-medium text-sm sm:text-base">
+                    Jam Terjadwal:
+                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
                     {calculateOverallTotal()} Jam
                   </p>
                 </div>
                 <div className="flex justify-between items-center">
-                  <p className="text-gray-700 font-medium">Jam Hadir:</p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-gray-700 dark:text-gray-300 font-medium text-sm sm:text-base">
+                    Jam Hadir:
+                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
                     {calculateTotalHadir()} Jam
-                    <span className="text-sm ml-2">
+                    <span className="text-xs sm:text-sm ml-1 sm:ml-2 text-gray-600 dark:text-gray-400">
                       (
                       {calculateOverallTotal() > 0
                         ? (
@@ -800,17 +829,19 @@ const ITMReport = () => {
                   </p>
                 </div>
                 <div className="flex justify-between items-center">
-                  <p className="text-gray-700 font-medium">Jam Tidak Hadir:</p>
-                  <p className="text-2xl font-bold text-red-600">
+                  <p className="text-gray-700 dark:text-gray-300 font-medium text-sm sm:text-base">
+                    Jam Tidak Hadir:
+                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">
                     {calculateOverallTotal() - calculateTotalHadir()} Jam
-                    <span className="text-sm ml-2">
+                    <span className="text-xs sm:text-sm ml-1 sm:ml-2 text-gray-600 dark:text-gray-400">
                       (
                       {calculateOverallTotal() > 0
                         ? (
                             ((calculateOverallTotal() - calculateTotalHadir()) /
                               calculateOverallTotal()) *
                             100
-                          ).toFixed(1) // <--- PERBAIKAN DILAKUKAN DI SINI
+                          ).toFixed(1)
                         : 0}
                       %)
                     </span>
@@ -824,12 +855,12 @@ const ITMReport = () => {
 
       {/* Empty State */}
       {!reportData && !loading && (
-        <div className="bg-white rounded-xl shadow-lg p-12 text-center print:hidden">
-          <Calendar className="mx-auto text-gray-400 mb-4" size={64} />
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 p-6 sm:p-8 md:p-12 text-center print:hidden">
+          <Calendar className="mx-auto text-gray-400 dark:text-gray-600 w-12 h-12 sm:w-16 sm:h-16" />
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-600 dark:text-gray-400 mb-1 sm:mb-2 mt-3">
             Belum Ada Laporan
           </h3>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-500 text-sm sm:text-base">
             Pilih guru, bulan, dan tahun lalu klik "Generate Laporan"
           </p>
         </div>
@@ -846,6 +877,23 @@ const ITMReport = () => {
           .print\\:shadow-none { box-shadow: none !important; }
           .print\\:mb-8 { margin-bottom: 2rem !important; }
           .print\\:mt-6 { margin-top: 1.5rem !important; }
+          
+          /* Dark mode styles for print */
+          .dark\\:bg-gray-800,
+          .dark\\:bg-gray-900,
+          .dark\\:text-gray-100,
+          .dark\\:text-gray-200,
+          .dark\\:text-gray-300,
+          .dark\\:border-gray-600,
+          .dark\\:border-gray-700 {
+            background: white !important;
+            color: black !important;
+            border-color: #374151 !important;
+          }
+          
+          .dark\\:shadow-gray-900\\/50 {
+            box-shadow: none !important;
+          }
         }
       `}</style>
     </div>

@@ -1,14 +1,27 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, Clock, Settings, LogOut, Menu, X, User } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  User,
+  Moon,
+  Sun,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import Sidebar from "./Sidebar";
 
-const Layout = ({ user, onLogout, children }) => {
+const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -19,20 +32,89 @@ const Layout = ({ user, onLogout, children }) => {
   const navigationTimeoutRef = useRef(null);
   const profileDropdownRef = useRef(null);
 
-  // Cek apakah user memiliki akses ke halaman saat ini
-  const hasAccessToCurrentPage = useCallback(() => {
-    // Jika tidak ada user data, return false
-    if (!user) return false;
+  // 🔥 COOL DARK MODE TOGGLE COMPONENT
+  const CoolDarkModeToggle = ({ size = "default" }) => {
+    const sizes = {
+      small: { container: "w-12 h-6", circle: "w-4 h-4", icon: 10 },
+      default: { container: "w-14 h-7", circle: "w-5 h-5", icon: 12 },
+      large: { container: "w-16 h-8", circle: "w-6 h-6", icon: 14 },
+    };
 
-    // Jika path adalah /attendance-management, hanya admin yang boleh akses
+    const currentSize = sizes[size];
+
+    return (
+      <button
+        onClick={onToggleDarkMode}
+        className={`relative ${
+          currentSize.container
+        } rounded-full transition-all duration-500 ease-in-out shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
+          darkMode
+            ? "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600"
+            : "bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400"
+        }`}
+        aria-label="Toggle Dark Mode"
+        title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+        {darkMode && (
+          <>
+            <span className="absolute top-1 left-2 w-1 h-1 bg-white rounded-full animate-pulse"></span>
+            <span className="absolute top-1.5 right-2 w-0.5 h-0.5 bg-white rounded-full animate-pulse delay-100"></span>
+            <span className="absolute bottom-1.5 left-2.5 w-0.5 h-0.5 bg-white rounded-full animate-pulse delay-200"></span>
+          </>
+        )}
+
+        {!darkMode && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute w-full h-full animate-spin-slow">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-0.5 h-1 bg-yellow-200 rounded-full"
+                  style={{
+                    top: "50%",
+                    left: "50%",
+                    transform: `rotate(${i * 45}deg) translateY(-${
+                      size === "large" ? "10" : size === "default" ? "8" : "6"
+                    }px)`,
+                    transformOrigin: "0 0",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div
+          className={`absolute top-0.5 ${
+            currentSize.circle
+          } bg-white rounded-full shadow-md flex items-center justify-center transition-all duration-500 ease-in-out transform ${
+            darkMode ? `translate-x-[calc(100%-0.125rem)]` : "translate-x-0"
+          }`}>
+          {darkMode ? (
+            <Moon
+              size={currentSize.icon}
+              className="text-indigo-600 animate-spin-slow"
+              fill="currentColor"
+            />
+          ) : (
+            <Sun
+              size={currentSize.icon}
+              className="text-orange-500 animate-pulse"
+            />
+          )}
+        </div>
+      </button>
+    );
+  };
+
+  const hasAccessToCurrentPage = useCallback(() => {
+    if (!user) return false;
     if (location.pathname === "/attendance-management") {
       return user.role === "admin";
     }
-
-    // Untuk halaman lainnya, semua role boleh akses
     return true;
   }, [user, location.pathname]);
 
+  // 🔥 FIX: Handle resize dengan 3 state preservation
   useEffect(() => {
     const handleResize = () => {
       const isLaptopSize = window.innerWidth >= 1024;
@@ -43,6 +125,8 @@ const Layout = ({ user, onLogout, children }) => {
         setMobileMenuOpen(false);
       } else {
         setIsSidebarOpen(false);
+        setIsSidebarCollapsed(false);
+        setMobileMenuOpen(false);
       }
     };
 
@@ -105,6 +189,78 @@ const Layout = ({ user, onLogout, children }) => {
       navigationTimeoutRef.current = null;
     }
   }, [location.pathname]);
+
+  // 🔥 FIX: Handle sidebar toggle dengan 3 state
+  const handleSidebarToggle = () => {
+    if (isLaptop) {
+      if (!isSidebarOpen) {
+        setIsSidebarOpen(true);
+        setIsSidebarCollapsed(false);
+      } else if (isSidebarOpen && !isSidebarCollapsed) {
+        setIsSidebarCollapsed(true);
+      } else if (isSidebarOpen && isSidebarCollapsed) {
+        setIsSidebarCollapsed(false);
+      }
+    } else {
+      setMobileMenuOpen(!mobileMenuOpen);
+    }
+  };
+
+  // 🔥 FIX: Get icon berdasarkan state
+  const getSidebarToggleIcon = () => {
+    if (isLaptop) {
+      if (!isSidebarOpen) {
+        return (
+          <Menu
+            size={20}
+            className={darkMode ? "text-blue-400" : "text-blue-600"}
+          />
+        );
+      } else if (isSidebarOpen && !isSidebarCollapsed) {
+        return (
+          <ChevronLeft
+            size={20}
+            className={darkMode ? "text-blue-400" : "text-blue-600"}
+          />
+        );
+      } else if (isSidebarOpen && isSidebarCollapsed) {
+        return (
+          <ChevronRight
+            size={20}
+            className={darkMode ? "text-blue-400" : "text-blue-600"}
+          />
+        );
+      }
+    }
+    return (
+      <Menu
+        size={20}
+        className={darkMode ? "text-blue-400" : "text-blue-600"}
+      />
+    );
+  };
+
+  // 🔥 FIX: Get tooltip text
+  const getSidebarToggleTooltip = () => {
+    if (isLaptop) {
+      if (!isSidebarOpen) {
+        return "Buka sidebar";
+      } else if (isSidebarOpen && !isSidebarCollapsed) {
+        return "Collapse sidebar (icon only)";
+      } else if (isSidebarOpen && isSidebarCollapsed) {
+        return "Expand sidebar (full)";
+      }
+    }
+    return "Buka menu";
+  };
+
+  // 🔥 FIX: Get sidebar width untuk content shifting
+  const getSidebarWidthClass = () => {
+    if (isLaptop && isSidebarOpen) {
+      return isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64";
+    }
+    return "lg:ml-0";
+  };
 
   const formatDate = (date) => {
     const options = {
@@ -254,9 +410,7 @@ const Layout = ({ user, onLogout, children }) => {
       const path = routes[page];
       if (!path) return;
 
-      // Cek akses sebelum navigasi
       if (path === "/attendance-management" && user?.role !== "admin") {
-        // Redirect ke dashboard jika bukan admin
         navigate("/dashboard");
         return;
       }
@@ -279,10 +433,6 @@ const Layout = ({ user, onLogout, children }) => {
     [isNavigating, location.pathname, navigate, user]
   );
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   const toggleProfileDropdown = () => {
     setProfileDropdownOpen(!profileDropdownOpen);
   };
@@ -301,28 +451,23 @@ const Layout = ({ user, onLogout, children }) => {
     setShowLogoutModal(false);
   };
 
-  const getUserRoleDisplay = () => {
-    if (!user) return "User";
-    const { role, homeroom_class_id } = user;
-
-    if (role === "admin") return "Admin";
-    if (role === "guru_bk") return "Guru BK/BP";
-    if (role === "teacher" && homeroom_class_id)
-      return `Wali ${homeroom_class_id}`;
-    if (role === "teacher") return "Guru";
-    return "User";
-  };
-
-  const currentPageName = getCurrentPageName();
-
-  // Render halaman "Akses Ditolak" jika user tidak memiliki akses
   const renderContent = () => {
     if (!hasAccessToCurrentPage()) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl shadow-sm border border-blue-100 p-6">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+        <div
+          className={`flex flex-col items-center justify-center h-64 rounded-xl shadow-sm border p-6 transition-colors ${
+            darkMode
+              ? "bg-gray-800 border-gray-700"
+              : "bg-white border-blue-100"
+          }`}>
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
+              darkMode ? "bg-red-900/30" : "bg-red-100"
+            }`}>
             <svg
-              className="w-8 h-8 text-red-600"
+              className={`w-8 h-8 ${
+                darkMode ? "text-red-400" : "text-red-600"
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24">
@@ -334,10 +479,16 @@ const Layout = ({ user, onLogout, children }) => {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <h2
+            className={`text-xl font-bold mb-2 transition-colors ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}>
             Akses Ditolak
           </h2>
-          <p className="text-gray-600 text-center mb-4">
+          <p
+            className={`text-center mb-4 transition-colors ${
+              darkMode ? "text-gray-400" : "text-gray-600"
+            }`}>
             Anda tidak memiliki izin untuk mengakses halaman ini.
           </p>
           <button
@@ -362,31 +513,60 @@ const Layout = ({ user, onLogout, children }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div
+      className={`flex min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+          : "bg-gradient-to-br from-blue-50 to-white"
+      }`}>
+      {/* Custom animations */}
+      <style>{`
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 20s linear infinite;
+        }
+        .delay-100 {
+          animation-delay: 0.1s;
+        }
+        .delay-200 {
+          animation-delay: 0.2s;
+        }
+      `}</style>
+
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-all duration-300"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
+      {/* 🔥 FIX: Sidebar Desktop dengan 3 state */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 ${
-          isSidebarOpen ? "w-64" : "w-0"
-        } transition-all duration-300 hidden lg:block`}>
-        <Sidebar
-          currentPage={getCurrentPage()}
-          onNavigate={handleNavigate}
-          isOpen={isSidebarOpen}
-          userRole={user?.role}
-          isWaliKelas={!!user?.homeroom_class_id}
-          userData={{
-            full_name: user?.full_name || user?.username || "User",
-            homeroom_class_name: user?.homeroom_class_id || "",
-          }}
-        />
+        className={`fixed inset-y-0 left-0 z-50 hidden lg:block transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? (isSidebarCollapsed ? "w-20" : "w-64") : "w-0"
+        }`}>
+        {isSidebarOpen && (
+          <Sidebar
+            currentPage={getCurrentPage()}
+            onNavigate={handleNavigate}
+            isOpen={isSidebarOpen}
+            isCollapsed={isSidebarCollapsed}
+            userRole={user?.role}
+            isWaliKelas={!!user?.homeroom_class_id}
+            userData={{
+              full_name: user?.full_name || user?.username || "User",
+              homeroom_class_name: user?.homeroom_class_id || "",
+            }}
+            darkMode={darkMode}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          />
+        )}
       </div>
 
+      {/* Sidebar Mobile */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 transform ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
@@ -395,6 +575,7 @@ const Layout = ({ user, onLogout, children }) => {
           currentPage={getCurrentPage()}
           onNavigate={handleNavigate}
           isOpen={true}
+          isCollapsed={false}
           userRole={user?.role}
           isWaliKelas={!!user?.homeroom_class_id}
           userData={{
@@ -402,66 +583,110 @@ const Layout = ({ user, onLogout, children }) => {
             homeroom_class_name: user?.homeroom_class_id || "",
           }}
           onClose={() => setMobileMenuOpen(false)}
+          darkMode={darkMode}
         />
       </div>
 
+      {/* 🔥 FIX: Main content dengan dynamic margin */}
       <main
-        className={`flex-1 min-h-screen transition-all duration-300 ${
-          isSidebarOpen && isLaptop ? "lg:ml-64" : "ml-0"
-        }`}>
-        <header className="bg-white shadow-md shadow-blue-100/50 border-b border-blue-100 sticky top-0 z-30">
+        className={`flex-1 min-h-screen transition-all duration-300 ease-in-out ${getSidebarWidthClass()}`}>
+        <header
+          className={`shadow-md border-b sticky top-0 z-30 transition-colors duration-300 ${
+            darkMode
+              ? "bg-gray-800 border-gray-700 shadow-gray-900/50"
+              : "bg-white border-blue-100 shadow-blue-100/50"
+          }`}>
           <div className="px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-4">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2 sm:gap-3 flex-1">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                {/* 🔥 FIX: Button toggle dengan icon dinamis */}
                 <button
-                  onClick={
-                    isLaptop
-                      ? () => setIsSidebarOpen(!isSidebarOpen)
-                      : toggleMobileMenu
-                  }
-                  className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors touch-manipulation"
-                  style={{ minWidth: "44px", minHeight: "44px" }}>
-                  {isSidebarOpen && isLaptop ? (
-                    <X size={20} />
-                  ) : (
-                    <Menu size={20} />
-                  )}
+                  onClick={handleSidebarToggle}
+                  className={`p-2 rounded-lg transition-colors touch-manipulation ${
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-blue-50"
+                  }`}
+                  style={{ minWidth: "44px", minHeight: "44px" }}
+                  title={getSidebarToggleTooltip()}
+                  aria-label={getSidebarToggleTooltip()}>
+                  {getSidebarToggleIcon()}
                 </button>
 
                 <div className="flex flex-col min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
-                      {currentPageName}
+                    <h1
+                      className={`text-base sm:text-lg lg:text-xl font-bold truncate transition-colors ${
+                        darkMode ? "text-white" : "text-gray-900"
+                      }`}>
+                      {getCurrentPageName()}
                     </h1>
                     {isNavigating && (
                       <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
                     )}
                   </div>
-                  <p className="text-xs sm:text-sm text-blue-600 font-medium truncate lg:block">
+                  <p
+                    className={`text-xs sm:text-sm font-medium truncate transition-colors ${
+                      darkMode ? "text-blue-400" : "text-blue-600"
+                    }`}>
                     {getPageSubtitle()}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
-                <div className="lg:hidden flex flex-col items-center min-w-[60px]">
-                  <div className="flex items-center gap-1 text-blue-600">
-                    <Clock size={14} className="text-blue-500 flex-shrink-0" />
-                    <span className="font-mono text-xs font-semibold text-gray-900">
+                {/* Dark Mode Toggle - Mobile */}
+                <div className="lg:hidden">
+                  <CoolDarkModeToggle size="small" />
+                </div>
+
+                {/* Clock - Mobile */}
+                <div
+                  className={`lg:hidden flex flex-col items-center min-w-[60px] rounded-lg px-2 py-1 transition-colors ${
+                    darkMode ? "bg-gray-700" : "bg-blue-50"
+                  }`}>
+                  <div className="flex items-center gap-1">
+                    <Clock
+                      size={12}
+                      className={`flex-shrink-0 ${
+                        darkMode ? "text-blue-400" : "text-blue-500"
+                      }`}
+                    />
+                    <span
+                      className={`font-mono text-xs font-semibold ${
+                        darkMode ? "text-white" : "text-gray-900"
+                      }`}>
                       {formatTime(currentTime)}
                     </span>
                   </div>
-                  <span className="text-xs text-blue-500 font-medium">
+                  <span
+                    className={`text-xs font-medium ${
+                      darkMode ? "text-blue-400" : "text-blue-500"
+                    }`}>
                     {formatDate(currentTime)}
                   </span>
                 </div>
 
-                <div className="hidden lg:flex bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl px-4 py-3 min-w-[280px] shadow-sm">
+                {/* Dark Mode Toggle - Desktop */}
+                <div className="hidden lg:block">
+                  <CoolDarkModeToggle size="large" />
+                </div>
+
+                {/* Clock - Desktop */}
+                <div
+                  className={`hidden lg:flex rounded-xl px-4 py-3 min-w-[280px] shadow-sm border transition-colors ${
+                    darkMode
+                      ? "bg-gradient-to-br from-gray-800 to-gray-700 border-gray-600"
+                      : "bg-gradient-to-br from-blue-50 to-white border-blue-200"
+                  }`}>
                   <div className="flex flex-col">
-                    <div className="flex items-center gap-2 text-blue-600 text-sm font-medium mb-1">
+                    <div
+                      className={`flex items-center gap-2 text-sm font-medium mb-1 transition-colors ${
+                        darkMode ? "text-blue-400" : "text-blue-600"
+                      }`}>
                       <Calendar
                         size={16}
-                        className="text-blue-500 flex-shrink-0"
+                        className={`flex-shrink-0 ${
+                          darkMode ? "text-blue-400" : "text-blue-500"
+                        }`}
                       />
                       <span>
                         {currentTime.toLocaleDateString("id-ID", {
@@ -475,9 +700,14 @@ const Layout = ({ user, onLogout, children }) => {
                     <div className="flex items-center gap-2">
                       <Clock
                         size={16}
-                        className="text-blue-500 flex-shrink-0"
+                        className={`flex-shrink-0 ${
+                          darkMode ? "text-blue-400" : "text-blue-500"
+                        }`}
                       />
-                      <span className="font-mono font-semibold text-gray-900 text-base tracking-wide">
+                      <span
+                        className={`font-mono font-semibold text-base tracking-wide transition-colors ${
+                          darkMode ? "text-white" : "text-gray-900"
+                        }`}>
                         {currentTime.toLocaleTimeString("id-ID")}
                       </span>
                       <span className="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded ml-1">
@@ -487,6 +717,7 @@ const Layout = ({ user, onLogout, children }) => {
                   </div>
                 </div>
 
+                {/* Profile Dropdown */}
                 <div className="relative" ref={profileDropdownRef}>
                   <button
                     onClick={toggleProfileDropdown}
@@ -499,12 +730,28 @@ const Layout = ({ user, onLogout, children }) => {
                   </button>
 
                   {profileDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white border border-blue-100 rounded-xl shadow-lg z-50">
-                      <div className="px-4 py-3 border-b border-blue-50 bg-gradient-to-r from-blue-50 to-white">
-                        <p className="font-semibold text-gray-900 text-sm truncate">
+                    <div
+                      className={`absolute right-0 top-full mt-2 w-64 sm:w-72 rounded-xl shadow-xl z-50 border transition-colors ${
+                        darkMode
+                          ? "bg-gray-800 border-gray-700"
+                          : "bg-white border-blue-100"
+                      }`}>
+                      <div
+                        className={`px-4 py-3 border-b rounded-t-xl transition-colors ${
+                          darkMode
+                            ? "border-gray-700 bg-gradient-to-r from-gray-700 to-gray-800"
+                            : "border-blue-50 bg-gradient-to-r from-blue-50 to-white"
+                        }`}>
+                        <p
+                          className={`font-semibold text-sm truncate transition-colors ${
+                            darkMode ? "text-white" : "text-gray-900"
+                          }`}>
                           {user?.full_name || user?.username || "User"}
                         </p>
-                        <p className="text-xs text-blue-600 capitalize font-medium">
+                        <p
+                          className={`text-xs capitalize font-medium transition-colors ${
+                            darkMode ? "text-blue-400" : "text-blue-600"
+                          }`}>
                           {user?.role === "admin"
                             ? "Administrator"
                             : user?.role === "guru_bk"
@@ -517,7 +764,10 @@ const Layout = ({ user, onLogout, children }) => {
                             : "User"}
                         </p>
                         {user?.teacher_id && (
-                          <p className="text-xs text-gray-500 font-medium">
+                          <p
+                            className={`text-xs font-medium transition-colors ${
+                              darkMode ? "text-gray-400" : "text-gray-500"
+                            }`}>
                             ID: {user.teacher_id}
                           </p>
                         )}
@@ -529,7 +779,11 @@ const Layout = ({ user, onLogout, children }) => {
                             navigate("/settings?tab=profile");
                             setProfileDropdownOpen(false);
                           }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 touch-manipulation">
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors duration-150 touch-manipulation ${
+                            darkMode
+                              ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                              : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                          }`}>
                           <User size={16} className="flex-shrink-0" />
                           <span className="font-medium">Profile</span>
                         </button>
@@ -540,7 +794,11 @@ const Layout = ({ user, onLogout, children }) => {
                               handleNavigate("settings");
                               setProfileDropdownOpen(false);
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 touch-manipulation">
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors duration-150 touch-manipulation ${
+                              darkMode
+                                ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
+                                : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                            }`}>
                             <Settings size={16} className="flex-shrink-0" />
                             <span className="font-medium">Pengaturan</span>
                           </button>
@@ -548,7 +806,11 @@ const Layout = ({ user, onLogout, children }) => {
 
                         <button
                           onClick={handleLogoutClick}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150 touch-manipulation">
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors duration-150 touch-manipulation ${
+                            darkMode
+                              ? "text-red-400 hover:bg-red-900/20"
+                              : "text-gray-700 hover:bg-red-50 hover:text-red-700"
+                          }`}>
                           <LogOut size={16} className="flex-shrink-0" />
                           <span className="font-medium">Logout</span>
                         </button>
@@ -561,31 +823,56 @@ const Layout = ({ user, onLogout, children }) => {
           </div>
         </header>
 
-        <div className="bg-gradient-to-br from-blue-50 to-white min-h-screen p-3 sm:p-4 lg:p-6">
+        <div
+          className={`min-h-screen p-3 sm:p-4 lg:p-6 transition-colors duration-300 ${
+            darkMode
+              ? "bg-gradient-to-br from-gray-900 to-gray-800"
+              : "bg-gradient-to-br from-blue-50 to-white"
+          }`}>
           {renderContent()}
         </div>
       </main>
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className={`rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 transition-colors ${
+              darkMode ? "bg-gray-800" : "bg-white"
+            }`}>
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <LogOut className="w-8 h-8 text-blue-600" />
+              <div
+                className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
+                  darkMode ? "bg-blue-900/30" : "bg-blue-100"
+                }`}>
+                <LogOut
+                  className={`w-8 h-8 ${
+                    darkMode ? "text-blue-400" : "text-blue-600"
+                  }`}
+                />
               </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3
+                className={`text-xl font-bold mb-2 transition-colors ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
                 Keluar dari Sistem?
               </h3>
-              <p className="text-gray-600 text-sm mb-6">
+              <p
+                className={`text-sm mb-6 transition-colors ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}>
                 Anda harus login kembali untuk mengakses sistem
               </p>
 
               <div className="flex gap-3 w-full">
                 <button
                   onClick={handleCancelLogout}
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                  className={`flex-1 px-4 py-3 rounded-xl border-2 font-semibold transition-colors ${
+                    darkMode
+                      ? "border-gray-600 text-gray-300 hover:bg-gray-700 active:bg-gray-600"
+                      : "border-gray-200 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                  }`}>
                   Batal
                 </button>
                 <button

@@ -1,4 +1,4 @@
-//[file name]: HomeroomTeacherDashboard.js
+//[file name]: HomeroomTeacherDashboard.js - REVISED VERSION (REMOVED DARK MODE TOGGLE)
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -7,6 +7,7 @@ import AnnouncementPopup from "./AnnouncementPopup";
 const HomeroomTeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -51,6 +52,33 @@ const HomeroomTeacherDashboard = ({ user }) => {
       window.removeEventListener("resize", checkMobile);
     };
   }, []);
+
+  // Check dark mode preference
+  useEffect(() => {
+    // Check localStorage first
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
 
   // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
   const getDayName = (dayIndex) => {
@@ -462,42 +490,46 @@ const HomeroomTeacherDashboard = ({ user }) => {
     return getDayName(today.getDay());
   }, []);
 
+  // 🆕 REVISI: DARK MODE TOGGLE COMPONENT DIHAPUS SEPENUHNYA
+
   // Quick Actions Component untuk Mobile
   const QuickActionsMobile = () => (
     <div className="mb-6">
-      <h2 className="text-lg font-semibold text-slate-800 mb-3">Aksi Cepat</h2>
+      <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
+        Aksi Cepat
+      </h2>
 
       {/* Baris 1 */}
       <div className="grid grid-cols-3 gap-2 mb-3">
         <button
           onClick={handleTeacherAttendance}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">👨‍🏫</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">👨‍🏫</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Presensi Guru
           </span>
         </button>
 
         <button
           onClick={handleStudentAttendance}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">👨‍🎓</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-300 dark:hover:border-green-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">👨‍🎓</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Presensi Siswa
           </span>
         </button>
 
         <button
           onClick={handleGrades}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">📊</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">📊</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Nilai Siswa
           </span>
         </button>
@@ -507,33 +539,33 @@ const HomeroomTeacherDashboard = ({ user }) => {
       <div className="grid grid-cols-3 gap-2 mb-3">
         <button
           onClick={handleDataGuru}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">👥</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">👥</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Data Guru
           </span>
         </button>
 
         <button
           onClick={handleDataKelas}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-cyan-50 hover:border-cyan-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">🏫</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-900/30 hover:border-cyan-300 dark:hover:border-cyan-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">🏫</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Data Kelas
           </span>
         </button>
 
         <button
           onClick={handleDataSiswa}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-pink-50 hover:border-pink-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">👤</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:border-pink-300 dark:hover:border-pink-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">👤</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Data Siswa
           </span>
         </button>
@@ -543,33 +575,33 @@ const HomeroomTeacherDashboard = ({ user }) => {
       <div className="grid grid-cols-3 gap-2">
         <button
           onClick={handleCatatanSiswa}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">📝</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30 hover:border-yellow-300 dark:hover:border-yellow-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">📝</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Catatan Siswa
           </span>
         </button>
 
         <button
           onClick={handleJadwalSaya}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">📅</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">📅</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Jadwal Saya
           </span>
         </button>
 
         <button
           onClick={handleReports}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all duration-200 shadow-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg">📄</span>
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-300 dark:hover:border-red-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
+            <span className="text-white text-lg sm:text-xl">📄</span>
           </div>
-          <span className="text-xs font-medium text-slate-800 text-center">
+          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Laporan
           </span>
         </button>
@@ -579,28 +611,35 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <span className="ml-4 text-slate-600">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500"></div>
+            <span className="ml-4 text-slate-600 dark:text-slate-400">
               Memuat dashboard homeroom...
             </span>
           </div>
         </div>
+        {/* 🆕 DARK MODE TOGGLE DIHAPUS DARI LOADING STATE */}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border border-amber-200 p-6 sm:p-8 text-center">
-            <div className="text-amber-500 text-4xl sm:text-5xl mb-4">⚠️</div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">Info</h3>
-            <p className="text-amber-600 mb-4 text-sm sm:text-base">{error}</p>
-            <p className="text-xs sm:text-sm text-slate-500 mb-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-amber-200 dark:border-amber-700 p-6 sm:p-8 text-center">
+            <div className="text-amber-500 dark:text-amber-400 text-4xl sm:text-5xl mb-4">
+              ⚠️
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
+              Info
+            </h3>
+            <p className="text-amber-600 dark:text-amber-400 mb-4 text-sm sm:text-base">
+              {error}
+            </p>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">
               Username: {username}
               <br />
               Role: {userRole}
@@ -609,34 +648,37 @@ const HomeroomTeacherDashboard = ({ user }) => {
             </p>
             <button
               onClick={handleRetry}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
               Coba Lagi
             </button>
           </div>
         </div>
+        {/* 🆕 DARK MODE TOGGLE DIHAPUS DARI ERROR STATE */}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
+        {/* 🆕 REVISI: DARK MODE TOGGLE BUTTON DIHAPUS DARI SINI */}
+
         {/* 🆕 Pop-up Pengumuman */}
         <AnnouncementPopup userId={user?.id} userRole="walikelas" />
 
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 lg:p-8">
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 lg:p-8 transition-colors duration-200">
             <div>
-              <h1 className="text-xl sm:text-2xl font-semibold text-slate-800 mb-3 sm:mb-2">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-2 sm:mb-3">
                 Selamat Datang, {fullName || username}
               </h1>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                   Wali Kelas {stats.className}
                 </span>
                 {primarySubject && (
-                  <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     Guru {primarySubject}
                   </span>
                 )}
@@ -649,100 +691,116 @@ const HomeroomTeacherDashboard = ({ user }) => {
         {isMobile && <QuickActionsMobile />}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6 mb-4 sm:mb-6 md:mb-8">
           {/* Total Siswa Kelas */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-3 sm:p-4 md:p-6 transition-colors duration-200">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
                   Siswa Kelas {stats.className}
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-blue-700">
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-blue-700 dark:text-blue-400">
                   {stats.totalStudents}
                 </p>
               </div>
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-lg sm:text-2xl">👨‍🎓</span>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
+                <span className="text-white text-base sm:text-lg md:text-2xl">
+                  👨‍🎓
+                </span>
               </div>
             </div>
           </div>
 
           {/* Gender Ratio */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-3 sm:p-4 md:p-6 transition-colors duration-200">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-slate-500 mb-2 sm:mb-3">
+              <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 sm:mb-3">
                 L / P
               </p>
               <div className="flex justify-between items-center">
                 <div className="text-center">
-                  <p className="text-lg sm:text-xl font-bold text-blue-700">
+                  <p className="text-base sm:text-lg md:text-xl font-bold text-blue-700 dark:text-blue-400">
                     {stats.maleStudents}
                   </p>
-                  <p className="text-xs text-slate-500">L</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    L
+                  </p>
                 </div>
-                <div className="text-slate-400">/</div>
+                <div className="text-slate-400 dark:text-slate-600">/</div>
                 <div className="text-center">
-                  <p className="text-lg sm:text-xl font-bold text-pink-600">
+                  <p className="text-base sm:text-lg md:text-xl font-bold text-pink-600 dark:text-pink-400">
                     {stats.femaleStudents}
                   </p>
-                  <p className="text-xs text-slate-500">P</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    P
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Hadir Hari Ini */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-3 sm:p-4 md:p-6 transition-colors duration-200">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
                   Hadir Hari Ini
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-emerald-700">
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                   {stats.presentToday}
                 </p>
               </div>
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-lg sm:text-2xl">✅</span>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
+                <span className="text-white text-base sm:text-lg md:text-2xl">
+                  ✅
+                </span>
               </div>
             </div>
           </div>
 
           {/* Tidak Hadir */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-3 sm:p-4 md:p-6 transition-colors duration-200">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
                   Tidak Hadir
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-red-700 mb-2">
+                <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-700 dark:text-red-400 mb-2">
                   {stats.absentToday}
                 </p>
                 {stats.absentToday > 0 && (
-                  <div className="space-y-0.5 text-xs text-slate-600">
+                  <div className="space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
                     {stats.sakitToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-orange-500">🏥</span>
+                        <span className="text-orange-500 dark:text-orange-400">
+                          🏥
+                        </span>
                         <span>Sakit: {stats.sakitToday}</span>
                       </div>
                     )}
                     {stats.izinToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-blue-500">📋</span>
+                        <span className="text-blue-500 dark:text-blue-400">
+                          📋
+                        </span>
                         <span>Izin: {stats.izinToday}</span>
                       </div>
                     )}
                     {stats.alpaToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-red-500">✖</span>
+                        <span className="text-red-500 dark:text-red-400">
+                          ✖
+                        </span>
                         <span>Alpa: {stats.alpaToday}</span>
                       </div>
                     )}
                   </div>
                 )}
               </div>
-              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-lg sm:text-2xl">📊</span>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
+                <span className="text-white text-base sm:text-lg md:text-2xl">
+                  📊
+                </span>
               </div>
             </div>
           </div>
@@ -750,24 +808,26 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
         {/* Quick Actions Desktop - Muncul hanya di Desktop/Tablet */}
         {!isMobile && (
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 sm:mb-4">
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">
               Aksi Cepat
             </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {/* Presensi Guru */}
               <button
                 onClick={handleTeacherAttendance}
-                className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <span className="text-white text-lg">👨‍🏫</span>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                    <span className="text-white text-lg sm:text-xl">👨‍🏫</span>
                   </div>
                   <div className="text-left">
-                    <h4 className="font-semibold text-slate-800 text-sm">
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
                       Presensi Guru
                     </h4>
-                    <p className="text-xs text-slate-600">Presensi Sendiri</p>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                      Presensi Sendiri
+                    </p>
                   </div>
                 </div>
               </button>
@@ -775,16 +835,16 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {/* Presensi Siswa */}
               <button
                 onClick={handleStudentAttendance}
-                className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <span className="text-white text-lg">📋</span>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                    <span className="text-white text-lg sm:text-xl">📋</span>
                   </div>
                   <div className="text-left">
-                    <h4 className="font-semibold text-slate-800 text-sm">
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
                       Presensi Siswa
                     </h4>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                       Kelas {stats.className}
                     </p>
                   </div>
@@ -795,16 +855,18 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {primarySubject && (
                 <button
                   onClick={handleGrades}
-                  className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+                  className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                      <span className="text-white text-lg">📝</span>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                      <span className="text-white text-lg sm:text-xl">📝</span>
                     </div>
                     <div className="text-left">
-                      <h4 className="font-semibold text-slate-800 text-sm">
+                      <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
                         Input Nilai
                       </h4>
-                      <p className="text-xs text-slate-600">{primarySubject}</p>
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                        {primarySubject}
+                      </p>
                     </div>
                   </div>
                 </button>
@@ -813,16 +875,16 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {/* Laporan */}
               <button
                 onClick={handleReports}
-                className="group bg-white border border-slate-200 rounded-lg p-4 hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1">
+                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <span className="text-white text-lg">📊</span>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                    <span className="text-white text-lg sm:text-xl">📊</span>
                   </div>
                   <div className="text-left">
-                    <h4 className="font-semibold text-slate-800 text-sm">
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
                       Laporan
                     </h4>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                       Kelas {stats.className}
                     </p>
                   </div>
@@ -833,11 +895,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
         )}
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 md:gap-6 mb-4 sm:mb-6 md:mb-8">
           {/* Mata Pelajaran & Kelas */}
           {teachingData.subjects.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 flex items-center">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200">
+              <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
                 <span className="mr-2">📖</span>
                 Mata Pelajaran & Kelas
               </h3>
@@ -857,12 +919,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   return (
                     <div
                       key={subject}
-                      className="border border-slate-200 rounded-lg p-3 sm:p-4">
+                      className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-slate-800 text-sm sm:text-base">
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
                           {subject}
                         </h4>
-                        <span className="text-xs sm:text-sm text-slate-500">
+                        <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                           {classes.length} kelas
                         </span>
                       </div>
@@ -877,12 +939,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
                                   key={index}
                                   className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${
                                     className === stats.className
-                                      ? "bg-green-50 text-green-700 border-green-200"
-                                      : "bg-blue-50 text-blue-700 border-blue-200"
+                                      ? "bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+                                      : "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
                                   }`}>
                                   {className}
                                   {className === stats.className && (
-                                    <span className="ml-1 text-green-600">
+                                    <span className="ml-1 text-green-600 dark:text-green-400">
                                       👑
                                     </span>
                                   )}
@@ -899,8 +961,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
           )}
 
           {/* Jadwal Hari Ini */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 flex items-center">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200">
+            <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
               <span className="mr-2">🗓️</span>
               Jadwal Hari Ini - {currentDay}
             </h3>
@@ -910,28 +972,30 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 {todaySchedule.map((schedule) => (
                   <div
                     key={schedule.id}
-                    className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                    className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1">
                         <div className="text-center min-w-[70px]">
-                          <div className="text-xs font-medium text-slate-500 mb-1">
+                          <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                             {schedule.sessionCount}JP (
                             {schedule.sessionNumbers.join("-")})
                           </div>
-                          <div className="font-semibold text-blue-700 text-xs sm:text-sm">
+                          <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
                             {formatTime(schedule.start_time)}
                           </div>
-                          <div className="text-xs text-slate-400">-</div>
-                          <div className="font-semibold text-blue-700 text-xs sm:text-sm">
+                          <div className="text-xs text-slate-400 dark:text-slate-600">
+                            -
+                          </div>
+                          <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
                             {formatTime(schedule.end_time)}
                           </div>
                         </div>
-                        <div className="h-auto min-h-[60px] w-px bg-slate-200"></div>
+                        <div className="h-auto min-h-[60px] w-px bg-slate-200 dark:bg-slate-700"></div>
                         <div className="flex-1">
-                          <div className="font-semibold text-slate-800 text-sm sm:text-base mb-1">
+                          <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base mb-1">
                             {schedule.subject}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                          <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                             <span className="flex items-center gap-1">
                               <span>🏫</span>
                               <span>
@@ -941,7 +1005,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
                             </span>
                             {schedule.room_number && (
                               <>
-                                <span className="text-slate-400">•</span>
+                                <span className="text-slate-400 dark:text-slate-600">
+                                  •
+                                </span>
                                 <span className="flex items-center gap-1">
                                   <span>📍</span>
                                   <span>R.{schedule.room_number}</span>
@@ -952,7 +1018,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                         </div>
                       </div>
                       {schedule.class_id === stats.className && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800 whitespace-nowrap">
                           <span className="mr-1">👑</span>
                           Wali
                         </span>
@@ -962,15 +1028,15 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <div className="text-5xl mb-4">📅</div>
-                <h4 className="font-semibold text-slate-800 mb-2 text-sm sm:text-base">
+              <div className="text-center py-8 sm:py-10 md:py-12">
+                <div className="text-4xl sm:text-5xl md:text-5xl mb-4">📅</div>
+                <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2 text-sm sm:text-base">
                   Tidak Ada Jadwal
                 </h4>
-                <p className="text-xs sm:text-sm text-slate-600">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                   Anda Tidak Memiliki Jadwal Mengajar Hari Ini
                 </p>
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
                   Selamat Menikmati Hari Libur ! 🎉
                 </p>
               </div>
@@ -979,8 +1045,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
         </div>
 
         {/* Pengumuman Terkini */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 sm:p-6">
-          <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 flex items-center">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200">
+          <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
             <span className="mr-2">📢</span>
             Pengumuman Terkini
           </h3>
@@ -989,14 +1055,14 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {announcements.map((announcement) => (
                 <div
                   key={announcement.id}
-                  className="border-l-4 border-blue-500 bg-blue-50 pl-4 py-3 rounded-r-lg">
-                  <h4 className="font-semibold text-slate-800 text-sm sm:text-base">
+                  className="border-l-4 border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 pl-4 py-3 rounded-r-lg">
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
                     {announcement.title}
                   </h4>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                     {announcement.content}
                   </p>
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
                     {new Date(announcement.created_at).toLocaleDateString(
                       "id-ID",
                       {
@@ -1010,12 +1076,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 sm:py-8">
-              <div className="text-3xl sm:text-4xl mb-3">📢</div>
-              <h4 className="font-medium text-slate-800 mb-1 text-sm sm:text-base">
+            <div className="text-center py-6 sm:py-7 md:py-8">
+              <div className="text-3xl sm:text-4xl md:text-4xl mb-3">📢</div>
+              <h4 className="font-medium text-slate-800 dark:text-slate-200 mb-1 text-sm sm:text-base">
                 Belum Ada Pengumuman
               </h4>
-              <p className="text-xs sm:text-sm text-slate-600">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                 Pengumuman terbaru akan ditampilkan di sini
               </p>
             </div>

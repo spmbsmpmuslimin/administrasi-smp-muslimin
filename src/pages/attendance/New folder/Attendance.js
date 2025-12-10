@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../supabaseClient";
+import AttendanceRecapModal from "./AttendanceRecapModal";
 import AttendanceFilters from "./AttendanceFilters";
 import AttendanceStats from "./AttendanceStats";
 import AttendanceTable from "./AttendanceTable";
@@ -126,7 +127,7 @@ const Attendance = ({ user, onShowToast }) => {
       await showSemesterExportModal({
         classId: selectedClass,
         studentsData: students,
-        subject: isHomeroomDaily() ? "Harian" : selectedSubject, // ✅ FIX INI!
+        subject: selectedSubject,
         type: isHomeroomDaily() ? "harian" : "mapel",
         currentUser: user,
         homeroomClass: homeroomClass,
@@ -715,7 +716,7 @@ const Attendance = ({ user, onShowToast }) => {
                 placeholder="Cari siswa (nama/NIS)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-4 py-2.5 sm:py-2 text-sm sm:text-base border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 dark:focus:border-blue-600 transition w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+                className="px-4 py-2.5 sm:py-2 text-sm sm:text-base border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-600 dark:focus:border-blue-600 transition w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
               />
               <span className="absolute right-3 top-2.5 sm:top-2 text-slate-400 dark:text-slate-500 text-lg">
                 🔍
@@ -809,7 +810,7 @@ const Attendance = ({ user, onShowToast }) => {
         </div>
       )}
 
-      {/* MODALS COMPONENT - INI SAJA YANG DIPANGGIL */}
+      {/* Modals Component */}
       <AttendanceModals
         showRekapModal={showRekapModal}
         setShowRekapModal={setShowRekapModal}
@@ -829,7 +830,17 @@ const Attendance = ({ user, onShowToast }) => {
         handleCancelOverwrite={handleCancelOverwrite}
       />
 
-      {/* HAPUS AttendanceRecapModal - SUDAH DIGABUNG DI AttendanceModals */}
+      {/* External Recap Modal */}
+      <AttendanceRecapModal
+        showModal={showRekapModal}
+        onClose={() => setShowRekapModal(false)}
+        attendanceMode={isHomeroomDaily() ? "daily" : "subject"}
+        selectedClass={selectedClass}
+        selectedSubject={selectedSubject}
+        homeroomClass={homeroomClass}
+        students={students}
+        onShowToast={onShowToast}
+      />
     </div>
   );
 };

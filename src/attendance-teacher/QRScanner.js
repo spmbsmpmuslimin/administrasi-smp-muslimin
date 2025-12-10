@@ -497,7 +497,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-6">
       {/* 🎯 NEW: Hidden file input */}
       <input
         ref={fileInputRef}
@@ -511,16 +511,18 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       <div id="qr-reader-file" style={{ display: "none" }}></div>
 
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center justify-center gap-2">
-          {isAdmin && <Shield className="text-blue-600" size={20} />}
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white mb-2 flex items-center justify-center gap-2">
+          {isAdmin && (
+            <Shield className="text-blue-600 dark:text-blue-400" size={20} />
+          )}
           Scan QR Code untuk Presensi
           {isAdmin && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+            <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
               ADMIN MODE
             </span>
           )}
         </h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
           {isAdmin
             ? "Scan QR Code untuk input presensi guru (tanpa batasan waktu)"
             : "Arahkan kamera ke QR Code atau pilih dari galeri"}
@@ -532,25 +534,34 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         <div
           className={`p-4 rounded-lg flex items-start gap-3 ${
             message.type === "success"
-              ? "bg-green-50 border border-green-200"
+              ? "bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800"
               : message.type === "error"
-              ? "bg-red-50 border border-red-200"
-              : "bg-yellow-50 border border-yellow-200"
+              ? "bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800"
+              : "bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800"
           }`}>
           {message.type === "success" ? (
-            <CheckCircle className="text-green-600 flex-shrink-0" size={24} />
+            <CheckCircle
+              className="text-green-600 dark:text-green-400 flex-shrink-0"
+              size={24}
+            />
           ) : message.type === "error" ? (
-            <XCircle className="text-red-600 flex-shrink-0" size={24} />
+            <XCircle
+              className="text-red-600 dark:text-red-400 flex-shrink-0"
+              size={24}
+            />
           ) : (
-            <AlertCircle className="text-yellow-600 flex-shrink-0" size={24} />
+            <AlertCircle
+              className="text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+              size={24}
+            />
           )}
           <p
             className={`text-sm font-medium whitespace-pre-line ${
               message.type === "success"
-                ? "text-green-800"
+                ? "text-green-800 dark:text-green-300"
                 : message.type === "error"
-                ? "text-red-800"
-                : "text-yellow-800"
+                ? "text-red-800 dark:text-red-300"
+                : "text-yellow-800 dark:text-yellow-300"
             }`}>
             {message.text}
           </p>
@@ -559,8 +570,8 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
       {/* Teacher Selection Modal (Admin Only) */}
       {showTeacherSelect && isAdmin && (
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 space-y-4">
-          <div className="flex items-center gap-2 text-blue-800 font-semibold">
+        <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4 space-y-4">
+          <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 font-semibold">
             <Shield size={20} />
             <span>Pilih Guru untuk Presensi</span>
           </div>
@@ -568,7 +579,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
           <select
             value={selectedTeacherId || ""}
             onChange={(e) => setSelectedTeacherId(e.target.value)}
-            className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="w-full px-4 py-3 border border-blue-300 dark:border-blue-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
             <option value="">-- Pilih Guru --</option>
             {teachersList.map((teacher) => (
               <option key={teacher.teacher_id} value={teacher.teacher_id}>
@@ -581,12 +592,12 @@ const QRScanner = ({ currentUser, onSuccess }) => {
             <button
               onClick={handleTeacherSubmit}
               disabled={!selectedTeacherId}
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all">
+              className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white font-semibold rounded-lg transition-all min-h-[48px]">
               Submit Presensi
             </button>
             <button
               onClick={handleCancelTeacherSelect}
-              className="flex-1 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all">
+              className="flex-1 py-3 bg-gray-500 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold rounded-lg transition-all min-h-[48px]">
               Batal
             </button>
           </div>
@@ -595,37 +606,39 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
       {/* 🎯 UPDATED: 2 Buttons - Camera & Gallery */}
       {!scanning && !loading && !showTeacherSelect && (
-        <div className="space-y-3">
+        <div className="space-y-3 sm:space-y-4">
           {/* Button Scan dengan Kamera */}
           <button
             onClick={startScanning}
-            className={`w-full py-4 ${
+            className={`w-full py-4 sm:py-5 min-h-[52px] sm:min-h-[60px] ${
               isAdmin
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-green-600 hover:bg-green-700"
+                ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                : "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
             } text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
             <Camera size={20} />
-            Scan dengan Kamera
+            <span className="text-sm sm:text-base">Scan dengan Kamera</span>
           </button>
 
           {/* 🎯 NEW: Button Pilih dari Galeri */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className={`w-full py-4 ${
+            className={`w-full py-4 sm:py-5 min-h-[52px] sm:min-h-[60px] ${
               isAdmin
-                ? "bg-blue-500 hover:bg-blue-600"
-                : "bg-green-500 hover:bg-green-600"
+                ? "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                : "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
             } text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
             <Image size={20} />
-            📷 Pilih dari Galeri
+            <span className="text-sm sm:text-base">📷 Pilih dari Galeri</span>
           </button>
         </div>
       )}
 
       {loading && (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Menyimpan presensi...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+          <p className="text-gray-600 dark:text-gray-300 mt-4">
+            Menyimpan presensi...
+          </p>
         </div>
       )}
 
@@ -637,31 +650,34 @@ const QRScanner = ({ currentUser, onSuccess }) => {
             style={{ width: "100%", minHeight: "300px" }}></div>
           <button
             onClick={stopScanning}
-            className="w-full py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all">
+            className="w-full py-3 sm:py-4 min-h-[48px] bg-gray-500 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold rounded-lg transition-all">
             Tutup Kamera
           </button>
         </div>
       )}
 
       {/* Info */}
-      <div className="space-y-3">
+      <div className="space-y-3 sm:space-y-4">
         <div
           className={`${
             isAdmin
-              ? "bg-blue-50 border-blue-200"
-              : "bg-green-50 border-green-200"
+              ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
+              : "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
           } border rounded-lg p-4`}>
-          <p className="text-sm text-gray-800">
+          <p className="text-sm sm:text-base text-gray-800 dark:text-gray-300">
             <strong>💡 Tips:</strong> Pastikan Pencahayaan Cukup dan QR Code
             Terlihat Jelas, atau Pilih Screenshot/foto QR Dari Galeri
           </p>
         </div>
 
         {!isAdmin && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-            <Clock className="text-amber-600 flex-shrink-0" size={20} />
+          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start gap-3">
+            <Clock
+              className="text-amber-600 dark:text-amber-400 flex-shrink-0"
+              size={20}
+            />
             <div className="space-y-2">
-              <p className="text-sm text-amber-800">
+              <p className="text-sm sm:text-base text-amber-800 dark:text-amber-300">
                 <strong>⏰ Jam Operasional:</strong> Presensi Hanya Dapat
                 Dilakukan Pada Pukul 07:00 - 14:00 WIB
               </p>
@@ -670,9 +686,12 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         )}
 
         {isAdmin && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-            <Shield className="text-blue-600 flex-shrink-0" size={20} />
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
+            <Shield
+              className="text-blue-600 dark:text-blue-400 flex-shrink-0"
+              size={20}
+            />
+            <p className="text-sm sm:text-base text-blue-800 dark:text-blue-300">
               <strong>Admin Mode:</strong> Anda dapat scan QR kapan saja tanpa
               batasan waktu dan lokasi untuk input presensi guru lain
             </p>

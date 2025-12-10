@@ -173,14 +173,22 @@ const MonthlyView = ({ currentUser }) => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      Hadir: { bg: "bg-green-500", text: "H", title: "Hadir" },
-      Izin: { bg: "bg-blue-500", text: "I", title: "Izin" },
-      Sakit: { bg: "bg-yellow-500", text: "S", title: "Sakit" },
-      Alpa: { bg: "bg-red-500", text: "A", title: "Alpha" },
+      Hadir: {
+        bg: "bg-green-500 dark:bg-green-600",
+        text: "H",
+        title: "Hadir",
+      },
+      Izin: { bg: "bg-blue-500 dark:bg-blue-600", text: "I", title: "Izin" },
+      Sakit: {
+        bg: "bg-yellow-500 dark:bg-yellow-600",
+        text: "S",
+        title: "Sakit",
+      },
+      Alpa: { bg: "bg-red-500 dark:bg-red-600", text: "A", title: "Alpha" },
     };
     return (
       badges[status] || {
-        bg: "bg-gray-300",
+        bg: "bg-gray-300 dark:bg-gray-600",
         text: "-",
         title: "Tidak ada data",
       }
@@ -231,38 +239,46 @@ const MonthlyView = ({ currentUser }) => {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
-          <Calendar className="text-blue-600" size={24} />
-          <h2 className="text-xl font-bold text-gray-800">Laporan Bulanan</h2>
+          <Calendar className="text-blue-600 dark:text-blue-400" size={24} />
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
+            Laporan Bulanan
+          </h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           {/* Month Navigation */}
-          <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 min-h-[44px]">
             <button
               onClick={handlePrevMonth}
-              className="p-2 hover:bg-white rounded transition-all">
-              <ChevronLeft size={20} />
+              className="p-2 hover:bg-white dark:hover:bg-gray-600 rounded transition-all">
+              <ChevronLeft
+                size={20}
+                className="text-gray-700 dark:text-gray-300"
+              />
             </button>
-            <span className="px-4 font-semibold text-gray-800 min-w-[180px] text-center">
+            <span className="px-2 sm:px-4 font-semibold text-gray-800 dark:text-white min-w-[150px] sm:min-w-[180px] text-center text-sm sm:text-base">
               {months[selectedMonth]} {selectedYear}
             </span>
             <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-white rounded transition-all">
-              <ChevronRight size={20} />
+              className="p-2 hover:bg-white dark:hover:bg-gray-600 rounded transition-all">
+              <ChevronRight
+                size={20}
+                className="text-gray-700 dark:text-gray-300"
+              />
             </button>
           </div>
 
           {/* Export Button */}
           <button
             onClick={() => setShowExport(true)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all flex items-center gap-2">
-            <Download size={20} />
-            Export Excel
+            className="px-4 py-2.5 sm:py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 min-h-[44px]">
+            <Download size={18} />
+            <span className="text-sm sm:text-base">Export Excel</span>
           </button>
         </div>
       </div>
@@ -271,7 +287,7 @@ const MonthlyView = ({ currentUser }) => {
       <div className="mb-4">
         <div className="relative">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
             size={20}
           />
           <input
@@ -279,7 +295,7 @@ const MonthlyView = ({ currentUser }) => {
             placeholder="Cari nama guru..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
           />
         </div>
       </div>
@@ -287,29 +303,31 @@ const MonthlyView = ({ currentUser }) => {
       {/* Loading State */}
       {loading ? (
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Memuat data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+          <p className="text-gray-600 dark:text-gray-300 mt-4">
+            Memuat data...
+          </p>
         </div>
       ) : (
         /* Table */
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 sticky left-0 bg-gray-100 z-10 min-w-[200px]">
+              <tr className="bg-gray-100 dark:bg-gray-700">
+                <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 sticky left-0 bg-gray-100 dark:bg-gray-700 z-10 min-w-[200px]">
                   Nama Guru
                 </th>
                 {days.map((day) => (
                   <th
                     key={day}
-                    className="border border-gray-300 px-2 py-3 text-center font-semibold text-gray-700 min-w-[40px]">
+                    className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 min-w-[36px] sm:min-w-[40px] text-xs sm:text-sm">
                     {day}
                   </th>
                 ))}
-                <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 min-w-[80px]">
+                <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 min-w-[70px] sm:min-w-[80px] text-xs sm:text-sm">
                   H/I/S/A
                 </th>
-                <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 min-w-[80px]">
+                <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 min-w-[60px] sm:min-w-[80px] text-xs sm:text-sm">
                   %
                 </th>
               </tr>
@@ -319,7 +337,7 @@ const MonthlyView = ({ currentUser }) => {
                 <tr>
                   <td
                     colSpan={daysInMonth + 3}
-                    className="border border-gray-300 px-4 py-8 text-center text-gray-500">
+                    className="border border-gray-300 dark:border-gray-600 px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada data guru
                   </td>
                 </tr>
@@ -327,8 +345,10 @@ const MonthlyView = ({ currentUser }) => {
                 filteredTeachers.map((teacher) => {
                   const stats = calculateTeacherStats(teacher.teacher_id);
                   return (
-                    <tr key={teacher.id} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-3 font-medium text-gray-800 sticky left-0 bg-white z-10">
+                    <tr
+                      key={teacher.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 font-medium text-gray-800 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800 z-10 min-w-[200px] text-sm sm:text-base">
                         {teacher.full_name}
                       </td>
                       {days.map((day) => {
@@ -359,8 +379,8 @@ const MonthlyView = ({ currentUser }) => {
                           : {
                               bg:
                                 weekend || holiday
-                                  ? "bg-gray-300"
-                                  : "bg-gray-200",
+                                  ? "bg-gray-300 dark:bg-gray-600"
+                                  : "bg-gray-200 dark:bg-gray-700",
                               text: "-",
                               title: holiday
                                 ? `🎉 ${holiday}`
@@ -372,24 +392,37 @@ const MonthlyView = ({ currentUser }) => {
                         return (
                           <td
                             key={day}
-                            className={`border border-gray-300 px-2 py-3 text-center ${
-                              weekend || holiday ? "bg-red-100" : ""
+                            className={`border border-gray-300 dark:border-gray-600 px-1 sm:px-2 py-2 sm:py-3 text-center ${
+                              weekend || holiday
+                                ? "bg-red-100 dark:bg-red-900/30"
+                                : ""
                             }`}>
                             <span
-                              className={`${badge.bg} text-white font-bold text-xs px-2 py-1 rounded inline-block min-w-[24px]`}
+                              className={`${badge.bg} text-white font-bold text-xs px-1 sm:px-2 py-1 rounded inline-block min-w-[24px]`}
                               title={badge.title}>
                               {badge.text}
                             </span>
                           </td>
                         );
                       })}
-                      <td className="border border-gray-300 px-4 py-3 text-center font-semibold text-sm">
-                        <span className="text-green-600">{stats.hadir}</span>/
-                        <span className="text-blue-600">{stats.izin}</span>/
-                        <span className="text-yellow-600">{stats.sakit}</span>/
-                        <span className="text-red-600">{stats.alpa}</span>
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-center font-semibold text-xs sm:text-sm">
+                        <span className="text-green-600 dark:text-green-400">
+                          {stats.hadir}
+                        </span>
+                        /
+                        <span className="text-blue-600 dark:text-blue-400">
+                          {stats.izin}
+                        </span>
+                        /
+                        <span className="text-yellow-600 dark:text-yellow-400">
+                          {stats.sakit}
+                        </span>
+                        /
+                        <span className="text-red-600 dark:text-red-400">
+                          {stats.alpa}
+                        </span>
                       </td>
-                      <td className="border border-gray-300 px-4 py-3 text-center font-semibold">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-center font-semibold">
                         {(() => {
                           const totalRecorded = calculateTotalRecordedDays(
                             teacher.teacher_id
@@ -400,11 +433,15 @@ const MonthlyView = ({ currentUser }) => {
                               : 0;
                           const color =
                             percentage >= 90
-                              ? "text-green-600"
+                              ? "text-green-600 dark:text-green-400"
                               : percentage >= 75
-                              ? "text-yellow-600"
-                              : "text-red-600";
-                          return <span className={color}>{percentage}%</span>;
+                              ? "text-yellow-600 dark:text-yellow-400"
+                              : "text-red-600 dark:text-red-400";
+                          return (
+                            <span className={`${color} text-sm sm:text-base`}>
+                              {percentage}%
+                            </span>
+                          );
                         })()}
                       </td>
                     </tr>
@@ -417,42 +454,44 @@ const MonthlyView = ({ currentUser }) => {
       )}
 
       {/* Legend */}
-      <div className="mt-6 flex flex-wrap gap-4 text-sm">
+      <div className="mt-6 flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
         <div className="flex items-center gap-2">
-          <span className="bg-green-500 text-white font-bold text-xs px-2 py-1 rounded">
+          <span className="bg-green-500 dark:bg-green-600 text-white font-bold text-xs px-2 py-1 rounded">
             H
           </span>
-          <span className="text-gray-600">Hadir</span>
+          <span className="text-gray-600 dark:text-gray-400">Hadir</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="bg-blue-500 text-white font-bold text-xs px-2 py-1 rounded">
+          <span className="bg-blue-500 dark:bg-blue-600 text-white font-bold text-xs px-2 py-1 rounded">
             I
           </span>
-          <span className="text-gray-600">Izin</span>
+          <span className="text-gray-600 dark:text-gray-400">Izin</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="bg-yellow-500 text-white font-bold text-xs px-2 py-1 rounded">
+          <span className="bg-yellow-500 dark:bg-yellow-600 text-white font-bold text-xs px-2 py-1 rounded">
             S
           </span>
-          <span className="text-gray-600">Sakit</span>
+          <span className="text-gray-600 dark:text-gray-400">Sakit</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="bg-red-500 text-white font-bold text-xs px-2 py-1 rounded">
+          <span className="bg-red-500 dark:bg-red-600 text-white font-bold text-xs px-2 py-1 rounded">
             A
           </span>
-          <span className="text-gray-600">Alpha</span>
+          <span className="text-gray-600 dark:text-gray-400">Alpha</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="bg-gray-200 text-gray-600 font-bold text-xs px-2 py-1 rounded">
+          <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-bold text-xs px-2 py-1 rounded">
             -
           </span>
-          <span className="text-gray-600">Belum Absen</span>
+          <span className="text-gray-600 dark:text-gray-400">Belum Absen</span>
         </div>
-        <div className="flex items-center gap-2 pl-4 border-l-2 border-gray-300">
-          <span className="bg-gray-300 text-gray-600 font-bold text-xs px-2 py-1 rounded">
+        <div className="flex items-center gap-2 pl-3 sm:pl-4 border-l-2 border-gray-300 dark:border-gray-600">
+          <span className="bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 font-bold text-xs px-2 py-1 rounded">
             🏠
           </span>
-          <span className="text-gray-600">Weekend / Libur Nasional</span>
+          <span className="text-gray-600 dark:text-gray-400">
+            Weekend / Libur Nasional
+          </span>
         </div>
       </div>
 

@@ -26,7 +26,7 @@ import MonitorSistem from "./system/MonitorSistem";
 import MaintenancePage from "./setting/MaintenancePage";
 import AdminPanel from "./setting/AdminPanel";
 
-// ✅ IMPORT BARU: Presensi Guru
+// Import Presensi Guru
 import TeacherAttendance from "./attendance-teacher/TeacherAttendance";
 
 function App() {
@@ -37,17 +37,39 @@ function App() {
   const [toastType, setToastType] = useState("info");
   const [showToast, setShowToast] = useState(false);
 
+  // 🌙 DARK MODE STATE
+  const [darkMode, setDarkMode] = useState(() => {
+    // Load dari localStorage atau default false
+    const saved = localStorage.getItem("darkMode");
+    return saved === "true";
+  });
+
   // ========== MAINTENANCE MODE STATE ==========
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState("");
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
-  const [whitelistUsers, setWhitelistUsers] = useState([]); // ✅ TAMBAH STATE WHITELIST
+  const [whitelistUsers, setWhitelistUsers] = useState([]);
+
+  // 🌙 DARK MODE EFFECT - Save to localStorage
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+    // Update document class untuk global dark mode styling
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
+
+  // 🌙 TOGGLE DARK MODE HANDLER
+  const handleToggleDarkMode = useCallback(() => {
+    setDarkMode((prev) => !prev);
+  }, []);
 
   // ========== 1. CHECK MAINTENANCE STATUS ==========
   useEffect(() => {
     checkMaintenanceStatus();
 
-    // ✅ Subscribe to real-time changes (TAMBAH maintenance_whitelist)
     const subscription = supabase
       .channel("maintenance-changes")
       .on(
@@ -57,10 +79,10 @@ function App() {
           schema: "public",
           table: "school_settings",
           filter:
-            "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)", // ✅ TAMBAH whitelist
+            "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
         },
         (payload) => {
-          console.log("🔔 Maintenance settings changed:", payload);
+          console.log("📡 Maintenance settings changed:", payload);
           loadMaintenanceSettings();
         }
       )
@@ -79,7 +101,6 @@ function App() {
     }
   };
 
-  // ✅ UPDATE: Load whitelist juga
   const loadMaintenanceSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -88,7 +109,7 @@ function App() {
         .in("setting_key", [
           "maintenance_mode",
           "maintenance_message",
-          "maintenance_whitelist", // ✅ TAMBAH whitelist
+          "maintenance_whitelist",
         ]);
 
       if (error) throw error;
@@ -108,7 +129,6 @@ function App() {
           "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"
       );
 
-      // ✅ Parse whitelist dari database
       if (settings.maintenance_whitelist) {
         try {
           const parsed = JSON.parse(settings.maintenance_whitelist);
@@ -139,7 +159,6 @@ function App() {
 
         const userData = JSON.parse(storedUser);
 
-        // Check expiry time
         if (userData.expiryTime) {
           const currentTime = Date.now();
           if (currentTime > userData.expiryTime) {
@@ -198,8 +217,8 @@ function App() {
   const handleLogin = useCallback((userData, rememberMe = false) => {
     const loginTime = Date.now();
     const expiryTime = rememberMe
-      ? loginTime + 30 * 24 * 60 * 60 * 1000 // 30 hari
-      : loginTime + 24 * 60 * 60 * 1000; // 24 jam
+      ? loginTime + 30 * 24 * 60 * 60 * 1000
+      : loginTime + 24 * 60 * 60 * 1000;
 
     const sessionData = {
       ...userData,
@@ -234,23 +253,33 @@ function App() {
     setShowToast(true);
   }, []);
 
+  // ✅ FIXED: Toast styling dengan dark mode dan responsive
   const getToastStyle = () => {
     const baseStyle =
-      "fixed top-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform";
+      "fixed top-3 right-3 sm:top-4 sm:right-4 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform max-w-[calc(100vw-1.5rem)] sm:max-w-md";
+
+    const darkModeClass = darkMode ? "ring-2 ring-white/20" : "";
 
     switch (toastType) {
       case "success":
-        return `${baseStyle} bg-green-500`;
+        return `${baseStyle} ${
+          darkMode ? "bg-green-600" : "bg-green-500"
+        } ${darkModeClass}`;
       case "error":
-        return `${baseStyle} bg-red-500`;
+        return `${baseStyle} ${
+          darkMode ? "bg-red-600" : "bg-red-500"
+        } ${darkModeClass}`;
       case "warning":
-        return `${baseStyle} bg-yellow-500`;
+        return `${baseStyle} ${
+          darkMode ? "bg-yellow-600" : "bg-yellow-500"
+        } ${darkModeClass}`;
       default:
-        return `${baseStyle} bg-blue-500`;
+        return `${baseStyle} ${
+          darkMode ? "bg-blue-600" : "bg-blue-500"
+        } ${darkModeClass}`;
     }
   };
 
-  // ✅ HELPER FUNCTION: Cek apakah user ada di whitelist
   const isUserWhitelisted = useCallback(
     (userId) => {
       return whitelistUsers.some((u) => u.id === userId);
@@ -258,15 +287,28 @@ function App() {
     [whitelistUsers]
   );
 
-  // ========== 6. PROTECTED ROUTE COMPONENT (UPDATED) ==========
+  // ========== 6. PROTECTED ROUTE COMPONENT ==========
   const ProtectedRoute = useCallback(
     ({ children, allowedRoles = [] }) => {
       if (loading || maintenanceLoading) {
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div
+            className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+              darkMode
+                ? "bg-gradient-to-br from-gray-900 to-gray-800"
+                : "bg-gradient-to-br from-blue-50 to-indigo-100"
+            }`}>
             <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 font-medium">Checking session...</p>
+              <div
+                className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
+                  darkMode ? "border-blue-400" : "border-blue-600"
+                }`}></div>
+              <p
+                className={`text-sm sm:text-base font-medium transition-colors ${
+                  darkMode ? "text-gray-300" : "text-gray-600"
+                }`}>
+                Checking session...
+              </p>
             </div>
           </div>
         );
@@ -276,17 +318,27 @@ function App() {
         return <Navigate to="/" />;
       }
 
-      // ✅ CEK ROLE-BASED ACCESS
+      // Role-based access check
       if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
         console.log(
           `🔴 User ${user.username} tidak memiliki akses ke halaman ini`
         );
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div
+            className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+              darkMode
+                ? "bg-gradient-to-br from-gray-900 to-gray-800"
+                : "bg-gradient-to-br from-blue-50 to-indigo-100"
+            }`}>
+            <div className="text-center max-w-md mx-auto">
+              <div
+                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
+                  darkMode ? "bg-red-900/30" : "bg-red-100"
+                }`}>
                 <svg
-                  className="w-8 h-8 text-red-600"
+                  className={`w-7 h-7 sm:w-8 sm:h-8 ${
+                    darkMode ? "text-red-400" : "text-red-600"
+                  }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24">
@@ -298,15 +350,25 @@ function App() {
                   />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
+              <h2
+                className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
                 Akses Ditolak
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p
+                className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}>
                 Anda tidak memiliki izin untuk mengakses halaman ini.
               </p>
               <button
                 onClick={() => (window.location.href = "/dashboard")}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                className={`w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 touch-manipulation active:scale-95 ${
+                  darkMode
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}>
                 Kembali ke Dashboard
               </button>
             </div>
@@ -314,11 +376,7 @@ function App() {
         );
       }
 
-      // ✅ CEK MAINTENANCE dengan WHITELIST
-      // User bisa akses jika:
-      // 1. Bukan maintenance mode, ATAU
-      // 2. User adalah admin, ATAU
-      // 3. User ada di whitelist
+      // Maintenance check with whitelist
       const canAccess =
         !isMaintenanceMode ||
         user.role === "admin" ||
@@ -326,10 +384,11 @@ function App() {
 
       if (!canAccess) {
         console.log(`🔴 User ${user.username} blocked by maintenance mode`);
-        return <MaintenancePage message={maintenanceMessage} />;
+        return (
+          <MaintenancePage message={maintenanceMessage} darkMode={darkMode} />
+        );
       }
 
-      // ✅ Debug log untuk user yang bisa akses saat maintenance
       if (isMaintenanceMode && canAccess) {
         if (user.role === "admin") {
           console.log(`✅ Admin ${user.username} bypassed maintenance`);
@@ -349,20 +408,25 @@ function App() {
       isMaintenanceMode,
       maintenanceMessage,
       isUserWhitelisted,
+      darkMode,
     ]
   );
 
-  // ========== 7. LAYOUT WRAPPER ==========
+  // ========== 7. LAYOUT WRAPPER (WITH DARK MODE) ==========
   const LayoutWrapper = useCallback(
     ({ children }) => (
-      <Layout user={user} onLogout={handleLogout}>
+      <Layout
+        user={user}
+        onLogout={handleLogout}
+        darkMode={darkMode}
+        onToggleDarkMode={handleToggleDarkMode}>
         {children}
       </Layout>
     ),
-    [user, handleLogout]
+    [user, handleLogout, darkMode, handleToggleDarkMode]
   );
 
-  // ========== 8. RENDER ADMIN PANEL (SPECIAL ROUTE - BYPASS MAINTENANCE) ==========
+  // ========== 8. RENDER ADMIN PANEL ==========
   const currentPath = window.location.pathname;
   if (currentPath === "/secret-admin-panel-2024") {
     return (
@@ -372,7 +436,10 @@ function App() {
           v7_relativeSplatPath: true,
         }}>
         <Routes>
-          <Route path="/secret-admin-panel-2024" element={<AdminPanel />} />
+          <Route
+            path="/secret-admin-panel-2024"
+            element={<AdminPanel darkMode={darkMode} />}
+          />
         </Routes>
       </BrowserRouter>
     );
@@ -381,10 +448,23 @@ function App() {
   // ========== 9. RENDER MAIN APP ==========
   if (loading || maintenanceLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div
+        className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+          darkMode
+            ? "bg-gradient-to-br from-gray-900 to-gray-800"
+            : "bg-gradient-to-br from-blue-50 to-indigo-100"
+        }`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading...</p>
+          <div
+            className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
+              darkMode ? "border-blue-400" : "border-blue-600"
+            }`}></div>
+          <p
+            className={`text-sm sm:text-base font-medium transition-colors ${
+              darkMode ? "text-gray-300" : "text-gray-600"
+            }`}>
+            Loading...
+          </p>
         </div>
       </div>
     );
@@ -396,15 +476,19 @@ function App() {
         v7_startTransition: true,
         v7_relativeSplatPath: true,
       }}>
-      {/* Toast Notification */}
+      {/* ✅ FIXED: Toast Notification dengan Dark Mode & Responsive */}
       {showToast && !isMaintenanceMode && (
         <div className={getToastStyle()}>
           <div className="flex items-center gap-2">
-            {toastType === "success" && <span className="text-lg">✅</span>}
-            {toastType === "error" && <span className="text-lg">❌</span>}
-            {toastType === "warning" && <span className="text-lg">⚠️</span>}
-            {toastType === "info" && <span className="text-lg">ℹ️</span>}
-            <span className="font-medium">{toastMessage}</span>
+            <span className="text-base sm:text-lg flex-shrink-0">
+              {toastType === "success" && "✅"}
+              {toastType === "error" && "❌"}
+              {toastType === "warning" && "⚠️"}
+              {toastType === "info" && "ℹ️"}
+            </span>
+            <span className="font-medium text-sm sm:text-base break-words">
+              {toastMessage}
+            </span>
           </div>
         </div>
       )}
@@ -417,7 +501,12 @@ function App() {
             user ? (
               <Navigate to="/dashboard" replace />
             ) : (
-              <Login onLogin={handleLogin} onShowToast={handleShowToast} />
+              <Login
+                onLogin={handleLogin}
+                onShowToast={handleShowToast}
+                darkMode={darkMode}
+                onToggleDarkMode={handleToggleDarkMode}
+              />
             )
           }
         />
@@ -428,7 +517,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Dashboard user={user} onShowToast={handleShowToast} />
+                <Dashboard
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -439,7 +532,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Teachers user={user} onShowToast={handleShowToast} />
+                <Teachers
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -450,7 +547,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Classes user={user} onShowToast={handleShowToast} />
+                <Classes
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -461,7 +562,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Students user={user} onShowToast={handleShowToast} />
+                <Students
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -472,25 +577,31 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Attendance user={user} onShowToast={handleShowToast} />
+                <Attendance
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
         />
 
-        {/* ✅ ROUTE BARU: PRESENSI GURU - HANYA UNTUK GURU & ADMIN */}
         <Route
           path="/attendance-teacher"
           element={
             <ProtectedRoute allowedRoles={["teacher", "guru_bk", "admin"]}>
               <LayoutWrapper>
-                <TeacherAttendance user={user} onShowToast={handleShowToast} />
+                <TeacherAttendance
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
         />
 
-        {/* 👇 ROUTE ATTENDANCE-MANAGEMENT HANYA UNTUK ADMIN */}
         <Route
           path="/attendance-management"
           element={
@@ -499,6 +610,7 @@ function App() {
                 <AttendanceManagement
                   user={user}
                   onShowToast={handleShowToast}
+                  darkMode={darkMode}
                 />
               </LayoutWrapper>
             </ProtectedRoute>
@@ -510,7 +622,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Grades user={user} onShowToast={handleShowToast} />
+                <Grades
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -521,7 +637,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <TeacherSchedule user={user} onShowToast={handleShowToast} />
+                <TeacherSchedule
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -532,7 +652,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <CatatanSiswa user={user} onShowToast={handleShowToast} />
+                <CatatanSiswa
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -543,7 +667,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Konseling user={user} onShowToast={handleShowToast} />
+                <Konseling
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -554,7 +682,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Reports user={user} onShowToast={handleShowToast} />
+                <Reports
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -565,7 +697,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <SPMB user={user} onShowToast={handleShowToast} />
+                <SPMB
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -576,7 +712,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <Setting user={user} onShowToast={handleShowToast} />
+                <Setting
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -587,7 +727,11 @@ function App() {
           element={
             <ProtectedRoute>
               <LayoutWrapper>
-                <MonitorSistem user={user} onShowToast={handleShowToast} />
+                <MonitorSistem
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }

@@ -138,25 +138,30 @@ const DailySummary = ({ refreshTrigger }) => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      Hadir: "bg-green-100 text-green-700 border-green-200",
-      Izin: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      Sakit: "bg-orange-100 text-orange-700 border-orange-200",
-      Alpa: "bg-red-100 text-red-700 border-red-200",
+      Hadir:
+        "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+      Izin: "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800",
+      Sakit:
+        "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800",
+      Alpa: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
     };
-    return badges[status] || "bg-gray-100 text-gray-700 border-gray-200";
+    return (
+      badges[status] ||
+      "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+    );
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        {/* 🔥 LOADING: 2 kolom di mobile, 4 di desktop */}
+      <div className="space-y-4 sm:space-y-6">
+        {/* 🔥 LOADING: 2 kolom di mobile, 4 di desktop dengan dark mode */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-xl shadow-lg p-4 sm:p-6 animate-pulse">
-              <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/2 mb-3 sm:mb-4"></div>
-              <div className="h-6 sm:h-8 bg-gray-200 rounded w-3/4"></div>
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 animate-pulse">
+              <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3 sm:mb-4"></div>
+              <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
             </div>
           ))}
         </div>
@@ -169,71 +174,78 @@ const DailySummary = ({ refreshTrigger }) => {
       title: "Total Guru",
       value: stats.totalTeachers,
       icon: Users,
-      gradient: "from-blue-50 to-indigo-50",
+      gradient:
+        "from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20",
       iconBg: "bg-gradient-to-br from-blue-400 to-blue-600",
-      textColor: "text-blue-700",
-      borderColor: "border-blue-200",
+      textColor: "text-blue-700 dark:text-blue-300",
+      borderColor: "border-blue-200 dark:border-blue-800",
     },
     {
       title: "Hadir",
       value: stats.hadir,
       icon: CheckCircle,
-      gradient: "from-green-50 to-emerald-50",
+      gradient:
+        "from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20",
       iconBg: "bg-gradient-to-br from-green-400 to-emerald-600",
-      textColor: "text-green-700",
-      borderColor: "border-green-200",
+      textColor: "text-green-700 dark:text-green-300",
+      borderColor: "border-green-200 dark:border-green-800",
       subtitle: `${stats.attendanceRate}% kehadiran`,
     },
     {
       title: "Izin / Sakit",
       value: `${stats.izin} / ${stats.sakit}`,
       icon: AlertCircle,
-      gradient: "from-yellow-50 to-amber-50",
+      gradient:
+        "from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20",
       iconBg: "bg-gradient-to-br from-yellow-400 to-amber-500",
-      textColor: "text-yellow-700",
-      borderColor: "border-yellow-200",
+      textColor: "text-yellow-700 dark:text-yellow-300",
+      borderColor: "border-yellow-200 dark:border-yellow-800",
     },
     {
       title: "Alpha / Belum Absen",
       value: `${stats.alpa} / ${stats.belumAbsen}`,
       icon: XCircle,
-      gradient: "from-red-50 to-rose-50",
+      gradient:
+        "from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20",
       iconBg: "bg-gradient-to-br from-red-400 to-rose-600",
-      textColor: "text-red-700",
-      borderColor: "border-red-200",
+      textColor: "text-red-700 dark:text-red-300",
+      borderColor: "border-red-200 dark:border-red-800",
     },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* 🔥 STATS CARDS: 2 kolom di mobile, 4 di desktop */}
+    <div className="space-y-4 sm:space-y-6">
+      {/* 🔥 STATS CARDS: 2 kolom di mobile, 4 di desktop dengan touch target lebih besar */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
             <div
               key={index}
-              className={`bg-gradient-to-br ${card.gradient} rounded-xl shadow-lg border ${card.borderColor} p-4 sm:p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300`}>
+              className={`bg-gradient-to-br ${card.gradient} rounded-xl shadow-lg border ${card.borderColor} p-4 sm:p-6 hover:shadow-xl active:scale-[0.98] transition-all duration-300 min-h-[120px] sm:min-h-[140px] flex flex-col justify-between touch-manipulation`}>
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  {/* 🔥 Text size responsive */}
-                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 truncate">
+                  {/* 🔥 Responsive typography dengan dark mode */}
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 sm:mb-3 truncate leading-tight">
                     {card.title}
                   </p>
                   <h3
-                    className={`text-2xl sm:text-3xl font-bold ${card.textColor} mb-1`}>
+                    className={`text-xl sm:text-2xl lg:text-3xl font-bold ${card.textColor} mb-1 sm:mb-2 leading-tight`}>
                     {card.value}
                   </h3>
                   {card.subtitle && (
-                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                      <TrendingUp size={10} className="sm:w-3 sm:h-3" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <TrendingUp
+                        size={10}
+                        className="sm:w-3 sm:h-3 flex-shrink-0"
+                      />
                       <span className="truncate">{card.subtitle}</span>
                     </p>
                   )}
                 </div>
-                {/* 🔥 Icon dengan gradient background */}
+                {/* 🔥 Icon dengan gradient background - touch target lebih besar */}
                 <div
-                  className={`${card.iconBg} p-2 sm:p-3 rounded-lg flex-shrink-0 shadow-md`}>
+                  className={`${card.iconBg} p-2 sm:p-3 rounded-lg flex-shrink-0 shadow-md min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center`}>
                   <Icon className="text-white w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
@@ -243,11 +255,13 @@ const DailySummary = ({ refreshTrigger }) => {
       </div>
 
       {/* 🔥 ATTENDANCE TABLE: Responsive dengan scroll horizontal di mobile */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 sm:px-6 py-3 sm:py-4">
-          <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-            <Users size={18} className="sm:w-5 sm:h-5" />
-            Daftar Guru yang Sudah Presensi Hari Ini
+          <h3 className="text-sm sm:text-base lg:text-lg font-bold text-white flex items-center gap-2">
+            <Users size={18} className="sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="truncate">
+              Daftar Guru yang Sudah Presensi Hari Ini
+            </span>
           </h3>
           <p className="text-blue-100 text-xs sm:text-sm mt-1">
             Total: {attendanceList.length} guru
@@ -255,55 +269,58 @@ const DailySummary = ({ refreshTrigger }) => {
         </div>
 
         {attendanceList.length > 0 ? (
-          /* 🔥 Scroll horizontal di mobile */
+          /* 🔥 Scroll horizontal di mobile dengan dark mode */
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b-2 border-gray-200">
+            <table className="w-full min-w-[600px]">
+              <thead className="bg-gray-50 dark:bg-gray-700/50 border-b-2 border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                     No.
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap min-w-[150px]">
                     Nama Guru
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                     <div className="flex items-center gap-2 whitespace-nowrap">
-                      <Clock size={14} />
+                      <Clock size={14} className="flex-shrink-0" />
                       Jam Presensi
                     </div>
                   </th>
-                  <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider min-w-[100px]">
                     Status
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {attendanceList.map((item) => (
                   <tr
                     key={item.no}
-                    className="hover:bg-gray-50 transition-colors">
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                       {item.no}
                     </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 font-medium">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-medium">
                       {item.name}
                     </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center gap-2">
                         <Clock
                           size={14}
-                          className="text-gray-400 flex-shrink-0"
+                          className="text-gray-400 dark:text-gray-500 flex-shrink-0"
                         />
-                        {item.time}
+                        <span className="font-medium">{item.time}</span>
                       </div>
                     </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 sm:px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(
-                          item.status
-                        )}`}>
-                        {item.status}
-                      </span>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      {/* 🔥 Better touch target untuk status badge */}
+                      <div className="py-1">
+                        <span
+                          className={`inline-flex px-3 py-2 text-xs font-semibold rounded-full border ${getStatusBadge(
+                            item.status
+                          )} select-none`}>
+                          {item.status}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -314,12 +331,12 @@ const DailySummary = ({ refreshTrigger }) => {
           <div className="px-4 sm:px-6 py-8 sm:py-12 text-center">
             <Users
               size={40}
-              className="sm:w-12 sm:h-12 mx-auto text-gray-300 mb-3 sm:mb-4"
+              className="sm:w-12 sm:h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3 sm:mb-4"
             />
-            <p className="text-sm sm:text-base text-gray-500 font-medium">
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium">
               Belum ada guru yang presensi hari ini
             </p>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1">
+            <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 mt-1">
               Data akan muncul setelah ada guru yang melakukan presensi
             </p>
           </div>

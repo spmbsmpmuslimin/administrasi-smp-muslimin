@@ -414,11 +414,13 @@ const Konseling = ({ user, onShowToast }) => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-5 md:p-6 lg:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Konseling BK/BP</h1>
-        <p className="text-gray-600 mt-2">
+      <div className="mb-4 sm:mb-5 md:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-1 sm:mb-2">
+          Konseling BK/BP
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
           Manajemen data konseling dan bimbingan siswa
         </p>
       </div>
@@ -458,34 +460,42 @@ const Konseling = ({ user, onShowToast }) => {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-            <div className="bg-red-50 border-b border-red-200 p-6 rounded-t-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md mx-2 sm:mx-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-5 sm:p-6 rounded-t-xl">
               <div className="flex items-center gap-3">
-                <XCircle className="text-red-600" size={24} />
+                <XCircle
+                  className="text-red-600 dark:text-red-400"
+                  size={24}
+                  style={{ width: "22px", height: "22px" }}
+                  aria-hidden="true"
+                />
                 <div>
-                  <h2 className="text-xl font-bold text-red-800">
+                  <h2 className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-300">
                     Konfirmasi Hapus
                   </h2>
-                  <p className="text-red-600 text-sm">
+                  <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm mt-0.5">
                     Data konseling akan dihapus permanen
                   </p>
                 </div>
               </div>
             </div>
-            <div className="p-6">
-              <p className="text-gray-700 mb-4">
+            <div className="p-5 sm:p-6">
+              <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm sm:text-base">
                 Apakah Anda yakin ingin menghapus data konseling untuk siswa{" "}
-                <strong>{deleteConfirm.studentName}</strong>?
+                <strong className="font-semibold">
+                  {deleteConfirm.studentName}
+                </strong>
+                ?
               </p>
-              <p className="text-sm text-red-600 mb-6">
+              <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mb-5 sm:mb-6">
                 Tindakan ini tidak dapat dibatalkan!
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={confirmDelete}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium">
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg disabled:opacity-50 font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200">
                   {loading ? "Menghapus..." : "Ya, Hapus"}
                 </button>
                 <button
@@ -493,7 +503,7 @@ const Konseling = ({ user, onShowToast }) => {
                     setDeleteConfirm({ show: false, id: null, studentName: "" })
                   }
                   disabled={loading}
-                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50">
+                  className="px-4 sm:px-6 py-3 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-gray-700 rounded-lg disabled:opacity-50 text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200">
                   Batal
                 </button>
               </div>

@@ -7,6 +7,39 @@ export const Classes = ({ user, onShowToast }) => {
   const [kelasData, setKelasData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // ✅ DARK MODE SYNC - Baca dari HTML class & localStorage
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const htmlHasDark = document.documentElement.classList.contains("dark");
+      const savedTheme = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+
+      const shouldBeDark =
+        htmlHasDark || savedTheme === "dark" || (!savedTheme && prefersDark);
+
+      setIsDarkMode(shouldBeDark);
+      if (shouldBeDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    };
+
+    checkDarkMode();
+
+    // ✅ Observer untuk detect perubahan dark mode dari halaman lain
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     fetchDataKelas();
@@ -119,20 +152,19 @@ export const Classes = ({ user, onShowToast }) => {
   };
 
   if (isLoading) {
-    // Styling Loading diubah agar lebih Mobile-First
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-200">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">
               Data Kelas
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300">
               Memuat data kelas...
             </p>
           </div>
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="flex justify-center items-center h-48 sm:h-64">
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 border-t-3 border-b-3 border-blue-500 dark:border-blue-400"></div>
           </div>
         </div>
       </div>
@@ -140,23 +172,22 @@ export const Classes = ({ user, onShowToast }) => {
   }
 
   if (error) {
-    // Styling Error diubah agar lebih Mobile-First
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-200">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+          <div className="mb-4 sm:mb-6 md:mb-8">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">
               Data Kelas
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300">
               Manajemen Data Kelas SMP Muslimin Cililin
             </p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center">
-              <div className="bg-red-100 p-3 rounded-full mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col items-center justify-center py-6 sm:py-8 md:py-12 text-center">
+              <div className="bg-red-100 dark:bg-red-900/30 p-2 sm:p-3 rounded-full mb-3 sm:mb-4">
                 <svg
-                  className="w-8 h-8 text-red-600"
+                  className="w-6 h-6 sm:w-8 sm:h-8 text-red-600 dark:text-red-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -168,13 +199,15 @@ export const Classes = ({ user, onShowToast }) => {
                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">
+              <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-white mb-1">
                 Terjadi Kesalahan
               </h3>
-              <p className="text-sm text-gray-600 mb-4">{error}</p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
+                {error}
+              </p>
               <button
                 onClick={fetchDataKelas}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-sm">
+                className="px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 text-xs sm:text-sm touch-manipulation min-h-[44px]">
                 Coba Lagi
               </button>
             </div>
@@ -185,75 +218,76 @@ export const Classes = ({ user, onShowToast }) => {
   }
 
   return (
-    // Padding menyesuaikan untuk Mobile-First
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
         {/* Header dengan tombol Export */}
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 sm:mb-8 gap-3">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 sm:mb-6 md:mb-8 gap-2 sm:gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">
               Data Kelas
             </h1>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300">
               Manajemen Data Kelas SMP Muslimin Cililin
             </p>
           </div>
 
           {/* Tombol Export Excel */}
-          {kelasData.length > 0 && (
-            <button
-              onClick={handleExportExcel}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              Export Excel
-            </button>
-          )}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {kelasData.length > 0 && (
+              <button
+                onClick={handleExportExcel}
+                className="bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 transition-all duration-200 text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg touch-manipulation min-h-[44px]">
+                <svg
+                  className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Export Excel
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ---------------------------------------------------- */}
         {/* 🚀 LAYOUT MOBILE-FIRST (Card View) - Default/HP/Kecil */}
         {/* ---------------------------------------------------- */}
-        <div className="sm:hidden space-y-4">
+        <div className="sm:hidden space-y-3">
           {kelasData.length > 0 ? (
             kelasData.map((kelas, index) => (
               <div
                 key={kelas.id}
-                className="bg-white rounded-xl shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-300">
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-3 sm:p-4 border border-gray-100 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900 transition-all duration-300 touch-manipulation">
                 {/* Header Card: Kelas & Tahun Ajaran */}
-                <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-3">
+                <div className="flex justify-between items-start border-b border-gray-100 dark:border-gray-700 pb-2 sm:pb-3 mb-2 sm:mb-3">
                   <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                       No. {index + 1}
                     </p>
-                    <p className="text-lg font-bold text-blue-600">
+                    <p className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
                       {kelas.id}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {kelas.academic_year}
                     </p>
                   </div>
                   {/* Wali Kelas */}
                   <div className="text-right">
-                    <p className="text-xs font-medium text-gray-500">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                       Wali Kelas
                     </p>
                     {kelas.wali_kelas ? (
-                      <span className="text-sm font-semibold text-gray-900">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
                         {kelas.wali_kelas.full_name}
                       </span>
                     ) : (
-                      <span className="text-sm font-medium text-gray-400 italic">
+                      <span className="text-sm font-medium text-gray-400 dark:text-gray-500 italic">
                         Belum ditentukan
                       </span>
                     )}
@@ -262,21 +296,27 @@ export const Classes = ({ user, onShowToast }) => {
 
                 {/* Body Card: Statistik Siswa */}
                 <div className="flex justify-between items-center text-center">
-                  <div className="flex-1 border-r border-gray-100 pr-2">
-                    <p className="text-xs text-gray-500">Total Siswa</p>
-                    <p className="text-xl font-bold text-gray-800">
+                  <div className="flex-1 border-r border-gray-100 dark:border-gray-700 pr-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Total Siswa
+                    </p>
+                    <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
                       {kelas.jumlah_siswa}
                     </p>
                   </div>
-                  <div className="flex-1 border-r border-gray-100 px-2">
-                    <p className="text-xs text-gray-500">Laki-laki</p>
-                    <p className="text-lg font-bold text-blue-600">
+                  <div className="flex-1 border-r border-gray-100 dark:border-gray-700 px-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Laki-laki
+                    </p>
+                    <p className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
                       {kelas.laki_laki}
                     </p>
                   </div>
                   <div className="flex-1 pl-2">
-                    <p className="text-xs text-gray-500">Perempuan</p>
-                    <p className="text-lg font-bold text-pink-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Perempuan
+                    </p>
+                    <p className="text-base sm:text-lg font-bold text-pink-500 dark:text-pink-400">
                       {kelas.perempuan}
                     </p>
                   </div>
@@ -284,10 +324,10 @@ export const Classes = ({ user, onShowToast }) => {
               </div>
             ))
           ) : (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="py-8 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+              <div className="py-6 sm:py-8 text-center">
                 <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
+                  className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -299,10 +339,10 @@ export const Classes = ({ user, onShowToast }) => {
                     d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
                   Tidak ada data kelas
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Tidak ada data kelas yang tersedia saat ini.
                 </p>
               </div>
@@ -311,22 +351,28 @@ export const Classes = ({ user, onShowToast }) => {
 
           {/* Card Total untuk Mobile */}
           {kelasData.length > 0 && (
-            <div className="bg-blue-600 text-white rounded-xl shadow-xl p-4 mt-4">
-              <h4 className="text-base font-bold mb-3 border-b border-blue-400 pb-2">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white rounded-xl shadow-xl p-3 sm:p-4 mt-3">
+              <h4 className="text-sm sm:text-base md:text-lg font-bold mb-2 sm:mb-3 border-b border-blue-400 dark:border-blue-500 pb-1 sm:pb-2">
                 TOTAL KESELURUHAN
               </h4>
               <div className="flex justify-between items-center text-center">
-                <div className="flex-1 border-r border-blue-400 pr-2">
+                <div className="flex-1 border-r border-blue-400 dark:border-blue-500 pr-2">
                   <p className="text-xs font-medium">Siswa Total</p>
-                  <p className="text-2xl font-extrabold">{totalSiswa}</p>
+                  <p className="text-xl sm:text-2xl md:text-3xl font-extrabold">
+                    {totalSiswa}
+                  </p>
                 </div>
-                <div className="flex-1 border-r border-blue-400 px-2">
+                <div className="flex-1 border-r border-blue-400 dark:border-blue-500 px-2">
                   <p className="text-xs font-medium">Laki-laki</p>
-                  <p className="text-xl font-bold">{totalLaki}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold">
+                    {totalLaki}
+                  </p>
                 </div>
                 <div className="flex-1 pl-2">
                   <p className="text-xs font-medium">Perempuan</p>
-                  <p className="text-xl font-bold">{totalPerempuan}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold">
+                    {totalPerempuan}
+                  </p>
                 </div>
               </div>
             </div>
@@ -336,86 +382,87 @@ export const Classes = ({ user, onShowToast }) => {
         {/* ---------------------------------------------------- */}
         {/* 💻 LAYOUT TABLE - Tablet (sm: ke atas) & Laptop */}
         {/* ---------------------------------------------------- */}
-        <div className="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-200">
           {/* Table Data Kelas */}
           <div className="overflow-x-auto">
             {kelasData.length > 0 ? (
               <table className="w-full">
                 <thead>
-                  <tr className="bg-blue-600 text-white">
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider w-12">
+                  {/* ✅ PERUBAHAN DI SINI: Ganti bg-blue-600 jadi gradient */}
+                  <tr className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-gray-700 dark:to-gray-800 text-white">
+                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider w-12">
                       No.
                     </th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider w-1/5">
+                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider w-1/5">
                       Kelas
                     </th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider w-1/4">
+                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider w-1/4">
                       Wali Kelas
                     </th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider">
                       Jumlah Siswa
                     </th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider">
                       Laki-laki
                     </th>
-                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">
+                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider">
                       Perempuan
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {kelasData.map((kelas, index) => (
                     <tr
                       key={kelas.id}
-                      className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-700 text-left">
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-xs md:text-sm text-gray-700 dark:text-gray-300 text-left">
                         {index + 1}
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-left">
-                        <div className="font-semibold text-gray-900">
+                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-left">
+                        <div className="font-semibold text-gray-900 dark:text-white">
                           {kelas.id}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
                           {kelas.academic_year}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-left">
+                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-left">
                         {kelas.wali_kelas ? (
-                          <span className="text-gray-900 text-sm">
+                          <span className="text-gray-900 dark:text-gray-200 text-xs md:text-sm">
                             {kelas.wali_kelas.full_name}
                           </span>
                         ) : (
-                          <span className="text-gray-400 italic text-sm">
+                          <span className="text-gray-400 dark:text-gray-500 italic text-xs md:text-sm">
                             Belum ditentukan
                           </span>
                         )}
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-left font-semibold text-gray-900 text-sm">
+                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-left font-semibold text-gray-900 dark:text-white text-xs md:text-sm">
                         {kelas.jumlah_siswa}
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-gray-700 text-left text-sm">
+                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 text-left text-xs md:text-sm">
                         {kelas.laki_laki}
                       </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-gray-700 text-left text-sm">
+                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 text-left text-xs md:text-sm">
                         {kelas.perempuan}
                       </td>
                     </tr>
                   ))}
 
                   {/* Baris Total */}
-                  <tr className="bg-blue-50 font-semibold border-t-2 border-blue-200">
+                  <tr className="bg-blue-50 dark:bg-blue-900/30 font-semibold border-t-2 border-blue-200 dark:border-blue-700">
                     <td
-                      className="px-4 sm:px-6 py-4 text-left text-sm"
+                      className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm dark:text-white"
                       colSpan="3">
                       TOTAL
                     </td>
-                    <td className="px-4 sm:px-6 py-4 text-left text-blue-700 text-sm">
+                    <td className="px-3 sm:px-4 md:px-6 py-3 text-left text-blue-700 dark:text-blue-300 text-xs md:text-sm">
                       {totalSiswa}
                     </td>
-                    <td className="px-4 sm:px-6 py-4 text-left text-blue-700 text-sm">
+                    <td className="px-3 sm:px-4 md:px-6 py-3 text-left text-blue-700 dark:text-blue-300 text-xs md:text-sm">
                       {totalLaki}
                     </td>
-                    <td className="px-4 sm:px-6 py-4 text-left text-blue-700 text-sm">
+                    <td className="px-3 sm:px-4 md:px-6 py-3 text-left text-blue-700 dark:text-blue-300 text-xs md:text-sm">
                       {totalPerempuan}
                     </td>
                   </tr>
@@ -423,9 +470,9 @@ export const Classes = ({ user, onShowToast }) => {
               </table>
             ) : (
               /* Empty State untuk Tablet/Laptop */
-              <div className="py-12 text-center">
+              <div className="py-8 sm:py-12 text-center">
                 <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
+                  className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -437,10 +484,10 @@ export const Classes = ({ user, onShowToast }) => {
                     d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
                   Tidak ada data kelas
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Tidak ada data kelas yang tersedia saat ini.
                 </p>
               </div>

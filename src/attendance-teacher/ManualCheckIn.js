@@ -32,10 +32,14 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
   const [teachersList, setTeachersList] = useState([]);
 
   const statusOptions = [
-    { value: "Hadir", label: "Hadir", color: "bg-green-500" },
-    { value: "Izin", label: "Izin", color: "bg-blue-500" },
-    { value: "Sakit", label: "Sakit", color: "bg-yellow-500" },
-    { value: "Alpa", label: "Alpa", color: "bg-red-500" },
+    { value: "Hadir", label: "Hadir", color: "bg-green-500 dark:bg-green-600" },
+    { value: "Izin", label: "Izin", color: "bg-blue-500 dark:bg-blue-600" },
+    {
+      value: "Sakit",
+      label: "Sakit",
+      color: "bg-yellow-500 dark:bg-yellow-600",
+    },
+    { value: "Alpa", label: "Alpa", color: "bg-red-500 dark:bg-red-600" },
   ];
 
   // Check if user is admin
@@ -367,18 +371,20 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-6">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center justify-center gap-2">
-          {isAdmin && <Shield className="text-blue-600" size={20} />}
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white mb-2 flex items-center justify-center gap-2">
+          {isAdmin && (
+            <Shield className="text-blue-600 dark:text-blue-400" size={20} />
+          )}
           Input Presensi Manual
           {isAdmin && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+            <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
               ADMIN MODE
             </span>
           )}
         </h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
           {isAdmin
             ? "Mode Admin: Dapat input presensi kapan saja untuk semua guru"
             : "Isi form di bawah untuk mencatat presensi"}
@@ -390,17 +396,25 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         <div
           className={`p-4 rounded-lg flex items-start gap-3 transition-all duration-500 ${
             message.type === "success"
-              ? "bg-green-50 border border-green-200 animate-fade-in"
-              : "bg-red-50 border border-red-200 animate-fade-in"
+              ? "bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 animate-fade-in"
+              : "bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 animate-fade-in"
           }`}>
           {message.type === "success" ? (
-            <CheckCircle className="text-green-600 flex-shrink-0" size={24} />
+            <CheckCircle
+              className="text-green-600 dark:text-green-400 flex-shrink-0"
+              size={24}
+            />
           ) : (
-            <XCircle className="text-red-600 flex-shrink-0" size={24} />
+            <XCircle
+              className="text-red-600 dark:text-red-400 flex-shrink-0"
+              size={24}
+            />
           )}
           <p
             className={`text-sm font-medium whitespace-pre-line ${
-              message.type === "success" ? "text-green-800" : "text-red-800"
+              message.type === "success"
+                ? "text-green-800 dark:text-green-300"
+                : "text-red-800 dark:text-red-300"
             }`}>
             {message.text}
           </p>
@@ -408,12 +422,12 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Pilih Guru (Hanya untuk Admin) */}
         {isAdmin && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <Shield size={18} className="text-blue-600" />
+            <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+              <Shield size={18} className="text-blue-600 dark:text-blue-400" />
               Pilih Guru (Opsional)
             </label>
             <select
@@ -421,7 +435,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
               onChange={(e) =>
                 handleChange("teacherId", e.target.value || null)
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
               <option value="">-- Pilih Guru --</option>
               {teachersList.map((teacher) => (
                 <option key={teacher.teacher_id} value={teacher.teacher_id}>
@@ -429,7 +443,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
               * Pilih Guru Yang Akan Diinputkan Presensinya
             </p>
           </div>
@@ -437,8 +451,8 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
         {/* Tanggal */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <Calendar size={18} />
+          <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <Calendar size={18} className="text-gray-600 dark:text-gray-400" />
             Tanggal Presensi
           </label>
           <input
@@ -447,9 +461,9 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
             onChange={(e) => handleChange("date", e.target.value)}
             max={isAdmin ? undefined : today}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
             {isAdmin
               ? "* Admin dapat memilih tanggal kapan saja"
               : "* Bisa pilih tanggal mundur untuk input presensi yang terlupa"}
@@ -458,27 +472,30 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
         {/* Status */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
             Status Kehadiran
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {statusOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => handleChange("status", option.value)}
-                className={`py-3 px-4 rounded-lg font-semibold transition-all ${
+                className={`py-3 sm:py-4 px-4 rounded-lg font-semibold transition-all min-h-[52px] sm:min-h-[60px] ${
                   formData.status === option.value
                     ? `${option.color} text-white shadow-lg scale-105`
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}>
                 {option.label}
               </button>
             ))}
           </div>
           {formData.status !== "Hadir" && (
-            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-              <AlertTriangle size={14} />
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
+              <AlertTriangle
+                size={14}
+                className="text-yellow-600 dark:text-yellow-400"
+              />
               Status selain "Hadir" hanya memerlukan validasi waktu operational
             </p>
           )}
@@ -486,8 +503,8 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
 
         {/* Jam Masuk */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-            <Clock size={18} />
+          <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <Clock size={18} className="text-gray-600 dark:text-gray-400" />
             Jam Masuk
           </label>
           <input
@@ -495,13 +512,13 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
             value={formData.clockIn}
             onChange={(e) => handleChange("clockIn", e.target.value)}
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
         </div>
 
         {/* Catatan */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
             Catatan (Opsional)
           </label>
           <textarea
@@ -509,7 +526,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
             onChange={(e) => handleChange("notes", e.target.value)}
             rows={3}
             placeholder="Contoh: Sakit demam, Ada keperluan keluarga, dll..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
           />
         </div>
 
@@ -517,20 +534,22 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-4 ${
+          className={`w-full py-4 sm:py-5 min-h-[52px] sm:min-h-[60px] ${
             isAdmin
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-green-600 hover:bg-green-700"
-          } disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
+              ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+              : "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+          } disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
           {loading ? (
             <>
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              Menyimpan...
+              <span className="text-sm sm:text-base">Menyimpan...</span>
             </>
           ) : (
             <>
               <Save size={20} />
-              {isAdmin ? "Simpan Presensi (Admin)" : "Simpan Presensi"}
+              <span className="text-sm sm:text-base">
+                {isAdmin ? "Simpan Presensi (Admin)" : "Simpan Presensi"}
+              </span>
             </>
           )}
         </button>
@@ -540,10 +559,10 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
       <div
         className={`${
           isAdmin
-            ? "bg-blue-50 border-blue-200"
-            : "bg-green-50 border-green-200"
-        } border rounded-lg p-4`}>
-        <p className="text-sm text-gray-800">
+            ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
+            : "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+        } border rounded-lg p-4 sm:p-5`}>
+        <p className="text-sm sm:text-base text-gray-800 dark:text-gray-300">
           <strong>ℹ️ Info:</strong>{" "}
           {isAdmin
             ? "Sebagai Admin, Anda dapat input presensi kapan saja tanpa batasan waktu. Pastikan mengisi catatan untuk audit trail."

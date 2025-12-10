@@ -12,9 +12,9 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
   const isAdmin = currentUser?.role === "admin";
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
       {/* Tab Header - Mobile Responsive */}
-      <div className="flex gap-1 sm:gap-2 border-b border-gray-200 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1 sm:gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto scrollbar-hide">
         {/* TAB 1: SCAN QR */}
         <button
           onClick={() => setActiveTab("qr")}
@@ -22,10 +22,11 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
             flex-1 py-3 px-3 sm:px-4 font-semibold transition-all 
             flex items-center justify-center gap-1.5 sm:gap-2
             text-xs sm:text-sm whitespace-nowrap
+            min-h-[44px]
             ${
               activeTab === "qr"
-                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
             }
           `}>
           <QrCode size={16} className="sm:w-5 sm:h-5" />
@@ -39,10 +40,11 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
             flex-1 py-3 px-3 sm:px-4 font-semibold transition-all 
             flex items-center justify-center gap-1.5 sm:gap-2
             text-xs sm:text-sm whitespace-nowrap
+            min-h-[44px]
             ${
               activeTab === "manual"
-                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
             }
           `}>
           <Edit3 size={16} className="sm:w-5 sm:h-5" />
@@ -57,10 +59,11 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
               flex-1 py-3 px-3 sm:px-4 font-semibold transition-all 
               flex items-center justify-center gap-1.5 sm:gap-2
               text-xs sm:text-sm whitespace-nowrap
+              min-h-[44px]
               ${
                 activeTab === "generate"
-                  ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
               }
             `}>
             <Sparkles size={16} className="sm:w-5 sm:h-5" />

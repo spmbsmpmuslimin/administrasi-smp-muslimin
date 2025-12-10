@@ -1,4 +1,3 @@
-// src/attendance-teacher/TeacherAttendance.js
 import React, { useState, useEffect } from "react";
 import { Clock, Bell, X } from "lucide-react";
 import { supabase } from "../supabaseClient";
@@ -162,18 +161,22 @@ const TeacherAttendance = ({ user }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
       </div>
     );
   }
 
   if (!currentUser) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <div className="text-center">
-          <p className="text-red-600 text-lg">Sesi login tidak ditemukan</p>
-          <p className="text-gray-600 mt-2">Silakan login kembali</p>
+          <p className="text-red-600 dark:text-red-400 text-lg">
+            Sesi login tidak ditemukan
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Silakan login kembali
+          </p>
         </div>
       </div>
     );
@@ -189,13 +192,13 @@ const TeacherAttendance = ({ user }) => {
 
   // ========== TEACHER VIEW ==========
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Reminder Pop-up */}
       {showReminder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-bounce-in">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full animate-bounce-in">
             {/* Header */}
-            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-t-2xl p-6 relative">
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-600 rounded-t-2xl p-6 relative">
               <button
                 onClick={handleDismissReminder}
                 className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-all">
@@ -218,20 +221,20 @@ const TeacherAttendance = ({ user }) => {
 
             {/* Content */}
             <div className="p-6">
-              <p className="text-gray-700 text-center text-lg font-medium mb-6">
+              <p className="text-gray-700 dark:text-gray-200 text-center text-lg font-medium mb-6">
                 Anda Belum Melakukan Presensi Hari Ini. Silakan Lakukan Presensi
                 Sekarang.
               </p>
 
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6">
-                <p className="text-blue-800 text-sm">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400 p-4 rounded-lg mb-6">
+                <p className="text-blue-800 dark:text-blue-200 text-sm">
                   <strong>📋 Info:</strong> Anda memiliki jadwal mengajar hari
                   ini. Silakan lakukan presensi untuk mencatat kehadiran Anda.
                 </p>
               </div>
 
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg mb-6">
-                <p className="text-amber-800 text-sm">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-400 p-4 rounded-lg mb-6">
+                <p className="text-amber-800 dark:text-amber-200 text-sm">
                   <strong>⏰ Batas Waktu:</strong> Input manual presensi
                   tersedia sampai jam 14:00. Pastikan Anda presensi sebelum
                   batas waktu!
@@ -242,7 +245,7 @@ const TeacherAttendance = ({ user }) => {
               <div className="flex gap-3">
                 <button
                   onClick={handleDismissReminder}
-                  className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-all border border-gray-300">
+                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition-all border border-gray-300 dark:border-gray-600">
                   Nanti
                 </button>
                 <button
@@ -257,34 +260,34 @@ const TeacherAttendance = ({ user }) => {
       )}
 
       {/* Header - Mobile Optimized */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-10">
         <div className="px-3 sm:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-3">
             {/* Logo & Title */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="bg-blue-100 p-1.5 sm:p-2 rounded-lg">
-                <Clock className="text-blue-600" size={20} />
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-1.5 sm:p-2 rounded-lg">
+                <Clock className="text-blue-600 dark:text-blue-400" size={20} />
               </div>
               <div>
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-800">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-800 dark:text-white">
                   Presensi Guru
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-500">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Sistem presensi guru menggunakan QR Code atau input manual
                 </p>
               </div>
             </div>
 
             {/* User Info - Responsive */}
-            <div className="flex items-center gap-2 bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-200">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                 {currentUser.full_name.charAt(0)}
               </div>
               <div className="hidden sm:block">
-                <p className="text-sm font-semibold text-gray-800">
+                <p className="text-sm font-semibold text-gray-800 dark:text-white">
                   {currentUser.full_name}
                 </p>
-                <p className="text-xs text-gray-500 capitalize">
+                <p className="text-xs text-gray-500 dark:text-gray-300 capitalize">
                   {currentUser.role === "guru_bk" ? "Guru BK" : "Guru"}
                 </p>
               </div>
@@ -298,7 +301,7 @@ const TeacherAttendance = ({ user }) => {
         <div className="fixed top-20 right-4 z-40 animate-pulse">
           <button
             onClick={() => setShowReminder(true)}
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
+            className="bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
             <Bell size={16} />
             <span className="text-sm font-semibold">Belum Presensi!</span>
           </button>
@@ -316,8 +319,8 @@ const TeacherAttendance = ({ user }) => {
               transition-all text-sm sm:text-base
               ${
                 activeView === "presensi"
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600"
               }
             `}>
             Presensi
@@ -329,8 +332,8 @@ const TeacherAttendance = ({ user }) => {
               transition-all text-sm sm:text-base
               ${
                 activeView === "history"
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600"
               }
             `}>
             Riwayat Saya

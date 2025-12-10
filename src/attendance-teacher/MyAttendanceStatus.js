@@ -27,7 +27,6 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
   const fetchMyAttendance = async () => {
     setLoading(true);
     try {
-      // ✅ FIX: Get today's date in local timezone (Indonesia/WIB)
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -53,9 +52,9 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-        <div className="h-10 bg-gray-200 rounded w-3/4"></div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
       </div>
     );
   }
@@ -65,9 +64,9 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
       return {
         icon: Clock,
         color: "bg-gray-500",
-        textColor: "text-gray-600",
-        bgLight: "bg-gray-50",
-        borderColor: "border-gray-300",
+        textColor: "text-gray-600 dark:text-gray-400",
+        bgLight: "bg-gray-50 dark:bg-gray-700",
+        borderColor: "border-gray-300 dark:border-gray-600",
         title: "Belum Absen",
         message: "Anda belum melakukan presensi hari ini",
         detail: "Silakan scan QR Code atau input manual",
@@ -78,36 +77,36 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
       Hadir: {
         icon: CheckCircle,
         color: "bg-green-500",
-        textColor: "text-green-600",
-        bgLight: "bg-green-50",
-        borderColor: "border-green-300",
+        textColor: "text-green-600 dark:text-green-400",
+        bgLight: "bg-green-50 dark:bg-green-900/20",
+        borderColor: "border-green-300 dark:border-green-600",
         title: "Hadir",
         message: "Anda sudah absen hari ini",
       },
       Izin: {
         icon: AlertCircle,
         color: "bg-yellow-500",
-        textColor: "text-yellow-600",
-        bgLight: "bg-yellow-50",
-        borderColor: "border-yellow-300",
+        textColor: "text-yellow-600 dark:text-yellow-400",
+        bgLight: "bg-yellow-50 dark:bg-yellow-900/20",
+        borderColor: "border-yellow-300 dark:border-yellow-600",
         title: "Izin",
         message: "Status presensi: Izin",
       },
       Sakit: {
         icon: AlertCircle,
         color: "bg-orange-500",
-        textColor: "text-orange-600",
-        bgLight: "bg-orange-50",
-        borderColor: "border-orange-300",
+        textColor: "text-orange-600 dark:text-orange-400",
+        bgLight: "bg-orange-50 dark:bg-orange-900/20",
+        borderColor: "border-orange-300 dark:border-orange-600",
         title: "Sakit",
         message: "Status presensi: Sakit",
       },
       Alpa: {
         icon: XCircle,
         color: "bg-red-500",
-        textColor: "text-red-600",
-        bgLight: "bg-red-50",
-        borderColor: "border-red-300",
+        textColor: "text-red-600 dark:text-red-400",
+        bgLight: "bg-red-50 dark:bg-red-900/20",
+        borderColor: "border-red-300 dark:border-red-600",
         title: "Alpha",
         message: "Status presensi: Alpha",
       },
@@ -123,15 +122,13 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
     if (!timeString) return "-";
 
     try {
-      // If format is HH:MM:SS, return HH.MM WIB
       if (
         typeof timeString === "string" &&
         timeString.match(/^\d{2}:\d{2}:\d{2}$/)
       ) {
-        return timeString.substring(0, 5).replace(":", ".") + " WIB"; // Return HH.MM WIB
+        return timeString.substring(0, 5).replace(":", ".") + " WIB";
       }
 
-      // If it's a full datetime
       const date = new Date(timeString);
       if (!isNaN(date.getTime())) {
         const time = date.toLocaleTimeString("id-ID", {
@@ -141,7 +138,6 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
         return time.replace(":", ".") + " WIB";
       }
 
-      // Fallback: return as-is
       return timeString;
     } catch (error) {
       console.error("Error formatting time:", error);
@@ -151,13 +147,13 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-lg p-6 border-l-4 ${config.borderColor}`}>
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 ${config.borderColor}`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">
             Status Presensi Anda
           </h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {new Date().toLocaleDateString("id-ID", {
               weekday: "long",
               year: "numeric",
@@ -176,35 +172,45 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
           <p className={`text-2xl font-bold ${config.textColor}`}>
             {config.title}
           </p>
-          <p className="text-sm text-gray-600 mt-1">{config.message}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            {config.message}
+          </p>
         </div>
 
         {todayAttendance ? (
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
             <div>
-              <p className="text-sm font-bold text-gray-700 mb-1">Jam Masuk</p>
-              <p className="text-sm font-semibold text-gray-800">
+              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Jam Masuk
+              </p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-white">
                 {formatTime(todayAttendance.clock_in)}
               </p>
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-700 mb-1">Metode</p>
-              <p className="text-sm font-semibold text-gray-800">
+              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Metode
+              </p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-white">
                 {formatCheckInMethod(todayAttendance.check_in_method) || "-"}
               </p>
             </div>
             {todayAttendance.notes && (
               <div className="col-span-2">
-                <p className="text-sm font-bold text-gray-700 mb-1">Catatan</p>
-                <p className="text-sm text-gray-700 italic">
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  Catatan
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 italic">
                   {todayAttendance.notes}
                 </p>
               </div>
             )}
           </div>
         ) : (
-          <div className="pt-3 border-t border-gray-100">
-            <p className="text-sm text-gray-500">{config.detail}</p>
+          <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {config.detail}
+            </p>
           </div>
         )}
       </div>

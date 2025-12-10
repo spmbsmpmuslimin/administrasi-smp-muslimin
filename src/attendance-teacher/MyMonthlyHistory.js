@@ -148,12 +148,15 @@ const MyMonthlyHistory = ({ currentUser }) => {
 
   const getStatusColor = (status) => {
     const colors = {
-      Hadir: "bg-green-500 text-white",
-      Izin: "bg-blue-500 text-white",
-      Sakit: "bg-yellow-500 text-white",
-      Alpa: "bg-red-500 text-white",
+      Hadir: "bg-green-500 dark:bg-green-600 text-white",
+      Izin: "bg-blue-500 dark:bg-blue-600 text-white",
+      Sakit: "bg-yellow-500 dark:bg-yellow-600 text-white",
+      Alpa: "bg-red-500 dark:bg-red-600 text-white",
     };
-    return colors[status] || "bg-gray-200 text-gray-600";
+    return (
+      colors[status] ||
+      "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+    );
   };
 
   const getStatusIcon = (status) => {
@@ -219,52 +222,86 @@ const MyMonthlyHistory = ({ currentUser }) => {
   return (
     <div className="space-y-4">
       {/* Header & Stats */}
-      <div className="bg-white rounded-xl shadow-lg p-4 md:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Calendar className="text-blue-600" size={24} />
-          <h2 className="text-xl font-bold text-gray-800">Riwayat Saya</h2>
+          <Calendar className="text-blue-600 dark:text-blue-400" size={24} />
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+            Riwayat Saya
+          </h2>
         </div>
 
         {/* Stats Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
-          <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="text-green-600" size={16} />
-              <p className="text-xs text-green-700 font-medium">Hadir</p>
+              <CheckCircle
+                className="text-green-600 dark:text-green-400"
+                size={16}
+              />
+              <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                Hadir
+              </p>
             </div>
-            <p className="text-xl font-bold text-green-600">{stats.hadir}</p>
+            <p className="text-xl font-bold text-green-600 dark:text-green-400">
+              {stats.hadir}
+            </p>
           </div>
 
-          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="text-blue-600" size={16} />
-              <p className="text-xs text-blue-700 font-medium">Izin</p>
+              <AlertCircle
+                className="text-blue-600 dark:text-blue-400"
+                size={16}
+              />
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                Izin
+              </p>
             </div>
-            <p className="text-xl font-bold text-blue-600">{stats.izin}</p>
+            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+              {stats.izin}
+            </p>
           </div>
 
-          <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="text-yellow-600" size={16} />
-              <p className="text-xs text-yellow-700 font-medium">Sakit</p>
+              <AlertCircle
+                className="text-yellow-600 dark:text-yellow-400"
+                size={16}
+              />
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">
+                Sakit
+              </p>
             </div>
-            <p className="text-xl font-bold text-yellow-600">{stats.sakit}</p>
+            <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
+              {stats.sakit}
+            </p>
           </div>
 
-          <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 border border-red-200 dark:border-red-800">
             <div className="flex items-center gap-2 mb-1">
-              <XCircle className="text-red-600" size={16} />
-              <p className="text-xs text-red-700 font-medium">Alpha</p>
+              <XCircle className="text-red-600 dark:text-red-400" size={16} />
+              <p className="text-xs text-red-700 dark:text-red-300 font-medium">
+                Alpha
+              </p>
             </div>
-            <p className="text-xl font-bold text-red-600">{stats.alpa}</p>
+            <p className="text-xl font-bold text-red-600 dark:text-red-400">
+              {stats.alpa}
+            </p>
           </div>
 
-          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 col-span-2 sm:col-span-1">
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800 col-span-2 sm:col-span-1">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="text-blue-600" size={16} />
-              <p className="text-xs text-blue-700 font-medium">Rate</p>
+              <TrendingUp
+                className="text-blue-600 dark:text-blue-400"
+                size={16}
+              />
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                Rate
+              </p>
             </div>
-            <p className="text-xl font-bold text-blue-600">{attendanceRate}%</p>
+            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+              {attendanceRate}%
+            </p>
           </div>
         </div>
       </div>
@@ -273,20 +310,20 @@ const MyMonthlyHistory = ({ currentUser }) => {
       <div className="flex gap-2 px-1">
         <button
           onClick={() => setViewMode("list")}
-          className={`flex-1 sm:flex-none sm:px-6 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
+          className={`flex-1 sm:flex-none sm:px-6 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm min-h-[44px] ${
             viewMode === "list"
-              ? "bg-blue-600 text-white shadow-lg"
-              : "bg-white text-gray-600 hover:bg-gray-50"
+              ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
+              : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           }`}>
           <List size={18} />
           <span className="hidden sm:inline">List</span>
         </button>
         <button
           onClick={() => setViewMode("calendar")}
-          className={`flex-1 sm:flex-none sm:px-6 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
+          className={`flex-1 sm:flex-none sm:px-6 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-sm min-h-[44px] ${
             viewMode === "calendar"
-              ? "bg-blue-600 text-white shadow-lg"
-              : "bg-white text-gray-600 hover:bg-gray-50"
+              ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
+              : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           }`}>
           <Grid3x3 size={18} />
           <span className="hidden sm:inline">Calendar</span>
@@ -294,40 +331,47 @@ const MyMonthlyHistory = ({ currentUser }) => {
       </div>
 
       {/* Content */}
-      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl shadow-lg p-4 md:p-6 border border-blue-100">
+      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 rounded-xl shadow-lg p-4 md:p-6 border border-blue-100 dark:border-gray-700">
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-600 mt-4">Memuat data...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">
+              Memuat data...
+            </p>
           </div>
         ) : viewMode === "list" ? (
           /* List View */
           <div className="space-y-2">
             {attendances.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 Belum ada data presensi bulan ini
               </div>
             ) : (
               attendances.map((att) => (
                 <div
                   key={att.id}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-md transition-all border border-gray-100">
+                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg hover:shadow-md transition-all border border-gray-100 dark:border-gray-700">
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-800 text-sm sm:text-base">
+                    <p className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">
                       {formatDate(att.attendance_date)}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Clock size={14} className="text-gray-500" />
-                      <p className="text-xs text-gray-600">
+                      <Clock
+                        size={14}
+                        className="text-gray-500 dark:text-gray-400"
+                      />
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
                         {formatTime(att.clock_in)}
                       </p>
-                      <span className="text-xs text-gray-400">•</span>
-                      <p className="text-xs text-gray-600">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        •
+                      </span>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
                         {formatCheckInMethod(att.check_in_method)}
                       </p>
                     </div>
                     {att.notes && (
-                      <p className="text-xs text-gray-500 italic mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-1">
                         {att.notes}
                       </p>
                     )}
@@ -346,21 +390,27 @@ const MyMonthlyHistory = ({ currentUser }) => {
         ) : (
           /* Calendar View */
           <>
-            <div className="max-w-md mx-auto bg-white rounded-xl p-4 shadow-md border border-gray-200">
+            <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-700">
               {/* Month & Year Selector */}
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <button
                   onClick={handlePrevMonth}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-all">
-                  <ChevronLeft size={20} className="text-gray-700" />
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center">
+                  <ChevronLeft
+                    size={20}
+                    className="text-gray-700 dark:text-gray-300"
+                  />
                 </button>
-                <span className="px-4 py-2 font-bold text-gray-800 text-lg">
+                <span className="px-4 py-2 font-bold text-gray-800 dark:text-white text-lg">
                   {months[selectedMonth]} {selectedYear}
                 </span>
                 <button
                   onClick={handleNextMonth}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-all">
-                  <ChevronRight size={20} className="text-gray-700" />
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center">
+                  <ChevronRight
+                    size={20}
+                    className="text-gray-700 dark:text-gray-300"
+                  />
                 </button>
               </div>
 
@@ -370,7 +420,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
                   (day, idx) => (
                     <div
                       key={idx}
-                      className="text-center font-bold text-gray-700 text-xs py-2 bg-gradient-to-b from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      className="text-center font-bold text-gray-700 dark:text-gray-300 text-xs py-2 bg-gradient-to-b from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-900 rounded-lg border border-blue-200 dark:border-gray-600">
                       {day}
                     </div>
                   )
@@ -408,12 +458,12 @@ const MyMonthlyHistory = ({ currentUser }) => {
                           attendance
                             ? getStatusColor(attendance.status) + " shadow-md"
                             : isToday
-                            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg border-2 border-blue-300"
+                            ? "bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-lg border-2 border-blue-300 dark:border-blue-500"
                             : holiday
-                            ? "bg-gradient-to-br from-red-100 to-pink-100 border-2 border-red-300"
+                            ? "bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 border-2 border-red-300 dark:border-red-700"
                             : weekend
-                            ? "bg-gradient-to-br from-gray-200 to-gray-300 border border-gray-400"
-                            : "bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 border border-gray-200"
+                            ? "bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 border border-gray-400 dark:border-gray-600"
+                            : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-600 dark:hover:to-gray-700 border border-gray-200 dark:border-gray-600"
                         }
                       `}
                       title={
@@ -434,16 +484,16 @@ const MyMonthlyHistory = ({ currentUser }) => {
                           attendance || isToday
                             ? "text-white"
                             : holiday
-                            ? "text-red-700"
+                            ? "text-red-700 dark:text-red-300"
                             : weekend
-                            ? "text-gray-600"
-                            : "text-gray-700"
+                            ? "text-gray-600 dark:text-gray-400"
+                            : "text-gray-700 dark:text-gray-300"
                         }`}>
                         {day}
                       </span>
 
                       {attendance && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border-2 border-current shadow-sm"></div>
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white dark:bg-gray-800 rounded-full border-2 border-current shadow-sm"></div>
                       )}
 
                       {isToday && !attendance && (
@@ -467,58 +517,58 @@ const MyMonthlyHistory = ({ currentUser }) => {
               </div>
 
               {/* Legend */}
-              <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
                 {/* Status Legend */}
                 <div className="grid grid-cols-4 gap-2">
                   <div className="flex flex-col items-center gap-1">
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
                       <CheckCircle size={14} className="text-white" />
                     </div>
-                    <span className="text-gray-700 text-xs font-medium">
+                    <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">
                       Hadir
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
                       <AlertCircle size={14} className="text-white" />
                     </div>
-                    <span className="text-gray-700 text-xs font-medium">
+                    <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">
                       Izin
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                    <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 dark:from-yellow-600 dark:to-yellow-700 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
                       <AlertCircle size={14} className="text-white" />
                     </div>
-                    <span className="text-gray-700 text-xs font-medium">
+                    <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">
                       Sakit
                     </span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <div className="bg-gradient-to-br from-red-500 to-red-600 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
+                    <div className="bg-gradient-to-br from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 w-8 h-8 rounded-lg shadow-md flex items-center justify-center">
                       <XCircle size={14} className="text-white" />
                     </div>
-                    <span className="text-gray-700 text-xs font-medium">
+                    <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">
                       Alpha
                     </span>
                   </div>
                 </div>
 
                 {/* Non-Working Days Legend */}
-                <div className="flex items-center justify-center gap-4 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-center gap-4 pt-2 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-2">
-                    <div className="bg-gradient-to-br from-gray-200 to-gray-300 w-6 h-6 rounded border border-gray-400 flex items-center justify-center">
+                    <div className="bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 w-6 h-6 rounded border border-gray-400 dark:border-gray-600 flex items-center justify-center">
                       <span className="text-xs">🏠</span>
                     </div>
-                    <span className="text-gray-600 text-xs font-medium">
+                    <span className="text-gray-600 dark:text-gray-400 text-xs font-medium">
                       Weekend
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="bg-gradient-to-br from-red-100 to-pink-100 w-6 h-6 rounded border-2 border-red-300 flex items-center justify-center">
+                    <div className="bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 w-6 h-6 rounded border-2 border-red-300 dark:border-red-700 flex items-center justify-center">
                       <span className="text-xs">🎉</span>
                     </div>
-                    <span className="text-gray-600 text-xs font-medium">
+                    <span className="text-gray-600 dark:text-gray-400 text-xs font-medium">
                       Libur Nasional
                     </span>
                   </div>

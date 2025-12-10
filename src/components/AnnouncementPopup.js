@@ -15,7 +15,7 @@ const AnnouncementPopup = ({ userId, userRole }) => {
   const checkForNewAnnouncement = async () => {
     try {
       const now = new Date().toISOString();
-      const today = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD (2025-12-06)
+      const today = new Date().toISOString().split("T")[0];
 
       // 1. Ambil pengumuman terbaru yang aktif
       const { data: announcements, error: fetchError } = await supabase
@@ -40,13 +40,12 @@ const AnnouncementPopup = ({ userId, userRole }) => {
       const latestAnnouncement = announcements[0];
 
       // 2. 🆕 Cek apakah user sudah baca pengumuman ini HARI INI
-      // Pop-up akan muncul lagi besok meskipun udah dibaca hari ini
       const { data: readStatus, error: readError } = await supabase
         .from("announcement_reads")
         .select("*")
         .eq("announcement_id", latestAnnouncement.id)
         .eq("user_id", userId)
-        .gte("read_at", today + "T00:00:00") // 👈 CEK HANYA HARI INI
+        .gte("read_at", today + "T00:00:00")
         .maybeSingle();
 
       if (readError) {
@@ -88,37 +87,38 @@ const AnnouncementPopup = ({ userId, userRole }) => {
   if (!showPopup || !announcement) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-3 md:p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-lg sm:rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] sm:max-h-[85vh] md:max-h-[80vh] overflow-hidden mx-2 sm:mx-4">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Bell className="w-6 h-6 animate-pulse" />
-            <h2 className="text-xl font-bold">📢 Pengumuman</h2>
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 text-white p-3 sm:p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Bell className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+            <h2 className="text-lg sm:text-xl font-bold">📢 Pengumuman</h2>
           </div>
           <button
             onClick={handleClose}
-            className="hover:bg-blue-700 rounded-full p-1 transition-colors">
-            <X className="w-6 h-6" />
+            className="hover:bg-blue-700 dark:hover:bg-blue-900 rounded-full p-1.5 sm:p-1 transition-colors touch-target min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Tutup pengumuman">
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
-          <h3 className="text-2xl font-bold text-slate-800 mb-4">
+        <div className="p-4 sm:p-5 md:p-6 overflow-y-auto max-h-[calc(90vh-180px)] sm:max-h-[calc(85vh-180px)] md:max-h-[60vh]">
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3 sm:mb-4">
             {announcement.title}
           </h3>
 
-          <div className="prose max-w-none">
-            <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">
+          <div className="prose max-w-none dark:prose-invert">
+            <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed text-sm sm:text-base">
               {announcement.content}
             </p>
           </div>
 
           {/* Timestamp */}
-          <div className="mt-6 pt-4 border-t border-slate-200">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Calendar className="w-4 h-4" />
+          <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>
                 {new Date(announcement.created_at).toLocaleDateString("id-ID", {
                   weekday: "long",
@@ -134,10 +134,11 @@ const AnnouncementPopup = ({ userId, userRole }) => {
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-50 p-4 flex justify-end border-t border-slate-200">
+        <div className="bg-slate-50 dark:bg-slate-800 p-3 sm:p-4 flex justify-end border-t border-slate-200 dark:border-slate-700">
           <button
             onClick={handleClose}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 hover:from-blue-700 hover:to-indigo-700 dark:hover:from-blue-800 dark:hover:to-indigo-800 text-white px-5 sm:px-6 py-2.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base touch-target min-h-[44px] w-full sm:w-auto"
+            aria-label="Tutup pengumuman">
             Tutup
           </button>
         </div>

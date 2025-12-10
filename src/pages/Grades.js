@@ -603,10 +603,10 @@ const Grades = ({ user, onShowToast }) => {
   // Loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <Calculator className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-600 mx-auto mb-4 animate-spin" />
-          <p className="text-slate-600 text-sm sm:text-base">
+          <Calculator className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-600 dark:text-indigo-400 mx-auto mb-4 animate-spin" />
+          <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base">
             Memeriksa autentikasi...
           </p>
         </div>
@@ -617,10 +617,12 @@ const Grades = ({ user, onShowToast }) => {
   // Not authenticated
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 text-center max-w-md">
-          <div className="text-red-500 text-4xl sm:text-5xl mb-4">⚠️</div>
-          <p className="text-slate-700 text-sm sm:text-base">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 p-6 sm:p-8 text-center max-w-md">
+          <div className="text-red-500 dark:text-red-400 text-4xl sm:text-5xl mb-4">
+            ⚠️
+          </div>
+          <p className="text-slate-700 dark:text-slate-300 text-sm sm:text-base">
             Anda harus login untuk mengakses halaman ini
           </p>
         </div>
@@ -631,19 +633,19 @@ const Grades = ({ user, onShowToast }) => {
   const stats = getGradeStats();
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
               <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                <Calculator className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
+                <Calculator className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-indigo-600 dark:text-indigo-400" />
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
                   Input Nilai Siswa
                 </h1>
               </div>
-              <p className="text-sm sm:text-base text-slate-600">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
                 Kelola Nilai Siswa Untuk Mata Pelajaran
               </p>
             </div>
@@ -652,21 +654,21 @@ const Grades = ({ user, onShowToast }) => {
           {/* Message */}
           {message && (
             <div
-              className={`mt-3 sm:mt-4 p-2.5 sm:p-3 rounded-lg text-sm sm:text-base ${
+              className={`mt-3 sm:mt-4 p-3 sm:p-3.5 rounded-lg text-sm sm:text-base ${
                 message.includes("Error") || message.includes("Gagal")
-                  ? "bg-red-100 text-red-700 border border-red-300"
-                  : "bg-green-100 text-green-700 border border-green-300"
+                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700"
+                  : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"
               }`}>
               {message}
             </div>
           )}
 
-          {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
+          {/* Filters - Mobile: 1 kolom, Tablet: 2 kolom, Desktop: 4 kolom */}
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
             {/* Academic Year */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-1.5" />
                 Tahun Akademik
               </label>
               <select
@@ -678,12 +680,17 @@ const Grades = ({ user, onShowToast }) => {
                   setStudents([]);
                   setGrades({});
                 }}
-                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                 disabled={loading || academicYears.length === 0}
-                style={{ minHeight: "44px" }}>
-                <option value="">Pilih Tahun Akademik</option>
+                style={{ minHeight: "44px", touchAction: "manipulation" }}>
+                <option value="" className="dark:bg-gray-700">
+                  Pilih Tahun Akademik
+                </option>
                 {academicYears.map((year) => (
-                  <option key={year} value={year}>
+                  <option
+                    key={year}
+                    value={year}
+                    className="dark:bg-gray-700 dark:text-slate-100">
                     {year}
                   </option>
                 ))}
@@ -692,8 +699,8 @@ const Grades = ({ user, onShowToast }) => {
 
             {/* Semester */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                <GraduationCap className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <GraduationCap className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-1.5" />
                 Semester
               </label>
               <select
@@ -705,18 +712,22 @@ const Grades = ({ user, onShowToast }) => {
                   setStudents([]);
                   setGrades({});
                 }}
-                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                 disabled={!academicYear}
-                style={{ minHeight: "44px" }}>
-                <option value="1">Semester 1</option>
-                <option value="2">Semester 2</option>
+                style={{ minHeight: "44px", touchAction: "manipulation" }}>
+                <option value="1" className="dark:bg-gray-700">
+                  Semester 1
+                </option>
+                <option value="2" className="dark:bg-gray-700">
+                  Semester 2
+                </option>
               </select>
             </div>
 
             {/* Mata Pelajaran */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-1.5" />
                 Mata Pelajaran
               </label>
               <select
@@ -727,12 +738,17 @@ const Grades = ({ user, onShowToast }) => {
                   setStudents([]);
                   setGrades({});
                 }}
-                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                 disabled={loading || !academicYear || subjects.length === 0}
-                style={{ minHeight: "44px" }}>
-                <option value="">Pilih Mata Pelajaran</option>
+                style={{ minHeight: "44px", touchAction: "manipulation" }}>
+                <option value="" className="dark:bg-gray-700">
+                  Pilih Mata Pelajaran
+                </option>
                 {subjects.map((subject, index) => (
-                  <option key={index} value={subject}>
+                  <option
+                    key={index}
+                    value={subject}
+                    className="dark:bg-gray-700 dark:text-slate-100">
                     {subject}
                   </option>
                 ))}
@@ -741,19 +757,24 @@ const Grades = ({ user, onShowToast }) => {
 
             {/* Kelas */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                <Users className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
+              <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-1.5" />
                 Kelas
               </label>
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                 disabled={!selectedSubject || loading || classes.length === 0}
-                style={{ minHeight: "44px" }}>
-                <option value="">Pilih Kelas</option>
+                style={{ minHeight: "44px", touchAction: "manipulation" }}>
+                <option value="" className="dark:bg-gray-700">
+                  Pilih Kelas
+                </option>
                 {classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
+                  <option
+                    key={cls.id}
+                    value={cls.id}
+                    className="dark:bg-gray-700 dark:text-slate-100">
                     {cls.displayName}
                   </option>
                 ))}
@@ -764,49 +785,49 @@ const Grades = ({ user, onShowToast }) => {
 
         {/* Stats Cards */}
         {selectedClass && selectedSubject && students.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-6">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="bg-blue-100 p-2.5 sm:p-3 rounded-lg">
-                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-2.5 sm:p-3 rounded-lg">
+                  <Users className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-800">
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
                     {stats.total}
                   </p>
-                  <p className="text-xs sm:text-sm text-slate-600">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                     Total Siswa
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="bg-green-100 p-2.5 sm:p-3 rounded-lg">
-                  <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                <div className="bg-green-100 dark:bg-green-900/30 p-2.5 sm:p-3 rounded-lg">
+                  <Eye className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-800">
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
                     {stats.completed}
                   </p>
-                  <p className="text-xs sm:text-sm text-slate-600">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                     Sudah Dinilai
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="bg-purple-100 p-2.5 sm:p-3 rounded-lg">
-                  <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                <div className="bg-purple-100 dark:bg-purple-900/30 p-2.5 sm:p-3 rounded-lg">
+                  <BarChart3 className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-800">
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
                     {stats.average}
                   </p>
-                  <p className="text-xs sm:text-sm text-slate-600">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                     Rata-rata NA
                   </p>
                 </div>
@@ -817,53 +838,55 @@ const Grades = ({ user, onShowToast }) => {
 
         {/* Grades Table/Cards */}
         {selectedClass && selectedSubject && students.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-slate-200">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 sm:p-5 md:p-6 border-b border-slate-200 dark:border-gray-700">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
                 <div>
-                  <h2 className="text-base sm:text-lg font-semibold text-slate-800">
+                  <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-100">
                     Daftar Nilai -{" "}
                     {classes.find((c) => c.id === selectedClass)?.displayName}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                     {selectedSubject} • {academicYear} • Semester {semester}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                     NA = Rata-rata NH (40%) + PSTS (30%) + PSAS (30%)
                   </p>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                {/* Action Buttons - Responsive Layout */}
+                <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
                   <button
                     onClick={saveGrades}
                     disabled={loading || students.length === 0}
-                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation text-sm sm:text-base"
-                    style={{ minHeight: "44px" }}>
-                    <Save className="w-4 h-4" />
+                    className="flex-1 xs:flex-none bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] text-sm sm:text-base"
+                    style={{ minHeight: "44px", touchAction: "manipulation" }}>
+                    <Save className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                     {loading ? "Menyimpan..." : "Simpan Nilai"}
                   </button>
 
                   <button
                     onClick={handleExport}
                     disabled={loading || students.length === 0}
-                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation text-sm sm:text-base"
+                    className="flex-1 xs:flex-none bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] text-sm sm:text-base"
                     title="Export data nilai ke Excel"
-                    style={{ minHeight: "44px" }}>
-                    <Download className="w-4 h-4" />
-                    Export Excel
+                    style={{ minHeight: "44px", touchAction: "manipulation" }}>
+                    <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                    <span className="hidden xs:inline">Export Excel</span>
+                    <span className="xs:hidden">Export</span>
                   </button>
 
                   <label
-                    className={`w-full sm:w-auto ${
+                    className={`flex-1 xs:flex-none ${
                       loading || students.length === 0
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-                    } text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation text-sm sm:text-base`}
+                        ? "bg-gray-400 dark:bg-gray-700 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer"
+                    } text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] text-sm sm:text-base`}
                     title="Import nilai dari file Excel"
-                    style={{ minHeight: "44px" }}>
-                    <Upload className="w-4 h-4" />
-                    Import Excel
+                    style={{ minHeight: "44px", touchAction: "manipulation" }}>
+                    <Upload className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                    <span className="hidden xs:inline">Import Excel</span>
+                    <span className="xs:hidden">Import</span>
                     <input
                       type="file"
                       accept=".xlsx,.xls"
@@ -883,34 +906,34 @@ const Grades = ({ user, onShowToast }) => {
                 return (
                   <div
                     key={student.id}
-                    className="border-b border-slate-100 p-4">
+                    className="border-b border-slate-100 dark:border-gray-700 p-4">
                     <div className="mb-3">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <div className="font-medium text-slate-900 text-sm">
+                          <div className="font-medium text-slate-900 dark:text-slate-100 text-sm">
                             {index + 1}. {student.full_name}
                           </div>
-                          <div className="text-xs text-slate-600">
+                          <div className="text-xs text-slate-600 dark:text-slate-400">
                             NIS: {student.nis}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-xs text-slate-600 mb-1">
+                          <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">
                             Nilai Akhir
                           </div>
-                          <div className="font-bold text-lg text-indigo-600 bg-indigo-50 rounded px-3 py-1">
+                          <div className="font-bold text-base sm:text-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded px-3 py-1.5">
                             {studentGrade.na || "0.00"}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Grade Inputs - Grid 2 Kolom */}
+                    {/* Grade Inputs - Grid untuk mobile */}
                     <div className="space-y-3">
                       <div className="grid grid-cols-3 gap-2">
                         {/* NH1 */}
                         <div>
-                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                             NH1
                           </label>
                           <input
@@ -922,16 +945,19 @@ const Grades = ({ user, onShowToast }) => {
                             onChange={(e) =>
                               updateGrade(student.id, "NH1", e.target.value)
                             }
-                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                             placeholder="0"
                             disabled={loading}
-                            style={{ minHeight: "44px" }}
+                            style={{
+                              minHeight: "44px",
+                              touchAction: "manipulation",
+                            }}
                           />
                         </div>
 
                         {/* NH2 */}
                         <div>
-                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                             NH2
                           </label>
                           <input
@@ -943,16 +969,19 @@ const Grades = ({ user, onShowToast }) => {
                             onChange={(e) =>
                               updateGrade(student.id, "NH2", e.target.value)
                             }
-                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                             placeholder="0"
                             disabled={loading}
-                            style={{ minHeight: "44px" }}
+                            style={{
+                              minHeight: "44px",
+                              touchAction: "manipulation",
+                            }}
                           />
                         </div>
 
                         {/* NH3 */}
                         <div>
-                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                             NH3
                           </label>
                           <input
@@ -964,10 +993,13 @@ const Grades = ({ user, onShowToast }) => {
                             onChange={(e) =>
                               updateGrade(student.id, "NH3", e.target.value)
                             }
-                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                             placeholder="0"
                             disabled={loading}
-                            style={{ minHeight: "44px" }}
+                            style={{
+                              minHeight: "44px",
+                              touchAction: "manipulation",
+                            }}
                           />
                         </div>
                       </div>
@@ -975,7 +1007,7 @@ const Grades = ({ user, onShowToast }) => {
                       <div className="grid grid-cols-2 gap-2">
                         {/* PSTS */}
                         <div>
-                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                             PSTS
                           </label>
                           <input
@@ -987,16 +1019,19 @@ const Grades = ({ user, onShowToast }) => {
                             onChange={(e) =>
                               updateGrade(student.id, "PSTS", e.target.value)
                             }
-                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                             placeholder="0"
                             disabled={loading}
-                            style={{ minHeight: "44px" }}
+                            style={{
+                              minHeight: "44px",
+                              touchAction: "manipulation",
+                            }}
                           />
                         </div>
 
                         {/* PSAS */}
                         <div>
-                          <label className="block text-xs font-medium text-slate-700 mb-1">
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                             PSAS
                           </label>
                           <input
@@ -1008,10 +1043,13 @@ const Grades = ({ user, onShowToast }) => {
                             onChange={(e) =>
                               updateGrade(student.id, "PSAS", e.target.value)
                             }
-                            className="w-full p-2.5 text-sm text-center border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-manipulation"
+                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                             placeholder="0"
                             disabled={loading}
-                            style={{ minHeight: "44px" }}
+                            style={{
+                              minHeight: "44px",
+                              touchAction: "manipulation",
+                            }}
                           />
                         </div>
                       </div>
@@ -1024,55 +1062,57 @@ const Grades = ({ user, onShowToast }) => {
             {/* Desktop View - Table */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50">
+                <thead className="bg-slate-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       No
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       NIS
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Nama Siswa
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       NH1
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       NH2
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       NH3
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       PSTS
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       PSAS
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider bg-indigo-50">
+                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30">
                       NA
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-slate-200 dark:divide-gray-700">
                   {students.map((student, index) => {
                     const studentGrade = grades[student.id] || {};
                     return (
-                      <tr key={student.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 text-sm text-slate-900">
+                      <tr
+                        key={student.id}
+                        className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
+                        <td className="px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100">
                           {index + 1}
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-900 whitespace-nowrap">
+                        <td className="px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
                           {student.nis}
                         </td>
-                        <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                        <td className="px-4 py-3.5 text-sm font-medium text-slate-900 dark:text-slate-100">
                           {student.full_name}
                         </td>
 
                         {/* Input Fields */}
                         {assignmentTypes.map((type) => (
-                          <td key={type} className="px-4 py-3">
+                          <td key={type} className="px-4 py-3.5">
                             <input
                               type="number"
                               min="0"
@@ -1082,7 +1122,7 @@ const Grades = ({ user, onShowToast }) => {
                               onChange={(e) =>
                                 updateGrade(student.id, type, e.target.value)
                               }
-                              className="w-24 p-2 text-center text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              className="w-24 p-2.5 text-center text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                               placeholder="0"
                               disabled={loading}
                             />
@@ -1090,8 +1130,8 @@ const Grades = ({ user, onShowToast }) => {
                         ))}
 
                         {/* Nilai Akhir */}
-                        <td className="px-4 py-3">
-                          <div className="text-center font-bold text-indigo-600 bg-indigo-50 rounded px-3 py-2">
+                        <td className="px-4 py-3.5">
+                          <div className="text-center font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded px-3 py-2">
                             {studentGrade.na || "0.00"}
                           </div>
                         </td>
@@ -1109,12 +1149,12 @@ const Grades = ({ user, onShowToast }) => {
           selectedSubject &&
           students.length === 0 &&
           !loading && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-12 text-center">
-              <Users className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-base sm:text-lg font-medium text-slate-500 mb-2">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-6 sm:p-8 md:p-12 text-center">
+              <Users className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-slate-300 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-base sm:text-lg md:text-xl font-medium text-slate-500 dark:text-slate-400 mb-2">
                 Tidak ada siswa aktif
               </h3>
-              <p className="text-sm sm:text-base text-slate-400">
+              <p className="text-sm sm:text-base text-slate-400 dark:text-slate-500">
                 Tidak ada siswa aktif di kelas ini untuk tahun akademik{" "}
                 {academicYear}
               </p>
@@ -1122,24 +1162,24 @@ const Grades = ({ user, onShowToast }) => {
           )}
 
         {!selectedClass && selectedSubject && classes.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-12 text-center">
-            <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-base sm:text-lg font-medium text-slate-500 mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-6 sm:p-8 md:p-12 text-center">
+            <BookOpen className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-slate-300 dark:text-gray-600 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg md:text-xl font-medium text-slate-500 dark:text-slate-400 mb-2">
               Tidak ada kelas
             </h3>
-            <p className="text-sm sm:text-base text-slate-400">
+            <p className="text-sm sm:text-base text-slate-400 dark:text-slate-500">
               Tidak ada kelas untuk mata pelajaran ini di semester {semester}
             </p>
           </div>
         )}
 
         {(!selectedClass || !selectedSubject) && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sm:p-12 text-center">
-            <Calculator className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-base sm:text-lg font-medium text-slate-500 mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-6 sm:p-8 md:p-12 text-center">
+            <Calculator className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-slate-300 dark:text-gray-600 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg md:text-xl font-medium text-slate-500 dark:text-slate-400 mb-2">
               Pilih Filter
             </h3>
-            <p className="text-sm sm:text-base text-slate-400">
+            <p className="text-sm sm:text-base text-slate-400 dark:text-slate-500">
               Silakan lengkapi semua filter untuk mulai input nilai
             </p>
           </div>
