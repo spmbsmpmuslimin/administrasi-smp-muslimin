@@ -252,7 +252,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
               <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400 p-4 rounded-lg mb-4">
                 <div className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
                   <p>
-                    <strong>📅 Tanggal:</strong>{" "}
+                    <strong>📅 Hari/Tanggal:</strong>{" "}
                     {new Date(
                       todayAttendance.attendance_date
                     ).toLocaleDateString("id-ID", {
