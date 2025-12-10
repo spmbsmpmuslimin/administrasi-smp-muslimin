@@ -30,7 +30,19 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
     if (!currentUser?.teacher_id) return;
 
     try {
-      const today = new Date().toISOString().split("T")[0];
+      // ✅ GET TANGGAL SESUAI TIMEZONE INDONESIA (WIB)
+      const jakartaDate = new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Jakarta",
+        })
+      );
+
+      const year = jakartaDate.getFullYear();
+      const month = String(jakartaDate.getMonth() + 1).padStart(2, "0");
+      const day = String(jakartaDate.getDate()).padStart(2, "0");
+      const today = `${year}-${month}-${day}`;
+
+      console.log("🔍 Checking attendance for date (WIB):", today);
 
       const { data, error } = await supabase
         .from("teacher_attendance")
@@ -44,6 +56,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
         return;
       }
 
+      console.log("📊 Today's attendance data:", data);
       setTodayAttendance(data);
     } catch (error) {
       console.error("Error in checkTodayAttendance:", error);
@@ -55,9 +68,22 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
     setCheckingDuplicate(true);
 
     try {
-      // Re-check attendance (karena user mungkin sudah lama di halaman)
-      const today = new Date().toISOString().split("T")[0];
+      // ✅ GET TANGGAL SESUAI TIMEZONE INDONESIA (WIB)
+      const jakartaDate = new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Jakarta",
+        })
+      );
+
+      const year = jakartaDate.getFullYear();
+      const month = String(jakartaDate.getMonth() + 1).padStart(2, "0");
+      const day = String(jakartaDate.getDate()).padStart(2, "0");
+      const today = `${year}-${month}-${day}`;
+
       const targetTeacherId = submitData.teacher_id || currentUser.teacher_id;
+
+      console.log("🔍 Re-checking duplicate for date (WIB):", today);
+      console.log("👤 Teacher ID:", targetTeacherId);
 
       const { data: existingData, error } = await supabase
         .from("teacher_attendance")
@@ -70,6 +96,8 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
         throw error;
       }
 
+      console.log("📋 Existing data found:", existingData);
+
       if (existingData) {
         // Sudah ada presensi → Tanya konfirmasi
         setTodayAttendance(existingData);
@@ -77,6 +105,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
         setShowDuplicateModal(true);
       } else {
         // Belum ada presensi → Langsung submit
+        console.log("✅ No duplicate, proceeding with submit");
         await processSubmit(submitData);
       }
     } catch (error) {
@@ -91,8 +120,22 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
   // Process actual submit (INSERT atau UPDATE)
   const processSubmit = async (submitData) => {
     try {
-      const today = new Date().toISOString().split("T")[0];
+      // ✅ GET TANGGAL SESUAI TIMEZONE INDONESIA (WIB)
+      const jakartaDate = new Date(
+        new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Jakarta",
+        })
+      );
+
+      const year = jakartaDate.getFullYear();
+      const month = String(jakartaDate.getMonth() + 1).padStart(2, "0");
+      const day = String(jakartaDate.getDate()).padStart(2, "0");
+      const today = `${year}-${month}-${day}`;
+
       const targetTeacherId = submitData.teacher_id || currentUser.teacher_id;
+
+      console.log("💾 Processing submit for date (WIB):", today);
+      console.log("📝 Submit data:", submitData);
 
       // Check lagi apakah sudah ada
       const { data: existingData } = await supabase
@@ -104,6 +147,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
 
       if (existingData) {
         // UPDATE existing
+        console.log("🔄 Updating existing attendance, ID:", existingData.id);
         const { error: updateError } = await supabase
           .from("teacher_attendance")
           .update({
@@ -118,8 +162,10 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
           .eq("id", existingData.id);
 
         if (updateError) throw updateError;
+        console.log("✅ Update successful!");
       } else {
         // INSERT new
+        console.log("➕ Inserting new attendance");
         const { error: insertError } = await supabase
           .from("teacher_attendance")
           .insert({
@@ -134,6 +180,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
           });
 
         if (insertError) throw insertError;
+        console.log("✅ Insert successful!");
       }
 
       // Success callback
@@ -154,6 +201,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
     setShowDuplicateModal(false);
 
     if (pendingSubmitData) {
+      console.log("🔄 User confirmed overwrite, processing...");
       await processSubmit(pendingSubmitData);
       setPendingSubmitData(null);
     }
@@ -161,6 +209,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
 
   // Handle "Batal"
   const handleCancelOverwrite = () => {
+    console.log("❌ User cancelled overwrite");
     setShowDuplicateModal(false);
     setPendingSubmitData(null);
   };
