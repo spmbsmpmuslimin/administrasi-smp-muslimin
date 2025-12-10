@@ -11,18 +11,18 @@ import {
   Shield,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import { validateAttendance } from "./LocationValidator"; // 🎯 MASTER VALIDATOR
+import { validateAttendance } from "./LocationValidator";
 
 const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   const today = new Date().toISOString().split("T")[0];
-  const now = new Date().toTimeString().split(" ")[0].slice(0, 5); // HH:MM
+  const now = new Date().toTimeString().split(" ")[0].slice(0, 5);
 
   const [formData, setFormData] = useState({
     date: today,
     status: "Hadir",
     clockIn: now,
     notes: "",
-    teacherId: null, // Untuk admin bisa pilih guru lain
+    teacherId: null,
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -42,19 +42,16 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
     { value: "Alpa", label: "Alpa", color: "bg-red-500 dark:bg-red-600" },
   ];
 
-  // Check if user is admin
   useEffect(() => {
     checkAdminStatus();
   }, [currentUser]);
 
-  // Load teachers list for admin
   useEffect(() => {
     if (isAdmin) {
       loadTeachers();
     }
   }, [isAdmin]);
 
-  // Pre-check location saat component mount (untuk status "Hadir" only)
   useEffect(() => {
     if (formData.status === "Hadir" && !isAdmin) {
       checkLocation();
@@ -97,7 +94,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   const checkLocation = async () => {
     setCheckingLocation(true);
 
-    // 🎯 PANGGIL MASTER VALIDATOR
     const validation = await validateAttendance({
       method: "manual",
       userId: currentUser.id,
@@ -114,12 +110,10 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
 
     try {
       // ========================================
-      // 🎯 VALIDASI MENGGUNAKAN MASTER VALIDATOR
+      // VALIDASI MENGGUNAKAN MASTER VALIDATOR
       // ========================================
 
-      // Admin bypass validasi
       if (!isAdmin) {
-        // Status "Hadir" perlu validasi lengkap
         if (formData.status === "Hadir") {
           const validation = await validateAttendance({
             method: "manual",
@@ -128,13 +122,11 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
 
           setLocationStatus(validation);
 
-          // ❌ Kalau ada error yang blocking
           if (!validation.isValid) {
             const errorMessages = validation.errors
               .map((err) => `• ${err.message}`)
               .join("\n");
 
-            // Cek apakah ada help text untuk GPS error
             const gpsError = validation.errors.find((err) => err.help);
             const helpText = gpsError?.help
               ? `\n\n📱 Panduan:\n${gpsError.help}`
@@ -148,7 +140,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             return;
           }
 
-          // ⚠️ Tampilkan warning jika ada (jadwal)
+          // ⚠️ WARNING JADWAL (PINDAH KE SINI - SEBELUM GET TEACHER_ID!)
           if (validation.data.warnings && validation.data.warnings.length > 0) {
             const warningMessages = validation.data.warnings
               .map((warn) => warn.message)
@@ -162,15 +154,12 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
               return;
             }
           }
-        }
-        // Status selain "Hadir" (Izin/Sakit/Alpa) - cuma cek waktu operational
-        else {
+        } else {
           const validation = await validateAttendance({
             method: "manual",
             userId: currentUser.id,
           });
 
-          // Cek error waktu saja
           const timeError = validation.errors.find(
             (err) => err.code === "TIME_NOT_ALLOWED"
           );
@@ -196,19 +185,16 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
       // PROSES SUBMIT ATTENDANCE
       // ========================================
 
-      // Get teacher_id
       let targetTeacherId;
       let targetTeacherName;
 
       if (isAdmin && formData.teacherId) {
-        // Admin input untuk guru lain
         targetTeacherId = formData.teacherId;
         const teacher = teachersList.find(
           (t) => t.teacher_id === formData.teacherId
         );
         targetTeacherName = teacher?.full_name || "Unknown";
       } else {
-        // Guru input sendiri atau admin input untuk diri sendiri
         const { data: userData, error: userError } = await supabase
           .from("users")
           .select("teacher_id, full_name")
@@ -225,14 +211,12 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         targetTeacherName = userData.full_name;
       }
 
-      // Prepare attendance metadata (untuk audit trail)
       const attendanceMetadata = {
         check_in_method: isAdmin ? "admin_manual" : "manual",
         notes: formData.notes || null,
         updated_at: new Date().toISOString(),
       };
 
-      // Tambahkan info admin jika di-input oleh admin
       if (isAdmin) {
         const { data: adminData } = await supabase
           .from("users")
@@ -248,7 +232,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         });
       }
 
-      // Tambahkan GPS metadata dari validation result
       if (!isAdmin && formData.status === "Hadir" && locationStatus?.isValid) {
         const locationData = locationStatus.data.location;
 
@@ -266,7 +249,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         formData.status === "Hadir" &&
         !locationStatus?.isValid
       ) {
-        // GPS error tapi diizinkan submit
         const locationError = locationStatus?.errors?.find(
           (err) => err.code.includes("GPS") || err.code.includes("LOCATION")
         );
@@ -278,12 +260,11 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         });
       }
 
-      // Prepare attendance data
       const attendanceData = {
         teacher_id: targetTeacherId,
         attendance_date: formData.date,
         status: formData.status,
-        clock_in: formData.clockIn + ":00", // Format TIME: HH:MM:SS
+        clock_in: formData.clockIn + ":00",
         ...attendanceMetadata,
       };
 
@@ -291,7 +272,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
       if (onBeforeSubmit) {
         await onBeforeSubmit(attendanceData);
 
-        // Show success message
         setMessage({
           type: "success",
           text: isAdmin
@@ -299,15 +279,12 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             : `✅ Presensi tanggal ${formData.date} berhasil disimpan!`,
         });
 
-        // Auto-hide success message after 3 seconds
         setTimeout(() => {
           setMessage(null);
         }, 3000);
 
-        // Trigger refresh di parent
         if (onSuccess) onSuccess();
 
-        // Reset form
         setFormData({
           date: today,
           status: "Hadir",
@@ -316,7 +293,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           teacherId: null,
         });
 
-        // Re-check location after reset (hanya untuk non-admin)
         if (!isAdmin) {
           setTimeout(() => {
             checkLocation();
@@ -328,7 +304,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
       }
 
       // FALLBACK: Kalau tidak ada onBeforeSubmit, proses langsung
-      // Cek apakah sudah ada presensi di tanggal yang dipilih
       const { data: existingAttendance, error: checkError } = await supabase
         .from("teacher_attendance")
         .select("*")
@@ -340,9 +315,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         throw checkError;
       }
 
-      // Jika sudah ada, update. Jika belum, insert
       if (existingAttendance) {
-        // UPDATE existing attendance
         const { error: updateError } = await supabase
           .from("teacher_attendance")
           .update({
@@ -361,7 +334,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             : `✅ Presensi tanggal ${formData.date} berhasil diupdate!`,
         });
       } else {
-        // INSERT new attendance
         const { error: insertError } = await supabase
           .from("teacher_attendance")
           .insert(attendanceData);
@@ -376,15 +348,12 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         });
       }
 
-      // Auto-hide success message after 3 seconds
       setTimeout(() => {
         setMessage(null);
       }, 3000);
 
-      // Trigger refresh di parent
       if (onSuccess) onSuccess();
 
-      // Reset form
       setFormData({
         date: today,
         status: "Hadir",
@@ -393,7 +362,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         teacherId: null,
       });
 
-      // Re-check location after reset (hanya untuk non-admin)
       if (!isAdmin) {
         setTimeout(() => {
           checkLocation();
@@ -435,7 +403,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         </p>
       </div>
 
-      {/* Message Alert */}
       {message && (
         <div
           className={`p-4 rounded-lg flex items-start gap-3 transition-all duration-500 ${
@@ -465,9 +432,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         </div>
       )}
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-        {/* Pilih Guru (Hanya untuk Admin) */}
         {isAdmin && (
           <div>
             <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
@@ -493,7 +458,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           </div>
         )}
 
-        {/* Tanggal */}
         <div>
           <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
             <Calendar size={18} className="text-gray-600 dark:text-gray-400" />
@@ -514,7 +478,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           </p>
         </div>
 
-        {/* Status */}
         <div>
           <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
             Status Kehadiran
@@ -545,7 +508,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           )}
         </div>
 
-        {/* Jam Masuk */}
         <div>
           <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
             <Clock size={18} className="text-gray-600 dark:text-gray-400" />
@@ -560,7 +522,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           />
         </div>
 
-        {/* Catatan */}
         <div>
           <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
             Catatan (Opsional)
@@ -574,7 +535,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           />
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
@@ -599,7 +559,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         </button>
       </form>
 
-      {/* Info */}
       <div
         className={`${
           isAdmin
@@ -614,7 +573,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         </p>
       </div>
 
-      {/* CSS Animations */}
       <style>{`
         @keyframes fade-in {
           from {

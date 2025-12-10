@@ -24,7 +24,7 @@ const DEBUG_MODE = true;
 const OPERATIONAL_HOURS = {
   startHour: 7,
   startMinute: 0,
-  endHour: 18,
+  endHour: 23,
   endMinute: 0,
 };
 
