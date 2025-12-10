@@ -12,8 +12,7 @@ const SCHOOL_COORDS = {
   lng: 107.416448,
 };
 
-const SCHOOL_RADIUS = 1000; // 200 meter radius
-// Quality Excellent - bisa pakai radius 150-200m
+const SCHOOL_RADIUS = 1000; // 1000 meter radius
 
 // Debug mode - set true untuk lihat detail GPS di console
 const DEBUG_MODE = true;
@@ -52,8 +51,71 @@ export const validateAttendance = async (options = {}) => {
   };
 
   // ========================================
-  // STEP 1: Validasi Waktu Operational (07:00-14:00)
+  // 🏠 LOCALHOST BYPASS - UNTUK DEVELOPMENT
   // ========================================
+  const isLocalhost =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === "0.0.0.0";
+
+  if (isLocalhost) {
+    console.log("🏠 DEVELOPMENT MODE - Running on localhost");
+    console.log("⚠️ GPS validation SKIPPED for development");
+    console.log("🌍 In production, GPS validation will be enforced");
+
+    // STEP 1: Validasi Waktu tetap jalan
+    const timeValidation = validateOperationalTime();
+    validationData.time = timeValidation;
+
+    if (!timeValidation.allowed) {
+      errors.push({
+        code: "TIME_NOT_ALLOWED",
+        message: timeValidation.message,
+      });
+    }
+
+    // STEP 2: Bypass GPS validation
+    validationData.location = {
+      allowed: true,
+      distance: 0,
+      coords: null,
+      accuracy: 0,
+      message: "GPS validation bypassed (localhost)",
+      isDevelopmentMode: true,
+    };
+
+    // STEP 3: Validasi Jadwal
+    if (userId) {
+      const scheduleValidation = await validateTeacherSchedule(userId);
+      validationData.schedule = scheduleValidation;
+
+      if (scheduleValidation.suspicious) {
+        validationData.warnings = validationData.warnings || [];
+        validationData.warnings.push({
+          code: scheduleValidation.reason,
+          message: scheduleValidation.message,
+        });
+      }
+    }
+
+    const isValid = errors.length === 0;
+
+    return {
+      isValid,
+      errors,
+      data: validationData,
+      message: isValid
+        ? "✅ Validasi berhasil (Development Mode - GPS bypassed)"
+        : `❌ ${errors.map((e) => e.message).join(". ")}`,
+    };
+  }
+
+  // ========================================
+  // 🌍 PRODUCTION MODE - FULL VALIDATION
+  // ========================================
+  console.log("🌍 PRODUCTION MODE - Full validation enabled");
+
+  // STEP 1: Validasi Waktu Operational (07:00-14:00)
   const timeValidation = validateOperationalTime();
   validationData.time = timeValidation;
 
@@ -64,9 +126,7 @@ export const validateAttendance = async (options = {}) => {
     });
   }
 
-  // ========================================
   // STEP 2: Validasi Lokasi GPS (Semua Method)
-  // ========================================
   const locationValidation = await validateLocation();
   validationData.location = locationValidation;
 
@@ -78,9 +138,7 @@ export const validateAttendance = async (options = {}) => {
     });
   }
 
-  // ========================================
   // STEP 3: Validasi Jadwal Guru (Optional Warning)
-  // ========================================
   if (userId) {
     const scheduleValidation = await validateTeacherSchedule(userId);
     validationData.schedule = scheduleValidation;
@@ -95,9 +153,7 @@ export const validateAttendance = async (options = {}) => {
     }
   }
 
-  // ========================================
   // RESULT
-  // ========================================
   const isValid = errors.length === 0;
 
   return {

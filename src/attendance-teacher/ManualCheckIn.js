@@ -66,6 +66,25 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   }, [isAdmin]);
 
   useEffect(() => {
+    // 🏠 Skip GPS check di localhost
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+
+    if (isLocalhost) {
+      console.log("🏠 Localhost detected - Skipping GPS pre-check");
+      setLocationStatus({
+        isValid: true,
+        data: {
+          location: {
+            allowed: true,
+            message: "GPS bypassed (localhost)",
+          },
+        },
+      });
+      return;
+    }
+
     if (formData.status === "Hadir" && !isAdmin) {
       checkLocation();
     } else {
