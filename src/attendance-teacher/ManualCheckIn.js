@@ -14,8 +14,21 @@ import { supabase } from "../supabaseClient";
 import { validateAttendance } from "./LocationValidator";
 
 const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
-  const today = new Date().toISOString().split("T")[0];
-  const now = new Date().toTimeString().split(" ")[0].slice(0, 5);
+  // ✅ GET TANGGAL & JAM SESUAI TIMEZONE INDONESIA (WIB)
+  const jakartaDate = new Date(
+    new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Jakarta",
+    })
+  );
+
+  const year = jakartaDate.getFullYear();
+  const month = String(jakartaDate.getMonth() + 1).padStart(2, "0");
+  const day = String(jakartaDate.getDate()).padStart(2, "0");
+  const today = `${year}-${month}-${day}`;
+
+  const hour = String(jakartaDate.getHours()).padStart(2, "0");
+  const minute = String(jakartaDate.getMinutes()).padStart(2, "0");
+  const now = `${hour}:${minute}`;
 
   const [formData, setFormData] = useState({
     date: today,
