@@ -22,7 +22,7 @@ const DEBUG_MODE = true;
 // ⏰ TIME WINDOW untuk Input Presensi (Manual & QR)
 // ========================================
 const OPERATIONAL_HOURS = {
-  startHour: 7,
+  startHour: 5,
   startMinute: 0,
   endHour: 23,
   endMinute: 0,
