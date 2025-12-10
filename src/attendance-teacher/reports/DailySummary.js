@@ -334,10 +334,10 @@ const DailySummary = ({ refreshTrigger }) => {
               className="sm:w-12 sm:h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3 sm:mb-4"
             />
             <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium">
-              Belum ada guru yang presensi hari ini
+              Belum Ada Guru Yang Presensi Hari Ini
             </p>
             <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 mt-1">
-              Data akan muncul setelah ada guru yang melakukan presensi
+              Data Akan Muncul Setelah Ada Guru Yang Sudah Melakukan Presensi
             </p>
           </div>
         )}

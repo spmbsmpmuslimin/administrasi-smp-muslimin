@@ -38,7 +38,7 @@ const AdminAttendanceView = ({ currentUser }) => {
                 Manajemen Presensi Guru
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                Monitoring dan laporan presensi seluruh guru
+                Monitoring Dan Laporan Presensi Seluruh Guru
               </p>
             </div>
             <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
@@ -117,8 +117,8 @@ const AdminAttendanceView = ({ currentUser }) => {
                       Statistik Presensi Hari Ini
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Data presensi seluruh guru pada hari ini. Untuk melihat
-                      detail per guru, silakan pilih tab "Laporan".
+                      Data Presensi Seluruh Guru Pada Hari Ini. Untuk Melihat
+                      Detail per Guru, Silakan Pilih Tab "Laporan".
                     </p>
                   </div>
                 </div>
@@ -135,7 +135,7 @@ const AdminAttendanceView = ({ currentUser }) => {
                       Laporan Presensi
                     </h2>
                     <p className="text-gray-600 dark:text-gray-300 text-sm">
-                      Pilih jenis laporan yang ingin dilihat
+                      Pilih Jenis Laporan Yang Ingin Dilihat
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -228,7 +228,7 @@ const AdminAttendanceView = ({ currentUser }) => {
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     {reportType === "monthly"
                       ? "📊 Menampilkan rekap presensi bulanan semua guru dengan filter berdasarkan bulan dan tahun."
-                      : "⏰ Menampilkan detail jam tatap muka per guru, termasuk kehadiran per jam pelajaran sesuai jadwal mengajar."}
+                      : "⏰ Menampilkan Detail Jam Tatap Muka Per Guru, Termasuk Kehadiran Per Jam Pelajaran Sesuai Jadwal Mengajar."}
                   </p>
                 </div>
               </div>
@@ -259,8 +259,8 @@ const AdminAttendanceView = ({ currentUser }) => {
                       Kelola Presensi Guru
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Generate QR Code untuk presensi hari ini, atau input
-                      presensi guru secara manual.
+                      Generate QR Code Untuk Presensi Hari Ini, Atau Input
+                      Presensi Guru Secara Manual.
                     </p>
                   </div>
                 </div>

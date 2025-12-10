@@ -68,8 +68,8 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
         bgLight: "bg-gray-50 dark:bg-gray-700",
         borderColor: "border-gray-300 dark:border-gray-600",
         title: "Belum Absen",
-        message: "Anda belum melakukan presensi hari ini",
-        detail: "Silakan scan QR Code atau input manual",
+        message: "Anda Belum Melakukan Presensi Hari Ini",
+        detail: "Silakan Scan QR Code Atau Input Manual",
       };
     }
 
@@ -217,5 +217,4 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
     </div>
   );
 };
-
 export default MyAttendanceStatus;

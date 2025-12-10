@@ -125,7 +125,7 @@ const QRCodeGenerator = () => {
           🎯 Generator QR Presensi Guru
         </h1>
         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-          Generate QR Code untuk sistem presensi guru SMP MUSLIMIN CILILIN
+          Generate QR Code Untuk Sistem Presensi Guru SMP MUSLIMIN CILILIN
         </p>
       </div>
 
@@ -177,8 +177,9 @@ const QRCodeGenerator = () => {
       {/* Warning */}
       <div className="mt-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4">
         <p className="text-xs sm:text-sm text-red-800 dark:text-red-300">
-          <strong>⚠️ Penting:</strong> QR Code ini statis untuk testing. Untuk
-          keamanan lebih baik, gunakan QR Code dinamis yang berubah setiap hari!
+          <strong>⚠️ Penting:</strong> QR Code Ini Statis Untuk Testing. Untuk
+          Leamanan Lebih Baik, Menggunakan QR Code Dinamis Yang Berubah Setiap
+          Hari !
         </p>
       </div>
     </div>

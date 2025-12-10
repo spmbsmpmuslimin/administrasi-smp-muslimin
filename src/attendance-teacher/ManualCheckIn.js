@@ -13,7 +13,7 @@ import {
 import { supabase } from "../supabaseClient";
 import { validateAttendance } from "./LocationValidator"; // 🎯 MASTER VALIDATOR
 
-const ManualCheckIn = ({ currentUser, onSuccess }) => {
+const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   const today = new Date().toISOString().split("T")[0];
   const now = new Date().toTimeString().split(" ")[0].slice(0, 5); // HH:MM
 
@@ -225,18 +225,6 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         targetTeacherName = userData.full_name;
       }
 
-      // Cek apakah sudah ada presensi di tanggal yang dipilih
-      const { data: existingAttendance, error: checkError } = await supabase
-        .from("teacher_attendance")
-        .select("*")
-        .eq("teacher_id", targetTeacherId)
-        .eq("attendance_date", formData.date)
-        .maybeSingle();
-
-      if (checkError && checkError.code !== "PGRST116") {
-        throw checkError;
-      }
-
       // Prepare attendance metadata (untuk audit trail)
       const attendanceMetadata = {
         check_in_method: isAdmin ? "admin_manual" : "manual",
@@ -290,6 +278,68 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         });
       }
 
+      // Prepare attendance data
+      const attendanceData = {
+        teacher_id: targetTeacherId,
+        attendance_date: formData.date,
+        status: formData.status,
+        clock_in: formData.clockIn + ":00", // Format TIME: HH:MM:SS
+        ...attendanceMetadata,
+      };
+
+      // 🎯 PANGGIL onBeforeSubmit jika ada (dari AttendanceTabs)
+      if (onBeforeSubmit) {
+        await onBeforeSubmit(attendanceData);
+
+        // Show success message
+        setMessage({
+          type: "success",
+          text: isAdmin
+            ? `✅ Presensi ${targetTeacherName} tanggal ${formData.date} berhasil disimpan!`
+            : `✅ Presensi tanggal ${formData.date} berhasil disimpan!`,
+        });
+
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setMessage(null);
+        }, 3000);
+
+        // Trigger refresh di parent
+        if (onSuccess) onSuccess();
+
+        // Reset form
+        setFormData({
+          date: today,
+          status: "Hadir",
+          clockIn: now,
+          notes: "",
+          teacherId: null,
+        });
+
+        // Re-check location after reset (hanya untuk non-admin)
+        if (!isAdmin) {
+          setTimeout(() => {
+            checkLocation();
+          }, 500);
+        }
+
+        setLoading(false);
+        return;
+      }
+
+      // FALLBACK: Kalau tidak ada onBeforeSubmit, proses langsung
+      // Cek apakah sudah ada presensi di tanggal yang dipilih
+      const { data: existingAttendance, error: checkError } = await supabase
+        .from("teacher_attendance")
+        .select("*")
+        .eq("teacher_id", targetTeacherId)
+        .eq("attendance_date", formData.date)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        throw checkError;
+      }
+
       // Jika sudah ada, update. Jika belum, insert
       if (existingAttendance) {
         // UPDATE existing attendance
@@ -297,7 +347,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
           .from("teacher_attendance")
           .update({
             status: formData.status,
-            clock_in: formData.clockIn + ":00", // Format TIME: HH:MM:SS
+            clock_in: formData.clockIn + ":00",
             ...attendanceMetadata,
           })
           .eq("id", existingAttendance.id);
@@ -314,13 +364,7 @@ const ManualCheckIn = ({ currentUser, onSuccess }) => {
         // INSERT new attendance
         const { error: insertError } = await supabase
           .from("teacher_attendance")
-          .insert({
-            teacher_id: targetTeacherId,
-            attendance_date: formData.date,
-            status: formData.status,
-            clock_in: formData.clockIn + ":00", // Format TIME: HH:MM:SS
-            ...attendanceMetadata,
-          });
+          .insert(attendanceData);
 
         if (insertError) throw insertError;
 

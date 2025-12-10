@@ -50,6 +50,25 @@ const ExportExcel = ({
     "2026-08-17": "Hari Kemerdekaan RI",
     "2026-08-25": "Maulid Nabi Muhammad SAW",
     "2026-12-25": "Hari Raya Natal",
+    // ===== 2027 (PREDIKSI) =====
+    // ⚠️ UPDATE setelah SKB 2027 resmi keluar!
+    "2027-01-01": "Tahun Baru Masehi",
+    "2027-01-05": "Isra Mi'raj Nabi Muhammad SAW (prediksi)",
+    "2027-02-06": "Tahun Baru Imlek 2578 (prediksi)",
+    "2027-03-09": "Hari Suci Nyepi (Tahun Baru Saka 1949)",
+    "2027-03-10": "Idul Fitri 1448 H (prediksi)",
+    "2027-03-11": "Idul Fitri 1448 H (prediksi)",
+    "2027-03-26": "Wafat Yesus Kristus (Jumat Agung)",
+    "2027-03-28": "Hari Paskah",
+    "2027-05-01": "Hari Buruh Internasional",
+    "2027-05-06": "Kenaikan Yesus Kristus",
+    "2027-05-16": "Idul Adha 1448 H (prediksi)",
+    "2027-05-20": "Hari Raya Waisak 2571 BE",
+    "2027-06-01": "Hari Lahir Pancasila",
+    "2027-06-06": "Tahun Baru Islam 1449 H (prediksi)",
+    "2027-08-14": "Maulid Nabi Muhammad SAW (prediksi)",
+    "2027-08-17": "Hari Kemerdekaan RI",
+    "2027-12-25": "Hari Raya Natal",
   };
 
   // Helper: Check if date is national holiday

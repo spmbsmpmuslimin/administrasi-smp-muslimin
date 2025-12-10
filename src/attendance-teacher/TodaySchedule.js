@@ -140,10 +140,10 @@ const TodaySchedule = ({ currentUser }) => {
             <Calendar className="text-gray-400 dark:text-gray-500" size={28} />
           </div>
           <p className="text-gray-600 dark:text-gray-300 font-medium mb-1 text-base sm:text-lg">
-            Tidak ada jadwal mengajar hari ini
+            Tidak Ada Jadwal Mengajar Hari Ini
           </p>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            Anda libur atau tidak ada kelas terjadwal
+            Anda Libur atau Tidak Ada Kelas Terjadwal
           </p>
         </div>
       ) : (

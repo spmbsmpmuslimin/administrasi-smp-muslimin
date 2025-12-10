@@ -6,6 +6,7 @@ import {
   Search,
   User,
   FileSpreadsheet,
+  AlertCircle,
 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import { exportITMReportToExcel } from "./ITMReportExcel";
@@ -92,12 +93,17 @@ const ITMReport = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
+  const [teachersLoading, setTeachersLoading] = useState(true);
+  const [teachersError, setTeachersError] = useState(null);
   const [reportData, setReportData] = useState(null);
 
   // Fetch semua guru aktif
   useEffect(() => {
     const fetchTeachers = async () => {
       try {
+        setTeachersLoading(true);
+        setTeachersError(null);
+
         const { data, error } = await supabase
           .from("users")
           .select("id, teacher_id, full_name")
@@ -105,18 +111,14 @@ const ITMReport = () => {
           .eq("is_active", true)
           .order("full_name");
 
-        if (error) {
-          console.error("Error fetching teachers:", error);
-          const demoTeachers = [
-            { id: 1, teacher_id: "G-12", full_name: "ELAN JAELANI" },
-          ];
-          setTeachers(demoTeachers);
-          return;
-        }
+        if (error) throw error;
 
         setTeachers(data || []);
       } catch (err) {
-        console.error("Unexpected error:", err);
+        console.error("Error fetching teachers:", err);
+        setTeachersError("Gagal memuat data guru. Silakan refresh halaman.");
+      } finally {
+        setTeachersLoading(false);
       }
     };
 
@@ -193,15 +195,12 @@ const ITMReport = () => {
     let weekNum = 1;
     let startDate = new Date(firstDay);
 
-    // Cari Senin pertama di bulan ini atau sebelumnya (tapi tetap dalam range wajar)
     const firstDayIndex = startDate.getDay();
 
     if (firstDayIndex !== 1 && firstDayIndex !== 0 && firstDayIndex !== 6) {
-      // Kalau mulai Selasa-Jumat, mundur ke Senin
       const daysToSubtract = firstDayIndex - 1;
       startDate.setDate(startDate.getDate() - daysToSubtract);
     } else if (firstDayIndex === 0 || firstDayIndex === 6) {
-      // Kalau mulai weekend, maju ke Senin berikutnya
       const daysToAdd = firstDayIndex === 0 ? 1 : 2;
       startDate.setDate(startDate.getDate() + daysToAdd);
     }
@@ -216,7 +215,6 @@ const ITMReport = () => {
       const dayName =
         dayIndex >= 1 && dayIndex <= 5 ? DAYS[dayIndex - 1] : null;
 
-      // FIX: Hanya masukkan tanggal yang benar-benar di bulan target
       if (dayName && currentDate.getMonth() === month) {
         currentWeek.push({
           day: currentDate.getDate(),
@@ -242,7 +240,6 @@ const ITMReport = () => {
       }
     }
 
-    // Tambahkan sisa minggu kalau ada
     if (currentWeek.length > 0) {
       weeks.push({
         weekNumber: weekNum++,
@@ -300,7 +297,6 @@ const ITMReport = () => {
 
       if (attendanceError) throw attendanceError;
 
-      // TAMBAHIN INI:
       console.log("=== DEBUG ATTENDANCE ===");
       console.log("Attendance Data:", attendance);
 
@@ -340,7 +336,6 @@ const ITMReport = () => {
 
             const attendanceRecord = formattedAttendance[dateStr];
 
-            // TAMBAHIN INI:
             if (date.getDate() === 29 || date.getDate() === 30) {
               console.log(
                 `DATE ${dateStr}: attendanceRecord =`,
@@ -348,7 +343,6 @@ const ITMReport = () => {
               );
             }
 
-            // FIX: Hadir = status "Hadir" saja, tanpa validasi waktu
             let hadir = attendanceRecord?.status === "Hadir";
 
             if (jamKe === 1 && dayName === "Senin") {
@@ -388,7 +382,6 @@ const ITMReport = () => {
         return { ...week, schedule: weekData };
       });
 
-      // FIX: Hitung total JP terjadwal dengan benar
       const totalScheduledHours = processedWeeks.reduce((total, week) => {
         return (
           total +
@@ -432,7 +425,7 @@ const ITMReport = () => {
     return total;
   };
 
-  // FIX: Hitung JP yang HADIR per hari (yang ada centang)
+  // Hitung JP yang HADIR per hari
   const calculateJamHadirPerHari = (weekSchedule, dayName) => {
     let total = 0;
     weekSchedule.forEach((jam) => {
@@ -462,7 +455,7 @@ const ITMReport = () => {
     return total;
   };
 
-  // Hitung total jam hadir (yang ada centang)
+  // Hitung total jam hadir
   const calculateTotalHadir = () => {
     if (!reportData) return 0;
     let total = 0;
@@ -502,6 +495,63 @@ const ITMReport = () => {
       alert("Gagal export Excel: " + error.message);
     }
   };
+
+  // Loading state untuk teachers
+  if (teachersLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            Memuat data guru...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state untuk teachers
+  if (teachersError) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="text-red-600 dark:text-red-400 w-6 h-6 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-red-800 dark:text-red-300 font-semibold mb-2">
+                Terjadi Kesalahan
+              </h3>
+              <p className="text-red-600 dark:text-red-400 mb-4 text-sm">
+                {teachersError}
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
+                Muat Ulang Halaman
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state jika tidak ada guru
+  if (teachers.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <User className="mx-auto text-gray-400 dark:text-gray-600 w-16 h-16 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
+            Tidak Ada Data Guru
+          </h3>
+          <p className="text-gray-500 dark:text-gray-500 text-sm">
+            Belum ada guru yang terdaftar dalam sistem.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6">
@@ -861,7 +911,7 @@ const ITMReport = () => {
             Belum Ada Laporan
           </h3>
           <p className="text-gray-500 dark:text-gray-500 text-sm sm:text-base">
-            Pilih guru, bulan, dan tahun lalu klik "Generate Laporan"
+            Pilih guru, bulan, dan tahun lalu klik "Lihat Laporan"
           </p>
         </div>
       )}

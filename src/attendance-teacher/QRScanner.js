@@ -14,7 +14,7 @@ import {
 import { supabase } from "../supabaseClient";
 import { validateAttendance } from "./LocationValidator"; // 🎯 MASTER VALIDATOR
 
-const QRScanner = ({ currentUser, onSuccess }) => {
+const QRScanner = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   const [scanning, setScanning] = useState(false);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -160,7 +160,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       console.log("❌ Invalid QR Code");
       setMessage({
         type: "error",
-        text: "QR Code tidak valid! Gunakan QR Code resmi presensi guru.",
+        text: "QR Code Tidak Valid ! Gunakan QR Code Resmi Presensi Guru.",
       });
       return;
     }
@@ -208,7 +208,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         console.log("❌ Invalid QR Code from gallery");
         setMessage({
           type: "error",
-          text: "QR Code tidak valid! Gunakan QR Code resmi presensi guru.",
+          text: "QR Code Tidak Valid! Gunakan QR Code Resmi Presensi Guru.",
         });
         setLoading(false);
         return;
@@ -229,7 +229,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
       console.error("❌ Error scanning file:", err);
       setMessage({
         type: "error",
-        text: "Tidak dapat mendeteksi QR Code dari gambar. Pastikan QR Code terlihat jelas dan tidak blur.",
+        text: "Tidak Dapat Mendeteksi QR Code dari Gambar. Pastikan QR Code Terlihat Jelas Dan Tidak Blur.",
       });
       setLoading(false);
     } finally {
@@ -269,7 +269,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
 
           setMessage({
             type: "error",
-            text: `❌ Presensi tidak dapat dilakukan:\n\n${errorMessages}${helpText}\n\n💡 Jika ada kendala, hubungi Admin untuk bantuan.`,
+            text: `❌ Presensi Tidak Dapat Dilakukan:\n\n${errorMessages}${helpText}\n\n💡 Jika Ada Kendala, Hubungi Admin Untuk Bantuan.`,
           });
           setLoading(false);
           return;
@@ -348,36 +348,6 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         targetTeacherName = userData.full_name;
       }
 
-      // Cek sudah absen hari ini atau belum
-      console.log("🔍 Checking existing attendance...");
-      const { data: existingAttendance, error: checkError } = await supabase
-        .from("teacher_attendance")
-        .select("*")
-        .eq("teacher_id", targetTeacherId)
-        .eq("attendance_date", today)
-        .maybeSingle();
-
-      if (checkError && checkError.code !== "PGRST116") {
-        throw checkError;
-      }
-
-      if (existingAttendance) {
-        setMessage({
-          type: "warning",
-          text: isAdmin
-            ? `${targetTeacherName} sudah melakukan presensi hari ini pada pukul ${existingAttendance.clock_in.substring(
-                0,
-                5
-              )} WIB`
-            : `Anda sudah melakukan presensi hari ini pada pukul ${existingAttendance.clock_in.substring(
-                0,
-                5
-              )} WIB`,
-        });
-        setLoading(false);
-        return;
-      }
-
       // Prepare attendance data
       const attendanceData = {
         teacher_id: targetTeacherId,
@@ -427,8 +397,38 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         }
       }
 
-      // Insert attendance
-      console.log("💾 Inserting attendance...");
+      // 🎯 PANGGIL onBeforeSubmit jika ada (dari AttendanceTabs)
+      if (onBeforeSubmit) {
+        await onBeforeSubmit(attendanceData);
+        setLoading(false);
+
+        // Show success message
+        setMessage({
+          type: "success",
+          text: isAdmin
+            ? `✅ Presensi ${targetTeacherName} berhasil! Jam: ${clockInTime.substring(
+                0,
+                5
+              )} WIB`
+            : `✅ Presensi berhasil! Jam masuk: ${clockInTime.substring(
+                0,
+                5
+              )} WIB`,
+        });
+
+        // Reset selection
+        setSelectedTeacherId(null);
+
+        // Auto-hide success message
+        setTimeout(() => {
+          setMessage(null);
+        }, 3000);
+
+        return;
+      }
+
+      // FALLBACK: Kalau tidak ada onBeforeSubmit, langsung insert
+      console.log("💾 Inserting attendance (fallback)...");
       const { error: insertError } = await supabase
         .from("teacher_attendance")
         .insert(attendanceData);
@@ -515,7 +515,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
           {isAdmin && (
             <Shield className="text-blue-600 dark:text-blue-400" size={20} />
           )}
-          Scan QR Code untuk Presensi
+          Scan QR Code Untuk Presensi
           {isAdmin && (
             <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
               ADMIN MODE
@@ -573,7 +573,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         <div className="bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4 space-y-4">
           <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 font-semibold">
             <Shield size={20} />
-            <span>Pilih Guru untuk Presensi</span>
+            <span>Pilih Guru Untuk Presensi</span>
           </div>
 
           <select
@@ -616,7 +616,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
                 : "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
             } text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
             <Camera size={20} />
-            <span className="text-sm sm:text-base">Scan dengan Kamera</span>
+            <span className="text-sm sm:text-base">Scan Dengan Kamera</span>
           </button>
 
           {/* 🎯 NEW: Button Pilih dari Galeri */}
@@ -628,7 +628,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
                 : "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
             } text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
             <Image size={20} />
-            <span className="text-sm sm:text-base">📷 Pilih dari Galeri</span>
+            <span className="text-sm sm:text-base">📷 Pilih Dari Galeri</span>
           </button>
         </div>
       )}
@@ -637,7 +637,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
           <p className="text-gray-600 dark:text-gray-300 mt-4">
-            Menyimpan presensi...
+            Menyimpan Presensi...
           </p>
         </div>
       )}
@@ -666,7 +666,7 @@ const QRScanner = ({ currentUser, onSuccess }) => {
           } border rounded-lg p-4`}>
           <p className="text-sm sm:text-base text-gray-800 dark:text-gray-300">
             <strong>💡 Tips:</strong> Pastikan Pencahayaan Cukup dan QR Code
-            Terlihat Jelas, atau Pilih Screenshot/foto QR Dari Galeri
+            Terlihat Jelas, atau Pilih Screenshot/Foto QR Dari Galeri
           </p>
         </div>
 
@@ -692,8 +692,8 @@ const QRScanner = ({ currentUser, onSuccess }) => {
               size={20}
             />
             <p className="text-sm sm:text-base text-blue-800 dark:text-blue-300">
-              <strong>Admin Mode:</strong> Anda dapat scan QR kapan saja tanpa
-              batasan waktu dan lokasi untuk input presensi guru lain
+              <strong>Admin Mode:</strong> Anda Dapat Scan QR Kapan Saja Tanpa
+              Batasan Waktu Dan Lokasi Untuk Input Presensi Guru Lain
             </p>
           </div>
         )}

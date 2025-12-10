@@ -281,7 +281,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
             <div className="flex items-center gap-2 mb-1">
               <XCircle className="text-red-600 dark:text-red-400" size={16} />
               <p className="text-xs text-red-700 dark:text-red-300 font-medium">
-                Alpha
+                Alpa
               </p>
             </div>
             <p className="text-xl font-bold text-red-600 dark:text-red-400">
@@ -344,7 +344,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
           <div className="space-y-2">
             {attendances.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                Belum ada data presensi bulan ini
+                Belum Ada Data Presensi Bulan Ini
               </div>
             ) : (
               attendances.map((att) => (

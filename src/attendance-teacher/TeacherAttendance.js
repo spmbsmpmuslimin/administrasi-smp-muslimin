@@ -172,10 +172,10 @@ const TeacherAttendance = ({ user }) => {
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <div className="text-center">
           <p className="text-red-600 dark:text-red-400 text-lg">
-            Sesi login tidak ditemukan
+            Sesi Login Tidak Ditemukan
           </p>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Silakan login kembali
+            Silakan Login Kembali
           </p>
         </div>
       </div>
@@ -213,7 +213,7 @@ const TeacherAttendance = ({ user }) => {
                     ⚠️ Reminder Presensi
                   </h3>
                   <p className="text-white text-sm opacity-90">
-                    Jangan lupa presensi hari ini!
+                    Jangan Lupa Presensi Hari Ini!
                   </p>
                 </div>
               </div>
@@ -228,16 +228,15 @@ const TeacherAttendance = ({ user }) => {
 
               <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400 p-4 rounded-lg mb-6">
                 <p className="text-blue-800 dark:text-blue-200 text-sm">
-                  <strong>📋 Info:</strong> Anda memiliki jadwal mengajar hari
-                  ini. Silakan lakukan presensi untuk mencatat kehadiran Anda.
+                  <strong>📋 Info:</strong> Anda Memiliki Jadwal Mengajar Hari
+                  Ini. Silakan Lakukan Presensi Untuk Mencatat Kehadiran Anda.
                 </p>
               </div>
 
               <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-400 p-4 rounded-lg mb-6">
                 <p className="text-amber-800 dark:text-amber-200 text-sm">
-                  <strong>⏰ Batas Waktu:</strong> Input manual presensi
-                  tersedia sampai jam 14:00. Pastikan Anda presensi sebelum
-                  batas waktu!
+                  <strong>⏰ Batas Waktu:</strong> Input Presensi Tersedia
+                  Sampai Jam 14:00. Pastikan Anda Presensi Sebelum Batas Waktu!
                 </p>
               </div>
 
