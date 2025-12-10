@@ -488,17 +488,17 @@ const SPMB = ({ user, onShowToast }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white pb-24 sm:pb-6">
-      <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 pb-24 sm:pb-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Toast Notification */}
         {toast.show && (
           <div
-            className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 p-4 rounded-lg shadow-xl border-l-4 animate-slide-down max-w-sm ${
+            className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 p-4 rounded-lg shadow-xl border-l-4 animate-slide-down max-w-sm w-11/12 sm:w-auto ${
               toast.type === "success"
-                ? "bg-green-50 border-green-500 text-green-800"
+                ? "bg-green-50 dark:bg-green-900/30 border-green-500 dark:border-green-600 text-green-800 dark:text-green-200"
                 : toast.type === "error"
-                ? "bg-red-50 border-red-500 text-red-800"
-                : "bg-blue-50 border-blue-500 text-blue-800"
+                ? "bg-red-50 dark:bg-red-900/30 border-red-500 dark:border-red-600 text-red-800 dark:text-red-200"
+                : "bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 text-blue-800 dark:text-blue-200"
             }`}>
             <div className="flex items-center gap-2">
               <span className="text-lg">
@@ -515,10 +515,10 @@ const SPMB = ({ user, onShowToast }) => {
 
         {/* Loading Target Year */}
         {isLoadingTargetYear && (
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 dark:border-blue-600 p-3 sm:p-4 rounded-lg">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-blue-800">
+              <div className="w-4 h-4 border-2 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-blue-800 dark:text-blue-300 text-sm sm:text-base">
                 Memuat data tahun ajaran target...
               </span>
             </div>
@@ -526,16 +526,16 @@ const SPMB = ({ user, onShowToast }) => {
         )}
 
         {/* PAGE HEADER */}
-        <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-600 rounded-xl p-8 sm:p-10 shadow-lg">
+        <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-600 dark:from-gray-800 dark:via-gray-700 dark:to-gray-600 rounded-xl p-6 sm:p-8 md:p-10 shadow-lg">
           <div className="text-center space-y-2">
-            <h2 className="text-2xl sm:text-lg text-blue-200 font-semibold uppercase tracking-widest">
+            <h2 className="text-sm sm:text-base md:text-lg text-blue-200 dark:text-blue-100 font-semibold uppercase tracking-widest">
               Sekolah Menengah Pertama Muslimin Cililin
             </h2>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
               Sistem Penerimaan Murid Baru (SPMB)
             </h1>
             {targetYear && (
-              <p className="text-blue-100 text-lg sm:text-xl font-medium pt-1">
+              <p className="text-blue-100 dark:text-blue-200 text-base sm:text-lg md:text-xl font-medium pt-1">
                 Penerimaan Tahun Ajaran {targetYear}
               </p>
             )}
@@ -543,34 +543,34 @@ const SPMB = ({ user, onShowToast }) => {
         </div>
 
         {/* Desktop Navigation Tabs */}
-        <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="flex">
             {navItems.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setActiveTab(item.key)}
-                className={`flex-1 p-4 font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                className={`flex-1 p-4 font-medium transition-all duration-200 flex items-center justify-center gap-2 min-h-[60px] ${
                   activeTab === item.key
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-gray-600 hover:bg-blue-50"
+                    ? "bg-blue-600 dark:bg-blue-700 text-white shadow-sm"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700"
                 }`}>
-                <span>{item.fullLabel}</span>
+                <span className="text-sm sm:text-base">{item.fullLabel}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6">
           {/* Loading State untuk form tab */}
           {(isLoading || isLoadingTargetYear) &&
             activeTab !== "form" &&
             activeTab !== "list" && (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
-                    className="animate-pulse bg-gray-200 h-20 rounded-lg"
+                    className="animate-pulse bg-gray-200 dark:bg-gray-700 h-16 sm:h-20 rounded-lg"
                   />
                 ))}
               </div>
@@ -592,22 +592,26 @@ const SPMB = ({ user, onShowToast }) => {
               {activeTab === "list" && (
                 <>
                   {filteredStudents.length === 0 && !searchInput ? (
-                    <div className="text-center py-16">
-                      <div className="text-6xl mb-4">🔭</div>
-                      <p className="text-gray-500 text-lg font-medium">
+                    <div className="text-center py-12 sm:py-16">
+                      <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">
+                        🔭
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg font-medium">
                         Belum ada data siswa
                       </p>
-                      <p className="text-gray-400 text-sm mt-2">
+                      <p className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm mt-1 sm:mt-2">
                         Mulai dengan mendaftarkan siswa baru
                       </p>
                     </div>
                   ) : filteredStudents.length === 0 && searchInput ? (
-                    <div className="text-center py-16">
-                      <div className="text-6xl mb-4">🔍</div>
-                      <p className="text-gray-500 text-lg font-medium">
+                    <div className="text-center py-12 sm:py-16">
+                      <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">
+                        🔍
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg font-medium">
                         Tidak ada hasil
                       </p>
-                      <p className="text-gray-400 text-sm mt-2">
+                      <p className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm mt-1 sm:mt-2">
                         Coba kata kunci lain
                       </p>
                     </div>
@@ -662,18 +666,18 @@ const SPMB = ({ user, onShowToast }) => {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:hidden z-40 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-40 shadow-lg">
         <div className="flex">
           {navItems.map((item) => (
             <button
               key={item.key}
               onClick={() => setActiveTab(item.key)}
-              className={`flex-1 p-3 font-medium transition-all duration-200 flex flex-col items-center justify-center gap-1 ${
+              className={`flex-1 p-3 font-medium transition-all duration-200 flex flex-col items-center justify-center gap-1 min-h-[70px] touch-manipulation ${
                 activeTab === item.key
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-gray-600"
+                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-700/50"
+                  : "text-gray-600 dark:text-gray-400"
               }`}>
-              <span className="text-lg">
+              <span className="text-xl">
                 {item.key === "form"
                   ? "📝"
                   : item.key === "list"
@@ -682,7 +686,7 @@ const SPMB = ({ user, onShowToast }) => {
                   ? "📊"
                   : "🔀"}
               </span>
-              <span className="text-xs">{item.label}</span>
+              <span className="text-xs font-medium">{item.label}</span>
             </button>
           ))}
         </div>

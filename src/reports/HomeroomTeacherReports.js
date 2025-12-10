@@ -37,52 +37,52 @@ import {
 
 const COLOR_CLASSES = {
   indigo: {
-    bg: "bg-indigo-100",
-    text: "text-indigo-600",
-    border: "border-indigo-200",
-    hover: "hover:bg-indigo-200",
+    bg: "bg-indigo-100 dark:bg-indigo-900/30",
+    text: "text-indigo-600 dark:text-indigo-400",
+    border: "border-indigo-200 dark:border-indigo-800",
+    hover: "hover:bg-indigo-200 dark:hover:bg-indigo-800/50",
   },
   green: {
-    bg: "bg-green-100",
-    text: "text-green-600",
-    border: "border-green-200",
-    hover: "hover:bg-green-200",
+    bg: "bg-green-100 dark:bg-green-900/30",
+    text: "text-green-600 dark:text-green-400",
+    border: "border-green-200 dark:border-green-800",
+    hover: "hover:bg-green-200 dark:hover:bg-green-800/50",
   },
   blue: {
-    bg: "bg-blue-100",
-    text: "text-blue-600",
-    border: "border-blue-200",
-    hover: "hover:bg-blue-200",
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    text: "text-blue-600 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-800",
+    hover: "hover:bg-blue-200 dark:hover:bg-blue-800/50",
   },
   yellow: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-600",
-    border: "border-yellow-200",
-    hover: "hover:bg-yellow-200",
+    bg: "bg-yellow-100 dark:bg-yellow-900/30",
+    text: "text-yellow-600 dark:text-yellow-400",
+    border: "border-yellow-200 dark:border-yellow-800",
+    hover: "hover:bg-yellow-200 dark:hover:bg-yellow-800/50",
   },
   orange: {
-    bg: "bg-orange-100",
-    text: "text-orange-600",
-    border: "border-orange-200",
-    hover: "hover:bg-orange-200",
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+    text: "text-orange-600 dark:text-orange-400",
+    border: "border-orange-200 dark:border-orange-800",
+    hover: "hover:bg-orange-200 dark:hover:bg-orange-800/50",
   },
   purple: {
-    bg: "bg-purple-100",
-    text: "text-purple-600",
-    border: "border-purple-200",
-    hover: "hover:bg-purple-200",
+    bg: "bg-purple-100 dark:bg-purple-900/30",
+    text: "text-purple-600 dark:text-purple-400",
+    border: "border-purple-200 dark:border-purple-800",
+    hover: "hover:bg-purple-200 dark:hover:bg-purple-800/50",
   },
   red: {
-    bg: "bg-red-100",
-    text: "text-red-600",
-    border: "border-red-200",
-    hover: "hover:bg-red-200",
+    bg: "bg-red-100 dark:bg-red-900/30",
+    text: "text-red-600 dark:text-red-400",
+    border: "border-red-200 dark:border-red-800",
+    hover: "hover:bg-red-200 dark:hover:bg-red-800/50",
   },
   teal: {
-    bg: "bg-teal-100",
-    text: "text-teal-600",
-    border: "border-teal-200",
-    hover: "hover:bg-teal-200",
+    bg: "bg-teal-100 dark:bg-teal-900/30",
+    text: "text-teal-600 dark:text-teal-400",
+    border: "border-teal-200 dark:border-teal-800",
+    hover: "hover:bg-teal-200 dark:hover:bg-teal-800/50",
   },
 };
 
@@ -105,19 +105,25 @@ const ReportStatCard = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm border ${
-        alert ? "border-red-300" : "border-slate-200"
-      } p-4 hover:shadow-md transition-shadow`}>
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900/50 border ${
+        alert
+          ? "border-red-300 dark:border-red-700"
+          : "border-slate-200 dark:border-gray-700"
+      } p-4 hover:shadow-md dark:hover:shadow-gray-900/70 transition-shadow`}>
       <div className="flex items-center gap-3">
         <div
           className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
           <Icon className={`w-6 h-6 ${colors.text}`} />
         </div>
         <div className="flex-1">
-          <p className="text-sm text-slate-600">{label}</p>
-          <p className="text-2xl font-bold text-slate-800">{value}</p>
+          <p className="text-sm text-slate-600 dark:text-gray-300">{label}</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-white">
+            {value}
+          </p>
         </div>
-        {alert && <AlertTriangle className="w-5 h-5 text-red-500" />}
+        {alert && (
+          <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400" />
+        )}
       </div>
     </div>
   );
@@ -127,7 +133,7 @@ const ReportStatCard = ({
 const DashboardStats = ({ activeTab, homeroomStats, teacherStats }) => {
   if (activeTab === "homeroom") {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
         <ReportStatCard
           icon={GraduationCap}
           label="Siswa di Kelas"
@@ -157,7 +163,7 @@ const DashboardStats = ({ activeTab, homeroomStats, teacherStats }) => {
     );
   } else {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
         <ReportStatCard
           icon={BookOpen}
           label="Kelas Diampu"
@@ -198,24 +204,29 @@ const FilterPanel = ({
   const yearOptions = getYearOptions();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
-      <div className="flex items-center gap-2 mb-3">
-        <Filter className="w-5 h-5 text-slate-600" />
-        <h3 className="font-semibold text-slate-800">Filter Laporan</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 p-4 md:p-6 mb-6">
+      <div className="flex items-center gap-2 mb-3 md:mb-4">
+        <Filter className="w-5 h-5 text-slate-600 dark:text-gray-300" />
+        <h3 className="font-semibold text-slate-800 dark:text-white text-sm md:text-base">
+          Filter Laporan
+        </h3>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {/* Month Dropdown */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-xs font-medium text-slate-600 dark:text-gray-400 mb-1.5">
             Bulan
           </label>
           <select
             value={filters.month || getCurrentMonth()}
             onChange={(e) => onFilterChange("month", e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            className="w-full px-3 py-2 md:py-2.5 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white transition-colors">
             {monthOptions.map((month) => (
-              <option key={month.value} value={month.value}>
+              <option
+                key={month.value}
+                value={month.value}
+                className="bg-white dark:bg-gray-700">
                 {month.label}
               </option>
             ))}
@@ -224,15 +235,18 @@ const FilterPanel = ({
 
         {/* Year Dropdown */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-xs font-medium text-slate-600 dark:text-gray-400 mb-1.5">
             Tahun
           </label>
           <select
             value={filters.year || getCurrentYear()}
             onChange={(e) => onFilterChange("year", e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            className="w-full px-3 py-2 md:py-2.5 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white transition-colors">
             {yearOptions.map((year) => (
-              <option key={year} value={year}>
+              <option
+                key={year}
+                value={year}
+                className="bg-white dark:bg-gray-700">
                 {year}
               </option>
             ))}
@@ -241,16 +255,21 @@ const FilterPanel = ({
 
         {/* Academic Year */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-xs font-medium text-slate-600 dark:text-gray-400 mb-1.5">
             Tahun Ajaran
           </label>
           <select
             value={filters.academic_year || ""}
             onChange={(e) => onFilterChange("academic_year", e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            <option value="">Semua</option>
+            className="w-full px-3 py-2 md:py-2.5 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white transition-colors">
+            <option value="" className="bg-white dark:bg-gray-700">
+              Semua
+            </option>
             {academicYears.map((year) => (
-              <option key={year} value={year}>
+              <option
+                key={year}
+                value={year}
+                className="bg-white dark:bg-gray-700">
                 {year}
               </option>
             ))}
@@ -259,24 +278,30 @@ const FilterPanel = ({
 
         {/* Semester */}
         <div>
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+          <label className="block text-xs font-medium text-slate-600 dark:text-gray-400 mb-1.5">
             Semester
           </label>
           <select
             value={filters.semester || ""}
             onChange={(e) => onFilterChange("semester", e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            <option value="">Semua</option>
-            <option value="1">Semester 1</option>
-            <option value="2">Semester 2</option>
+            className="w-full px-3 py-2 md:py-2.5 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white transition-colors">
+            <option value="" className="bg-white dark:bg-gray-700">
+              Semua
+            </option>
+            <option value="1" className="bg-white dark:bg-gray-700">
+              Semester 1
+            </option>
+            <option value="2" className="bg-white dark:bg-gray-700">
+              Semester 2
+            </option>
           </select>
         </div>
 
         {/* Reset Button */}
-        <div className="col-span-2 md:col-span-3 lg:col-span-2 flex items-end">
+        <div className="col-span-2 sm:col-span-3 lg:col-span-2 flex items-end">
           <button
             onClick={onReset}
-            className="w-full px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors">
+            className="w-full px-4 py-2.5 bg-slate-200 dark:bg-gray-700 hover:bg-slate-300 dark:hover:bg-gray-600 text-slate-700 dark:text-gray-300 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors min-h-[44px] touch-manipulation">
             <X className="w-4 h-4" />
             Reset Filter
           </button>
@@ -297,14 +322,14 @@ const ReportCardsGrid = ({
 }) => {
   if (!currentReports || currentReports.length === 0) {
     return (
-      <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-8">
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
+          <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
           <div className="flex-1">
-            <h3 className="font-semibold text-yellow-900 mb-2">
+            <h3 className="font-semibold text-yellow-900 dark:text-yellow-300 mb-2 text-sm md:text-base">
               Tidak Ada Laporan Tersedia
             </h3>
-            <p className="text-sm text-yellow-800">
+            <p className="text-sm text-yellow-800 dark:text-yellow-300">
               {activeTab === "homeroom"
                 ? "Data kelas belum tersedia. Pastikan Anda sudah ditugaskan sebagai wali kelas dan terdapat data siswa di kelas Anda."
                 : "Tidak ada penugasan mata pelajaran. Silakan hubungi admin untuk setup penugasan."}
@@ -319,9 +344,9 @@ const ReportCardsGrid = ({
     <div
       className={`grid grid-cols-1 ${
         activeTab === "homeroom"
-          ? "md:grid-cols-2 lg:grid-cols-4"
-          : "md:grid-cols-3"
-      } gap-4 mb-8`}>
+          ? "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          : "sm:grid-cols-2 md:grid-cols-3"
+      } gap-3 md:gap-4 mb-6 md:mb-8`}>
       {currentReports.map((report) => {
         const Icon = report.icon;
         const isDownloading = downloadingReportId === report.id;
@@ -330,23 +355,23 @@ const ReportCardsGrid = ({
         return (
           <div
             key={report.id}
-            className={`bg-white rounded-lg shadow-sm border-2 ${colors.border} p-4 hover:shadow-md transition-all duration-200`}>
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border-2 ${colors.border} p-4 hover:shadow-md dark:hover:shadow-gray-900/70 transition-all duration-200`}>
             <div className="flex items-start justify-between mb-3">
               <div
-                className={`w-11 h-11 rounded-xl ${colors.bg} flex items-center justify-center`}>
+                className={`w-11 h-11 rounded-xl ${colors.bg} flex items-center justify-center flex-shrink-0`}>
                 <Icon className={`w-5 h-5 ${colors.text}`} />
               </div>
             </div>
 
-            <h3 className="text-sm font-semibold text-slate-800 mb-1.5 leading-tight">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-white mb-1.5 leading-tight line-clamp-2">
               {report.title}
             </h3>
 
-            <p className="text-xs text-slate-600 mb-2 leading-tight">
+            <p className="text-xs text-slate-600 dark:text-gray-400 mb-2 leading-tight line-clamp-2">
               {report.description}
             </p>
 
-            <p className="text-xs text-slate-500 mb-3 font-medium">
+            <p className="text-xs text-slate-500 dark:text-gray-500 mb-3 font-medium">
               {report.stats}
             </p>
 
@@ -354,7 +379,7 @@ const ReportCardsGrid = ({
               <button
                 onClick={() => previewReport(report.id)}
                 disabled={loading || downloadingReportId}
-                className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-gray-300 text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                className="w-full bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-800 text-slate-700 dark:text-gray-300 px-2.5 py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors min-h-[44px] touch-manipulation">
                 <Eye className="w-3.5 h-3.5" />
                 {loading ? "Memuat..." : "Preview"}
               </button>
@@ -366,7 +391,7 @@ const ReportCardsGrid = ({
                   isDownloading ||
                   (downloadingReportId && !isDownloading)
                 }
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                className="w-full bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-800 text-white px-2.5 py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors min-h-[44px] touch-manipulation">
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 {isDownloading ? "Exporting..." : "Export Excel"}
               </button>
@@ -386,25 +411,25 @@ const StudentAlertsAndAssignments = ({
 }) => {
   if (activeTab === "homeroom" && alertStudents.length > 0) {
     return (
-      <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 mb-8">
+      <div className="bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-orange-600 mt-1" />
+          <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400 mt-1 flex-shrink-0" />
           <div className="flex-1">
-            <h3 className="font-semibold text-orange-900 mb-2">
+            <h3 className="font-semibold text-orange-900 dark:text-orange-300 mb-2 text-sm md:text-base">
               Siswa Perlu Perhatian Khusus
             </h3>
-            <p className="text-sm text-orange-800 mb-3">
+            <p className="text-sm text-orange-800 dark:text-orange-300 mb-3">
               Siswa dengan tingkat kehadiran di bawah 75% dalam 30 hari terakhir
             </p>
             <div className="space-y-2">
               {alertStudents.map((student, idx) => (
                 <div
                   key={idx}
-                  className="bg-white p-3 rounded-lg border border-orange-200">
-                  <p className="text-sm font-medium text-slate-800">
+                  className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-orange-200 dark:border-orange-700">
+                  <p className="text-sm font-medium text-slate-800 dark:text-white">
                     {student.name} ({student.nis})
                   </p>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-slate-600 dark:text-gray-400">
                     Kehadiran: {student.rate}% ({student.present} dari{" "}
                     {student.total} hari)
                   </p>
@@ -419,23 +444,25 @@ const StudentAlertsAndAssignments = ({
 
   if (activeTab === "teacher" && teacherAssignments.length > 0) {
     return (
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
         <div className="flex items-start gap-3">
-          <BookOpen className="w-6 h-6 text-blue-600 mt-1" />
+          <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400 mt-1 flex-shrink-0" />
           <div className="flex-1">
-            <h3 className="font-semibold text-blue-900 mb-2">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2 text-sm md:text-base">
               Kelas & Mata Pelajaran yang Diampu
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
               {teacherAssignments.map((assignment, idx) => (
                 <div
                   key={idx}
-                  className="bg-white p-3 rounded-lg border border-blue-200">
-                  <p className="text-sm font-medium text-slate-800">
+                  className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                  <p className="text-sm font-medium text-slate-800 dark:text-white">
                     Kelas {assignment.class_id}
                   </p>
-                  <p className="text-xs text-slate-600">{assignment.subject}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-600 dark:text-gray-400">
+                    {assignment.subject}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-gray-500">
                     {assignment.academic_year} • Semester {assignment.semester}
                   </p>
                 </div>
@@ -449,14 +476,14 @@ const StudentAlertsAndAssignments = ({
 
   if (activeTab === "teacher" && teacherAssignments.length === 0) {
     return (
-      <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-8">
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
+          <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
           <div className="flex-1">
-            <h3 className="font-semibold text-yellow-900 mb-2">
+            <h3 className="font-semibold text-yellow-900 dark:text-yellow-300 mb-2 text-sm md:text-base">
               Belum Ada Penugasan Kelas
             </h3>
-            <p className="text-sm text-yellow-800">
+            <p className="text-sm text-yellow-800 dark:text-yellow-300">
               Anda belum memiliki penugasan mata pelajaran. Silakan hubungi
               admin untuk setup penugasan kelas dan mata pelajaran.
             </p>
@@ -1132,12 +1159,14 @@ const HomeroomTeacherReports = ({ user }) => {
 
   if (loading && !dataLoaded) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-slate-600">Memuat data...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
+              <p className="text-slate-600 dark:text-gray-300">
+                Memuat data...
+              </p>
             </div>
           </div>
         </div>
@@ -1148,16 +1177,16 @@ const HomeroomTeacherReports = ({ user }) => {
   // Error state for Homeroom tab if not assigned
   if (!user?.homeroom_class_id && activeTab === "homeroom") {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-4 md:p-6">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
+              <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="font-semibold text-yellow-900 mb-2">
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-300 mb-2 text-sm md:text-base">
                   Belum Ditugaskan Sebagai Wali Kelas
                 </h3>
-                <p className="text-sm text-yellow-800">
+                <p className="text-sm text-yellow-800 dark:text-yellow-300">
                   Anda belum memiliki penugasan sebagai wali kelas. Silakan
                   hubungi admin untuk setup penugasan kelas.
                 </p>
@@ -1171,44 +1200,44 @@ const HomeroomTeacherReports = ({ user }) => {
 
   // ==================== MAIN RENDER ====================
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 md:p-6 transition-colors">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <FileText className="w-8 h-8 text-indigo-600" />
+            <FileText className="w-8 h-8 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white">
                 Laporan - Wali Kelas & Guru Mapel
               </h1>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
                 {user?.full_name || "User"} - Wali Kelas{" "}
                 {user?.homeroom_class_id || "-"}
               </p>
             </div>
           </div>
-          <p className="text-slate-600">
+          <p className="text-slate-600 dark:text-gray-300 text-sm md:text-base">
             Kelola laporan sebagai wali kelas dan guru mata pelajaran
           </p>
         </div>
 
         {/* Success/Error Alerts */}
         {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+          <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
             <span className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
               {success}
             </span>
             <button
               onClick={() => setSuccess(null)}
-              className="text-green-800 hover:text-green-900 font-bold">
+              className="text-green-800 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 font-bold">
               ×
             </button>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6">
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
@@ -1216,7 +1245,7 @@ const HomeroomTeacherReports = ({ user }) => {
               </span>
               <button
                 onClick={() => setError(null)}
-                className="text-red-800 hover:text-red-900 font-bold">
+                className="text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 font-bold">
                 ×
               </button>
             </div>
@@ -1224,21 +1253,22 @@ const HomeroomTeacherReports = ({ user }) => {
         )}
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-          <div className="flex border-b border-slate-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 mb-6">
+          <div className="flex border-b border-slate-200 dark:border-gray-700">
             <button
               onClick={() => {
                 setActiveTab("homeroom");
                 resetFilters();
               }}
-              className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 px-4 md:px-6 py-3 md:py-4 font-semibold text-xs md:text-sm transition-colors flex items-center justify-center gap-2 min-h-[52px] touch-manipulation ${
                 activeTab === "homeroom"
-                  ? "bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
+                  : "text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-gray-700"
               }`}>
               <Users className="w-5 h-5" />
-              Laporan Wali Kelas
-              <span className="ml-2 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">
+              <span className="hidden sm:inline">Laporan Wali Kelas</span>
+              <span className="sm:hidden">Wali Kelas</span>
+              <span className="ml-2 bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs">
                 Kelas {user?.homeroom_class_id || "-"}
               </span>
             </button>
@@ -1247,14 +1277,15 @@ const HomeroomTeacherReports = ({ user }) => {
                 setActiveTab("teacher");
                 resetFilters();
               }}
-              className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 px-4 md:px-6 py-3 md:py-4 font-semibold text-xs md:text-sm transition-colors flex items-center justify-center gap-2 min-h-[52px] touch-manipulation ${
                 activeTab === "teacher"
-                  ? "bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
+                  : "text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-gray-700"
               }`}>
               <BookOpen className="w-5 h-5" />
-              Laporan Guru Mapel
-              <span className="ml-2 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">
+              <span className="hidden sm:inline">Laporan Guru Mapel</span>
+              <span className="sm:hidden">Guru Mapel</span>
+              <span className="ml-2 bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs">
                 {teacherStats.totalClasses || 0} Kelas
               </span>
             </button>
@@ -1294,27 +1325,27 @@ const HomeroomTeacherReports = ({ user }) => {
         />
 
         {/* Info Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 p-4 md:p-6 mb-6">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">
             📋 Informasi Laporan
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             <div>
-              <h4 className="font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <h4 className="font-medium text-slate-700 dark:text-gray-300 mb-2 flex items-center gap-2 text-sm md:text-base">
                 <FileSpreadsheet className="w-4 h-4" />
                 Format File
               </h4>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-gray-400">
                 Laporan tersedia dalam format Excel dengan layout yang rapi dan
                 profesional.
               </p>
             </div>
             <div>
-              <h4 className="font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <h4 className="font-medium text-slate-700 dark:text-gray-300 mb-2 flex items-center gap-2 text-sm md:text-base">
                 <Users className="w-4 h-4" />
                 Cakupan Data
               </h4>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-gray-400">
                 {activeTab === "homeroom"
                   ? `Laporan wali kelas mencakup data kelas ${
                       user?.homeroom_class_id || "-"
@@ -1323,11 +1354,11 @@ const HomeroomTeacherReports = ({ user }) => {
               </p>
             </div>
             <div>
-              <h4 className="font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <h4 className="font-medium text-slate-700 dark:text-gray-300 mb-2 flex items-center gap-2 text-sm md:text-base">
                 <Eye className="w-4 h-4" />
                 Preview Tersedia
               </h4>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-gray-400">
                 Klik "Preview" untuk melihat semua data sebelum export.
               </p>
             </div>
@@ -1335,12 +1366,16 @@ const HomeroomTeacherReports = ({ user }) => {
         </div>
 
         {/* Tips */}
-        <div className="mt-6 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+        <div className="mt-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
           <div className="flex gap-3">
-            <div className="text-indigo-600 text-xl">💡</div>
+            <div className="text-indigo-600 dark:text-indigo-400 text-xl">
+              💡
+            </div>
             <div>
-              <h4 className="font-medium text-indigo-900 mb-1">Tips:</h4>
-              <p className="text-sm text-indigo-700">
+              <h4 className="font-medium text-indigo-900 dark:text-indigo-300 mb-1 text-sm md:text-base">
+                Tips:
+              </h4>
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
                 {activeTab === "homeroom"
                   ? "Export laporan presensi dan nilai secara berkala untuk monitoring performa siswa. Nilai Akademik menampilkan NILAI AKHIR (NA) yang dihitung dari: NH×40% + PSTS×30% + PSAS×30%."
                   : "Gunakan laporan guru mapel untuk analisis performa siswa per mata pelajaran. Bandingkan hasil antar kelas untuk evaluasi metode pengajaran."}

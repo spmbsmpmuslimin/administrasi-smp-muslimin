@@ -174,12 +174,15 @@ const calculateHighRiskStudents = (atRiskAttendance, atRiskGrades) => {
 const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
   if (!data || data.length === 0) {
     return (
-      <div className={`bg-white rounded-lg border-2 ${color} p-4`}>
+      <div
+        className={`bg-white dark:bg-slate-800 rounded-lg border-2 ${color} p-4 h-full`}>
         <div className="flex items-center gap-2 mb-3">
-          <Icon className="w-5 h-5" />
-          <h3 className="font-semibold text-slate-800">{title}</h3>
+          <Icon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+          <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+            {title}
+          </h3>
         </div>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Tidak ada data yang perlu perhatian
         </p>
       </div>
@@ -189,47 +192,54 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
   const displayData = data.slice(0, 5);
 
   return (
-    <div className={`bg-white rounded-lg border-2 ${color} p-4`}>
+    <div
+      className={`bg-white dark:bg-slate-800 rounded-lg border-2 ${color} p-4 h-full`}>
       <div className="flex items-center gap-2 mb-3">
-        <Icon className="w-5 h-5" />
-        <h3 className="font-semibold text-slate-800">{title}</h3>
-        <span className="ml-auto bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">
+        <Icon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+        <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex-1">
+          {title}
+        </h3>
+        <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded-full text-xs font-bold min-w-[3rem] text-center">
           {data.length} siswa
         </span>
       </div>
 
       <div className="space-y-2">
         {displayData.map((student, idx) => (
-          <div key={idx} className="bg-slate-50 p-2 rounded text-xs">
+          <div
+            key={idx}
+            className="bg-slate-50 dark:bg-slate-700/50 p-2 rounded text-xs">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="font-semibold text-slate-800">{student.name}</p>
-                <p className="text-slate-600">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                  {student.name}
+                </p>
+                <p className="text-slate-600 dark:text-slate-400 text-xs">
                   {student.nis} • Kelas {student.class_id}
                 </p>
               </div>
               {type === "attendance" && (
                 <span
-                  className={`px-2 py-1 rounded font-bold ${
+                  className={`px-2 py-1 rounded font-bold min-w-[3rem] text-center ml-2 ${
                     student.attendanceRate >= 75
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-red-100 text-red-700"
+                      ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                      : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
                   }`}>
                   {student.attendanceRate}%
                 </span>
               )}
               {type === "grades" && (
                 <span
-                  className={`px-2 py-1 rounded font-bold ${
+                  className={`px-2 py-1 rounded font-bold min-w-[3rem] text-center ml-2 ${
                     student.averageGrade >= 70
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-red-100 text-red-700"
+                      ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
+                      : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
                   }`}>
                   {student.averageGrade}
                 </span>
               )}
               {type === "highRisk" && (
-                <span className="px-2 py-1 rounded font-bold bg-red-100 text-red-700">
+                <span className="px-2 py-1 rounded font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 min-w-[3rem] text-center ml-2">
                   ⚠️ {student.riskScore}
                 </span>
               )}
@@ -239,7 +249,7 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
       </div>
 
       {data.length > 5 && (
-        <p className="text-xs text-slate-500 mt-3 pt-3 border-t">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
           +{data.length - 5} siswa lainnya
         </p>
       )}
@@ -250,16 +260,22 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
 // ==================== STAT CARD ====================
 
 const StatCard = ({ icon: Icon, label, value, subtitle, colorClass }) => (
-  <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow">
+  <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow h-full">
     <div className="flex items-center gap-3">
       <div
-        className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass}`}>
+        className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass} flex-shrink-0`}>
         <Icon className="w-6 h-6" />
       </div>
-      <div className="flex-1">
-        <p className="text-sm text-slate-600">{label}</p>
-        <p className="text-2xl font-bold text-slate-800">{value}</p>
-        {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-slate-600 dark:text-slate-400">{label}</p>
+        <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+          {value}
+        </p>
+        {subtitle && (
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+            {subtitle}
+          </p>
+        )}
       </div>
     </div>
   </div>
@@ -294,8 +310,10 @@ const AdminReports = ({ user, onShowToast }) => {
       title: "Data Guru",
       description: "Master data lengkap semua guru",
       stats: `${stats.totalTeachers || 0} guru`,
-      colorCard: "bg-blue-50 border-blue-200",
-      colorIcon: "bg-blue-100 text-blue-600",
+      colorCard:
+        "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
+      colorIcon:
+        "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300",
     },
     {
       id: "students",
@@ -303,8 +321,10 @@ const AdminReports = ({ user, onShowToast }) => {
       title: "Data Siswa",
       description: "Master data semua siswa aktif",
       stats: `${stats.totalStudents || 0} siswa`,
-      colorCard: "bg-green-50 border-green-200",
-      colorIcon: "bg-green-100 text-green-600",
+      colorCard:
+        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
+      colorIcon:
+        "bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300",
     },
     {
       id: "attendance-recap",
@@ -312,8 +332,10 @@ const AdminReports = ({ user, onShowToast }) => {
       title: "Rekapitulasi Kehadiran",
       description: "Statistik kehadiran per siswa",
       stats: `Rata-rata: ${stats.attendanceToday || 0}%`,
-      colorCard: "bg-orange-50 border-orange-200",
-      colorIcon: "bg-orange-100 text-orange-600",
+      colorCard:
+        "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
+      colorIcon:
+        "bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-300",
     },
     {
       id: "grades",
@@ -321,8 +343,10 @@ const AdminReports = ({ user, onShowToast }) => {
       title: "Data Nilai",
       description: "Nilai akademik semua mata pelajaran",
       stats: `Rata-rata Akhir: ${stats.averageGrade || 0}`,
-      colorCard: "bg-purple-50 border-purple-200",
-      colorIcon: "bg-purple-100 text-purple-600",
+      colorCard:
+        "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800",
+      colorIcon:
+        "bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300",
     },
   ];
 
@@ -641,94 +665,98 @@ const AdminReports = ({ user, onShowToast }) => {
   }, [previewModal.isOpen]);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+        {/* Header */}
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-7 h-7 text-indigo-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5 sm:w-7 sm:h-7 text-indigo-600 dark:text-indigo-400" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-800">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-200 leading-tight">
                 Laporan Admin
               </h1>
-              <p className="text-slate-600">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-1">
                 SMP Muslimin Cililin - Monitoring & Export Laporan Sekolah
               </p>
             </div>
           </div>
         </div>
 
+        {/* Toast Messages */}
         {!onShowToast && success && (
-          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" />
-              <span>{success}</span>
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="truncate">{success}</span>
             </div>
             <button
               onClick={() => setSuccess(null)}
-              className="text-green-600 hover:text-green-800">
+              className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 ml-2 flex-shrink-0">
               <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
         {!onShowToast && error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              <span>{error}</span>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="truncate">{error}</span>
             </div>
             <button
               onClick={() => setError(null)}
-              className="text-red-600 hover:text-red-800">
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-2 flex-shrink-0">
               <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatCard
             icon={Users}
             label="Total Guru"
             value={stats.totalTeachers || 0}
             subtitle="Guru aktif"
-            colorClass="bg-blue-100 text-blue-600"
+            colorClass="bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300"
           />
           <StatCard
             icon={GraduationCap}
             label="Total Siswa"
             value={stats.totalStudents || 0}
             subtitle="Siswa aktif"
-            colorClass="bg-green-100 text-green-600"
+            colorClass="bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300"
           />
           <StatCard
             icon={Building}
             label="Total Kelas"
             value={stats.totalClasses || 0}
             subtitle="Semua tingkat"
-            colorClass="bg-purple-100 text-purple-600"
+            colorClass="bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300"
           />
           <StatCard
             icon={TrendingUp}
             label="Kehadiran Hari Ini"
             value={`${stats.attendanceToday || 0}%`}
             subtitle={`Rata-rata nilai akhir: ${stats.averageGrade || 0}`}
-            colorClass="bg-indigo-100 text-indigo-600"
+            colorClass="bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300"
           />
         </div>
 
         {/* MONITORING SECTION */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-red-600" />
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400 flex-shrink-0" />
             Monitoring Siswa
           </h2>
 
-          <div className="bg-white rounded-lg border border-slate-200 p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+          {/* Filter Controls */}
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 sm:mb-2">
                   Filter Kelas (Opsional)
                 </label>
                 <select
@@ -736,7 +764,7 @@ const AdminReports = ({ user, onShowToast }) => {
                   onChange={(e) =>
                     handleFilterChange("class_id", e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm sm:text-base min-h-[44px]">
                   <option value="">Semua Kelas</option>
                   {classOptions.map((cls) => (
                     <option key={cls} value={cls}>
@@ -749,43 +777,46 @@ const AdminReports = ({ user, onShowToast }) => {
                 <button
                   onClick={handleApplyFilter}
                   disabled={monitoringLoading}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium">
-                  Refresh Data
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 text-white px-3 py-2.5 sm:py-2 rounded-lg font-medium text-sm sm:text-base min-h-[44px]">
+                  {monitoringLoading ? "Memuat..." : "Refresh Data"}
                 </button>
                 <button
                   onClick={handleResetFilters}
-                  className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium">
+                  className="flex-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-3 py-2.5 sm:py-2 rounded-lg font-medium text-sm sm:text-base min-h-[44px]">
                   Reset
                 </button>
               </div>
             </div>
           </div>
 
+          {/* Monitoring Cards */}
           {monitoringLoading ? (
-            <div className="text-center py-8">
-              <p className="text-slate-600">Memproses data monitoring...</p>
+            <div className="text-center py-6 sm:py-8">
+              <p className="text-slate-600 dark:text-slate-400">
+                Memproses data monitoring...
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
               <MonitoringCard
                 title="Siswa Absensi Tinggi (< 75%)"
                 data={atRiskAttendance}
                 icon={TrendingDown}
-                color="bg-red-50 border-red-200"
+                color="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
                 type="attendance"
               />
               <MonitoringCard
                 title="Siswa Nilai Rendah (< 70)"
                 data={atRiskGrades}
                 icon={AlertCircle}
-                color="bg-orange-50 border-orange-200"
+                color="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800"
                 type="grades"
               />
               <MonitoringCard
                 title="Siswa High Risk (Both Issues)"
                 data={highRiskStudents}
                 icon={AlertTriangle}
-                color="bg-red-50 border-red-300"
+                color="bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
                 type="highRisk"
               />
             </div>
@@ -793,48 +824,51 @@ const AdminReports = ({ user, onShowToast }) => {
         </div>
 
         {/* EXPORT REPORTS SECTION */}
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-800 mb-4">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-200">
             Export Laporan Lengkap
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Report Cards */}
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {REPORT_CARDS.map((card) => {
             const Icon = card.icon;
             return (
               <div
                 key={card.id}
-                className={`bg-white rounded-lg shadow-sm border-2 ${card.colorCard} p-4 hover:shadow-md transition-shadow`}>
+                className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border-2 ${card.colorCard} p-3 sm:p-4 hover:shadow-md transition-shadow h-full`}>
                 <div className="flex items-center justify-between mb-3">
                   <div
-                    className={`w-11 h-11 rounded-xl ${card.colorIcon} flex items-center justify-center`}>
-                    <Icon className="w-5 h-5" />
+                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl ${card.colorIcon} flex items-center justify-center flex-shrink-0`}>
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
 
-                <h3 className="text-sm font-semibold text-slate-800 mb-1.5">
+                <h3 className="text-sm sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5 line-clamp-2">
                   {card.title}
                 </h3>
-                <p className="text-xs text-slate-600 mb-2 line-clamp-2">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mb-2 line-clamp-2">
                   {card.description}
                 </p>
-                <p className="text-xs text-slate-500 mb-3">{card.stats}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-500 mb-3">
+                  {card.stats}
+                </p>
 
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => previewReport(card.id)}
                     disabled={loading}
-                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-slate-50 text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5" />
-                    Preview
+                    className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:bg-slate-50 dark:disabled:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 min-h-[44px]">
+                    <Eye className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>Preview</span>
                   </button>
                   <button
                     onClick={() => downloadReport(card.id, "xlsx")}
                     disabled={loading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5">
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    Export
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 text-white px-2.5 py-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 min-h-[44px]">
+                    <FileSpreadsheet className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>Export</span>
                   </button>
                 </div>
               </div>
@@ -842,16 +876,20 @@ const AdminReports = ({ user, onShowToast }) => {
           })}
         </div>
 
+        {/* Loading Overlay */}
         {loading && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
-            <div className="bg-white rounded-lg p-6 shadow-xl flex flex-col items-center gap-3">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-              <p className="text-slate-700 font-medium">Memproses laporan...</p>
+          <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 sm:p-6 shadow-xl flex flex-col items-center gap-3 max-w-xs w-full">
+              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+              <p className="text-slate-700 dark:text-slate-300 font-medium text-sm sm:text-base text-center">
+                Memproses laporan...
+              </p>
             </div>
           </div>
         )}
       </div>
 
+      {/* Report Modal */}
       <ReportModal
         isOpen={previewModal.isOpen}
         onClose={() =>

@@ -386,13 +386,13 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex-1">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
             Pengaturan Sekolah
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Kelola informasi dan identitas SMP Muslimin Cililin
           </p>
         </div>
@@ -402,59 +402,59 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
               setEditingSchoolSettings(true);
               setTempSchoolSettings({ ...schoolSettings });
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <Edit3 size={16} />
-            Edit Pengaturan
+            className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors w-full sm:w-auto min-h-[44px] touch-manipulation">
+            <Edit3 size={18} className="sm:size-[16px]" />
+            <span className="text-sm sm:text-base">Edit Pengaturan</span>
           </button>
         )}
       </div>
 
       {/* ✅ SEMESTER MISMATCH WARNING */}
       {!editingSchoolSettings && isSemesterMismatch() && (
-        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
+        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 rounded-lg shadow-sm">
           <div className="flex items-start gap-3">
             <AlertTriangle
-              className="text-yellow-600 flex-shrink-0 mt-0.5"
+              className="text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"
               size={20}
             />
             <div className="flex-1">
-              <h4 className="text-sm font-bold text-yellow-900 mb-1">
+              <h4 className="text-sm font-bold text-yellow-900 dark:text-yellow-300 mb-1">
                 ⚠️ Perhatian: Semester Mungkin Perlu Diupdate
               </h4>
-              <p className="text-sm text-yellow-800 mb-3">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
                 Sekarang{" "}
-                <strong>
+                <strong className="dark:text-yellow-100">
                   {getCurrentMonthName()} {getCurrentYear()}
                 </strong>
                 , semester seharusnya{" "}
-                <strong className="text-yellow-900">
+                <strong className="text-yellow-900 dark:text-yellow-100">
                   "{getExpectedSemester()}"
                 </strong>
                 <br />
                 Semester aktif saat ini:{" "}
-                <strong className="text-red-700">
+                <strong className="text-red-700 dark:text-red-300">
                   "{schoolSettings.semester}"
                 </strong>
               </p>
-              <div className="flex items-center gap-2 text-xs text-yellow-700 mb-3">
-                <span className="px-2 py-1 bg-yellow-100 rounded">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-yellow-700 dark:text-yellow-300 mb-3">
+                <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/40 rounded">
                   Juli-Des = Ganjil
                 </span>
-                <span className="px-2 py-1 bg-yellow-100 rounded">
+                <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/40 rounded">
                   Jan-Jun = Genap
                 </span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <button
                   onClick={quickUpdateSemester}
                   disabled={loading}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors shadow-sm">
-                  <Check size={14} />
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg disabled:opacity-50 transition-colors shadow-sm min-h-[44px] touch-manipulation">
+                  <Check size={16} />
                   {loading
                     ? "Updating..."
                     : `Update ke "${getExpectedSemester()}" Sekarang`}
                 </button>
-                <span className="text-xs text-yellow-700 self-center">
+                <span className="text-xs text-yellow-700 dark:text-yellow-300 self-center text-center sm:text-left">
                   atau abaikan jika semester sudah benar
                 </span>
               </div>
@@ -463,18 +463,21 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Informasi Sekolah */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Building2 size={20} className="text-blue-600" />
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+              <Building2
+                size={20}
+                className="text-blue-600 dark:text-blue-400"
+              />
               Informasi Sekolah
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Nama Sekolah *
                 </label>
                 {editingSchoolSettings ? (
@@ -487,27 +490,27 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         school_name: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation"
                     placeholder="Masukkan nama sekolah"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <div className="w-full px-4 py-3 sm:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white min-h-[44px] flex items-center">
                     {schoolSettings.school_name}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tingkat Sekolah *
                 </label>
-                <div className="w-full px-4 py-2 bg-blue-50 border border-blue-300 rounded-lg font-medium text-blue-800">
+                <div className="w-full px-4 py-3 sm:py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg font-medium text-blue-800 dark:text-blue-300 min-h-[44px] flex items-center">
                   {schoolSettings.school_level}
                 </div>
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Alamat Sekolah *
                 </label>
                 {editingSchoolSettings ? (
@@ -519,19 +522,19 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         school_address: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                    className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 resize-vertical min-h-[100px] sm:min-h-[76px] touch-manipulation"
                     rows="3"
                     placeholder="Masukkan alamat lengkap sekolah"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg min-h-[76px]">
+                  <div className="w-full px-4 py-3 sm:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white min-h-[100px] sm:min-h-[76px] flex items-start p-4">
                     {schoolSettings.school_address}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   NPSN *
                 </label>
                 {editingSchoolSettings ? (
@@ -544,19 +547,19 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         npsn: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation"
                     placeholder="8 digit NPSN"
                     maxLength="8"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <div className="w-full px-4 py-3 sm:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white min-h-[44px] flex items-center">
                     {schoolSettings.npsn}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Maks. Siswa per Kelas
                 </label>
                 {editingSchoolSettings ? (
@@ -569,13 +572,13 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         max_students_per_class: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation"
                     placeholder="36"
                     min="20"
                     max="40"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <div className="w-full px-4 py-3 sm:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white min-h-[44px] flex items-center">
                     {schoolSettings.max_students_per_class} siswa
                   </div>
                 )}
@@ -584,15 +587,15 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           </div>
 
           {/* Kontak Sekolah */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Phone size={20} className="text-green-600" />
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+              <Phone size={20} className="text-green-600 dark:text-green-400" />
               Kontak Sekolah
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Nomor Telepon
                 </label>
                 {editingSchoolSettings ? (
@@ -605,18 +608,18 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         school_phone: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation"
                     placeholder="Contoh: 022-1234567"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <div className="w-full px-4 py-3 sm:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white min-h-[44px] flex items-center">
                     {schoolSettings.school_phone || "-"}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email Sekolah
                 </label>
                 {editingSchoolSettings ? (
@@ -629,18 +632,18 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         school_email: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation"
                     placeholder="email@sekolah.sch.id"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <div className="w-full px-4 py-3 sm:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white min-h-[44px] flex items-center">
                     {schoolSettings.school_email || "-"}
                   </div>
                 )}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Website Sekolah
                 </label>
                 {editingSchoolSettings ? (
@@ -653,11 +656,11 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         school_website: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation"
                     placeholder="https://example.sch.id"
                   />
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg">
+                  <div className="w-full px-4 py-3 sm:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white min-h-[44px] flex items-center">
                     {schoolSettings.school_website || "-"}
                   </div>
                 )}
@@ -668,15 +671,18 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
         {/* Tahun Ajaran dan Logo */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Calendar size={20} className="text-purple-600" />
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+              <Calendar
+                size={20}
+                className="text-purple-600 dark:text-purple-400"
+              />
               Tahun Ajaran
             </h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tahun Ajaran Aktif *
                 </label>
                 {editingSchoolSettings ? (
@@ -691,21 +697,21 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         }))
                       }
                       placeholder="2024/2025"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation"
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Format: YYYY/YYYY (contoh: 2024/2025)
                     </p>
                   </div>
                 ) : (
-                  <div className="w-full px-4 py-2 bg-purple-50 border border-purple-300 rounded-lg font-semibold text-purple-800">
+                  <div className="w-full px-4 py-3 sm:py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-700 rounded-lg font-semibold text-purple-800 dark:text-purple-300 min-h-[44px] flex items-center">
                     {schoolSettings.current_academic_year}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Semester Aktif
                 </label>
                 {editingSchoolSettings ? (
@@ -718,21 +724,21 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                           semester: e.target.value,
                         }))
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                      className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white min-h-[44px] touch-manipulation">
                       <option value="Ganjil">Ganjil</option>
                       <option value="Genap">Genap</option>
                     </select>
-                    <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded border border-blue-200">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded border border-blue-200 dark:border-blue-800">
                       📅 <strong>Info:</strong> Jul-Des = Ganjil | Jan-Jun =
                       Genap
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <div className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg mb-2">
+                    <div className="w-full px-4 py-3 sm:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg mb-2 text-gray-900 dark:text-white min-h-[44px] flex items-center">
                       {schoolSettings.semester}
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Jul-Des: Ganjil | Jan-Jun: Genap
                     </p>
                   </div>
@@ -741,10 +747,13 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
             </div>
           </div>
 
-          {/* Logo Section - Keep existing logo upload code */}
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Image size={20} className="text-orange-600" />
+          {/* Logo Section */}
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+              <Image
+                size={20}
+                className="text-orange-600 dark:text-orange-400"
+              />
               Logo Sekolah
             </h3>
 
@@ -752,20 +761,20 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
               <div className="space-y-4">
                 {uploadProgress > 0 && (
                   <div className="space-y-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${uploadProgress}%` }}></div>
                     </div>
-                    <p className="text-xs text-gray-600 text-center">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
                       Mengupload... {uploadProgress}%
                     </p>
                   </div>
                 )}
 
                 {!imageValidation.isValid && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-700">
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <p className="text-sm text-red-700 dark:text-red-300">
                       {imageValidation.message}
                     </p>
                   </div>
@@ -773,30 +782,31 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
                 {(tempSchoolSettings.school_logo ||
                   schoolSettings.school_logo) && (
-                  <div className="relative p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="relative p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                     <button
                       onClick={removeLogo}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                      title="Hapus logo">
-                      <X size={14} />
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-colors touch-manipulation"
+                      title="Hapus logo"
+                      aria-label="Hapus logo">
+                      <X size={16} />
                     </button>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                       <img
                         src={
                           tempSchoolSettings.school_logo ||
                           schoolSettings.school_logo
                         }
                         alt="Preview Logo"
-                        className="h-20 w-20 object-contain border rounded-lg bg-white p-2"
+                        className="h-20 w-20 object-contain border rounded-lg bg-white dark:bg-gray-800 p-2 mx-auto sm:mx-0"
                       />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-700">
+                      <div className="flex-1 text-center sm:text-left">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           Preview Logo
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Logo akan disimpan dalam format terkompresi
                         </p>
-                        <p className="text-xs text-green-600 mt-1">
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                           ✓ Gambar telah dioptimasi
                         </p>
                       </div>
@@ -808,16 +818,16 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                   className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
                     loading
                       ? "opacity-50 cursor-not-allowed"
-                      : "hover:border-blue-500 border-gray-300"
-                  } bg-gray-50`}>
-                  <Upload className="w-8 h-8 text-gray-400 mb-3" />
-                  <span className="text-sm font-medium text-gray-700 text-center mb-1">
+                      : "hover:border-blue-500 dark:hover:border-blue-400 border-gray-300 dark:border-gray-600"
+                  } bg-gray-50 dark:bg-gray-700/50 touch-manipulation`}>
+                  <Upload className="w-8 h-8 text-gray-400 dark:text-gray-500 mb-3" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center mb-1">
                     Klik untuk upload logo
                   </span>
-                  <span className="text-xs text-gray-500 text-center">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 text-center">
                     PNG, JPG, JPEG • Maks. 2MB • Minimal 100x100px
                   </span>
-                  <span className="text-xs text-blue-600 mt-2 text-center">
+                  <span className="text-xs text-blue-600 dark:text-blue-400 mt-2 text-center">
                     Gambar akan dikompresi otomatis
                   </span>
                   <input
@@ -829,8 +839,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                   />
                 </label>
 
-                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-xs text-blue-700">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
                     <strong>Tips:</strong> Gunakan gambar dengan latar belakang
                     transparan (PNG) untuk hasil terbaik. Logo akan otomatis
                     dikompresi hingga 70% lebih kecil.
@@ -839,7 +849,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center justify-center p-6 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                   {schoolSettings.school_logo ? (
                     <img
                       src={schoolSettings.school_logo}
@@ -851,12 +861,14 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                       <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center text-white mx-auto mb-3">
                         <span className="text-2xl">🏫</span>
                       </div>
-                      <p className="text-sm text-gray-500">Logo belum diset</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Logo belum diset
+                      </p>
                     </div>
                   )}
                 </div>
                 {schoolSettings.school_logo && (
-                  <p className="text-xs text-gray-500 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                     Logo terpasang • Format terkompresi
                   </p>
                 )}
@@ -868,35 +880,37 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
       {/* Enhanced Action Buttons */}
       {editingSchoolSettings && (
-        <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-gray-200">
-          <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <button
               onClick={updateSchoolSettings}
               disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors">
-              <Save size={16} />
-              {loading ? "Menyimpan..." : "Simpan Perubahan"}
+              className="flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation order-2 sm:order-1">
+              <Save size={18} className="sm:size-[16px]" />
+              <span className="text-sm sm:text-base">
+                {loading ? "Menyimpan..." : "Simpan Perubahan"}
+              </span>
             </button>
 
             <button
               onClick={resetForm}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 transition-colors">
-              <RotateCcw size={16} />
-              Reset
+              className="flex items-center justify-center gap-2 px-4 py-4 sm:py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation order-3 sm:order-2">
+              <RotateCcw size={18} className="sm:size-[16px]" />
+              <span className="text-sm sm:text-base">Reset</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setEditingSchoolSettings(false);
+                setTempSchoolSettings({});
+                setImageValidation({ isValid: true, message: "" });
+              }}
+              disabled={loading}
+              className="px-6 py-4 sm:py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation order-1 sm:order-3">
+              Batal
             </button>
           </div>
-
-          <button
-            onClick={() => {
-              setEditingSchoolSettings(false);
-              setTempSchoolSettings({});
-              setImageValidation({ isValid: true, message: "" });
-            }}
-            disabled={loading}
-            className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 transition-colors sm:ml-auto">
-            Batal
-          </button>
         </div>
       )}
     </div>

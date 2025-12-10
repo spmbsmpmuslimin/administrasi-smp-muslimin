@@ -264,7 +264,7 @@ const DailySummary = ({ refreshTrigger }) => {
             </span>
           </h3>
           <p className="text-blue-100 text-xs sm:text-sm mt-1">
-            Total: {attendanceList.length} guru
+            Total: {attendanceList.length} Guru
           </p>
         </div>
 

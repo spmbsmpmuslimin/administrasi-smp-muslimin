@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
-import ChangePasswordSection from "./ChangePasswordSection"; // Asumsi ChangePasswordSection ada
+import ChangePasswordSection from "./ChangePasswordSection";
 import {
   User,
   Mail,
@@ -673,10 +673,12 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12">
+      <div className="flex items-center justify-center p-12 bg-white dark:bg-gray-800 min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-100 border-t-blue-600 mx-auto"></div>
-          <p className="mt-6 text-gray-600 font-medium">Memuat profil...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-100 dark:border-gray-700 border-t-blue-600 dark:border-t-blue-500 mx-auto"></div>
+          <p className="mt-6 text-gray-600 dark:text-gray-300 font-medium">
+            Memuat profil...
+          </p>
         </div>
       </div>
     );
@@ -684,19 +686,19 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
   if (!profileData) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
-        <div className="max-w-xl mx-auto bg-white rounded-xl shadow-lg p-8 text-center border border-red-200">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 md:p-8">
+        <div className="max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 text-center border border-red-200 dark:border-red-800">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
             Data Profil Hilang
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Terjadi kesalahan saat memuat data profil. Silakan coba *logout*
             lalu *login* kembali.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors text-sm md:text-base font-medium min-h-[44px]">
             Refresh Halaman
           </button>
         </div>
@@ -744,15 +746,13 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
   // =======================================================================
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8">
-      {" "}
-      {/* ✅ p-4 sm:p-6 md:p-8 for better mobile padding */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* User Search & Management (Admin Only) */}
         {isAdmin && (
-          <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 border border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Users size={24} className="text-blue-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6 mb-8 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              <Users size={20} className="text-blue-600 dark:text-blue-400" />
               Manajemen Pengguna
             </h2>
 
@@ -760,41 +760,50 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               <div className="relative flex-1">
                 <Search
                   size={18}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
                 />
                 <input
                   type="text"
                   placeholder="Cari pengguna (Nama, Username, ID Guru)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base transition"
                 />
               </div>
               <button
                 onClick={openAddModal}
-                className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition flex-shrink-0">
+                className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm sm:text-base min-h-[44px]">
                 <Plus size={18} />
-                Tambah User
+                <span className="hidden sm:inline">Tambah User</span>
+                <span className="sm:hidden">Tambah</span>
               </button>
             </div>
 
             {/* List Toggle */}
             <div
               onClick={() => setShowUserList(!showUserList)}
-              className="flex items-center justify-between p-4 cursor-pointer bg-gray-50 hover:bg-gray-100 rounded-lg transition border border-gray-200 mb-3">
+              className="flex items-center justify-between p-4 cursor-pointer bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-700 mb-3">
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    showUserList ? "bg-blue-600" : "bg-gray-100"
+                    showUserList
+                      ? "bg-blue-600 dark:bg-blue-700"
+                      : "bg-gray-100 dark:bg-gray-600"
                   }`}>
                   <List
                     size={18}
-                    className={showUserList ? "text-white" : "text-gray-600"}
+                    className={
+                      showUserList
+                        ? "text-white"
+                        : "text-gray-600 dark:text-gray-300"
+                    }
                   />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900">Semua Pengguna</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm sm:text-base">
+                    Semua Pengguna
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     {filteredUsers.length}{" "}
                     {searchQuery ? "hasil" : "pengguna terdaftar"}
                   </p>
@@ -805,23 +814,26 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   e.stopPropagation();
                   setShowUserList(!showUserList);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm font-medium">
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-lg transition-colors text-xs sm:text-sm font-medium min-h-[36px]">
                 {showUserList ? (
-                  <ChevronUp size={18} />
+                  <ChevronUp size={16} />
                 ) : (
-                  <ChevronDown size={18} />
+                  <ChevronDown size={16} />
                 )}
-                {showUserList ? "Tutup" : "Lihat Semua"}
+                {showUserList ? "Tutup" : "Lihat"}
               </button>
             </div>
 
             {showUserList && (
-              <div className="border-t border-gray-200">
-                <div className="max-h-[500px] overflow-y-auto p-4">
+              <div className="border-t border-gray-200 dark:border-gray-700">
+                <div className="max-h-[500px] overflow-y-auto p-3 sm:p-4">
                   {filteredUsers.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Users size={48} className="text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">
+                    <div className="text-center py-8 sm:py-12">
+                      <Users
+                        size={40}
+                        className="text-gray-300 dark:text-gray-600 mx-auto mb-3"
+                      />
+                      <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">
                         {searchQuery
                           ? "Tidak ada pengguna yang ditemukan"
                           : "Belum ada pengguna"}
@@ -832,19 +844,16 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       {filteredUsers.map((listUser) => (
                         <div
                           key={listUser.id}
-                          className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition border border-gray-200 shadow-sm" // ✅ Added flex-col sm:flex-row for responsiveness
-                        >
-                          <div className="flex items-start gap-4 flex-1 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold flex-shrink-0">
+                          className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border border-gray-200 dark:border-gray-700 shadow-sm">
+                          <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold flex-shrink-0">
                               {listUser.full_name[0]}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900 truncate">
+                              <p className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
                                 {listUser.full_name}
                               </p>
-                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-0.5">
-                                {" "}
-                                {/* ✅ Added flex-wrap */}
+                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                 {listUser.teacher_id && (
                                   <span className="font-mono">
                                     ID: {listUser.teacher_id}
@@ -855,13 +864,11 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-2 mt-3 sm:mt-0 flex-shrink-0 items-center">
-                            {" "}
-                            {/* ✅ Added flex-wrap and mt-3 sm:mt-0 */}
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
                                 listUser.role === "admin"
-                                  ? "bg-purple-100 text-purple-700"
-                                  : "bg-blue-100 text-blue-700"
+                                  ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
                               }`}>
                               <Shield size={12} />
                               {listUser.role === "admin" ? "Admin" : "Guru"}
@@ -869,53 +876,53 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
                                 listUser.is_active
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-gray-100 text-gray-500"
+                                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                                  : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                               }`}>
                               <span
                                 className={`w-2 h-2 rounded-full ${
                                   listUser.is_active
-                                    ? "bg-green-500"
-                                    : "bg-gray-400"
+                                    ? "bg-green-500 dark:bg-green-400"
+                                    : "bg-gray-400 dark:bg-gray-500"
                                 }`}></span>
                               {listUser.is_active ? "Aktif" : "Nonaktif"}
                             </span>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1 sm:gap-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleViewProfile(listUser);
                                 }}
-                                className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition"
+                                className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
                                 title="Lihat Profil">
-                                <Eye size={18} />
+                                <Eye size={16} />
                               </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openEditModal(listUser);
                                 }}
-                                className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition"
+                                className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
                                 title="Edit User">
-                                <Edit2 size={18} />
+                                <Edit2 size={16} />
                               </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openResetPasswordModal(listUser);
                                 }}
-                                className="p-2 text-orange-600 hover:bg-orange-100 rounded-lg transition"
+                                className="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
                                 title="Reset Password">
-                                <Shield size={18} />
+                                <Shield size={16} />
                               </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDelete(listUser);
                                 }}
-                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition"
+                                className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
                                 title="Hapus User">
-                                <Trash2 size={18} />
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </div>
@@ -930,51 +937,47 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         )}
 
         {/* Main Profile Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 border border-gray-100 dark:border-gray-700">
           {/* Header Section */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
-            {" "}
-            {/* ✅ Added flex-col md:flex-row for stacking on mobile */}
             {/* Left Side - Profile Picture & Main Info */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 flex-1 min-w-0 text-center sm:text-left">
-              {" "}
-              {/* ✅ Added flex-col sm:flex-row and text alignment fixes */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 flex-1 min-w-0">
               {/* Avatar Placeholder */}
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-bold text-3xl flex-shrink-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold text-2xl sm:text-3xl flex-shrink-0">
                 {profileData.full_name[0]}
               </div>
               {/* Main Info */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
                   {profileData.full_name}
                 </h1>
-                <p className="text-gray-600 mb-2">@{profileData.username}</p>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-3">
-                  {" "}
-                  {/* ✅ Added justify-center sm:justify-start */}
+                <p className="text-gray-600 dark:text-gray-400 mb-2 text-sm sm:text-base">
+                  @{profileData.username}
+                </p>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 mb-3">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs sm:text-sm font-medium ${
                       profileData.role === "admin"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-blue-100 text-blue-700"
+                        ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                        : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
                     }`}>
-                    <Shield size={14} />
+                    <Shield size={12} />
                     {profileData.role === "admin" ? "Administrator" : "Guru"}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     <span
                       className={`w-2 h-2 rounded-full ${
-                        profileData.is_active ? "bg-green-500" : "bg-gray-400"
+                        profileData.is_active
+                          ? "bg-green-500 dark:bg-green-400"
+                          : "bg-gray-400 dark:bg-gray-500"
                       }`}></span>
                     {profileData.is_active ? "Aktif" : "Nonaktif"}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600 justify-center sm:justify-start">
-                  {" "}
-                  {/* ✅ Added justify-center sm:justify-start */}
+                <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 justify-center sm:justify-start">
                   {profileData.teacher_id && (
                     <div className="flex items-center gap-1.5">
-                      <User size={14} />
+                      <User size={12} />
                       <span className="font-mono font-medium">
                         {profileData.teacher_id}
                       </span>
@@ -982,7 +985,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   )}
                   {profileData.no_hp && (
                     <div className="flex items-center gap-1.5">
-                      <Phone size={14} />
+                      <Phone size={12} />
                       <span>{profileData.no_hp}</span>
                     </div>
                   )}
@@ -991,25 +994,23 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             </div>
             {/* Right Side - Academic Info */}
             <div className="flex flex-col gap-3 flex-shrink-0 mt-4 md:mt-0 w-full sm:w-auto">
-              {" "}
-              {/* ✅ Added mt-4 md:mt-0 and w-full sm:w-auto */}
               {activeAcademicYear && (
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar size={16} className="text-blue-500" />
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar size={14} className="text-blue-500" />
                     <span className="font-medium">Tahun Ajaran:</span>
-                    <span className="font-bold text-gray-900">
+                    <span className="font-bold text-gray-900 dark:text-gray-100">
                       {activeAcademicYear}
                     </span>
                   </div>
                 </div>
               )}
               {profileData.homeroom_class && (
-                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                  <div className="flex items-center gap-2 text-sm text-blue-700">
-                    <School size={16} />
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300">
+                    <School size={14} />
                     <span className="font-medium">Wali Kelas:</span>
-                    <span className="font-bold text-blue-900">
+                    <span className="font-bold text-blue-900 dark:text-blue-200">
                       {profileData.homeroom_class.id}
                     </span>
                   </div>
@@ -1020,43 +1021,46 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           {/* End Header Section */}
 
           {/* Role Description */}
-          <div className="mt-6 border-t pt-6 border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
-              <Shield size={18} className="text-purple-600" />
+          <div className="mt-6 border-t pt-6 border-gray-100 dark:border-gray-700">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2">
+              <Shield
+                size={16}
+                className="text-purple-600 dark:text-purple-400"
+              />
               Role:{" "}
               <span
-                className={`text-xl font-bold ${
+                className={`text-lg sm:text-xl font-bold ${
                   profileData.role === "admin"
-                    ? "text-purple-700"
-                    : "text-blue-700"
+                    ? "text-purple-700 dark:text-purple-300"
+                    : "text-blue-700 dark:text-blue-300"
                 }`}>
                 {profileData.role === "admin" ? "Administrator" : "Guru"}
               </span>
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
               {profileData.role === "teacher"
                 ? "Bertanggung Jawab Atas Pengajaran Mata Pelajaran, Penilaian, Dan Presensi Siswa Di Kelas Yang Ditugaskan."
                 : "Memiliki Hak Penuh Untuk Mengelola Semua Data Dan Pengguna Dalam Sistem"}
             </p>
             {/* Admin Privilege Details */}
             {profileData.role === "admin" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <h4 className="font-bold text-gray-900 mb-2 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-left">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-600">
+                  <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-2 text-xs sm:text-sm">
                     Hak Akses:
                   </h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-1">
                     <li>• Kelola semua user & role</li>
                     <li>• Akses data lengkap sistem</li>
                     <li>• Konfigurasi akademik</li>
                     <li>• Monitoring aktivitas</li>
                   </ul>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <h4 className="font-bold text-gray-900 mb-2 text-sm">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-600">
+                  <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-2 text-xs sm:text-sm">
                     Fitur Khusus:
                   </h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-1">
                     <li>• Lihat profil semua user</li>
                     <li>• Edit & hapus user</li>
                     <li>• Generate laporan</li>
@@ -1069,61 +1073,72 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         </div>
 
         {/* Content Grid (Assignments, Password, etc) */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Column 1: Password / Admin Management */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Mail size={18} className="text-red-500" />
+          <div className="lg:col-span-1 space-y-4 sm:space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
+                <Mail size={16} className="text-red-500" />
                 Ubah Password
               </h3>
-              {/* ✅ FIXED: Pass user object instead of userId */}
               <ChangePasswordSection user={user} />
             </div>
             {/* Admin Actions (Jika Admin dan Melihat Profil Sendiri) */}
             {isAdmin && !isViewingOtherProfile && (
-              <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Users size={18} className="text-blue-500" />
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
+                  <Users
+                    size={16}
+                    className="text-blue-500 dark:text-blue-400"
+                  />
                   Aksi Admin
                 </h3>
-                <button
-                  onClick={openAddModal}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition shadow-md">
-                  <Plus size={18} />
-                  Tambah User Baru
-                </button>
-                <button
-                  onClick={() => setShowUserList(true)}
-                  className="w-full flex items-center justify-center gap-2 mt-3 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition shadow-sm">
-                  <List size={18} />
-                  Lihat Semua User
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={openAddModal}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors shadow-md text-sm sm:text-base min-h-[44px]">
+                    <Plus size={16} />
+                    Tambah User Baru
+                  </button>
+                  <button
+                    onClick={() => setShowUserList(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors shadow-sm text-sm sm:text-base min-h-[44px]">
+                    <List size={16} />
+                    Lihat Semua User
+                  </button>
+                </div>
               </div>
             )}
           </div>
 
           {/* Column 2/3: Teaching Assignments */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center justify-between">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <BookOpen size={18} className="text-orange-600" />
+                  <BookOpen size={16} className="text-orange-600" />
                   Penugasan Mengajar
                 </span>
                 {profileData.teacher_id && (
                   <button
                     onClick={() => setShowHistory(!showHistory)}
                     disabled={loadingHistory}
-                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition disabled:opacity-50">
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 min-h-[32px]">
                     {loadingHistory ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-blue-600"></div>
                     ) : showHistory ? (
-                      <ChevronUp size={16} />
+                      <ChevronUp size={14} />
                     ) : (
-                      <ChevronDown size={16} />
+                      <ChevronDown size={14} />
                     )}
-                    {showHistory ? "Sembunyikan Riwayat" : "Tampilkan Riwayat"}
+                    <span className="hidden sm:inline">
+                      {showHistory
+                        ? "Sembunyikan Riwayat"
+                        : "Tampilkan Riwayat"}
+                    </span>
+                    <span className="sm:hidden">
+                      {showHistory ? "Tutup" : "Riwayat"}
+                    </span>
                   </button>
                 )}
               </h3>
@@ -1131,66 +1146,64 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               {/* Stats Bar - Current Year */}
               {!showHistory && (
                 <>
-                  <p className="text-sm text-gray-500 mb-4 border-b pb-3">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4 border-b pb-3 border-gray-100 dark:border-gray-700">
                     Statistik Penugasan Tahun Ajaran Aktif (
                     {activeAcademicYear || "N/A"})
                   </p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    {" "}
-                    {/* ✅ Changed grid-cols-1 md:grid-cols-4 to grid-cols-2 md:grid-cols-4 */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                     {/* Stat Card: Total Mengajar */}
-                    <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200 shadow-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="bg-orange-50 rounded-lg p-2">
-                          <BookOpen size={18} className="text-orange-600" />
+                    <div className="bg-white dark:bg-gray-700/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-600 shadow-sm">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-1.5 sm:p-2">
+                          <BookOpen size={14} className="text-orange-600" />
                         </div>
-                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
                           {totalSubjects}
                         </p>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                         Total Sesi
                       </p>
                     </div>
                     {/* Stat Card: Mata Pelajaran */}
-                    <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200 shadow-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="bg-purple-50 rounded-lg p-2">
-                          <Award size={18} className="text-purple-600" />
+                    <div className="bg-white dark:bg-gray-700/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-600 shadow-sm">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-1.5 sm:p-2">
+                          <Award size={14} className="text-purple-600" />
                         </div>
-                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
                           {uniqueSubjects}
                         </p>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                         Mata Pelajaran
                       </p>
                     </div>
                     {/* Stat Card: Kelas Berbeda */}
-                    <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200 shadow-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="bg-blue-50 rounded-lg p-2">
-                          <Users size={18} className="text-blue-600" />
+                    <div className="bg-white dark:bg-gray-700/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-600 shadow-sm">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-1.5 sm:p-2">
+                          <Users size={14} className="text-blue-600" />
                         </div>
-                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
                           {totalClasses}
                         </p>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                         Kelas Diajar
                       </p>
                     </div>
                     {/* Stat Card: Homeroom Class */}
-                    <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200 shadow-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="bg-green-50 rounded-lg p-2">
-                          <History size={18} className="text-green-600" />
+                    <div className="bg-white dark:bg-gray-700/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-600 shadow-sm">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-1.5 sm:p-2">
+                          <History size={14} className="text-green-600" />
                         </div>
-                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                        <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
                           {profileData.homeroom_class?.id || "-"}
                         </p>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                         Wali Kelas
                       </p>
                     </div>
@@ -1198,31 +1211,27 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
                   {/* Current Assignments List */}
                   {currentAssignments.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {currentAssignments.map((assignment) => (
                         <div
                           key={assignment.id}
-                          className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:shadow-md transition-all">
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                            {" "}
-                            {/* ✅ Added flex-col sm:flex-row for stacking on mobile */}
-                            <div>
-                              <p className="text-base font-bold text-gray-900">
+                          className="bg-gray-50 dark:bg-gray-700/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
                                 {assignment.subject}
                               </p>
-                              <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                                <School size={14} />
+                              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1.5">
+                                <School size={12} />
                                 <span>{getClassName(assignment)}</span>
                               </p>
                             </div>
-                            <div className="flex flex-wrap gap-2 text-xs font-medium mt-2 sm:mt-0">
-                              {" "}
-                              {/* ✅ Added flex-wrap */}
-                              <span className="bg-white border border-gray-300 text-gray-600 px-2.5 py-1 rounded font-medium">
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2 text-xs font-medium mt-2 sm:mt-0">
+                              <span className="bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-600 dark:text-gray-300 px-2 py-1 rounded font-medium">
                                 Semester {assignment.semester}
                               </span>
-                              <span className="bg-gray-200 text-gray-600 px-2.5 py-1 rounded font-medium flex items-center gap-1">
-                                <Clock size={12} />
+                              <span className="bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded font-medium flex items-center gap-1">
+                                <Clock size={10} />
                                 {assignment.academic_year}
                               </span>
                             </div>
@@ -1231,14 +1240,17 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-200 text-center">
-                      <div className="bg-gray-100 rounded-full p-6 w-fit mx-auto mb-4">
-                        <BookOpen size={40} className="text-gray-400" />
+                    <div className="bg-white dark:bg-gray-700/30 rounded-xl p-6 sm:p-8 sm:p-12 shadow-sm border border-gray-200 dark:border-gray-600 text-center">
+                      <div className="bg-gray-100 dark:bg-gray-600 rounded-full p-4 sm:p-6 w-fit mx-auto mb-4">
+                        <BookOpen
+                          size={32}
+                          className="text-gray-400 dark:text-gray-500"
+                        />
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
                         Belum Ada Tugas Mengajar
                       </h3>
-                      <p className="text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                         {isViewingOtherProfile ? "User ini" : "Anda"} belum
                         memiliki mata pelajaran untuk tahun ajaran ini.
                       </p>
@@ -1249,44 +1261,44 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
               {/* History Assignments List */}
               {showHistory && (
-                <div className="mt-6 border-t pt-4 border-gray-100">
-                  <p className="text-sm font-semibold text-gray-700 mb-4">
+                <div className="mt-4 sm:mt-6 border-t pt-3 sm:pt-4 border-gray-100 dark:border-gray-700">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
                     Riwayat Penugasan Mengajar
                   </p>
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {historyYears.map((yearGroup) => (
                       <div key={yearGroup.year}>
-                        <h4 className="text-base font-bold text-gray-800 mb-3 border-l-4 border-orange-400 pl-3">
+                        <h4 className="text-sm sm:text-base font-bold text-gray-800 dark:text-gray-200 mb-2 sm:mb-3 border-l-4 border-orange-400 pl-2 sm:pl-3">
                           Tahun Ajaran {yearGroup.year}
                         </h4>
-                        <div className="space-y-4 ml-2">
+                        <div className="space-y-3 sm:space-y-4 ml-2">
                           {Object.entries(yearGroup.semesters).map(
                             ([semester, assignments]) => (
-                              <div key={semester} className="space-y-2">
-                                <p className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+                              <div
+                                key={semester}
+                                className="space-y-1.5 sm:space-y-2">
+                                <p className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
                                   <Calendar
-                                    size={14}
+                                    size={12}
                                     className="text-blue-500"
                                   />
                                   Semester {semester}
                                 </p>
-                                <div className="space-y-3 pl-4 border-l border-gray-200">
+                                <div className="space-y-2 sm:space-y-3 pl-3 sm:pl-4 border-l border-gray-200 dark:border-gray-600">
                                   {assignments.map((assignment) => (
                                     <div
                                       key={assignment.id}
-                                      className="bg-white rounded-lg p-3 border border-gray-200 hover:bg-gray-50 transition-all">
-                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                                        {" "}
-                                        {/* ✅ Added flex-col sm:flex-row */}
-                                        <div>
-                                          <p className="text-sm font-bold text-gray-900">
+                                      className="bg-white dark:bg-gray-700/30 rounded-lg p-2.5 sm:p-3 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all">
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
                                             {assignment.subject}
                                           </p>
-                                          <p className="text-xs text-gray-600 mt-0.5">
+                                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                                             {getClassName(assignment)}
                                           </p>
                                         </div>
-                                        <span className="bg-gray-200 text-gray-600 px-2.5 py-1 rounded font-medium text-xs">
+                                        <span className="bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-0.5 sm:py-1 rounded font-medium text-xs">
                                           {assignment.academic_year}
                                         </span>
                                       </div>
@@ -1306,38 +1318,35 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           </div>
         </div>
       </div>
+
       {/* =================================================================== */}
       {/* ======================= MODAL: ADD/EDIT USER ====================== */}
       {/* =================================================================== */}
       {showUserModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4 sm:p-6">
-          {" "}
-          {/* ✅ Added p-4 sm:p-6 */}
-          <div className="relative bg-white rounded-xl shadow-2xl max-w-lg w-full transform transition-all my-8">
-            {" "}
-            {/* ✅ max-w-lg w-full for better mobile display */}
-            <div className="sticky top-0 bg-white rounded-t-xl z-10 border-b border-gray-200">
-              <div className="flex items-center justify-between p-6">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-3 sm:p-4">
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-2xl max-w-full sm:max-w-lg w-full mx-auto my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 rounded-t-lg sm:rounded-t-xl z-10 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 sm:gap-3">
                   {modalMode === "add" ? (
-                    <Plus size={24} className="text-green-600" />
+                    <Plus size={20} className="text-green-600" />
                   ) : (
-                    <Edit2 size={24} className="text-indigo-600" />
+                    <Edit2 size={20} className="text-indigo-600" />
                   )}
                   {modalMode === "add" ? "Tambah User Baru" : "Edit User"}
                 </h3>
                 <button
                   onClick={() => setShowUserModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition">
-                  <X size={20} />
+                  className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center">
+                  <X size={18} />
                 </button>
               </div>
             </div>
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4">
               {/* Form Fields */}
               {/* Username */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Username <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -1349,21 +1358,23 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       username: e.target.value,
                     }))
                   }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formErrors.username ? "border-red-500" : "border-gray-300"
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base ${
+                    formErrors.username
+                      ? "border-red-500"
+                      : "border-gray-300 dark:border-gray-600"
                   }`}
                   placeholder="Masukkan username"
                   disabled={modalMode === "edit"}
                 />
                 {formErrors.username && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle size={14} /> {formErrors.username}
+                    <AlertCircle size={12} /> {formErrors.username}
                   </p>
                 )}
               </div>
               {/* Full Name */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Nama Lengkap <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -1375,20 +1386,22 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       full_name: e.target.value,
                     }))
                   }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formErrors.full_name ? "border-red-500" : "border-gray-300"
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base ${
+                    formErrors.full_name
+                      ? "border-red-500"
+                      : "border-gray-300 dark:border-gray-600"
                   }`}
                   placeholder="Masukkan nama lengkap"
                 />
                 {formErrors.full_name && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle size={14} /> {formErrors.full_name}
+                    <AlertCircle size={12} /> {formErrors.full_name}
                   </p>
                 )}
               </div>
               {/* Role */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Role <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -1399,15 +1412,17 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       role: e.target.value,
                     }))
                   }
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm sm:text-base">
                   <option value="teacher">Guru</option>
                   <option value="guru_bk">Guru BK</option>
-                  <option value="admin" className="text-red-600 font-semibold">
+                  <option
+                    value="admin"
+                    className="text-red-600 dark:text-red-400 font-semibold">
                     ⚠️ Administrator (Hati-hati!)
                   </option>
                 </select>
                 {formData.role === "admin" && (
-                  <p className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                  <p className="mt-2 text-xs sm:text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 sm:p-3 rounded border border-red-200 dark:border-red-800">
                     ⚠️ <span className="font-semibold">PERINGATAN:</span> Role
                     admin memiliki akses penuh ke semua data dan fitur sistem.
                     Hanya berikan ke pengguna yang benar-benar dipercaya.
@@ -1416,13 +1431,13 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               </div>
               {/* Password */}
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Password{" "}
                   {modalMode === "add" && (
                     <span className="text-red-500">*</span>
                   )}
                   {modalMode === "edit" && (
-                    <span className="text-gray-500 text-xs font-normal ml-2">
+                    <span className="text-gray-500 dark:text-gray-400 text-xs font-normal ml-1">
                       (Kosongkan jika tidak diubah)
                     </span>
                   )}
@@ -1436,8 +1451,10 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       password: e.target.value,
                     }))
                   }
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    formErrors.password ? "border-red-500" : "border-gray-300"
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base pr-10 ${
+                    formErrors.password
+                      ? "border-red-500"
+                      : "border-gray-300 dark:border-gray-600"
                   }`}
                   placeholder={
                     modalMode === "add"
@@ -1448,19 +1465,19 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-[50%] p-1 text-gray-500 hover:text-gray-700 transition">
-                  <Eye size={20} />
+                  className="absolute right-3 top-[50%] transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center">
+                  <Eye size={18} />
                 </button>
                 {formErrors.password && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle size={14} /> {formErrors.password}
+                    <AlertCircle size={12} /> {formErrors.password}
                   </p>
                 )}
               </div>
               {/* Teacher ID (If role is teacher) */}
               {formData.role === "teacher" && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     ID Guru <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -1472,23 +1489,23 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                         teacher_id: e.target.value,
                       }))
                     }
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base ${
                       formErrors.teacher_id
                         ? "border-red-500"
-                        : "border-gray-300"
+                        : "border-gray-300 dark:border-gray-600"
                     }`}
                     placeholder="Contoh: G-01, G-12, G-BK01"
                   />
                   {formErrors.teacher_id && (
                     <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle size={14} /> {formErrors.teacher_id}
+                      <AlertCircle size={12} /> {formErrors.teacher_id}
                     </p>
                   )}
                 </div>
               )}
               {/* Nomor HP */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Nomor HP
                 </label>
                 <input
@@ -1497,7 +1514,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, no_hp: e.target.value }))
                   }
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base"
                   placeholder="Masukkan nomor HP (opsional)"
                 />
               </div>
@@ -1513,35 +1530,35 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                         is_active: e.target.checked,
                       }))
                     }
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 dark:text-blue-500 rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                   />
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Akun Aktif
                   </span>
                 </label>
               </div>
             </div>
             {/* Action Buttons */}
-            <div className="p-6 pt-4 border-t border-gray-200">
-              <div className="flex gap-3">
+            <div className="p-4 sm:p-6 pt-2 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowUserModal(false)}
-                  className="flex-1 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition"
+                  className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors text-sm sm:text-base min-h-[44px]"
                   disabled={submitting}>
                   Batal
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex-1 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  className="flex-1 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]">
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                       Menyimpan...
                     </>
                   ) : (
                     <>
-                      <Save size={20} />
+                      <Save size={16} />
                       Simpan User
                     </>
                   )}
@@ -1551,62 +1568,56 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           </div>
         </div>
       )}
+
       {/* =================================================================== */}
       {/* ===================== MODAL: RESET PASSWORD ======================= */}
       {/* =================================================================== */}
       {showResetPasswordModal && resetPasswordUser && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4 sm:p-6">
-          {" "}
-          {/* ✅ Added p-4 sm:p-6 */}
-          <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all p-6 sm:p-8 my-8">
-            {" "}
-            {/* ✅ max-w-md w-full for better mobile display */}
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                <Shield size={24} className="text-orange-600" />
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 flex items-center justify-center p-3 sm:p-4">
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-2xl max-w-full sm:max-w-md w-full mx-auto my-4 sm:my-8 p-4 sm:p-6">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3 sm:pb-4 mb-3 sm:mb-4">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 sm:gap-3">
+                <Shield size={20} className="text-orange-600" />
                 Reset Password
               </h3>
               <button
                 onClick={closeResetPasswordModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition">
-                <X size={20} />
+                className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center">
+                <X size={18} />
               </button>
             </div>
-            <div className="text-center mb-6">
-              <p className="text-gray-700 mb-3">
+            <div className="text-center mb-4 sm:mb-6">
+              <p className="text-gray-700 dark:text-gray-300 mb-2 sm:mb-3 text-sm sm:text-base">
                 Anda yakin ingin mereset password untuk user:
               </p>
-              <p className="text-xl font-bold text-blue-700">
+              <p className="text-lg sm:text-xl font-bold text-blue-700 dark:text-blue-300">
                 {resetPasswordUser.full_name}
               </p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                 ({resetPasswordUser.teacher_id || resetPasswordUser.username})
               </p>
             </div>
-            <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 mb-4">
-              <p className="text-xs text-gray-500 mb-2 font-semibold uppercase">
+            <div className="bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-300 dark:border-gray-600 rounded-lg p-3 sm:p-4 mb-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold uppercase">
                 Password Baru yang akan Digunakan:
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                {" "}
-                {/* ✅ Added flex-col sm:flex-row for responsiveness */}
-                <code className="text-xl sm:text-2xl font-mono font-bold text-gray-900 tracking-wider break-all text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+                <code className="text-lg sm:text-xl font-mono font-bold text-gray-900 dark:text-gray-100 tracking-wider break-all text-center sm:text-left">
                   {newGeneratedPassword}
                 </code>
                 <button
                   onClick={copyPasswordToClipboard}
-                  className={`flex-shrink-0 px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center justify-center gap-2 mt-2 sm:mt-0 ${
-                    // ✅ Added mt-2 sm:mt-0
+                  className={`flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5 mt-2 sm:mt-0 min-h-[36px] ${
                     passwordCopied
-                      ? "bg-green-100 text-green-700 border-2 border-green-500"
-                      : "bg-blue-100 text-blue-700 border-2 border-blue-500 hover:bg-blue-200"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-2 border-green-500"
+                      : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500 hover:bg-blue-200 dark:hover:bg-blue-800/40"
                   }`}>
                   {passwordCopied ? (
                     <>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="14"
+                        height="14"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -1621,8 +1632,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     <>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="14"
+                        height="14"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -1645,25 +1656,25 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               </div>
             </div>
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={closeResetPasswordModal}
-                className="flex-1 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition"
+                className="flex-1 px-4 sm:px-6 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors text-sm sm:text-base min-h-[44px]"
                 disabled={resetting}>
                 Batal
               </button>
               <button
                 onClick={handleResetPassword}
                 disabled={resetting}
-                className="flex-1 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                className="flex-1 px-4 sm:px-6 py-2.5 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]">
                 {resetting ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
                     Mereset...
                   </>
                 ) : (
                   <>
-                    <Shield size={20} />
+                    <Shield size={16} />
                     Reset Sekarang
                   </>
                 )}

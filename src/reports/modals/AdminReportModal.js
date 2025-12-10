@@ -18,6 +18,7 @@ import {
 // ==================== ADMIN REPORT MODAL ====================
 // 💡 Modal khusus untuk preview laporan Admin
 // ✅ FIXED: Masalah Alpa kosong
+// ✅ ADDED: Full Dark Mode & Mobile Responsive
 
 const AdminReportModal = ({
   isOpen,
@@ -322,37 +323,42 @@ const AdminReportModal = ({
 
   const themeColor = getThemeColor();
 
-  // ✅ Color classes mapping
+  // ✅ Color classes mapping with dark mode
   const colorClasses = {
     blue: {
-      bg: "bg-blue-50",
-      border: "border-blue-200",
-      text: "text-blue-600",
-      button: "bg-blue-600 hover:bg-blue-700",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      border: "border-blue-200 dark:border-blue-800",
+      text: "text-blue-600 dark:text-blue-400",
+      button:
+        "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600",
     },
     indigo: {
-      bg: "bg-indigo-50",
-      border: "border-indigo-200",
-      text: "text-indigo-600",
-      button: "bg-indigo-600 hover:bg-indigo-700",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      border: "border-indigo-200 dark:border-indigo-800",
+      text: "text-indigo-600 dark:text-indigo-400",
+      button:
+        "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600",
     },
     purple: {
-      bg: "bg-purple-50",
-      border: "border-purple-200",
-      text: "text-purple-600",
-      button: "bg-purple-600 hover:bg-purple-700",
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      border: "border-purple-200 dark:border-purple-800",
+      text: "text-purple-600 dark:text-purple-400",
+      button:
+        "bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600",
     },
     green: {
-      bg: "bg-green-50",
-      border: "border-green-200",
-      text: "text-green-600",
-      button: "bg-green-600 hover:bg-green-700",
+      bg: "bg-green-50 dark:bg-green-900/20",
+      border: "border-green-200 dark:border-green-800",
+      text: "text-green-600 dark:text-green-400",
+      button:
+        "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600",
     },
     slate: {
-      bg: "bg-slate-50",
-      border: "border-slate-200",
-      text: "text-slate-600",
-      button: "bg-slate-600 hover:bg-slate-700",
+      bg: "bg-slate-50 dark:bg-slate-900/20",
+      border: "border-slate-200 dark:border-slate-800",
+      text: "text-slate-600 dark:text-slate-400",
+      button:
+        "bg-slate-600 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600",
     },
   };
 
@@ -429,7 +435,7 @@ const AdminReportModal = ({
     // Special styling untuk Alpa
     if (header === "Alpa" && cellValue !== "-" && cellValue !== "0") {
       return (
-        <span className="font-medium text-red-600 bg-red-50 px-2 py-1 rounded">
+        <span className="font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded">
           {cellValue}
         </span>
       );
@@ -442,10 +448,10 @@ const AdminReportModal = ({
     ) {
       const bgColor =
         header === "Hadir"
-          ? "bg-green-50 text-green-700"
+          ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
           : header === "Sakit"
-          ? "bg-yellow-50 text-yellow-700"
-          : "bg-blue-50 text-blue-700";
+          ? "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+          : "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400";
       return (
         <span className={`font-medium ${bgColor} px-2 py-1 rounded`}>
           {cellValue}
@@ -464,7 +470,9 @@ const AdminReportModal = ({
       return (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            isActive
+              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+              : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
           }`}>
           {isActive ? "Aktif" : "Tidak Aktif"}
         </span>
@@ -474,18 +482,23 @@ const AdminReportModal = ({
     // Role colors
     if (header === "Role") {
       const roleColors = {
-        admin: "bg-purple-100 text-purple-800",
-        teacher: "bg-blue-100 text-blue-800",
-        bk: "bg-teal-100 text-teal-800",
-        homeroom: "bg-green-100 text-green-800",
-        siswa: "bg-gray-100 text-gray-800",
-        student: "bg-gray-100 text-gray-800",
-        "guru bk": "bg-teal-100 text-teal-800",
-        guru: "bg-blue-100 text-blue-800",
+        admin:
+          "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300",
+        teacher:
+          "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
+        bk: "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300",
+        homeroom:
+          "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
+        siswa: "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300",
+        student:
+          "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300",
+        "guru bk":
+          "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300",
+        guru: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
       };
       const colorClass =
         roleColors[String(cellValue).toLowerCase()] ||
-        "bg-gray-100 text-gray-800";
+        "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
       return (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
@@ -516,10 +529,12 @@ const AdminReportModal = ({
       cellValue.includes("%")
     ) {
       const pct = parseFloat(cellValue);
-      let colorClass = "text-gray-600";
-      if (pct >= 90) colorClass = "text-green-600 font-bold";
-      else if (pct >= 75) colorClass = "text-yellow-600 font-bold";
-      else colorClass = "text-red-600 font-bold";
+      let colorClass = "text-gray-600 dark:text-gray-400";
+      if (pct >= 90)
+        colorClass = "text-green-600 dark:text-green-400 font-bold";
+      else if (pct >= 75)
+        colorClass = "text-yellow-600 dark:text-yellow-400 font-bold";
+      else colorClass = "text-red-600 dark:text-red-400 font-bold";
 
       return <span className={colorClass}>{cellValue}</span>;
     }
@@ -527,7 +542,7 @@ const AdminReportModal = ({
     // Highlight class columns
     if ((header === "Kelas" || header === "Wali Kelas") && cellValue !== "-") {
       return (
-        <span className="font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+        <span className="font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded">
           {cellValue}
         </span>
       );
@@ -542,9 +557,9 @@ const AdminReportModal = ({
     ) {
       // Untuk Alpa, tampilkan 0 jika kosong
       if (header === "Alpa") {
-        return <span className="text-slate-400">0</span>;
+        return <span className="text-slate-400 dark:text-slate-500">0</span>;
       }
-      return <span className="text-slate-400">-</span>;
+      return <span className="text-slate-400 dark:text-slate-500">-</span>;
     }
 
     return String(cellValue);
@@ -553,21 +568,23 @@ const AdminReportModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-3 md:p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-lg sm:rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] md:max-h-[95vh] flex flex-col">
         {/* ===== HEADER ===== */}
-        <div className={`${colors.bg} border-b-2 ${colors.border} p-6`}>
+        <div className={`${colors.bg} border-b-2 ${colors.border} p-4 sm:p-6`}>
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div
-                className={`w-14 h-14 ${colors.bg} border-2 ${colors.border} rounded-xl flex items-center justify-center`}>
-                <ReportIcon className={`w-7 h-7 ${colors.text}`} />
+                className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 ${colors.bg} border-2 ${colors.border} rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0`}>
+                <ReportIcon
+                  className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 ${colors.text}`}
+                />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-slate-800">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-200 leading-tight">
                   {reportTitle}
                 </h2>
-                <p className="text-sm text-slate-600 mt-1">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                   Preview Data Administrator • {filteredData.length} dari{" "}
                   {total || dataToUse.length} record
                   {dataToUse.length === 0 &&
@@ -577,24 +594,25 @@ const AdminReportModal = ({
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 transition-colors">
-              <X className="w-6 h-6" />
+              className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1 -m-1"
+              aria-label="Tutup modal">
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
         </div>
 
         {/* ===== SUMMARY CARDS ===== */}
         {summary && summary.length > 0 && (
-          <div className="px-6 py-3 bg-slate-50 border-b border-slate-200">
-            <div className="flex flex-wrap gap-4 justify-start">
+          <div className="px-4 sm:px-6 py-2 sm:py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+            <div className="flex flex-nowrap gap-2 sm:gap-3 md:gap-4 pb-2">
               {summary.map((stat, idx) => (
                 <div
                   key={idx}
-                  className="bg-white rounded-lg border border-slate-200 p-3 min-w-[120px]">
-                  <p className="text-xs text-slate-600 mb-1 truncate">
+                  className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-2 sm:p-3 min-w-[110px] sm:min-w-[120px] flex-shrink-0">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 truncate">
                     {stat.label}
                   </p>
-                  <p className="text-lg font-bold text-slate-800 truncate">
+                  <p className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-200 truncate">
                     {stat.value}
                   </p>
                 </div>
@@ -604,16 +622,16 @@ const AdminReportModal = ({
         )}
 
         {/* ===== SEARCH & FILTER BAR ===== */}
-        <div className="px-6 py-4 bg-white border-b border-slate-200">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
             <div className="flex-1 relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 placeholder="Cari nama, NIS, email, atau data lainnya..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 text-sm sm:text-base"
               />
             </div>
 
@@ -622,7 +640,8 @@ const AdminReportModal = ({
               <select
                 value={filterClass}
                 onChange={(e) => setFilterClass(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[150px]">
+                className="px-3 py-2.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 text-sm sm:text-base min-w-[140px] sm:min-w-[150px]"
+                aria-label="Filter kelas">
                 <option value="">Semua Kelas</option>
                 {uniqueClasses.map((kelas) => (
                   <option key={kelas} value={kelas}>
@@ -639,7 +658,8 @@ const AdminReportModal = ({
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-[150px]">
+                className="px-3 py-2.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 text-sm sm:text-base min-w-[140px] sm:min-w-[150px]"
+                aria-label="Filter status">
                 <option value="">Semua Status</option>
                 {uniqueStatuses.map((status) => (
                   <option key={status} value={status}>
@@ -656,7 +676,7 @@ const AdminReportModal = ({
                   setFilterClass("");
                   setFilterStatus("");
                 }}
-                className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 font-medium whitespace-nowrap">
+                className="px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300 font-medium whitespace-nowrap">
                 Reset Filter
               </button>
             )}
@@ -664,16 +684,18 @@ const AdminReportModal = ({
 
           {/* Active Filters Info */}
           {(filterClass || filterStatus) && (
-            <div className="flex items-center gap-2 mt-3">
-              <Filter className="w-4 h-4 text-slate-500" />
-              <span className="text-sm text-slate-600">Filter aktif:</span>
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-2">
+              <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-slate-500 dark:text-slate-400" />
+              <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                Filter aktif:
+              </span>
               {filterClass && (
-                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-medium">
+                <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full font-medium whitespace-nowrap">
                   Kelas {filterClass}
                 </span>
               )}
               {filterStatus && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-medium whitespace-nowrap">
                   {filterStatus}
                 </span>
               )}
@@ -682,37 +704,37 @@ const AdminReportModal = ({
         </div>
 
         {/* ===== TABLE CONTENT ===== */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
           {currentData.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse min-w-full">
                 <thead>
-                  <tr className="bg-slate-100 border-b-2 border-slate-300">
-                    <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider border-r border-slate-200">
+                  <tr className="bg-slate-100 dark:bg-slate-800 border-b-2 border-slate-300 dark:border-slate-700">
+                    <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider border-r border-slate-200 dark:border-slate-700 whitespace-nowrap">
                       No
                     </th>
                     {headers.map((header, idx) => (
                       <th
                         key={idx}
-                        className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider border-r border-slate-200">
+                        className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider border-r border-slate-200 dark:border-slate-700 whitespace-nowrap min-w-[80px]">
                         {/* ✅ FIX: Replace "Absen" with "Alpa" in header display */}
                         {header === "Absen" ? "Alpa" : header}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
+                <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
                   {currentData.map((row, rowIdx) => (
                     <tr
                       key={rowIdx}
-                      className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 text-sm text-slate-600 border-r border-slate-200 font-medium">
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700 font-medium whitespace-nowrap">
                         {startIndex + rowIdx + 1}
                       </td>
                       {headers.map((header, colIdx) => (
                         <td
                           key={colIdx}
-                          className="px-4 py-3 text-sm text-slate-700 border-r border-slate-200">
+                          className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700 whitespace-nowrap">
                           {renderCell(header, row[header], row)}
                         </td>
                       ))}
@@ -722,14 +744,14 @@ const AdminReportModal = ({
               </table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12">
-              <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
-              <p className="text-slate-500 text-lg font-medium">
+            <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+              <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 dark:text-slate-600 mb-3 sm:mb-4" />
+              <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg font-medium text-center">
                 {dataToUse.length === 0
                   ? "Data laporan kosong"
                   : "Tidak ada data yang sesuai"}
               </p>
-              <p className="text-slate-400 text-sm mt-2">
+              <p className="text-slate-400 dark:text-slate-500 text-xs sm:text-sm mt-1 sm:mt-2 text-center">
                 {dataToUse.length === 0
                   ? "Periksa struktur data atau koneksi API"
                   : "Coba ubah filter atau kata kunci pencarian"}
@@ -743,7 +765,7 @@ const AdminReportModal = ({
                       dataToUse,
                     })
                   }
-                  className="mt-4 px-4 py-2 bg-slate-200 text-slate-700 rounded text-sm">
+                  className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-xs sm:text-sm">
                   📋 Debug Data di Console
                 </button>
               )}
@@ -753,19 +775,20 @@ const AdminReportModal = ({
 
         {/* ===== PAGINATION ===== */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-slate-600">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                 Menampilkan {startIndex + 1} -{" "}
                 {Math.min(endIndex, filteredData.length)} dari{" "}
                 {filteredData.length} data
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-2 border border-slate-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors">
-                  <ChevronLeft className="w-4 h-4" />
+                  className="px-2 sm:px-3 py-1.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors min-h-[36px] sm:min-h-[40px]"
+                  aria-label="Halaman sebelumnya">
+                  <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
 
                 <div className="flex items-center gap-1">
@@ -785,11 +808,12 @@ const AdminReportModal = ({
                       <button
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors min-h-[36px] sm:min-h-[40px] min-w-[36px] sm:min-w-[40px] ${
                           currentPage === pageNum
                             ? `${colors.button} text-white`
-                            : "border border-slate-300 hover:bg-slate-100"
-                        }`}>
+                            : "border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        }`}
+                        aria-label={`Halaman ${pageNum}`}>
                         {pageNum}
                       </button>
                     );
@@ -801,8 +825,9 @@ const AdminReportModal = ({
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="px-3 py-2 border border-slate-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors">
-                  <ChevronRight className="w-4 h-4" />
+                  className="px-2 sm:px-3 py-1.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors min-h-[36px] sm:min-h-[40px]"
+                  aria-label="Halaman berikutnya">
+                  <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
@@ -810,28 +835,28 @@ const AdminReportModal = ({
         )}
 
         {/* ===== FOOTER ACTIONS ===== */}
-        <div className="px-6 py-4 bg-slate-50 border-t-2 border-slate-200">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-slate-600">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 dark:bg-slate-800/50 border-t-2 border-slate-200 dark:border-slate-700">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               <span className="font-medium">💡 Tips:</span> Gunakan filter untuk
               analisis data yang lebih spesifik
               {dataToUse.length === 0 && (
-                <span className="text-red-500 ml-2">
+                <span className="text-red-500 dark:text-red-400 ml-1 sm:ml-2">
                   ⚠️ Data kosong - periksa console untuk debug
                 </span>
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-100 transition-colors">
+                className="flex-1 sm:flex-none px-3 sm:px-4 md:px-5 py-2.5 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm sm:text-base min-h-[44px]">
                 Tutup
               </button>
               <button
                 onClick={() => onDownload(reportType, "xlsx")}
                 disabled={loading || dataToUse.length === 0}
-                className={`${colors.button} text-white px-5 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2`}>
-                <FileSpreadsheet className="w-4 h-4" />
+                className={`flex-1 sm:flex-none ${colors.button} text-white px-3 sm:px-4 md:px-5 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base min-h-[44px]`}>
+                <FileSpreadsheet className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                 {loading ? "Exporting..." : "Export ke Excel"}
               </button>
             </div>

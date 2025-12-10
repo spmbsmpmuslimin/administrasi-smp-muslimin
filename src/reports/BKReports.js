@@ -38,10 +38,15 @@ import {
   Target,
   Activity,
   TrendingDown,
+  Sun,
+  Moon,
+  Smartphone,
+  Tablet,
+  Monitor,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import { exportToExcel, exportToCSV } from './ReportExcel';
-import ReportModal from './modals/BKReportModal';
+import { exportToExcel, exportToCSV } from "./ReportExcel";
+import ReportModal from "./modals/BKReportModal";
 
 const BKReportsEnhanced = ({ user, onShowToast }) => {
   const [konselingData, setKonselingData] = useState([]);
@@ -52,6 +57,9 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   // Filters - ✅ UPDATED: Tambah filter baru
   const [filters, setFilters] = useState({
@@ -66,6 +74,34 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
     dateStart: "",
     dateEnd: "",
   });
+
+  // ✅ Initialize dark mode and device detection
+  useEffect(() => {
+    // Dark mode detection
+    const isDarkMode =
+      localStorage.getItem("darkMode") === "true" ||
+      (!("darkMode" in localStorage) &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    setDarkMode(isDarkMode);
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    }
+
+    // Device detection
+    const checkDevice = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 640);
+      setIsTablet(width >= 640 && width < 1024);
+    };
+
+    checkDevice();
+    window.addEventListener("resize", checkDevice);
+
+    return () => {
+      window.removeEventListener("resize", checkDevice);
+    };
+  }, []);
 
   // Fetch data from Supabase
   useEffect(() => {
@@ -110,8 +146,8 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
         tanggal: item.tanggal,
         jenis_layanan: item.jenis_layanan,
         bidang_bimbingan: item.bidang_bimbingan,
-        tingkat_urgensi: item.tingkat_urgensi || 'Sedang', // NEW
-        kategori_masalah: item.kategori_masalah || 'Lainnya', // NEW
+        tingkat_urgensi: item.tingkat_urgensi || "Sedang", // NEW
+        kategori_masalah: item.kategori_masalah || "Lainnya", // NEW
         permasalahan: item.permasalahan,
         kronologi: item.kronologi,
         tindakan_layanan: item.tindakan_layanan,
@@ -156,17 +192,26 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
   const stats = {
     total: konselingData.length,
     selesai: konselingData.filter((d) => d.status_layanan === "Selesai").length,
-    proses: konselingData.filter((d) => d.status_layanan === "Dalam Proses").length,
-    darurat: konselingData.filter((d) => d.tingkat_urgensi === "Darurat").length, // NEW
+    proses: konselingData.filter((d) => d.status_layanan === "Dalam Proses")
+      .length,
+    darurat: konselingData.filter((d) => d.tingkat_urgensi === "Darurat")
+      .length, // NEW
     tinggi: konselingData.filter((d) => d.tingkat_urgensi === "Tinggi").length, // NEW
-    perlu_followup: konselingData.filter((d) => d.perlu_followup === true).length, // NEW
+    perlu_followup: konselingData.filter((d) => d.perlu_followup === true)
+      .length, // NEW
     followup_overdue: konselingData.filter(
-      (d) => d.perlu_followup && d.tanggal_followup && new Date(d.tanggal_followup) < new Date()
+      (d) =>
+        d.perlu_followup &&
+        d.tanggal_followup &&
+        new Date(d.tanggal_followup) < new Date()
     ).length, // NEW
     followup_upcoming: konselingData.filter(
-      (d) => d.perlu_followup && d.tanggal_followup && 
-      new Date(d.tanggal_followup) >= new Date() &&
-      new Date(d.tanggal_followup) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      (d) =>
+        d.perlu_followup &&
+        d.tanggal_followup &&
+        new Date(d.tanggal_followup) >= new Date() &&
+        new Date(d.tanggal_followup) <=
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     ).length, // NEW
   };
 
@@ -191,12 +236,17 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
       acc[item.tingkat_urgensi] = (acc[item.tingkat_urgensi] || 0) + 1;
       return acc;
     }, {})
-  ).map(([name, value]) => ({ 
-    name, 
+  ).map(([name, value]) => ({
+    name,
     value,
-    color: name === 'Darurat' ? '#ef4444' : 
-           name === 'Tinggi' ? '#f97316' :
-           name === 'Sedang' ? '#eab308' : '#22c55e'
+    color:
+      name === "Darurat"
+        ? "#ef4444"
+        : name === "Tinggi"
+        ? "#f97316"
+        : name === "Sedang"
+        ? "#eab308"
+        : "#22c55e",
   }));
 
   // ✅ NEW: Chart data untuk KATEGORI MASALAH
@@ -205,7 +255,8 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
       acc[item.kategori_masalah] = (acc[item.kategori_masalah] || 0) + 1;
       return acc;
     }, {})
-  ).map(([name, value]) => ({ name, value }))
+  )
+    .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value);
 
   // Chart data - Existing
@@ -227,8 +278,8 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
         acc[month] = { month, total: 0, darurat: 0, selesai: 0 };
       }
       acc[month].total++;
-      if (item.tingkat_urgensi === 'Darurat') acc[month].darurat++;
-      if (item.status_layanan === 'Selesai') acc[month].selesai++;
+      if (item.tingkat_urgensi === "Darurat") acc[month].darurat++;
+      if (item.status_layanan === "Selesai") acc[month].selesai++;
       return acc;
     }, {})
   ).map(([_, data]) => data);
@@ -239,31 +290,40 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
   ];
 
   // ✅ NEW: Success rate per kategori
-  const successRateByCategory = categoryData.map(cat => {
-    const total = konselingData.filter(d => d.kategori_masalah === cat.name).length;
-    const selesai = konselingData.filter(
-      d => d.kategori_masalah === cat.name && d.status_layanan === 'Selesai'
-    ).length;
-    return {
-      kategori: cat.name,
-      rate: total > 0 ? ((selesai / total) * 100).toFixed(1) : 0
-    };
-  }).sort((a, b) => b.rate - a.rate).slice(0, 5);
+  const successRateByCategory = categoryData
+    .map((cat) => {
+      const total = konselingData.filter(
+        (d) => d.kategori_masalah === cat.name
+      ).length;
+      const selesai = konselingData.filter(
+        (d) => d.kategori_masalah === cat.name && d.status_layanan === "Selesai"
+      ).length;
+      return {
+        kategori: cat.name,
+        rate: total > 0 ? ((selesai / total) * 100).toFixed(1) : 0,
+      };
+    })
+    .sort((a, b) => b.rate - a.rate)
+    .slice(0, 5);
 
   // ✅ NEW: Follow-up list (upcoming & overdue)
   const followupList = konselingData
-    .filter(d => d.perlu_followup && d.tanggal_followup)
-    .map(d => ({
+    .filter((d) => d.perlu_followup && d.tanggal_followup)
+    .map((d) => ({
       ...d,
       isOverdue: new Date(d.tanggal_followup) < new Date(),
-      daysUntil: Math.ceil((new Date(d.tanggal_followup) - new Date()) / (1000 * 60 * 60 * 24))
+      daysUntil: Math.ceil(
+        (new Date(d.tanggal_followup) - new Date()) / (1000 * 60 * 60 * 24)
+      ),
     }))
     .sort((a, b) => new Date(a.tanggal_followup) - new Date(b.tanggal_followup))
     .slice(0, 10);
 
   // ✅ NEW: Kasus darurat list
   const emergencyCases = konselingData
-    .filter(d => d.tingkat_urgensi === 'Darurat' && d.status_layanan !== 'Selesai')
+    .filter(
+      (d) => d.tingkat_urgensi === "Darurat" && d.status_layanan !== "Selesai"
+    )
     .sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal))
     .slice(0, 5);
 
@@ -290,24 +350,32 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
     }
 
     if (filters.bidang) {
-      result = result.filter((item) => item.bidang_bimbingan === filters.bidang);
+      result = result.filter(
+        (item) => item.bidang_bimbingan === filters.bidang
+      );
     }
 
     if (filters.jenisLayanan) {
-      result = result.filter((item) => item.jenis_layanan === filters.jenisLayanan);
+      result = result.filter(
+        (item) => item.jenis_layanan === filters.jenisLayanan
+      );
     }
 
     // NEW FILTERS
     if (filters.tingkat_urgensi) {
-      result = result.filter((item) => item.tingkat_urgensi === filters.tingkat_urgensi);
+      result = result.filter(
+        (item) => item.tingkat_urgensi === filters.tingkat_urgensi
+      );
     }
 
     if (filters.kategori_masalah) {
-      result = result.filter((item) => item.kategori_masalah === filters.kategori_masalah);
+      result = result.filter(
+        (item) => item.kategori_masalah === filters.kategori_masalah
+      );
     }
 
     if (filters.perlu_followup) {
-      const needFollowup = filters.perlu_followup === 'true';
+      const needFollowup = filters.perlu_followup === "true";
       result = result.filter((item) => item.perlu_followup === needFollowup);
     }
 
@@ -341,7 +409,7 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
       "Permasalahan",
       "Hasil",
     ];
-    
+
     const csvData = filteredData.map((item) => [
       item.full_name,
       item.nis,
@@ -352,13 +420,17 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
       item.jenis_layanan,
       item.bidang_bimbingan,
       item.status_layanan,
-      item.perlu_followup ? 'Ya' : 'Tidak',
-      item.tanggal_followup || '-',
-      `"${(item.permasalahan || '').replace(/"/g, '""')}"`,
-      `"${(item.hasil_layanan || '').replace(/"/g, '""')}"`,
+      item.perlu_followup ? "Ya" : "Tidak",
+      item.tanggal_followup || "-",
+      `"${(item.permasalahan || "").replace(/"/g, '""')}"`,
+      `"${(item.hasil_layanan || "").replace(/"/g, '""')}"`,
     ]);
 
-    exportToCSV(csvData, headers, `laporan_konseling_${new Date().toISOString().split("T")[0]}.csv`);
+    exportToCSV(
+      csvData,
+      headers,
+      `laporan_konseling_${new Date().toISOString().split("T")[0]}.csv`
+    );
     onShowToast("Data berhasil diexport ke CSV", "success");
   };
 
@@ -368,18 +440,18 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
       // Headers dengan urutan yang sesuai kolom ReportExcel.js
       const headers = [
         "Nama",
-        "NIS", 
+        "NIS",
         "Kelas",
         "Tanggal",
-        "Tingkat Urgensi",      // NEW
-        "Kategori Masalah",     // NEW
+        "Tingkat Urgensi", // NEW
+        "Kategori Masalah", // NEW
         "Jenis Layanan",
         "Bidang Bimbingan",
         "Status Layanan",
-        "Follow-up",            // NEW
-        "Tanggal Follow-up",    // NEW
+        "Follow-up", // NEW
+        "Tanggal Follow-up", // NEW
         "Permasalahan",
-        "Hasil Layanan"
+        "Hasil Layanan",
       ];
 
       // Format data dengan semua field baru
@@ -387,56 +459,84 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
         nama: item.full_name,
         nis: item.nis,
         kelas: item.class_name,
-        tanggal: new Date(item.tanggal).toLocaleDateString('id-ID'),
-        urgensi: item.tingkat_urgensi,                    // NEW - untuk conditional formatting
-        kategori: item.kategori_masalah,                   // NEW - untuk conditional formatting
+        tanggal: new Date(item.tanggal).toLocaleDateString("id-ID"),
+        urgensi: item.tingkat_urgensi, // NEW - untuk conditional formatting
+        kategori: item.kategori_masalah, // NEW - untuk conditional formatting
         jenis_layanan: item.jenis_layanan,
         bidang_bimbingan: item.bidang_bimbingan,
         status_layanan: item.status_layanan,
-        followup: item.perlu_followup ? 'Ya' : 'Tidak',   // NEW - untuk conditional formatting
-        tanggal_followup: item.tanggal_followup            // NEW
-          ? new Date(item.tanggal_followup).toLocaleDateString('id-ID') 
-          : '-',
+        followup: item.perlu_followup ? "Ya" : "Tidak", // NEW - untuk conditional formatting
+        tanggal_followup: item.tanggal_followup // NEW
+          ? new Date(item.tanggal_followup).toLocaleDateString("id-ID")
+          : "-",
         permasalahan: item.permasalahan,
-        hasil_layanan: item.hasil_layanan || '-'
+        hasil_layanan: item.hasil_layanan || "-",
       }));
 
       // Build filter description
       const filterParts = [];
       if (filters.class) filterParts.push(`Kelas ${filters.class}`);
       if (filters.status) filterParts.push(`Status ${filters.status}`);
-      if (filters.tingkat_urgensi) filterParts.push(`Urgensi ${filters.tingkat_urgensi}`);
-      if (filters.kategori_masalah) filterParts.push(`Kategori ${filters.kategori_masalah}`);
+      if (filters.tingkat_urgensi)
+        filterParts.push(`Urgensi ${filters.tingkat_urgensi}`);
+      if (filters.kategori_masalah)
+        filterParts.push(`Kategori ${filters.kategori_masalah}`);
       if (filters.perlu_followup) {
-        filterParts.push(`Follow-up ${filters.perlu_followup === 'true' ? 'Ya' : 'Tidak'}`);
+        filterParts.push(
+          `Follow-up ${filters.perlu_followup === "true" ? "Ya" : "Tidak"}`
+        );
       }
       if (filters.dateStart && filters.dateEnd) {
-        filterParts.push(`Periode ${new Date(filters.dateStart).toLocaleDateString('id-ID')} - ${new Date(filters.dateEnd).toLocaleDateString('id-ID')}`);
+        filterParts.push(
+          `Periode ${new Date(filters.dateStart).toLocaleDateString(
+            "id-ID"
+          )} - ${new Date(filters.dateEnd).toLocaleDateString("id-ID")}`
+        );
       }
-      const filterDescription = filterParts.length > 0 ? filterParts.join(', ') : 'Semua Data';
+      const filterDescription =
+        filterParts.length > 0 ? filterParts.join(", ") : "Semua Data";
 
       // Summary dengan stats lengkap
       const summary = [
-        { label: 'Total Konseling', value: filteredData.length },
-        { label: 'Kasus Darurat', value: filteredData.filter(d => d.tingkat_urgensi === 'Darurat').length },
-        { label: 'Kasus Tinggi', value: filteredData.filter(d => d.tingkat_urgensi === 'Tinggi').length },
-        { label: 'Perlu Follow-up', value: filteredData.filter(d => d.perlu_followup).length },
-        { label: 'Selesai', value: filteredData.filter(d => d.status_layanan === 'Selesai').length },
-        { label: 'Dalam Proses', value: filteredData.filter(d => d.status_layanan === 'Dalam Proses').length }
+        { label: "Total Konseling", value: filteredData.length },
+        {
+          label: "Kasus Darurat",
+          value: filteredData.filter((d) => d.tingkat_urgensi === "Darurat")
+            .length,
+        },
+        {
+          label: "Kasus Tinggi",
+          value: filteredData.filter((d) => d.tingkat_urgensi === "Tinggi")
+            .length,
+        },
+        {
+          label: "Perlu Follow-up",
+          value: filteredData.filter((d) => d.perlu_followup).length,
+        },
+        {
+          label: "Selesai",
+          value: filteredData.filter((d) => d.status_layanan === "Selesai")
+            .length,
+        },
+        {
+          label: "Dalam Proses",
+          value: filteredData.filter((d) => d.status_layanan === "Dalam Proses")
+            .length,
+        },
       ];
 
       const metadata = {
-        title: 'LAPORAN DATA KONSELING BK',
+        title: "LAPORAN DATA KONSELING BK",
         filters: filterDescription,
         summary: summary,
-        academicYear: '2025/2026',
-        semester: '1'
+        academicYear: "2025/2026",
+        semester: "1",
       };
 
       // Call exportToExcel dari ReportExcel.js dengan options BK
       await exportToExcel(formattedData, headers, metadata, {
-        role: 'bk',
-        reportType: 'counseling'
+        role: "bk",
+        reportType: "counseling",
       });
 
       onShowToast("Data berhasil diexport ke Excel", "success");
@@ -478,75 +578,161 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, color, subtitle, badge }) => (
-    <div className={`bg-white p-6 rounded-lg shadow-sm border-l-4 ${color} hover:shadow-md transition-shadow`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-slate-500">{title}</p>
-            {badge && (
-              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
-                {badge}
-              </span>
+  // ✅ UPDATED: StatCard dengan dark mode
+  const StatCard = ({ title, value, icon: Icon, color, subtitle, badge }) => {
+    const baseColor = color.replace("border-", "").replace("500", "");
+
+    return (
+      <div
+        className={`
+        bg-white dark:bg-slate-800 
+        p-4 sm:p-6 rounded-lg shadow-sm dark:shadow-slate-900/30
+        border-l-4 ${color} 
+        hover:shadow-md dark:hover:shadow-slate-900/50 
+        transition-shadow
+        min-h-[120px] flex flex-col justify-center
+      `}>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                {title}
+              </p>
+              {badge && (
+                <span
+                  className="
+                  px-2 py-0.5 
+                  bg-red-100 dark:bg-red-900/40
+                  text-red-600 dark:text-red-300 
+                  text-xs font-semibold rounded-full
+                ">
+                  {badge}
+                </span>
+              )}
+            </div>
+            <p
+              className="
+              text-2xl sm:text-3xl 
+              font-bold text-slate-800 dark:text-white mt-2
+            ">
+              {value}
+            </p>
+            {subtitle && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {subtitle}
+              </p>
             )}
           </div>
-          <p className="text-3xl font-bold text-slate-800 mt-2">{value}</p>
-          {subtitle && (
-            <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
-          )}
-        </div>
-        <div
-          className={`p-3 rounded-lg ${color
-            .replace("border-", "bg-")
-            .replace("500", "100")}`}>
-          <Icon className={`w-6 h-6 ${color.replace("border-", "text-")}`} />
+          <div
+            className={`
+              p-2 sm:p-3 rounded-lg 
+              bg-${baseColor}100 dark:bg-${baseColor}900/30
+              flex-shrink-0
+            `}>
+            <Icon
+              className={`
+              w-5 h-5 sm:w-6 sm:h-6 
+              ${color.replace("border-", "text-")} 
+              dark:text-${baseColor}400
+            `}
+            />
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  // ✅ UPDATED: Detail Modal dengan field baru
+  // ✅ UPDATED: Detail Modal dengan field baru dan dark mode
   const DetailModal = () => {
     if (!showDetailModal || !selectedItem) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-2 sm:p-4">
+        <div
+          className="
+          bg-white dark:bg-slate-800 
+          rounded-lg sm:rounded-xl 
+          max-w-full sm:max-w-3xl w-full 
+          max-h-[90vh] overflow-y-auto
+          shadow-2xl dark:shadow-black/50
+        ">
+          <div
+            className="
+            p-4 sm:p-6 
+            border-b border-slate-200 dark:border-slate-700 
+            flex justify-between items-center
+          ">
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">Detail Konseling</h2>
-              <div className="flex gap-2 mt-2">
+              <h2
+                className="
+                text-xl sm:text-2xl 
+                font-bold text-slate-800 dark:text-white
+              ">
+                Detail Konseling
+              </h2>
+              <div className="flex flex-wrap gap-2 mt-2">
                 {getUrgencyBadge(selectedItem.tingkat_urgensi)}
                 {getCategoryBadge(selectedItem.kategori_masalah)}
               </div>
             </div>
             <button
               onClick={() => setShowDetailModal(false)}
-              className="text-slate-400 hover:text-slate-600">
-              <X className="w-6 h-6" />
+              className="
+                text-slate-400 dark:text-slate-500 
+                hover:text-slate-600 dark:hover:text-slate-300
+                p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700
+                transition-colors
+                min-h-[44px] min-w-[44px] flex items-center justify-center
+              "
+              aria-label="Tutup modal">
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Student Info */}
-            <div className="bg-slate-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-slate-700 mb-3">Informasi Siswa</h3>
-              <div className="grid grid-cols-2 gap-4">
+            <div
+              className="
+              bg-slate-50 dark:bg-slate-900/50 
+              p-4 rounded-lg
+            ">
+              <h3
+                className="
+                font-semibold text-slate-700 dark:text-slate-300 
+                mb-3 text-sm sm:text-base
+              ">
+                Informasi Siswa
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <p className="text-sm text-slate-500">Nama Lengkap</p>
-                  <p className="font-medium text-slate-800">{selectedItem.full_name}</p>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    Nama Lengkap
+                  </p>
+                  <p className="font-medium text-slate-800 dark:text-white text-sm sm:text-base">
+                    {selectedItem.full_name}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">NIS</p>
-                  <p className="font-medium text-slate-800">{selectedItem.nis}</p>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    NIS
+                  </p>
+                  <p className="font-medium text-slate-800 dark:text-white text-sm sm:text-base">
+                    {selectedItem.nis}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Kelas</p>
-                  <p className="font-medium text-slate-800">{selectedItem.class_name}</p>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    Kelas
+                  </p>
+                  <p className="font-medium text-slate-800 dark:text-white text-sm sm:text-base">
+                    {selectedItem.class_name}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Jenis Kelamin</p>
-                  <p className="font-medium text-slate-800">
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    Jenis Kelamin
+                  </p>
+                  <p className="font-medium text-slate-800 dark:text-white text-sm sm:text-base">
                     {selectedItem.gender === "L" ? "Laki-laki" : "Perempuan"}
                   </p>
                 </div>
@@ -555,43 +741,87 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
 
             {/* Konseling Info */}
             <div>
-              <h3 className="font-semibold text-slate-700 mb-3">Detail Konseling</h3>
+              <h3
+                className="
+                font-semibold text-slate-700 dark:text-slate-300 
+                mb-3 text-sm sm:text-base
+              ">
+                Detail Konseling
+              </h3>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-slate-500">Tanggal</p>
-                  <p className="font-medium text-slate-800">
-                    {new Date(selectedItem.tanggal).toLocaleDateString("id-ID", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    Tanggal
+                  </p>
+                  <p className="font-medium text-slate-800 dark:text-white text-sm sm:text-base">
+                    {new Date(selectedItem.tanggal).toLocaleDateString(
+                      "id-ID",
+                      {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <p className="text-sm text-slate-500">Jenis Layanan</p>
-                    <p className="font-medium text-slate-800">{selectedItem.jenis_layanan}</p>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                      Jenis Layanan
+                    </p>
+                    <p className="font-medium text-slate-800 dark:text-white text-sm sm:text-base">
+                      {selectedItem.jenis_layanan}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Bidang Bimbingan</p>
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getBidangColor(selectedItem.bidang_bimbingan)}`}>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                      Bidang Bimbingan
+                    </p>
+                    <span
+                      className={`
+                      inline-block px-3 py-1 rounded-full 
+                      text-xs sm:text-sm font-medium 
+                      ${getBidangColor(selectedItem.bidang_bimbingan)}
+                    `}>
                       {selectedItem.bidang_bimbingan}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Status</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedItem.status_layanan)}`}>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    Status
+                  </p>
+                  <span
+                    className={`
+                    inline-block px-3 py-1 rounded-full 
+                    text-xs sm:text-sm font-medium 
+                    ${getStatusColor(selectedItem.status_layanan)}
+                  `}>
                     {selectedItem.status_layanan}
                   </span>
                 </div>
                 {/* NEW: Follow-up Info */}
                 {selectedItem.perlu_followup && (
-                  <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                    <p className="text-sm font-semibold text-purple-700 mb-1">📅 Follow-up Diperlukan</p>
-                    <p className="text-sm text-purple-600">
-                      Tanggal: {selectedItem.tanggal_followup ? new Date(selectedItem.tanggal_followup).toLocaleDateString('id-ID') : 'Belum ditentukan'}
+                  <div
+                    className="
+                    bg-purple-50 dark:bg-purple-900/30 
+                    p-3 rounded-lg border border-purple-200 dark:border-purple-700
+                  ">
+                    <p
+                      className="
+                      text-xs sm:text-sm font-semibold 
+                      text-purple-700 dark:text-purple-300 mb-1
+                    ">
+                      📅 Follow-up Diperlukan
+                    </p>
+                    <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400">
+                      Tanggal:{" "}
+                      {selectedItem.tanggal_followup
+                        ? new Date(
+                            selectedItem.tanggal_followup
+                          ).toLocaleDateString("id-ID")
+                        : "Belum ditentukan"}
                     </p>
                   </div>
                 )}
@@ -601,43 +831,125 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
             {/* Problem & Solution */}
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">Permasalahan</p>
-                <p className="text-slate-600 bg-red-50 p-3 rounded">{selectedItem.permasalahan}</p>
+                <p
+                  className="
+                  text-sm font-semibold 
+                  text-slate-700 dark:text-slate-300 mb-2
+                ">
+                  Permasalahan
+                </p>
+                <p
+                  className="
+                  text-slate-600 dark:text-slate-400 
+                  bg-red-50 dark:bg-red-900/20 
+                  p-3 rounded text-sm
+                ">
+                  {selectedItem.permasalahan}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">Kronologi</p>
-                <p className="text-slate-600 bg-slate-50 p-3 rounded">{selectedItem.kronologi}</p>
+                <p
+                  className="
+                  text-sm font-semibold 
+                  text-slate-700 dark:text-slate-300 mb-2
+                ">
+                  Kronologi
+                </p>
+                <p
+                  className="
+                  text-slate-600 dark:text-slate-400 
+                  bg-slate-50 dark:bg-slate-900/50 
+                  p-3 rounded text-sm
+                ">
+                  {selectedItem.kronologi}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">Tindakan Layanan</p>
-                <p className="text-slate-600 bg-blue-50 p-3 rounded">{selectedItem.tindakan_layanan}</p>
+                <p
+                  className="
+                  text-sm font-semibold 
+                  text-slate-700 dark:text-slate-300 mb-2
+                ">
+                  Tindakan Layanan
+                </p>
+                <p
+                  className="
+                  text-slate-600 dark:text-slate-400 
+                  bg-blue-50 dark:bg-blue-900/20 
+                  p-3 rounded text-sm
+                ">
+                  {selectedItem.tindakan_layanan}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">Hasil Layanan</p>
-                <p className="text-slate-600 bg-green-50 p-3 rounded">{selectedItem.hasil_layanan}</p>
+                <p
+                  className="
+                  text-sm font-semibold 
+                  text-slate-700 dark:text-slate-300 mb-2
+                ">
+                  Hasil Layanan
+                </p>
+                <p
+                  className="
+                  text-slate-600 dark:text-slate-400 
+                  bg-green-50 dark:bg-green-900/20 
+                  p-3 rounded text-sm
+                ">
+                  {selectedItem.hasil_layanan}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">Rencana Tindak Lanjut</p>
-                <p className="text-slate-600 bg-yellow-50 p-3 rounded">{selectedItem.rencana_tindak_lanjut}</p>
+                <p
+                  className="
+                  text-sm font-semibold 
+                  text-slate-700 dark:text-slate-300 mb-2
+                ">
+                  Rencana Tindak Lanjut
+                </p>
+                <p
+                  className="
+                  text-slate-600 dark:text-slate-400 
+                  bg-yellow-50 dark:bg-yellow-900/20 
+                  p-3 rounded text-sm
+                ">
+                  {selectedItem.rencana_tindak_lanjut}
+                </p>
               </div>
             </div>
 
             {/* BK Info */}
-            <div className="bg-slate-50 p-4 rounded-lg">
-              <p className="text-sm text-slate-500">Guru BK</p>
-              <p className="font-medium text-slate-800">{selectedItem.guru_bk_name}</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Tahun Ajaran {selectedItem.academic_year} - Semester {selectedItem.semester}
+            <div
+              className="
+              bg-slate-50 dark:bg-slate-900/50 
+              p-4 rounded-lg
+            ">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                Guru BK
+              </p>
+              <p className="font-medium text-slate-800 dark:text-white text-sm sm:text-base">
+                {selectedItem.guru_bk_name}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Tahun Ajaran {selectedItem.academic_year} - Semester{" "}
+                {selectedItem.semester}
               </p>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-4 border-t border-slate-200">
+            <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
               {selectedItem.status_layanan !== "Selesai" && (
                 <button
-                  onClick={() => updateKonselingStatus(selectedItem.id, "Selesai")}
-                  className="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
+                  onClick={() =>
+                    updateKonselingStatus(selectedItem.id, "Selesai")
+                  }
+                  className="
+                    flex-1 bg-green-500 hover:bg-green-600 
+                    text-white py-3 rounded-lg 
+                    transition-colors flex items-center justify-center gap-2
+                    text-sm sm:text-base
+                    min-h-[44px]
+                  ">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   Tandai Selesai
                 </button>
               )}
@@ -648,59 +960,135 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
     );
   };
 
+  // ✅ UPDATED: Helper functions dengan dark mode
   const getStatusColor = (status) => {
     const colors = {
-      Selesai: "bg-green-100 text-green-800 border border-green-200",
-      "Dalam Proses": "bg-yellow-100 text-yellow-800 border border-yellow-200",
-      Menunggu: "bg-blue-100 text-blue-800 border border-blue-200",
-      Ditunda: "bg-red-100 text-red-800 border border-red-200",
+      Selesai:
+        "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-700",
+      "Dalam Proses":
+        "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-700",
+      Menunggu:
+        "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700",
+      Ditunda:
+        "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-700",
     };
-    return colors[status] || "bg-slate-100 text-slate-800 border border-slate-200";
+    return (
+      colors[status] ||
+      "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+    );
   };
 
   const getBidangColor = (bidang) => {
     const colors = {
-      Akademik: "bg-purple-100 text-purple-800 border border-purple-200",
-      Sosial: "bg-indigo-100 text-indigo-800 border border-indigo-200",
-      Karir: "bg-pink-100 text-pink-800 border border-pink-200",
-      Pribadi: "bg-orange-100 text-orange-800 border border-orange-200",
+      Akademik:
+        "bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700",
+      Sosial:
+        "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700",
+      Karir:
+        "bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-700",
+      Pribadi:
+        "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-700",
     };
-    return colors[bidang] || "bg-slate-100 text-slate-800 border border-slate-200";
+    return (
+      colors[bidang] ||
+      "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+    );
   };
 
-  // ✅ NEW: Urgency Badge
+  // ✅ NEW: Urgency Badge dengan dark mode
   const getUrgencyBadge = (urgency) => {
     const config = {
-      'Darurat': { color: 'bg-red-100 text-red-800 border-red-300', emoji: '🔴' },
-      'Tinggi': { color: 'bg-orange-100 text-orange-800 border-orange-300', emoji: '🟠' },
-      'Sedang': { color: 'bg-yellow-100 text-yellow-800 border-yellow-300', emoji: '🟡' },
-      'Rendah': { color: 'bg-green-100 text-green-800 border-green-300', emoji: '🟢' }
+      Darurat: {
+        color:
+          "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700",
+        emoji: "🔴",
+      },
+      Tinggi: {
+        color:
+          "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-700",
+        emoji: "🟠",
+      },
+      Sedang: {
+        color:
+          "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700",
+        emoji: "🟡",
+      },
+      Rendah: {
+        color:
+          "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700",
+        emoji: "🟢",
+      },
     };
-    const c = config[urgency] || config['Sedang'];
+    const c = config[urgency] || config["Sedang"];
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold border ${c.color}`}>
+      <span
+        className={`
+        inline-flex items-center gap-1 px-2 py-1 rounded-md 
+        text-xs font-semibold border ${c.color}
+      `}>
         {c.emoji} {urgency}
       </span>
     );
   };
 
-  // ✅ NEW: Category Badge
+  // ✅ NEW: Category Badge dengan dark mode
   const getCategoryBadge = (category) => {
     const config = {
-      'Akademik': { color: 'bg-blue-100 text-blue-800', emoji: '📚' },
-      'Perilaku': { color: 'bg-red-100 text-red-800', emoji: '⚠️' },
-      'Sosial-Emosional': { color: 'bg-purple-100 text-purple-800', emoji: '😔' },
-      'Pertemanan': { color: 'bg-indigo-100 text-indigo-800', emoji: '👥' },
-      'Keluarga': { color: 'bg-amber-100 text-amber-800', emoji: '🏠' },
-      'Percintaan': { color: 'bg-pink-100 text-pink-800', emoji: '💔' },
-      'Teknologi/Gadget': { color: 'bg-cyan-100 text-cyan-800', emoji: '📱' },
-      'Kenakalan': { color: 'bg-gray-700 text-white', emoji: '🚬' },
-      'Kesehatan Mental': { color: 'bg-violet-100 text-violet-800', emoji: '🧠' },
-      'Lainnya': { color: 'bg-gray-100 text-gray-800', emoji: '📋' }
+      Akademik: {
+        color:
+          "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
+        emoji: "📚",
+      },
+      Perilaku: {
+        color: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
+        emoji: "⚠️",
+      },
+      "Sosial-Emosional": {
+        color:
+          "bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300",
+        emoji: "😔",
+      },
+      Pertemanan: {
+        color:
+          "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300",
+        emoji: "👥",
+      },
+      Keluarga: {
+        color:
+          "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300",
+        emoji: "🏠",
+      },
+      Percintaan: {
+        color:
+          "bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300",
+        emoji: "💔",
+      },
+      "Teknologi/Gadget": {
+        color:
+          "bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300",
+        emoji: "📱",
+      },
+      Kenakalan: {
+        color: "bg-gray-700 dark:bg-gray-800 text-white dark:text-gray-300",
+        emoji: "🚬",
+      },
+      "Kesehatan Mental": {
+        color:
+          "bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300",
+        emoji: "🧠",
+      },
+      Lainnya: {
+        color: "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300",
+        emoji: "📋",
+      },
     };
-    const c = config[category] || config['Lainnya'];
+    const c = config[category] || config["Lainnya"];
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${c.color}`}>
+      <span
+        className={`
+        inline-flex items-center gap-1 px-2 py-1 rounded-md 
+        text-xs font-medium ${c.color}
+      `}>
         {c.emoji} {category}
       </span>
     );
@@ -708,50 +1096,167 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div
+        className="
+        min-h-screen 
+        bg-slate-50 dark:bg-slate-900 
+        flex items-center justify-center
+      ">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-slate-600 mt-4">Memuat data konseling...</p>
+          <div
+            className="
+            animate-spin rounded-full h-12 w-12 
+            border-b-2 border-blue-500 dark:border-blue-400 
+            mx-auto mb-4
+          "></div>
+          <p className="text-slate-600 dark:text-slate-400">
+            Memuat data konseling...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div
+      className="
+      min-h-screen 
+      bg-slate-50 dark:bg-slate-900 
+      p-3 sm:p-4 md:p-6
+      transition-colors duration-200
+    ">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800">Dashboard Bimbingan Konseling</h1>
-          <p className="text-slate-600 mt-2">Monitoring, analisis, dan pelaporan layanan BK</p>
+        {/* Header - Toggle Dark Mode DIHAPUS */}
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                w-10 h-10 sm:w-12 sm:h-12 
+                bg-blue-100 dark:bg-blue-900/50 
+                rounded-lg flex items-center justify-center flex-shrink-0
+              ">
+                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h1
+                  className="
+                  text-xl sm:text-2xl md:text-3xl 
+                  font-bold text-slate-800 dark:text-white
+                  leading-tight
+                ">
+                  Dashboard Bimbingan Konseling
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <p
+                    className="
+                    text-xs sm:text-sm 
+                    text-slate-600 dark:text-slate-400
+                  ">
+                    Monitoring, analisis, dan pelaporan layanan BK
+                  </p>
+                  <span
+                    className="
+                    inline-flex items-center gap-1 
+                    px-2 py-1 rounded-full 
+                    bg-slate-200 dark:bg-slate-700 
+                    text-xs text-slate-600 dark:text-slate-400
+                  ">
+                    {isMobile ? (
+                      <>
+                        <Smartphone className="w-3 h-3" /> Mobile
+                      </>
+                    ) : isTablet ? (
+                      <>
+                        <Tablet className="w-3 h-3" /> Tablet
+                      </>
+                    ) : (
+                      <>
+                        <Monitor className="w-3 h-3" /> Desktop
+                      </>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {/* TOMBOL DARK MODE DIHAPUS DI SINI */}
+          </div>
         </div>
 
-        {/* ✅ NEW: Emergency Alert Banner */}
+        {/* ✅ NEW: Emergency Alert Banner dengan dark mode */}
         {(stats.darurat > 0 || stats.followup_overdue > 0) && (
-          <div className="mb-6 space-y-3">
+          <div className="mb-4 sm:mb-6 space-y-3">
             {stats.darurat > 0 && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3">
-                <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+              <div
+                className="
+                bg-red-50 dark:bg-red-900/30 
+                border-l-4 border-red-500 dark:border-red-600 
+                p-3 sm:p-4 rounded-lg flex items-start gap-3
+              ">
+                <AlertTriangle
+                  className="
+                  w-5 h-5 sm:w-6 sm:h-6 
+                  text-red-600 dark:text-red-400 
+                  flex-shrink-0 mt-0.5
+                "
+                />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-red-900 mb-1">🚨 Kasus Darurat Memerlukan Perhatian!</h3>
-                  <p className="text-sm text-red-700">
-                    Terdapat <strong>{stats.darurat}</strong> kasus dengan tingkat urgensi DARURAT yang perlu ditangani segera.
+                  <h3
+                    className="
+                    text-sm sm:text-base font-semibold 
+                    text-red-900 dark:text-red-300 mb-1
+                  ">
+                    🚨 Kasus Darurat Memerlukan Perhatian!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-red-700 dark:text-red-400">
+                    Terdapat <strong>{stats.darurat}</strong> kasus dengan
+                    tingkat urgensi DARURAT yang perlu ditangani segera.
                   </p>
                   <button
-                    onClick={() => setFilters({ ...filters, tingkat_urgensi: 'Darurat', status: '' })}
-                    className="mt-2 text-sm bg-red-600 text-white px-4 py-1.5 rounded hover:bg-red-700 transition">
+                    onClick={() =>
+                      setFilters({
+                        ...filters,
+                        tingkat_urgensi: "Darurat",
+                        status: "",
+                      })
+                    }
+                    className="
+                      mt-2 text-xs sm:text-sm 
+                      bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600
+                      text-white px-3 py-1.5 sm:px-4 sm:py-1.5 rounded 
+                      transition-colors
+                      min-h-[36px]
+                    ">
                     Lihat Kasus Darurat
                   </button>
                 </div>
               </div>
             )}
             {stats.followup_overdue > 0 && (
-              <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg flex items-start gap-3">
-                <Bell className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div
+                className="
+                bg-orange-50 dark:bg-orange-900/30 
+                border-l-4 border-orange-500 dark:border-orange-600 
+                p-3 sm:p-4 rounded-lg flex items-start gap-3
+              ">
+                <Bell
+                  className="
+                  w-5 h-5 sm:w-6 sm:h-6 
+                  text-orange-600 dark:text-orange-400 
+                  flex-shrink-0 mt-0.5
+                "
+                />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-orange-900 mb-1">⏰ Follow-up Terlambat!</h3>
-                  <p className="text-sm text-orange-700">
-                    Ada <strong>{stats.followup_overdue}</strong> siswa yang jadwal follow-up nya sudah terlewat.
+                  <h3
+                    className="
+                    text-sm sm:text-base font-semibold 
+                    text-orange-900 dark:text-orange-300 mb-1
+                  ">
+                    ⏰ Follow-up Terlambat!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-400">
+                    Ada <strong>{stats.followup_overdue}</strong> siswa yang
+                    jadwal follow-up nya sudah terlewat.
                   </p>
                 </div>
               </div>
@@ -759,45 +1264,80 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
           </div>
         )}
 
-        {/* View Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-slate-200">
+        {/* View Tabs - Responsive */}
+        <div
+          className="
+          flex overflow-x-auto pb-2 mb-4 sm:mb-6 
+          border-b border-slate-200 dark:border-slate-700
+          gap-1 sm:gap-2
+          scrollbar-hide
+        ">
           <button
             onClick={() => setActiveView("dashboard")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeView === "dashboard"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-slate-600 hover:text-slate-800"
-            }`}>
+            className={`
+              px-3 py-2 sm:px-4 sm:py-2 
+              font-medium transition-colors whitespace-nowrap
+              text-sm sm:text-base
+              min-h-[44px]
+              ${
+                activeView === "dashboard"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300"
+              }
+            `}>
             Dashboard
           </button>
           <button
             onClick={() => setActiveView("table")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeView === "table"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-slate-600 hover:text-slate-800"
-            }`}>
+            className={`
+              px-3 py-2 sm:px-4 sm:py-2 
+              font-medium transition-colors whitespace-nowrap
+              text-sm sm:text-base
+              min-h-[44px]
+              ${
+                activeView === "table"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300"
+              }
+            `}>
             Data Konseling
           </button>
           <button
             onClick={() => setActiveView("analytics")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeView === "analytics"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-slate-600 hover:text-slate-800"
-            }`}>
+            className={`
+              px-3 py-2 sm:px-4 sm:py-2 
+              font-medium transition-colors whitespace-nowrap
+              text-sm sm:text-base
+              min-h-[44px]
+              ${
+                activeView === "analytics"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300"
+              }
+            `}>
             Analytics
           </button>
           <button
             onClick={() => setActiveView("followup")}
-            className={`px-4 py-2 font-medium transition-colors relative ${
-              activeView === "followup"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-slate-600 hover:text-slate-800"
-            }`}>
+            className={`
+              px-3 py-2 sm:px-4 sm:py-2 
+              font-medium transition-colors whitespace-nowrap relative
+              text-sm sm:text-base
+              min-h-[44px]
+              ${
+                activeView === "followup"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300"
+              }
+            `}>
             Follow-up
             {stats.followup_upcoming > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+              <span
+                className="
+                absolute -top-1 -right-1 
+                bg-red-500 text-white text-xs 
+                w-5 h-5 flex items-center justify-center rounded-full
+              ">
                 {stats.followup_upcoming}
               </span>
             )}
@@ -806,9 +1346,13 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
 
         {/* Dashboard View */}
         {activeView === "dashboard" && (
-          <div className="space-y-6">
-            {/* ✅ UPDATED: KPI Cards dengan field baru */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-4 sm:space-y-6">
+            {/* ✅ UPDATED: KPI Cards dengan field baru - Responsive Grid */}
+            <div
+              className="
+              grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 
+              gap-3 sm:gap-4 lg:gap-6
+            ">
               <StatCard
                 title="Total Konseling"
                 value={stats.total}
@@ -836,129 +1380,246 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
                 value={stats.selesai}
                 icon={CheckCircle}
                 color="border-green-500"
-                subtitle={`${stats.total > 0 ? ((stats.selesai / stats.total) * 100).toFixed(0) : 0}% completion rate`}
+                subtitle={`${
+                  stats.total > 0
+                    ? ((stats.selesai / stats.total) * 100).toFixed(0)
+                    : 0
+                }% completion rate`}
               />
             </div>
 
-            {/* ✅ NEW: Charts Row 1 - Urgensi & Kategori */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* ✅ NEW: Charts Row 1 - Urgensi & Kategori - Responsive */}
+            <div
+              className="
+              grid grid-cols-1 lg:grid-cols-2 
+              gap-4 sm:gap-6
+            ">
               {/* Urgency Distribution */}
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm
+              ">
+                <h3
+                  className="
+                  text-base sm:text-lg font-semibold 
+                  text-slate-800 dark:text-white mb-4
+                ">
                   Distribusi Tingkat Urgensi
                 </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={urgencyData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value">
-                      {urgencyData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="h-[250px] sm:h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={urgencyData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`
+                        }
+                        outerRadius={isMobile ? 60 : 80}
+                        fill="#8884d8"
+                        dataKey="value">
+                        {urgencyData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Category Distribution */}
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm
+              ">
+                <h3
+                  className="
+                  text-base sm:text-lg font-semibold 
+                  text-slate-800 dark:text-white mb-4
+                ">
                   Top 5 Kategori Masalah
                 </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={categoryData.slice(0, 5)} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={100} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#8b5cf6" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="h-[250px] sm:h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={categoryData.slice(0, 5)} layout="vertical">
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                        strokeOpacity={darkMode ? 0.3 : 1}
+                      />
+                      <XAxis type="number" stroke="#94a3b8" />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        width={isMobile ? 80 : 100}
+                        stroke="#94a3b8"
+                      />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#8b5cf6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
-            {/* Charts Row 2 - Bidang & Status */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Charts Row 2 - Bidang & Status - Responsive */}
+            <div
+              className="
+              grid grid-cols-1 lg:grid-cols-2 
+              gap-4 sm:gap-6
+            ">
               {/* Bidang Distribution */}
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm
+              ">
+                <h3
+                  className="
+                  text-base sm:text-lg font-semibold 
+                  text-slate-800 dark:text-white mb-4
+                ">
                   Distribusi Bidang Bimbingan
                 </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={bidangData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value">
-                      {bidangData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={["#8b5cf6", "#6366f1", "#ec4899", "#f97316"][index % 4]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="h-[250px] sm:h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={bidangData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`
+                        }
+                        outerRadius={isMobile ? 60 : 80}
+                        fill="#8884d8"
+                        dataKey="value">
+                        {bidangData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              ["#8b5cf6", "#6366f1", "#ec4899", "#f97316"][
+                                index % 4
+                              ]
+                            }
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Status Distribution */}
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm
+              ">
+                <h3
+                  className="
+                  text-base sm:text-lg font-semibold 
+                  text-slate-800 dark:text-white mb-4
+                ">
                   Status Layanan
                 </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={statusData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#3b82f6">
-                      {statusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="h-[250px] sm:h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={statusData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                        strokeOpacity={darkMode ? 0.3 : 1}
+                      />
+                      <XAxis dataKey="name" stroke="#94a3b8" />
+                      <YAxis stroke="#94a3b8" />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#3b82f6">
+                        {statusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
-            {/* Trend & High Frequency Students */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Trend & High Frequency Students - Responsive */}
+            <div
+              className="
+              grid grid-cols-1 lg:grid-cols-2 
+              gap-4 sm:gap-6
+            ">
               {/* Monthly Trend */}
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm
+              ">
+                <h3
+                  className="
+                  text-base sm:text-lg font-semibold 
+                  text-slate-800 dark:text-white mb-4
+                ">
                   Trend Bulanan
                 </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2} name="Total" />
-                    <Line type="monotone" dataKey="darurat" stroke="#ef4444" strokeWidth={2} name="Darurat" />
-                    <Line type="monotone" dataKey="selesai" stroke="#22c55e" strokeWidth={2} name="Selesai" />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="h-[250px] sm:h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthlyData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                        strokeOpacity={darkMode ? 0.3 : 1}
+                      />
+                      <XAxis dataKey="month" stroke="#94a3b8" />
+                      <YAxis stroke="#94a3b8" />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="total"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        name="Total"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="darurat"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        name="Darurat"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="selesai"
+                        stroke="#22c55e"
+                        strokeWidth={2}
+                        name="Selesai"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Frequent Students */}
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800 mb-4">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm
+              ">
+                <h3
+                  className="
+                  text-base sm:text-lg font-semibold 
+                  text-slate-800 dark:text-white mb-4
+                ">
                   Siswa dengan Konseling Berulang
                 </h3>
                 <div className="space-y-3">
@@ -966,61 +1627,124 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
                     frequentStudents.map((student, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                        className="
+                          flex items-center justify-between p-3 
+                          bg-slate-50 dark:bg-slate-900/50 
+                          rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 
+                          transition-colors cursor-pointer
+                        "
                         onClick={() => {
                           setSelectedItem(student);
                           setShowDetailModal(true);
                         }}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-blue-600" />
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className="
+                            w-8 h-8 sm:w-10 sm:h-10 
+                            bg-blue-100 dark:bg-blue-900/50 
+                            rounded-full flex items-center justify-center flex-shrink-0
+                          ">
+                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                           </div>
-                          <div>
-                            <p className="font-medium text-slate-800">{student.full_name}</p>
-                            <p className="text-sm text-slate-500">{student.class_name} • {student.nis}</p>
+                          <div className="min-w-0">
+                            <p
+                              className="
+                              font-medium text-slate-800 dark:text-white 
+                              text-sm sm:text-base truncate
+                            ">
+                              {student.full_name}
+                            </p>
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                              {student.class_name} • {student.nis}
+                            </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-blue-600">{student.frequency}</p>
-                          <p className="text-xs text-slate-500">konseling</p>
+                        <div className="text-right flex-shrink-0">
+                          <p
+                            className="
+                            text-xl sm:text-2xl font-bold 
+                            text-blue-600 dark:text-blue-400
+                          ">
+                            {student.frequency}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            konseling
+                          </p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-slate-500 py-8">Tidak ada data</p>
+                    <p className="text-center text-slate-500 dark:text-slate-400 py-6 sm:py-8">
+                      Tidak ada data
+                    </p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* ✅ NEW: Emergency Cases Quick View */}
+            {/* ✅ NEW: Emergency Cases Quick View - Responsive */}
             {emergencyCases.length > 0 && (
-              <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-red-500">
-                <h3 className="text-lg font-semibold text-red-800 mb-4 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" />
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm 
+                border-l-4 border-red-500 dark:border-red-600
+              ">
+                <h3
+                  className="
+                  text-base sm:text-lg font-semibold 
+                  text-red-800 dark:text-red-300 mb-4 flex items-center gap-2
+                ">
+                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
                   Kasus Darurat yang Belum Selesai
                 </h3>
                 <div className="space-y-3">
                   {emergencyCases.map((item, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
+                      className="
+                        flex items-center justify-between p-3 
+                        bg-red-50 dark:bg-red-900/30 
+                        rounded-lg border border-red-200 dark:border-red-700 
+                        hover:bg-red-100 dark:hover:bg-red-900/50 
+                        transition-colors cursor-pointer
+                      "
                       onClick={() => {
                         setSelectedItem(item);
                         setShowDetailModal(true);
                       }}>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-red-900">{item.full_name}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <p
+                            className="
+                            font-semibold text-red-900 dark:text-red-300 
+                            text-sm sm:text-base
+                          ">
+                            {item.full_name}
+                          </p>
                           {getCategoryBadge(item.kategori_masalah)}
                         </div>
-                        <p className="text-sm text-red-700 mt-1 line-clamp-1">{item.permasalahan}</p>
-                        <p className="text-xs text-red-600 mt-1">
-                          {new Date(item.tanggal).toLocaleDateString('id-ID')} • {item.class_name}
+                        <p
+                          className="
+                          text-xs sm:text-sm text-red-700 dark:text-red-400 
+                          mt-1 line-clamp-1 sm:line-clamp-2
+                        ">
+                          {item.permasalahan}
+                        </p>
+                        <p className="text-xs text-red-600 dark:text-red-500 mt-1">
+                          {new Date(item.tanggal).toLocaleDateString("id-ID")} •{" "}
+                          {item.class_name}
                         </p>
                       </div>
-                      <button className="text-red-600 hover:text-red-800 px-3 py-1 rounded bg-white hover:bg-red-50">
-                        <Eye className="w-4 h-4" />
+                      <button
+                        className="
+                        text-red-600 dark:text-red-400 
+                        hover:text-red-800 dark:hover:text-red-300 
+                        p-2 rounded bg-white dark:bg-red-900/30 
+                        hover:bg-red-50 dark:hover:bg-red-900/50
+                        min-h-[44px] min-w-[44px] flex items-center justify-center
+                      ">
+                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </div>
                   ))}
@@ -1032,25 +1756,58 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
 
         {/* Table View */}
         {activeView === "table" && (
-          <div className="space-y-6">
-            {/* ✅ UPDATED: Filters dengan field baru */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <div className="space-y-4 sm:space-y-6">
+            {/* ✅ UPDATED: Filters dengan field baru - Responsive */}
+            <div
+              className="
+              bg-white dark:bg-slate-800 
+              p-4 sm:p-6 rounded-lg shadow-sm
+            ">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                <div className="relative sm:col-span-2 lg:col-span-1">
+                  <Search
+                    className="
+                    absolute left-3 top-1/2 transform -translate-y-1/2 
+                    text-slate-400 dark:text-slate-500 
+                    w-4 h-4 sm:w-5 sm:h-5
+                  "
+                  />
                   <input
                     type="text"
                     placeholder="Cari nama, NIS, atau masalah..."
-                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="
+                      w-full pl-9 sm:pl-10 pr-4 
+                      py-2.5 sm:py-2
+                      border border-slate-300 dark:border-slate-600 
+                      rounded-lg 
+                      bg-white dark:bg-slate-700
+                      text-slate-800 dark:text-white
+                      placeholder:text-slate-500 dark:placeholder:text-slate-400
+                      focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                      focus:border-blue-500 dark:focus:border-blue-400
+                      text-sm
+                    "
                     value={filters.search}
-                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                    onChange={(e) =>
+                      setFilters({ ...filters, search: e.target.value })
+                    }
                   />
                 </div>
 
                 <select
-                  className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="
+                    px-3 py-2.5 sm:py-2
+                    border border-slate-300 dark:border-slate-600 
+                    rounded-lg 
+                    bg-white dark:bg-slate-700
+                    text-slate-800 dark:text-white
+                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                    text-sm
+                  "
                   value={filters.tingkat_urgensi}
-                  onChange={(e) => setFilters({ ...filters, tingkat_urgensi: e.target.value })}>
+                  onChange={(e) =>
+                    setFilters({ ...filters, tingkat_urgensi: e.target.value })
+                  }>
                   <option value="">Semua Urgensi</option>
                   <option value="Darurat">🔴 Darurat</option>
                   <option value="Tinggi">🟠 Tinggi</option>
@@ -1059,9 +1816,19 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
                 </select>
 
                 <select
-                  className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="
+                    px-3 py-2.5 sm:py-2
+                    border border-slate-300 dark:border-slate-600 
+                    rounded-lg 
+                    bg-white dark:bg-slate-700
+                    text-slate-800 dark:text-white
+                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                    text-sm
+                  "
                   value={filters.kategori_masalah}
-                  onChange={(e) => setFilters({ ...filters, kategori_masalah: e.target.value })}>
+                  onChange={(e) =>
+                    setFilters({ ...filters, kategori_masalah: e.target.value })
+                  }>
                   <option value="">Semua Kategori</option>
                   <option value="Akademik">📚 Akademik</option>
                   <option value="Perilaku">⚠️ Perilaku</option>
@@ -1076,9 +1843,19 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
                 </select>
 
                 <select
-                  className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="
+                    px-3 py-2.5 sm:py-2
+                    border border-slate-300 dark:border-slate-600 
+                    rounded-lg 
+                    bg-white dark:bg-slate-700
+                    text-slate-800 dark:text-white
+                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                    text-sm
+                  "
                   value={filters.class}
-                  onChange={(e) => setFilters({ ...filters, class: e.target.value })}>
+                  onChange={(e) =>
+                    setFilters({ ...filters, class: e.target.value })
+                  }>
                   <option value="">Semua Kelas</option>
                   {classes.map((classItem) => (
                     <option key={classItem.id} value={classItem.id}>
@@ -1088,18 +1865,38 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
                 </select>
 
                 <select
-                  className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="
+                    px-3 py-2.5 sm:py-2
+                    border border-slate-300 dark:border-slate-600 
+                    rounded-lg 
+                    bg-white dark:bg-slate-700
+                    text-slate-800 dark:text-white
+                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                    text-sm
+                  "
                   value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
+                  onChange={(e) =>
+                    setFilters({ ...filters, status: e.target.value })
+                  }>
                   <option value="">Semua Status</option>
                   <option value="Selesai">✅ Selesai</option>
                   <option value="Dalam Proses">⏳ Dalam Proses</option>
                 </select>
 
                 <select
-                  className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="
+                    px-3 py-2.5 sm:py-2
+                    border border-slate-300 dark:border-slate-600 
+                    rounded-lg 
+                    bg-white dark:bg-slate-700
+                    text-slate-800 dark:text-white
+                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                    text-sm
+                  "
                   value={filters.perlu_followup}
-                  onChange={(e) => setFilters({ ...filters, perlu_followup: e.target.value })}>
+                  onChange={(e) =>
+                    setFilters({ ...filters, perlu_followup: e.target.value })
+                  }>
                   <option value="">Semua Follow-up</option>
                   <option value="true">✅ Perlu Follow-up</option>
                   <option value="false">❌ Tidak Perlu</option>
@@ -1107,36 +1904,82 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
 
                 <input
                   type="date"
-                  className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="
+                    px-3 py-2.5 sm:py-2
+                    border border-slate-300 dark:border-slate-600 
+                    rounded-lg 
+                    bg-white dark:bg-slate-700
+                    text-slate-800 dark:text-white
+                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                    text-sm
+                  "
                   value={filters.dateStart}
-                  onChange={(e) => setFilters({ ...filters, dateStart: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, dateStart: e.target.value })
+                  }
                   placeholder="Dari Tanggal"
                 />
 
                 <input
                   type="date"
-                  className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="
+                    px-3 py-2.5 sm:py-2
+                    border border-slate-300 dark:border-slate-600 
+                    rounded-lg 
+                    bg-white dark:bg-slate-700
+                    text-slate-800 dark:text-white
+                    focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                    text-sm
+                  "
                   value={filters.dateEnd}
-                  onChange={(e) => setFilters({ ...filters, dateEnd: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, dateEnd: e.target.value })
+                  }
                   placeholder="Sampai Tanggal"
                 />
               </div>
 
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
-                <p className="text-sm text-slate-600">
-                  Menampilkan <span className="font-semibold">{filteredData.length}</span> dari{" "}
-                  <span className="font-semibold">{konselingData.length}</span> data
+              <div
+                className="
+                flex flex-col sm:flex-row items-start sm:items-center 
+                justify-between gap-4 mt-4 pt-4 
+                border-t border-slate-200 dark:border-slate-700
+              ">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                  Menampilkan{" "}
+                  <span className="font-semibold">{filteredData.length}</span>{" "}
+                  dari{" "}
+                  <span className="font-semibold">{konselingData.length}</span>{" "}
+                  data
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                   <button
                     onClick={exportToExcelHandler}
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
+                    className="
+                      flex-1 sm:flex-none
+                      bg-green-500 hover:bg-green-600 
+                      dark:bg-green-600 dark:hover:bg-green-700
+                      text-white px-4 py-2.5 sm:py-2
+                      rounded-lg transition-colors 
+                      flex items-center justify-center gap-2
+                      text-sm
+                      min-h-[44px]
+                    ">
                     <Download className="w-4 h-4" />
                     Export Excel
                   </button>
                   <button
                     onClick={exportToCSVHandler}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2">
+                    className="
+                      flex-1 sm:flex-none
+                      bg-blue-500 hover:bg-blue-600 
+                      dark:bg-blue-600 dark:hover:bg-blue-700
+                      text-white px-4 py-2.5 sm:py-2
+                      rounded-lg transition-colors 
+                      flex items-center justify-center gap-2
+                      text-sm
+                      min-h-[44px]
+                    ">
                     <Download className="w-4 h-4" />
                     Export CSV
                   </button>
@@ -1155,7 +1998,14 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
                         dateEnd: "",
                       })
                     }
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+                    className="
+                      flex-1 sm:flex-none
+                      text-blue-600 dark:text-blue-400 
+                      hover:text-blue-800 dark:hover:text-blue-300 
+                      text-sm font-medium flex items-center justify-center gap-1
+                      px-4 py-2.5 sm:py-2
+                      min-h-[44px]
+                    ">
                     <X className="w-4 h-4" />
                     Reset Filter
                   </button>
@@ -1163,97 +2013,205 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
               </div>
             </div>
 
-            {/* ✅ UPDATED: Table dengan kolom baru */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            {/* ✅ UPDATED: Table dengan kolom baru - Responsive */}
+            <div
+              className="
+              bg-white dark:bg-slate-800 
+              rounded-lg shadow-sm overflow-hidden
+            ">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-50 border-b border-slate-200">
+                <table className="w-full min-w-max">
+                  <thead
+                    className="
+                    bg-slate-50 dark:bg-slate-900 
+                    border-b border-slate-200 dark:border-slate-700
+                  ">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <th
+                        className="
+                        px-4 py-3 text-left 
+                        text-xs font-medium text-slate-500 dark:text-slate-400 
+                        uppercase tracking-wider whitespace-nowrap
+                      ">
                         Siswa
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <th
+                        className="
+                        px-4 py-3 text-left 
+                        text-xs font-medium text-slate-500 dark:text-slate-400 
+                        uppercase tracking-wider whitespace-nowrap
+                      ">
                         Tanggal
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Urgensi
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Kategori
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      {!isMobile && (
+                        <>
+                          <th
+                            className="
+                            px-4 py-3 text-left 
+                            text-xs font-medium text-slate-500 dark:text-slate-400 
+                            uppercase tracking-wider whitespace-nowrap
+                          ">
+                            Urgensi
+                          </th>
+                          <th
+                            className="
+                            px-4 py-3 text-left 
+                            text-xs font-medium text-slate-500 dark:text-slate-400 
+                            uppercase tracking-wider whitespace-nowrap
+                          ">
+                            Kategori
+                          </th>
+                        </>
+                      )}
+                      <th
+                        className="
+                        px-4 py-3 text-left 
+                        text-xs font-medium text-slate-500 dark:text-slate-400 
+                        uppercase tracking-wider whitespace-nowrap
+                      ">
                         Permasalahan
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <th
+                        className="
+                        px-4 py-3 text-left 
+                        text-xs font-medium text-slate-500 dark:text-slate-400 
+                        uppercase tracking-wider whitespace-nowrap
+                      ">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      <th
+                        className="
+                        px-4 py-3 text-left 
+                        text-xs font-medium text-slate-500 dark:text-slate-400 
+                        uppercase tracking-wider whitespace-nowrap
+                      ">
                         Aksi
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                     {filteredData.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="px-6 py-12 text-center">
+                        <td
+                          colSpan={isMobile ? 5 : 7}
+                          className="px-4 py-8 sm:py-12 text-center">
                           <div className="flex flex-col items-center">
-                            <Filter className="w-12 h-12 text-slate-300 mb-3" />
-                            <p className="text-slate-600 font-medium">Tidak ada data ditemukan</p>
-                            <p className="text-slate-500 text-sm mt-1">Coba ubah filter pencarian</p>
+                            <Filter
+                              className="
+                              w-10 h-10 sm:w-12 sm:h-12 
+                              text-slate-300 dark:text-slate-700 mb-3
+                            "
+                            />
+                            <p
+                              className="
+                              text-slate-600 dark:text-slate-400 font-medium 
+                              text-sm sm:text-base
+                            ">
+                              Tidak ada data ditemukan
+                            </p>
+                            <p className="text-slate-500 dark:text-slate-500 text-xs sm:text-sm mt-1">
+                              Coba ubah filter pencarian
+                            </p>
                           </div>
                         </td>
                       </tr>
                     ) : (
                       filteredData.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-4">
+                        <tr
+                          key={item.id}
+                          className="
+                            hover:bg-slate-50 dark:hover:bg-slate-900/50 
+                            transition-colors
+                          ">
+                          <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <User className="w-5 h-5 text-blue-600" />
+                              <div
+                                className="
+                                w-8 h-8 sm:w-10 sm:h-10 
+                                bg-blue-100 dark:bg-blue-900/50 
+                                rounded-full flex items-center justify-center flex-shrink-0
+                              ">
+                                <User className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                               </div>
-                              <div>
-                                <p className="font-medium text-slate-900 flex items-center gap-2">
+                              <div className="min-w-0">
+                                <p
+                                  className="
+                                  font-medium text-slate-900 dark:text-white 
+                                  text-sm sm:text-base flex items-center gap-2 truncate
+                                ">
                                   {item.full_name}
                                   {item.perlu_followup && (
-                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs border border-purple-300">
+                                    <span
+                                      className="
+                                      px-1.5 py-0.5 
+                                      bg-purple-100 dark:bg-purple-900/40 
+                                      text-purple-700 dark:text-purple-300 
+                                      rounded-full text-xs border border-purple-300 dark:border-purple-700
+                                      whitespace-nowrap
+                                    ">
                                       Follow-up
                                     </span>
                                   )}
                                 </p>
-                                <p className="text-sm text-slate-500">{item.class_name} • {item.nis}</p>
+                                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                                  {item.class_name} • {item.nis}
+                                </p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                            {new Date(item.tanggal).toLocaleDateString("id-ID", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-300">
+                            {new Date(item.tanggal).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getUrgencyBadge(item.tingkat_urgensi)}
-                          </td>
-                          <td className="px-6 py-4">
-                            {getCategoryBadge(item.kategori_masalah)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-sm text-slate-900 line-clamp-2 max-w-xs">
+                          {!isMobile && (
+                            <>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                {getUrgencyBadge(item.tingkat_urgensi)}
+                              </td>
+                              <td className="px-4 py-4">
+                                {getCategoryBadge(item.kategori_masalah)}
+                              </td>
+                            </>
+                          )}
+                          <td className="px-4 py-4">
+                            <p
+                              className="
+                              text-sm text-slate-900 dark:text-slate-300 
+                              line-clamp-2 max-w-xs
+                            ">
                               {item.permasalahan}
                             </p>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(item.status_layanan)}`}>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span
+                              className={`
+                              inline-flex items-center px-3 py-1 
+                              rounded-full text-xs sm:text-sm font-medium 
+                              ${getStatusColor(item.status_layanan)}
+                            `}>
                               {item.status_layanan}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <button
                               onClick={() => {
                                 setSelectedItem(item);
                                 setShowDetailModal(true);
                               }}
-                              className="text-blue-600 hover:text-blue-900 flex items-center gap-2 px-3 py-1 rounded hover:bg-blue-50 transition-colors">
+                              className="
+                                text-blue-600 dark:text-blue-400 
+                                hover:text-blue-900 dark:hover:text-blue-300 
+                                flex items-center gap-2 px-3 py-1.5 
+                                rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 
+                                transition-colors text-sm
+                                min-h-[44px]
+                              ">
                               <Eye className="w-4 h-4" />
                               Detail
                             </button>
@@ -1270,180 +2228,356 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
 
         {/* Analytics View */}
         {activeView === "analytics" && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* ✅ NEW: Success Rate per Category */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            <div
+              className="
+              bg-white dark:bg-slate-800 
+              p-4 sm:p-6 rounded-lg shadow-sm
+            ">
+              <h3
+                className="
+                text-base sm:text-lg font-semibold 
+                text-slate-800 dark:text-white mb-4
+              ">
                 Success Rate per Kategori Masalah
               </h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={successRateByCategory}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="kategori" />
-                  <YAxis label={{ value: 'Success Rate (%)', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip formatter={(value) => `${value}%`} />
-                  <Bar dataKey="rate" fill="#10b981">
-                    {successRateByCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.rate > 70 ? '#10b981' : entry.rate > 50 ? '#f59e0b' : '#ef4444'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              <p className="text-sm text-slate-600 mt-3">
-                💡 <strong>Insight:</strong> Kategori dengan success rate tinggi menunjukkan efektivitas penanganan yang baik.
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={successRateByCategory}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#e5e7eb"
+                      strokeOpacity={darkMode ? 0.3 : 1}
+                    />
+                    <XAxis dataKey="kategori" stroke="#94a3b8" />
+                    <YAxis
+                      label={{
+                        value: "Success Rate (%)",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                      stroke="#94a3b8"
+                    />
+                    <Tooltip formatter={(value) => `${value}%`} />
+                    <Bar dataKey="rate" fill="#10b981">
+                      {successRateByCategory.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            entry.rate > 70
+                              ? "#10b981"
+                              : entry.rate > 50
+                              ? "#f59e0b"
+                              : "#ef4444"
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <p
+                className="
+                text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-3
+              ">
+                💡{" "}
+                <strong className="text-slate-800 dark:text-slate-300">
+                  Insight:
+                </strong>{" "}
+                Kategori dengan success rate tinggi menunjukkan efektivitas
+                penanganan yang baik.
               </p>
             </div>
 
             {/* Comprehensive Charts */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            <div
+              className="
+              bg-white dark:bg-slate-800 
+              p-4 sm:p-6 rounded-lg shadow-sm
+            ">
+              <h3
+                className="
+                text-base sm:text-lg font-semibold 
+                text-slate-800 dark:text-white mb-4
+              ">
                 Analisis Mendalam
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Bidang per Status */}
                 <div>
-                  <h4 className="text-sm font-medium text-slate-600 mb-3">
+                  <h4
+                    className="
+                    text-sm font-medium text-slate-600 dark:text-slate-400 mb-3
+                  ">
                     Bidang Bimbingan per Status
                   </h4>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={bidangData} layout="horizontal">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="name" type="category" />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="h-[250px] sm:h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={bidangData} layout="horizontal">
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="#e5e7eb"
+                          strokeOpacity={darkMode ? 0.3 : 1}
+                        />
+                        <XAxis type="number" stroke="#94a3b8" />
+                        <YAxis
+                          dataKey="name"
+                          type="category"
+                          stroke="#94a3b8"
+                        />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
 
                 {/* Monthly Comparison */}
                 <div>
-                  <h4 className="text-sm font-medium text-slate-600 mb-3">
+                  <h4
+                    className="
+                    text-sm font-medium text-slate-600 dark:text-slate-400 mb-3
+                  ">
                     Perbandingan Bulanan
                   </h4>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={monthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="total" stroke="#8b5cf6" strokeWidth={2} name="Total" />
-                      <Line type="monotone" dataKey="darurat" stroke="#ef4444" strokeWidth={2} name="Darurat" />
-                      <Line type="monotone" dataKey="selesai" stroke="#22c55e" strokeWidth={2} name="Selesai" />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <div className="h-[250px] sm:h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={monthlyData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="#e5e7eb"
+                          strokeOpacity={darkMode ? 0.3 : 1}
+                        />
+                        <XAxis dataKey="month" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" />
+                        <Tooltip />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="total"
+                          stroke="#8b5cf6"
+                          strokeWidth={2}
+                          name="Total"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="darurat"
+                          stroke="#ef4444"
+                          strokeWidth={2}
+                          name="Darurat"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="selesai"
+                          stroke="#22c55e"
+                          strokeWidth={2}
+                          name="Selesai"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Insights Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-lg shadow-lg">
-                <TrendingUp className="w-8 h-8 mb-3 opacity-80" />
-                <h4 className="text-lg font-semibold mb-2">Kategori Tertinggi</h4>
-                <p className="text-3xl font-bold mb-1">
+            {/* Insights Cards - Responsive */}
+            <div
+              className="
+              grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6
+            ">
+              <div
+                className="
+                bg-gradient-to-br from-purple-500 to-purple-600 
+                text-white p-4 sm:p-6 rounded-lg shadow-lg
+              ">
+                <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 mb-3 opacity-80" />
+                <h4 className="text-sm sm:text-lg font-semibold mb-2">
+                  Kategori Tertinggi
+                </h4>
+                <p className="text-2xl sm:text-3xl font-bold mb-1">
                   {categoryData.length > 0 ? categoryData[0].name : "-"}
                 </p>
-                <p className="text-sm opacity-90">
+                <p className="text-xs sm:text-sm opacity-90">
                   {categoryData.length > 0 ? categoryData[0].value : 0} kasus
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-lg shadow-lg">
-                <CheckCircle className="w-8 h-8 mb-3 opacity-80" />
-                <h4 className="text-lg font-semibold mb-2">Success Rate</h4>
-                <p className="text-3xl font-bold mb-1">
-                  {stats.total > 0 ? ((stats.selesai / stats.total) * 100).toFixed(1) : 0}%
+              <div
+                className="
+                bg-gradient-to-br from-green-500 to-green-600 
+                text-white p-4 sm:p-6 rounded-lg shadow-lg
+              ">
+                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 mb-3 opacity-80" />
+                <h4 className="text-sm sm:text-lg font-semibold mb-2">
+                  Success Rate
+                </h4>
+                <p className="text-2xl sm:text-3xl font-bold mb-1">
+                  {stats.total > 0
+                    ? ((stats.selesai / stats.total) * 100).toFixed(1)
+                    : 0}
+                  %
                 </p>
-                <p className="text-sm opacity-90">
+                <p className="text-xs sm:text-sm opacity-90">
                   {stats.selesai} dari {stats.total} selesai
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-6 rounded-lg shadow-lg">
-                <AlertCircle className="w-8 h-8 mb-3 opacity-80" />
-                <h4 className="text-lg font-semibold mb-2">Perlu Perhatian</h4>
-                <p className="text-3xl font-bold mb-1">
+              <div
+                className="
+                bg-gradient-to-br from-orange-500 to-orange-600 
+                text-white p-4 sm:p-6 rounded-lg shadow-lg
+              ">
+                <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 mb-3 opacity-80" />
+                <h4 className="text-sm sm:text-lg font-semibold mb-2">
+                  Perlu Perhatian
+                </h4>
+                <p className="text-2xl sm:text-3xl font-bold mb-1">
                   {stats.darurat + stats.tinggi}
                 </p>
-                <p className="text-sm opacity-90">
+                <p className="text-xs sm:text-sm opacity-90">
                   {stats.darurat} darurat + {stats.tinggi} tinggi
                 </p>
               </div>
             </div>
 
-            {/* ✅ NEW: Recommendations */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            {/* ✅ NEW: Recommendations - Responsive */}
+            <div
+              className="
+              bg-white dark:bg-slate-800 
+              p-4 sm:p-6 rounded-lg shadow-sm
+            ">
+              <h3
+                className="
+                text-base sm:text-lg font-semibold 
+                text-slate-800 dark:text-white mb-4
+              ">
                 Rekomendasi & Action Items
               </h3>
               <div className="space-y-3">
                 {stats.darurat > 0 && (
-                  <div className="flex items-start gap-3 p-4 bg-red-50 border-l-4 border-red-500 rounded">
-                    <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div
+                    className="
+                    flex items-start gap-3 p-4 
+                    bg-red-50 dark:bg-red-900/30 
+                    border-l-4 border-red-500 dark:border-red-600 rounded
+                  ">
+                    <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-red-900">
-                        {stats.darurat} kasus DARURAT memerlukan penanganan segera
+                      <p
+                        className="
+                        font-medium text-red-900 dark:text-red-300 
+                        text-sm sm:text-base
+                      ">
+                        {stats.darurat} kasus DARURAT memerlukan penanganan
+                        segera
                       </p>
-                      <p className="text-sm text-red-700 mt-1">
-                        Prioritaskan kasus dengan tingkat urgensi darurat untuk ditangani hari ini. Koordinasi dengan wali kelas dan orang tua jika diperlukan.
+                      <p className="text-xs sm:text-sm text-red-700 dark:text-red-400 mt-1">
+                        Prioritaskan kasus dengan tingkat urgensi darurat untuk
+                        ditangani hari ini. Koordinasi dengan wali kelas dan
+                        orang tua jika diperlukan.
                       </p>
                     </div>
                   </div>
                 )}
 
                 {stats.perlu_followup > 0 && (
-                  <div className="flex items-start gap-3 p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
-                    <Calendar className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div
+                    className="
+                    flex items-start gap-3 p-4 
+                    bg-purple-50 dark:bg-purple-900/30 
+                    border-l-4 border-purple-500 dark:border-purple-600 rounded
+                  ">
+                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-purple-900">
+                      <p
+                        className="
+                        font-medium text-purple-900 dark:text-purple-300 
+                        text-sm sm:text-base
+                      ">
                         {stats.perlu_followup} siswa memerlukan tindak lanjut
                       </p>
-                      <p className="text-sm text-purple-700 mt-1">
-                        Jadwalkan sesi konseling lanjutan sesuai tanggal yang ditentukan. {stats.followup_overdue} follow-up sudah terlambat.
+                      <p className="text-xs sm:text-sm text-purple-700 dark:text-purple-400 mt-1">
+                        Jadwalkan sesi konseling lanjutan sesuai tanggal yang
+                        ditentukan. {stats.followup_overdue} follow-up sudah
+                        terlambat.
                       </p>
                     </div>
                   </div>
                 )}
 
                 {frequentStudents.length > 0 && (
-                  <div className="flex items-start gap-3 p-4 bg-amber-50 border-l-4 border-amber-500 rounded">
-                    <Users className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div
+                    className="
+                    flex items-start gap-3 p-4 
+                    bg-amber-50 dark:bg-amber-900/30 
+                    border-l-4 border-amber-500 dark:border-amber-600 rounded
+                  ">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-amber-900">
-                        {frequentStudents.length} siswa dengan konseling berulang
+                      <p
+                        className="
+                        font-medium text-amber-900 dark:text-amber-300 
+                        text-sm sm:text-base
+                      ">
+                        {frequentStudents.length} siswa dengan konseling
+                        berulang
                       </p>
-                      <p className="text-sm text-amber-700 mt-1">
-                        Pertimbangkan untuk melakukan home visit, konsultasi dengan orang tua, atau merujuk ke psikolog profesional untuk penanganan lebih mendalam.
+                      <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400 mt-1">
+                        Pertimbangkan untuk melakukan home visit, konsultasi
+                        dengan orang tua, atau merujuk ke psikolog profesional
+                        untuk penanganan lebih mendalam.
                       </p>
                     </div>
                   </div>
                 )}
 
                 {stats.proses > stats.selesai && (
-                  <div className="flex items-start gap-3 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-                    <Clock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div
+                    className="
+                    flex items-start gap-3 p-4 
+                    bg-blue-50 dark:bg-blue-900/30 
+                    border-l-4 border-blue-500 dark:border-blue-600 rounded
+                  ">
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-blue-900">
-                        Kasus dalam proses ({stats.proses}) lebih banyak dari yang selesai ({stats.selesai})
+                      <p
+                        className="
+                        font-medium text-blue-900 dark:text-blue-300 
+                        text-sm sm:text-base
+                      ">
+                        Kasus dalam proses ({stats.proses}) lebih banyak dari
+                        yang selesai ({stats.selesai})
                       </p>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Review dan prioritaskan kasus yang sudah berjalan lama. Evaluasi strategi penanganan untuk meningkatkan efektivitas.
+                      <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-400 mt-1">
+                        Review dan prioritaskan kasus yang sudah berjalan lama.
+                        Evaluasi strategi penanganan untuk meningkatkan
+                        efektivitas.
                       </p>
                     </div>
                   </div>
                 )}
 
                 {categoryData.length > 0 && (
-                  <div className="flex items-start gap-3 p-4 bg-green-50 border-l-4 border-green-500 rounded">
-                    <Target className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div
+                    className="
+                    flex items-start gap-3 p-4 
+                    bg-green-50 dark:bg-green-900/30 
+                    border-l-4 border-green-500 dark:border-green-600 rounded
+                  ">
+                    <Target className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-green-900">
+                      <p
+                        className="
+                        font-medium text-green-900 dark:text-green-300 
+                        text-sm sm:text-base
+                      ">
                         Fokus program preventif: {categoryData[0].name}
                       </p>
-                      <p className="text-sm text-green-700 mt-1">
-                        Kategori masalah tertinggi adalah {categoryData[0].name}. Buat program bimbingan kelompok atau sosialisasi untuk mencegah masalah serupa di masa depan.
+                      <p className="text-xs sm:text-sm text-green-700 dark:text-green-400 mt-1">
+                        Kategori masalah tertinggi adalah {categoryData[0].name}
+                        . Buat program bimbingan kelompok atau sosialisasi untuk
+                        mencegah masalah serupa di masa depan.
                       </p>
                     </div>
                   </div>
@@ -1451,35 +2585,98 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
               </div>
             </div>
 
-            {/* Export Options */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            {/* Export Options - Responsive */}
+            <div
+              className="
+              bg-white dark:bg-slate-800 
+              p-4 sm:p-6 rounded-lg shadow-sm
+            ">
+              <h3
+                className="
+                text-base sm:text-lg font-semibold 
+                text-slate-800 dark:text-white mb-4
+              ">
                 Export Laporan
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
                   onClick={exportToExcelHandler}
-                  className="flex items-center justify-center gap-3 px-6 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                  <Download className="w-5 h-5" />
+                  className="
+                    flex items-center justify-center gap-3 
+                    px-4 py-3 sm:px-6 sm:py-4 
+                    bg-blue-500 dark:bg-blue-600 
+                    text-white rounded-lg 
+                    hover:bg-blue-600 dark:hover:bg-blue-700 
+                    transition-colors
+                    min-h-[44px]
+                  ">
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                   <div className="text-left">
-                    <p className="font-medium">Laporan Excel</p>
-                    <p className="text-xs opacity-90">Format XLSX Lengkap</p>
+                    <p
+                      className="
+                      font-medium text-sm sm:text-base
+                    ">
+                      Laporan Excel
+                    </p>
+                    <p
+                      className="
+                      text-xs opacity-90
+                    ">
+                      Format XLSX Lengkap
+                    </p>
                   </div>
                 </button>
                 <button
                   onClick={exportToCSVHandler}
-                  className="flex items-center justify-center gap-3 px-6 py-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                  <Download className="w-5 h-5" />
+                  className="
+                    flex items-center justify-center gap-3 
+                    px-4 py-3 sm:px-6 sm:py-4 
+                    bg-green-500 dark:bg-green-600 
+                    text-white rounded-lg 
+                    hover:bg-green-600 dark:hover:bg-green-700 
+                    transition-colors
+                    min-h-[44px]
+                  ">
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                   <div className="text-left">
-                    <p className="font-medium">Data CSV</p>
-                    <p className="text-xs opacity-90">Semua Record</p>
+                    <p
+                      className="
+                      font-medium text-sm sm:text-base
+                    ">
+                      Data CSV
+                    </p>
+                    <p
+                      className="
+                      text-xs opacity-90
+                    ">
+                      Semua Record
+                    </p>
                   </div>
                 </button>
-                <button className="flex items-center justify-center gap-3 px-6 py-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
-                  <FileText className="w-5 h-5" />
+                <button
+                  className="
+                  flex items-center justify-center gap-3 
+                  px-4 py-3 sm:px-6 sm:py-4 
+                  bg-purple-500 dark:bg-purple-600 
+                  text-white rounded-lg 
+                  hover:bg-purple-600 dark:hover:bg-purple-700 
+                  transition-colors
+                  min-h-[44px]
+                ">
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                   <div className="text-left">
-                    <p className="font-medium">Laporan Bulanan</p>
-                    <p className="text-xs opacity-90">Summary Report</p>
+                    <p
+                      className="
+                      font-medium text-sm sm:text-base
+                    ">
+                      Laporan Bulanan
+                    </p>
+                    <p
+                      className="
+                      text-xs opacity-90
+                    ">
+                      Summary Report
+                    </p>
                   </div>
                 </button>
               </div>
@@ -1487,43 +2684,120 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
           </div>
         )}
 
-        {/* ✅ NEW: Follow-up View */}
+        {/* ✅ NEW: Follow-up View - Responsive */}
         {activeView === "followup" && (
-          <div className="space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-purple-500">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Summary Cards - Responsive */}
+            <div
+              className="
+              grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6
+            ">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm 
+                border-l-4 border-purple-500 dark:border-purple-600
+              ">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500">Total Perlu Follow-up</p>
-                    <p className="text-3xl font-bold text-purple-600 mt-2">{stats.perlu_followup}</p>
+                    <p
+                      className="
+                      text-xs sm:text-sm font-medium 
+                      text-slate-500 dark:text-slate-400
+                    ">
+                      Total Perlu Follow-up
+                    </p>
+                    <p
+                      className="
+                      text-2xl sm:text-3xl font-bold 
+                      text-purple-600 dark:text-purple-400 mt-2
+                    ">
+                      {stats.perlu_followup}
+                    </p>
                   </div>
-                  <Calendar className="w-8 h-8 text-purple-500" />
+                  <Calendar
+                    className="
+                    w-6 h-6 sm:w-8 sm:h-8 
+                    text-purple-500 dark:text-purple-400
+                  "
+                  />
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-orange-500">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm 
+                border-l-4 border-orange-500 dark:border-orange-600
+              ">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500">Terlambat</p>
-                    <p className="text-3xl font-bold text-orange-600 mt-2">{stats.followup_overdue}</p>
+                    <p
+                      className="
+                      text-xs sm:text-sm font-medium 
+                      text-slate-500 dark:text-slate-400
+                    ">
+                      Terlambat
+                    </p>
+                    <p
+                      className="
+                      text-2xl sm:text-3xl font-bold 
+                      text-orange-600 dark:text-orange-400 mt-2
+                    ">
+                      {stats.followup_overdue}
+                    </p>
                   </div>
-                  <AlertCircle className="w-8 h-8 text-orange-500" />
+                  <AlertCircle
+                    className="
+                    w-6 h-6 sm:w-8 sm:h-8 
+                    text-orange-500 dark:text-orange-400
+                  "
+                  />
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-500">
+              <div
+                className="
+                bg-white dark:bg-slate-800 
+                p-4 sm:p-6 rounded-lg shadow-sm 
+                border-l-4 border-blue-500 dark:border-blue-600
+              ">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-500">Minggu Ini</p>
-                    <p className="text-3xl font-bold text-blue-600 mt-2">{stats.followup_upcoming}</p>
+                    <p
+                      className="
+                      text-xs sm:text-sm font-medium 
+                      text-slate-500 dark:text-slate-400
+                    ">
+                      Minggu Ini
+                    </p>
+                    <p
+                      className="
+                      text-2xl sm:text-3xl font-bold 
+                      text-blue-600 dark:text-blue-400 mt-2
+                    ">
+                      {stats.followup_upcoming}
+                    </p>
                   </div>
-                  <Bell className="w-8 h-8 text-blue-500" />
+                  <Bell
+                    className="
+                    w-6 h-6 sm:w-8 sm:h-8 
+                    text-blue-500 dark:text-blue-400
+                  "
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Follow-up List */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            {/* Follow-up List - Responsive */}
+            <div
+              className="
+              bg-white dark:bg-slate-800 
+              p-4 sm:p-6 rounded-lg shadow-sm
+            ">
+              <h3
+                className="
+                text-base sm:text-lg font-semibold 
+                text-slate-800 dark:text-white mb-4
+              ">
                 Jadwal Follow-up
               </h3>
               <div className="space-y-3">
@@ -1531,54 +2805,135 @@ const BKReportsEnhanced = ({ user, onShowToast }) => {
                   followupList.map((item, index) => (
                     <div
                       key={index}
-                      className={`flex items-center justify-between p-4 rounded-lg border-l-4 cursor-pointer transition-colors ${
-                        item.isOverdue 
-                          ? 'bg-red-50 border-red-500 hover:bg-red-100' 
-                          : item.daysUntil <= 3
-                          ? 'bg-orange-50 border-orange-500 hover:bg-orange-100'
-                          : 'bg-blue-50 border-blue-500 hover:bg-blue-100'
-                      }`}
+                      className={`
+                        flex items-center justify-between p-3 sm:p-4 
+                        rounded-lg border-l-4 cursor-pointer 
+                        transition-colors min-h-[44px]
+                        ${
+                          item.isOverdue
+                            ? "bg-red-50 dark:bg-red-900/30 border-red-500 dark:border-red-600 hover:bg-red-100 dark:hover:bg-red-900/50"
+                            : item.daysUntil <= 3
+                            ? "bg-orange-50 dark:bg-orange-900/30 border-orange-500 dark:border-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/50"
+                            : "bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                        }
+                      `}
                       onClick={() => {
                         setSelectedItem(item);
                         setShowDetailModal(true);
                       }}>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <p className={`font-semibold ${item.isOverdue ? 'text-red-900' : item.daysUntil <= 3 ? 'text-orange-900' : 'text-blue-900'}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <p
+                            className={`
+                            font-semibold text-sm sm:text-base truncate
+                            ${
+                              item.isOverdue
+                                ? "text-red-900 dark:text-red-300"
+                                : item.daysUntil <= 3
+                                ? "text-orange-900 dark:text-orange-300"
+                                : "text-blue-900 dark:text-blue-300"
+                            }
+                          `}>
                             {item.full_name}
                           </p>
-                          {getUrgencyBadge(item.tingkat_urgensi)}
-                          {getCategoryBadge(item.kategori_masalah)}
+                          {!isMobile && (
+                            <>
+                              {getUrgencyBadge(item.tingkat_urgensi)}
+                              {getCategoryBadge(item.kategori_masalah)}
+                            </>
+                          )}
                         </div>
-                        <p className={`text-sm line-clamp-1 ${item.isOverdue ? 'text-red-700' : item.daysUntil <= 3 ? 'text-orange-700' : 'text-blue-700'}`}>
+                        <p
+                          className={`
+                          text-xs sm:text-sm line-clamp-1 sm:line-clamp-2
+                          ${
+                            item.isOverdue
+                              ? "text-red-700 dark:text-red-400"
+                              : item.daysUntil <= 3
+                              ? "text-orange-700 dark:text-orange-400"
+                              : "text-blue-700 dark:text-blue-400"
+                          }
+                        `}>
                           {item.permasalahan}
                         </p>
-                        <div className="flex items-center gap-4 mt-2 text-xs">
-                          <span className={item.isOverdue ? 'text-red-600' : item.daysUntil <= 3 ? 'text-orange-600' : 'text-blue-600'}>
-                            📅 {new Date(item.tanggal_followup).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs">
+                          <span
+                            className={
+                              item.isOverdue
+                                ? "text-red-600 dark:text-red-400"
+                                : item.daysUntil <= 3
+                                ? "text-orange-600 dark:text-orange-400"
+                                : "text-blue-600 dark:text-blue-400"
+                            }>
+                            📅{" "}
+                            {new Date(item.tanggal_followup).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )}
                           </span>
-                          <span className={item.isOverdue ? 'text-red-600 font-semibold' : item.daysUntil <= 3 ? 'text-orange-600 font-semibold' : 'text-blue-600'}>
-                            {item.isOverdue 
-                              ? `⏰ Terlambat ${Math.abs(item.daysUntil)} hari` 
-                              : item.daysUntil === 0 
-                              ? '🔔 Hari ini!'
+                          <span
+                            className={`
+                            ${
+                              item.isOverdue
+                                ? "text-red-600 dark:text-red-400 font-semibold"
+                                : item.daysUntil <= 3
+                                ? "text-orange-600 dark:text-orange-400 font-semibold"
+                                : "text-blue-600 dark:text-blue-400"
+                            }
+                          `}>
+                            {item.isOverdue
+                              ? `⏰ Terlambat ${Math.abs(item.daysUntil)} hari`
+                              : item.daysUntil === 0
+                              ? "🔔 Hari ini!"
                               : `⏳ ${item.daysUntil} hari lagi`}
                           </span>
-                          <span className="text-slate-500">
+                          <span className="text-slate-500 dark:text-slate-400">
                             👤 {item.class_name} • {item.nis}
                           </span>
                         </div>
                       </div>
-                      <button className={`p-2 rounded-lg ${item.isOverdue ? 'bg-red-100 text-red-600 hover:bg-red-200' : item.daysUntil <= 3 ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}>
-                        <Eye className="w-5 h-5" />
+                      <button
+                        className={`
+                        p-2 rounded-lg flex-shrink-0
+                        min-h-[44px] min-w-[44px] flex items-center justify-center
+                        ${
+                          item.isOverdue
+                            ? "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60"
+                            : item.daysUntil <= 3
+                            ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/60"
+                            : "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60"
+                        }
+                      `}>
+                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-12">
-                    <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-600 font-medium">Tidak ada jadwal follow-up</p>
-                    <p className="text-slate-500 text-sm mt-1">Semua konseling sudah ditindaklanjuti</p>
+                  <div className="text-center py-8 sm:py-12">
+                    <Calendar
+                      className="
+                      w-12 h-12 sm:w-16 sm:h-16 
+                      text-slate-300 dark:text-slate-700 mx-auto mb-3
+                    "
+                    />
+                    <p
+                      className="
+                      text-slate-600 dark:text-slate-400 font-medium 
+                      text-sm sm:text-base
+                    ">
+                      Tidak ada jadwal follow-up
+                    </p>
+                    <p
+                      className="
+                      text-slate-500 dark:text-slate-500 
+                      text-xs sm:text-sm mt-1
+                    ">
+                      Semua konseling sudah ditindaklanjuti
+                    </p>
                   </div>
                 )}
               </div>

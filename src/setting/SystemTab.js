@@ -770,20 +770,23 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
           System Management
         </h2>
-        <p className="text-gray-600 text-sm">
+        <p className="text-gray-600 dark:text-gray-400 text-sm">
           SMP Muslimin Cililin - Backup & Restore Database
         </p>
 
         {exportProgress && (
-          <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="mt-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <div className="flex items-center gap-2">
-              <RefreshCw className="animate-spin text-blue-600" size={16} />
-              <span className="text-sm text-blue-800 font-medium">
+              <RefreshCw
+                className="animate-spin text-blue-600 dark:text-blue-400"
+                size={16}
+              />
+              <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">
                 {exportProgress}
               </span>
             </div>
@@ -793,52 +796,56 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
       {/* System Health Monitor Card */}
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 mb-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-bold mb-2">System Health Monitor</h3>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h3 className="text-lg sm:text-xl font-bold mb-2">
+              System Health Monitor
+            </h3>
             <p className="text-blue-100 mb-4">
               Pantau kesehatan sistem, cek performa database, dan validasi
               integritas data
             </p>
             <button
               onClick={navigateToSystemMonitor}
-              className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-semibold transition-colors">
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-semibold transition-colors min-h-[44px] touch-manipulation w-full md:w-auto">
               <Monitor size={18} />
-              Buka System Health Monitor
+              <span className="text-sm sm:text-base">
+                Buka System Health Monitor
+              </span>
             </button>
           </div>
-          <div className="text-right">
+          <div className="hidden md:block text-right">
             <Monitor size={48} className="text-blue-200 opacity-80" />
           </div>
         </div>
       </div>
 
       {/* Export Individual Tables to CSV */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4">
           Export Data ke CSV
         </h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
           Export data per tabel ke format CSV untuk analisis atau backup
           selektif.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
           {/* Baris 1 */}
           <button
             onClick={() => exportTableToCSV("academic_years", "Tahun Ajaran")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-lg hover:bg-teal-200 dark:hover:bg-teal-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Tahun Ajaran
+            <span className="truncate">Export Tahun Ajaran</span>
           </button>
 
           <button
             onClick={() => exportTableToCSV("users", "Data Pengguna")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Users
+            <span className="truncate">Export Users</span>
           </button>
 
           <button
@@ -846,59 +853,59 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               exportTableToCSV("teacher_assignments", "Penugasan Guru")
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Penugasan Guru
+            <span className="truncate">Export Penugasan Guru</span>
           </button>
 
           {/* Baris 2 */}
           <button
             onClick={() => exportTableToCSV("classes", "Data Kelas")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Kelas
+            <span className="truncate">Export Kelas</span>
           </button>
 
           <button
             onClick={() => exportTableToCSV("students", "Data Siswa")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Students
+            <span className="truncate">Export Students</span>
           </button>
 
           <button
             onClick={() => exportTableToCSV("attendances", "Data Kehadiran")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Attendance
+            <span className="truncate">Export Attendance</span>
           </button>
 
           {/* Baris 3 */}
           <button
             onClick={() => exportTableToCSV("grades", "Data Nilai")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Nilai
+            <span className="truncate">Export Nilai</span>
           </button>
 
           <button
             onClick={() => exportTableToCSV("konseling", "Data Konseling")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-cyan-100 text-cyan-700 rounded-lg hover:bg-cyan-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-lg hover:bg-cyan-200 dark:hover:bg-cyan-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Konseling
+            <span className="truncate">Export Konseling</span>
           </button>
 
           <button
             onClick={() => exportTableToCSV("siswa_baru", "Data Siswa Baru")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-pink-100 text-pink-700 rounded-lg hover:bg-pink-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-200 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Siswa Baru
+            <span className="truncate">Export Siswa Baru</span>
           </button>
 
           {/* Baris 4 */}
@@ -907,25 +914,25 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               exportTableToCSV("school_settings", "Pengaturan Sekolah")
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Settings
+            <span className="truncate">Export Settings</span>
           </button>
 
           <button
             onClick={() => exportTableToCSV("announcement", "Pengumuman")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Pengumuman
+            <span className="truncate">Export Pengumuman</span>
           </button>
 
           <button
             onClick={() => exportTableToCSV("teacher_schedules", "Jadwal Guru")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-lime-100 text-lime-700 rounded-lg hover:bg-lime-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300 rounded-lg hover:bg-lime-200 dark:hover:bg-lime-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Jadwal Guru
+            <span className="truncate">Export Jadwal Guru</span>
           </button>
 
           {/* Baris 5 */}
@@ -937,9 +944,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               )
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Catatan Perkembangan
+            <span className="truncate">Export Catatan Perkembangan</span>
           </button>
 
           <button
@@ -947,9 +954,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               exportTableToCSV("system_health_logs", "System Health Logs")
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export System Logs
+            <span className="truncate">Export System Logs</span>
           </button>
 
           <button
@@ -957,25 +964,25 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               exportTableToCSV("cleanup_history", "Riwayat Cleanup")
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Riwayat Cleanup
+            <span className="truncate">Export Riwayat Cleanup</span>
           </button>
 
           {/* Baris 6 */}
           <button
             onClick={() => exportTableToCSV("spmb_settings", "Pengaturan SPMB")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 disabled:opacity-50 font-medium transition-colors">
+            className="flex items-center gap-2 px-4 py-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
             <Table size={16} />
-            Export Pengaturan SPMB
+            <span className="truncate">Export Pengaturan SPMB</span>
           </button>
 
-          <div className="md:col-span-2">
+          <div className="sm:col-span-2 lg:col-span-1">
             <button
               onClick={exportAllTablesToCSV}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors w-full justify-center">
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-800 disabled:opacity-50 font-medium transition-colors w-full min-h-[44px] touch-manipulation text-sm sm:text-base">
               <FileText size={18} />
               {loading ? "Exporting..." : "Export Semua Tabel"}
             </button>
@@ -984,11 +991,11 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       </div>
 
       {/* Database Backup */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4">
           Database Backup (JSON)
         </h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
           Download backup lengkap database untuk keperluan keamanan dan migrasi
           data.
         </p>
@@ -996,16 +1003,18 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         <button
           onClick={exportDatabaseBackup}
           disabled={loading}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors">
+          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-medium transition-colors w-full sm:w-auto min-h-[44px] touch-manipulation">
           <Download size={18} />
-          {loading ? "Membuat Backup..." : "Download Backup Database (JSON)"}
+          <span className="text-sm sm:text-base">
+            {loading ? "Membuat Backup..." : "Download Backup Database (JSON)"}
+          </span>
         </button>
 
-        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800 font-medium mb-2">
+        <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-2">
             ℹ️ Backup akan berisi:
           </p>
-          <ul className="list-disc list-inside mt-1 space-y-1 text-xs text-blue-700">
+          <ul className="list-disc list-inside mt-1 space-y-1 text-xs text-blue-700 dark:text-blue-400">
             <li>Data tahun ajaran (academic_years table)</li>
             <li>Data pengguna (users table)</li>
             <li>Penugasan guru (teacher_assignments table)</li>
@@ -1045,20 +1054,20 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       </div>
 
       {/* Database Restore */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4">
           Database Restore
         </h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
           Upload dan restore backup database.{" "}
-          <span className="text-red-600 font-medium">
+          <span className="text-red-600 dark:text-red-400 font-medium">
             PERHATIAN: Ini akan menimpa semua data yang ada!
           </span>
         </p>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Upload Backup File
             </label>
             <input
@@ -1066,22 +1075,22 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               accept=".json"
               onChange={handleRestoreFile}
               disabled={loading}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+              className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 disabled:opacity-50 cursor-pointer touch-manipulation"
             />
           </div>
 
           {restorePreview && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
               <div className="flex items-start gap-3 mb-3">
                 <AlertTriangle
-                  className="text-yellow-600 flex-shrink-0 mt-0.5"
+                  className="text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"
                   size={16}
                 />
                 <div>
-                  <h4 className="font-medium text-yellow-800">
+                  <h4 className="font-medium text-yellow-800 dark:text-yellow-300">
                     Backup File Preview
                   </h4>
-                  <div className="text-sm text-yellow-700 mt-2 space-y-1">
+                  <div className="text-sm text-yellow-700 dark:text-yellow-400 mt-2 space-y-1">
                     <p>
                       <strong>Tanggal Backup:</strong>{" "}
                       {new Date(restorePreview.timestamp).toLocaleString(
@@ -1155,17 +1164,14 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-4">
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
                 <button
                   onClick={executeRestore}
                   disabled={loading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium transition-colors">
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation">
                   {loading ? (
                     <>
-                      <RefreshCw
-                        className="animate-spin inline mr-2"
-                        size={16}
-                      />
+                      <RefreshCw className="animate-spin" size={16} />
                       Restoring...
                     </>
                   ) : (
@@ -1179,7 +1185,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                     setRestorePreview(null);
                   }}
                   disabled={loading}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 transition-colors">
+                  className="px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation">
                   Cancel
                 </button>
               </div>
@@ -1189,64 +1195,72 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       </div>
 
       {/* System Information */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Database size={20} className="text-blue-600" />
+      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+          <Database size={20} className="text-blue-600 dark:text-blue-400" />
           Informasi Sistem
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Database
             </label>
-            <p className="text-sm text-gray-600">Supabase PostgreSQL</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Supabase PostgreSQL
+            </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Total Records
             </label>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {schoolStats.total_students + schoolStats.total_teachers} pengguna
               total
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Tahun Ajaran
             </label>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {schoolSettings.academic_year}
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Nama Sekolah
             </label>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {schoolSettings.school_name}
             </p>
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Detail Records
             </label>
-            <div className="flex gap-4 text-xs text-gray-600">
-              <span>👨‍🏫 {schoolStats.total_teachers} guru</span>
-              <span>👨‍🎓 {schoolStats.total_students} siswa</span>
-              <span>🏫 SMP Muslimin Cililin</span>
+            <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
+              <span className="flex items-center gap-1">
+                👨‍🏫 {schoolStats.total_teachers} guru
+              </span>
+              <span className="flex items-center gap-1">
+                👨‍🎓 {schoolStats.total_students} siswa
+              </span>
+              <span className="flex items-center gap-1">
+                🏫 SMP Muslimin Cililin
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       {/* ✅ Improvement Notes */}
-      <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
-        <h4 className="text-sm font-semibold text-green-800 mb-2">
+      <div className="mt-6 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
+        <h4 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2">
           ✅ Improvements Applied
         </h4>
-        <ul className="text-xs text-green-700 space-y-1 list-disc list-inside">
+        <ul className="text-xs text-green-700 dark:text-green-400 space-y-1 list-disc list-inside">
           <li>
-            <strong>Added all missing tables:</strong> cleanup_history &
+            <strong>Added all missing tables:</strong> cleanup_history &amp;
             spmb_settings
           </li>
           <li>

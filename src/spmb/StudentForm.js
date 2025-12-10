@@ -656,68 +656,70 @@ const StudentForm = ({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
-        <i className="fas fa-file-alt text-blue-600"></i>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800 dark:text-gray-200 flex items-center gap-2 sm:gap-3">
+        <i className="fas fa-file-alt text-blue-600 dark:text-blue-400 text-lg sm:text-xl"></i>
         Form Pendaftaran SMP Muslimin Cililin
       </h2>
 
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-4 mb-6 flex items-center gap-3">
-        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-        <span className="text-blue-800">
-          <i className="fas fa-shield-alt"></i> Sistem Terhubung Ke Database -
-          Data Aman
+      <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+        <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 dark:bg-blue-400 rounded-full animate-pulse flex-shrink-0"></div>
+        <span className="text-blue-800 dark:text-blue-300 text-xs sm:text-sm">
+          <i className="fas fa-shield-alt mr-1"></i>
+          Sistem Terhubung Ke Database - Data Aman
         </span>
       </div>
 
       {formSuccess && (
-        <div className="bg-gradient-to-r from-green-100 to-green-50 text-green-800 p-4 rounded-xl border-l-4 border-green-500 mb-6 animate-slide-down">
-          <i className="fas fa-check-circle"></i> Data berhasil disimpan dan
-          siswa diterima!
+        <div className="bg-gradient-to-r from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/30 text-green-800 dark:text-green-300 p-3 sm:p-4 rounded-xl border-l-4 border-green-500 dark:border-green-600 mb-4 sm:mb-6 animate-slide-down">
+          <i className="fas fa-check-circle mr-2"></i>
+          Data berhasil disimpan dan siswa diterima!
         </div>
       )}
 
       {showDuplicateWarning && duplicateInfo && (
-        <div className="bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 rounded-xl p-4 mb-6 flex items-center gap-3 animate-slide-down">
-          <i className="fas fa-exclamation-triangle text-yellow-600"></i>
-          <span className="text-yellow-800 flex-1">
+        <div className="bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-300 dark:border-yellow-700 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 animate-slide-down">
+          <i className="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-lg flex-shrink-0"></i>
+          <span className="text-yellow-800 dark:text-yellow-300 text-sm flex-1">
             Nama serupa "{duplicateInfo.student.nama_lengkap}" sudah terdaftar!
             ({Math.round(duplicateInfo.similarity * 100)}% kemiripan)
           </span>
-          <button
-            className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-            onClick={viewDuplicate}>
-            Lihat Data
-          </button>
-          <button
-            className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors ml-2"
-            onClick={continueAnyway}>
-            Tetap Simpan
-          </button>
+          <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+            <button
+              className="bg-blue-600 dark:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex-1 sm:flex-none min-h-[40px]"
+              onClick={viewDuplicate}>
+              Lihat Data
+            </button>
+            <button
+              className="bg-green-600 dark:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 dark:hover:bg-green-600 transition-colors flex-1 sm:flex-none min-h-[40px]"
+              onClick={continueAnyway}>
+              Tetap Simpan
+            </button>
+          </div>
         </div>
       )}
 
       <div
-        className={`text-center font-bold mb-4 p-2 rounded-lg ${
+        className={`text-center font-bold mb-3 sm:mb-4 p-2 rounded-lg ${
           editingStudent
-            ? "bg-orange-100 text-orange-800"
-            : "bg-blue-100 text-blue-800"
+            ? "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300"
+            : "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
         }`}>
-        <i className={`fas ${editingStudent ? "fa-edit" : "fa-plus"}`}></i>
+        <i className={`fas ${editingStudent ? "fa-edit" : "fa-plus"} mr-2`}></i>
         Mode:{" "}
         {editingStudent
           ? `Edit Data - ${editingStudent.nama_lengkap}`
           : "Tambah Data Baru"}
       </div>
 
-      <div className="sm:hidden bg-white rounded-lg p-4 mb-6 border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
+      <div className="sm:hidden bg-white dark:bg-gray-800 rounded-lg p-3 mb-4 border border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between items-center mb-3">
           {steps.map((step, index) => (
             <div key={step.number} className="flex flex-col items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
                   currentStep >= step.number
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-500"
+                    ? "bg-blue-500 dark:bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                 }`}>
                 {currentStep > step.number ? (
                   <i className="fas fa-check text-xs"></i>
@@ -725,28 +727,30 @@ const StudentForm = ({
                   step.number
                 )}
               </div>
-              <span className="text-xs mt-1 text-gray-600">{step.title}</span>
+              <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">
+                {step.title}
+              </span>
             </div>
           ))}
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
           <div
-            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            className="bg-blue-500 dark:bg-blue-600 h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${(currentStep / steps.length) * 100}%` }}></div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {(currentStep === 1 || window.innerWidth >= 640) && (
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-            <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
-              <i className="fas fa-user"></i>
+          <div className="bg-blue-50 dark:bg-gray-800 border-l-4 border-blue-400 dark:border-blue-600 p-3 sm:p-4 rounded-r-lg">
+            <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+              <i className="fas fa-user text-blue-600 dark:text-blue-400"></i>
               Data Calon Siswa SMP
             </h3>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-gray-700 font-semibold mb-2">
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                   Nama Lengkap <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -755,17 +759,17 @@ const StudentForm = ({
                   onChange={(e) =>
                     updateFormData("nama_lengkap", e.target.value)
                   }
-                  className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                  className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                   placeholder="Masukkan nama lengkap sesuai akta kelahiran"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Jenis Kelamin <span className="text-red-500">*</span>
-                    <small className="block text-gray-500 font-normal">
+                    <small className="block text-gray-500 dark:text-gray-400 font-normal text-xs sm:text-sm">
                       Pilih jenis kelamin siswa
                     </small>
                   </label>
@@ -774,18 +778,20 @@ const StudentForm = ({
                     onChange={(e) =>
                       updateFormData("jenis_kelamin", e.target.value)
                     }
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none"
                     required>
-                    <option value="">Pilih Jenis Kelamin</option>
+                    <option value="" className="text-gray-400">
+                      Pilih Jenis Kelamin
+                    </option>
                     <option value="Laki-laki">Laki-laki</option>
                     <option value="Perempuan">Perempuan</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     NISN (Opsional)
-                    <small className="block text-gray-500 font-normal">
+                    <small className="block text-gray-500 dark:text-gray-400 font-normal text-xs sm:text-sm">
                       Kosongkan jika belum memiliki NISN
                     </small>
                   </label>
@@ -793,16 +799,16 @@ const StudentForm = ({
                     type="text"
                     value={formData.nisn}
                     onChange={(e) => updateFormData("nisn", e.target.value)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                     placeholder="10 digit NISN"
                     maxLength="10"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Tempat Lahir <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -811,14 +817,14 @@ const StudentForm = ({
                     onChange={(e) =>
                       updateFormData("tempat_lahir", e.target.value)
                     }
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                     placeholder="Kota kelahiran"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Tanggal Lahir <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -828,7 +834,7 @@ const StudentForm = ({
                       updateFormData("tanggal_lahir", e.target.value)
                     }
                     onInput={(e) => formatDateInput(e.target)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                     placeholder="DD-MM-YYYY"
                     maxLength="10"
                     required
@@ -837,9 +843,9 @@ const StudentForm = ({
               </div>
 
               <div>
-                <label className="block text-gray-700 font-semibold mb-2">
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                   Asal Sekolah Dasar (SD)
-                  <small className="block text-gray-500 font-normal">
+                  <small className="block text-gray-500 dark:text-gray-400 font-normal text-xs sm:text-sm">
                     Nama SD asal calon siswa
                   </small>
                 </label>
@@ -849,7 +855,7 @@ const StudentForm = ({
                   onChange={(e) =>
                     updateFormData("asal_sekolah", e.target.value)
                   }
-                  className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                  className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                   placeholder="Nama SD asal"
                 />
               </div>
@@ -858,16 +864,16 @@ const StudentForm = ({
         )}
 
         {(currentStep === 2 || window.innerWidth >= 640) && (
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-            <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
-              <i className="fas fa-users"></i>
+          <div className="bg-blue-50 dark:bg-gray-800 border-l-4 border-blue-400 dark:border-blue-600 p-3 sm:p-4 rounded-r-lg">
+            <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+              <i className="fas fa-users text-blue-600 dark:text-blue-400"></i>
               Data Orang Tua/Wali
             </h3>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Nama Ayah
                   </label>
                   <input
@@ -876,28 +882,28 @@ const StudentForm = ({
                     onChange={(e) =>
                       updateFormData("nama_ayah", e.target.value)
                     }
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                     placeholder="Nama lengkap ayah"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Nama Ibu
                   </label>
                   <input
                     type="text"
                     value={formData.nama_ibu}
                     onChange={(e) => updateFormData("nama_ibu", e.target.value)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                     placeholder="Nama lengkap ibu"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Pekerjaan Ayah
                   </label>
                   <select
@@ -905,8 +911,10 @@ const StudentForm = ({
                     onChange={(e) =>
                       updateFormData("pekerjaan_ayah", e.target.value)
                     }
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1">
-                    <option value="">Pilih Pekerjaan</option>
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none">
+                    <option value="" className="text-gray-400">
+                      Pilih Pekerjaan
+                    </option>
                     {pekerjaanListAyah.map((pekerjaan) => (
                       <option key={pekerjaan} value={pekerjaan}>
                         {pekerjaan}
@@ -921,7 +929,7 @@ const StudentForm = ({
                       onChange={(e) =>
                         updateFormData("pekerjaan_ayah_lainnya", e.target.value)
                       }
-                      className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1 mt-2"
+                      className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none mt-2"
                       placeholder="Sebutkan pekerjaan lainnya"
                       required
                     />
@@ -929,7 +937,7 @@ const StudentForm = ({
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Pekerjaan Ibu
                   </label>
                   <select
@@ -937,8 +945,10 @@ const StudentForm = ({
                     onChange={(e) =>
                       updateFormData("pekerjaan_ibu", e.target.value)
                     }
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1">
-                    <option value="">Pilih Pekerjaan</option>
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none">
+                    <option value="" className="text-gray-400">
+                      Pilih Pekerjaan
+                    </option>
                     {pekerjaanListIbu.map((pekerjaan) => (
                       <option key={pekerjaan} value={pekerjaan}>
                         {pekerjaan}
@@ -953,7 +963,7 @@ const StudentForm = ({
                       onChange={(e) =>
                         updateFormData("pekerjaan_ibu_lainnya", e.target.value)
                       }
-                      className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1 mt-2"
+                      className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none mt-2"
                       placeholder="Sebutkan pekerjaan lainnya"
                       required
                     />
@@ -961,9 +971,9 @@ const StudentForm = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Pendidikan Ayah
                   </label>
                   <select
@@ -971,8 +981,10 @@ const StudentForm = ({
                     onChange={(e) =>
                       updateFormData("pendidikan_ayah", e.target.value)
                     }
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1">
-                    <option value="">Pilih Pendidikan</option>
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none">
+                    <option value="" className="text-gray-400">
+                      Pilih Pendidikan
+                    </option>
                     <option value="SD/Sederajat">SD/Sederajat</option>
                     <option value="SMP/Sederajat">SMP/Sederajat</option>
                     <option value="SMA/Sederajat">SMA/Sederajat</option>
@@ -983,7 +995,7 @@ const StudentForm = ({
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     Pendidikan Ibu
                   </label>
                   <select
@@ -991,8 +1003,10 @@ const StudentForm = ({
                     onChange={(e) =>
                       updateFormData("pendidikan_ibu", e.target.value)
                     }
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1">
-                    <option value="">Pilih Pendidikan</option>
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none">
+                    <option value="" className="text-gray-400">
+                      Pilih Pendidikan
+                    </option>
                     <option value="SD/Sederajat">SD/Sederajat</option>
                     <option value="SMP/Sederajat">SMP/Sederajat</option>
                     <option value="SMA/Sederajat">SMA/Sederajat</option>
@@ -1004,27 +1018,27 @@ const StudentForm = ({
               </div>
 
               <div>
-                <label className="block text-gray-700 font-semibold mb-2">
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                   No. HP Orang Tua <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.no_hp}
                   onChange={(e) => updateFormData("no_hp", e.target.value)}
-                  className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                  className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                   placeholder="Contoh: 081234567890"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-700 font-semibold mb-2">
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                   Alamat Lengkap <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={formData.alamat}
                   onChange={(e) => updateFormData("alamat", e.target.value)}
-                  className="w-full p-4 border-2 border-gray-200 rounded-xl text-base transition-all duration-300 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-200 focus:outline-none focus:-translate-y-1"
+                  className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none resize-none"
                   rows="3"
                   placeholder="Alamat lengkap tempat tinggal"
                   required
@@ -1034,12 +1048,12 @@ const StudentForm = ({
           </div>
         )}
 
-        <div className="flex gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-3 sm:pt-4">
           {window.innerWidth < 640 && currentStep > 1 && (
             <button
               type="button"
               onClick={prevStep}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-400 text-white p-4 rounded-xl font-semibold text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl flex items-center justify-center gap-3">
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
               <i className="fas fa-arrow-left"></i>
               Kembali
             </button>
@@ -1049,7 +1063,7 @@ const StudentForm = ({
             <button
               type="button"
               onClick={nextStep}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-400 text-white p-4 rounded-xl font-semibold text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl flex items-center justify-center gap-3">
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
               Lanjut
               <i className="fas fa-arrow-right"></i>
             </button>
@@ -1060,23 +1074,25 @@ const StudentForm = ({
               <button
                 type="button"
                 onClick={downloadWordTemplate}
-                className="flex-1 bg-gradient-to-r from-green-600 to-green-400 text-white p-4 rounded-xl font-semibold text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl flex items-center justify-center gap-3">
-                <i className="fas fa-file-download"></i>
-                Download Form
+                className="flex-1 bg-gradient-to-r from-green-600 to-green-400 dark:from-green-700 dark:to-green-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
+                <i className="fas fa-file-download text-sm sm:text-base"></i>
+                <span className="hidden sm:inline">Download Form</span>
+                <span className="sm:hidden">Download</span>
               </button>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-400 text-white p-4 rounded-xl font-semibold text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3">
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
                 {isLoading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Menyimpan...
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span className="hidden sm:inline">Menyimpan...</span>
+                    <span className="sm:hidden">Menyimpan...</span>
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-save"></i>
+                    <i className="fas fa-save text-sm sm:text-base"></i>
                     {editingStudent ? "Update Data" : "Simpan Data"}
                   </>
                 )}
@@ -1085,9 +1101,10 @@ const StudentForm = ({
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-300 text-white p-4 rounded-xl font-semibold text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl flex items-center justify-center gap-3">
-                <i className="fas fa-undo"></i>
-                Reset Form
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-300 dark:from-blue-600 dark:to-blue-400 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
+                <i className="fas fa-undo text-sm sm:text-base"></i>
+                <span className="hidden sm:inline">Reset Form</span>
+                <span className="sm:hidden">Reset</span>
               </button>
             </>
           )}

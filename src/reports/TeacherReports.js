@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Calendar,
   TrendingUp,
+  Download,
 } from "lucide-react";
 
 import { exportToExcel } from "./ReportExcel";
@@ -30,22 +31,49 @@ import {
 
 // ==================== CONSTANTS ====================
 
-// ✅ FIX: Tailwind color classes mapping
+// ✅ FIX: Tailwind color classes mapping with dark mode support
 const COLOR_CLASSES = {
-  indigo: { bg: "bg-indigo-100", text: "text-indigo-600" },
-  green: { bg: "bg-green-100", text: "text-green-600" },
-  blue: { bg: "bg-blue-100", text: "text-blue-600" },
-  purple: { bg: "bg-purple-100", text: "text-purple-600" },
-  cyan: { bg: "bg-cyan-100", text: "text-cyan-600" },
-  emerald: { bg: "bg-emerald-100", text: "text-emerald-600" },
-  yellow: { bg: "bg-yellow-100", text: "text-yellow-600" },
-  orange: { bg: "bg-orange-100", text: "text-orange-600" },
-  teal: { bg: "bg-teal-100", text: "text-teal-600" },
+  indigo: {
+    bg: "bg-indigo-100 dark:bg-indigo-900/30",
+    text: "text-indigo-600 dark:text-indigo-400",
+  },
+  green: {
+    bg: "bg-green-100 dark:bg-green-900/30",
+    text: "text-green-600 dark:text-green-400",
+  },
+  blue: {
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    text: "text-blue-600 dark:text-blue-400",
+  },
+  purple: {
+    bg: "bg-purple-100 dark:bg-purple-900/30",
+    text: "text-purple-600 dark:text-purple-400",
+  },
+  cyan: {
+    bg: "bg-cyan-100 dark:bg-cyan-900/30",
+    text: "text-cyan-600 dark:text-cyan-400",
+  },
+  emerald: {
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    text: "text-emerald-600 dark:text-emerald-400",
+  },
+  yellow: {
+    bg: "bg-yellow-100 dark:bg-yellow-900/30",
+    text: "text-yellow-600 dark:text-yellow-400",
+  },
+  orange: {
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+    text: "text-orange-600 dark:text-orange-400",
+  },
+  teal: {
+    bg: "bg-teal-100 dark:bg-teal-900/30",
+    text: "text-teal-600 dark:text-teal-400",
+  },
 };
 
 // ==================== COMPONENTS ====================
 
-// ✅ FIXED: StatCard with proper color classes
+// ✅ FIXED: StatCard with proper color classes and dark mode
 const StatCard = ({
   icon: Icon,
   label,
@@ -57,19 +85,33 @@ const StatCard = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm border ${
-        alert ? "border-red-300" : "border-slate-200"
-      } p-4 hover:shadow-md transition-shadow`}>
+      className={`
+        bg-white dark:bg-slate-800 
+        rounded-lg shadow-sm dark:shadow-none
+        border ${
+          alert
+            ? "border-red-300 dark:border-red-700"
+            : "border-slate-200 dark:border-slate-700"
+        } 
+        p-4 hover:shadow-md dark:hover:shadow-slate-900/50 transition-shadow
+        min-h-[110px] flex flex-col justify-center
+      `}>
       <div className="flex items-center gap-3">
         <div
-          className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
+          className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
           <Icon className={`w-6 h-6 ${colors.text}`} />
         </div>
-        <div className="flex-1">
-          <p className="text-sm text-slate-600">{label}</p>
-          <p className="text-2xl font-bold text-slate-800">{value}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+            {label}
+          </p>
+          <p className="text-2xl md:text-xl lg:text-2xl font-bold text-slate-800 dark:text-white truncate">
+            {value}
+          </p>
         </div>
-        {alert && <AlertTriangle className="w-5 h-5 text-red-500" />}
+        {alert && (
+          <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0" />
+        )}
       </div>
     </div>
   );
@@ -101,20 +143,39 @@ const FilterPanel = ({
   }, [filters]);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
+    <div
+      className="
+      bg-white dark:bg-slate-800 
+      rounded-lg shadow-sm dark:shadow-none
+      border border-slate-200 dark:border-slate-700 p-4 mb-6
+    ">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-slate-600" />
-          <h3 className="font-semibold text-slate-800">Filter Laporan</h3>
+          <Filter className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <h3 className="font-semibold text-slate-800 dark:text-white">
+            Filter Laporan
+          </h3>
           {activeFilterCount > 0 && (
-            <span className="ml-2 bg-indigo-100 text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-full">
-              {activeFilterCount} Filter Aktif
+            <span
+              className="
+              ml-2 bg-indigo-100 dark:bg-indigo-900/50 
+              text-indigo-600 dark:text-indigo-300 
+              text-xs font-bold px-2 py-1 rounded-full
+              min-h-[24px] min-w-[24px] flex items-center justify-center
+            ">
+              {activeFilterCount}
             </span>
           )}
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="text-slate-600 hover:text-slate-800">
+          className="
+            text-slate-600 dark:text-slate-400 
+            hover:text-slate-800 dark:hover:text-white
+            p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700
+            transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center
+          "
+          aria-label={isOpen ? "Tutup filter" : "Buka filter"}>
           <ChevronDown
             className={`w-5 h-5 transition-transform ${
               isOpen ? "rotate-180" : ""
@@ -124,16 +185,29 @@ const FilterPanel = ({
       </div>
 
       {isOpen && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-3 border-t border-slate-200">
+        <div
+          className="
+          pt-3 border-t border-slate-200 dark:border-slate-700
+          grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4
+        ">
           {subjectOptions.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+            <div className="sm:col-span-2 lg:col-span-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Mata Pelajaran
               </label>
               <select
                 value={filters.subject || ""}
                 onChange={(e) => onFilterChange("subject", e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                className="
+                  w-full px-3 py-2.5
+                  border border-slate-300 dark:border-slate-600
+                  rounded-lg 
+                  bg-white dark:bg-slate-700
+                  text-slate-800 dark:text-white
+                  focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
+                  focus:border-indigo-500 dark:focus:border-indigo-400
+                  text-sm
+                ">
                 <option value="">Semua Mapel</option>
                 {subjectOptions.map((subj) => (
                   <option key={subj} value={subj}>
@@ -146,13 +220,22 @@ const FilterPanel = ({
 
           {classOptions.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Kelas
               </label>
               <select
                 value={filters.class_id || ""}
                 onChange={(e) => onFilterChange("class_id", e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                className="
+                  w-full px-3 py-2.5
+                  border border-slate-300 dark:border-slate-600
+                  rounded-lg 
+                  bg-white dark:bg-slate-700
+                  text-slate-800 dark:text-white
+                  focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
+                  focus:border-indigo-500 dark:focus:border-indigo-400
+                  text-sm
+                ">
                 <option value="">Semua Kelas</option>
                 {classOptions.map((cls) => (
                   <option key={cls} value={cls}>
@@ -164,13 +247,22 @@ const FilterPanel = ({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Tahun Ajaran
             </label>
             <select
               value={filters.academic_year || ""}
               onChange={(e) => onFilterChange("academic_year", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+              className="
+                w-full px-3 py-2.5
+                border border-slate-300 dark:border-slate-600
+                rounded-lg 
+                bg-white dark:bg-slate-700
+                text-slate-800 dark:text-white
+                focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
+                focus:border-indigo-500 dark:focus:border-indigo-400
+                text-sm
+              ">
               <option value="">Semua Tahun</option>
               {academicYears.map((year) => (
                 <option key={year} value={year}>
@@ -181,47 +273,84 @@ const FilterPanel = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Semester
             </label>
             <select
               value={filters.semester || ""}
               onChange={(e) => onFilterChange("semester", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+              className="
+                w-full px-3 py-2.5
+                border border-slate-300 dark:border-slate-600
+                rounded-lg 
+                bg-white dark:bg-slate-700
+                text-slate-800 dark:text-white
+                focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
+                focus:border-indigo-500 dark:focus:border-indigo-400
+                text-sm
+              ">
               <option value="">Semua Semester</option>
               <option value="1">Semester 1</option>
               <option value="2">Semester 2</option>
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Dari Tanggal
             </label>
             <input
               type="date"
               value={filters.start_date || ""}
               onChange={(e) => onFilterChange("start_date", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="
+                w-full px-3 py-2.5
+                border border-slate-300 dark:border-slate-600
+                rounded-lg 
+                bg-white dark:bg-slate-700
+                text-slate-800 dark:text-white
+                focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
+                focus:border-indigo-500 dark:focus:border-indigo-400
+                text-sm
+              "
             />
           </div>
 
-          <div className="md:col-span-2 lg:col-span-1">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+          <div className="sm:col-span-2 lg:col-span-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Sampai Tanggal
             </label>
             <input
               type="date"
               value={filters.end_date || ""}
               onChange={(e) => onFilterChange("end_date", e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="
+                w-full px-3 py-2.5
+                border border-slate-300 dark:border-slate-600
+                rounded-lg 
+                bg-white dark:bg-slate-700
+                text-slate-800 dark:text-white
+                focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
+                focus:border-indigo-500 dark:focus:border-indigo-400
+                text-sm
+              "
             />
           </div>
 
-          <div className="flex items-end md:col-span-3 lg:col-span-4">
+          <div className="sm:col-span-2 lg:col-span-3 xl:col-span-4 flex items-end">
             <button
               onClick={onReset}
-              className="w-full px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
+              className="
+                w-full px-4 py-3
+                bg-slate-200 dark:bg-slate-700
+                hover:bg-slate-300 dark:hover:bg-slate-600
+                text-slate-700 dark:text-slate-300
+                rounded-lg font-medium 
+                flex items-center justify-center gap-2
+                transition-colors
+                text-sm
+                min-h-[44px]
+              ">
               <X className="w-4 h-4" />
               Reset Filter
             </button>
@@ -839,15 +968,17 @@ const TeacherReports = ({ user }) => {
     },
   ];
 
-  // ✅ FIX: Loading state
+  // ✅ FIX: Loading state dengan dark mode
   if (loading && !stats.totalClasses) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-slate-600">Memuat data...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
+              <p className="text-slate-600 dark:text-slate-400">
+                Memuat data...
+              </p>
             </div>
           </div>
         </div>
@@ -856,50 +987,102 @@ const TeacherReports = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-6 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <FileText className="w-8 h-8 text-indigo-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-slate-800">
-                Laporan - Guru Mata Pelajaran
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                {user.full_name} - {stats.subject || "Mata Pelajaran"}
-              </p>
+        {/* Header - Tanpa Dark Mode Toggle */}
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                w-10 h-10 md:w-12 md:h-12 
+                bg-indigo-100 dark:bg-indigo-900/50 
+                rounded-lg flex items-center justify-center flex-shrink-0
+              ">
+                <FileText className="w-5 h-5 md:w-6 md:h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="min-w-0">
+                <h1
+                  className="
+                  text-xl md:text-2xl lg:text-3xl 
+                  font-bold text-slate-800 dark:text-white 
+                  leading-tight
+                ">
+                  Laporan - Guru Mata Pelajaran
+                </h1>
+                <p
+                  className="
+                  text-xs md:text-sm 
+                  text-slate-500 dark:text-slate-400 mt-1
+                  truncate
+                ">
+                  {user.full_name} - {stats.subject || "Mata Pelajaran"}
+                </p>
+              </div>
             </div>
           </div>
-          <p className="text-slate-600">
+
+          <p
+            className="
+            text-sm md:text-base 
+            text-slate-600 dark:text-slate-400
+            leading-relaxed
+          ">
             Kelola laporan nilai akhir dan kehadiran siswa di kelas yang Anda
             ajar
           </p>
         </div>
 
+        {/* Success Message */}
         {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+          <div
+            className="
+            bg-green-100 dark:bg-green-900/30 
+            border border-green-400 dark:border-green-700 
+            text-green-700 dark:text-green-400 
+            px-4 py-3 rounded-lg mb-6 
+            flex items-center justify-between
+          ">
             <span className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
-              {success}
+              <span className="text-sm">{success}</span>
             </span>
             <button
               onClick={() => setSuccess(null)}
-              className="text-green-800 hover:text-green-900 font-bold">
+              className="
+                text-green-800 dark:text-green-300 
+                hover:text-green-900 dark:hover:text-green-200 
+                font-bold text-lg
+                min-h-[32px] min-w-[32px] flex items-center justify-center
+              ">
               ×
             </button>
           </div>
         )}
 
+        {/* Error Message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <div
+            className="
+            bg-red-100 dark:bg-red-900/30 
+            border border-red-400 dark:border-red-700 
+            text-red-700 dark:text-red-400 
+            px-4 py-3 rounded-lg mb-6
+          ">
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                {error}
+                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
               </span>
               <button
                 onClick={() => setError(null)}
-                className="text-red-800 hover:text-red-900 font-bold">
+                className="
+                  text-red-800 dark:text-red-300 
+                  hover:text-red-900 dark:hover:text-red-200 
+                  font-bold text-lg
+                  ml-2 flex-shrink-0
+                  min-h-[32px] min-w-[32px] flex items-center justify-center
+                ">
                 ×
               </button>
             </div>
@@ -908,14 +1091,34 @@ const TeacherReports = ({ user }) => {
 
         {/* ✅ FIX: Empty state for no assignments */}
         {teacherAssignments.length === 0 && (
-          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-8">
+          <div
+            className="
+            bg-yellow-50 dark:bg-yellow-900/20 
+            border-2 border-yellow-200 dark:border-yellow-700 
+            rounded-lg p-4 md:p-6 mb-6 md:mb-8
+          ">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-yellow-900 mb-2">
+              <AlertTriangle
+                className="
+                w-5 h-5 md:w-6 md:h-6 
+                text-yellow-600 dark:text-yellow-400 
+                mt-0.5 flex-shrink-0
+              "
+              />
+              <div className="flex-1 min-w-0">
+                <h3
+                  className="
+                  font-semibold 
+                  text-yellow-900 dark:text-yellow-300 
+                  mb-2 text-sm md:text-base
+                ">
                   Belum Ada Penugasan Kelas
                 </h3>
-                <p className="text-sm text-yellow-800">
+                <p
+                  className="
+                  text-xs md:text-sm 
+                  text-yellow-800 dark:text-yellow-400
+                ">
                   Anda belum memiliki penugasan mata pelajaran. Silakan hubungi
                   admin untuk setup penugasan kelas dan mata pelajaran.
                 </p>
@@ -924,7 +1127,13 @@ const TeacherReports = ({ user }) => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Stats Grid - Responsive */}
+        <div
+          className="
+          grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 
+          gap-3 md:gap-4 lg:gap-6 
+          mb-6 md:mb-8
+        ">
           <StatCard
             icon={BookOpen}
             label="Mata Pelajaran"
@@ -951,7 +1160,8 @@ const TeacherReports = ({ user }) => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Secondary Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6 mb-6 md:mb-8">
           <StatCard
             icon={FileText}
             label="Total Nilai Akhir"
@@ -966,6 +1176,7 @@ const TeacherReports = ({ user }) => {
           />
         </div>
 
+        {/* Filter Panel */}
         {subjectOptions.length > 0 && (
           <FilterPanel
             filters={filters}
@@ -977,15 +1188,36 @@ const TeacherReports = ({ user }) => {
           />
         )}
 
+        {/* Alert Students */}
         {alertStudents.length > 0 && (
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 mb-8">
+          <div
+            className="
+            bg-orange-50 dark:bg-orange-900/20 
+            border-2 border-orange-200 dark:border-orange-700 
+            rounded-lg p-4 md:p-6 mb-6 md:mb-8
+          ">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-6 h-6 text-orange-600 mt-1" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-orange-900 mb-2">
+              <AlertTriangle
+                className="
+                w-5 h-5 md:w-6 md:h-6 
+                text-orange-600 dark:text-orange-400 
+                mt-0.5 flex-shrink-0
+              "
+              />
+              <div className="flex-1 min-w-0">
+                <h3
+                  className="
+                  font-semibold 
+                  text-orange-900 dark:text-orange-300 
+                  mb-2 text-sm md:text-base
+                ">
                   🎯 Siswa Perlu Perhatian Khusus
                 </h3>
-                <p className="text-sm text-orange-800 mb-3">
+                <p
+                  className="
+                  text-xs md:text-sm 
+                  text-orange-800 dark:text-orange-400 mb-3
+                ">
                   Siswa dengan nilai akhir di bawah KKM (75) - perlu bimbingan
                   tambahan
                 </p>
@@ -993,23 +1225,35 @@ const TeacherReports = ({ user }) => {
                   {alertStudents.map((student, idx) => (
                     <div
                       key={idx}
-                      className="bg-white p-3 rounded-lg border border-orange-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">
+                      className="
+                        bg-white dark:bg-slate-800 
+                        p-3 rounded-lg 
+                        border border-orange-200 dark:border-orange-700
+                      ">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p
+                            className="
+                            text-sm font-medium 
+                            text-slate-800 dark:text-white 
+                            truncate
+                          ">
                             {student.name} ({student.nis}) - {student.class_id}
                           </p>
-                          <p className="text-xs text-slate-600">
+                          <p className="text-xs text-slate-600 dark:text-slate-400">
                             Nilai Akhir: {student.avgScore}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex-shrink-0">
                           <span
-                            className={`text-lg font-bold ${
-                              student.avgScore < 60
-                                ? "text-red-600"
-                                : "text-orange-600"
-                            }`}>
+                            className={`
+                              text-lg font-bold 
+                              ${
+                                student.avgScore < 60
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-orange-600 dark:text-orange-400"
+                              }
+                            `}>
                             {student.avgScore}
                           </span>
                         </div>
@@ -1022,7 +1266,13 @@ const TeacherReports = ({ user }) => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Reports Grid - Responsive dengan touch targets yang lebih besar */}
+        <div
+          className="
+          grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 
+          gap-3 md:gap-4 
+          mb-6 md:mb-8
+        ">
           {reports.map((report) => {
             const Icon = report.icon;
             const isDownloading = downloadingReportId === report.id;
@@ -1031,31 +1281,71 @@ const TeacherReports = ({ user }) => {
             return (
               <div
                 key={report.id}
-                className={`bg-white rounded-lg shadow-sm border-2 border-${report.color}-200 p-4 hover:shadow-md transition-all duration-200`}>
+                className={`
+                  bg-white dark:bg-slate-800 
+                  rounded-lg shadow-sm dark:shadow-none
+                  border border-slate-200 dark:border-slate-700
+                  p-4 hover:shadow-md dark:hover:shadow-slate-900/50 
+                  transition-all duration-200
+                  flex flex-col
+                  min-h-[200px]
+                `}>
                 <div className="flex items-start justify-between mb-3">
                   <div
-                    className={`w-11 h-11 rounded-xl ${colors.bg} flex items-center justify-center flex-shrink-0`}>
-                    <Icon className={`w-5 h-5 ${colors.text}`} />
+                    className={`
+                      w-10 h-10 md:w-11 md:h-11 
+                      rounded-xl ${colors.bg} 
+                      flex items-center justify-center flex-shrink-0
+                    `}>
+                    <Icon className={`w-5 h-5 md:w-5 md:h-5 ${colors.text}`} />
                   </div>
                 </div>
 
-                <h3 className="text-sm font-semibold text-slate-800 mb-1.5 leading-tight">
+                <h3
+                  className="
+                  text-sm md:text-sm 
+                  font-semibold text-slate-800 dark:text-white 
+                  mb-1.5 leading-tight
+                  line-clamp-2
+                ">
                   {report.title}
                 </h3>
 
-                <p className="text-xs text-slate-600 mb-2 leading-tight line-clamp-2">
+                <p
+                  className="
+                  text-xs text-slate-600 dark:text-slate-400 
+                  mb-2 leading-tight line-clamp-2
+                  flex-grow
+                ">
                   {report.description}
                 </p>
 
-                <p className="text-xs text-slate-500 mb-3 font-medium">
+                <p
+                  className="
+                  text-xs text-slate-500 dark:text-slate-500 
+                  mb-3 font-medium
+                ">
                   {report.stats}
                 </p>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 mt-auto">
                   <button
                     onClick={() => previewReport(report.id)}
                     disabled={loading || downloadingReportId}
-                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:bg-gray-300 text-slate-700 px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                    className="
+                      w-full 
+                      bg-slate-100 dark:bg-slate-700 
+                      hover:bg-slate-200 dark:hover:bg-slate-600 
+                      disabled:bg-gray-300 dark:disabled:bg-gray-700 
+                      text-slate-700 dark:text-slate-300 
+                      disabled:text-gray-500 dark:disabled:text-gray-400
+                      px-2.5 py-2.5 md:py-2
+                      rounded-lg 
+                      text-xs font-medium 
+                      flex items-center justify-center gap-1.5 
+                      transition-colors
+                      min-h-[44px]
+                    ">
                     <Eye className="w-3.5 h-3.5" />
                     {loading ? "Memuat..." : "Preview"}
                   </button>
@@ -1067,9 +1357,29 @@ const TeacherReports = ({ user }) => {
                       isDownloading ||
                       (downloadingReportId && !isDownloading)
                     }
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    {isDownloading ? "Exporting..." : "Export"}
+                    className="
+                      w-full 
+                      bg-green-600 hover:bg-green-700 
+                      disabled:bg-gray-400 dark:disabled:bg-gray-600 
+                      text-white 
+                      px-2.5 py-2.5 md:py-2
+                      rounded-lg 
+                      text-xs font-medium 
+                      flex items-center justify-center gap-1.5 
+                      transition-colors
+                      min-h-[44px]
+                    ">
+                    {isDownloading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white mr-1.5"></div>
+                        Exporting...
+                      </>
+                    ) : (
+                      <>
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                        Export
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1077,37 +1387,64 @@ const TeacherReports = ({ user }) => {
           })}
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+        {/* Information Section */}
+        <div
+          className="
+          bg-white dark:bg-slate-800 
+          rounded-lg shadow-sm dark:shadow-none
+          border border-slate-200 dark:border-slate-700 
+          p-4 md:p-6 mb-6
+        ">
+          <h3
+            className="
+            text-lg font-semibold 
+            text-slate-800 dark:text-white 
+            mb-4 flex items-center gap-2
+          ">
             📊 Informasi Laporan
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             <div>
-              <h4 className="font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <h4
+                className="
+                font-medium text-slate-700 dark:text-slate-300 
+                mb-2 flex items-center gap-2 text-sm md:text-base
+              ">
                 <FileSpreadsheet className="w-4 h-4" />
                 Format File
               </h4>
-              <p className="text-sm text-slate-600">
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
                 Laporan tersedia dalam format Excel dengan styling profesional
                 dan summary statistik.
               </p>
             </div>
             <div>
-              <h4 className="font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <h4
+                className="
+                font-medium text-slate-700 dark:text-slate-300 
+                mb-2 flex items-center gap-2 text-sm md:text-base
+              ">
                 <BookOpen className="w-4 h-4" />
                 Cakupan Data
               </h4>
-              <p className="text-sm text-slate-600">
-                Laporan mencakup data <strong>nilai akhir</strong> dan kehadiran
-                siswa di kelas yang Anda ajar.
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
+                Laporan mencakup data{" "}
+                <strong className="text-slate-800 dark:text-white">
+                  nilai akhir
+                </strong>{" "}
+                dan kehadiran siswa di kelas yang Anda ajar.
               </p>
             </div>
             <div>
-              <h4 className="font-medium text-slate-700 mb-2 flex items-center gap-2">
+              <h4
+                className="
+                font-medium text-slate-700 dark:text-slate-300 
+                mb-2 flex items-center gap-2 text-sm md:text-base
+              ">
                 <Eye className="w-4 h-4" />
                 Preview & Filter
               </h4>
-              <p className="text-sm text-slate-600">
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
                 Gunakan filter untuk menyaring data. Klik "Preview" untuk
                 melihat data sebelum export.
               </p>
@@ -1115,14 +1452,35 @@ const TeacherReports = ({ user }) => {
           </div>
         </div>
 
-        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+        {/* Tips Section */}
+        <div
+          className="
+          bg-indigo-50 dark:bg-indigo-900/30 
+          border border-indigo-200 dark:border-indigo-700 
+          rounded-lg p-4 md:p-5 mb-6
+        ">
           <div className="flex gap-3">
-            <div className="text-indigo-600 text-xl">💡</div>
+            <div
+              className="
+              text-indigo-600 dark:text-indigo-400 
+              text-xl flex-shrink-0 mt-0.5
+            ">
+              💡
+            </div>
             <div>
-              <h4 className="font-medium text-indigo-900 mb-1">
+              <h4
+                className="
+                font-medium text-indigo-900 dark:text-indigo-300 
+                mb-2 text-sm md:text-base
+              ">
                 Tips Penggunaan:
               </h4>
-              <ul className="text-sm text-indigo-700 space-y-1">
+              <ul
+                className="
+                text-xs md:text-sm 
+                text-indigo-700 dark:text-indigo-400 
+                space-y-1.5
+              ">
                 <li>
                   • <strong>Laporan Nilai Akhir</strong> untuk export data nilai
                   akhir mata pelajaran Anda
