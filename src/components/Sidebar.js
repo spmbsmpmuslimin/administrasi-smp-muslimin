@@ -138,7 +138,7 @@ const Sidebar = ({
                 <div className="text-base sm:text-lg font-bold text-white dark:text-gray-100 leading-tight">
                   SMP MUSLIMIN
                 </div>
-                <div className="text-base sm:text-lg font-bold text-white dark:text-gray-100 leading-tight mt-1">
+                <div className="text-base sm:text-lg font-bold text-white dark:text-gray-100 leading-tight">
                   CILILIN
                 </div>
               </div>

@@ -222,16 +222,9 @@ const TeacherAttendance = ({ user }) => {
             {/* Content */}
             <div className="p-6">
               <p className="text-gray-700 dark:text-gray-200 text-center text-lg font-medium mb-6">
-                Anda Belum Melakukan Presensi Hari Ini. Silakan Lakukan Presensi
-                Sekarang.
+                Anda Memiliki Jadwal Mengajar Hari Ini. Silakan Lakukan Presensi
+                Untuk Mencatat Kehadiran Anda.
               </p>
-
-              <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-400 p-4 rounded-lg mb-6">
-                <p className="text-blue-800 dark:text-blue-200 text-sm">
-                  <strong>📋 Info:</strong> Anda Memiliki Jadwal Mengajar Hari
-                  Ini. Silakan Lakukan Presensi Untuk Mencatat Kehadiran Anda.
-                </p>
-              </div>
 
               <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-400 p-4 rounded-lg mb-6">
                 <p className="text-amber-800 dark:text-amber-200 text-sm">
