@@ -172,13 +172,15 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             return;
           }
 
-          // ⚠️ WARNING JADWAL (DICOMMENT)
+          // ⚠️ WARNING JADWAL (PINDAH KE SINI - SEBELUM GET TEACHER_ID!)
           // if (validation.data.warnings && validation.data.warnings.length > 0) {
           //   const warningMessages = validation.data.warnings
           //     .map((warn) => warn.message)
           //     .join("\n\n");
+          //
           //   const confirmMessage = `⚠️ Perhatian!\n\n${warningMessages}\n\nTetap lanjutkan presensi?`;
           //   const confirmed = window.confirm(confirmMessage);
+          //
           //   if (!confirmed) {
           //     setLoading(false);
           //     return;
@@ -474,7 +476,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
               onChange={(e) =>
                 handleChange("teacherId", e.target.value || null)
               }
-              className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-all">
+              className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
               <option value="">-- Pilih Guru --</option>
               {teachersList.map((teacher) => (
                 <option key={teacher.teacher_id} value={teacher.teacher_id}>
@@ -488,34 +490,23 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           </div>
         )}
 
-        {/* 🎨 ENHANCED DATE PICKER */}
         <div>
           <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-            <Calendar size={18} className="text-blue-600 dark:text-blue-400" />
+            <Calendar size={18} className="text-gray-600 dark:text-gray-400" />
             Tanggal Presensi
           </label>
-          <div className="relative">
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleChange("date", e.target.value)}
-              max={isAdmin ? undefined : today}
-              required
-              className="w-full px-4 py-3 sm:py-4 pr-12 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium text-base transition-all hover:border-gray-400 dark:hover:border-gray-500 cursor-pointer"
-              style={{
-                colorScheme: "light dark",
-              }}
-            />
-            <Calendar
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
-              size={20}
-            />
-          </div>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+          <input
+            type="date"
+            value={formData.date}
+            onChange={(e) => handleChange("date", e.target.value)}
+            max={isAdmin ? undefined : today}
+            required
+            className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          />
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
             {isAdmin
-              ? "Admin dapat memilih tanggal kapan saja"
-              : "Bisa pilih tanggal mundur untuk input presensi yang terlupa"}
+              ? "* Admin dapat memilih tanggal kapan saja"
+              : "* Bisa pilih tanggal mundur untuk input presensi yang terlupa"}
           </p>
         </div>
 
@@ -549,28 +540,18 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           )}
         </div>
 
-        {/* 🎨 ENHANCED TIME PICKER */}
         <div>
           <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-            <Clock size={18} className="text-blue-600 dark:text-blue-400" />
+            <Clock size={18} className="text-gray-600 dark:text-gray-400" />
             Jam Masuk
           </label>
-          <div className="relative">
-            <input
-              type="time"
-              value={formData.clockIn}
-              onChange={(e) => handleChange("clockIn", e.target.value)}
-              required
-              className="w-full px-4 py-3 sm:py-4 pr-12 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium text-base transition-all hover:border-gray-400 dark:hover:border-gray-500 cursor-pointer"
-              style={{
-                colorScheme: "light dark",
-              }}
-            />
-            <Clock
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
-              size={20}
-            />
-          </div>
+          <input
+            type="time"
+            value={formData.clockIn}
+            onChange={(e) => handleChange("clockIn", e.target.value)}
+            required
+            className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          />
         </div>
 
         <div>
@@ -582,7 +563,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             onChange={(e) => handleChange("notes", e.target.value)}
             rows={3}
             placeholder="Contoh: Sakit demam, Ada keperluan keluarga, dll..."
-            className="w-full px-4 py-3 sm:py-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none transition-all hover:border-gray-400 dark:hover:border-gray-500"
+            className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
           />
         </div>
 
@@ -593,7 +574,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             isAdmin
               ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
               : "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
-          } disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]`}>
+          } disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
           {loading ? (
             <>
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -617,7 +598,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             : "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
         } border rounded-lg p-4 sm:p-5`}>
         <p className="text-sm sm:text-base text-gray-800 dark:text-gray-300">
-          <strong>💡</strong>{" "}
+          <strong></strong>{" "}
           {isAdmin
             ? "Sebagai Admin, Anda dapat input presensi kapan saja tanpa batasan waktu. Pastikan mengisi catatan untuk audit trail."
             : "⏰ Jam Operasional Presensi Hanya Dapat Dilakukan Pada Pukul 07:00 - 14:00 WIB"}
@@ -637,31 +618,6 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         }
         .animate-fade-in {
           animation: fade-in 0.3s ease-out;
-        }
-
-        /* 🎨 Enhanced Date & Time Picker Styling */
-        input[type="date"]::-webkit-calendar-picker-indicator,
-        input[type="time"]::-webkit-calendar-picker-indicator {
-          cursor: pointer;
-          opacity: 0;
-          position: absolute;
-          right: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Better focus states */
-        input[type="date"]:focus,
-        input[type="time"]:focus {
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        /* Dark mode adjustments */
-        @media (prefers-color-scheme: dark) {
-          input[type="date"],
-          input[type="time"] {
-            color-scheme: dark;
-          }
         }
       `}</style>
     </div>

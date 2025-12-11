@@ -50,21 +50,39 @@ function App() {
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
   const [whitelistUsers, setWhitelistUsers] = useState([]);
 
-  // 🌙 DARK MODE EFFECT - Save to localStorage
+  // 🌙 DARK MODE EFFECT - Optimized dengan requestAnimationFrame
   useEffect(() => {
-    localStorage.setItem("darkMode", darkMode);
-    // Update document class untuk global dark mode styling
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    // Delay state update untuk smooth transition
+    requestAnimationFrame(() => {
+      localStorage.setItem("darkMode", darkMode);
+
+      if (darkMode) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    });
   }, [darkMode]);
 
-  // 🌙 TOGGLE DARK MODE HANDLER
+  // 🌙 TOGGLE DARK MODE HANDLER - Optimized dengan debounce
+  const [isTogglingDarkMode, setIsTogglingDarkMode] = useState(false);
+
   const handleToggleDarkMode = useCallback(() => {
-    setDarkMode((prev) => !prev);
-  }, []);
+    // Prevent spam toggle
+    if (isTogglingDarkMode) return;
+
+    setIsTogglingDarkMode(true);
+
+    // Toggle dengan slight delay untuk smooth transition
+    requestAnimationFrame(() => {
+      setDarkMode((prev) => !prev);
+
+      // Reset toggle lock after transition
+      setTimeout(() => {
+        setIsTogglingDarkMode(false);
+      }, 300);
+    });
+  }, [isTogglingDarkMode]);
 
   // ========== 1. CHECK MAINTENANCE STATUS ==========
   useEffect(() => {
