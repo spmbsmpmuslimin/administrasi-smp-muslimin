@@ -229,7 +229,8 @@ const TeacherAttendance = ({ user }) => {
               <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-400 p-4 rounded-lg mb-6">
                 <p className="text-amber-800 dark:text-amber-200 text-sm">
                   <strong>⏰ Batas Waktu:</strong> Input Presensi Tersedia
-                  Sampai Jam 14:00. Pastikan Anda Presensi Sebelum Batas Waktu!
+                  Sampai Jam 14:00 WIB. Pastikan Anda Presensi Sebelum Batas
+                  Waktu!
                 </p>
               </div>
 

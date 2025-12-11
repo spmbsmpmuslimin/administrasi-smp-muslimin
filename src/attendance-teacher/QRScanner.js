@@ -276,19 +276,17 @@ const QRScanner = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         }
 
         // ⚠️ Tampilkan warning jika ada (jadwal terlambat)
-        if (validation.data.warnings && validation.data.warnings.length > 0) {
-          const warningMessages = validation.data.warnings
-            .map((warn) => warn.message)
-            .join("\n\n");
-
-          const confirmMessage = `⚠️ Perhatian!\n\n${warningMessages}\n\nTetap lanjutkan presensi?`;
-          const confirmed = window.confirm(confirmMessage);
-
-          if (!confirmed) {
-            setLoading(false);
-            return;
-          }
-        }
+        // if (validation.data.warnings && validation.data.warnings.length > 0) {
+        //   const warningMessages = validation.data.warnings
+        //     .map((warn) => warn.message)
+        //     .join("\n\n");
+        //   const confirmMessage = `⚠️ Perhatian!\n\n${warningMessages}\n\nTetap lanjutkan presensi?`;
+        //   const confirmed = window.confirm(confirmMessage);
+        //   if (!confirmed) {
+        //     setLoading(false);
+        //     return;
+        //   }
+        // }
 
         // Log validation success
         console.log("✅ Validation passed:", validation.data);
@@ -632,7 +630,6 @@ const QRScanner = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           </button>
         </div>
       )}
-
       {loading && (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
@@ -641,7 +638,6 @@ const QRScanner = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           </p>
         </div>
       )}
-
       {scanning && (
         <div className="space-y-4">
           <div
@@ -655,21 +651,8 @@ const QRScanner = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           </button>
         </div>
       )}
-
       {/* Info */}
       <div className="space-y-3 sm:space-y-4">
-        <div
-          className={`${
-            isAdmin
-              ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
-              : "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
-          } border rounded-lg p-4`}>
-          <p className="text-sm sm:text-base text-gray-800 dark:text-gray-300">
-            <strong>💡 Tips:</strong> Pastikan Pencahayaan Cukup dan QR Code
-            Terlihat Jelas, atau Pilih Screenshot/Foto QR Dari Galeri
-          </p>
-        </div>
-
         {!isAdmin && (
           <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start gap-3">
             <Clock
@@ -684,7 +667,6 @@ const QRScanner = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             </div>
           </div>
         )}
-
         {isAdmin && (
           <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
             <Shield
