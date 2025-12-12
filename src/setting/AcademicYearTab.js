@@ -12,8 +12,9 @@ import {
   Clock,
   PlayCircle,
   PauseCircle,
+  Trash2,
 } from "lucide-react";
-import Simulator from "./Simulator"; // Import simulator saja
+import Simulator from "./Simulator";
 
 const AcademicYearTab = ({
   user,
@@ -33,7 +34,6 @@ const AcademicYearTab = ({
     inProgress: false,
   });
 
-  // ✅ State untuk semester
   const [semesters, setSemesters] = useState([]);
   const [showAddSemester, setShowAddSemester] = useState(false);
   const [newSemester, setNewSemester] = useState({
@@ -43,7 +43,6 @@ const AcademicYearTab = ({
     end_date: "",
   });
 
-  // Default config jika schoolConfig belum loaded
   const config = {
     schoolName: schoolConfig?.schoolName || "SMP Muslimin Cililin",
     schoolLevel: schoolConfig?.schoolLevel || "SMP",
@@ -62,10 +61,9 @@ const AcademicYearTab = ({
 
   useEffect(() => {
     loadSchoolData();
-    loadSemesters(); // ✅ Load semester data
+    loadSemesters();
   }, []);
 
-  // ✅ Load semesters from database
   const loadSemesters = async () => {
     try {
       const { data, error } = await supabase
@@ -149,7 +147,6 @@ const AcademicYearTab = ({
     }
   };
 
-  // ✅ Add new semester
   const handleAddSemester = async () => {
     if (!newSemester.year || !newSemester.start_date || !newSemester.end_date) {
       showToast("Semua field harus diisi!", "error");
@@ -167,7 +164,7 @@ const AcademicYearTab = ({
             semester: parseInt(newSemester.semester),
             start_date: newSemester.start_date,
             end_date: newSemester.end_date,
-            is_active: false, // Default nonaktif dulu
+            is_active: false,
           },
         ])
         .select();
@@ -191,7 +188,6 @@ const AcademicYearTab = ({
     }
   };
 
-  // ✅ Activate semester (nonaktifkan yang lain)
   const handleActivateSemester = async (semesterId) => {
     const confirmed = window.confirm(
       "Aktifkan semester ini?\n\nSemester yang sedang aktif akan dinonaktifkan."
@@ -202,15 +198,13 @@ const AcademicYearTab = ({
     try {
       setLoading(true);
 
-      // 1. Nonaktifkan semua semester
       const { error: deactivateError } = await supabase
         .from("academic_years")
         .update({ is_active: false })
-        .neq("id", "00000000-0000-0000-0000-000000000000"); // Update all
+        .neq("id", "00000000-0000-0000-0000-000000000000");
 
       if (deactivateError) throw deactivateError;
 
-      // 2. Aktifkan semester yang dipilih
       const { error: activateError } = await supabase
         .from("academic_years")
         .update({ is_active: true })
@@ -228,7 +222,6 @@ const AcademicYearTab = ({
     }
   };
 
-  // ✅ Delete semester
   const handleDeleteSemester = async (semesterId, isActive) => {
     if (isActive) {
       showToast("❌ Tidak bisa menghapus semester yang sedang aktif!", "error");
@@ -306,7 +299,6 @@ const AcademicYearTab = ({
         }
       });
 
-      // ✅ Ambil target year dari SPMB settings
       const { data: spmb_settings } = await supabase
         .from("spmb_settings")
         .select("target_academic_year")
@@ -321,7 +313,7 @@ const AcademicYearTab = ({
         .from("siswa_baru")
         .select("*")
         .eq("is_transferred", false)
-        .eq("academic_year", targetYear) // ✅ Pakai targetYear dari SPMB settings
+        .eq("academic_year", targetYear)
         .not("kelas", "is", null);
 
       if (siswaBaruError) {
@@ -436,7 +428,6 @@ const AcademicYearTab = ({
   const executeYearTransition = async () => {
     const { preview } = yearTransition;
 
-    // ✅ RE-FETCH data terbaru untuk summary akurat
     const { data: latestSiswaBaruData } = await supabase
       .from("siswa_baru")
       .select("id", { count: "exact" })
@@ -449,7 +440,6 @@ const AcademicYearTab = ({
 
     const totalPromotions = Object.values(preview.promotions).flat().length;
 
-    // ✅ Warning kalo data berubah
     let warningMessage = "";
     if (latestSiswaBaruCount !== previewSiswaBaruCount) {
       warningMessage = `\n⚠️ PERHATIAN: Data siswa baru berubah!\n   Preview: ${previewSiswaBaruCount} siswa → Sekarang: ${latestSiswaBaruCount} siswa\n`;
@@ -508,7 +498,6 @@ const AcademicYearTab = ({
       }
 
       if (preview.newStudents.length > 0) {
-        // ✅ RE-FETCH data terbaru dari database (bukan pakai preview lama)
         const { data: latestSiswaBaruData, error: fetchError } = await supabase
           .from("siswa_baru")
           .select("*")
@@ -521,7 +510,6 @@ const AcademicYearTab = ({
         const totalLatest = latestSiswaBaruData?.length || 0;
         const totalPreview = preview.newStudents.length;
 
-        // ✅ Warning kalo data berubah, tapi tetep lanjut
         if (totalLatest !== totalPreview) {
           console.warn(
             `⚠️ Data siswa baru berubah: Preview ${totalPreview} → Sekarang ${totalLatest}`
@@ -538,7 +526,6 @@ const AcademicYearTab = ({
             "info"
           );
 
-          // ✅ Group by kelas (sesuai assignment di SPMB)
           const distributionByClass = {};
 
           latestSiswaBaruData.forEach((siswa) => {
@@ -549,7 +536,6 @@ const AcademicYearTab = ({
             distributionByClass[kelas].push(siswa);
           });
 
-          // ✅ Insert per kelas
           for (const [classId, siswaList] of Object.entries(
             distributionByClass
           )) {
@@ -571,7 +557,6 @@ const AcademicYearTab = ({
             if (insertError) throw insertError;
           }
 
-          // ✅ Update status di siswa_baru
           const siswaBaruIds = latestSiswaBaruData.map((s) => s.id);
 
           const { error: updateSiswaBaruError } = await supabase
@@ -632,39 +617,40 @@ const AcademicYearTab = ({
 
   return (
     <div className="p-3 sm:p-4 md:p-6 dark:bg-gray-900 min-h-screen">
-      <div className="mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+      {/* Header */}
+      <div className="mb-4 sm:mb-6 md:mb-8">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
+          <div className="p-1.5 sm:p-2 md:p-2.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <Calendar className="text-blue-600 dark:text-blue-400" size={20} />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100">
               Manajemen Tahun Ajaran
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               {config.schoolName} - {config.schoolLevel}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Current Academic Year */}
-      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-4 sm:p-6 rounded-lg mb-6 sm:mb-8 border border-blue-200 dark:border-blue-700">
+      {/* Current Academic Year Card */}
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-4 sm:p-5 md:p-6 rounded-xl mb-6 sm:mb-8 border border-blue-200 dark:border-blue-700 shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+            <div className="flex items-center gap-2 mb-2">
               <Calendar
                 className="text-blue-600 dark:text-blue-400"
-                size={16}
+                size={18}
               />
-              <h3 className="text-xs sm:text-sm font-medium text-blue-800 dark:text-blue-300">
+              <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
                 Tahun Ajaran Aktif
               </h3>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-blue-900 dark:text-blue-200 mb-1">
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-900 dark:text-blue-200 mb-2">
               {schoolStats.academic_year}
             </p>
-            <p className="text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
+            <p className="text-blue-700 dark:text-blue-400 text-sm">
               <span className="font-semibold">
                 {schoolStats.total_students}
               </span>{" "}
@@ -675,12 +661,12 @@ const AcademicYearTab = ({
               kelas
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-blue-200 dark:border-blue-700 w-full sm:w-auto">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-blue-200 dark:border-blue-600 w-full sm:w-auto">
             <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
                 Total Kelas
               </p>
-              <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {Object.keys(studentsByClass).length}
               </p>
             </div>
@@ -688,48 +674,45 @@ const AcademicYearTab = ({
         </div>
       </div>
 
-      {/* ✅ Semester Management Section */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+      {/* Semester Management */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 md:p-6 mb-6 sm:mb-8 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <Clock
-                className="text-purple-600 dark:text-purple-400"
-                size={16}
-              />
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200">
+              <Clock className="text-blue-600 dark:text-blue-400" size={18} />
+              <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
                 Manajemen Semester
               </h3>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Kelola semester dalam tahun ajaran aktif
             </p>
           </div>
 
           <button
             onClick={() => setShowAddSemester(!showAddSemester)}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition w-full sm:w-auto justify-center min-h-[44px]">
-            <Plus size={14} />
-            <span className="text-sm sm:text-base">Tambah Semester</span>
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium">
+            <Plus size={16} />
+            <span>Tambah Semester</span>
           </button>
         </div>
 
         {/* Active Semester Highlight */}
         {activeSemester && (
-          <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 p-3 sm:p-4 rounded-lg mb-4 border border-purple-200 dark:border-purple-700">
-            <div className="flex items-center gap-2 sm:gap-3">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg mb-5 border border-blue-200 dark:border-blue-600">
+            <div className="flex items-center gap-3">
               <PlayCircle
-                className="text-purple-600 dark:text-purple-400"
+                className="text-blue-600 dark:text-blue-400"
                 size={20}
               />
               <div className="flex-1">
-                <p className="text-xs sm:text-sm text-purple-700 dark:text-purple-300 font-medium">
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
                   Semester Aktif Sekarang
                 </p>
-                <p className="text-base sm:text-lg font-bold text-purple-900 dark:text-purple-200">
+                <p className="text-lg font-bold text-blue-900 dark:text-blue-200">
                   {activeSemester.year} - Semester {activeSemester.semester}
                 </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                   {new Date(activeSemester.start_date).toLocaleDateString(
                     "id-ID",
                     {
@@ -755,13 +738,13 @@ const AcademicYearTab = ({
 
         {/* Add Semester Form */}
         {showAddSemester && (
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4 border border-gray-200 dark:border-gray-600">
-            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-sm sm:text-base">
+          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-5 border border-gray-200 dark:border-gray-600">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-4">
               Tambah Semester Baru
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div className="sm:col-span-2">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tahun Ajaran
                 </label>
                 <input
@@ -771,12 +754,12 @@ const AcademicYearTab = ({
                   onChange={(e) =>
                     setNewSemester({ ...newSemester, year: e.target.value })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm sm:text-base"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Semester
                 </label>
                 <select
@@ -787,14 +770,14 @@ const AcademicYearTab = ({
                       semester: parseInt(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm sm:text-base appearance-none">
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                   <option value={1}>Semester 1</option>
                   <option value={2}>Semester 2</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tanggal Mulai
                 </label>
                 <input
@@ -806,12 +789,12 @@ const AcademicYearTab = ({
                       start_date: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm sm:text-base"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tanggal Selesai
                 </label>
                 <input
@@ -820,16 +803,16 @@ const AcademicYearTab = ({
                   onChange={(e) =>
                     setNewSemester({ ...newSemester, end_date: e.target.value })
                   }
-                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm sm:text-base"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleAddSemester}
                 disabled={loading}
-                className="px-4 py-2.5 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 disabled:opacity-50 font-medium transition text-sm sm:text-base min-h-[44px]">
+                className="px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]">
                 Simpan Semester
               </button>
               <button
@@ -842,7 +825,7 @@ const AcademicYearTab = ({
                     end_date: "",
                   });
                 }}
-                className="px-4 py-2.5 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 font-medium transition text-sm sm:text-base min-h-[44px]">
+                className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px]">
                 Batal
               </button>
             </div>
@@ -850,10 +833,10 @@ const AcademicYearTab = ({
         )}
 
         {/* Semester List */}
-        <div className="space-y-2 sm:space-y-3">
+        <div className="space-y-3">
           {semesters.length === 0 ? (
-            <div className="text-center py-6 sm:py-8 text-gray-500 dark:text-gray-400">
-              <Clock size={40} className="mx-auto mb-2 opacity-50" />
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <Clock size={40} className="mx-auto mb-3 opacity-50" />
               <p className="text-sm">Belum ada data semester</p>
               <p className="text-xs mt-1">
                 Klik "Tambah Semester" untuk memulai
@@ -863,36 +846,36 @@ const AcademicYearTab = ({
             semesters.map((semester) => (
               <div
                 key={semester.id}
-                className={`p-3 sm:p-4 rounded-lg border-2 transition ${
+                className={`p-4 rounded-lg border-2 transition ${
                   semester.is_active
-                    ? "bg-purple-50 dark:bg-purple-900/30 border-purple-300 dark:border-purple-600"
+                    ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600"
                     : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 }`}>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
-                  <div className="flex items-center gap-2 sm:gap-3 flex-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     {semester.is_active ? (
                       <PlayCircle
-                        className="text-purple-600 dark:text-purple-400"
-                        size={16}
+                        className="text-blue-600 dark:text-blue-400"
+                        size={20}
                       />
                     ) : (
                       <PauseCircle
                         className="text-gray-400 dark:text-gray-500"
-                        size={16}
+                        size={20}
                       />
                     )}
                     <div className="flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <span className="font-semibold text-gray-800 dark:text-gray-100">
                           {semester.year} - Semester {semester.semester}
                         </span>
                         {semester.is_active && (
-                          <span className="px-2 py-0.5 bg-purple-600 dark:bg-purple-700 text-white text-xs rounded-full font-medium self-start sm:self-center">
+                          <span className="px-3 py-1 bg-blue-600 dark:bg-blue-700 text-white text-xs rounded-full font-medium">
                             AKTIF
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         {new Date(semester.start_date).toLocaleDateString(
                           "id-ID",
                           {
@@ -914,12 +897,12 @@ const AcademicYearTab = ({
                     </div>
                   </div>
 
-                  <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     {!semester.is_active && (
                       <button
                         onClick={() => handleActivateSemester(semester.id)}
                         disabled={loading}
-                        className="px-3 py-1.5 bg-purple-600 dark:bg-purple-700 text-white text-xs sm:text-sm rounded hover:bg-purple-700 dark:hover:bg-purple-600 disabled:opacity-50 transition flex-1 sm:flex-none min-h-[36px]">
+                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none">
                         Aktifkan
                       </button>
                     )}
@@ -929,7 +912,7 @@ const AcademicYearTab = ({
                           handleDeleteSemester(semester.id, semester.is_active)
                         }
                         disabled={loading}
-                        className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs sm:text-sm rounded hover:bg-red-200 dark:hover:bg-red-800 disabled:opacity-50 transition flex-1 sm:flex-none min-h-[36px]">
+                        className="px-4 py-2.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none">
                         Hapus
                       </button>
                     )}
@@ -942,23 +925,23 @@ const AcademicYearTab = ({
       </div>
 
       {/* Students by Grade */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {["7", "8", "9"].map((grade) => {
           const totalStudents = studentsByGrade[grade] || 0;
 
           return (
             <div
               key={grade}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
-              <div className="flex items-center justify-between mb-1 sm:mb-2">
-                <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-bold text-gray-800 dark:text-gray-100">
                   Kelas {grade}
                 </h4>
-                <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {totalStudents}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {totalStudents === 0
                   ? "Belum ada siswa"
                   : `${totalStudents} siswa aktif`}
@@ -969,74 +952,74 @@ const AcademicYearTab = ({
       </div>
 
       {/* Year Transition */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 md:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
           <div className="flex-1">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
               Transisi Tahun Ajaran
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru
               Dari SPMB)
             </p>
           </div>
 
           {!yearTransition.preview && (
-            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+            <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={generateYearTransitionPreview}
                 disabled={loading}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition w-full sm:w-auto justify-center min-h-[44px]">
-                <Eye size={14} />
-                <span className="text-sm sm:text-base">Preview Naik Kelas</span>
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition w-full sm:w-auto min-h-[44px] font-medium">
+                <Eye size={16} />
+                <span>Preview Naik Kelas</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* 🟢🟢🟢 SIMULATOR PREVIEW OTOMATIS 🟢🟢🟢 */}
+        {/* Preview Section */}
         {yearTransition.preview && (
-          <div className="bg-gray-50 dark:bg-gray-700/30 p-4 sm:p-6 rounded-lg border border-gray-200 dark:border-gray-600">
-            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="bg-gray-50 dark:bg-gray-700/30 p-4 sm:p-5 md:p-6 rounded-xl border border-gray-200 dark:border-gray-600">
+            <div className="flex items-center gap-3 mb-6">
               <CheckCircle
                 className="text-green-600 dark:text-green-500"
-                size={20}
+                size={24}
               />
               <div>
-                <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+                <h4 className="font-bold text-gray-800 dark:text-gray-100">
                   Preview Transisi Tahun Ajaran
                 </h4>
-                <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   {yearTransition.preview.currentYear} →{" "}
                   {yearTransition.preview.newYear}
                 </p>
               </div>
             </div>
 
-            {/* NIS CONFLICT WARNING */}
+            {/* NIS Conflict Warning */}
             {yearTransition.preview.conflictedNIS?.length > 0 && (
-              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4">
-                <div className="flex items-start gap-2 sm:gap-3">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-5">
+                <div className="flex items-start gap-3">
                   <AlertTriangle
                     className="text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5"
-                    size={14}
+                    size={18}
                   />
                   <div className="flex-1">
-                    <p className="text-red-800 dark:text-red-300 font-medium mb-2 text-sm sm:text-base">
+                    <p className="text-red-800 dark:text-red-300 font-bold mb-2">
                       ⚠️ Konflik NIS Terdeteksi!
                     </p>
-                    <p className="text-red-700 dark:text-red-400 text-xs sm:text-sm mb-2">
+                    <p className="text-red-700 dark:text-red-400 text-sm mb-3">
                       {yearTransition.preview.conflictedNIS.length} siswa baru
                       memiliki NIS yang sudah terdaftar:
                     </p>
-                    <ul className="text-red-700 dark:text-red-400 text-xs sm:text-sm space-y-1 list-disc list-inside max-h-32 overflow-y-auto">
+                    <ul className="text-red-700 dark:text-red-400 text-sm space-y-1 list-disc list-inside max-h-32 overflow-y-auto">
                       {yearTransition.preview.conflictedNIS.map((item, idx) => (
                         <li key={idx}>
                           {item.nama} (NIS: {item.nisn})
                         </li>
                       ))}
                     </ul>
-                    <p className="text-red-600 dark:text-red-500 text-xs mt-2 font-medium">
+                    <p className="text-red-600 dark:text-red-500 text-xs mt-3 font-medium">
                       Siswa ini TIDAK akan dimasukkan ke sistem. Perbaiki NIS di
                       SPMB terlebih dahulu!
                     </p>
@@ -1045,28 +1028,28 @@ const AcademicYearTab = ({
               </div>
             )}
 
-            {/* SIMULATOR PREVIEW AUTO-SHOW */}
+            {/* Simulator Preview */}
             <Simulator
-              mode="preview" // ✅ MODE PREVIEW = AUTO SHOW HASIL
+              mode="preview"
               preview={yearTransition.preview}
               schoolStats={schoolStats}
               config={config}
               loading={loading}
-              onSimulate={() => {}} // Kosong karena mode preview tidak perlu callback
+              onSimulate={() => {}}
             />
 
-            {/* Execute Button */}
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-3 sm:p-4 mt-4 sm:mt-6">
-              <div className="flex items-start gap-2 sm:gap-3">
+            {/* Execute Warning */}
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-4 sm:p-5 mt-6">
+              <div className="flex items-start gap-3">
                 <AlertTriangle
                   className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"
-                  size={16}
+                  size={20}
                 />
                 <div className="flex-1">
-                  <p className="text-yellow-900 dark:text-yellow-300 font-semibold mb-2 text-sm sm:text-base">
+                  <p className="text-yellow-900 dark:text-yellow-300 font-bold mb-3">
                     ⚠️ Peringatan: Tindakan Permanen
                   </p>
-                  <ul className="text-yellow-800 dark:text-yellow-400 text-xs sm:text-sm space-y-1 mb-3 sm:mb-4 list-disc list-inside">
+                  <ul className="text-yellow-800 dark:text-yellow-400 text-sm space-y-2 mb-4 list-disc list-inside">
                     <li>18 kelas baru akan dibuat (7A-7F, 8A-8F, 9A-9F)</li>
                     <li>Semua siswa akan naik kelas (7→8, 8→9)</li>
                     <li>
@@ -1080,19 +1063,19 @@ const AcademicYearTab = ({
                     </li>
                   </ul>
 
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={executeYearTransition}
                       disabled={loading || yearTransition.inProgress}
-                      className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 font-semibold transition text-sm sm:text-base min-h-[44px] justify-center">
+                      className="flex items-center justify-center gap-2 px-6 py-3.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-50 font-bold transition min-h-[44px]">
                       {yearTransition.inProgress ? (
                         <>
-                          <RefreshCw className="animate-spin" size={14} />
+                          <RefreshCw className="animate-spin" size={16} />
                           <span>Memproses...</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircle size={14} />
+                          <CheckCircle size={16} />
                           <span>Mulai Tahun Ajaran Baru</span>
                         </>
                       )}
@@ -1107,7 +1090,7 @@ const AcademicYearTab = ({
                         });
                       }}
                       disabled={yearTransition.inProgress}
-                      className="px-4 py-2.5 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 disabled:opacity-50 font-medium transition text-sm sm:text-base min-h-[44px]">
+                      className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]">
                       Batal
                     </button>
                   </div>

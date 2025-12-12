@@ -315,24 +315,24 @@ export const SimulationResults = ({
   } = data;
 
   return (
-    <div className="mt-6 bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4 sm:p-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div className="mt-4 sm:mt-6 bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-4 sm:p-6 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <BarChart3 className="text-blue-600 dark:text-blue-400" size={20} />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200">
+            <h3 className="text-sm sm:text-lg font-semibold text-gray-800 dark:text-gray-200">
               🧮 Hasil Analisis Simulasi
             </h3>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               {new Date(data.timestamp).toLocaleString("id-ID")}
             </p>
           </div>
         </div>
 
         <div
-          className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
+          className={`px-3 py-1.5 rounded-full text-xs font-medium min-h-[32px] flex items-center ${
             isValid
               ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
               : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
@@ -342,7 +342,7 @@ export const SimulationResults = ({
       </div>
 
       {/* STATISTIK UTAMA */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 p-3 sm:p-4 rounded-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp
@@ -361,53 +361,53 @@ export const SimulationResults = ({
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 p-3 sm:p-4 rounded-lg border border-green-200 dark:border-green-800">
+        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/10 p-3 sm:p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
           <div className="flex items-center gap-2 mb-2">
             <UserPlus
               size={14}
-              className="text-green-600 dark:text-green-400"
+              className="text-emerald-600 dark:text-emerald-400"
             />
-            <p className="text-xs font-medium text-green-700 dark:text-green-300">
+            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
               Siswa Baru
             </p>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-green-800 dark:text-green-200">
+          <p className="text-xl sm:text-2xl font-bold text-emerald-800 dark:text-emerald-200">
             {summary.totalNewStudents}
           </p>
-          <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
             Masuk kelas 7
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 p-3 sm:p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+        <div className="bg-gradient-to-br from-violet-50 to-violet-100 dark:from-violet-900/20 dark:to-violet-900/10 p-3 sm:p-4 rounded-lg border border-violet-200 dark:border-violet-800">
           <div className="flex items-center gap-2 mb-2">
             <School
               size={14}
-              className="text-purple-600 dark:text-purple-400"
+              className="text-violet-600 dark:text-violet-400"
             />
-            <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
+            <p className="text-xs font-medium text-violet-700 dark:text-violet-300">
               Siswa Lulus
             </p>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-purple-800 dark:text-purple-200">
+          <p className="text-xl sm:text-2xl font-bold text-violet-800 dark:text-violet-200">
             {summary.totalGraduated}
           </p>
-          <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+          <p className="text-xs text-violet-600 dark:text-violet-400 mt-1">
             Kelas 9
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 p-3 sm:p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+        <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 p-3 sm:p-4 rounded-lg border border-amber-200 dark:border-amber-800">
           <div className="flex items-center gap-2 mb-2">
-            <Users size={14} className="text-orange-600 dark:text-orange-400" />
-            <p className="text-xs font-medium text-orange-700 dark:text-orange-300">
+            <Users size={14} className="text-amber-600 dark:text-amber-400" />
+            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
               Total Aktif
             </p>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-orange-800 dark:text-orange-200">
+          <p className="text-xl sm:text-2xl font-bold text-amber-800 dark:text-amber-200">
             {summary.totalActiveAfter}
           </p>
-          <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
             {summary.netChange > 0 ? "+" : ""}
             {summary.netChange} dari sebelumnya
           </p>
@@ -432,7 +432,7 @@ export const SimulationResults = ({
             const statusColors = {
               low: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300",
               optimal:
-                "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
+                "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300",
               full: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
               high: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300",
             };
@@ -440,9 +440,9 @@ export const SimulationResults = ({
             return (
               <div
                 key={grade}
-                className="bg-white dark:bg-gray-700/30 p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                className="bg-white dark:bg-gray-700/30 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+                  <span className="font-bold text-gray-800 dark:text-gray-200">
                     Kelas {grade}
                   </span>
                   <span
@@ -455,7 +455,7 @@ export const SimulationResults = ({
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       Total Siswa
                     </span>
                     <span className="font-semibold text-gray-800 dark:text-gray-200">
@@ -463,7 +463,7 @@ export const SimulationResults = ({
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       Rata² per Kelas
                     </span>
                     <span className="font-semibold text-gray-800 dark:text-gray-200">
@@ -471,7 +471,7 @@ export const SimulationResults = ({
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       Status
                     </span>
                     <span
@@ -480,7 +480,7 @@ export const SimulationResults = ({
                           ? "text-orange-600 dark:text-orange-400"
                           : gradeData.status === "low"
                           ? "text-yellow-600 dark:text-yellow-400"
-                          : "text-green-600 dark:text-green-400"
+                          : "text-emerald-600 dark:text-emerald-400"
                       }`}>
                       {gradeData.status === "high"
                         ? "Padat"
@@ -501,9 +501,9 @@ export const SimulationResults = ({
       {/* DISTRIBUSI DETAIL */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 text-sm sm:text-base">
+          <h4 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <PieChart
-              className="text-purple-600 dark:text-purple-400"
+              className="text-violet-600 dark:text-violet-400"
               size={16}
             />
             Distribusi Per Kelas
@@ -512,7 +512,7 @@ export const SimulationResults = ({
             onClick={() =>
               setShowDetails((prev) => ({ ...prev, classes: !prev.classes }))
             }
-            className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 min-h-[32px]">
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 min-h-[44px] px-2">
             {showDetails.classes ? "Sembunyikan" : "Tampilkan"} Detail
             {showDetails.classes ? (
               <ChevronUp size={14} />
@@ -523,14 +523,14 @@ export const SimulationResults = ({
         </div>
 
         {showDetails.classes ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {classDistribution.map((cls) => {
               const statusColors = {
                 empty:
                   "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",
                 low: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800",
                 optimal:
-                  "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
+                  "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800",
                 full: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
                 high: "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
               };
@@ -546,11 +546,11 @@ export const SimulationResults = ({
               return (
                 <div
                   key={cls.class}
-                  className={`p-2 sm:p-3 rounded-lg border ${
+                  className={`p-3 rounded-lg border ${
                     statusColors[cls.status] || "bg-gray-50 dark:bg-gray-700/30"
                   }`}>
                   <div className="text-center">
-                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">
+                    <p className="font-bold text-gray-800 dark:text-gray-200">
                       {cls.class}
                     </p>
                     <p className="text-xl sm:text-2xl font-bold mt-1 text-gray-900 dark:text-gray-100">
@@ -567,7 +567,7 @@ export const SimulationResults = ({
                           ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
                           : cls.status === "empty"
                           ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
-                          : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                          : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
                       }`}>
                       {statusText[cls.status]}
                     </div>
@@ -577,8 +577,8 @@ export const SimulationResults = ({
             })}
           </div>
         ) : (
-          <div className="bg-gray-50 dark:bg-gray-700/30 p-3 sm:p-4 rounded-lg">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center">
+          <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
               {classDistribution.length} Kelas Terdeteksi. Klik "Tampilkan
               Detail" Untuk Melihat Distribusi Lengkap.
             </p>
@@ -588,8 +588,8 @@ export const SimulationResults = ({
 
       {/* INSIGHTS & REKOMENDASI */}
       {showRecommendations && recommendations && recommendations.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 mb-6">
-          <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-3 flex items-center gap-2 text-sm sm:text-base">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-3 flex items-center gap-2">
             <Hash className="text-blue-600 dark:text-blue-400" size={16} />
             Rekomendasi Sistem
           </h4>
@@ -597,7 +597,7 @@ export const SimulationResults = ({
             {recommendations.map((rec, idx) => (
               <div key={idx} className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5 flex-shrink-0"></div>
-                <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-300">
+                <p className="text-sm text-blue-800 dark:text-blue-300">
                   {rec}
                 </p>
               </div>
@@ -609,9 +609,9 @@ export const SimulationResults = ({
       {/* WARNING & INSIGHTS */}
       {(warnings.length > 0 || insights.length > 0) && (
         <div className="mb-6">
-          <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2 text-sm sm:text-base">
+          <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
             <AlertTriangle
-              className="text-yellow-600 dark:text-yellow-500"
+              className="text-amber-600 dark:text-amber-500"
               size={16}
             />
             Analisis Sistem
@@ -619,11 +619,11 @@ export const SimulationResults = ({
           <div className="space-y-3">
             {/* WARNINGS */}
             {warnings.length > 0 && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4">
-                <p className="font-medium text-red-800 dark:text-red-300 mb-2 text-sm sm:text-base">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <p className="font-medium text-red-800 dark:text-red-300 mb-2">
                   ⚠️ Perhatian Khusus
                 </p>
-                <ul className="text-xs sm:text-sm text-red-700 dark:text-red-300 space-y-1">
+                <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
                   {warnings.map((warning, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="mt-0.5 flex-shrink-0">•</span>
@@ -636,11 +636,11 @@ export const SimulationResults = ({
 
             {/* INSIGHTS */}
             {insights.length > 0 && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 sm:p-4">
-                <p className="font-medium text-yellow-800 dark:text-yellow-300 mb-2 text-sm sm:text-base">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <p className="font-medium text-amber-800 dark:text-amber-300 mb-2">
                   💡 Insight
                 </p>
-                <ul className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+                <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
                   {insights.map((insight, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="mt-0.5 flex-shrink-0">•</span>
@@ -656,15 +656,15 @@ export const SimulationResults = ({
 
       {/* STATUS VALIDASI */}
       <div
-        className={`p-3 sm:p-4 rounded-lg ${
+        className={`p-4 rounded-lg ${
           isValid
-            ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+            ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
             : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
         }`}>
         <div className="flex items-start sm:items-center gap-3">
           {isValid ? (
             <CheckCircle
-              className="text-green-600 dark:text-green-400 flex-shrink-0"
+              className="text-emerald-600 dark:text-emerald-400 flex-shrink-0"
               size={20}
             />
           ) : (
@@ -675,9 +675,9 @@ export const SimulationResults = ({
           )}
           <div>
             <p
-              className={`font-semibold text-sm sm:text-base ${
+              className={`font-semibold ${
                 isValid
-                  ? "text-green-800 dark:text-green-300"
+                  ? "text-emerald-800 dark:text-emerald-300"
                   : "text-red-800 dark:text-red-300"
               }`}>
               {isValid
@@ -685,9 +685,9 @@ export const SimulationResults = ({
                 : "⚠️ PERHATIAN - Ada Masalah Yang Perlu Ditinjau Sebelum Execute"}
             </p>
             <p
-              className={`text-xs sm:text-sm mt-1 ${
+              className={`text-sm mt-1 ${
                 isValid
-                  ? "text-green-700 dark:text-green-400"
+                  ? "text-emerald-700 dark:text-emerald-400"
                   : "text-red-700 dark:text-red-400"
               }`}>
               {isValid
@@ -703,7 +703,7 @@ export const SimulationResults = ({
         <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors text-sm sm:text-base min-h-[44px] flex-1">
+            className="px-4 py-2.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 font-medium transition-colors text-sm min-h-[44px] flex-1">
             Tutup
           </button>
         </div>
@@ -775,17 +775,17 @@ const Simulator = ({
   // Jika belum ada preview
   if (!preview) {
     return (
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 sm:p-4">
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
         <div className="flex items-start sm:items-center gap-3">
           <AlertTriangle
-            className="text-yellow-600 dark:text-yellow-500 flex-shrink-0"
+            className="text-amber-600 dark:text-amber-500 flex-shrink-0"
             size={20}
           />
           <div>
-            <p className="font-medium text-yellow-800 dark:text-yellow-300 text-sm sm:text-base">
+            <p className="font-medium text-amber-800 dark:text-amber-300">
               Belum ada preview transisi
             </p>
-            <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-400">
+            <p className="text-sm text-amber-700 dark:text-amber-400">
               Klik "Preview Naik Kelas" terlebih dahulu
             </p>
           </div>
@@ -798,17 +798,17 @@ const Simulator = ({
     <div className="mb-6">
       {/* TOMBOL SIMULASI */}
       {!simulationResult && (
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3 sm:p-4 mb-4">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 border-2 border-blue-300 dark:border-blue-700 rounded-xl p-4 sm:p-5 mb-4 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
-                <Zap className="text-blue-700 dark:text-blue-300" size={20} />
+              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                <Zap className="text-blue-600 dark:text-blue-300" size={20} />
               </div>
               <div>
-                <h3 className="font-semibold text-blue-900 dark:text-blue-200 text-base sm:text-lg">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-200 text-lg">
                   🧮 SIMULATOR TRANSIKSI DINAMIS
                 </h3>
-                <p className="text-blue-700 dark:text-blue-300 text-xs sm:text-sm">
+                <p className="text-blue-700 dark:text-blue-300 text-sm">
                   Analisis kebutuhan kelas dan distribusi siswa secara otomatis
                 </p>
               </div>
@@ -817,7 +817,7 @@ const Simulator = ({
             <button
               onClick={handleSimulate}
               disabled={isSimulating || loading}
-              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 dark:hover:from-blue-800 dark:hover:to-blue-900 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors shadow-md min-h-[44px] w-full sm:w-auto">
+              className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 dark:hover:from-blue-800 dark:hover:to-blue-900 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors shadow-md min-h-[44px] w-full sm:w-auto">
               {isSimulating ? (
                 <>
                   <RefreshCw className="animate-spin" size={16} />
@@ -833,7 +833,7 @@ const Simulator = ({
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm text-blue-800 dark:text-blue-300">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-blue-800 dark:text-blue-300">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
               <span>Analisis kapasitas kelas</span>
@@ -851,32 +851,32 @@ const Simulator = ({
       )}
 
       {/* STATUS PREVIEW */}
-      <div className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 mb-4">
+      <div className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
         <div className="flex items-center gap-3 mb-3">
           <Calendar className="text-gray-600 dark:text-gray-400" size={16} />
           <div>
-            <p className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+            <p className="font-medium text-gray-800 dark:text-gray-200">
               Preview Transisi
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {preview.currentYear} → {preview.newYear}
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-          <div className="bg-white dark:bg-gray-700/50 p-2 sm:p-3 rounded border border-gray-300 dark:border-gray-600">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white dark:bg-gray-700/50 p-3 rounded border border-gray-300 dark:border-gray-600">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Siswa Baru (Kelas 7)
             </p>
-            <p className="font-bold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+            <p className="font-bold text-gray-800 dark:text-gray-200">
               {preview.newStudents?.length || 0}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-700/50 p-2 sm:p-3 rounded border border-gray-300 dark:border-gray-600">
+          <div className="bg-white dark:bg-gray-700/50 p-3 rounded border border-gray-300 dark:border-gray-600">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Naik Kelas
             </p>
-            <p className="font-bold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+            <p className="font-bold text-gray-800 dark:text-gray-200">
               {Object.keys(preview.promotions || {}).length > 0
                 ? Object.values(preview.promotions || {}).reduce(
                     (total, arr) => total + arr.length,
@@ -885,15 +885,15 @@ const Simulator = ({
                 : 0}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-700/50 p-2 sm:p-3 rounded border border-gray-300 dark:border-gray-600">
+          <div className="bg-white dark:bg-gray-700/50 p-3 rounded border border-gray-300 dark:border-gray-600">
             <p className="text-xs text-gray-500 dark:text-gray-400">Lulus</p>
-            <p className="font-bold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+            <p className="font-bold text-gray-800 dark:text-gray-200">
               {preview.graduating?.length || 0}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-700/50 p-2 sm:p-3 rounded border border-gray-300 dark:border-gray-600">
+          <div className="bg-white dark:bg-gray-700/50 p-3 rounded border border-gray-300 dark:border-gray-600">
             <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
-            <p className="font-medium text-green-600 dark:text-green-400 text-sm sm:text-base">
+            <p className="font-medium text-emerald-600 dark:text-emerald-400">
               Preview Siap
             </p>
           </div>
@@ -911,15 +911,15 @@ const Simulator = ({
 
       {/* LOADING STATE */}
       {(isSimulating || loading) && !simulationResult && (
-        <div className="border-2 border-blue-300 dark:border-blue-700 border-dashed rounded-lg p-6 sm:p-8 text-center">
+        <div className="border-2 border-blue-300 dark:border-blue-700 border-dashed rounded-lg p-8 text-center">
           <RefreshCw
             className="animate-spin mx-auto text-blue-500 dark:text-blue-400"
             size={28}
           />
-          <p className="mt-3 font-medium text-blue-700 dark:text-blue-300 text-sm sm:text-base">
+          <p className="mt-3 font-medium text-blue-700 dark:text-blue-300">
             Menganalisis data transisi...
           </p>
-          <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 mt-1">
+          <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
             Menghitung distribusi, kapasitas, dan rekomendasi sistem
           </p>
         </div>
@@ -927,20 +927,20 @@ const Simulator = ({
 
       {/* EMPTY STATE - No preview */}
       {!preview && (
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/30 dark:to-gray-900/20 border-2 border-gray-300 dark:border-gray-700 rounded-lg p-6 sm:p-8 text-center">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/30 dark:to-gray-900/20 border-2 border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
           <BarChart3
             className="mx-auto text-gray-400 dark:text-gray-600"
             size={40}
           />
-          <h3 className="mt-4 text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-300">
+          <h3 className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
             Simulator Siap
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base">
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Hasil analisis akan muncul di sini setelah menjalankan simulasi.
           </p>
           <button
             disabled={true}
-            className="mt-4 px-4 sm:px-5 py-2 bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 rounded-lg font-medium cursor-not-allowed text-sm sm:text-base min-h-[44px]">
+            className="mt-4 px-5 py-2.5 bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 rounded-lg font-medium cursor-not-allowed min-h-[44px]">
             Butuh Preview Transisi
           </button>
         </div>

@@ -37,12 +37,13 @@ const Setting = ({ user, onShowToast }) => {
 
   // ✅ Handle URL parameter changes & smooth scroll
   useEffect(() => {
-    if (tabFromURL && tabFromURL !== activeTab) {
-      setActiveTab(tabFromURL);
+    const urlTab = searchParams.get("tab");
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
 
       // Smooth scroll to tab content with delay
       setTimeout(() => {
-        const element = document.getElementById(`${tabFromURL}-tab-content`);
+        const element = document.getElementById(`${urlTab}-tab-content`);
         if (element) {
           element.scrollIntoView({
             behavior: "smooth",
@@ -52,7 +53,7 @@ const Setting = ({ user, onShowToast }) => {
         }
       }, 150);
     }
-  }, [tabFromURL]);
+  }, [searchParams]); // 🔥 FIX: Depend on searchParams, bukan tabFromURL
 
   useEffect(() => {
     if (user) {
@@ -117,6 +118,13 @@ const Setting = ({ user, onShowToast }) => {
     }
   };
 
+  // ✅ Function to change tab dan persist ke URL
+  const changeTab = (tabId) => {
+    setActiveTab(tabId);
+    // Update URL tanpa page reload
+    window.history.replaceState(null, "", `/setting?tab=${tabId}`);
+  };
+
   // ✅ Tabs - hanya admin yang bisa akses Maintenance Mode
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
@@ -170,10 +178,10 @@ const Setting = ({ user, onShowToast }) => {
   // ✅ Loading state
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300 font-medium">
             Memuat pengaturan...
           </p>
         </div>
@@ -182,30 +190,30 @@ const Setting = ({ user, onShowToast }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-2 sm:p-4 lg:p-6 transition-colors duration-200">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 p-3 sm:p-4 lg:p-6 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         {/* ✅ BREADCRUMB - Responsive dengan Dark Mode */}
-        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 overflow-x-auto">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-5 overflow-x-auto">
           <button
             onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors whitespace-nowrap flex-shrink-0 p-1 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-            <Home size={14} className="sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">Dashboard</span>
+            className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap flex-shrink-0 p-2 sm:p-2.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95">
+            <Home size={16} className="sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline font-medium">Dashboard</span>
           </button>
           <ChevronRight
-            size={14}
+            size={16}
             className="text-gray-400 dark:text-gray-500 flex-shrink-0 sm:w-4 sm:h-4"
           />
-          <span className="text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">
+          <span className="text-blue-600 dark:text-blue-400 font-semibold whitespace-nowrap">
             Pengaturan
           </span>
           {activeTab !== "profile" && (
             <>
               <ChevronRight
-                size={14}
+                size={16}
                 className="text-gray-400 dark:text-gray-500 flex-shrink-0 sm:w-4 sm:h-4"
               />
-              <span className="text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap truncate">
+              <span className="text-blue-600 dark:text-blue-400 font-semibold whitespace-nowrap truncate">
                 {getCurrentTabLabel()}
               </span>
             </>
@@ -213,15 +221,17 @@ const Setting = ({ user, onShowToast }) => {
         </div>
 
         {/* ✅ Header - Responsive dengan Dark Mode */}
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <SettingsIcon className="text-blue-600 dark:text-blue-500 w-6 h-6 sm:w-7 sm:h-7" />
+        <div className="flex items-center justify-between mb-5 sm:mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="p-2.5 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white rounded-xl shadow-md">
+              <SettingsIcon className="w-6 h-6 sm:w-7 sm:h-7" />
+            </div>
             <div>
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-gray-100">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-gray-100">
                 Pengaturan Sistem
               </h1>
               {schoolConfig && (
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {schoolConfig.schoolName} - {schoolConfig.schoolLevel}
                 </p>
               )}
@@ -232,12 +242,12 @@ const Setting = ({ user, onShowToast }) => {
           {tabs.length > 1 && (
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="lg:hidden p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-95"
+              className="lg:hidden p-3.5 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all active:scale-95 shadow-sm"
               aria-label={showMobileMenu ? "Tutup menu" : "Buka menu"}>
               {showMobileMenu ? (
-                <X size={24} className="text-gray-600 dark:text-gray-300" />
+                <X size={24} className="text-gray-700 dark:text-gray-300" />
               ) : (
-                <Menu size={24} className="text-gray-600 dark:text-gray-300" />
+                <Menu size={24} className="text-gray-700 dark:text-gray-300" />
               )}
             </button>
           )}
@@ -253,17 +263,24 @@ const Setting = ({ user, onShowToast }) => {
               return (
                 <button
                   key={tab.id}
-                  className={`flex items-center gap-2 whitespace-nowrap py-3 px-4 font-medium text-sm transition-all duration-200 min-h-[44px] ${
+                  className={`flex items-center gap-3 whitespace-nowrap py-4 px-5 font-medium text-sm transition-all duration-200 min-h-[44px] relative ${
                     isActive
-                      ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/30 scale-105"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      ? "text-blue-600 dark:text-blue-400 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 border-b-2 border-blue-600 dark:border-blue-500 scale-105 shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   }`}
-                  onClick={() => setActiveTab(tab.id)}>
+                  onClick={() => changeTab(tab.id)}>
                   <IconComponent
-                    size={16}
-                    className={isActive ? "animate-pulse" : ""}
+                    size={18}
+                    className={`${
+                      isActive
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-gray-400 dark:text-gray-500"
+                    }`}
                   />
                   {tab.label}
+                  {isActive && (
+                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-blue-600 dark:bg-blue-500 rounded-t-lg"></div>
+                  )}
                 </button>
               );
             })}
@@ -272,8 +289,18 @@ const Setting = ({ user, onShowToast }) => {
 
         {/* ✅ Mobile/Tablet Tab Navigation - Dropdown style dengan Dark Mode */}
         {showMobileMenu && (
-          <div className="lg:hidden mb-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden animate-in slide-in-from-top duration-200 z-50 relative">
-            <div className="p-2">
+          <div className="lg:hidden mb-5 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-in slide-in-from-top duration-300 z-50 relative">
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-3 px-2">
+                <h3 className="font-bold text-gray-800 dark:text-gray-200 text-lg">
+                  Menu Pengaturan
+                </h3>
+                <button
+                  onClick={() => setShowMobileMenu(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <X size={20} className="text-gray-600 dark:text-gray-400" />
+                </button>
+              </div>
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -281,23 +308,32 @@ const Setting = ({ user, onShowToast }) => {
                 return (
                   <button
                     key={tab.id}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg font-medium text-sm transition-all min-h-[48px] ${
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl font-medium text-base transition-all min-h-[52px] my-1 ${
                       isActive
-                        ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        ? "text-blue-600 dark:text-blue-400 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-2 border-blue-500 dark:border-blue-600 shadow-sm"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent"
                     }`}
-                    onClick={() => setActiveTab(tab.id)}>
-                    <IconComponent
-                      size={18}
-                      className={
+                    onClick={() => changeTab(tab.id)}>
+                    <div
+                      className={`p-2 rounded-lg ${
                         isActive
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-gray-500 dark:text-gray-400"
-                      }
-                    />
-                    <span className="flex-1 text-left">{tab.label}</span>
+                          ? "bg-blue-100 dark:bg-blue-900/50"
+                          : "bg-gray-100 dark:bg-gray-700"
+                      }`}>
+                      <IconComponent
+                        size={20}
+                        className={
+                          isActive
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-gray-500 dark:text-gray-400"
+                        }
+                      />
+                    </div>
+                    <span className="flex-1 text-left font-semibold">
+                      {tab.label}
+                    </span>
                     {isActive && (
-                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-pulse"></div>
+                      <div className="w-2.5 h-2.5 bg-blue-600 dark:bg-blue-500 rounded-full animate-pulse"></div>
                     )}
                   </button>
                 );
@@ -307,8 +343,8 @@ const Setting = ({ user, onShowToast }) => {
         )}
 
         {/* ✅ Tablet Horizontal Scroll Tabs - Only on tablet dengan Dark Mode */}
-        <div className="lg:hidden block mb-4 overflow-x-auto scrollbar-hide">
-          <div className="flex min-w-max space-x-2 pb-2 px-1">
+        <div className="lg:hidden block mb-5 overflow-x-auto scrollbar-hide">
+          <div className="flex min-w-max space-x-3 pb-3 px-1">
             {tabs.map((tab) => {
               const IconComponent = tab.icon;
               const isActive = activeTab === tab.id;
@@ -316,20 +352,25 @@ const Setting = ({ user, onShowToast }) => {
               return (
                 <button
                   key={tab.id}
-                  className={`flex items-center gap-2 whitespace-nowrap py-3 px-4 rounded-lg font-medium text-xs sm:text-sm transition-all min-h-[44px] flex-shrink-0 ${
+                  className={`flex items-center gap-3 whitespace-nowrap py-3.5 px-4.5 rounded-xl font-medium text-sm transition-all min-h-[44px] flex-shrink-0 shadow-sm ${
                     isActive
-                      ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-600 dark:border-blue-500 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      ? "text-blue-600 dark:text-blue-400 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-2 border-blue-600 dark:border-blue-500"
+                      : "text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   }`}
-                  onClick={() => setActiveTab(tab.id)}>
+                  onClick={() => changeTab(tab.id)}>
                   <IconComponent
-                    size={16}
-                    className={isActive ? "animate-pulse" : ""}
+                    size={18}
+                    className={
+                      isActive
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-gray-500 dark:text-gray-400"
+                    }
                   />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">
-                    {tab.label.split(" ")[0]}{" "}
-                    {/* Hanya kata pertama di mobile */}
+                  <span className="hidden sm:inline font-semibold">
+                    {tab.label}
+                  </span>
+                  <span className="sm:hidden font-semibold">
+                    {tab.label.split(" ")[0]}
                   </span>
                 </button>
               );
@@ -340,7 +381,7 @@ const Setting = ({ user, onShowToast }) => {
         {/* ✅ Tab Content - Responsive padding dengan Dark Mode */}
         <div
           id={`${activeTab}-tab-content`}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900/30 transition-all duration-300 overflow-hidden">
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/30 transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700">
           {renderActiveTab()}
         </div>
       </div>
@@ -348,7 +389,7 @@ const Setting = ({ user, onShowToast }) => {
       {/* ✅ Overlay for mobile menu */}
       {showMobileMenu && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-40"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-40 backdrop-blur-sm transition-all"
           onClick={() => setShowMobileMenu(false)}></div>
       )}
     </div>

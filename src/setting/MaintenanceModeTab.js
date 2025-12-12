@@ -240,7 +240,7 @@ const MaintenanceModeTab = ({ showToast }) => {
     <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
-        <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-1 sm:mt-0" />
+        <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1 sm:mt-0" />
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
             Mode Maintenance
@@ -252,26 +252,26 @@ const MaintenanceModeTab = ({ showToast }) => {
       </div>
 
       {/* Status Badge */}
-      <div className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
+      <div className="p-3 sm:p-4 rounded-lg bg-blue-50 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+        <p className="text-xs sm:text-sm text-blue-700 dark:text-gray-400 mb-2">
           Status Aplikasi:
         </p>
         <div className="flex items-center gap-2">
           <div
             className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0 ${
               maintenanceMode
-                ? "bg-red-500 dark:bg-red-600 animate-pulse"
+                ? "bg-blue-600 dark:bg-red-600 animate-pulse"
                 : "bg-green-500 dark:bg-green-600"
             }`}></div>
           <span
             className={`font-bold text-base sm:text-lg ${
               maintenanceMode
-                ? "text-red-600 dark:text-red-400"
+                ? "text-blue-700 dark:text-red-400"
                 : "text-green-600 dark:text-green-400"
             }`}>
             {maintenanceMode ? "🔴 MAINTENANCE" : "🟢 AKTIF"}
           </span>
-          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+          <span className="text-xs text-blue-600 dark:text-gray-400 ml-2">
             {maintenanceMode
               ? `${whitelistUsers.length} user bisa akses`
               : "Semua user bisa akses"}
@@ -283,10 +283,10 @@ const MaintenanceModeTab = ({ showToast }) => {
       <div className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex-1">
-            <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base">
+            <p className="font-semibold text-blue-800 dark:text-gray-100 text-sm sm:text-base">
               Aktifkan Mode Maintenance
             </p>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-xs sm:text-sm text-blue-600 dark:text-gray-400 mt-1">
               Ketika diaktifkan, hanya user di whitelist + admin yang bisa akses
             </p>
           </div>
@@ -295,7 +295,7 @@ const MaintenanceModeTab = ({ showToast }) => {
             disabled={isSaving}
             className={`relative w-14 h-8 sm:w-16 sm:h-9 rounded-full transition-all flex-shrink-0 ${
               maintenanceMode
-                ? "bg-red-500 dark:bg-red-600"
+                ? "bg-blue-600 dark:bg-red-600"
                 : "bg-gray-300 dark:bg-gray-700"
             } ${
               isSaving
@@ -315,8 +315,8 @@ const MaintenanceModeTab = ({ showToast }) => {
 
       {/* Custom Message - hanya saat maintenance aktif */}
       {maintenanceMode && (
-        <div className="p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <div className="p-3 sm:p-4 bg-blue-50 dark:bg-amber-900/10 rounded-lg border border-blue-200 dark:border-amber-800">
+          <label className="block text-sm font-semibold text-blue-800 dark:text-gray-300 mb-2">
             📝 Pesan Maintenance
           </label>
           <textarea
@@ -324,10 +324,10 @@ const MaintenanceModeTab = ({ showToast }) => {
             onChange={handleMessageChange}
             rows="4"
             maxLength={500}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-600 resize-none text-sm min-h-[120px]"
+            className="w-full p-3 border border-blue-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-amber-600 resize-none text-sm min-h-[120px]"
             placeholder="Tulis pesan untuk user yang melihat halaman maintenance..."
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          <p className="text-xs text-blue-600 dark:text-gray-400 mt-2">
             {customMessage.length}/500 karakter
           </p>
         </div>
@@ -337,13 +337,13 @@ const MaintenanceModeTab = ({ showToast }) => {
       {maintenanceMode && (
         <div className="space-y-3 sm:space-y-4">
           {/* Add User Section dengan DROPDOWN */}
-          <div className="p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800">
+          <div className="p-3 sm:p-4 bg-blue-50 dark:bg-purple-900/10 rounded-lg border border-blue-200 dark:border-purple-800">
             <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-500 flex-shrink-0" />
-              <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-purple-500 flex-shrink-0" />
+              <h3 className="font-semibold text-blue-800 dark:text-gray-100 text-sm sm:text-base">
                 Whitelist User
               </h3>
-              <span className="ml-auto text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
+              <span className="ml-auto text-xs bg-blue-100 dark:bg-purple-900/40 text-blue-700 dark:text-purple-300 px-2 py-1 rounded-full">
                 {whitelistUsers.length} user
               </span>
             </div>
@@ -354,7 +354,7 @@ const MaintenanceModeTab = ({ showToast }) => {
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 disabled={loadingUsers}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 text-sm min-h-[44px] disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">
+                className="flex-1 px-3 py-2 border border-blue-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-purple-600 text-sm min-h-[44px] disabled:bg-blue-50 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">
                 <option value="">
                   {loadingUsers ? "Loading..." : "-- Pilih User --"}
                 </option>
@@ -367,14 +367,14 @@ const MaintenanceModeTab = ({ showToast }) => {
               <button
                 onClick={handleAddUserFromDropdown}
                 disabled={!selectedUserId || loadingUsers}
-                className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm font-medium min-h-[44px]">
+                className="px-4 py-2 bg-blue-600 dark:bg-purple-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-purple-600 transition disabled:bg-blue-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm font-medium min-h-[44px]">
                 <UserPlus className="w-4 h-4" />
                 <span>Tambah</span>
               </button>
             </div>
 
             {availableUsers.length === 0 && !loadingUsers && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+              <p className="text-xs text-blue-600 dark:text-gray-400 mt-2 text-center">
                 Semua user sudah ada di whitelist
               </p>
             )}
@@ -382,19 +382,19 @@ const MaintenanceModeTab = ({ showToast }) => {
 
           {/* Whitelisted Users - COLLAPSIBLE */}
           {whitelistUsers.length > 0 && (
-            <div className="p-3 sm:p-4 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="p-3 sm:p-4 bg-blue-50/70 dark:bg-green-900/10 rounded-lg border border-blue-200 dark:border-green-800">
               <button
                 onClick={() => setShowWhitelistDetails(!showWhitelistDetails)}
-                className="w-full flex items-center justify-between hover:bg-green-100 dark:hover:bg-green-900/20 p-2 rounded-lg transition min-h-[44px]">
+                className="w-full flex items-center justify-between hover:bg-blue-100 dark:hover:bg-green-900/20 p-2 rounded-lg transition min-h-[44px]">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base">
+                  <h3 className="font-semibold text-blue-800 dark:text-gray-100 text-sm sm:text-base">
                     ✅ User yang Diwhitelist
                   </h3>
-                  <span className="text-xs bg-green-200 dark:bg-green-900/40 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-blue-100 dark:bg-green-900/40 text-blue-700 dark:text-green-300 px-2 py-1 rounded-full">
                     {whitelistUsers.length} user
                   </span>
                 </div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
+                <span className="text-blue-600 dark:text-gray-400 text-xs">
                   {showWhitelistDetails ? "▲ Sembunyikan" : "▼ Tampilkan"}
                 </span>
               </button>
@@ -405,12 +405,12 @@ const MaintenanceModeTab = ({ showToast }) => {
                   {whitelistUsers.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-700">
+                      className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-green-700">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-800 dark:text-gray-100 truncate text-sm sm:text-base">
+                        <p className="font-medium text-blue-800 dark:text-gray-100 truncate text-sm sm:text-base">
                           {user.full_name}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        <p className="text-xs text-blue-600 dark:text-gray-400 truncate">
                           @{user.username}
                         </p>
                       </div>
@@ -431,19 +431,19 @@ const MaintenanceModeTab = ({ showToast }) => {
 
       {/* Preview */}
       {maintenanceMode && (
-        <div className="p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800">
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+        <div className="p-3 sm:p-4 bg-blue-50 dark:bg-purple-900/10 rounded-lg border border-blue-200 dark:border-purple-800">
+          <p className="text-sm font-semibold text-blue-800 dark:text-gray-300 mb-3">
             🖼️ Preview Halaman Maintenance:
           </p>
-          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-sm text-center border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-sm text-center border border-blue-200 dark:border-gray-700">
             <div className="text-4xl sm:text-6xl mb-2 sm:mb-3">🔧</div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">
+            <h3 className="text-lg sm:text-xl font-bold text-blue-800 dark:text-gray-100 mb-1 sm:mb-2">
               Sedang Maintenance
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm leading-relaxed px-2">
+            <p className="text-blue-700 dark:text-gray-300 text-xs sm:text-sm leading-relaxed px-2">
               {customMessage}
             </p>
-            <p className="text-gray-500 dark:text-gray-400 text-xs mt-3 sm:mt-4">
+            <p className="text-blue-600 dark:text-gray-400 text-xs mt-3 sm:mt-4">
               Mohon maaf atas ketidaknyamanannya 🙏
             </p>
           </div>

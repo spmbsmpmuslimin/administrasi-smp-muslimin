@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import Login from "./components/Login";
@@ -39,16 +39,12 @@ function App() {
 
   // 🌙 DARK MODE STATE
   const [darkMode, setDarkMode] = useState(() => {
-    // Load dari localStorage atau default false
     const saved = localStorage.getItem("darkMode");
     return saved === "true";
   });
 
-  // ========== MAINTENANCE MODE STATE ==========
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-  const [maintenanceMessage, setMaintenanceMessage] = useState("");
-  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
-  const [whitelistUsers, setWhitelistUsers] = useState([]);
+  // 🔥 MAINTENANCE MODE - DIPINDAH KE ProtectedRoute.js
+  // State ini dihapus karena bikin re-render terus
 
   // 🌙 DARK MODE EFFECT - Instant update
   useEffect(() => {
@@ -66,87 +62,9 @@ function App() {
     setDarkMode((prev) => !prev);
   }, []);
 
-  // ========== 1. CHECK MAINTENANCE STATUS ==========
-  useEffect(() => {
-    checkMaintenanceStatus();
+  // 🔥 MAINTENANCE CHECK DIPINDAH KE ProtectedRoute.js
 
-    const subscription = supabase
-      .channel("maintenance-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "school_settings",
-          filter:
-            "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
-        },
-        (payload) => {
-          console.log("📡 Maintenance settings changed:", payload);
-          loadMaintenanceSettings();
-        }
-      )
-      .subscribe();
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkMaintenanceStatus = async () => {
-    try {
-      await loadMaintenanceSettings();
-    } catch (error) {
-      console.error("❌ Error checking maintenance:", error);
-    } finally {
-      setMaintenanceLoading(false);
-    }
-  };
-
-  const loadMaintenanceSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("school_settings")
-        .select("setting_key, setting_value")
-        .in("setting_key", [
-          "maintenance_mode",
-          "maintenance_message",
-          "maintenance_whitelist",
-        ]);
-
-      if (error) throw error;
-
-      const settings = {};
-      data?.forEach((item) => {
-        settings[item.setting_key] = item.setting_value;
-      });
-
-      const isMaintenance =
-        settings.maintenance_mode === "true" ||
-        settings.maintenance_mode === true;
-
-      setIsMaintenanceMode(isMaintenance);
-      setMaintenanceMessage(
-        settings.maintenance_message ||
-          "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"
-      );
-
-      if (settings.maintenance_whitelist) {
-        try {
-          const parsed = JSON.parse(settings.maintenance_whitelist);
-          setWhitelistUsers(Array.isArray(parsed) ? parsed : []);
-          console.log("✅ Whitelist loaded:", parsed);
-        } catch (e) {
-          console.error("❌ Error parsing whitelist:", e);
-          setWhitelistUsers([]);
-        }
-      } else {
-        setWhitelistUsers([]);
-      }
-    } catch (error) {
-      console.error("❌ Error loading maintenance settings:", error);
-    }
-  };
-
-  // ========== 2. CHECK SESSION DARI localStorage ==========
+  // ========== 1. CHECK SESSION DARI localStorage ==========
   useEffect(() => {
     const checkSession = () => {
       try {
@@ -189,7 +107,7 @@ function App() {
     checkSession();
   }, []);
 
-  // ========== 3. AUTO HIDE TOAST ==========
+  // ========== 2. AUTO HIDE TOAST ==========
   useEffect(() => {
     if (showToast) {
       const timer = setTimeout(() => {
@@ -200,7 +118,7 @@ function App() {
     }
   }, [showToast]);
 
-  // ========== 4. KEYBOARD SHORTCUT: Ctrl + Shift + M (ADMIN PANEL) ==========
+  // ========== 3. KEYBOARD SHORTCUT: Ctrl + Shift + M (ADMIN PANEL) ==========
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.ctrlKey && e.shiftKey && e.key === "M") {
@@ -213,7 +131,7 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
-  // ========== 5. HANDLERS ==========
+  // ========== 4. HANDLERS ==========
   const handleLogin = useCallback((userData, rememberMe = false) => {
     const loginTime = Date.now();
     const expiryTime = rememberMe
@@ -280,139 +198,111 @@ function App() {
     }
   };
 
-  const isUserWhitelisted = useCallback(
-    (userId) => {
-      return whitelistUsers.some((u) => u.id === userId);
-    },
-    [whitelistUsers]
-  );
+  // 🔥 DIPINDAH KE ProtectedRoute.js
+  // const isUserWhitelisted = useMemo(() => {
+  //   return (userId) => whitelistUsers.some((u) => u.id === userId);
+  // }, [whitelistUsers]);
 
-  // ========== 6. PROTECTED ROUTE COMPONENT ==========
-  const ProtectedRoute = useCallback(
-    ({ children, allowedRoles = [] }) => {
-      if (loading || maintenanceLoading) {
-        return (
-          <div
-            className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
-              darkMode
-                ? "bg-gradient-to-br from-gray-900 to-gray-800"
-                : "bg-gradient-to-br from-blue-50 to-indigo-100"
-            }`}>
-            <div className="text-center">
-              <div
-                className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
-                  darkMode ? "border-blue-400" : "border-blue-600"
-                }`}></div>
-              <p
-                className={`text-sm sm:text-base font-medium transition-colors ${
-                  darkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
-                Checking session...
-              </p>
-            </div>
-          </div>
-        );
-      }
-
-      if (!user) {
-        return <Navigate to="/" />;
-      }
-
-      // Role-based access check
-      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-        console.log(
-          `🔴 User ${user.username} tidak memiliki akses ke halaman ini`
-        );
-        return (
-          <div
-            className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
-              darkMode
-                ? "bg-gradient-to-br from-gray-900 to-gray-800"
-                : "bg-gradient-to-br from-blue-50 to-indigo-100"
-            }`}>
-            <div className="text-center max-w-md mx-auto">
-              <div
-                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
-                  darkMode ? "bg-red-900/30" : "bg-red-100"
-                }`}>
-                <svg
-                  className={`w-7 h-7 sm:w-8 sm:h-8 ${
-                    darkMode ? "text-red-400" : "text-red-600"
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-9a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
+  // ========== 5. PROTECTED ROUTE COMPONENT ==========
+  // 🔥 FIX: Sekarang ProtectedRoute.js yang handle maintenance check sendiri
+  const ProtectedRoute = useMemo(
+    () =>
+      ({ children, allowedRoles = [] }) => {
+        if (loading) {
+          return (
+            <div
+              className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+                darkMode
+                  ? "bg-gradient-to-br from-gray-900 to-gray-800"
+                  : "bg-gradient-to-br from-blue-50 to-indigo-100"
+              }`}>
+              <div className="text-center">
+                <div
+                  className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
+                    darkMode ? "border-blue-400" : "border-blue-600"
+                  }`}></div>
+                <p
+                  className={`text-sm sm:text-base font-medium transition-colors ${
+                    darkMode ? "text-gray-300" : "text-gray-600"
+                  }`}>
+                  Checking session...
+                </p>
               </div>
-              <h2
-                className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
-                  darkMode ? "text-white" : "text-gray-900"
-                }`}>
-                Akses Ditolak
-              </h2>
-              <p
-                className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                Anda tidak memiliki izin untuk mengakses halaman ini.
-              </p>
-              <button
-                onClick={() => (window.location.href = "/dashboard")}
-                className={`w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 touch-manipulation active:scale-95 ${
-                  darkMode
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}>
-                Kembali ke Dashboard
-              </button>
             </div>
-          </div>
-        );
-      }
-
-      // Maintenance check with whitelist
-      const canAccess =
-        !isMaintenanceMode ||
-        user.role === "admin" ||
-        isUserWhitelisted(user.id);
-
-      if (!canAccess) {
-        console.log(`🔴 User ${user.username} blocked by maintenance mode`);
-        return (
-          <MaintenancePage message={maintenanceMessage} darkMode={darkMode} />
-        );
-      }
-
-      if (isMaintenanceMode && canAccess) {
-        if (user.role === "admin") {
-          console.log(`✅ Admin ${user.username} bypassed maintenance`);
-        } else if (isUserWhitelisted(user.id)) {
-          console.log(
-            `✅ Whitelisted user ${user.username} bypassed maintenance`
           );
         }
-      }
 
-      return children;
-    },
-    [
-      user,
-      loading,
-      maintenanceLoading,
-      isMaintenanceMode,
-      maintenanceMessage,
-      isUserWhitelisted,
-      darkMode,
-    ]
+        if (!user) {
+          return <Navigate to="/" />;
+        }
+
+        // Role-based access check
+        if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+          console.log(
+            `🔴 User ${user.username} tidak memiliki akses ke halaman ini`
+          );
+          return (
+            <div
+              className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+                darkMode
+                  ? "bg-gradient-to-br from-gray-900 to-gray-800"
+                  : "bg-gradient-to-br from-blue-50 to-indigo-100"
+              }`}>
+              <div className="text-center max-w-md mx-auto">
+                <div
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
+                    darkMode ? "bg-red-900/30" : "bg-red-100"
+                  }`}>
+                  <svg
+                    className={`w-7 h-7 sm:w-8 sm:h-8 ${
+                      darkMode ? "text-red-400" : "text-red-600"
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-9a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <h2
+                  className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                  Akses Ditolak
+                </h2>
+                <p
+                  className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                  Anda tidak memiliki izin untuk mengakses halaman ini.
+                </p>
+                <button
+                  onClick={() => (window.location.href = "/dashboard")}
+                  className={`w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 touch-manipulation active:scale-95 ${
+                    darkMode
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}>
+                  Kembali ke Dashboard
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // 🔥 Maintenance check dipindah ke ProtectedRoute.js
+        // Sekarang ProtectedRoute.js yang import dan wrap children-nya
+
+        return children;
+      },
+    [user, loading, darkMode]
   );
 
-  // ========== 7. LAYOUT WRAPPER (WITH DARK MODE) ==========
+  // ========== 6. LAYOUT WRAPPER (WITH DARK MODE) ==========
   const LayoutWrapper = useCallback(
     ({ children }) => (
       <Layout
@@ -426,7 +316,7 @@ function App() {
     [user, handleLogout, darkMode, handleToggleDarkMode]
   );
 
-  // ========== 8. RENDER ADMIN PANEL ==========
+  // ========== 7. RENDER ADMIN PANEL ==========
   const currentPath = window.location.pathname;
   if (currentPath === "/secret-admin-panel-2024") {
     return (
@@ -445,8 +335,8 @@ function App() {
     );
   }
 
-  // ========== 9. RENDER MAIN APP ==========
-  if (loading || maintenanceLoading) {
+  // ========== 8. RENDER MAIN APP ==========
+  if (loading) {
     return (
       <div
         className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
@@ -477,7 +367,7 @@ function App() {
         v7_relativeSplatPath: true,
       }}>
       {/* ✅ FIXED: Toast Notification dengan Dark Mode & Responsive */}
-      {showToast && !isMaintenanceMode && (
+      {showToast && (
         <div className={getToastStyle()}>
           <div className="flex items-center gap-2">
             <span className="text-base sm:text-lg flex-shrink-0">
@@ -512,6 +402,7 @@ function App() {
         />
 
         {/* ========== PROTECTED ROUTES ========== */}
+        {/* 🔥 Sekarang ProtectedRoute.js yang handle maintenance check */}
         <Route
           path="/dashboard"
           element={

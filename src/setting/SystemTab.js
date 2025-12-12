@@ -770,23 +770,24 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
   };
 
   return (
-    <div className="p-4 sm:p-6">
-      <div className="mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
+    <div className="p-3 sm:p-4 md:p-6 dark:bg-gray-900 min-h-screen">
+      {/* Header */}
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
           System Management
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">
+        <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
           SMP Muslimin Cililin - Backup & Restore Database
         </p>
 
         {exportProgress && (
-          <div className="mt-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <div className="flex items-center gap-2">
+          <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <div className="flex items-center gap-3">
               <RefreshCw
                 className="animate-spin text-blue-600 dark:text-blue-400"
-                size={16}
+                size={20}
               />
-              <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+              <span className="text-sm sm:text-base text-blue-800 dark:text-blue-300 font-medium">
                 {exportProgress}
               </span>
             </div>
@@ -795,55 +796,78 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       </div>
 
       {/* System Health Monitor Card */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 mb-6 text-white">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 rounded-xl p-5 sm:p-6 mb-6 sm:mb-8 text-white shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex-1">
-            <h3 className="text-lg sm:text-xl font-bold mb-2">
-              System Health Monitor
-            </h3>
-            <p className="text-blue-100 mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Monitor size={24} className="text-blue-200" />
+              <h3 className="text-lg sm:text-xl font-bold">
+                System Health Monitor
+              </h3>
+            </div>
+            <p className="text-blue-100 mb-5 text-sm sm:text-base">
               Pantau kesehatan sistem, cek performa database, dan validasi
               integritas data
             </p>
             <button
               onClick={navigateToSystemMonitor}
-              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-semibold transition-colors min-h-[44px] touch-manipulation w-full md:w-auto">
+              className="flex items-center justify-center gap-3 px-5 sm:px-6 py-3.5 bg-white text-blue-600 dark:text-blue-700 rounded-lg hover:bg-blue-50 font-semibold transition-colors min-h-[44px] w-full md:w-auto">
               <Monitor size={18} />
               <span className="text-sm sm:text-base">
                 Buka System Health Monitor
               </span>
             </button>
           </div>
-          <div className="hidden md:block text-right">
-            <Monitor size={48} className="text-blue-200 opacity-80" />
+          <div className="hidden md:block">
+            <Monitor size={64} className="text-blue-300 opacity-80" />
           </div>
         </div>
       </div>
 
       {/* Export Individual Tables to CSV */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          Export Data ke CSV
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 md:p-6 mb-6 sm:mb-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <FileText className="text-blue-600 dark:text-blue-400" size={20} />
+          <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
+            Export Data ke CSV
+          </h3>
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 mb-5 text-sm sm:text-base">
           Export data per tabel ke format CSV untuk analisis atau backup
           selektif.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-          {/* Baris 1 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+          {/* Group 1: Academic Data */}
           <button
             onClick={() => exportTableToCSV("academic_years", "Tahun Ajaran")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 rounded-lg hover:bg-teal-200 dark:hover:bg-teal-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Tahun Ajaran</span>
           </button>
 
           <button
+            onClick={() => exportTableToCSV("classes", "Data Kelas")}
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Kelas</span>
+          </button>
+
+          <button
+            onClick={() => exportTableToCSV("students", "Data Siswa")}
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Students</span>
+          </button>
+
+          {/* Group 2: Teacher Data */}
+          <button
             onClick={() => exportTableToCSV("users", "Data Pengguna")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Users</span>
           </button>
@@ -853,41 +877,32 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               exportTableToCSV("teacher_assignments", "Penugasan Guru")
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Penugasan Guru</span>
           </button>
 
-          {/* Baris 2 */}
           <button
-            onClick={() => exportTableToCSV("classes", "Data Kelas")}
+            onClick={() => exportTableToCSV("teacher_schedules", "Jadwal Guru")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
-            <span className="truncate">Export Kelas</span>
+            <span className="truncate">Export Jadwal Guru</span>
           </button>
 
-          <button
-            onClick={() => exportTableToCSV("students", "Data Siswa")}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
-            <Table size={16} />
-            <span className="truncate">Export Students</span>
-          </button>
-
+          {/* Group 3: Academic Records */}
           <button
             onClick={() => exportTableToCSV("attendances", "Data Kehadiran")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Attendance</span>
           </button>
 
-          {/* Baris 3 */}
           <button
             onClick={() => exportTableToCSV("grades", "Data Nilai")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Nilai</span>
           </button>
@@ -895,47 +910,20 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("konseling", "Data Konseling")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-lg hover:bg-cyan-200 dark:hover:bg-cyan-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Konseling</span>
           </button>
 
+          {/* Group 4: Additional Data */}
           <button
             onClick={() => exportTableToCSV("siswa_baru", "Data Siswa Baru")}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-200 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Siswa Baru</span>
           </button>
 
-          {/* Baris 4 */}
-          <button
-            onClick={() =>
-              exportTableToCSV("school_settings", "Pengaturan Sekolah")
-            }
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
-            <Table size={16} />
-            <span className="truncate">Export Settings</span>
-          </button>
-
-          <button
-            onClick={() => exportTableToCSV("announcement", "Pengumuman")}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
-            <Table size={16} />
-            <span className="truncate">Export Pengumuman</span>
-          </button>
-
-          <button
-            onClick={() => exportTableToCSV("teacher_schedules", "Jadwal Guru")}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-300 rounded-lg hover:bg-lime-200 dark:hover:bg-lime-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
-            <Table size={16} />
-            <span className="truncate">Export Jadwal Guru</span>
-          </button>
-
-          {/* Baris 5 */}
           <button
             onClick={() =>
               exportTableToCSV(
@@ -944,9 +932,36 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               )
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Catatan Perkembangan</span>
+          </button>
+
+          <button
+            onClick={() => exportTableToCSV("announcement", "Pengumuman")}
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Pengumuman</span>
+          </button>
+
+          {/* Group 5: System Data */}
+          <button
+            onClick={() =>
+              exportTableToCSV("school_settings", "Pengaturan Sekolah")
+            }
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Settings</span>
+          </button>
+
+          <button
+            onClick={() => exportTableToCSV("spmb_settings", "Pengaturan SPMB")}
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Pengaturan SPMB</span>
           </button>
 
           <button
@@ -954,48 +969,52 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               exportTableToCSV("system_health_logs", "System Health Logs")
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-lg hover:bg-violet-200 dark:hover:bg-violet-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export System Logs</span>
           </button>
 
+          {/* Group 6: History */}
           <button
             onClick={() =>
               exportTableToCSV("cleanup_history", "Riwayat Cleanup")
             }
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+            className="flex items-center gap-3 px-4 py-3.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
             <Table size={16} />
             <span className="truncate">Export Riwayat Cleanup</span>
           </button>
 
-          {/* Baris 6 */}
-          <button
-            onClick={() => exportTableToCSV("spmb_settings", "Pengaturan SPMB")}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
-            <Table size={16} />
-            <span className="truncate">Export Pengaturan SPMB</span>
-          </button>
-
-          <div className="sm:col-span-2 lg:col-span-1">
+          {/* Export All Button */}
+          <div className="sm:col-span-2 lg:col-span-3">
             <button
               onClick={exportAllTablesToCSV}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-800 disabled:opacity-50 font-medium transition-colors w-full min-h-[44px] touch-manipulation text-sm sm:text-base">
-              <FileText size={18} />
-              {loading ? "Exporting..." : "Export Semua Tabel"}
+              className="flex items-center justify-center gap-3 px-5 py-4 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-bold transition-colors w-full min-h-[44px]">
+              <FileText size={20} />
+              <span className="text-base">
+                {loading ? "Exporting..." : "Export Semua Tabel (16 Tabel)"}
+              </span>
             </button>
           </div>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+            ℹ️ Total 16 tabel yang didukung untuk export
+          </p>
         </div>
       </div>
 
       {/* Database Backup */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          Database Backup (JSON)
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 md:p-6 mb-6 sm:mb-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <Download className="text-blue-600 dark:text-blue-400" size={20} />
+          <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
+            Database Backup (JSON)
+          </h3>
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 mb-5 text-sm sm:text-base">
           Download backup lengkap database untuk keperluan keamanan dan migrasi
           data.
         </p>
@@ -1003,191 +1022,153 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         <button
           onClick={exportDatabaseBackup}
           disabled={loading}
-          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-medium transition-colors w-full sm:w-auto min-h-[44px] touch-manipulation">
-          <Download size={18} />
-          <span className="text-sm sm:text-base">
+          className="flex items-center justify-center gap-3 px-5 sm:px-6 py-3.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-bold transition-colors w-full sm:w-auto min-h-[44px] mb-5">
+          <Download size={20} />
+          <span className="text-base">
             {loading ? "Membuat Backup..." : "Download Backup Database (JSON)"}
           </span>
         </button>
 
-        <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-2">
-            ℹ️ Backup akan berisi:
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-3">
+            ℹ️ Backup akan berisi semua data dari 16 tabel:
           </p>
-          <ul className="list-disc list-inside mt-1 space-y-1 text-xs text-blue-700 dark:text-blue-400">
-            <li>Data tahun ajaran (academic_years table)</li>
-            <li>Data pengguna (users table)</li>
-            <li>Penugasan guru (teacher_assignments table)</li>
-            <li>Data kelas (classes table)</li>
-            <li>Data siswa aktif (students table)</li>
-            <li>
-              <strong>Semua data kehadiran</strong> (attendances table - no
-              limit)
-            </li>
-            <li>
-              <strong>Semua data nilai</strong> (grades table - no limit)
-            </li>
-            <li>
-              <strong>Semua data konseling</strong> (konseling table - no limit)
-            </li>
-            <li>Data siswa baru (siswa_baru table)</li>
-            <li>Pengaturan sekolah (school_settings table)</li>
-            <li>Pengumuman (announcement table)</li>
-            <li>
-              <strong>Jadwal guru</strong> (teacher_schedules table)
-            </li>
-            <li>
-              <strong>Catatan perkembangan siswa</strong>{" "}
-              (student_development_notes table)
-            </li>
-            <li>
-              <strong>System health logs</strong> (system_health_logs table)
-            </li>
-            <li>
-              <strong>Riwayat cleanup</strong> (cleanup_history table)
-            </li>
-            <li>
-              <strong>Pengaturan SPMB</strong> (spmb_settings table)
-            </li>
-          </ul>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-blue-700 dark:text-blue-400">
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Tahun Ajaran</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Data Pengguna</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Penugasan Guru</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Data Kelas</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Data Siswa</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Data Kehadiran</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Data Nilai</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              <span>Data Konseling</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Database Restore */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4">
-          Database Restore
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 md:p-6 mb-6 sm:mb-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <Upload className="text-red-600 dark:text-red-400" size={20} />
+          <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
+            Database Restore
+          </h3>
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 mb-5 text-sm sm:text-base">
           Upload dan restore backup database.{" "}
-          <span className="text-red-600 dark:text-red-400 font-medium">
+          <span className="text-red-600 dark:text-red-400 font-bold">
             PERHATIAN: Ini akan menimpa semua data yang ada!
           </span>
         </p>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Upload Backup File
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Upload Backup File (.json)
             </label>
             <input
               type="file"
               accept=".json"
               onChange={handleRestoreFile}
               disabled={loading}
-              className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 disabled:opacity-50 cursor-pointer touch-manipulation"
+              className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 disabled:opacity-50 cursor-pointer"
             />
           </div>
 
           {restorePreview && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-              <div className="flex items-start gap-3 mb-3">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-4 sm:p-5">
+              <div className="flex items-start gap-3 mb-4">
                 <AlertTriangle
-                  className="text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"
-                  size={16}
+                  className="text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-1"
+                  size={20}
                 />
-                <div>
-                  <h4 className="font-medium text-yellow-800 dark:text-yellow-300">
-                    Backup File Preview
+                <div className="flex-1">
+                  <h4 className="font-bold text-yellow-800 dark:text-yellow-300 text-base mb-3">
+                    ⚠️ Backup File Preview
                   </h4>
-                  <div className="text-sm text-yellow-700 dark:text-yellow-400 mt-2 space-y-1">
-                    <p>
-                      <strong>Tanggal Backup:</strong>{" "}
-                      {new Date(restorePreview.timestamp).toLocaleString(
-                        "id-ID"
+                  <div className="text-sm text-yellow-700 dark:text-yellow-400 space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <p>
+                        <strong className="block text-xs">
+                          Tanggal Backup:
+                        </strong>
+                        {new Date(restorePreview.timestamp).toLocaleString(
+                          "id-ID"
+                        )}
+                      </p>
+                      <p>
+                        <strong className="block text-xs">Tahun Ajaran:</strong>
+                        {restorePreview.academic_year}
+                      </p>
+                      <p>
+                        <strong className="block text-xs">Sekolah:</strong>
+                        {restorePreview.school_info?.school_name}
+                      </p>
+                      <p>
+                        <strong className="block text-xs">
+                          Total Records:
+                        </strong>
+                        {(restorePreview.stats?.total_academic_years || 0) +
+                          (restorePreview.stats?.total_users || 0) +
+                          (restorePreview.stats?.total_teacher_assignments ||
+                            0) +
+                          (restorePreview.stats?.total_classes || 0) +
+                          (restorePreview.stats?.total_students || 0)}{" "}
+                        records
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 mt-5">
+                    <button
+                      onClick={executeRestore}
+                      disabled={loading}
+                      className="flex items-center justify-center gap-3 px-5 py-3.5 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 font-bold transition-colors min-h-[44px]">
+                      {loading ? (
+                        <>
+                          <RefreshCw className="animate-spin" size={18} />
+                          <span>Restoring...</span>
+                        </>
+                      ) : (
+                        "Execute Restore"
                       )}
-                    </p>
-                    <p>
-                      <strong>Tahun Ajaran:</strong>{" "}
-                      {restorePreview.academic_year}
-                    </p>
-                    <p>
-                      <strong>Sekolah:</strong>{" "}
-                      {restorePreview.school_info?.school_name}
-                    </p>
-                    <p>
-                      <strong>Data Records:</strong>
-                    </p>
-                    <ul className="list-disc list-inside ml-4">
-                      <li>
-                        {restorePreview.stats?.total_academic_years || 0} tahun
-                        ajaran
-                      </li>
-                      <li>{restorePreview.stats?.total_users || 0} pengguna</li>
-                      <li>
-                        {restorePreview.stats?.total_teacher_assignments || 0}{" "}
-                        penugasan guru
-                      </li>
-                      <li>{restorePreview.stats?.total_classes || 0} kelas</li>
-                      <li>{restorePreview.stats?.total_students || 0} siswa</li>
-                      <li>
-                        {restorePreview.stats?.total_attendance_records || 0}{" "}
-                        data kehadiran
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_grades_records || 0} data
-                        nilai
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_konseling_records || 0}{" "}
-                        data konseling
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_siswa_baru || 0} siswa baru
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_announcements || 0}{" "}
-                        pengumuman
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_teacher_schedules || 0}{" "}
-                        jadwal guru
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_development_notes || 0}{" "}
-                        catatan perkembangan
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_system_health_logs || 0}{" "}
-                        system health logs
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_cleanup_history || 0}{" "}
-                        riwayat cleanup
-                      </li>
-                      <li>
-                        {restorePreview.stats?.total_spmb_settings || 0}{" "}
-                        pengaturan SPMB
-                      </li>
-                    </ul>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setRestoreFile(null);
+                        setRestorePreview(null);
+                      }}
+                      disabled={loading}
+                      className="px-5 py-3.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+                      Cancel
+                    </button>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                <button
-                  onClick={executeRestore}
-                  disabled={loading}
-                  className="flex items-center justify-center gap-2 px-4 py-3 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 font-medium transition-colors min-h-[44px] touch-manipulation">
-                  {loading ? (
-                    <>
-                      <RefreshCw className="animate-spin" size={16} />
-                      Restoring...
-                    </>
-                  ) : (
-                    "Execute Restore"
-                  )}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setRestoreFile(null);
-                    setRestorePreview(null);
-                  }}
-                  disabled={loading}
-                  className="px-4 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation">
-                  Cancel
-                </button>
               </div>
             </div>
           )}
@@ -1195,83 +1176,65 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       </div>
 
       {/* System Information */}
-      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 sm:p-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-          <Database size={20} className="text-blue-600 dark:text-blue-400" />
-          Informasi Sistem
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 sm:p-5 md:p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <Database className="text-blue-600 dark:text-blue-400" size={20} />
+          <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
+            Informasi Sistem
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
               Database
             </label>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
               Supabase PostgreSQL
             </p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
               Total Records
             </label>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
               {schoolStats.total_students + schoolStats.total_teachers} pengguna
-              total
             </p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
               Tahun Ajaran
             </label>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
               {schoolSettings.academic_year}
             </p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
               Nama Sekolah
             </label>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
               {schoolSettings.school_name}
             </p>
           </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Detail Records
-            </label>
-            <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
-              <span className="flex items-center gap-1">
-                👨‍🏫 {schoolStats.total_teachers} guru
-              </span>
-              <span className="flex items-center gap-1">
-                👨‍🎓 {schoolStats.total_students} siswa
-              </span>
-              <span className="flex items-center gap-1">
-                🏫 SMP Muslimin Cililin
-              </span>
-            </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-4">
+          <div className="flex items-center gap-2 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              👨‍🏫 {schoolStats.total_teachers} guru
+            </span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+              👨‍🎓 {schoolStats.total_students} siswa
+            </span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              🏫 SMP Muslimin Cililin
+            </span>
           </div>
         </div>
-      </div>
-
-      {/* ✅ Improvement Notes */}
-      <div className="mt-6 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
-        <h4 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2">
-          ✅ Improvements Applied
-        </h4>
-        <ul className="text-xs text-green-700 dark:text-green-400 space-y-1 list-disc list-inside">
-          <li>
-            <strong>Added all missing tables:</strong> cleanup_history &amp;
-            spmb_settings
-          </li>
-          <li>
-            <strong>Total 16 tables</strong> now supported for complete backup
-          </li>
-          <li>New export buttons for Cleanup History and SPMB Settings</li>
-          <li>Updated backup process to include new tables</li>
-          <li>Enhanced restore process for all 16 tables</li>
-          <li>Updated backup preview with complete statistics</li>
-          <li>Improved UI organization with additional table buttons</li>
-        </ul>
       </div>
     </div>
   );
