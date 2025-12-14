@@ -278,7 +278,6 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     });
   };
 
-  // 🔥 UPDATE: Menambahkan halaman nilai-katrol
   const getCurrentPage = () => {
     const path = location.pathname;
     if (path === "/dashboard") return "dashboard";
@@ -288,8 +287,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     if (path === "/attendance") return "attendance";
     if (path === "/attendance-management") return "attendance-management";
     if (path === "/attendance-teacher") return "attendance-teacher";
-    if (path === "/grades") return "nilai-asli"; // 🔥 UPDATE: untuk submenu Nilai Asli
-    if (path === "/grades-katrol") return "nilai-katrol"; // 🔥 UPDATE: untuk submenu Nilai Katrol
+    if (path === "/grades") return "grades";
     if (path === "/jadwal-saya") return "jadwal-saya";
     if (path === "/catatan-siswa") return "catatan-siswa";
     if (path === "/konseling") return "konseling";
@@ -300,7 +298,6 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     return "dashboard";
   };
 
-  // 🔥 UPDATE: Menambahkan nama halaman untuk nilai-katrol
   const getCurrentPageName = () => {
     const pathMap = {
       "/dashboard": "Dashboard",
@@ -310,8 +307,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       "/attendance": "Kehadiran",
       "/attendance-management": "Management Presensi",
       "/attendance-teacher": "Presensi Guru",
-      "/grades": "Nilai Asli", // 🔥 UPDATE
-      "/grades-katrol": "Nilai Katrol", // 🔥 UPDATE
+      "/grades": "Nilai Akademik",
       "/jadwal-saya": "Jadwal Saya",
       "/catatan-siswa": "Catatan Siswa",
       "/konseling": "Konseling",
@@ -323,7 +319,6 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     return pathMap[location.pathname] || "Dashboard";
   };
 
-  // 🔥 UPDATE: Menambahkan subtitle untuk halaman nilai
   const getPageSubtitle = () => {
     if (!user) return "SMP Muslimin";
 
@@ -339,8 +334,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         Kehadiran: "Kelola Kehadiran Siswa",
         "Management Presensi": "Edit, Ubah Tanggal, atau Hapus Data Presensi",
         "Presensi Guru": "Kelola Presensi dan Absensi Guru",
-        "Nilai Asli": "Kelola Nilai Asli Akademik Siswa", // 🔥 UPDATE
-        "Nilai Katrol": "Kelola Nilai Katrol Akademik Siswa", // 🔥 UPDATE
+        "Nilai Akademik": "Kelola Nilai Akademik Siswa",
         "Jadwal Saya": "Lihat Jadwal Mengajar",
         "Catatan Siswa": "Kelola Catatan Perkembangan Siswa",
         Konseling: "Kelola Data Konseling BK/BP",
@@ -367,8 +361,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Kehadiran: `Input kehadiran Kelas`,
             "Management Presensi": "Kelola Data Presensi yang Sudah Diinput",
             "Presensi Guru": "Input Presensi dan Absensi Guru",
-            "Nilai Asli": `Input Nilai Asli Kelas`, // 🔥 UPDATE
-            "Nilai Katrol": `Input Nilai Katrol Kelas`, // 🔥 UPDATE
+            "Nilai Akademik": `Input Nilai Kelas`,
             "Catatan Siswa": `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
             "Jadwal Saya": "Lihat Jadwal Mengajar Kelas",
             Laporan: `Laporan Kelas`,
@@ -382,8 +375,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Kehadiran: "Input kehadiran mata pelajaran",
             "Management Presensi": "Kelola Data Presensi Mata Pelajaran",
             "Presensi Guru": "Input Presensi dan Absensi Guru",
-            "Nilai Asli": "Input nilai asli mata pelajaran", // 🔥 UPDATE
-            "Nilai Katrol": "Input nilai katrol mata pelajaran", // 🔥 UPDATE
+            "Nilai Akademik": "Input nilai mata pelajaran",
             "Jadwal Saya": "Lihat Jadwal Mengajar",
             Laporan: "Laporan mata pelajaran",
             Pengaturan: "Pengaturan akun",
@@ -393,7 +385,6 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     return subtitles[role]?.[currentPage] || "SMP Muslimin";
   };
 
-  // 🔥 UPDATE: Menambahkan route untuk nilai-katrol
   const handleNavigate = useCallback(
     (page) => {
       if (isNavigating) return;
@@ -406,8 +397,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         attendance: "/attendance",
         "attendance-management": "/attendance-management",
         "attendance-teacher": "/attendance-teacher",
-        "nilai-asli": "/grades", // 🔥 UPDATE: untuk submenu Nilai Asli
-        "nilai-katrol": "/grades-katrol", // 🔥 UPDATE: untuk submenu Nilai Katrol
+        grades: "/grades",
         "jadwal-saya": "/jadwal-saya",
         "catatan-siswa": "/catatan-siswa",
         konseling: "/konseling",

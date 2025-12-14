@@ -6,18 +6,17 @@ const Sidebar = ({
   currentPage,
   onNavigate,
   isOpen,
-  isCollapsed = false, // ← PROP BARU
+  isCollapsed = false,
   userRole,
   isWaliKelas,
   userData = {},
-  darkMode = false, // ← PROP BARU (ganti auto-detect)
-  onClose = null, // ← PROP BARU untuk mobile
-  onToggleCollapse = null, // ← PROP BARU untuk desktop
+  darkMode = false,
+  onClose = null,
+  onToggleCollapse = null,
 }) => {
-  // HAPUS AUTO-DETECT DARK MODE, PAKE PROP DARI LAYOUT
   const [isDarkMode, setIsDarkMode] = useState(darkMode);
+  const [gradesMenuOpen, setGradesMenuOpen] = useState(false); // State untuk dropdown Nilai Siswa
 
-  // Sync dengan prop darkMode dari Layout.js
   useEffect(() => {
     setIsDarkMode(darkMode);
   }, [darkMode]);
@@ -26,7 +25,6 @@ const Sidebar = ({
   const isAdmin = userRole === "admin";
   const isTeacher = userRole === "teacher";
 
-  // Ambil data user
   const fullName = userData.full_name || "User";
   const roleName =
     userRole === "admin"
@@ -39,7 +37,6 @@ const Sidebar = ({
       ? "Guru"
       : "Pengguna";
 
-  // Generate initial dari nama depan dan belakang
   const getInitials = (name) => {
     const words = name
       .trim()
@@ -47,17 +44,25 @@ const Sidebar = ({
       .filter((word) => word.length > 0);
     if (words.length === 0) return "U";
     if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
-    // Ambil huruf pertama dari kata pertama dan kata terakhir
     return (words[0][0] + words[words.length - 1][0]).toUpperCase();
   };
 
   const initials = getInitials(fullName);
 
-  // Handle menu click dengan close untuk mobile
   const handleMenuClick = (page) => {
     onNavigate(page);
-    if (onClose) onClose(); // Close mobile sidebar setelah klik
+    if (onClose) onClose();
   };
+
+  // Handle khusus untuk menu Nilai Siswa
+  const handleGradesMenuClick = (page) => {
+    handleMenuClick(page);
+    setGradesMenuOpen(false); // Tutup dropdown setelah memilih
+  };
+
+  // Cek apakah halaman saat ini adalah salah satu dari submenu nilai
+  const isNilaiPage =
+    currentPage === "nilai-asli" || currentPage === "nilai-katrol";
 
   return (
     <div
@@ -67,17 +72,14 @@ const Sidebar = ({
       <div
         className={`
         h-full transition-all duration-300 flex flex-col
-        ${
-          isCollapsed ? "w-20" : "w-64"
-        } // ← DYNAMIC WIDTH BERDASARKAN COLLAPSED
+        ${isCollapsed ? "w-20" : "w-64"}
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         sm:translate-x-0 sm:relative
         bg-blue-900 dark:bg-gray-900 text-white border-r border-blue-800 dark:border-gray-800
         overflow-y-auto
       `}>
-        {/* Header */}
+        {/* Header - sama seperti sebelumnya */}
         <div className="p-4 sm:p-6 border-b border-blue-700 dark:border-gray-800">
-          {/* Close button untuk mobile */}
           {onClose && (
             <button
               onClick={onClose}
@@ -121,13 +123,12 @@ const Sidebar = ({
             className={`flex items-center gap-3 ${
               isCollapsed ? "justify-center" : ""
             }`}>
-            {/* Logo Sekolah */}
             <div
               className={`${
                 isCollapsed ? "w-10 h-10" : "w-10 h-10 sm:w-12 sm:h-12"
               } bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden shadow-lg`}>
               <img
-                src={sekolahLogo} // ← INI YANG DIGANTI DARI "/logo_sekolah.PNG"
+                src={sekolahLogo}
                 alt="Logo SMP Muslimin Cililin"
                 className="w-full h-full object-cover"
               />
@@ -146,7 +147,7 @@ const Sidebar = ({
           </div>
         </div>
 
-        {/* Navigation - CONDITIONAL RENDER BERDASARKAN COLLAPSED STATE */}
+        {/* Navigation */}
         <nav className="py-4 flex-1">
           {/* Menu Utama */}
           <div className="mb-4 sm:mb-5">
@@ -196,7 +197,7 @@ const Sidebar = ({
             </a>
           </div>
 
-          {/* Master Data - Untuk semua role */}
+          {/* Master Data */}
           <div className="mb-4 sm:mb-5">
             {!isCollapsed && (
               <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
@@ -204,7 +205,7 @@ const Sidebar = ({
               </div>
             )}
 
-            {/* Data Guru - Untuk semua role */}
+            {/* Data Guru */}
             <a
               href="#teachers"
               className={`
@@ -239,7 +240,7 @@ const Sidebar = ({
               )}
             </a>
 
-            {/* Data Kelas - Untuk semua role */}
+            {/* Data Kelas */}
             <a
               href="#classes"
               className={`
@@ -274,7 +275,7 @@ const Sidebar = ({
               )}
             </a>
 
-            {/* Data Siswa - Untuk semua role */}
+            {/* Data Siswa */}
             <a
               href="#students"
               className={`
@@ -318,7 +319,7 @@ const Sidebar = ({
               </div>
             )}
 
-            {/* ✅ PRESENSI GURU - Untuk Admin, Teacher, dan Guru BK */}
+            {/* ✅ PRESENSI GURU */}
             {(isAdmin || isTeacher || isGuruBK) && (
               <a
                 href="#attendance-teacher"
@@ -355,7 +356,7 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* Presensi Siswa - Untuk Admin dan non-Guru BK */}
+            {/* Presensi Siswa */}
             {(isAdmin || !isGuruBK) && (
               <a
                 href="#attendance"
@@ -435,44 +436,119 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* Nilai - Untuk Admin dan non-Guru BK */}
+            {/* NILAI SISWA dengan Submenu */}
             {(isAdmin || !isGuruBK) && (
-              <a
-                href="#grades"
-                className={`
-                  flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                  touch-manipulation min-h-[44px]
-                  ${isCollapsed ? "justify-center" : ""}
-                  ${
-                    currentPage === "grades"
-                      ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                      : "hover:text-blue-100 dark:hover:text-gray-100"
-                  }
-                `}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleMenuClick("grades");
-                }}
-                title={isCollapsed ? "Nilai Siswa" : ""}>
-                <svg
-                  className="w-5 h-5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                {!isCollapsed && (
-                  <span className="flex-1 text-sm">Nilai Siswa</span>
+              <div className="mb-1">
+                {/* Menu Utama Nilai Siswa */}
+                <a
+                  href="#nilai-siswa"
+                  className={`
+                    flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                    touch-manipulation min-h-[44px]
+                    ${isCollapsed ? "justify-center" : ""}
+                    ${
+                      isNilaiPage
+                        ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                        : "hover:text-blue-100 dark:hover:text-gray-100"
+                    }
+                  `}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (!isCollapsed) {
+                      setGradesMenuOpen(!gradesMenuOpen);
+                    } else {
+                      // Jika collapsed, langsung ke halaman default
+                      handleGradesMenuClick("nilai-asli");
+                    }
+                  }}
+                  title={isCollapsed ? "Nilai Siswa" : ""}>
+                  <div className="flex items-center gap-3">
+                    <svg
+                      className="w-5 h-5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                    {!isCollapsed && (
+                      <span className="flex-1 text-sm">Nilai Siswa</span>
+                    )}
+                  </div>
+
+                  {/* Dropdown arrow - hanya tampil jika tidak collapsed */}
+                  {!isCollapsed && (
+                    <svg
+                      className={`w-4 h-4 transition-transform duration-200 ${
+                        gradesMenuOpen ? "rotate-90" : ""
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  )}
+                </a>
+
+                {/* Submenu Nilai Siswa - hanya tampil jika tidak collapsed dan dropdown open */}
+                {!isCollapsed && gradesMenuOpen && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {/* Submenu Nilai Asli */}
+                    <a
+                      href="#nilai-asli"
+                      className={`
+                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                        touch-manipulation min-h-[44px]
+                        ${
+                          currentPage === "nilai-asli"
+                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
+                            : "hover:text-blue-100 dark:hover:text-gray-100"
+                        }
+                      `}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleGradesMenuClick("nilai-asli");
+                      }}
+                      title="Nilai Asli">
+                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
+                      <span className="flex-1 text-sm">Nilai Asli</span>
+                    </a>
+
+                    {/* Submenu Nilai Katrol */}
+                    <a
+                      href="#nilai-katrol"
+                      className={`
+                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                        touch-manipulation min-h-[44px]
+                        ${
+                          currentPage === "nilai-katrol"
+                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
+                            : "hover:text-blue-100 dark:hover:text-gray-100"
+                        }
+                      `}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleGradesMenuClick("nilai-katrol");
+                      }}
+                      title="Nilai Katrol">
+                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
+                      <span className="flex-1 text-sm">Nilai Katrol</span>
+                    </a>
+                  </div>
                 )}
-              </a>
+              </div>
             )}
 
-            {/* CATATAN SISWA - Untuk Admin dan Wali Kelas */}
+            {/* CATATAN SISWA */}
             {(isAdmin || (isWaliKelas && !isGuruBK)) && (
               <a
                 href="#catatan-siswa"
@@ -509,7 +585,7 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* Jadwal Saya - Untuk Admin, Guru & Wali Kelas (bukan Guru BK) */}
+            {/* Jadwal Saya */}
             {(isAdmin ||
               (!isGuruBK &&
                 (userRole === "teacher" || userRole === "homeroom"))) && (
@@ -548,7 +624,7 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* Konseling - Untuk Admin & Guru BK */}
+            {/* Konseling */}
             {(isAdmin || isGuruBK) && (
               <a
                 href="#konseling"
@@ -585,7 +661,7 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* Laporan - Untuk Admin, Guru & Guru BK */}
+            {/* Laporan */}
             {(isAdmin || isGuruBK || userRole === "teacher") && (
               <a
                 href="#reports"
@@ -755,7 +831,6 @@ const Sidebar = ({
             className={`flex items-center gap-3 ${
               isCollapsed ? "justify-center" : ""
             }`}>
-            {/* Avatar */}
             <div
               className={`w-10 h-10 ${
                 isDarkMode ? "bg-blue-700" : "bg-blue-600"
@@ -763,7 +838,6 @@ const Sidebar = ({
               <span className="text-white font-bold text-sm">{initials}</span>
             </div>
 
-            {/* User Info - HIDDEN ketika collapsed */}
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <div

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import Login from "./components/Login";
@@ -12,7 +12,6 @@ import Students from "./pages/Students";
 import Attendance from "./pages/attendance/Attendance";
 import AttendanceManagement from "./pages/attendance/AttendanceManagement";
 import Grades from "./pages/Grades";
-import GradesKatrol from "./pages/GradesKatrol";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import CatatanSiswa from "./pages/CatatanSiswa";
 import Setting from "./setting/Setting";
@@ -30,237 +29,6 @@ import AdminPanel from "./setting/AdminPanel";
 // Import Presensi Guru
 import TeacherAttendance from "./attendance-teacher/TeacherAttendance";
 
-// 🔥 PROTECTED ROUTE COMPONENT - WITH MAINTENANCE MODE
-const ProtectedRoute = ({
-  children,
-  user,
-  loading,
-  darkMode,
-  allowedRoles = [],
-}) => {
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [maintenanceMessage, setMaintenanceMessage] = useState("");
-  const [whitelistUsers, setWhitelistUsers] = useState([]);
-  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null);
-
-  // 🔥 Fetch user role dari database
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user?.id) {
-        setUserRole(null);
-        setMaintenanceLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        if (error) throw error;
-
-        setUserRole(data?.role);
-        console.log("👤 User role fetched:", data?.role);
-      } catch (error) {
-        console.error("Error fetching user role:", error);
-        setUserRole(null);
-      }
-    };
-
-    fetchUserRole();
-  }, [user?.id]);
-
-  // 🔥 Check maintenance mode
-  useEffect(() => {
-    const checkMaintenance = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("school_settings")
-          .select("setting_key, setting_value")
-          .in("setting_key", [
-            "maintenance_mode",
-            "maintenance_message",
-            "maintenance_whitelist",
-          ]);
-
-        if (error) throw error;
-
-        const settings = {};
-        data?.forEach((item) => {
-          settings[item.setting_key] = item.setting_value;
-        });
-
-        const isMaintenance =
-          settings.maintenance_mode === "true" ||
-          settings.maintenance_mode === true;
-
-        setMaintenanceMode(isMaintenance);
-        setMaintenanceMessage(
-          settings.maintenance_message ||
-            "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"
-        );
-
-        if (settings.maintenance_whitelist) {
-          try {
-            const parsed = JSON.parse(settings.maintenance_whitelist);
-            setWhitelistUsers(Array.isArray(parsed) ? parsed : []);
-          } catch (e) {
-            setWhitelistUsers([]);
-          }
-        }
-
-        console.log("🔧 Maintenance check:", {
-          mode: isMaintenance,
-          whitelistCount: settings.maintenance_whitelist
-            ? JSON.parse(settings.maintenance_whitelist || "[]").length
-            : 0,
-        });
-      } catch (error) {
-        console.error("Error checking maintenance mode:", error);
-      } finally {
-        setMaintenanceLoading(false);
-      }
-    };
-
-    checkMaintenance();
-
-    // Realtime subscription
-    const subscription = supabase
-      .channel("maintenance-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "school_settings",
-          filter:
-            "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
-        },
-        () => {
-          console.log("🔔 Maintenance setting changed");
-          checkMaintenance();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // Loading state
-  if (loading || maintenanceLoading || (user && userRole === null)) {
-    return (
-      <div
-        className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
-          darkMode
-            ? "bg-gradient-to-br from-gray-900 to-gray-800"
-            : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}>
-        <div className="text-center">
-          <div
-            className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
-              darkMode ? "border-blue-400" : "border-blue-600"
-            }`}></div>
-          <p
-            className={`text-sm sm:text-base font-medium transition-colors ${
-              darkMode ? "text-gray-300" : "text-gray-600"
-            }`}>
-            Checking session...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Not logged in
-  if (!user) {
-    return <Navigate to="/" />;
-  }
-
-  // 🔥 MAINTENANCE MODE CHECK
-  const isWhitelisted = whitelistUsers.some((u) => u.id === user?.id);
-
-  console.log("🔍 Maintenance Check:", {
-    maintenanceMode,
-    userId: user?.id,
-    username: user?.username,
-    userRole,
-    isWhitelisted,
-    shouldBlock: maintenanceMode && userRole !== "admin" && !isWhitelisted,
-  });
-
-  if (maintenanceMode && userRole !== "admin" && !isWhitelisted) {
-    console.log(`🔴 User ${user?.username} BLOCKED by maintenance`);
-    return <MaintenancePage message={maintenanceMessage} />;
-  }
-
-  if (maintenanceMode && (userRole === "admin" || isWhitelisted)) {
-    console.log(`✅ User ${user?.username} BYPASSED maintenance (${userRole})`);
-  }
-
-  // Role-based access check
-  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-    console.log(`🔴 User ${user.username} tidak memiliki akses ke halaman ini`);
-    return (
-      <div
-        className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
-          darkMode
-            ? "bg-gradient-to-br from-gray-900 to-gray-800"
-            : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}>
-        <div className="text-center max-w-md mx-auto">
-          <div
-            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
-              darkMode ? "bg-red-900/30" : "bg-red-100"
-            }`}>
-            <svg
-              className={`w-7 h-7 sm:w-8 sm:h-8 ${
-                darkMode ? "text-red-400" : "text-red-600"
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-9a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </div>
-          <h2
-            className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}>
-            Akses Ditolak
-          </h2>
-          <p
-            className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
-              darkMode ? "text-gray-400" : "text-gray-600"
-            }`}>
-            Anda tidak memiliki izin untuk mengakses halaman ini.
-          </p>
-          <button
-            onClick={() => (window.location.href = "/dashboard")}
-            className={`w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 touch-manipulation active:scale-95 ${
-              darkMode
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}>
-            Kembali ke Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return children;
-};
-
 function App() {
   // ========== STATE ==========
   const [user, setUser] = useState(null);
@@ -274,6 +42,9 @@ function App() {
     const saved = localStorage.getItem("darkMode");
     return saved === "true";
   });
+
+  // 🔥 MAINTENANCE MODE - DIPINDAH KE ProtectedRoute.js
+  // State ini dihapus karena bikin re-render terus
 
   // 🌙 DARK MODE EFFECT - Instant update
   useEffect(() => {
@@ -290,6 +61,8 @@ function App() {
   const handleToggleDarkMode = useCallback(() => {
     setDarkMode((prev) => !prev);
   }, []);
+
+  // 🔥 MAINTENANCE CHECK DIPINDAH KE ProtectedRoute.js
 
   // ========== 1. CHECK SESSION DARI localStorage ==========
   useEffect(() => {
@@ -425,7 +198,111 @@ function App() {
     }
   };
 
-  // ========== 5. LAYOUT WRAPPER (WITH DARK MODE) ==========
+  // 🔥 DIPINDAH KE ProtectedRoute.js
+  // const isUserWhitelisted = useMemo(() => {
+  //   return (userId) => whitelistUsers.some((u) => u.id === userId);
+  // }, [whitelistUsers]);
+
+  // ========== 5. PROTECTED ROUTE COMPONENT ==========
+  // 🔥 FIX: Sekarang ProtectedRoute.js yang handle maintenance check sendiri
+  const ProtectedRoute = useMemo(
+    () =>
+      ({ children, allowedRoles = [] }) => {
+        if (loading) {
+          return (
+            <div
+              className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+                darkMode
+                  ? "bg-gradient-to-br from-gray-900 to-gray-800"
+                  : "bg-gradient-to-br from-blue-50 to-indigo-100"
+              }`}>
+              <div className="text-center">
+                <div
+                  className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
+                    darkMode ? "border-blue-400" : "border-blue-600"
+                  }`}></div>
+                <p
+                  className={`text-sm sm:text-base font-medium transition-colors ${
+                    darkMode ? "text-gray-300" : "text-gray-600"
+                  }`}>
+                  Checking session...
+                </p>
+              </div>
+            </div>
+          );
+        }
+
+        if (!user) {
+          return <Navigate to="/" />;
+        }
+
+        // Role-based access check
+        if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+          console.log(
+            `🔴 User ${user.username} tidak memiliki akses ke halaman ini`
+          );
+          return (
+            <div
+              className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+                darkMode
+                  ? "bg-gradient-to-br from-gray-900 to-gray-800"
+                  : "bg-gradient-to-br from-blue-50 to-indigo-100"
+              }`}>
+              <div className="text-center max-w-md mx-auto">
+                <div
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
+                    darkMode ? "bg-red-900/30" : "bg-red-100"
+                  }`}>
+                  <svg
+                    className={`w-7 h-7 sm:w-8 sm:h-8 ${
+                      darkMode ? "text-red-400" : "text-red-600"
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-9a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <h2
+                  className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}>
+                  Akses Ditolak
+                </h2>
+                <p
+                  className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                  Anda tidak memiliki izin untuk mengakses halaman ini.
+                </p>
+                <button
+                  onClick={() => (window.location.href = "/dashboard")}
+                  className={`w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 touch-manipulation active:scale-95 ${
+                    darkMode
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}>
+                  Kembali ke Dashboard
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // 🔥 Maintenance check dipindah ke ProtectedRoute.js
+        // Sekarang ProtectedRoute.js yang import dan wrap children-nya
+
+        return children;
+      },
+    [user, loading, darkMode]
+  );
+
+  // ========== 6. LAYOUT WRAPPER (WITH DARK MODE) ==========
   const LayoutWrapper = useCallback(
     ({ children }) => (
       <Layout
@@ -439,7 +316,7 @@ function App() {
     [user, handleLogout, darkMode, handleToggleDarkMode]
   );
 
-  // ========== 6. RENDER ADMIN PANEL ==========
+  // ========== 7. RENDER ADMIN PANEL ==========
   const currentPath = window.location.pathname;
   if (currentPath === "/secret-admin-panel-2024") {
     return (
@@ -458,7 +335,7 @@ function App() {
     );
   }
 
-  // ========== 7. RENDER MAIN APP ==========
+  // ========== 8. RENDER MAIN APP ==========
   if (loading) {
     return (
       <div
@@ -525,10 +402,11 @@ function App() {
         />
 
         {/* ========== PROTECTED ROUTES ========== */}
+        {/* 🔥 Sekarang ProtectedRoute.js yang handle maintenance check */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Dashboard
                   user={user}
@@ -543,7 +421,7 @@ function App() {
         <Route
           path="/teachers"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Teachers
                   user={user}
@@ -558,7 +436,7 @@ function App() {
         <Route
           path="/classes"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Classes
                   user={user}
@@ -573,7 +451,7 @@ function App() {
         <Route
           path="/students"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Students
                   user={user}
@@ -588,7 +466,7 @@ function App() {
         <Route
           path="/attendance"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Attendance
                   user={user}
@@ -601,28 +479,9 @@ function App() {
         />
 
         <Route
-          path="/grades-katrol"
-          element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
-              <LayoutWrapper>
-                <GradesKatrol
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
           path="/attendance-teacher"
           element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              allowedRoles={["teacher", "guru_bk", "admin"]}>
+            <ProtectedRoute allowedRoles={["teacher", "guru_bk", "admin"]}>
               <LayoutWrapper>
                 <TeacherAttendance
                   user={user}
@@ -637,11 +496,7 @@ function App() {
         <Route
           path="/attendance-management"
           element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              allowedRoles={["admin"]}>
+            <ProtectedRoute allowedRoles={["admin"]}>
               <LayoutWrapper>
                 <AttendanceManagement
                   user={user}
@@ -656,7 +511,7 @@ function App() {
         <Route
           path="/grades"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Grades
                   user={user}
@@ -671,7 +526,7 @@ function App() {
         <Route
           path="/jadwal-saya"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <TeacherSchedule
                   user={user}
@@ -686,7 +541,7 @@ function App() {
         <Route
           path="/catatan-siswa"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <CatatanSiswa
                   user={user}
@@ -701,7 +556,7 @@ function App() {
         <Route
           path="/konseling"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Konseling
                   user={user}
@@ -716,7 +571,7 @@ function App() {
         <Route
           path="/reports"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Reports
                   user={user}
@@ -731,7 +586,7 @@ function App() {
         <Route
           path="/spmb"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <SPMB
                   user={user}
@@ -746,7 +601,7 @@ function App() {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <Setting
                   user={user}
@@ -761,7 +616,7 @@ function App() {
         <Route
           path="/monitor-sistem"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute>
               <LayoutWrapper>
                 <MonitorSistem
                   user={user}

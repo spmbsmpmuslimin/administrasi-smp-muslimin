@@ -11,8 +11,26 @@ import {
   GraduationCap,
   Download,
   Upload,
+  Loader2,
 } from "lucide-react";
 import { exportToExcel, importFromExcel } from "./GradesExcel";
+
+// Loading Overlay Component
+const LoadingOverlay = ({ message }) => (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 sm:p-8 max-w-sm w-full">
+      <div className="flex flex-col items-center">
+        <Loader2 className="w-12 h-12 sm:w-16 sm:h-16 text-indigo-600 dark:text-indigo-400 animate-spin mb-4" />
+        <p className="text-slate-800 dark:text-slate-100 font-medium text-base sm:text-lg text-center mb-2">
+          {message || "Memproses..."}
+        </p>
+        <p className="text-slate-600 dark:text-slate-400 text-sm text-center">
+          Mohon tunggu sebentar
+        </p>
+      </div>
+    </div>
+  </div>
+);
 
 const Grades = ({ user, onShowToast }) => {
   // States untuk auth dan user
@@ -33,6 +51,7 @@ const Grades = ({ user, onShowToast }) => {
   const [students, setStudents] = useState([]);
   const [grades, setGrades] = useState({});
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [message, setMessage] = useState("");
 
   // Assignment types
@@ -222,6 +241,7 @@ const Grades = ({ user, onShowToast }) => {
 
     try {
       setLoading(true);
+      setLoadingMessage("Mengambil data siswa...");
 
       const { data: studentsData, error: studentsError } = await supabase
         .from("students")
@@ -233,6 +253,8 @@ const Grades = ({ user, onShowToast }) => {
 
       if (studentsError) throw studentsError;
       setStudents(studentsData || []);
+
+      setLoadingMessage("Mengambil data nilai...");
 
       const { data: teacherUser, error: teacherError } = await supabase
         .from("users")
@@ -302,6 +324,7 @@ const Grades = ({ user, onShowToast }) => {
       setMessage("Error: Gagal mengambil data - " + error.message);
     } finally {
       setLoading(false);
+      setLoadingMessage("");
     }
   };
 
@@ -338,7 +361,7 @@ const Grades = ({ user, onShowToast }) => {
     });
   };
 
-  // Save grades function
+  // Save grades function - OPTIMIZED
   const saveGrades = async () => {
     if (!teacherId || !selectedSubject || !selectedClass) {
       const msg = "Pilih mata pelajaran dan kelas terlebih dahulu!";
@@ -355,6 +378,7 @@ const Grades = ({ user, onShowToast }) => {
     }
 
     setLoading(true);
+    setLoadingMessage("Mempersiapkan data...");
     setMessage("");
 
     try {
@@ -420,8 +444,10 @@ const Grades = ({ user, onShowToast }) => {
       let errorCount = 0;
       const errorDetails = [];
 
+      // INSERT - Batch processing
       if (gradesToSave.length > 0) {
-        const BATCH_SIZE = 5;
+        setLoadingMessage(`Menyimpan ${gradesToSave.length} nilai baru...`);
+        const BATCH_SIZE = 10; // Increased batch size for better performance
         for (let i = 0; i < gradesToSave.length; i += BATCH_SIZE) {
           const batch = gradesToSave.slice(i, i + BATCH_SIZE);
 
@@ -448,26 +474,43 @@ const Grades = ({ user, onShowToast }) => {
         }
       }
 
+      // UPDATE - Batch processing (OPTIMIZED)
       if (gradesToUpdate.length > 0) {
-        for (const grade of gradesToUpdate) {
-          const { id, ...updateData } = grade;
+        setLoadingMessage(`Memperbarui ${gradesToUpdate.length} nilai...`);
 
-          try {
-            const { error } = await supabase
-              .from("grades")
-              .update(updateData)
-              .eq("id", id);
+        // Group updates by student to reduce number of queries
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < gradesToUpdate.length; i += BATCH_SIZE) {
+          const batch = gradesToUpdate.slice(i, i + BATCH_SIZE);
 
-            if (error) {
-              errorCount++;
-              errorDetails.push(`Update ID ${id}: ${error.message}`);
-            } else {
-              successCount++;
+          // Execute updates in parallel for better performance
+          const updatePromises = batch.map(async (grade) => {
+            const { id, ...updateData } = grade;
+            try {
+              const { error } = await supabase
+                .from("grades")
+                .update(updateData)
+                .eq("id", id);
+
+              if (error) {
+                return { success: false, id, error: error.message };
+              }
+              return { success: true };
+            } catch (updateError) {
+              return { success: false, id, error: updateError.message };
             }
-          } catch (updateError) {
-            errorCount++;
-            errorDetails.push(`Update ID ${id}: ${updateError.message}`);
-          }
+          });
+
+          const results = await Promise.all(updatePromises);
+
+          results.forEach((result) => {
+            if (result.success) {
+              successCount++;
+            } else {
+              errorCount++;
+              errorDetails.push(`Update ID ${result.id}: ${result.error}`);
+            }
+          });
         }
       }
 
@@ -488,16 +531,18 @@ const Grades = ({ user, onShowToast }) => {
       setMessage(successMsg);
       if (onShowToast) onShowToast(successMsg, "success");
 
+      setLoadingMessage("Memuat ulang data...");
       setTimeout(() => {
         fetchStudentsAndGrades(selectedClass);
         setMessage("");
-      }, 2000);
+      }, 1000);
     } catch (error) {
       const errorMsg = "Gagal menyimpan nilai: " + error.message;
       setMessage(errorMsg);
       if (onShowToast) onShowToast(errorMsg, "error");
     } finally {
       setLoading(false);
+      setLoadingMessage("");
     }
   };
 
@@ -511,7 +556,7 @@ const Grades = ({ user, onShowToast }) => {
     }
 
     setLoading(true);
-    setMessage("Mengekspor data ke Excel...");
+    setLoadingMessage("Mengekspor data ke Excel...");
 
     const result = await exportToExcel({
       students,
@@ -529,6 +574,7 @@ const Grades = ({ user, onShowToast }) => {
       onShowToast(result.message, result.success ? "success" : "error");
     }
     setLoading(false);
+    setLoadingMessage("");
   };
 
   // Handler Import
@@ -545,7 +591,7 @@ const Grades = ({ user, onShowToast }) => {
     }
 
     setLoading(true);
-    setMessage("Memproses file Excel...");
+    setLoadingMessage("Memproses file Excel...");
 
     const result = await importFromExcel(file, {
       students,
@@ -562,13 +608,16 @@ const Grades = ({ user, onShowToast }) => {
     }
 
     if (result.success) {
+      setLoadingMessage("Memuat ulang data...");
       setTimeout(() => {
         fetchStudentsAndGrades(selectedClass);
         setMessage("");
-      }, 2000);
+        setLoadingMessage("");
+      }, 1000);
     }
 
     setLoading(false);
+    setLoadingMessage("");
     event.target.value = "";
   };
 
@@ -634,6 +683,9 @@ const Grades = ({ user, onShowToast }) => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6">
+      {/* Loading Overlay */}
+      {loading && loadingMessage && <LoadingOverlay message={loadingMessage} />}
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-6 mb-4 sm:mb-6">
@@ -663,7 +715,7 @@ const Grades = ({ user, onShowToast }) => {
             </div>
           )}
 
-          {/* Filters - Mobile: 1 kolom, Tablet: 2 kolom, Desktop: 4 kolom */}
+          {/* Filters */}
           <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
             {/* Academic Year */}
             <div>
@@ -849,44 +901,43 @@ const Grades = ({ user, onShowToast }) => {
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                     {selectedSubject} • {academicYear} • Semester {semester}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                    NA = Rata-rata NH (40%) + PSTS (30%) + PSAS (30%)
-                  </p>
                 </div>
 
-                {/* Action Buttons - Responsive Layout */}
-                <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
+                {/* Action Buttons - SELALU HORIZONTAL */}
+                <div className="flex flex-row gap-2 sm:gap-3">
                   <button
                     onClick={saveGrades}
                     disabled={loading || students.length === 0}
-                    className="flex-1 xs:flex-none bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] text-sm sm:text-base"
+                    className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base"
                     style={{ minHeight: "44px", touchAction: "manipulation" }}>
                     <Save className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                    {loading ? "Menyimpan..." : "Simpan Nilai"}
+                    <span className="hidden sm:inline">
+                      {loading ? "Menyimpan..." : "Simpan Nilai"}
+                    </span>
                   </button>
 
                   <button
                     onClick={handleExport}
                     disabled={loading || students.length === 0}
-                    className="flex-1 xs:flex-none bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] text-sm sm:text-base"
+                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base"
                     title="Export data nilai ke Excel"
                     style={{ minHeight: "44px", touchAction: "manipulation" }}>
                     <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                    <span className="hidden xs:inline">Export Excel</span>
-                    <span className="xs:hidden">Export</span>
+                    <span className="hidden sm:inline">Export Excel</span>
+                    <span className="sm:hidden">Export</span>
                   </button>
 
                   <label
-                    className={`flex-1 xs:flex-none ${
+                    className={`flex items-center justify-center gap-2 ${
                       loading || students.length === 0
                         ? "bg-gray-400 dark:bg-gray-700 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer"
-                    } text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors active:scale-[0.98] text-sm sm:text-base`}
+                    } text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base`}
                     title="Import nilai dari file Excel"
                     style={{ minHeight: "44px", touchAction: "manipulation" }}>
                     <Upload className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                    <span className="hidden xs:inline">Import Excel</span>
-                    <span className="xs:hidden">Import</span>
+                    <span className="hidden sm:inline">Import Excel</span>
+                    <span className="sm:hidden">Import</span>
                     <input
                       type="file"
                       accept=".xlsx,.xls"
