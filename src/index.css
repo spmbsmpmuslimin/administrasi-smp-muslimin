@@ -2,10 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ==================== CSS VARIABLES - KONSISTENSI WARNA ==================== */
+/* ==================== 🎨 CSS VARIABLES - THEME SYSTEM ==================== */
 @layer base {
   :root {
-    /* Primary Blue Theme - Konsisten untuk seluruh aplikasi */
+    /* ========== EXISTING: Primary Blue Theme ========== */
     --primary-50: #eff6ff;
     --primary-100: #dbeafe;
     --primary-200: #bfdbfe;
@@ -17,7 +17,7 @@
     --primary-800: #1e40af;
     --primary-900: #1e3a8a;
 
-    /* Secondary Gray-Slate Theme */
+    /* ========== EXISTING: Secondary Gray-Slate Theme ========== */
     --secondary-50: #f8fafc;
     --secondary-100: #f1f5f9;
     --secondary-200: #e2e8f0;
@@ -28,6 +28,91 @@
     --secondary-700: #334155;
     --secondary-800: #1e293b;
     --secondary-900: #0f172a;
+
+    /* ========== NEW: THEME SYSTEM COLORS (Default: Blue Theme) ========== */
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-secondary: #ffffff;
+    --color-background: #ffffff;
+    --color-surface: #f8fafc;
+    --color-surface-hover: #f1f5f9;
+    --color-text: #0f172a;
+    --color-text-secondary: #64748b;
+    --color-border: #e2e8f0;
+    --color-success: #16a34a;
+    --color-warning: #f59e0b;
+    --color-error: #dc2626;
+    --color-info: #3b82f6;
+
+    /* ========== NEW: SHADOWS ========== */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    /* ========== NEW: TRANSITIONS ========== */
+    --transition-fast: 150ms ease;
+    --transition-base: 300ms ease;
+    --transition-slow: 500ms ease;
+
+    /* ========== NEW: SPACING ========== */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* ========== NEW: BORDER RADIUS ========== */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-full: 9999px;
+  }
+
+  /* ========== 📱 RESPONSIVE TYPOGRAPHY ========== */
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    font-size: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 1.3rem + 1vw, 2rem);
+  }
+
+  h2 {
+    font-size: clamp(1.25rem, 1.1rem + 0.75vw, 1.75rem);
+  }
+
+  h3 {
+    font-size: clamp(1.125rem, 1rem + 0.5vw, 1.5rem);
+  }
+
+  h4 {
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.25rem);
+  }
+
+  /* ========== 🎨 SMOOTH TRANSITIONS ========== */
+  * {
+    transition: background-color var(--transition-base),
+      color var(--transition-base), border-color var(--transition-base);
+  }
+
+  /* Faster transitions for interactive elements */
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    transition: background-color var(--transition-fast),
+      color var(--transition-fast), border-color var(--transition-fast),
+      transform var(--transition-fast);
   }
 }
 
@@ -36,6 +121,7 @@
   /* ========== BUTTONS - Updated dengan Blue-White Theme ========== */
   .btn {
     @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm;
+    min-height: 44px; /* Mobile touch target */
   }
 
   .btn-primary {
@@ -58,6 +144,38 @@
     @apply bg-transparent hover:bg-blue-50 text-blue-600 border border-transparent hover:border-blue-200;
   }
 
+  /* ========== NEW: THEME-AWARE BUTTONS ========== */
+  .btn-theme-primary {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    transition: all var(--transition-fast);
+  }
+
+  .btn-theme-primary:hover {
+    background-color: var(--color-primary-hover);
+    transform: scale(1.02);
+  }
+
+  .btn-theme-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    transition: all var(--transition-fast);
+  }
+
+  .btn-theme-secondary:hover {
+    background-color: var(--color-surface-hover);
+  }
+
   /* ========== CARDS - Blue-White Theme ========== */
   .card {
     @apply bg-white rounded-xl shadow-lg shadow-blue-100/50 border border-blue-100 p-6;
@@ -71,11 +189,27 @@
     @apply bg-white rounded-lg shadow-md border border-blue-50 p-4;
   }
 
+  /* ========== NEW: THEME-AWARE CARDS ========== */
+  .card-theme {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-base);
+  }
+
+  .card-theme:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
   /* ========== INPUTS - Consistent Styling ========== */
   .input {
     @apply w-full px-3 py-2.5 border border-blue-200 rounded-lg bg-white text-slate-900 placeholder-slate-400 
            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
            transition-colors duration-200 text-sm;
+    min-height: 44px; /* Mobile touch target */
   }
 
   .input-error {
@@ -86,6 +220,31 @@
     @apply w-full px-3 py-2.5 border border-blue-200 rounded-lg bg-white text-slate-900
            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
            transition-colors duration-200 text-sm;
+    min-height: 44px; /* Mobile touch target */
+  }
+
+  /* ========== NEW: THEME-AWARE INPUTS ========== */
+  .input-theme {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 1rem;
+    min-height: 44px;
+    width: 100%;
+    transition: all var(--transition-fast);
+  }
+
+  .input-theme:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .input-theme::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.6;
   }
 
   /* ========== TABLES - Blue-White Professional Theme ========== */
@@ -113,13 +272,47 @@
     @apply border-b-0;
   }
 
+  /* ========== NEW: THEME-AWARE TABLES ========== */
+  .table-theme {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .table-theme thead {
+    background-color: var(--color-primary);
+    color: #ffffff;
+  }
+
+  .table-theme th {
+    padding: var(--spacing-md);
+    text-align: left;
+    font-weight: 600;
+    font-size: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  }
+
+  .table-theme td {
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-size: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  }
+
+  .table-theme tbody tr:hover {
+    background-color: var(--color-surface-hover);
+  }
+
   /* ========== NAVIGATION - Consistent Blue Theme ========== */
   .nav-item {
     @apply flex items-center px-4 py-3 rounded-lg transition-all duration-200 text-slate-600 hover:bg-blue-50 hover:text-blue-700 font-medium;
+    min-height: 44px; /* Mobile touch target */
   }
 
   .nav-item-active {
     @apply flex items-center px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md font-semibold;
+    min-height: 44px;
   }
 
   .nav-header {
@@ -149,6 +342,38 @@
 
   .badge-info {
     @apply bg-blue-100 text-blue-800 border-blue-200;
+  }
+
+  /* ========== NEW: THEME-AWARE ALERTS ========== */
+  .alert-theme {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border-left: 4px solid;
+    margin-bottom: var(--spacing-md);
+  }
+
+  .alert-success {
+    background-color: rgba(22, 163, 74, 0.1);
+    border-color: var(--color-success);
+    color: var(--color-success);
+  }
+
+  .alert-warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+  }
+
+  .alert-error {
+    background-color: rgba(220, 38, 38, 0.1);
+    border-color: var(--color-error);
+    color: var(--color-error);
+  }
+
+  .alert-info {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: var(--color-info);
+    color: var(--color-info);
   }
 
   /* ========== LAYOUTS ========== */
@@ -183,6 +408,22 @@
 
   .loading-text {
     @apply text-sm sm:text-base text-slate-500 mt-4;
+  }
+
+  /* ========== NEW: THEME LOADING SPINNER ========== */
+  .spinner-theme {
+    border: 4px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* ========== TOASTS & NOTIFICATIONS ========== */
@@ -269,4 +510,169 @@
   .form-help {
     @apply text-slate-500 text-xs mt-1;
   }
+
+  /* ========== NEW: THEME UTILITIES ========== */
+  .theme-bg {
+    background-color: var(--color-background);
+  }
+
+  .theme-surface {
+    background-color: var(--color-surface);
+  }
+
+  .theme-text {
+    color: var(--color-text);
+  }
+
+  .theme-text-secondary {
+    color: var(--color-text-secondary);
+  }
+
+  .theme-primary {
+    color: var(--color-primary);
+  }
+
+  .theme-border {
+    border-color: var(--color-border);
+  }
+
+  /* ========== 🖱️ TOUCH TARGETS (MOBILE FIRST) ========== */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1rem;
+  }
+
+  .touch-target-sm {
+    min-height: 40px;
+    min-width: 40px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .touch-target-lg {
+    min-height: 56px;
+    min-width: 56px;
+    padding: 1rem 1.5rem;
+  }
+}
+
+/* ==================== 🎨 CUSTOM SCROLLBAR ==================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface, #f8fafc);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border, #e2e8f0);
+  border-radius: var(--radius-full, 9999px);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary, #64748b);
+}
+
+/* ==================== 🎯 FOCUS VISIBLE (ACCESSIBILITY) ==================== */
+*:focus-visible {
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: 2px;
+}
+
+/* ==================== 💫 ANIMATIONS ==================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ==================== 📱 MOBILE RESPONSIVE ==================== */
+@media (max-width: 640px) {
+  .card-theme,
+  .card {
+    padding: var(--spacing-md, 1rem);
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .button-group > * {
+    width: 100%;
+  }
+
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1025px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* ==================== 🌙 DARK MODE COMPATIBILITY ==================== */
+.dark {
+  /* Variables akan di-set via JavaScript dari themeConfig.js */
+}
+
+.dark .bg-gray-900 {
+  background-color: #111827;
+}
+
+.dark .text-white {
+  color: #ffffff;
+}
+
+.dark .text-gray-300 {
+  color: #d1d5db;
+}
+
+.dark .border-gray-700 {
+  border-color: #374151;
 }

@@ -34,13 +34,13 @@ const MaintenancePage = ({ message }) => {
           🔧
         </div>
 
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 sm:mb-5">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-700 dark:text-red-300 mb-4 sm:mb-5">
           Sedang Maintenance
         </h1>
 
         <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg md:text-xl mb-6 sm:mb-8 leading-relaxed">
           {message ||
-            "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"}
+            "Aplikasi Sedang Dalam maintenance. Kami Akan Kembali Segera!"}
         </p>
 
         <button
@@ -64,11 +64,7 @@ const MaintenancePage = ({ message }) => {
           </span>
         </button>
 
-        <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-4">
-          Klik tombol di atas untuk kembali ke halaman login
-        </p>
-
-        <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-6 sm:mt-8">
+        <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg mt-4 font-semibold">
           Mohon maaf atas ketidaknyamanannya 🙏
         </p>
       </div>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import Logo from "./Logo"; // ← ADD THIS
+import Logo from "./Logo";
 import logoSekolah from "../assets/logo_sekolah.png";
 import backgroundImage from "../assets/Background.JPG";
 
@@ -142,14 +142,17 @@ export const Login = ({ onLogin, onShowToast }) => {
         created_at: data.created_at,
       };
 
+      // 🔥 Call onLogin WITHOUT toast
       onLogin(userData, rememberMe);
 
-      if (onShowToast) {
-        onShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
-      }
+      // 🔥 HAPUS TOAST - biar ProtectedRoute/Dashboard yang handle
+      // if (onShowToast) {
+      //   onShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
+      // }
     } catch (error) {
       setErrors({ general: error.message });
 
+      // Toast error tetap ada
       if (onShowToast) {
         onShowToast(error.message, "error");
       }

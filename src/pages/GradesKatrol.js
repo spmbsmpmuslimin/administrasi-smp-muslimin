@@ -1,6 +1,6 @@
+// 📁 GradesKatrol.js - VERSI FIXED & CLEAN
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import ExcelJS from "exceljs";
 import {
   Calculator,
   Download,
@@ -9,7 +9,6 @@ import {
   Loader,
   TrendingUp,
   Eye,
-  Settings,
   Save,
   Zap,
   X,
@@ -19,178 +18,172 @@ import {
   Users,
 } from "lucide-react";
 
-const KatrolTable = ({ data, showComparison = false }) => {
+// ✅ IMPORT DARI FILE LAIN
+import KatrolTable from "./KatrolTable";
+import {
+  calculateKatrolValue,
+  organizeGradesByStudent,
+  calculateMinMaxKelas,
+  prosesKatrol as prosesKatrolUtils,
+  formatDataForDatabase,
+  exportToExcel,
+  validateBeforeKatrol,
+  formatNilaiDisplay,
+  calculateClassStatistics,
+} from "./Utils";
+
+// 🎨 CUSTOM STYLES untuk animasi loading
+const customStyles = `
+  @keyframes scale-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes progress {
+    0% {
+      width: 0%;
+    }
+    100% {
+      width: 100%;
+    }
+  }
+  
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+  }
+  
+  .animate-progress {
+    animation: progress 2s ease-in-out infinite;
+  }
+`;
+
+// 🎨 HELPER COMPONENT
+const InfoRow = ({ label, value }) => (
+  <div className="flex justify-between items-center">
+    <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
+    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+      {value}
+    </span>
+  </div>
+);
+
+// 🎨 CUSTOM CONFIRMATION MODAL COMPONENT
+const ConfirmationModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  type = "save",
+  data = {},
+}) => {
+  if (!isOpen) return null;
+
+  const isSaveConfirm = type === "save";
+  const isOverwriteWarning = type === "overwrite";
+
   return (
-    <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-700">
-          <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              No
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NIS
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Nama Siswa
-            </th>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform animate-scale-in">
+        {/* Header */}
+        <div
+          className={`px-6 py-5 ${
+            isSaveConfirm
+              ? "bg-gradient-to-r from-purple-600 to-indigo-600"
+              : "bg-gradient-to-r from-orange-500 to-red-500"
+          }`}>
+          <div className="flex items-center gap-3 text-white">
+            <div className="bg-white/20 p-2 rounded-lg">
+              {isSaveConfirm ? (
+                <Save className="w-6 h-6" />
+              ) : (
+                <AlertCircle className="w-6 h-6" />
+              )}
+            </div>
+            <h3 className="text-xl font-semibold">
+              {isSaveConfirm
+                ? "Konfirmasi Penyimpanan"
+                : "Peringatan Data Sudah Ada!"}
+            </h3>
+          </div>
+        </div>
 
-            {/* Nilai Asli */}
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH1
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH2
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH3
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Rata NH
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              PSTS
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              PSAS
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Nilai Akhir
-            </th>
+        {/* Content */}
+        <div className="px-6 py-5">
+          {isSaveConfirm ? (
+            <>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                Anda akan menyimpan data katrol dengan detail:
+              </p>
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 space-y-2.5 mb-4">
+                <InfoRow label="Tahun Ajaran" value={data.academicYear} />
+                <InfoRow label="Semester" value={data.semester} />
+                <InfoRow label="Kelas" value={data.classId} />
+                <InfoRow label="Mata Pelajaran" value={data.subject} />
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Total Siswa
+                  </span>
+                  <span className="text-base font-bold text-purple-600 dark:text-purple-400">
+                    {data.totalStudents}
+                  </span>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                Data akan disimpan ke database. Jika sudah ada, akan ditimpa.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 p-4 mb-4">
+                <p className="text-sm text-orange-800 dark:text-orange-300 font-medium">
+                  Ditemukan{" "}
+                  <span className="font-bold">{data.existingCount}</span> data
+                  katrol yang sudah tersimpan
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 space-y-2.5 mb-4">
+                <InfoRow label="Kelas" value={data.classId} />
+                <InfoRow label="Mata Pelajaran" value={data.subject} />
+                <InfoRow label="Tahun Ajaran" value={data.academicYear} />
+                <InfoRow label="Semester" value={data.semester} />
+              </div>
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 mb-4">
+                <p className="text-sm text-red-700 dark:text-red-300 font-medium">
+                  ⚠️ Data lama akan dihapus dan diganti dengan data baru
+                </p>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Apakah Anda yakin ingin melanjutkan?
+              </p>
+            </>
+          )}
+        </div>
 
-            {/* Nilai Katrol */}
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH1 (K)
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH2 (K)
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH3 (K)
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Rata NH (K)
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              PSTS (K)
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              PSAS (K)
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Nilai Akhir (K)
-            </th>
-
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Status
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          {data.map((item, index) => (
-            <tr
-              key={item.student_id}
-              className="hover:bg-gray-50 dark:hover:bg-gray-700">
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {index + 1}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
-                {item.nis || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.nama_siswa}
-              </td>
-
-              {/* Nilai Asli */}
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.nh1 || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.nh2 || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.nh3 || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.rata_nh ? item.rata_nh.toFixed(1) : "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.psts || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.psas || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-200">
-                {item.nilai_akhir ? item.nilai_akhir.toFixed(1) : "-"}
-              </td>
-
-              {/* Nilai Katrol */}
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.nh1_k || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.nh2_k || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.nh3_k || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400 font-bold">
-                {item.rata_nh_k ? item.rata_nh_k.toFixed(1) : "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.psts_k || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.psas_k || "-"}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-green-700 dark:text-green-400">
-                {item.nilai_akhir_k ? item.nilai_akhir_k.toFixed(1) : "-"}
-              </td>
-
-              <td className="px-4 py-3 whitespace-nowrap">
-                <span
-                  className={`px-2 py-1 text-xs rounded-full ${
-                    item.status === "Tuntas"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                  }`}>
-                  {item.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        {/* Footer Actions */}
+        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors ${
+              isSaveConfirm
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            }`}>
+            {isSaveConfirm ? "Ya, Simpan" : "Ya, Timpa Data"}
+          </button>
+        </div>
+      </div>
     </div>
   );
-};
-
-// Helper function untuk katrol nilai
-const calculateKatrolValue = (nilai, minKelas, maxKelas, kkm, targetMax) => {
-  if (nilai === null || nilai === undefined || isNaN(nilai)) return null;
-
-  // Jika minKelas atau maxKelas null, return nilai asli
-  if (minKelas === null || maxKelas === null) return nilai;
-
-  // Jika nilai sudah >= KKM, tidak perlu dikatrol
-  if (nilai >= kkm) return nilai;
-
-  // Jika semua nilai sama (min = max), return KKM
-  if (minKelas === maxKelas) return kkm;
-
-  // Pastikan nilai tidak lebih kecil dari minKelas (jaga-jaga)
-  const nilaiTerpakai = Math.max(nilai, minKelas);
-
-  // Rumus katrol
-  const scaledValue =
-    kkm +
-    ((nilaiTerpakai - minKelas) / (maxKelas - minKelas)) * (targetMax - kkm);
-
-  // Batasi maksimal ke targetMax, bulatkan 1 desimal
-  const hasil = Math.min(Math.round(scaledValue * 10) / 10, targetMax);
-
-  // Pastikan hasil tidak lebih kecil dari nilai asli (katrol harus naik atau tetap)
-  return Math.max(hasil, nilai);
 };
 
 const GradesKatrol = ({
@@ -227,6 +220,11 @@ const GradesKatrol = ({
   const [message, setMessage] = useState({ text: "", type: "" });
   const [academicYearId, setAcademicYearId] = useState(null);
 
+  // State untuk modal konfirmasi
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showOverwriteModal, setShowOverwriteModal] = useState(false);
+  const [pendingSaveData, setPendingSaveData] = useState(null);
+
   // State untuk filter
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(
     academicYear || ""
@@ -242,15 +240,16 @@ const GradesKatrol = ({
   const [classes, setClasses] = useState([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  // Debug state changes
   useEffect(() => {
     console.log("🎯 STATE UPDATE:", {
       selectedAcademicYear,
       selectedSemester,
       selectedSubjectState,
       selectedClassId,
-      academicYearsAvailable: academicYears.length,
-      subjectsAvailable: subjects.length,
-      classesAvailable: classes.length,
+      academicYearsLength: academicYears.length,
+      subjectsLength: subjects.length,
+      classesLength: classes.length,
       loading,
       processing,
     });
@@ -466,6 +465,7 @@ const GradesKatrol = ({
     setTimeout(() => setMessage({ text: "", type: "" }), 5000);
   };
 
+  // ✅ FETCH DATA NILAI (dengan Utils.js)
   const fetchDataNilai = async () => {
     if (!selectedClassId || !selectedSubjectState || !selectedAcademicYear) {
       showMessage(
@@ -515,13 +515,11 @@ const GradesKatrol = ({
           `✅ Ditemukan ${katrolData.length} data KATROL (sudah diproses)`
         );
 
-        // Format data dari database (CLEAN VERSION - NO MENTAH)
+        // Format data dari database
         const formattedKatrol = katrolData.map((item) => ({
           student_id: item.student_id,
           nis: item.students?.nis || "-",
           nama_siswa: item.students?.full_name || "-",
-
-          // ✅ CLEAN: Nilai Asli (langsung dari database)
           nh1: item.nh1,
           nh2: item.nh2,
           nh3: item.nh3,
@@ -529,8 +527,6 @@ const GradesKatrol = ({
           psts: item.psts,
           psas: item.psas,
           nilai_akhir: item.nilai_akhir,
-
-          // ✅ CLEAN: Nilai Katrol (langsung dari database)
           nh1_k: item.nh1_k,
           nh2_k: item.nh2_k,
           nh3_k: item.nh3_k,
@@ -538,7 +534,6 @@ const GradesKatrol = ({
           psts_k: item.psts_k,
           psas_k: item.psas_k,
           nilai_akhir_k: item.nilai_akhir_k,
-
           status: item.nilai_akhir_k >= item.kkm ? "Tuntas" : "Belum Tuntas",
         }));
 
@@ -582,7 +577,7 @@ const GradesKatrol = ({
 
       if (gradesError) throw gradesError;
 
-      // Format data preview (CLEAN VERSION)
+      // Format data preview
       const previewData = studentsData.map((student) => {
         const studentGrades =
           gradesData?.filter((g) => g.student_id === student.id) || [];
@@ -618,7 +613,6 @@ const GradesKatrol = ({
           student_id: student.id,
           nis: student.nis,
           nama_siswa: student.full_name,
-          // ✅ CLEAN: Langsung pakai nama field final
           nh1: nh1,
           nh2: nh2,
           nh3: nh3,
@@ -645,6 +639,7 @@ const GradesKatrol = ({
     }
   };
 
+  // ✅ PROSES KATROL (dengan Utils.js)
   const prosesKatrol = async () => {
     if (!selectedClassId || !selectedSubjectState || !selectedAcademicYear) {
       showMessage(
@@ -683,202 +678,144 @@ const GradesKatrol = ({
 
       if (gradesError) throw gradesError;
 
-      // Hitung nilai asli per siswa (CLEAN VERSION)
-      const nilaiAsli = studentsData
-        .map((student) => {
-          const studentGrades =
-            gradesData?.filter((g) => g.student_id === student.id) || [];
+      // ✅ PAKAI FUNGSI DARI UTILS.JS
+      const organizedGrades = organizeGradesByStudent(gradesData);
+      const minMax = calculateMinMaxKelas(organizedGrades);
 
-          const nh1 =
-            parseFloat(
-              studentGrades.find((g) => g.assignment_type === "NH1")?.score
-            ) || null;
-          const nh2 =
-            parseFloat(
-              studentGrades.find((g) => g.assignment_type === "NH2")?.score
-            ) || null;
-          const nh3 =
-            parseFloat(
-              studentGrades.find((g) => g.assignment_type === "NH3")?.score
-            ) || null;
-          const psts =
-            parseFloat(
-              studentGrades.find((g) => g.assignment_type === "PSTS")?.score
-            ) || null;
-          const psas =
-            parseFloat(
-              studentGrades.find((g) => g.assignment_type === "PSAS")?.score
-            ) || null;
+      const additionalInfo = {
+        class_id: selectedClassId,
+        teacher_id: teacherId,
+        subject: selectedSubjectState,
+        academic_year: selectedAcademicYear,
+        academic_year_id: academicYearId,
+        semester: selectedSemester,
+      };
 
-          const rata_nh = nh1 && nh2 && nh3 ? (nh1 + nh2 + nh3) / 3 : null;
-          const nilai_akhir =
-            rata_nh && psts && psas
-              ? rata_nh * 0.4 + psts * 0.3 + psas * 0.3
-              : null;
-
-          return {
-            student_id: student.id,
-            nis: student.nis,
-            nama_siswa: student.full_name,
-            // ✅ CLEAN: Langsung pakai field final
-            nh1: nh1,
-            nh2: nh2,
-            nh3: nh3,
-            psts: psts,
-            psas: psas,
-            rata_nh: rata_nh,
-            nilai_akhir: nilai_akhir,
-          };
-        })
-        .filter((item) => item.nilai_akhir !== null); // Hanya siswa yang punya nilai akhir
-
-      if (nilaiAsli.length === 0) {
-        showMessage("Tidak ada nilai yang bisa diproses", "error");
+      // ✅ VALIDASI SEBELUM PROSES
+      const validation = validateBeforeKatrol(studentsData, organizedGrades);
+      if (!validation.isValid) {
+        showMessage(validation.errors[0], "error");
         return;
       }
 
-      // Hitung min dan max PER KOMPONEN
-      const nh1Array = nilaiAsli
-        .map((item) => item.nh1)
-        .filter((n) => n !== null && !isNaN(n));
-      const nh2Array = nilaiAsli
-        .map((item) => item.nh2)
-        .filter((n) => n !== null && !isNaN(n));
-      const nh3Array = nilaiAsli
-        .map((item) => item.nh3)
-        .filter((n) => n !== null && !isNaN(n));
-      const pstsArray = nilaiAsli
-        .map((item) => item.psts)
-        .filter((n) => n !== null && !isNaN(n));
-      const psasArray = nilaiAsli
-        .map((item) => item.psas)
-        .filter((n) => n !== null && !isNaN(n));
+      if (validation.warnings.length > 0) {
+        console.warn("⚠️ Warnings:", validation.warnings);
+      }
 
-      const minNH1 = nh1Array.length > 0 ? Math.min(...nh1Array) : null;
-      const maxNH1 = nh1Array.length > 0 ? Math.max(...nh1Array) : null;
-      const minNH2 = nh2Array.length > 0 ? Math.min(...nh2Array) : null;
-      const maxNH2 = nh2Array.length > 0 ? Math.max(...nh2Array) : null;
-      const minNH3 = nh3Array.length > 0 ? Math.min(...nh3Array) : null;
-      const maxNH3 = nh3Array.length > 0 ? Math.max(...nh3Array) : null;
-      const minPSTS = pstsArray.length > 0 ? Math.min(...pstsArray) : null;
-      const maxPSTS = pstsArray.length > 0 ? Math.max(...pstsArray) : null;
-      const minPSAS = psasArray.length > 0 ? Math.min(...psasArray) : null;
-      const maxPSAS = psasArray.length > 0 ? Math.max(...psasArray) : null;
+      // ✅ PROSES KATROL DENGAN UTILS
+      const hasil = prosesKatrolUtils(
+        studentsData,
+        organizedGrades,
+        minMax,
+        kkm,
+        nilaiMaksimal,
+        additionalInfo
+      );
 
-      console.log("📊 Min/Max per komponen:", {
-        minNH1,
-        maxNH1,
-        minNH2,
-        maxNH2,
-        minNH3,
-        maxNH3,
-        minPSTS,
-        maxPSTS,
-        minPSAS,
-        maxPSAS,
-      });
+      // Format untuk display
+      const formattedHasil = hasil.map((item) => ({
+        student_id: item.student_id,
+        nis: item.student_nis,
+        nama_siswa: item.student_name,
+        nh1: item.nh1_mentah,
+        nh2: item.nh2_mentah,
+        nh3: item.nh3_mentah,
+        psts: item.psts_mentah,
+        psas: item.psas_mentah,
+        rata_nh: item.rata_nh_mentah,
+        nilai_akhir: item.nilai_akhir_mentah,
+        nh1_k: item.nh1_katrol,
+        nh2_k: item.nh2_katrol,
+        nh3_k: item.nh3_katrol,
+        psts_k: item.psts_katrol,
+        psas_k: item.psas_katrol,
+        rata_nh_k: item.rata_nh_katrol,
+        nilai_akhir_k: item.nilai_akhir_katrol,
+        status: item.nilai_akhir_katrol >= kkm ? "Tuntas" : "Belum Tuntas",
+      }));
 
-      // Proses katrol per komponen
-      const hasil = nilaiAsli.map((item) => {
-        // Katrol per komponen dengan min/max masing-masing
-        const nh1_k = calculateKatrolValue(
-          item.nh1,
-          minNH1,
-          maxNH1,
-          kkm,
-          nilaiMaksimal
-        );
-        const nh2_k = calculateKatrolValue(
-          item.nh2,
-          minNH2,
-          maxNH2,
-          kkm,
-          nilaiMaksimal
-        );
-        const nh3_k = calculateKatrolValue(
-          item.nh3,
-          minNH3,
-          maxNH3,
-          kkm,
-          nilaiMaksimal
-        );
-        const psts_k = calculateKatrolValue(
-          item.psts,
-          minPSTS,
-          maxPSTS,
-          kkm,
-          nilaiMaksimal
-        );
-        const psas_k = calculateKatrolValue(
-          item.psas,
-          minPSAS,
-          maxPSAS,
-          kkm,
-          nilaiMaksimal
-        );
-
-        // Hitung rata-rata NH katrol
-        const rata_nh_k =
-          nh1_k && nh2_k && nh3_k ? (nh1_k + nh2_k + nh3_k) / 3 : null;
-
-        // Hitung nilai akhir katrol
-        const nilai_akhir_k =
-          rata_nh_k && psts_k && psas_k
-            ? rata_nh_k * 0.4 + psts_k * 0.3 + psas_k * 0.3
-            : null;
-
-        return {
-          ...item,
-          // ✅ CLEAN: Langsung pakai suffix _k
-          nh1_k,
-          nh2_k,
-          nh3_k,
-          psts_k,
-          psas_k,
-          rata_nh_k,
-          nilai_akhir_k,
-          status: nilai_akhir_k >= kkm ? "Tuntas" : "Belum Tuntas",
-        };
-      });
-
-      setHasilKatrol(hasil);
+      setHasilKatrol(formattedHasil);
       setShowPreview(false);
       showMessage(
-        `✅ Berhasil memproses katrol untuk ${hasil.length} siswa`,
+        `✅ Berhasil memproses katrol untuk ${formattedHasil.length} siswa`,
         "success"
       );
     } catch (error) {
       console.error("❌ Error processing katrol:", error);
-      showMessage("Gagal memproses katrol", "error");
+      showMessage("Gagal memproses katrol: " + error.message, "error");
     } finally {
       setProcessing(false);
     }
   };
 
+  // ✅ SIMPAN KE DATABASE (dengan Elegant Modal)
   const saveKatrolToDatabase = async () => {
     if (!hasilKatrol || hasilKatrol.length === 0) {
       showMessage("Tidak ada data katrol untuk disimpan", "error");
       return;
     }
 
-    const confirmSave = window.confirm(
-      `💾 SIMPAN NILAI KATROL SMP?\n\n` +
-        `Tahun Ajaran: ${selectedAcademicYear}\n` +
-        `Semester: ${selectedSemester}\n` +
-        `Kelas: ${selectedClassId}\n` +
-        `Mata Pelajaran: ${selectedSubjectState}\n` +
-        `Total Siswa: ${hasilKatrol.length}\n\n` +
-        `Nilai akan disimpan ke database.\n` +
-        `Jika sudah ada, akan DITIMPA!\n\n` +
-        `Lanjutkan?`
-    );
+    // Simpan data untuk modal
+    setPendingSaveData({
+      academicYear: selectedAcademicYear,
+      semester: selectedSemester,
+      classId: selectedClassId,
+      subject: selectedSubjectState,
+      totalStudents: hasilKatrol.length,
+    });
 
-    if (!confirmSave) return;
+    // Tampilkan modal konfirmasi pertama
+    setShowConfirmModal(true);
+  };
 
+  const handleFirstConfirm = async () => {
+    setShowConfirmModal(false);
     setSaving(true);
+    setMessage({ text: "", type: "" });
+
     try {
-      // 🔥 STRATEGI 1: Hapus data lama terlebih dahulu
-      console.log("🗑️ Menghapus data lama...");
+      // Cek data lama
+      const { data: existingData, error: checkError } = await supabase
+        .from("grades_katrol")
+        .select("id")
+        .eq("class_id", selectedClassId)
+        .eq("subject", selectedSubjectState)
+        .eq("academic_year", selectedAcademicYear)
+        .eq("semester", selectedSemester);
+
+      if (checkError)
+        throw new Error(`Gagal mengecek data: ${checkError.message}`);
+
+      setSaving(false);
+
+      // Kalau ada data lama, tampilkan modal kedua
+      if (existingData && existingData.length > 0) {
+        setPendingSaveData((prev) => ({
+          ...prev,
+          existingCount: existingData.length,
+        }));
+        setShowOverwriteModal(true);
+        return;
+      }
+
+      // Kalau belum ada data, langsung save
+      await processSaveToDatabase();
+    } catch (error) {
+      setSaving(false);
+      showMessage(`Gagal mengecek data: ${error.message}`, "error");
+    }
+  };
+
+  const handleOverwriteConfirm = async () => {
+    setShowOverwriteModal(false);
+    await processSaveToDatabase();
+  };
+
+  const processSaveToDatabase = async () => {
+    setSaving(true);
+
+    try {
+      // Hapus data lama jika ada
       const { error: deleteError } = await supabase
         .from("grades_katrol")
         .delete()
@@ -887,94 +824,64 @@ const GradesKatrol = ({
         .eq("academic_year", selectedAcademicYear)
         .eq("semester", selectedSemester);
 
-      if (deleteError) {
-        console.error("⚠️ Error deleting old data:", deleteError);
-        // Lanjutkan saja, mungkin belum ada data
-      }
+      if (deleteError)
+        throw new Error(`Gagal menghapus data lama: ${deleteError.message}`);
 
-      // 🔥 STRATEGI 2: Insert data baru dengan field CLEAN
+      // Format data untuk database
       const recordsToSave = hasilKatrol.map((item) => {
-        const nilaiArray = [
-          item.nilai_akhir,
-          item.nh1,
-          item.nh2,
-          item.nh3,
-          item.psts,
-          item.psas,
-        ].filter((n) => n !== null && !isNaN(n));
+        const userInfo = {
+          userId: user?.id,
+          teacherId: teacherId,
+          userName: user?.full_name || user?.username || "Unknown",
+        };
 
-        const min_nilai =
-          nilaiArray.length > 0 ? Math.min(...nilaiArray) : null;
-        const max_nilai =
-          nilaiArray.length > 0 ? Math.max(...nilaiArray) : null;
-
-        return {
+        const katrolData = {
           student_id: item.student_id,
+          student_name: item.nama_siswa,
+          student_nis: item.nis,
           class_id: selectedClassId,
           teacher_id: teacherId,
           subject: selectedSubjectState,
-          academic_year_id: academicYearId || null,
           academic_year: selectedAcademicYear,
+          academic_year_id: academicYearId,
           semester: selectedSemester,
-
-          // ✅ CLEAN: Nilai Asli
-          nh1: item.nh1 || null,
-          nh2: item.nh2 || null,
-          nh3: item.nh3 || null,
-          psts: item.psts || null,
-          psas: item.psas || null,
-          rata_nh: item.rata_nh || null,
-          nilai_akhir: item.nilai_akhir || null,
-
-          // ✅ CLEAN: Nilai Katrol (suffix _k)
-          nh1_k: item.nh1_k || null,
-          nh2_k: item.nh2_k || null,
-          nh3_k: item.nh3_k || null,
-          psts_k: item.psts_k || null,
-          psas_k: item.psas_k || null,
-          rata_nh_k: item.rata_nh_k || null,
-          nilai_akhir_k: item.nilai_akhir_k || null,
-
-          // Metadata
+          nh1_mentah: item.nh1,
+          nh2_mentah: item.nh2,
+          nh3_mentah: item.nh3,
+          psts_mentah: item.psts,
+          psas_mentah: item.psas,
+          rata_nh_mentah: item.rata_nh,
+          nilai_akhir_mentah: item.nilai_akhir,
+          nh1_katrol: item.nh1_k,
+          nh2_katrol: item.nh2_k,
+          nh3_katrol: item.nh3_k,
+          psts_katrol: item.psts_k,
+          psas_katrol: item.psas_k,
+          rata_nh_katrol: item.rata_nh_k,
+          nilai_akhir_katrol: item.nilai_akhir_k,
           kkm: kkm,
-          nilai_min_kelas: min_nilai,
-          nilai_max_kelas: max_nilai,
-          target_min: kkm,
           target_max: nilaiMaksimal,
+          target_min: kkm,
+          nilai_min_kelas: null,
+          nilai_max_kelas: null,
           jumlah_siswa_kelas: hasilKatrol.length,
-          formula_used: "linear_scaling",
-          status: "processed",
-          notes: null,
-          processed_by: user?.id || teacherId,
-          processed_at: new Date().toISOString(),
         };
+
+        return formatDataForDatabase(katrolData, userInfo);
       });
 
-      console.log("💾 Menyimpan data katrol:", recordsToSave.length, "records");
-      console.log("📦 Sample data:", recordsToSave[0]);
-
-      const { data, error } = await supabase
+      // Insert data baru
+      const { error } = await supabase
         .from("grades_katrol")
         .insert(recordsToSave);
 
-      if (error) {
-        console.error("❌ Supabase Error Details:", {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        throw error;
-      }
-
-      console.log("✅ Data berhasil disimpan:", data);
+      if (error) throw error;
 
       showMessage(
         `✅ Berhasil menyimpan ${recordsToSave.length} nilai katrol ke database!`,
         "success"
       );
 
-      // Refresh data setelah save
       await fetchDataNilai();
     } catch (error) {
       console.error("❌ Error saving katrol:", error);
@@ -987,6 +894,7 @@ const GradesKatrol = ({
     }
   };
 
+  // ✅ EXPORT EXCEL (dengan Utils.js)
   const handleExport = async () => {
     if (!hasilKatrol || hasilKatrol.length === 0) {
       showMessage("Tidak ada data untuk di-export", "error");
@@ -995,98 +903,20 @@ const GradesKatrol = ({
 
     setExporting(true);
     try {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Katrol Nilai");
-
-      // Header
-      worksheet.columns = [
-        { header: "No", key: "no", width: 5 },
-        { header: "NIS", key: "nis", width: 15 },
-        { header: "Nama", key: "nama", width: 30 },
-        { header: "NH1", key: "nh1", width: 10 },
-        { header: "NH2", key: "nh2", width: 10 },
-        { header: "NH3", key: "nh3", width: 10 },
-        { header: "Rata NH", key: "rata_nh", width: 12 },
-        { header: "PSTS", key: "psts", width: 10 },
-        { header: "PSAS", key: "psas", width: 10 },
-        { header: "Nilai Akhir", key: "akhir", width: 12 },
-        { header: "NH1 (K)", key: "nh1_k", width: 10 },
-        { header: "NH2 (K)", key: "nh2_k", width: 10 },
-        { header: "NH3 (K)", key: "nh3_k", width: 10 },
-        { header: "Rata NH (K)", key: "rata_nh_k", width: 12 },
-        { header: "PSTS (K)", key: "psts_k", width: 10 },
-        { header: "PSAS (K)", key: "psas_k", width: 10 },
-        { header: "Nilai Akhir (K)", key: "akhir_k", width: 14 },
-        { header: "Status", key: "status", width: 15 },
-      ];
-
-      // Style header
-      worksheet.getRow(1).font = { bold: true };
-      worksheet.getRow(1).fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFFF00" },
-      };
-      worksheet.getRow(1).alignment = {
-        vertical: "middle",
-        horizontal: "center",
-      };
-
-      // Data (CLEAN VERSION)
-      hasilKatrol.forEach((item, index) => {
-        worksheet.addRow({
-          no: index + 1,
-          nis: item.nis,
-          nama: item.nama_siswa,
-          nh1: item.nh1 || "",
-          nh2: item.nh2 || "",
-          nh3: item.nh3 || "",
-          rata_nh: item.rata_nh ? item.rata_nh.toFixed(1) : "",
-          psts: item.psts || "",
-          psas: item.psas || "",
-          akhir: item.nilai_akhir ? item.nilai_akhir.toFixed(1) : "",
-          nh1_k: item.nh1_k || "",
-          nh2_k: item.nh2_k || "",
-          nh3_k: item.nh3_k || "",
-          rata_nh_k: item.rata_nh_k ? item.rata_nh_k.toFixed(1) : "",
-          psts_k: item.psts_k || "",
-          psas_k: item.psas_k || "",
-          akhir_k: item.nilai_akhir_k ? item.nilai_akhir_k.toFixed(1) : "",
-          status: item.status,
-        });
-      });
-
-      // Border
-      worksheet.eachRow({ includeEmpty: false }, (row) => {
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-          };
-        });
-      });
-
-      // Generate file
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `Katrol_${selectedSubjectState}_${selectedClassId}_${new Date()
-          .toISOString()
-          .slice(0, 10)}.xlsx`
+      // ✅ PAKAI exportToExcel DARI UTILS.JS
+      exportToExcel(
+        hasilKatrol,
+        {
+          subject: selectedSubjectState,
+          class_name: selectedClassId,
+          academic_year: selectedAcademicYear,
+          semester: selectedSemester,
+          kkm: kkm,
+          target_max: nilaiMaksimal,
+          processed_by: user?.full_name || user?.username || "Unknown",
+        },
+        `Katrol_${selectedSubjectState}_${selectedClassId}`
       );
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
 
       showMessage("✅ Berhasil export data ke Excel", "success");
     } catch (error) {
@@ -1099,6 +929,62 @@ const GradesKatrol = ({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6">
+      {/* 🎨 INJECT CUSTOM STYLES */}
+      <style>{customStyles}</style>
+
+      {/* 🎨 LOADING OVERLAY - KEREN! */}
+      {saving && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-scale-in">
+            <div className="flex flex-col items-center gap-6">
+              {/* Animated Icon */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                <div className="relative bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full p-6">
+                  <Save className="w-12 h-12 text-white animate-bounce" />
+                </div>
+              </div>
+
+              {/* Loading Text */}
+              <div className="text-center space-y-3">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Menyimpan Data...
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Sedang menyimpan {hasilKatrol.length} nilai katrol ke database
+                </p>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 h-full rounded-full animate-progress"></div>
+                </div>
+
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                  Mohon tunggu, jangan tutup halaman ini...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🎨 CONFIRMATION MODALS */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onConfirm={handleFirstConfirm}
+        onCancel={() => setShowConfirmModal(false)}
+        type="save"
+        data={pendingSaveData}
+      />
+
+      <ConfirmationModal
+        isOpen={showOverwriteModal}
+        onConfirm={handleOverwriteConfirm}
+        onCancel={() => setShowOverwriteModal(false)}
+        type="overwrite"
+        data={pendingSaveData}
+      />
+
       {/* Header dengan tombol close */}
       <div className="max-w-7xl mx-auto mb-6">
         <div className="flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-700 dark:from-purple-950 dark:to-indigo-900 rounded-xl shadow-lg p-4 sm:p-6 text-white">
@@ -1467,25 +1353,25 @@ const GradesKatrol = ({
                         {item.nama_siswa}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.nh1 || "-"}
+                        {formatNilaiDisplay(item.nh1, item.nh1)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.nh2 || "-"}
+                        {formatNilaiDisplay(item.nh2, item.nh2)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.nh3 || "-"}
+                        {formatNilaiDisplay(item.nh3, item.nh3)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.rata_nh ? item.rata_nh.toFixed(1) : "-"}
+                        {formatNilaiDisplay(item.rata_nh, item.rata_nh)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.psts || "-"}
+                        {formatNilaiDisplay(item.psts, item.psts)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.psas || "-"}
+                        {formatNilaiDisplay(item.psas, item.psas)}
                       </td>
                       <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-200">
-                        {item.nilai_akhir ? item.nilai_akhir.toFixed(1) : "-"}
+                        {formatNilaiDisplay(item.nilai_akhir, item.nilai_akhir)}
                       </td>
                     </tr>
                   ))}
@@ -1503,63 +1389,83 @@ const GradesKatrol = ({
         </div>
       )}
 
-      {/* Results Table */}
+      {/* ✅ RESULTS TABLE - SIMPLE VERSION */}
       {hasilKatrol.length > 0 && (
         <div className="max-w-7xl mx-auto">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-100 dark:border-gray-700">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <div>
-                <h3 className="text-lg font-semibold dark:text-gray-200 flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-green-600 dark:text-green-500" />
-                  Hasil Katrol Nilai SMP ({hasilKatrol.length} siswa)
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  KKM: {kkm} | Nilai Maksimal Target: {nilaiMaksimal} |
-                  Semester: {selectedSemester}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-700 dark:text-gray-400">
-                    Tuntas (
-                    {hasilKatrol.filter((h) => h.status === "Tuntas").length})
-                  </span>
+            {/* HEADER SIMPLE */}
+            <div className="mb-6">
+              <h3 className="text-xl font-bold dark:text-gray-200 flex items-center gap-2 mb-2">
+                <Calculator className="w-6 h-6 text-green-600 dark:text-green-500" />
+                Hasil Katrol Nilai
+              </h3>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full">
+                  Kelas: {selectedClassId}
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-sm text-gray-700 dark:text-gray-400">
-                    Belum Tuntas (
-                    {
-                      hasilKatrol.filter((h) => h.status === "Belum Tuntas")
-                        .length
-                    }
-                    )
-                  </span>
+                <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-3 py-1 rounded-full">
+                  Mapel: {selectedSubjectState}
+                </div>
+                <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-3 py-1 rounded-full">
+                  KKM: {kkm}
+                </div>
+                <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-3 py-1 rounded-full">
+                  {hasilKatrol.length} Siswa
                 </div>
               </div>
             </div>
 
-            <KatrolTable data={hasilKatrol} />
+            {/* ✅ PAKAI KatrolTable YANG DI-IMPORT */}
+            <KatrolTable
+              hasilKatrol={hasilKatrol}
+              kkm={kkm}
+              nilaiMaksimal={nilaiMaksimal}
+              academicYear={selectedAcademicYear}
+              semester={selectedSemester}
+              subject={selectedSubjectState}
+              className={selectedClassId}
+              showComparison={true}
+              isDarkMode={false}
+            />
 
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <h4 className="font-semibold mb-2 dark:text-gray-200">
-                📊 Rumus Nilai Akhir SMP:
-              </h4>
-              <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
-                <p>
-                  <strong>
-                    Nilai Akhir = (Rata NH × 0.4) + (PSTS × 0.3) + (PSAS × 0.3)
-                  </strong>
-                </p>
-                <p>
-                  <strong>Katrol per Komponen:</strong> KKM + ((Nilai - Min
-                  Kelas) / (Max Kelas - Min Kelas)) × (Nilai Maksimal - KKM)
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                  💡 <strong>(K)</strong> = Nilai Katrol
-                </p>
+            {/* SIMPLE SUMMARY - CUMA INI DOANG YANG TINGGAL */}
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-center gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {hasilKatrol.filter((h) => h.nilai_akhir_k >= kkm).length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Tuntas
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {hasilKatrol.filter((h) => h.nilai_akhir_k < kkm).length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Tidak Tuntas
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {
+                      hasilKatrol.filter(
+                        (h) => h.nilai_akhir < kkm && h.nilai_akhir_k >= kkm
+                      ).length
+                    }
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Naik Status
+                  </div>
+                </div>
+              </div>
+
+              {/* SIMPLE NOTE */}
+              <div className="text-center mt-4 text-sm text-gray-500 dark:text-gray-400">
+                * Nilai yang dikatrol ditandai dengan warna hijau
               </div>
             </div>
           </div>

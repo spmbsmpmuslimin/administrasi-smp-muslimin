@@ -24,8 +24,8 @@ import SPMB from "./spmb/SPMB";
 import MonitorSistem from "./system/MonitorSistem";
 
 // Import components
-import MaintenancePage from "./setting/MaintenancePage";
 import AdminPanel from "./setting/AdminPanel";
+import MaintenancePage from "./setting/MaintenancePage";
 
 // Import Presensi Guru
 import TeacherAttendance from "./attendance-teacher/TeacherAttendance";
@@ -37,6 +37,7 @@ const ProtectedRoute = ({
   loading,
   darkMode,
   allowedRoles = [],
+  onShowToast,
 }) => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState("");
@@ -150,6 +151,11 @@ const ProtectedRoute = ({
       subscription.unsubscribe();
     };
   }, []);
+
+  // 🔥 HAPUS TOAST DARI SINI - PINDAH KE DASHBOARD
+  // useEffect(() => {
+  //   ...toast logic...
+  // }, []);
 
   // Loading state
   if (loading || maintenanceLoading || (user && userRole === null)) {
@@ -382,15 +388,19 @@ function App() {
       console.log("✅ Session valid for 24 hours");
     }
 
-    handleShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
+    // 🔥 Toast dipindah ke ProtectedRoute
   }, []);
 
   const handleLogout = useCallback(() => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("rememberMe");
+    // Clear welcome toast flag
+    if (user?.id) {
+      sessionStorage.removeItem(`welcomeShown_${user.id}`);
+    }
     handleShowToast("Logout berhasil! 👋", "info");
-  }, []);
+  }, [user]);
 
   const handleShowToast = useCallback((message, type = "info") => {
     setToastMessage(message);
@@ -528,7 +538,11 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Dashboard
                   user={user}
@@ -543,7 +557,11 @@ function App() {
         <Route
           path="/teachers"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Teachers
                   user={user}
@@ -558,7 +576,11 @@ function App() {
         <Route
           path="/classes"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Classes
                   user={user}
@@ -573,7 +595,11 @@ function App() {
         <Route
           path="/students"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Students
                   user={user}
@@ -588,7 +614,11 @@ function App() {
         <Route
           path="/attendance"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Attendance
                   user={user}
@@ -603,7 +633,11 @@ function App() {
         <Route
           path="/grades-katrol"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <GradesKatrol
                   user={user}
@@ -622,6 +656,7 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
+              onShowToast={handleShowToast}
               allowedRoles={["teacher", "guru_bk", "admin"]}>
               <LayoutWrapper>
                 <TeacherAttendance
@@ -641,6 +676,7 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
+              onShowToast={handleShowToast}
               allowedRoles={["admin"]}>
               <LayoutWrapper>
                 <AttendanceManagement
@@ -656,7 +692,11 @@ function App() {
         <Route
           path="/grades"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Grades
                   user={user}
@@ -671,7 +711,11 @@ function App() {
         <Route
           path="/jadwal-saya"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <TeacherSchedule
                   user={user}
@@ -686,7 +730,11 @@ function App() {
         <Route
           path="/catatan-siswa"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <CatatanSiswa
                   user={user}
@@ -701,7 +749,11 @@ function App() {
         <Route
           path="/konseling"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Konseling
                   user={user}
@@ -716,7 +768,11 @@ function App() {
         <Route
           path="/reports"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Reports
                   user={user}
@@ -731,7 +787,11 @@ function App() {
         <Route
           path="/spmb"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <SPMB
                   user={user}
@@ -746,7 +806,11 @@ function App() {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <Setting
                   user={user}
@@ -761,7 +825,11 @@ function App() {
         <Route
           path="/monitor-sistem"
           element={
-            <ProtectedRoute user={user} loading={loading} darkMode={darkMode}>
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
                 <MonitorSistem
                   user={user}

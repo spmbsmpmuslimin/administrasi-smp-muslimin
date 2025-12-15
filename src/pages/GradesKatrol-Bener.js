@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import ExcelJS from "exceljs";
 import {
   Calculator,
   Download,
@@ -34,27 +35,27 @@ const KatrolTable = ({ data, showComparison = false }) => {
               Nama Siswa
             </th>
 
-            {/* Nilai Mentah */}
+            {/* Nilai Asli */}
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH1 (M)
+              NH1
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH2 (M)
+              NH2
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH3 (M)
+              NH3
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Rata NH (M)
+              Rata NH
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              PSTS (M)
+              PSTS
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              PSAS (M)
+              PSAS
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Akhir (M)
+              Nilai Akhir
             </th>
 
             {/* Nilai Katrol */}
@@ -77,7 +78,7 @@ const KatrolTable = ({ data, showComparison = false }) => {
               PSAS (K)
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Akhir (K)
+              Nilai Akhir (K)
             </th>
 
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -100,54 +101,50 @@ const KatrolTable = ({ data, showComparison = false }) => {
                 {item.nama_siswa}
               </td>
 
-              {/* Nilai Mentah */}
+              {/* Nilai Asli */}
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.nh1_mentah || "-"}
+                {item.nh1 || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.nh2_mentah || "-"}
+                {item.nh2 || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.nh3_mentah || "-"}
+                {item.nh3 || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.rata_nh_mentah ? item.rata_nh_mentah.toFixed(1) : "-"}
+                {item.rata_nh ? item.rata_nh.toFixed(1) : "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.psts_mentah || "-"}
+                {item.psts || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                {item.psas_mentah || "-"}
+                {item.psas || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-200">
-                {item.nilai_akhir_mentah
-                  ? item.nilai_akhir_mentah.toFixed(1)
-                  : "-"}
+                {item.nilai_akhir ? item.nilai_akhir.toFixed(1) : "-"}
               </td>
 
               {/* Nilai Katrol */}
               <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.nh1_katrol || "-"}
+                {item.nh1_k || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.nh2_katrol || "-"}
+                {item.nh2_k || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.nh3_katrol || "-"}
+                {item.nh3_k || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400 font-bold">
-                {item.rata_nh_katrol ? item.rata_nh_katrol.toFixed(1) : "-"}
+                {item.rata_nh_k ? item.rata_nh_k.toFixed(1) : "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.psts_katrol || "-"}
+                {item.psts_k || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-green-700 dark:text-green-400">
-                {item.psas_katrol || "-"}
+                {item.psas_k || "-"}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-green-700 dark:text-green-400">
-                {item.nilai_akhir_katrol
-                  ? item.nilai_akhir_katrol.toFixed(1)
-                  : "-"}
+                {item.nilai_akhir_k ? item.nilai_akhir_k.toFixed(1) : "-"}
               </td>
 
               <td className="px-4 py-3 whitespace-nowrap">
@@ -171,12 +168,29 @@ const KatrolTable = ({ data, showComparison = false }) => {
 // Helper function untuk katrol nilai
 const calculateKatrolValue = (nilai, minKelas, maxKelas, kkm, targetMax) => {
   if (nilai === null || nilai === undefined || isNaN(nilai)) return null;
-  if (nilai >= kkm) return nilai; // Tidak perlu katrol jika sudah di atas KKM
-  if (minKelas === maxKelas) return kkm; // Edge case
 
+  // Jika minKelas atau maxKelas null, return nilai asli
+  if (minKelas === null || maxKelas === null) return nilai;
+
+  // Jika nilai sudah >= KKM, tidak perlu dikatrol
+  if (nilai >= kkm) return nilai;
+
+  // Jika semua nilai sama (min = max), return KKM
+  if (minKelas === maxKelas) return kkm;
+
+  // Pastikan nilai tidak lebih kecil dari minKelas (jaga-jaga)
+  const nilaiTerpakai = Math.max(nilai, minKelas);
+
+  // Rumus katrol
   const scaledValue =
-    kkm + ((nilai - minKelas) / (maxKelas - minKelas)) * (targetMax - kkm);
-  return Math.min(Math.round(scaledValue * 10) / 10, targetMax); // Max 2 decimal
+    kkm +
+    ((nilaiTerpakai - minKelas) / (maxKelas - minKelas)) * (targetMax - kkm);
+
+  // Batasi maksimal ke targetMax, bulatkan 1 desimal
+  const hasil = Math.min(Math.round(scaledValue * 10) / 10, targetMax);
+
+  // Pastikan hasil tidak lebih kecil dari nilai asli (katrol harus naik atau tetap)
+  return Math.max(hasil, nilai);
 };
 
 const GradesKatrol = ({
@@ -189,9 +203,7 @@ const GradesKatrol = ({
   onClose,
 }) => {
   const teacherId = teacherIdProp || user?.teacher_id || user?.id;
-  // =============================================
-  // STEP 2: Tambahkan Debug Console Logs
-  // =============================================
+
   console.log("🚀 GradesKatrol mounted with:", {
     teacherId,
     selectedClass,
@@ -215,9 +227,7 @@ const GradesKatrol = ({
   const [message, setMessage] = useState({ text: "", type: "" });
   const [academicYearId, setAcademicYearId] = useState(null);
 
-  // =============================================
-  // STEP 6A: Pisahkan State Management
-  // =============================================
+  // State untuk filter
   const [selectedAcademicYear, setSelectedAcademicYear] = useState(
     academicYear || ""
   );
@@ -230,11 +240,8 @@ const GradesKatrol = ({
   const [academicYears, setAcademicYears] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(true); // ← TAMBAH INI
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // =============================================
-  // STEP 2A: Debug State Changes
-  // =============================================
   useEffect(() => {
     console.log("🎯 STATE UPDATE:", {
       selectedAcademicYear,
@@ -259,15 +266,13 @@ const GradesKatrol = ({
     processing,
   ]);
 
-  // =============================================
-  // STEP 2B: Fetch Academic Years (Dari Grades.js)
-  // =============================================
+  // Fetch Academic Years
   useEffect(() => {
     console.log("🔄 fetchAcademicYears TRIGGERED", { teacherId });
     const fetchAcademicYears = async () => {
       if (!teacherId) {
         console.log("⚠️ teacherId not available, skipping fetch");
-        setIsInitialLoad(false); // ← TAMBAH INI
+        setIsInitialLoad(false);
         return;
       }
       console.log("📡 Fetching academic years...");
@@ -276,25 +281,29 @@ const GradesKatrol = ({
           .from("teacher_assignments")
           .select("academic_year")
           .eq("teacher_id", teacherId);
+
         console.log("✅ Academic years fetched:", assignmentData?.length || 0);
+
         if (assignmentError) {
           console.error("Error fetching academic years:", assignmentError);
           setMessage({
             text: "Error: Gagal mengambil tahun akademik",
             type: "error",
           });
-          setIsInitialLoad(false); // ← TAMBAH INI
+          setIsInitialLoad(false);
           return;
         }
+
         if (!assignmentData || assignmentData.length === 0) {
           setAcademicYears([]);
           setMessage({
             text: "Tidak ada data tahun akademik untuk guru ini",
             type: "error",
           });
-          setIsInitialLoad(false); // ← TAMBAH INI
+          setIsInitialLoad(false);
           return;
         }
+
         const uniqueYears = [
           ...new Set(assignmentData.map((item) => item.academic_year)),
         ];
@@ -303,28 +312,28 @@ const GradesKatrol = ({
           const yearB = parseInt(b.split("/")[0]);
           return yearB - yearA;
         });
+
         console.log("📊 Sorted academic years:", sortedYears);
         setAcademicYears(sortedYears);
+
         if (!selectedAcademicYear && sortedYears.length > 0) {
           console.log("🎯 Auto-setting academic year to:", sortedYears[0]);
           setSelectedAcademicYear(sortedYears[0]);
         }
-        setIsInitialLoad(false); // ← TAMBAH INI
+        setIsInitialLoad(false);
       } catch (error) {
         console.error("Error in fetchAcademicYears:", error);
         setMessage({
           text: "Error: Terjadi kesalahan sistem saat mengambil tahun akademik",
           type: "error",
         });
-        setIsInitialLoad(false); // ← TAMBAH INI
+        setIsInitialLoad(false);
       }
     };
     fetchAcademicYears();
   }, [teacherId]);
 
-  // =============================================
-  // STEP 2C: Fetch Subjects (Dari Grades.js)
-  // =============================================
+  // Fetch Subjects
   useEffect(() => {
     console.log("🔄 fetchSubjects TRIGGERED", {
       teacherId,
@@ -374,17 +383,6 @@ const GradesKatrol = ({
         const uniqueSubjects = [...new Set(data.map((item) => item.subject))];
         console.log("📊 Unique subjects:", uniqueSubjects);
         setSubjects(uniqueSubjects);
-
-        // =============================================
-        // STEP 6C: Hapus Reset Logic yang Bermasalah
-        // =============================================
-        // HAPUS LOGIC INI SEUTUHNYA:
-        // if (selectedAcademicYear !== "" || selectedSemester !== "") {
-        //   setSelectedSubjectState("");
-        //   setSelectedClassId("");
-        //   setDataNilai([]);
-        //   setHasilKatrol([]);
-        // }
       } catch (error) {
         console.error("Error in fetchSubjects:", error);
         setMessage({ text: "Error: Terjadi kesalahan sistem", type: "error" });
@@ -394,9 +392,7 @@ const GradesKatrol = ({
     fetchSubjects();
   }, [teacherId, selectedAcademicYear, selectedSemester]);
 
-  // =============================================
-  // STEP 2D: Fetch Classes (Dari Grades.js)
-  // =============================================
+  // Fetch Classes
   useEffect(() => {
     console.log("🔄 fetchClasses TRIGGERED", {
       subject: selectedSubjectState,
@@ -423,6 +419,7 @@ const GradesKatrol = ({
           .eq("semester", selectedSemester);
 
         if (assignmentError) throw assignmentError;
+
         if (!assignmentData?.length) {
           console.log("📊 No classes found for this subject");
           setClasses([]);
@@ -452,16 +449,6 @@ const GradesKatrol = ({
 
         console.log("📊 Formatted classes:", formattedClasses);
         setClasses(formattedClasses);
-
-        // =============================================
-        // STEP 6C: Hapus Reset Logic yang Bermasalah
-        // =============================================
-        // HAPUS LOGIC INI SEUTUHNYA:
-        // if (selectedSubjectState !== "") {
-        //   setSelectedClassId("");
-        //   setDataNilai([]);
-        //   setHasilKatrol([]);
-        // }
       } catch (error) {
         console.error("Error fetching classes:", error);
         setMessage({
@@ -509,7 +496,12 @@ const GradesKatrol = ({
       // 1️⃣ CEK DULU: Ada data di grades_katrol?
       const { data: katrolData, error: katrolError } = await supabase
         .from("grades_katrol")
-        .select("*")
+        .select(
+          `
+          *,
+          students:student_id (nis, full_name)
+        `
+        )
         .eq("class_id", selectedClassId)
         .eq("subject", selectedSubjectState)
         .eq("academic_year", selectedAcademicYear)
@@ -523,46 +515,32 @@ const GradesKatrol = ({
           `✅ Ditemukan ${katrolData.length} data KATROL (sudah diproses)`
         );
 
-        // ✅ FIX: Ambil juga data students untuk dapetin nis yang hilang (kalau grades_katrol gak ada kolom nis)
-        const studentIds = katrolData.map((k) => k.student_id);
-        const { data: studentsData, error: studentsError } = await supabase
-          .from("students")
-          .select("id, nis, full_name")
-          .in("id", studentIds);
+        // Format data dari database (CLEAN VERSION - NO MENTAH)
+        const formattedKatrol = katrolData.map((item) => ({
+          student_id: item.student_id,
+          nis: item.students?.nis || "-",
+          nama_siswa: item.students?.full_name || "-",
 
-        if (studentsError) {
-          console.error("Error fetching students:", studentsError);
-        }
+          // ✅ CLEAN: Nilai Asli (langsung dari database)
+          nh1: item.nh1,
+          nh2: item.nh2,
+          nh3: item.nh3,
+          rata_nh: item.rata_nh,
+          psts: item.psts,
+          psas: item.psas,
+          nilai_akhir: item.nilai_akhir,
 
-        // Format data katrol dengan join ke students
-        const formattedKatrol = katrolData.map((item) => {
-          // Cari student data berdasarkan student_id
-          const student = studentsData?.find((s) => s.id === item.student_id);
+          // ✅ CLEAN: Nilai Katrol (langsung dari database)
+          nh1_k: item.nh1_k,
+          nh2_k: item.nh2_k,
+          nh3_k: item.nh3_k,
+          rata_nh_k: item.rata_nh_k,
+          psts_k: item.psts_k,
+          psas_k: item.psas_k,
+          nilai_akhir_k: item.nilai_akhir_k,
 
-          return {
-            student_id: item.student_id,
-            nis: student?.nis || "-", // ← FIX: Ambil dari students table
-            nama_siswa: student?.full_name || item.nama_siswa || "-", // ← FIX: Fallback ke students
-            // Nilai Mentah
-            nh1_mentah: item.nh1_mentah,
-            nh2_mentah: item.nh2_mentah,
-            nh3_mentah: item.nh3_mentah,
-            rata_nh_mentah: item.rata_nh_mentah,
-            psts_mentah: item.psts_mentah,
-            psas_mentah: item.psas_mentah,
-            nilai_akhir_mentah: item.nilai_akhir_mentah,
-            // Nilai Katrol
-            nh1_katrol: item.nh1_katrol,
-            nh2_katrol: item.nh2_katrol,
-            nh3_katrol: item.nh3_katrol,
-            rata_nh_katrol: item.rata_nh_katrol,
-            psts_katrol: item.psts_katrol,
-            psas_katrol: item.psas_katrol,
-            nilai_akhir_katrol: item.nilai_akhir_katrol,
-            status:
-              item.nilai_akhir_katrol >= item.kkm ? "Tuntas" : "Belum Tuntas",
-          };
-        });
+          status: item.nilai_akhir_k >= item.kkm ? "Tuntas" : "Belum Tuntas",
+        }));
 
         setHasilKatrol(formattedKatrol);
         setShowPreview(false);
@@ -573,8 +551,8 @@ const GradesKatrol = ({
         return;
       }
 
-      // 3️⃣ KALAU BELUM ADA DATA KATROL, LOAD GRADES
-      console.log(`ℹ️ Tidak ada data katrol, memuat nilai MENTAH...`);
+      // 3️⃣ KALAU BELUM ADA DATA KATROL, LOAD GRADES untuk preview
+      console.log(`ℹ️ Tidak ada data katrol, memuat nilai ASLI...`);
 
       // Ambil siswa aktif di kelas
       const { data: studentsData, error: studentsError } = await supabase
@@ -604,23 +582,31 @@ const GradesKatrol = ({
 
       if (gradesError) throw gradesError;
 
-      // Format data preview
+      // Format data preview (CLEAN VERSION)
       const previewData = studentsData.map((student) => {
         const studentGrades =
           gradesData?.filter((g) => g.student_id === student.id) || [];
 
         const nh1 =
-          studentGrades.find((g) => g.assignment_type === "NH1")?.score || null;
+          parseFloat(
+            studentGrades.find((g) => g.assignment_type === "NH1")?.score
+          ) || null;
         const nh2 =
-          studentGrades.find((g) => g.assignment_type === "NH2")?.score || null;
+          parseFloat(
+            studentGrades.find((g) => g.assignment_type === "NH2")?.score
+          ) || null;
         const nh3 =
-          studentGrades.find((g) => g.assignment_type === "NH3")?.score || null;
+          parseFloat(
+            studentGrades.find((g) => g.assignment_type === "NH3")?.score
+          ) || null;
         const psts =
-          studentGrades.find((g) => g.assignment_type === "PSTS")?.score ||
-          null;
+          parseFloat(
+            studentGrades.find((g) => g.assignment_type === "PSTS")?.score
+          ) || null;
         const psas =
-          studentGrades.find((g) => g.assignment_type === "PSAS")?.score ||
-          null;
+          parseFloat(
+            studentGrades.find((g) => g.assignment_type === "PSAS")?.score
+          ) || null;
 
         const rata_nh = nh1 && nh2 && nh3 ? (nh1 + nh2 + nh3) / 3 : null;
         const nilai_akhir =
@@ -632,14 +618,14 @@ const GradesKatrol = ({
           student_id: student.id,
           nis: student.nis,
           nama_siswa: student.full_name,
-          // Nilai Mentah
-          nh1_mentah: nh1,
-          nh2_mentah: nh2,
-          nh3_mentah: nh3,
-          rata_nh_mentah: rata_nh,
-          psts_mentah: psts,
-          psas_mentah: psas,
-          nilai_akhir_mentah: nilai_akhir,
+          // ✅ CLEAN: Langsung pakai nama field final
+          nh1: nh1,
+          nh2: nh2,
+          nh3: nh3,
+          psts: psts,
+          psas: psas,
+          rata_nh: rata_nh,
+          nilai_akhir: nilai_akhir,
         };
       });
 
@@ -648,7 +634,7 @@ const GradesKatrol = ({
       setHasilKatrol([]);
 
       showMessage(
-        `✅ Berhasil memuat ${previewData.length} siswa (nilai MENTAH - belum dikatrol)`,
+        `✅ Berhasil memuat ${previewData.length} siswa (nilai ASLI - belum dikatrol)`,
         "success"
       );
     } catch (error) {
@@ -697,27 +683,32 @@ const GradesKatrol = ({
 
       if (gradesError) throw gradesError;
 
-      // Hitung nilai mentah per siswa
-      const nilaiMentah = studentsData
+      // Hitung nilai asli per siswa (CLEAN VERSION)
+      const nilaiAsli = studentsData
         .map((student) => {
           const studentGrades =
             gradesData?.filter((g) => g.student_id === student.id) || [];
 
           const nh1 =
-            studentGrades.find((g) => g.assignment_type === "NH1")?.score ||
-            null;
+            parseFloat(
+              studentGrades.find((g) => g.assignment_type === "NH1")?.score
+            ) || null;
           const nh2 =
-            studentGrades.find((g) => g.assignment_type === "NH2")?.score ||
-            null;
+            parseFloat(
+              studentGrades.find((g) => g.assignment_type === "NH2")?.score
+            ) || null;
           const nh3 =
-            studentGrades.find((g) => g.assignment_type === "NH3")?.score ||
-            null;
+            parseFloat(
+              studentGrades.find((g) => g.assignment_type === "NH3")?.score
+            ) || null;
           const psts =
-            studentGrades.find((g) => g.assignment_type === "PSTS")?.score ||
-            null;
+            parseFloat(
+              studentGrades.find((g) => g.assignment_type === "PSTS")?.score
+            ) || null;
           const psas =
-            studentGrades.find((g) => g.assignment_type === "PSAS")?.score ||
-            null;
+            parseFloat(
+              studentGrades.find((g) => g.assignment_type === "PSAS")?.score
+            ) || null;
 
           const rata_nh = nh1 && nh2 && nh3 ? (nh1 + nh2 + nh3) / 3 : null;
           const nilai_akhir =
@@ -729,90 +720,124 @@ const GradesKatrol = ({
             student_id: student.id,
             nis: student.nis,
             nama_siswa: student.full_name,
-            nh1_mentah: nh1,
-            nh2_mentah: nh2,
-            nh3_mentah: nh3,
-            rata_nh_mentah: rata_nh,
-            psts_mentah: psts,
-            psas_mentah: psas,
-            nilai_akhir_mentah: nilai_akhir,
+            // ✅ CLEAN: Langsung pakai field final
+            nh1: nh1,
+            nh2: nh2,
+            nh3: nh3,
+            psts: psts,
+            psas: psas,
+            rata_nh: rata_nh,
+            nilai_akhir: nilai_akhir,
           };
         })
-        .filter((item) => item.nilai_akhir_mentah !== null); // Hanya siswa yang punya nilai akhir
+        .filter((item) => item.nilai_akhir !== null); // Hanya siswa yang punya nilai akhir
 
-      if (nilaiMentah.length === 0) {
+      if (nilaiAsli.length === 0) {
         showMessage("Tidak ada nilai yang bisa diproses", "error");
         return;
       }
 
-      // Cari min dan max nilai akhir di kelas
-      const nilaiAkhirArray = nilaiMentah
-        .map((item) => item.nilai_akhir_mentah)
-        .filter((n) => n !== null);
-      const minKelas = Math.min(...nilaiAkhirArray);
-      const maxKelas = Math.max(...nilaiAkhirArray);
+      // Hitung min dan max PER KOMPONEN
+      const nh1Array = nilaiAsli
+        .map((item) => item.nh1)
+        .filter((n) => n !== null && !isNaN(n));
+      const nh2Array = nilaiAsli
+        .map((item) => item.nh2)
+        .filter((n) => n !== null && !isNaN(n));
+      const nh3Array = nilaiAsli
+        .map((item) => item.nh3)
+        .filter((n) => n !== null && !isNaN(n));
+      const pstsArray = nilaiAsli
+        .map((item) => item.psts)
+        .filter((n) => n !== null && !isNaN(n));
+      const psasArray = nilaiAsli
+        .map((item) => item.psas)
+        .filter((n) => n !== null && !isNaN(n));
+
+      const minNH1 = nh1Array.length > 0 ? Math.min(...nh1Array) : null;
+      const maxNH1 = nh1Array.length > 0 ? Math.max(...nh1Array) : null;
+      const minNH2 = nh2Array.length > 0 ? Math.min(...nh2Array) : null;
+      const maxNH2 = nh2Array.length > 0 ? Math.max(...nh2Array) : null;
+      const minNH3 = nh3Array.length > 0 ? Math.min(...nh3Array) : null;
+      const maxNH3 = nh3Array.length > 0 ? Math.max(...nh3Array) : null;
+      const minPSTS = pstsArray.length > 0 ? Math.min(...pstsArray) : null;
+      const maxPSTS = pstsArray.length > 0 ? Math.max(...pstsArray) : null;
+      const minPSAS = psasArray.length > 0 ? Math.min(...psasArray) : null;
+      const maxPSAS = psasArray.length > 0 ? Math.max(...psasArray) : null;
+
+      console.log("📊 Min/Max per komponen:", {
+        minNH1,
+        maxNH1,
+        minNH2,
+        maxNH2,
+        minNH3,
+        maxNH3,
+        minPSTS,
+        maxPSTS,
+        minPSAS,
+        maxPSAS,
+      });
 
       // Proses katrol per komponen
-      const hasil = nilaiMentah.map((item) => {
-        // Katrol per komponen
-        const nh1_katrol = calculateKatrolValue(
-          item.nh1_mentah,
-          minKelas,
-          maxKelas,
+      const hasil = nilaiAsli.map((item) => {
+        // Katrol per komponen dengan min/max masing-masing
+        const nh1_k = calculateKatrolValue(
+          item.nh1,
+          minNH1,
+          maxNH1,
           kkm,
           nilaiMaksimal
         );
-        const nh2_katrol = calculateKatrolValue(
-          item.nh2_mentah,
-          minKelas,
-          maxKelas,
+        const nh2_k = calculateKatrolValue(
+          item.nh2,
+          minNH2,
+          maxNH2,
           kkm,
           nilaiMaksimal
         );
-        const nh3_katrol = calculateKatrolValue(
-          item.nh3_mentah,
-          minKelas,
-          maxKelas,
+        const nh3_k = calculateKatrolValue(
+          item.nh3,
+          minNH3,
+          maxNH3,
           kkm,
           nilaiMaksimal
         );
-        const psts_katrol = calculateKatrolValue(
-          item.psts_mentah,
-          minKelas,
-          maxKelas,
+        const psts_k = calculateKatrolValue(
+          item.psts,
+          minPSTS,
+          maxPSTS,
           kkm,
           nilaiMaksimal
         );
-        const psas_katrol = calculateKatrolValue(
-          item.psas_mentah,
-          minKelas,
-          maxKelas,
+        const psas_k = calculateKatrolValue(
+          item.psas,
+          minPSAS,
+          maxPSAS,
           kkm,
           nilaiMaksimal
         );
 
         // Hitung rata-rata NH katrol
-        const rata_nh_katrol =
-          nh1_katrol && nh2_katrol && nh3_katrol
-            ? (nh1_katrol + nh2_katrol + nh3_katrol) / 3
-            : null;
+        const rata_nh_k =
+          nh1_k && nh2_k && nh3_k ? (nh1_k + nh2_k + nh3_k) / 3 : null;
 
         // Hitung nilai akhir katrol
-        const nilai_akhir_katrol =
-          rata_nh_katrol && psts_katrol && psas_katrol
-            ? rata_nh_katrol * 0.4 + psts_katrol * 0.3 + psas_katrol * 0.3
+        const nilai_akhir_k =
+          rata_nh_k && psts_k && psas_k
+            ? rata_nh_k * 0.4 + psts_k * 0.3 + psas_k * 0.3
             : null;
 
         return {
           ...item,
-          nh1_katrol,
-          nh2_katrol,
-          nh3_katrol,
-          psts_katrol,
-          psas_katrol,
-          rata_nh_katrol,
-          nilai_akhir_katrol,
-          status: nilai_akhir_katrol >= kkm ? "Tuntas" : "Belum Tuntas",
+          // ✅ CLEAN: Langsung pakai suffix _k
+          nh1_k,
+          nh2_k,
+          nh3_k,
+          psts_k,
+          psas_k,
+          rata_nh_k,
+          nilai_akhir_k,
+          status: nilai_akhir_k >= kkm ? "Tuntas" : "Belum Tuntas",
         };
       });
 
@@ -836,11 +861,6 @@ const GradesKatrol = ({
       return;
     }
 
-    if (!academicYearId) {
-      showMessage("Tahun ajaran tidak valid", "error");
-      return;
-    }
-
     const confirmSave = window.confirm(
       `💾 SIMPAN NILAI KATROL SMP?\n\n` +
         `Tahun Ajaran: ${selectedAcademicYear}\n` +
@@ -857,14 +877,30 @@ const GradesKatrol = ({
 
     setSaving(true);
     try {
+      // 🔥 STRATEGI 1: Hapus data lama terlebih dahulu
+      console.log("🗑️ Menghapus data lama...");
+      const { error: deleteError } = await supabase
+        .from("grades_katrol")
+        .delete()
+        .eq("class_id", selectedClassId)
+        .eq("subject", selectedSubjectState)
+        .eq("academic_year", selectedAcademicYear)
+        .eq("semester", selectedSemester);
+
+      if (deleteError) {
+        console.error("⚠️ Error deleting old data:", deleteError);
+        // Lanjutkan saja, mungkin belum ada data
+      }
+
+      // 🔥 STRATEGI 2: Insert data baru dengan field CLEAN
       const recordsToSave = hasilKatrol.map((item) => {
         const nilaiArray = [
-          item.nilai_akhir_mentah,
-          item.nh1_mentah,
-          item.nh2_mentah,
-          item.nh3_mentah,
-          item.psts_mentah,
-          item.psas_mentah,
+          item.nilai_akhir,
+          item.nh1,
+          item.nh2,
+          item.nh3,
+          item.psts,
+          item.psas,
         ].filter((n) => n !== null && !isNaN(n));
 
         const min_nilai =
@@ -877,27 +913,27 @@ const GradesKatrol = ({
           class_id: selectedClassId,
           teacher_id: teacherId,
           subject: selectedSubjectState,
-          academic_year_id: academicYearId,
+          academic_year_id: academicYearId || null,
           academic_year: selectedAcademicYear,
           semester: selectedSemester,
 
-          // Nilai Mentah
-          nh1_mentah: item.nh1_mentah,
-          nh2_mentah: item.nh2_mentah,
-          nh3_mentah: item.nh3_mentah,
-          psts_mentah: item.psts_mentah,
-          psas_mentah: item.psas_mentah,
-          rata_nh_mentah: item.rata_nh_mentah,
-          nilai_akhir_mentah: item.nilai_akhir_mentah,
+          // ✅ CLEAN: Nilai Asli
+          nh1: item.nh1 || null,
+          nh2: item.nh2 || null,
+          nh3: item.nh3 || null,
+          psts: item.psts || null,
+          psas: item.psas || null,
+          rata_nh: item.rata_nh || null,
+          nilai_akhir: item.nilai_akhir || null,
 
-          // Nilai Katrol
-          nh1_katrol: item.nh1_katrol,
-          nh2_katrol: item.nh2_katrol,
-          nh3_katrol: item.nh3_katrol,
-          psts_katrol: item.psts_katrol,
-          psas_katrol: item.psas_katrol,
-          rata_nh_katrol: item.rata_nh_katrol,
-          nilai_akhir_katrol: item.nilai_akhir_katrol,
+          // ✅ CLEAN: Nilai Katrol (suffix _k)
+          nh1_k: item.nh1_k || null,
+          nh2_k: item.nh2_k || null,
+          nh3_k: item.nh3_k || null,
+          psts_k: item.psts_k || null,
+          psas_k: item.psas_k || null,
+          rata_nh_k: item.rata_nh_k || null,
+          nilai_akhir_k: item.nilai_akhir_k || null,
 
           // Metadata
           kkm: kkm,
@@ -908,29 +944,44 @@ const GradesKatrol = ({
           jumlah_siswa_kelas: hasilKatrol.length,
           formula_used: "linear_scaling",
           status: "processed",
+          notes: null,
           processed_by: user?.id || teacherId,
           processed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         };
       });
 
       console.log("💾 Menyimpan data katrol:", recordsToSave.length, "records");
+      console.log("📦 Sample data:", recordsToSave[0]);
 
       const { data, error } = await supabase
         .from("grades_katrol")
-        .upsert(recordsToSave, {
-          onConflict: "student_id,subject,class_id,academic_year,semester",
-        });
+        .insert(recordsToSave);
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Supabase Error Details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
+
+      console.log("✅ Data berhasil disimpan:", data);
 
       showMessage(
         `✅ Berhasil menyimpan ${recordsToSave.length} nilai katrol ke database!`,
         "success"
       );
+
+      // Refresh data setelah save
+      await fetchDataNilai();
     } catch (error) {
       console.error("❌ Error saving katrol:", error);
-      showMessage(`Gagal menyimpan nilai katrol: ${error.message}`, "error");
+      showMessage(
+        `Gagal menyimpan nilai katrol: ${error.message || "Unknown error"}`,
+        "error"
+      );
     } finally {
       setSaving(false);
     }
@@ -944,47 +995,85 @@ const GradesKatrol = ({
 
     setExporting(true);
     try {
-      // Simple export untuk sekarang
-      const csvContent = [
-        [
-          "NIS",
-          "Nama",
-          "NH1 Mentah",
-          "NH2 Mentah",
-          "NH3 Mentah",
-          "PSTS Mentah",
-          "PSAS Mentah",
-          "Akhir Mentah",
-          "NH1 Katrol",
-          "NH2 Katrol",
-          "NH3 Katrol",
-          "PSTS Katrol",
-          "PSAS Katrol",
-          "Akhir Katrol",
-          "Status",
-        ].join(","),
-        ...hasilKatrol.map((item) =>
-          [
-            item.nis,
-            item.nama_siswa,
-            item.nh1_mentah || "",
-            item.nh2_mentah || "",
-            item.nh3_mentah || "",
-            item.psts_mentah || "",
-            item.psas_mentah || "",
-            item.nilai_akhir_mentah || "",
-            item.nh1_katrol || "",
-            item.nh2_katrol || "",
-            item.nh3_katrol || "",
-            item.psts_katrol || "",
-            item.psas_katrol || "",
-            item.nilai_akhir_katrol || "",
-            item.status,
-          ].join(",")
-        ),
-      ].join("\n");
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Katrol Nilai");
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      // Header
+      worksheet.columns = [
+        { header: "No", key: "no", width: 5 },
+        { header: "NIS", key: "nis", width: 15 },
+        { header: "Nama", key: "nama", width: 30 },
+        { header: "NH1", key: "nh1", width: 10 },
+        { header: "NH2", key: "nh2", width: 10 },
+        { header: "NH3", key: "nh3", width: 10 },
+        { header: "Rata NH", key: "rata_nh", width: 12 },
+        { header: "PSTS", key: "psts", width: 10 },
+        { header: "PSAS", key: "psas", width: 10 },
+        { header: "Nilai Akhir", key: "akhir", width: 12 },
+        { header: "NH1 (K)", key: "nh1_k", width: 10 },
+        { header: "NH2 (K)", key: "nh2_k", width: 10 },
+        { header: "NH3 (K)", key: "nh3_k", width: 10 },
+        { header: "Rata NH (K)", key: "rata_nh_k", width: 12 },
+        { header: "PSTS (K)", key: "psts_k", width: 10 },
+        { header: "PSAS (K)", key: "psas_k", width: 10 },
+        { header: "Nilai Akhir (K)", key: "akhir_k", width: 14 },
+        { header: "Status", key: "status", width: 15 },
+      ];
+
+      // Style header
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFF00" },
+      };
+      worksheet.getRow(1).alignment = {
+        vertical: "middle",
+        horizontal: "center",
+      };
+
+      // Data (CLEAN VERSION)
+      hasilKatrol.forEach((item, index) => {
+        worksheet.addRow({
+          no: index + 1,
+          nis: item.nis,
+          nama: item.nama_siswa,
+          nh1: item.nh1 || "",
+          nh2: item.nh2 || "",
+          nh3: item.nh3 || "",
+          rata_nh: item.rata_nh ? item.rata_nh.toFixed(1) : "",
+          psts: item.psts || "",
+          psas: item.psas || "",
+          akhir: item.nilai_akhir ? item.nilai_akhir.toFixed(1) : "",
+          nh1_k: item.nh1_k || "",
+          nh2_k: item.nh2_k || "",
+          nh3_k: item.nh3_k || "",
+          rata_nh_k: item.rata_nh_k ? item.rata_nh_k.toFixed(1) : "",
+          psts_k: item.psts_k || "",
+          psas_k: item.psas_k || "",
+          akhir_k: item.nilai_akhir_k ? item.nilai_akhir_k.toFixed(1) : "",
+          status: item.status,
+        });
+      });
+
+      // Border
+      worksheet.eachRow({ includeEmpty: false }, (row) => {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+        });
+      });
+
+      // Generate file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
@@ -992,17 +1081,17 @@ const GradesKatrol = ({
         "download",
         `Katrol_${selectedSubjectState}_${selectedClassId}_${new Date()
           .toISOString()
-          .slice(0, 10)}.csv`
+          .slice(0, 10)}.xlsx`
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      showMessage("✅ Berhasil export data ke CSV", "success");
+      showMessage("✅ Berhasil export data ke Excel", "success");
     } catch (error) {
       console.error("Error exporting:", error);
-      showMessage("Gagal export data", "error");
+      showMessage("Gagal export data: " + error.message, "error");
     } finally {
       setExporting(false);
     }
@@ -1034,7 +1123,7 @@ const GradesKatrol = ({
         </div>
       </div>
 
-      {/* Filter Section - DENGAN PERBAIKAN */}
+      {/* Filter Section */}
       <div className="max-w-7xl mx-auto mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
           <h2 className="text-lg font-semibold mb-4 dark:text-gray-200 flex items-center gap-2">
@@ -1292,7 +1381,7 @@ const GradesKatrol = ({
                 disabled={exporting}
                 className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors">
                 <Download className="w-4 h-4" />
-                Export CSV
+                Export Excel
               </button>
             )}
           </div>
@@ -1324,7 +1413,7 @@ const GradesKatrol = ({
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-semibold mb-4 dark:text-gray-200 flex items-center gap-2">
               <Eye className="w-5 h-5 text-purple-600 dark:text-purple-500" />
-              Preview Data Nilai Mentah ({dataNilai.length} siswa)
+              Preview Data Nilai Asli ({dataNilai.length} siswa)
             </h3>
 
             <div className="overflow-x-auto">
@@ -1378,29 +1467,25 @@ const GradesKatrol = ({
                         {item.nama_siswa}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.nh1_mentah || "-"}
+                        {item.nh1 || "-"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.nh2_mentah || "-"}
+                        {item.nh2 || "-"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.nh3_mentah || "-"}
+                        {item.nh3 || "-"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.rata_nh_mentah
-                          ? item.rata_nh_mentah.toFixed(1)
-                          : "-"}
+                        {item.rata_nh ? item.rata_nh.toFixed(1) : "-"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.psts_mentah || "-"}
+                        {item.psts || "-"}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
-                        {item.psas_mentah || "-"}
+                        {item.psas || "-"}
                       </td>
                       <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-gray-200">
-                        {item.nilai_akhir_mentah
-                          ? item.nilai_akhir_mentah.toFixed(1)
-                          : "-"}
+                        {item.nilai_akhir ? item.nilai_akhir.toFixed(1) : "-"}
                       </td>
                     </tr>
                   ))}
@@ -1473,8 +1558,7 @@ const GradesKatrol = ({
                   Kelas) / (Max Kelas - Min Kelas)) × (Nilai Maksimal - KKM)
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                  💡 <strong>(M)</strong> = Nilai Mentah | <strong>(K)</strong>{" "}
-                  = Nilai Katrol
+                  💡 <strong>(K)</strong> = Nilai Katrol
                 </p>
               </div>
             </div>

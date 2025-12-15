@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  createContext,
+  useMemo,
+} from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import Login from "./components/Login";
@@ -29,6 +35,18 @@ import MaintenancePage from "./setting/MaintenancePage";
 
 // Import Presensi Guru
 import TeacherAttendance from "./attendance-teacher/TeacherAttendance";
+
+// ========== 🎨 THEME SYSTEM IMPORTS ==========
+import { THEMES, DEFAULT_THEME, STORAGE_KEY } from "./config/themeConfig";
+
+// ========== 🎨 THEME CONTEXT ==========
+export const ThemeContext = createContext({
+  currentTheme: DEFAULT_THEME,
+  setTheme: () => {},
+  themes: THEMES,
+  darkMode: false,
+  toggleDarkMode: () => {},
+});
 
 // 🔥 PROTECTED ROUTE COMPONENT - WITH MAINTENANCE MODE
 const ProtectedRoute = ({
@@ -152,11 +170,6 @@ const ProtectedRoute = ({
     };
   }, []);
 
-  // 🔥 HAPUS TOAST DARI SINI - PINDAH KE DASHBOARD
-  // useEffect(() => {
-  //   ...toast logic...
-  // }, []);
-
   // Loading state
   if (loading || maintenanceLoading || (user && userRole === null)) {
     return (
@@ -190,7 +203,7 @@ const ProtectedRoute = ({
   // 🔥 MAINTENANCE MODE CHECK
   const isWhitelisted = whitelistUsers.some((u) => u.id === user?.id);
 
-  console.log("🔍 Maintenance Check:", {
+  console.log("🔒 Maintenance Check:", {
     maintenanceMode,
     userId: user?.id,
     username: user?.username,
@@ -275,29 +288,89 @@ function App() {
   const [toastType, setToastType] = useState("info");
   const [showToast, setShowToast] = useState(false);
 
-  // 🌙 DARK MODE STATE
+  // 🌙 DARK MODE STATE (EXISTING - KEEP AS IS)
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("darkMode");
     return saved === "true";
   });
 
-  // 🌙 DARK MODE EFFECT - Instant update
+  // ========== 🎨 NEW: THEME STATE (Color Theme) ==========
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    // If dark mode is on, default to 'dark', else 'blue' (your existing theme)
+    if (!saved) {
+      return darkMode ? "dark" : "blue";
+    }
+    return saved && THEMES[saved] ? saved : "blue"; // Default to blue to match your existing
+  });
+
+  // ========== 🎨 NEW: APPLY THEME CSS VARIABLES ==========
+  useEffect(() => {
+    const theme = THEMES[currentTheme];
+    if (!theme) return;
+
+    const root = document.documentElement;
+
+    // Apply each color variable
+    Object.entries(theme.colors).forEach(([key, value]) => {
+      const cssVar = key.replace(/([A-Z])/g, "-$1").toLowerCase();
+      root.style.setProperty(`--color-${cssVar}`, value);
+    });
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, currentTheme);
+
+    console.log("🎨 Theme applied:", theme.name);
+  }, [currentTheme]);
+
+  // 🌙 DARK MODE EFFECT - Instant update (EXISTING - KEEP AS IS)
   useEffect(() => {
     localStorage.setItem("darkMode", darkMode);
 
     if (darkMode) {
       document.documentElement.classList.add("dark");
+      // Auto switch to dark theme if not already
+      if (currentTheme !== "dark") {
+        setCurrentTheme("dark");
+      }
     } else {
       document.documentElement.classList.remove("dark");
+      // Auto switch to blue theme if not already (keep your existing blue)
+      if (currentTheme === "dark") {
+        setCurrentTheme("blue");
+      }
     }
-  }, [darkMode]);
+  }, [darkMode, currentTheme]);
 
-  // 🌙 TOGGLE DARK MODE HANDLER - Instant toggle
+  // 🌙 TOGGLE DARK MODE HANDLER - Instant toggle (EXISTING - KEEP AS IS)
   const handleToggleDarkMode = useCallback(() => {
     setDarkMode((prev) => !prev);
   }, []);
 
-  // ========== 1. CHECK SESSION DARI localStorage ==========
+  // ========== 🎨 NEW: SET THEME FUNCTION ==========
+  const handleSetTheme = useCallback(
+    (themeKey) => {
+      if (!THEMES[themeKey]) {
+        console.warn(`Theme "${themeKey}" not found`);
+        return;
+      }
+
+      console.log("🎨 Switching theme to:", themeKey);
+      setCurrentTheme(themeKey);
+
+      // Sync dark mode state with theme
+      if (themeKey === "dark" && !darkMode) {
+        setDarkMode(true);
+        localStorage.setItem("darkMode", "true");
+      } else if (themeKey !== "dark" && darkMode) {
+        setDarkMode(false);
+        localStorage.setItem("darkMode", "false");
+      }
+    },
+    [darkMode]
+  );
+
+  // ========== 1. CHECK SESSION DARI localStorage (EXISTING - KEEP AS IS) ==========
   useEffect(() => {
     const checkSession = () => {
       try {
@@ -340,7 +413,7 @@ function App() {
     checkSession();
   }, []);
 
-  // ========== 2. AUTO HIDE TOAST ==========
+  // ========== 2. AUTO HIDE TOAST (EXISTING - KEEP AS IS) ==========
   useEffect(() => {
     if (showToast) {
       const timer = setTimeout(() => {
@@ -351,7 +424,7 @@ function App() {
     }
   }, [showToast]);
 
-  // ========== 3. KEYBOARD SHORTCUT: Ctrl + Shift + M (ADMIN PANEL) ==========
+  // ========== 3. KEYBOARD SHORTCUT: Ctrl + Shift + M (ADMIN PANEL) (EXISTING - KEEP AS IS) ==========
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.ctrlKey && e.shiftKey && e.key === "M") {
@@ -364,7 +437,7 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
-  // ========== 4. HANDLERS ==========
+  // ========== 4. HANDLERS (EXISTING - KEEP AS IS) ==========
   const handleLogin = useCallback((userData, rememberMe = false) => {
     const loginTime = Date.now();
     const expiryTime = rememberMe
@@ -387,8 +460,6 @@ function App() {
       localStorage.setItem("rememberMe", "false");
       console.log("✅ Session valid for 24 hours");
     }
-
-    // 🔥 Toast dipindah ke ProtectedRoute
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -408,7 +479,7 @@ function App() {
     setShowToast(true);
   }, []);
 
-  // ✅ FIXED: Toast styling dengan dark mode dan responsive
+  // ✅ FIXED: Toast styling dengan dark mode dan responsive (EXISTING - KEEP AS IS)
   const getToastStyle = () => {
     const baseStyle =
       "fixed top-3 right-3 sm:top-4 sm:right-4 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform max-w-[calc(100vw-1.5rem)] sm:max-w-md";
@@ -435,7 +506,19 @@ function App() {
     }
   };
 
-  // ========== 5. LAYOUT WRAPPER (WITH DARK MODE) ==========
+  // ========== 🎨 NEW: THEME CONTEXT VALUE ==========
+  const themeContextValue = useMemo(
+    () => ({
+      currentTheme,
+      setTheme: handleSetTheme,
+      themes: THEMES,
+      darkMode,
+      toggleDarkMode: handleToggleDarkMode,
+    }),
+    [currentTheme, handleSetTheme, darkMode, handleToggleDarkMode]
+  );
+
+  // ========== 5. LAYOUT WRAPPER (WITH DARK MODE) (EXISTING - KEEP AS IS) ==========
   const LayoutWrapper = useCallback(
     ({ children }) => (
       <Layout
@@ -449,7 +532,7 @@ function App() {
     [user, handleLogout, darkMode, handleToggleDarkMode]
   );
 
-  // ========== 6. RENDER ADMIN PANEL ==========
+  // ========== 6. RENDER ADMIN PANEL (EXISTING - KEEP AS IS) ==========
   const currentPath = window.location.pathname;
   if (currentPath === "/secret-admin-panel-2024") {
     return (
@@ -468,7 +551,7 @@ function App() {
     );
   }
 
-  // ========== 7. RENDER MAIN APP ==========
+  // ========== 7. RENDER MAIN APP (EXISTING - KEEP AS IS) ==========
   if (loading) {
     return (
       <div
@@ -494,357 +577,358 @@ function App() {
   }
 
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}>
-      {/* ✅ FIXED: Toast Notification dengan Dark Mode & Responsive */}
-      {showToast && (
-        <div className={getToastStyle()}>
-          <div className="flex items-center gap-2">
-            <span className="text-base sm:text-lg flex-shrink-0">
-              {toastType === "success" && "✅"}
-              {toastType === "error" && "❌"}
-              {toastType === "warning" && "⚠️"}
-              {toastType === "info" && "ℹ️"}
-            </span>
-            <span className="font-medium text-sm sm:text-base break-words">
-              {toastMessage}
-            </span>
+    <ThemeContext.Provider value={themeContextValue}>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}>
+        {/* ✅ FIXED: Toast Notification dengan Dark Mode & Responsive (EXISTING - KEEP AS IS) */}
+        {showToast && (
+          <div className={getToastStyle()}>
+            <div className="flex items-center gap-2">
+              <span className="text-base sm:text-lg flex-shrink-0">
+                {toastType === "success" && "✅"}
+                {toastType === "error" && "❌"}
+                {toastType === "warning" && "⚠️"}
+                {toastType === "info" && "ℹ️"}
+              </span>
+              <span className="font-medium text-sm sm:text-base break-words">
+                {toastMessage}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <Routes>
-        {/* ========== PUBLIC ROUTES ========== */}
-        <Route
-          path="/"
-          element={
-            user ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <Login
-                onLogin={handleLogin}
-                onShowToast={handleShowToast}
+        <Routes>
+          {/* ========== PUBLIC ROUTES (EXISTING - KEEP AS IS) ========== */}
+          <Route
+            path="/"
+            element={
+              user ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <Login
+                  onLogin={handleLogin}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                />
+              )
+            }
+          />
+
+          {/* ========== PROTECTED ROUTES (EXISTING - KEEP AS IS) ========== */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
                 darkMode={darkMode}
-                onToggleDarkMode={handleToggleDarkMode}
-              />
-            )
-          }
-        />
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Dashboard
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* ========== PROTECTED ROUTES ========== */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Dashboard
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/teachers"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Teachers
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/teachers"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Teachers
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/classes"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Classes
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/classes"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Classes
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/students"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Students
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/students"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Students
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/attendance"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Attendance
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/attendance"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Attendance
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/grades-katrol"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <GradesKatrol
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/grades-katrol"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <GradesKatrol
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/attendance-teacher"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}
+                allowedRoles={["teacher", "guru_bk", "admin"]}>
+                <LayoutWrapper>
+                  <TeacherAttendance
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/attendance-teacher"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}
-              allowedRoles={["teacher", "guru_bk", "admin"]}>
-              <LayoutWrapper>
-                <TeacherAttendance
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/attendance-management"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}
+                allowedRoles={["admin"]}>
+                <LayoutWrapper>
+                  <AttendanceManagement
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/attendance-management"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}
-              allowedRoles={["admin"]}>
-              <LayoutWrapper>
-                <AttendanceManagement
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/grades"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Grades
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/grades"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Grades
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/jadwal-saya"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <TeacherSchedule
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/jadwal-saya"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <TeacherSchedule
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/catatan-siswa"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <CatatanSiswa
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/catatan-siswa"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <CatatanSiswa
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/konseling"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Konseling
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/konseling"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Konseling
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Reports
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Reports
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/spmb"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <SPMB
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/spmb"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <SPMB
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <Setting
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <Setting
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/monitor-sistem"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}>
-              <LayoutWrapper>
-                <MonitorSistem
-                  user={user}
-                  onShowToast={handleShowToast}
-                  darkMode={darkMode}
-                />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ========== CATCH-ALL ROUTE ========== */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route
+            path="/monitor-sistem"
+            element={
+              <ProtectedRoute
+                user={user}
+                loading={loading}
+                darkMode={darkMode}
+                onShowToast={handleShowToast}>
+                <LayoutWrapper>
+                  <MonitorSistem
+                    user={user}
+                    onShowToast={handleShowToast}
+                    darkMode={darkMode}
+                  />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            }
+          />
+          {/* ========== CATCH-ALL ROUTE ========== */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeContext.Provider>
   );
 }
 

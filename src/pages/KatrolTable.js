@@ -1,936 +1,201 @@
-// file name: KatrolTable.js
-import React, { useState } from "react";
+// 📊 KatrolTable.js - Component tabel hasil katrol (SIMPLE & CLEAN)
+import React from "react";
 
 const KatrolTable = ({
-  hasilKatrol = [],
-  kkm = 75,
-  nilaiMaksimal = 100,
-  academicYear = "",
-  semester = "1",
-  subject = "",
-  className = "",
+  hasilKatrol,
+  kkm,
   showComparison = true,
   isDarkMode = false,
 }) => {
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "ascending",
-  });
-
-  // Fungsi untuk sort tabel
-  const requestSort = (key) => {
-    let direction = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending";
-    }
-    setSortConfig({ key, direction });
-  };
-
-  // Sorted data
-  const sortedData = React.useMemo(() => {
-    if (!sortConfig.key) return hasilKatrol;
-
-    return [...hasilKatrol].sort((a, b) => {
-      if (sortConfig.key === "nama") {
-        const aVal = a.nama_siswa || "";
-        const bVal = b.nama_siswa || "";
-        if (sortConfig.direction === "ascending") {
-          return aVal.localeCompare(bVal);
-        }
-        return bVal.localeCompare(aVal);
-      }
-
-      // Sorting untuk nilai
-      const aVal = a[sortConfig.key] || 0;
-      const bVal = b[sortConfig.key] || 0;
-
-      if (sortConfig.direction === "ascending") {
-        return aVal - bVal;
-      }
-      return bVal - aVal;
-    });
-  }, [hasilKatrol, sortConfig]);
-
-  // Format nilai dengan 2 desimal
+  // Format nilai untuk display (pembulatan ke integer)
   const formatNilai = (nilai) => {
     if (nilai === null || nilai === undefined) return "-";
-    return parseFloat(nilai).toFixed(2);
+    return typeof nilai === "number" ? Math.round(nilai) : nilai;
   };
 
-  // Warna untuk nilai di bawah KKM
-  const getScoreColor = (score, isKatrol = false) => {
-    if (score === null || score === undefined) return "";
-
-    const nilai = parseFloat(score);
-    if (isKatrol) {
-      return nilai >= kkm
-        ? "text-green-600 dark:text-green-400"
-        : "text-red-500 dark:text-red-400";
-    }
-    return nilai >= kkm
-      ? "text-blue-600 dark:text-blue-400"
-      : "text-yellow-600 dark:text-yellow-400";
+  // Cek apakah nilai dikatrol (naik)
+  const isKatrolled = (nilaiAsli, nilaiKatrol) => {
+    if (nilaiAsli === null || nilaiKatrol === null) return false;
+    return nilaiKatrol > nilaiAsli;
   };
 
-  // Get sort icon
-  const getSortIcon = (key) => {
-    if (sortConfig.key !== key) return "↕️";
-    return sortConfig.direction === "ascending" ? "↑" : "↓";
+  // Hitung selisih nilai
+  const hitungSelisih = (nilaiAsli, nilaiKatrol) => {
+    if (nilaiAsli === null || nilaiKatrol === null) return 0;
+    return nilaiKatrol - nilaiAsli;
   };
 
-  // Render header dengan sort
-  const renderSortableHeader = (label, key) => (
-    <th
-      className={`cursor-pointer hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors p-3 text-left ${
-        isDarkMode ? "text-gray-300" : "text-gray-700"
-      }`}
-      onClick={() => requestSort(key)}>
-      <div className="flex items-center justify-between">
-        <span>{label}</span>
-        <span className="text-xs ml-2">{getSortIcon(key)}</span>
-      </div>
-    </th>
-  );
+  // Cell component dengan styling sederhana
+  const NilaiCell = ({ nilaiAsli, nilaiKatrol }) => {
+    const naik = isKatrolled(nilaiAsli, nilaiKatrol);
+    const selisih = hitungSelisih(nilaiAsli, nilaiKatrol);
 
-  // Hitung statistik - PERBAIKAN: PAKAI FIELD BARU
-  const calculateStats = () => {
-    if (hasilKatrol.length === 0) return null;
-
-    const stats = {
-      jumlahSiswa: hasilKatrol.length,
-      lulusMentah: hasilKatrol.filter(
-        (s) => parseFloat(s.nilai_akhir || 0) >= kkm // ✅ GANTI: nilai_akhir_mentah → nilai_akhir
-      ).length,
-      lulusKatrol: hasilKatrol.filter(
-        (s) => parseFloat(s.nilai_akhir_k || 0) >= kkm // ✅ GANTI: nilai_akhir_katrol → nilai_akhir_k
-      ).length,
-      avgMentah: 0,
-      avgKatrol: 0,
-      minMentah: Infinity,
-      maxMentah: -Infinity,
-      minKatrol: Infinity,
-      maxKatrol: -Infinity,
-    };
-
-    hasilKatrol.forEach((siswa) => {
-      const nilaiMentah = parseFloat(siswa.nilai_akhir || 0); // ✅ GANTI
-      const nilaiKatrol = parseFloat(siswa.nilai_akhir_k || 0); // ✅ GANTI
-
-      stats.avgMentah += nilaiMentah;
-      stats.avgKatrol += nilaiKatrol;
-      stats.minMentah = Math.min(stats.minMentah, nilaiMentah);
-      stats.maxMentah = Math.max(stats.maxMentah, nilaiMentah);
-      stats.minKatrol = Math.min(stats.minKatrol, nilaiKatrol);
-      stats.maxKatrol = Math.max(stats.maxKatrol, nilaiKatrol);
-    });
-
-    stats.avgMentah /= stats.jumlahSiswa;
-    stats.avgKatrol /= stats.jumlahSiswa;
-
-    return stats;
-  };
-
-  const stats = calculateStats();
-
-  if (hasilKatrol.length === 0) {
     return (
-      <div
-        className={`rounded-xl p-8 text-center border ${
-          isDarkMode
-            ? "bg-gray-800 border-gray-700"
-            : "bg-white border-blue-100"
-        }`}>
-        <div
-          className={`text-4xl mb-4 ${
-            isDarkMode ? "text-gray-600" : "text-gray-300"
-          }`}>
-          📊
+      <div className="flex flex-col items-center justify-center gap-1 min-h-[3rem]">
+        {/* Nilai Asli → Katrol */}
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[1.5rem]">
+            {formatNilai(nilaiAsli)}
+          </span>
+
+          {naik && (
+            <span className="text-green-600 dark:text-green-400 text-xs">
+              →
+            </span>
+          )}
+
+          <span
+            className={`text-sm font-semibold min-w-[1.5rem] ${
+              naik
+                ? "text-green-600 dark:text-green-400"
+                : "text-gray-900 dark:text-gray-100"
+            }`}>
+            {formatNilai(nilaiKatrol)}
+          </span>
         </div>
-        <h3
-          className={`text-lg font-semibold mb-2 ${
-            isDarkMode ? "text-gray-300" : "text-gray-700"
-          }`}>
-          Data Hasil Katrol Belum Tersedia
-        </h3>
-        <p className={`${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
-          Proses katrol terlebih dahulu untuk melihat hasilnya.
-        </p>
+
+        {/* Selisih (hanya kalau naik) */}
+        {naik && (
+          <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded">
+            +{Math.round(selisih)}
+          </span>
+        )}
       </div>
     );
-  }
+  };
 
-  // Fungsi untuk warna baris saat hover
-  const getRowHoverClass = () => {
-    return isDarkMode ? "hover:bg-gray-800" : "hover:bg-blue-50";
+  // Status badge sederhana
+  const StatusBadge = ({ nilaiAkhir }) => {
+    const lulus = nilaiAkhir >= kkm;
+    return (
+      <div className="flex justify-center">
+        <span
+          className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium ${
+            lulus
+              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+              : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+          }`}>
+          {lulus ? "✓ Tuntas" : "✗ Belum"}
+        </span>
+      </div>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      {/* Informasi Header */}
-      <div
-        className={`rounded-xl p-4 ${
-          isDarkMode
-            ? "bg-gray-800 border border-gray-700"
-            : "bg-blue-50 border border-blue-100"
-        }`}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <p
-              className={`text-sm font-medium ${
-                isDarkMode ? "text-gray-400" : "text-blue-600"
-              }`}>
-              Kelas
-            </p>
-            <p
-              className={`font-semibold ${
-                isDarkMode ? "text-white" : "text-gray-900"
-              }`}>
-              {className || "-"}
-            </p>
-          </div>
-          <div>
-            <p
-              className={`text-sm font-medium ${
-                isDarkMode ? "text-gray-400" : "text-blue-600"
-              }`}>
-              Mapel
-            </p>
-            <p
-              className={`font-semibold ${
-                isDarkMode ? "text-white" : "text-gray-900"
-              }`}>
-              {subject || "-"}
-            </p>
-          </div>
-          <div>
-            <p
-              className={`text-sm font-medium ${
-                isDarkMode ? "text-gray-400" : "text-blue-600"
-              }`}>
-              Tahun Ajaran
-            </p>
-            <p
-              className={`font-semibold ${
-                isDarkMode ? "text-white" : "text-gray-900"
-              }`}>
-              {academicYear || "-"}
-            </p>
-          </div>
-          <div>
-            <p
-              className={`text-sm font-medium ${
-                isDarkMode ? "text-gray-400" : "text-blue-600"
-              }`}>
-              Semester
-            </p>
-            <p
-              className={`font-semibold ${
-                isDarkMode ? "text-white" : "text-gray-900"
-              }`}>
-              {semester === "1" ? "Ganjil" : "Genap"}
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        {/* HEADER */}
+        <thead className={`${isDarkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+          <tr>
+            <th className="px-4 py-3.5 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              No
+            </th>
+            <th className="px-4 py-3.5 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              NIS
+            </th>
+            <th className="px-4 py-3.5 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Nama Siswa
+            </th>
+            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              NH1
+            </th>
+            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              NH2
+            </th>
+            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              NH3
+            </th>
+            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Rata NH
+            </th>
+            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              PSTS
+            </th>
+            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              PSAS
+            </th>
+            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Nilai Akhir
+            </th>
+            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              Status
+            </th>
+          </tr>
+        </thead>
 
-      {/* Statistik */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div
-            className={`rounded-lg p-4 ${
-              isDarkMode
-                ? "bg-gray-800 border border-gray-700"
-                : "bg-white border border-blue-100"
-            }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-sm font-medium ${
-                    isDarkMode ? "text-gray-400" : "text-gray-600"
-                  }`}>
-                  Total Siswa
-                </p>
-                <p
-                  className={`text-2xl font-bold ${
-                    isDarkMode ? "text-white" : "text-gray-900"
-                  }`}>
-                  {stats.jumlahSiswa}
-                </p>
-              </div>
-              <div className="text-3xl">👥</div>
-            </div>
-          </div>
+        {/* BODY */}
+        <tbody
+          className={`${
+            isDarkMode ? "bg-gray-800" : "bg-white"
+          } divide-y divide-gray-200 dark:divide-gray-700`}>
+          {hasilKatrol.map((item, index) => (
+            <tr
+              key={item.student_id}
+              className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+              {/* No */}
+              <td className="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 font-medium">
+                {index + 1}
+              </td>
 
-          <div
-            className={`rounded-lg p-4 ${
-              isDarkMode
-                ? "bg-gray-800 border border-gray-700"
-                : "bg-white border border-blue-100"
-            }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-sm font-medium ${
-                    isDarkMode ? "text-gray-400" : "text-gray-600"
-                  }`}>
-                  Lulus (Mentah)
-                </p>
-                <p
-                  className={`text-2xl font-bold ${
-                    isDarkMode ? "text-white" : "text-gray-900"
-                  }`}>
-                  {stats.lulusMentah}{" "}
-                  <span className="text-sm">
-                    (
-                    {((stats.lulusMentah / stats.jumlahSiswa) * 100).toFixed(1)}
-                    %)
-                  </span>
-                </p>
-              </div>
-              <div className="text-3xl">📈</div>
-            </div>
-          </div>
+              {/* NIS */}
+              <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                {item.nis}
+              </td>
 
-          <div
-            className={`rounded-lg p-4 ${
-              isDarkMode
-                ? "bg-gray-800 border border-gray-700"
-                : "bg-white border border-blue-100"
-            }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-sm font-medium ${
-                    isDarkMode ? "text-gray-400" : "text-gray-600"
-                  }`}>
-                  Lulus (Katrol)
-                </p>
-                <p
-                  className={`text-2xl font-bold ${
-                    isDarkMode ? "text-white" : "text-gray-900"
-                  }`}>
-                  {stats.lulusKatrol}{" "}
-                  <span className="text-sm">
-                    (
-                    {((stats.lulusKatrol / stats.jumlahSiswa) * 100).toFixed(1)}
-                    %)
-                  </span>
-                </p>
-              </div>
-              <div className="text-3xl">🎯</div>
-            </div>
-          </div>
+              {/* Nama */}
+              <td className="px-4 py-4 text-sm text-gray-900 dark:text-gray-100">
+                {item.nama_siswa}
+              </td>
 
-          <div
-            className={`rounded-lg p-4 ${
-              isDarkMode
-                ? "bg-gray-800 border border-gray-700"
-                : "bg-white border border-blue-100"
-            }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p
-                  className={`text-sm font-medium ${
-                    isDarkMode ? "text-gray-400" : "text-gray-600"
-                  }`}>
-                  Kenaikan Rata-rata
-                </p>
-                <p
-                  className={`text-2xl font-bold ${
-                    stats.avgKatrol - stats.avgMentah > 0
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                  }`}>
-                  +{(stats.avgKatrol - stats.avgMentah).toFixed(2)}
-                </p>
-              </div>
-              <div className="text-3xl">📊</div>
-            </div>
-          </div>
-        </div>
-      )}
+              {/* NH1 */}
+              <td className="px-4 py-4">
+                <NilaiCell nilaiAsli={item.nh1} nilaiKatrol={item.nh1_k} />
+              </td>
 
-      {/* Tabel Utama */}
-      <div className="overflow-x-auto rounded-xl border shadow-sm">
-        <table
-          className={`min-w-full divide-y ${
-            isDarkMode ? "divide-gray-700" : "divide-gray-200"
-          }`}>
-          <thead className={isDarkMode ? "bg-gray-800" : "bg-blue-50"}>
-            <tr>
-              {renderSortableHeader("No", "no")}
-              {renderSortableHeader("NIS", "nis")}
-              {renderSortableHeader("Nama Siswa", "nama")}
+              {/* NH2 */}
+              <td className="px-4 py-4">
+                <NilaiCell nilaiAsli={item.nh2} nilaiKatrol={item.nh2_k} />
+              </td>
 
-              {/* Nilai Mentah */}
-              <th
-                colSpan="6"
-                className="p-3 text-center border-x border-blue-300 dark:border-gray-600">
-                <div
-                  className={`font-semibold ${
-                    isDarkMode ? "text-blue-400" : "text-blue-700"
-                  }`}>
-                  Nilai Mentah
-                </div>
-              </th>
+              {/* NH3 */}
+              <td className="px-4 py-4">
+                <NilaiCell nilaiAsli={item.nh3} nilaiKatrol={item.nh3_k} />
+              </td>
 
-              {/* Nilai Katrol */}
-              <th colSpan="6" className="p-3 text-center">
-                <div
-                  className={`font-semibold ${
-                    isDarkMode ? "text-green-400" : "text-green-700"
-                  }`}>
-                  Nilai Katrol
-                </div>
-              </th>
+              {/* Rata NH */}
+              <td className="px-4 py-4">
+                <NilaiCell
+                  nilaiAsli={item.rata_nh}
+                  nilaiKatrol={item.rata_nh_k}
+                />
+              </td>
+
+              {/* PSTS */}
+              <td className="px-4 py-4">
+                <NilaiCell nilaiAsli={item.psts} nilaiKatrol={item.psts_k} />
+              </td>
+
+              {/* PSAS */}
+              <td className="px-4 py-4">
+                <NilaiCell nilaiAsli={item.psas} nilaiKatrol={item.psas_k} />
+              </td>
 
               {/* Nilai Akhir */}
-              <th
-                colSpan={showComparison ? 4 : 2}
-                className="p-3 text-center border-x border-blue-300 dark:border-gray-600">
-                <div
-                  className={`font-semibold ${
-                    isDarkMode ? "text-purple-400" : "text-purple-700"
-                  }`}>
-                  Nilai Akhir
-                </div>
-              </th>
+              <td className="px-4 py-4">
+                <NilaiCell
+                  nilaiAsli={item.nilai_akhir}
+                  nilaiKatrol={item.nilai_akhir_k}
+                />
+              </td>
 
               {/* Status */}
-              {showComparison && renderSortableHeader("Status", "status")}
+              <td className="px-4 py-4">
+                <StatusBadge nilaiAkhir={item.nilai_akhir_k} />
+              </td>
             </tr>
-
-            {/* Sub Header */}
-            <tr className={isDarkMode ? "bg-gray-800" : "bg-blue-50/50"}>
-              <th className="p-2"></th>
-              <th className="p-2"></th>
-              <th className="p-2"></th>
-
-              {/* Sub Header Nilai Mentah */}
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                NH1
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                NH2
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                NH3
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                Rata NH
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                PSTS
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center border-r border-blue-300 dark:border-gray-600 ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                PSAS
-              </th>
-
-              {/* Sub Header Nilai Katrol */}
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                NH1
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                NH2
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                NH3
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                Rata NH
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                PSTS
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                PSAS
-              </th>
-
-              {/* Sub Header Nilai Akhir */}
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-blue-300" : "text-blue-600"
-                }`}>
-                Mentah
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-green-300" : "text-green-600"
-                }`}>
-                Katrol
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center ${
-                  isDarkMode ? "text-yellow-300" : "text-yellow-600"
-                }`}>
-                Selisih
-              </th>
-              <th
-                className={`p-2 text-xs font-medium text-center border-r border-blue-300 dark:border-gray-600 ${
-                  isDarkMode ? "text-purple-300" : "text-purple-600"
-                }`}>
-                Kenaikan
-              </th>
-
-              {/* Status */}
-              {showComparison && <th className="p-2"></th>}
-            </tr>
-          </thead>
-
-          <tbody
-            className={`divide-y ${
-              isDarkMode
-                ? "divide-gray-700 bg-gray-900"
-                : "divide-gray-200 bg-white"
-            }`}>
-            {sortedData.map((siswa, index) => {
-              // ✅ PERBAIKAN: PAKAI FIELD BARU
-              const selisih =
-                parseFloat(siswa.nilai_akhir_k || 0) -
-                parseFloat(siswa.nilai_akhir || 0);
-              const kenaikanPersen =
-                parseFloat(siswa.nilai_akhir || 0) > 0
-                  ? (selisih / parseFloat(siswa.nilai_akhir || 0)) * 100
-                  : 100;
-
-              const isLulusMentah = parseFloat(siswa.nilai_akhir || 0) >= kkm; // ✅ GANTI
-              const isLulusKatrol = parseFloat(siswa.nilai_akhir_k || 0) >= kkm; // ✅ GANTI
-
-              const getStatusColor = () => {
-                if (!isLulusMentah && isLulusKatrol)
-                  return "text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400";
-                if (isLulusMentah && isLulusKatrol)
-                  return "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400";
-                if (!isLulusMentah && !isLulusKatrol)
-                  return "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400";
-                return "text-gray-600 bg-gray-50 dark:bg-gray-800 dark:text-gray-400";
-              };
-
-              const getStatusText = () => {
-                if (!isLulusMentah && isLulusKatrol) return "Naik Status";
-                if (isLulusMentah && isLulusKatrol) return "Tetap Lulus";
-                if (!isLulusMentah && !isLulusKatrol) return "Tetap Gagal";
-                return "-";
-              };
-
-              return (
-                <tr
-                  key={siswa.student_id || index}
-                  className={`${getRowHoverClass()} transition-colors`}>
-                  {/* No */}
-                  <td className="p-3 text-center">
-                    <span
-                      className={`font-medium ${
-                        isDarkMode ? "text-gray-300" : "text-gray-700"
-                      }`}>
-                      {index + 1}
-                    </span>
-                  </td>
-
-                  {/* NIS */}
-                  <td className="p-3">
-                    <span
-                      className={`font-mono text-sm ${
-                        isDarkMode ? "text-gray-400" : "text-gray-600"
-                      }`}>
-                      {siswa.nis || "-"}
-                    </span>
-                  </td>
-
-                  {/* Nama */}
-                  <td className="p-3">
-                    <div>
-                      <p
-                        className={`font-medium ${
-                          isDarkMode ? "text-white" : "text-gray-900"
-                        }`}>
-                        {siswa.nama_siswa || "-"}
-                      </p>
-                    </div>
-                  </td>
-
-                  {/* Nilai Mentah - ✅ PERBAIKAN: PAKAI FIELD BARU */}
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.nh1, // ✅ GANTI: nh1_mentah → nh1
-                      false
-                    )}`}>
-                    {formatNilai(siswa.nh1)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.nh2, // ✅ GANTI: nh2_mentah → nh2
-                      false
-                    )}`}>
-                    {formatNilai(siswa.nh2)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.nh3, // ✅ GANTI: nh3_mentah → nh3
-                      false
-                    )}`}>
-                    {formatNilai(siswa.nh3)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.rata_nh, // ✅ GANTI: rata_nh_mentah → rata_nh
-                      false
-                    )}`}>
-                    {formatNilai(siswa.rata_nh)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.psts, // ✅ GANTI: psts_mentah → psts
-                      false
-                    )}`}>
-                    {formatNilai(siswa.psts)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium border-r ${getScoreColor(
-                      siswa.psas, // ✅ GANTI: psas_mentah → psas
-                      false
-                    )} ${isDarkMode ? "border-gray-600" : "border-blue-300"}`}>
-                    {formatNilai(siswa.psas)}
-                  </td>
-
-                  {/* Nilai Katrol - ✅ PERBAIKAN: PAKAI FIELD BARU */}
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.nh1_k, // ✅ GANTI: nh1_katrol → nh1_k
-                      true
-                    )}`}>
-                    {formatNilai(siswa.nh1_k)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.nh2_k, // ✅ GANTI: nh2_katrol → nh2_k
-                      true
-                    )}`}>
-                    {formatNilai(siswa.nh2_k)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.nh3_k, // ✅ GANTI: nh3_katrol → nh3_k
-                      true
-                    )}`}>
-                    {formatNilai(siswa.nh3_k)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.rata_nh_k, // ✅ GANTI: rata_nh_katrol → rata_nh_k
-                      true
-                    )}`}>
-                    {formatNilai(siswa.rata_nh_k)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.psts_k, // ✅ GANTI: psts_katrol → psts_k
-                      true
-                    )}`}>
-                    {formatNilai(siswa.psts_k)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.psas_k, // ✅ GANTI: psas_katrol → psas_k
-                      true
-                    )}`}>
-                    {formatNilai(siswa.psas_k)}
-                  </td>
-
-                  {/* Nilai Akhir - ✅ PERBAIKAN: PAKAI FIELD BARU */}
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.nilai_akhir, // ✅ GANTI: nilai_akhir_mentah → nilai_akhir
-                      false
-                    )}`}>
-                    {formatNilai(siswa.nilai_akhir)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${getScoreColor(
-                      siswa.nilai_akhir_k, // ✅ GANTI: nilai_akhir_katrol → nilai_akhir_k
-                      true
-                    )}`}>
-                    {formatNilai(siswa.nilai_akhir_k)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium ${
-                      selisih >= 0
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}>
-                    {selisih >= 0 ? "+" : ""}
-                    {formatNilai(selisih)}
-                  </td>
-                  <td
-                    className={`p-3 text-center font-medium border-r ${
-                      selisih >= 0
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    } ${isDarkMode ? "border-gray-600" : "border-blue-300"}`}>
-                    {selisih >= 0 ? "+" : ""}
-                    {kenaikanPersen.toFixed(1)}%
-                  </td>
-
-                  {/* Status */}
-                  {showComparison && (
-                    <td className="p-3 text-center">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor()}`}>
-                        {getStatusText()}
-                      </span>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-
-          {/* Footer dengan rata-rata - ✅ PERBAIKAN: PAKAI FIELD BARU */}
-          {stats && (
-            <tfoot
-              className={
-                isDarkMode
-                  ? "bg-gray-800 border-t border-gray-700"
-                  : "bg-blue-50 border-t border-blue-100"
-              }>
-              <tr>
-                <td colSpan="3" className="p-3 text-right font-semibold">
-                  <span
-                    className={isDarkMode ? "text-gray-300" : "text-gray-700"}>
-                    Rata-rata Kelas:
-                  </span>
-                </td>
-
-                {/* Rata-rata Nilai Mentah - ✅ PERBAIKAN */}
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={isDarkMode ? "text-blue-400" : "text-blue-600"}>
-                    {formatNilai(
-                      hasilKatrol.reduce(
-                        (sum, s) => sum + parseFloat(s.nh1 || 0), // ✅ GANTI: nh1_mentah → nh1
-                        0
-                      ) / hasilKatrol.length
-                    )}
-                  </span>
-                </td>
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={isDarkMode ? "text-blue-400" : "text-blue-600"}>
-                    {formatNilai(
-                      hasilKatrol.reduce(
-                        (sum, s) => sum + parseFloat(s.nh2 || 0), // ✅ GANTI
-                        0
-                      ) / hasilKatrol.length
-                    )}
-                  </span>
-                </td>
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={isDarkMode ? "text-blue-400" : "text-blue-600"}>
-                    {formatNilai(
-                      hasilKatrol.reduce(
-                        (sum, s) => sum + parseFloat(s.nh3 || 0), // ✅ GANTI
-                        0
-                      ) / hasilKatrol.length
-                    )}
-                  </span>
-                </td>
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={isDarkMode ? "text-blue-400" : "text-blue-600"}>
-                    {formatNilai(stats.avgMentah * 0.4)}
-                  </span>
-                </td>
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={isDarkMode ? "text-blue-400" : "text-blue-600"}>
-                    {formatNilai(
-                      hasilKatrol.reduce(
-                        (sum, s) => sum + parseFloat(s.psts || 0), // ✅ GANTI
-                        0
-                      ) / hasilKatrol.length
-                    )}
-                  </span>
-                </td>
-                <td
-                  className={`p-3 text-center font-medium border-r ${
-                    isDarkMode ? "border-gray-600" : "border-blue-300"
-                  }`}>
-                  <span
-                    className={isDarkMode ? "text-blue-400" : "text-blue-600"}>
-                    {formatNilai(
-                      hasilKatrol.reduce(
-                        (sum, s) => sum + parseFloat(s.psas || 0), // ✅ GANTI
-                        0
-                      ) / hasilKatrol.length
-                    )}
-                  </span>
-                </td>
-
-                {/* Rata-rata Nilai Katrol - ✅ PERBAIKAN */}
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={
-                      isDarkMode ? "text-green-400" : "text-green-600"
-                    }>
-                    {formatNilai(
-                      hasilKatrol.reduce(
-                        (sum, s) => sum + parseFloat(s.psts_k || 0), // ✅ GANTI
-                        0
-                      ) / hasilKatrol.length
-                    )}
-                  </span>
-                </td>
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={
-                      isDarkMode ? "text-green-400" : "text-green-600"
-                    }>
-                    {formatNilai(
-                      hasilKatrol.reduce(
-                        (sum, s) => sum + parseFloat(s.psas_k || 0), // ✅ GANTI
-                        0
-                      ) / hasilKatrol.length
-                    )}
-                  </span>
-                </td>
-
-                {/* Rata-rata Nilai Akhir */}
-                <td
-                  className={`p-3 text-center font-medium border-l ${
-                    isDarkMode ? "border-gray-600" : "border-blue-300"
-                  }`}>
-                  <span
-                    className={isDarkMode ? "text-blue-400" : "text-blue-600"}>
-                    {formatNilai(stats.avgMentah)}
-                  </span>
-                </td>
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={
-                      isDarkMode ? "text-green-400" : "text-green-600"
-                    }>
-                    {formatNilai(stats.avgKatrol)}
-                  </span>
-                </td>
-                <td className="p-3 text-center font-medium">
-                  <span
-                    className={
-                      isDarkMode ? "text-green-400" : "text-green-600"
-                    }>
-                    +{formatNilai(stats.avgKatrol - stats.avgMentah)}
-                  </span>
-                </td>
-                <td
-                  className={`p-3 text-center font-medium border-r ${
-                    isDarkMode ? "border-gray-600" : "border-blue-300"
-                  }`}>
-                  <span
-                    className={
-                      isDarkMode ? "text-green-400" : "text-green-600"
-                    }>
-                    +
-                    {(
-                      ((stats.avgKatrol - stats.avgMentah) /
-                        (stats.avgMentah || 1)) *
-                      100
-                    ).toFixed(1)}
-                    %
-                  </span>
-                </td>
-
-                {/* Status Footer */}
-                {showComparison && (
-                  <td className="p-3 text-center">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        stats.lulusKatrol > stats.lulusMentah
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                      }`}>
-                      {stats.lulusKatrol - stats.lulusMentah > 0
-                        ? `+${stats.lulusKatrol - stats.lulusMentah} Lulus`
-                        : "Stabil"}
-                    </span>
-                  </td>
-                )}
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
-
-      {/* Legend */}
-      <div
-        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm ${
-          isDarkMode ? "text-gray-400" : "text-gray-600"
-        }`}>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-green-500"></div>
-          <span>Nilai katrol ≥ KKM ({kkm})</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-red-500"></div>
-          <span>Nilai katrol &lt; KKM ({kkm})</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-blue-500"></div>
-          <span>Nilai mentah ≥ KKM ({kkm})</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-yellow-500"></div>
-          <span>Nilai mentah &lt; KKM ({kkm})</span>
-        </div>
-      </div>
-
-      {/* Notes */}
-      <div
-        className={`text-sm ${isDarkMode ? "text-gray-500" : "text-gray-600"}`}>
-        <p>
-          <strong>Catatan:</strong> Nilai akhir = (Rata-rata NH × 40%) + (PSTS ×
-          30%) + (PSAS × 30%)
-        </p>
-        <p>
-          <strong>Target katrol:</strong> KKM = {kkm}, Nilai Maksimal ={" "}
-          {nilaiMaksimal}
-        </p>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
