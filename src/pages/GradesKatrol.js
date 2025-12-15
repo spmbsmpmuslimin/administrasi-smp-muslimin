@@ -1,4 +1,4 @@
-// 📁 GradesKatrol.js - VERSI FIXED & CLEAN
+// 📁 GradesKatrol.js - VERSI FLEXIBLE NO LOCK
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import {
@@ -16,6 +16,8 @@ import {
   GraduationCap,
   BookOpen,
   Users,
+  Edit,
+  RefreshCw,
 } from "lucide-react";
 
 // ✅ IMPORT DARI FILE LAIN
@@ -214,8 +216,11 @@ const GradesKatrol = ({
   const [hasilKatrol, setHasilKatrol] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
 
+  // ✅ STATE KKM FLEXIBLE (TANPA LOCK)
   const [kkm, setKkm] = useState(75);
   const [nilaiMaksimal, setNilaiMaksimal] = useState(100);
+  const [kkmSettings, setKkmSettings] = useState(null); // Untuk tracking data yang sudah disimpan
+  const [isSavingKkm, setIsSavingKkm] = useState(false);
 
   const [message, setMessage] = useState({ text: "", type: "" });
   const [academicYearId, setAcademicYearId] = useState(null);
@@ -413,7 +418,7 @@ const GradesKatrol = ({
           .from("teacher_assignments")
           .select("class_id")
           .eq("teacher_id", teacherId)
-          .eq("subject", selectedSubjectState)
+          .ilike("subject", selectedSubjectState)
           .eq("academic_year", selectedAcademicYear)
           .eq("semester", selectedSemester);
 
@@ -460,6 +465,184 @@ const GradesKatrol = ({
     fetchClasses();
   }, [selectedSubjectState, teacherId, selectedAcademicYear, selectedSemester]);
 
+  // ✅ LOAD KKM SETTINGS dari database (TANPA LOCK)
+  const loadKkmSettings = async () => {
+    if (!selectedSubjectState || !selectedClassId) {
+      setKkmSettings(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("grades_katrol_settings")
+        .select("*")
+        .eq("mata_pelajaran_id", selectedSubjectState)
+        .eq("kelas_id", selectedClassId)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error loading KKM settings:", error);
+        return;
+      }
+
+      if (data) {
+        // ✅ LOAD TANPA LOCK - selalu bisa diedit
+        setKkm(data.kkm);
+        setNilaiMaksimal(data.nilai_maksimal);
+        setKkmSettings(data);
+        showMessage(
+          `✅ Setting KKM dimuat: KKM=${data.kkm}, Maks=${data.nilai_maksimal}`,
+          "success"
+        );
+      } else {
+        // ✅ BELUM ADA - GUNAKAN DEFAULT
+        setKkmSettings(null);
+        showMessage(
+          "ℹ️ Belum ada setting KKM. Silakan atur dan simpan.",
+          "info"
+        );
+      }
+    } catch (error) {
+      console.error("Error in loadKkmSettings:", error);
+      showMessage("Gagal memuat setting KKM: " + error.message, "error");
+    }
+  };
+
+  // ✅ TAMBAH useEffect INI (setelah useEffect yang lain)
+  useEffect(() => {
+    if (selectedSubjectState && selectedClassId) {
+      loadKkmSettings();
+    } else {
+      // Reset jika belum pilih
+      setKkmSettings(null);
+    }
+  }, [selectedSubjectState, selectedClassId]);
+
+  // ✅ SAVE/UPDATE KKM SETTINGS ke database (FLEXIBLE)
+  const saveKkmSettings = async () => {
+    // Validasi
+    if (!selectedSubjectState || !selectedClassId) {
+      showMessage("Pilih kelas dan mata pelajaran terlebih dahulu!", "error");
+      return;
+    }
+
+    if (kkm <= 0 || nilaiMaksimal <= 0) {
+      showMessage("KKM dan Nilai Maksimal harus lebih dari 0!", "error");
+      return;
+    }
+
+    if (kkm >= nilaiMaksimal) {
+      showMessage("KKM harus lebih kecil dari Nilai Maksimal!", "error");
+      return;
+    }
+
+    setIsSavingKkm(true);
+    try {
+      const settingsData = {
+        mata_pelajaran_id: selectedSubjectState,
+        kelas_id: selectedClassId,
+        kkm: kkm,
+        nilai_maksimal: nilaiMaksimal,
+        updated_at: new Date().toISOString(),
+        updated_by: user?.id || teacherId,
+      };
+
+      let result;
+
+      // ✅ UPDATE jika sudah ada, INSERT jika baru
+      if (kkmSettings) {
+        const { data, error } = await supabase
+          .from("grades_katrol_settings")
+          .update(settingsData)
+          .eq("id", kkmSettings.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        result = data;
+        showMessage("✅ Pengaturan KKM berhasil diperbarui!", "success");
+      } else {
+        const { data, error } = await supabase
+          .from("grades_katrol_settings")
+          .insert(settingsData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        result = data;
+        showMessage("✅ Pengaturan KKM berhasil disimpan!", "success");
+      }
+
+      // ✅ UPDATE STATE TANPA LOCK
+      setKkmSettings(result);
+    } catch (error) {
+      console.error("Error saving KKM settings:", error);
+
+      // Handle duplicate constraint dengan upsert
+      if (error.code === "23505") {
+        try {
+          const { data, error: upsertError } = await supabase
+            .from("grades_katrol_settings")
+            .upsert({
+              mata_pelajaran_id: selectedSubjectState,
+              kelas_id: selectedClassId,
+              kkm: kkm,
+              nilai_maksimal: nilaiMaksimal,
+              updated_at: new Date().toISOString(),
+              updated_by: user?.id || teacherId,
+            })
+            .select()
+            .single();
+
+          if (upsertError) throw upsertError;
+
+          setKkmSettings(data);
+          showMessage("✅ Pengaturan KKM berhasil diperbarui!", "success");
+        } catch (upsertError) {
+          console.error("Upsert error:", upsertError);
+          showMessage(
+            "Gagal menyimpan setting KKM: " + upsertError.message,
+            "error"
+          );
+        }
+      } else {
+        showMessage("Gagal menyimpan setting KKM: " + error.message, "error");
+      }
+    } finally {
+      setIsSavingKkm(false);
+    }
+  };
+
+  // ✅ HAPUS KKM SETTINGS (optional)
+  const resetKkmSettings = async () => {
+    if (!kkmSettings) return;
+
+    const confirm = window.confirm(
+      "Yakin ingin menghapus pengaturan KKM?\n\n" +
+        "Data akan dihapus dari database dan KKM akan dikembalikan ke default."
+    );
+
+    if (!confirm) return;
+
+    try {
+      const { error } = await supabase
+        .from("grades_katrol_settings")
+        .delete()
+        .eq("id", kkmSettings.id);
+
+      if (error) throw error;
+
+      // Reset ke default
+      setKkm(75);
+      setNilaiMaksimal(100);
+      setKkmSettings(null);
+      showMessage("✅ Pengaturan KKM berhasil dihapus", "success");
+    } catch (error) {
+      console.error("Error deleting KKM settings:", error);
+      showMessage("Gagal menghapus setting KKM: " + error.message, "error");
+    }
+  };
+
   const showMessage = (text, type) => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: "", type: "" }), 5000);
@@ -503,7 +686,7 @@ const GradesKatrol = ({
         `
         )
         .eq("class_id", selectedClassId)
-        .eq("subject", selectedSubjectState)
+        .ilike("subject", selectedSubjectState)
         .eq("academic_year", selectedAcademicYear)
         .eq("semester", selectedSemester);
 
@@ -520,20 +703,20 @@ const GradesKatrol = ({
           student_id: item.student_id,
           nis: item.students?.nis || "-",
           nama_siswa: item.students?.full_name || "-",
-          nh1: item.nh1,
-          nh2: item.nh2,
-          nh3: item.nh3,
-          rata_nh: item.rata_nh,
-          psts: item.psts,
-          psas: item.psas,
-          nilai_akhir: item.nilai_akhir,
-          nh1_k: item.nh1_k,
-          nh2_k: item.nh2_k,
-          nh3_k: item.nh3_k,
-          rata_nh_k: item.rata_nh_k,
-          psts_k: item.psts_k,
-          psas_k: item.psas_k,
-          nilai_akhir_k: item.nilai_akhir_k,
+          nh1: item.nh1_mentah,
+          nh2: item.nh2_mentah,
+          nh3: item.nh3_mentah,
+          rata_nh: item.rata_nh_mentah,
+          psts: item.psts_mentah,
+          psas: item.psas_mentah,
+          nilai_akhir: item.nilai_akhir_mentah,
+          nh1_k: item.nh1_katrol,
+          nh2_k: item.nh2_katrol,
+          nh3_k: item.nh3_katrol,
+          rata_nh_k: item.rata_nh_katrol,
+          psts_k: item.psts_katrol,
+          psas_k: item.psas_katrol,
+          nilai_akhir_k: item.nilai_akhir_katrol,
           status: item.nilai_akhir_k >= item.kkm ? "Tuntas" : "Belum Tuntas",
         }));
 
@@ -570,7 +753,7 @@ const GradesKatrol = ({
         .from("grades")
         .select("*")
         .eq("class_id", selectedClassId)
-        .eq("subject", selectedSubjectState)
+        .ilike("subject", selectedSubjectState)
         .eq("academic_year", selectedAcademicYear)
         .eq("semester", selectedSemester)
         .in("assignment_type", ["NH1", "NH2", "NH3", "PSTS", "PSAS"]);
@@ -639,8 +822,17 @@ const GradesKatrol = ({
     }
   };
 
-  // ✅ PROSES KATROL (dengan Utils.js)
+  // ✅ PROSES KATROL (dengan Utils.js) - VERSI DIPERBAIKI
   const prosesKatrol = async () => {
+    // ✅ VALIDASI SEDERHANA: Cek KKM sudah di-set
+    if (!kkm || !nilaiMaksimal) {
+      showMessage(
+        "⚠️ Silakan atur KKM dan Nilai Maksimal terlebih dahulu!",
+        "error"
+      );
+      return;
+    }
+
     if (!selectedClassId || !selectedSubjectState || !selectedAcademicYear) {
       showMessage(
         "Pilih kelas, mata pelajaran, dan tahun ajaran terlebih dahulu",
@@ -656,13 +848,14 @@ const GradesKatrol = ({
 
     setProcessing(true);
     try {
-      // Ambil data siswa
+      // ✅ AMBIL DATA SISWA DENGAN SORTING
       const { data: studentsData, error: studentsError } = await supabase
         .from("students")
         .select("id, full_name, nis")
         .eq("class_id", selectedClassId)
         .eq("academic_year", selectedAcademicYear)
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .order("full_name");
 
       if (studentsError) throw studentsError;
 
@@ -671,7 +864,7 @@ const GradesKatrol = ({
         .from("grades")
         .select("*")
         .eq("class_id", selectedClassId)
-        .eq("subject", selectedSubjectState)
+        .ilike("subject", selectedSubjectState)
         .eq("academic_year", selectedAcademicYear)
         .eq("semester", selectedSemester)
         .in("assignment_type", ["NH1", "NH2", "NH3", "PSTS", "PSAS"]);
@@ -712,8 +905,13 @@ const GradesKatrol = ({
         additionalInfo
       );
 
+      // ✅ SORT HASIL BERDASARKAN NAMA SISWA
+      const sortedHasil = [...hasil].sort((a, b) =>
+        a.student_name.localeCompare(b.student_name)
+      );
+
       // Format untuk display
-      const formattedHasil = hasil.map((item) => ({
+      const formattedHasil = sortedHasil.map((item) => ({
         student_id: item.student_id,
         nis: item.student_nis,
         nama_siswa: item.student_name,
@@ -779,7 +977,7 @@ const GradesKatrol = ({
         .from("grades_katrol")
         .select("id")
         .eq("class_id", selectedClassId)
-        .eq("subject", selectedSubjectState)
+        .ilike("subject", selectedSubjectState)
         .eq("academic_year", selectedAcademicYear)
         .eq("semester", selectedSemester);
 
@@ -820,7 +1018,7 @@ const GradesKatrol = ({
         .from("grades_katrol")
         .delete()
         .eq("class_id", selectedClassId)
-        .eq("subject", selectedSubjectState)
+        .ilike("subject", selectedSubjectState)
         .eq("academic_year", selectedAcademicYear)
         .eq("semester", selectedSemester);
 
@@ -1037,6 +1235,7 @@ const GradesKatrol = ({
                   setClasses([]);
                   setDataNilai([]);
                   setHasilKatrol([]);
+                  setKkmSettings(null);
                 }}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
                 disabled={isInitialLoad || loading}
@@ -1074,6 +1273,7 @@ const GradesKatrol = ({
                   setClasses([]);
                   setDataNilai([]);
                   setHasilKatrol([]);
+                  setKkmSettings(null);
                 }}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
                 disabled={isInitialLoad || !selectedAcademicYear}
@@ -1108,6 +1308,7 @@ const GradesKatrol = ({
                   setClasses([]);
                   setDataNilai([]);
                   setHasilKatrol([]);
+                  setKkmSettings(null);
                 }}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
                 disabled={isInitialLoad || loading || !selectedAcademicYear}
@@ -1144,6 +1345,7 @@ const GradesKatrol = ({
                   setSelectedClassId(value);
                   setDataNilai([]);
                   setHasilKatrol([]);
+                  setKkmSettings(null);
                 }}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
                 disabled={isInitialLoad || !selectedSubjectState || loading}
@@ -1166,39 +1368,90 @@ const GradesKatrol = ({
             </div>
           </div>
 
-          {/* KKM & Nilai Maksimal */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                KKM (Kriteria Ketuntasan Minimal)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={kkm}
-                onChange={(e) => setKkm(parseInt(e.target.value) || 75)}
-                className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200"
-                placeholder="75"
-              />
+          {/* ✅ KKM & Nilai Maksimal - FLEXIBLE VERSION */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold dark:text-gray-200 flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-green-600 dark:text-green-500" />
+                Pengaturan KKM
+              </h3>
+
+              {kkmSettings && (
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-3 py-1 rounded-full flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Tersimpan
+                  </div>
+                  <button
+                    onClick={resetKkmSettings}
+                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3" />
+                    Reset
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nilai Maksimal Target
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={nilaiMaksimal}
-                onChange={(e) =>
-                  setNilaiMaksimal(parseInt(e.target.value) || 100)
-                }
-                className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200"
-                placeholder="100"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  KKM (Kriteria Ketuntasan Minimal)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={kkm}
+                  onChange={(e) => setKkm(parseInt(e.target.value) || 75)}
+                  className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
+                  placeholder="75"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nilai Maksimal Target
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={nilaiMaksimal}
+                  onChange={(e) =>
+                    setNilaiMaksimal(parseInt(e.target.value) || 100)
+                  }
+                  className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
+                  placeholder="100"
+                />
+              </div>
             </div>
+
+            {/* ✅ TOMBOL SIMPAN/UPDATE KKM */}
+            {selectedClassId && selectedSubjectState && (
+              <div>
+                <button
+                  onClick={saveKkmSettings}
+                  disabled={isSavingKkm}
+                  className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors">
+                  {isSavingKkm ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      {kkmSettings
+                        ? "Update Pengaturan KKM"
+                        : "Simpan Pengaturan KKM"}
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  ✅ Pengaturan bisa diubah kapan saja sesuai kebutuhan
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -1428,7 +1681,7 @@ const GradesKatrol = ({
               isDarkMode={false}
             />
 
-            {/* SIMPLE SUMMARY - CUMA INI DOANG YANG TINGGAL */}
+            {/* SIMPLE SUMMARY */}
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-center gap-6">
                 <div className="text-center">

@@ -122,11 +122,18 @@ export const calculateMinMaxKelas = (organizedData) => {
 };
 
 /**
- * Hitung rata-rata NH dengan pembulatan
+ * Hitung rata-rata NH dengan pembulatan - SMART VERSION
+ * Rata dari NH yang ada, bukan selalu bagi 3
  */
 export const hitungRataNH = (nh1, nh2, nh3) => {
-  if (nh1 === null || nh2 === null || nh3 === null) return null;
-  const rata = (nh1 + nh2 + nh3) / 3;
+  // ✅ Filter NH yang ada nilainya (tidak null dan > 0)
+  const nhValues = [nh1, nh2, nh3].filter((n) => n !== null && n > 0);
+
+  // Kalau ga ada satupun NH yang diisi, return null
+  if (nhValues.length === 0) return null;
+
+  // Hitung rata dari yang ada
+  const rata = nhValues.reduce((a, b) => a + b, 0) / nhValues.length;
   return roundToTwo(rata);
 };
 
@@ -313,13 +320,13 @@ export const exportToExcel = async (
   // Hitung statistik
   const totalSiswa = hasilKatrol.length;
   const lulusSebelum = hasilKatrol.filter(
-    (r) => r.nilai_akhir_mentah >= kkm
+    (r) => r.nilai_akhir >= kkm // ❌ BUKAN nilai_akhir_mentah
   ).length;
   const lulusSesudah = hasilKatrol.filter(
-    (r) => r.nilai_akhir_katrol >= kkm
+    (r) => r.nilai_akhir_k >= kkm // ❌ BUKAN nilai_akhir_katrol
   ).length;
   const naikStatus = hasilKatrol.filter(
-    (r) => r.nilai_akhir_mentah < kkm && r.nilai_akhir_katrol >= kkm
+    (r) => r.nilai_akhir < kkm && r.nilai_akhir_k >= kkm // ❌ FIX field names
   ).length;
 
   // ==================== SHEET 1: DATA LENGKAP ====================
@@ -424,20 +431,20 @@ export const exportToExcel = async (
       index + 1,
       siswa.nis,
       siswa.nama_siswa,
-      formatNum(siswa.nh1_mentah),
-      formatNum(siswa.nh1_katrol),
-      formatNum(siswa.nh2_mentah),
-      formatNum(siswa.nh2_katrol),
-      formatNum(siswa.nh3_mentah),
-      formatNum(siswa.nh3_katrol),
-      formatNum(siswa.rata_nh_mentah),
-      formatNum(siswa.rata_nh_katrol),
-      formatNum(siswa.psts_mentah),
-      formatNum(siswa.psts_katrol),
-      formatNum(siswa.psas_mentah),
-      formatNum(siswa.psas_katrol),
-      formatNum(siswa.nilai_akhir_mentah),
-      formatNum(siswa.nilai_akhir_katrol),
+      formatNum(siswa.nh1), // ❌ BUKAN nh1_mentah
+      formatNum(siswa.nh1_k), // ❌ BUKAN nh1_katrol
+      formatNum(siswa.nh2), // ❌ BUKAN nh2_mentah
+      formatNum(siswa.nh2_k), // ❌ BUKAN nh2_katrol
+      formatNum(siswa.nh3), // ❌ BUKAN nh3_mentah
+      formatNum(siswa.nh3_k), // ❌ BUKAN nh3_katrol
+      formatNum(siswa.rata_nh), // ❌ BUKAN rata_nh_mentah
+      formatNum(siswa.rata_nh_k), // ❌ BUKAN rata_nh_katrol
+      formatNum(siswa.psts), // ❌ BUKAN psts_mentah
+      formatNum(siswa.psts_k), // ❌ BUKAN psts_katrol
+      formatNum(siswa.psas), // ❌ BUKAN psas_mentah
+      formatNum(siswa.psas_k), // ❌ BUKAN psas_katrol
+      formatNum(siswa.nilai_akhir), // ❌ BUKAN nilai_akhir_mentah
+      formatNum(siswa.nilai_akhir_k), // ❌ BUKAN nilai_akhir_katrol
     ];
 
     const r = ws1.addRow(rowData);
@@ -477,23 +484,6 @@ export const exportToExcel = async (
       }
     });
   });
-
-  // Summary row
-  currentRow = ws1.lastRow.number + 2;
-  const summaryRow = ws1.getRow(currentRow);
-  summaryRow.values = [
-    "",
-    "",
-    "RINGKASAN:",
-    `Total Siswa: ${totalSiswa}`,
-    "",
-    `Lulus Sebelum: ${lulusSebelum}`,
-    "",
-    `Lulus Sesudah: ${lulusSesudah}`,
-    "",
-    `Naik Status: ${naikStatus}`,
-  ];
-  summaryRow.font = { bold: true };
 
   // ==================== SHEET 2: KATROL AKHIR ====================
   const ws2 = workbook.addWorksheet("Katrol Akhir");
@@ -580,13 +570,13 @@ export const exportToExcel = async (
       index + 1,
       siswa.nis,
       siswa.nama_siswa,
-      formatNum(siswa.nh1_katrol),
-      formatNum(siswa.nh2_katrol),
-      formatNum(siswa.nh3_katrol),
-      formatNum(siswa.rata_nh_katrol),
-      formatNum(siswa.psts_katrol),
-      formatNum(siswa.psas_katrol),
-      formatNum(siswa.nilai_akhir_katrol),
+      formatNum(siswa.nh1_k), // ❌ BUKAN nh1_katrol
+      formatNum(siswa.nh2_k), // ❌ BUKAN nh2_katrol
+      formatNum(siswa.nh3_k), // ❌ BUKAN nh3_katrol
+      formatNum(siswa.rata_nh_k), // ❌ BUKAN rata_nh_katrol
+      formatNum(siswa.psts_k), // ❌ BUKAN psts_katrol
+      formatNum(siswa.psas_k), // ❌ BUKAN psas_katrol
+      formatNum(siswa.nilai_akhir_k), // ❌ BUKAN nilai_akhir_katrol
     ];
 
     const r = ws2.addRow(rowData2);

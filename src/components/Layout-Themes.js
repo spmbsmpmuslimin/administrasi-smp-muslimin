@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useContext,
+} from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Calendar,
@@ -15,9 +21,16 @@ import {
 } from "lucide-react";
 import Sidebar from "./Sidebar";
 
+// ✅ NEW: Import Theme Context dan ThemeSelector
+import { ThemeContext } from "./../App-Theme"; // atau "../App-Theme"
+import ThemeSelector from "./ThemeSelector"; // ini sudah benar
+
 const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // ✅ NEW: Akses Theme Context
+  const { currentTheme, setTheme, themes } = useContext(ThemeContext);
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -278,6 +291,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     });
   };
 
+  // 🔥 UPDATE: Menambahkan halaman nilai-katrol
   const getCurrentPage = () => {
     const path = location.pathname;
     if (path === "/dashboard") return "dashboard";
@@ -287,7 +301,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     if (path === "/attendance") return "attendance";
     if (path === "/attendance-management") return "attendance-management";
     if (path === "/attendance-teacher") return "attendance-teacher";
-    if (path === "/grades") return "grades";
+    if (path === "/grades") return "nilai-asli";
+    if (path === "/grades-katrol") return "nilai-katrol";
     if (path === "/jadwal-saya") return "jadwal-saya";
     if (path === "/catatan-siswa") return "catatan-siswa";
     if (path === "/konseling") return "konseling";
@@ -298,6 +313,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     return "dashboard";
   };
 
+  // 🔥 UPDATE: Menambahkan nama halaman untuk nilai-katrol
   const getCurrentPageName = () => {
     const pathMap = {
       "/dashboard": "Dashboard",
@@ -307,7 +323,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       "/attendance": "Kehadiran",
       "/attendance-management": "Management Presensi",
       "/attendance-teacher": "Presensi Guru",
-      "/grades": "Nilai Akademik",
+      "/grades": "Nilai Asli",
+      "/grades-katrol": "Nilai Katrol",
       "/jadwal-saya": "Jadwal Saya",
       "/catatan-siswa": "Catatan Siswa",
       "/konseling": "Konseling",
@@ -319,6 +336,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     return pathMap[location.pathname] || "Dashboard";
   };
 
+  // 🔥 UPDATE: Menambahkan subtitle untuk halaman nilai
   const getPageSubtitle = () => {
     if (!user) return "SMP Muslimin";
 
@@ -334,7 +352,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         Kehadiran: "Kelola Kehadiran Siswa",
         "Management Presensi": "Edit, Ubah Tanggal, atau Hapus Data Presensi",
         "Presensi Guru": "Kelola Presensi dan Absensi Guru",
-        "Nilai Akademik": "Kelola Nilai Akademik Siswa",
+        "Nilai Asli": "Kelola Nilai Asli Akademik Siswa",
+        "Nilai Katrol": "Kelola Nilai Katrol Akademik Siswa",
         "Jadwal Saya": "Lihat Jadwal Mengajar",
         "Catatan Siswa": "Kelola Catatan Perkembangan Siswa",
         Konseling: "Kelola Data Konseling BK/BP",
@@ -361,7 +380,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Kehadiran: `Input kehadiran Kelas`,
             "Management Presensi": "Kelola Data Presensi yang Sudah Diinput",
             "Presensi Guru": "Input Presensi dan Absensi Guru",
-            "Nilai Akademik": `Input Nilai Kelas`,
+            "Nilai Asli": `Input Nilai Asli Kelas`,
+            "Nilai Katrol": `Input Nilai Katrol Kelas`,
             "Catatan Siswa": `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
             "Jadwal Saya": "Lihat Jadwal Mengajar Kelas",
             Laporan: `Laporan Kelas`,
@@ -375,7 +395,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Kehadiran: "Input kehadiran mata pelajaran",
             "Management Presensi": "Kelola Data Presensi Mata Pelajaran",
             "Presensi Guru": "Input Presensi dan Absensi Guru",
-            "Nilai Akademik": "Input nilai mata pelajaran",
+            "Nilai Asli": "Input nilai asli mata pelajaran",
+            "Nilai Katrol": "Input nilai katrol mata pelajaran",
             "Jadwal Saya": "Lihat Jadwal Mengajar",
             Laporan: "Laporan mata pelajaran",
             Pengaturan: "Pengaturan akun",
@@ -385,6 +406,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     return subtitles[role]?.[currentPage] || "SMP Muslimin";
   };
 
+  // 🔥 UPDATE: Menambahkan route untuk nilai-katrol
   const handleNavigate = useCallback(
     (page) => {
       if (isNavigating) return;
@@ -397,7 +419,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         attendance: "/attendance",
         "attendance-management": "/attendance-management",
         "attendance-teacher": "/attendance-teacher",
-        grades: "/grades",
+        "nilai-asli": "/grades",
+        "nilai-katrol": "/grades-katrol",
         "jadwal-saya": "/jadwal-saya",
         "catatan-siswa": "/catatan-siswa",
         konseling: "/konseling",
@@ -832,6 +855,19 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
           {renderContent()}
         </div>
       </main>
+
+      {/* ✅ NEW: Theme Selector - Floating Button (top-right) */}
+      {user && (
+        <div className="fixed top-4 right-24 z-30">
+          {" "}
+          {/* right-24 = 96px dari kanan, profile di right-0 */}
+          <ThemeSelector
+            currentTheme={currentTheme}
+            onThemeChange={setTheme}
+            themes={themes}
+          />
+        </div>
+      )}
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (

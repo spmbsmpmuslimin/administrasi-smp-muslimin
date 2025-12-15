@@ -313,7 +313,13 @@ const Grades = ({ user, onShowToast }) => {
         const psts = parseFloat(grades.PSTS.score) || 0;
         const psas = parseFloat(grades.PSAS.score) || 0;
 
-        const nhAvg = (nh1 + nh2 + nh3) / 3;
+        // ✅ SMART: Hitung rata dari NH yang ada aja
+        const nhValues = [nh1, nh2, nh3].filter((n) => n > 0);
+        const nhAvg =
+          nhValues.length > 0
+            ? nhValues.reduce((a, b) => a + b, 0) / nhValues.length
+            : 0;
+
         const na = nhAvg * 0.4 + psts * 0.3 + psas * 0.3;
         formattedGrades[student.id].na = na.toFixed(2);
       });
@@ -336,8 +342,18 @@ const Grades = ({ user, onShowToast }) => {
 
   // Calculate NA
   const calculateNA = (nh1, nh2, nh3, psts, psas) => {
+    // ✅ SMART: Filter NH yang ada nilainya
+    const nhValues = [
+      parseFloat(nh1 || 0),
+      parseFloat(nh2 || 0),
+      parseFloat(nh3 || 0),
+    ].filter((n) => n > 0);
+
     const nhAvg =
-      (parseFloat(nh1 || 0) + parseFloat(nh2 || 0) + parseFloat(nh3 || 0)) / 3;
+      nhValues.length > 0
+        ? nhValues.reduce((a, b) => a + b, 0) / nhValues.length
+        : 0;
+
     const na =
       nhAvg * 0.4 + parseFloat(psts || 0) * 0.3 + parseFloat(psas || 0) * 0.3;
     return na.toFixed(2);
