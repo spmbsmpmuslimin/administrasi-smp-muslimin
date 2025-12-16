@@ -31,6 +31,7 @@ import MaintenancePage from "./setting/MaintenancePage";
 import TeacherAttendance from "./attendance-teacher/TeacherAttendance";
 
 // 🔥 PROTECTED ROUTE COMPONENT - WITH MAINTENANCE MODE
+// 🔥 FIXED: Complete ProtectedRoute Component
 const ProtectedRoute = ({
   children,
   user,
@@ -44,13 +45,17 @@ const ProtectedRoute = ({
   const [whitelistUsers, setWhitelistUsers] = useState([]);
   const [maintenanceLoading, setMaintenanceLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
+  const [roleLoading, setRoleLoading] = useState(true);
 
-  // 🔥 Fetch user role dari database
+  // 🔥 Fetch user role - COMPLETELY FIXED
   useEffect(() => {
     const fetchUserRole = async () => {
+      console.log("🔍 Starting fetchUserRole for:", user?.id);
+
       if (!user?.id) {
+        console.log("❌ No user ID found");
         setUserRole(null);
-        setMaintenanceLoading(false);
+        setRoleLoading(false);
         return;
       }
 
@@ -59,15 +64,30 @@ const ProtectedRoute = ({
           .from("users")
           .select("role")
           .eq("id", user.id)
-          .single();
+          .maybeSingle(); // ✅ Use maybeSingle instead of single
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Supabase error:", error);
+          // Set default role on error
+          setUserRole("teacher");
+          setRoleLoading(false);
+          return;
+        }
 
-        setUserRole(data?.role);
-        console.log("👤 User role fetched:", data?.role);
+        if (!data) {
+          console.warn("⚠️ User not found in DB, using default role");
+          setUserRole("teacher");
+          setRoleLoading(false);
+          return;
+        }
+
+        console.log("✅ User role fetched:", data.role);
+        setUserRole(data.role);
+        setRoleLoading(false);
       } catch (error) {
-        console.error("Error fetching user role:", error);
-        setUserRole(null);
+        console.error("❌ Unexpected error:", error);
+        setUserRole("teacher");
+        setRoleLoading(false);
       }
     };
 
@@ -77,6 +97,8 @@ const ProtectedRoute = ({
   // 🔥 Check maintenance mode
   useEffect(() => {
     const checkMaintenance = async () => {
+      console.log("🔍 Checking maintenance mode...");
+
       try {
         const { data, error } = await supabase
           .from("school_settings")
@@ -87,7 +109,11 @@ const ProtectedRoute = ({
             "maintenance_whitelist",
           ]);
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Error checking maintenance:", error);
+          setMaintenanceLoading(false);
+          return;
+        }
 
         const settings = {};
         data?.forEach((item) => {
@@ -113,14 +139,14 @@ const ProtectedRoute = ({
           }
         }
 
-        console.log("🔧 Maintenance check:", {
+        console.log("✅ Maintenance check complete:", {
           mode: isMaintenance,
           whitelistCount: settings.maintenance_whitelist
             ? JSON.parse(settings.maintenance_whitelist || "[]").length
             : 0,
         });
       } catch (error) {
-        console.error("Error checking maintenance mode:", error);
+        console.error("❌ Error in maintenance check:", error);
       } finally {
         setMaintenanceLoading(false);
       }
@@ -152,13 +178,19 @@ const ProtectedRoute = ({
     };
   }, []);
 
-  // 🔥 HAPUS TOAST DARI SINI - PINDAH KE DASHBOARD
-  // useEffect(() => {
-  //   ...toast logic...
-  // }, []);
+  // ✅ FIXED: Loading state check
+  const isLoading = loading || maintenanceLoading || roleLoading;
 
-  // Loading state
-  if (loading || maintenanceLoading || (user && userRole === null)) {
+  console.log("🎯 Loading check:", {
+    loading,
+    maintenanceLoading,
+    roleLoading,
+    isLoading,
+    hasUser: !!user,
+    userRole,
+  });
+
+  if (isLoading) {
     return (
       <div
         className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
@@ -184,13 +216,14 @@ const ProtectedRoute = ({
 
   // Not logged in
   if (!user) {
+    console.log("🚫 No user, redirecting to login");
     return <Navigate to="/" />;
   }
 
   // 🔥 MAINTENANCE MODE CHECK
   const isWhitelisted = whitelistUsers.some((u) => u.id === user?.id);
 
-  console.log("🔍 Maintenance Check:", {
+  console.log("🔐 Maintenance Check:", {
     maintenanceMode,
     userId: user?.id,
     username: user?.username,
@@ -264,6 +297,7 @@ const ProtectedRoute = ({
     );
   }
 
+  console.log("✅ All checks passed, rendering children");
   return children;
 };
 
