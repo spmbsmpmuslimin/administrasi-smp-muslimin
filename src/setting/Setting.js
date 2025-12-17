@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Menu,
   X,
+  FileText,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import ProfileTab from "./ProfileTab";
@@ -20,6 +21,7 @@ import AcademicYearTab from "./AcademicYearTab";
 import SchoolSettingsTab from "./SchoolSettingsTab";
 import SystemTab from "./SystemTab";
 import MaintenanceModeTab from "./MaintenanceModeTab";
+import RaportConfig from "../e-raport/RaportConfig";
 
 const Setting = ({ user, onShowToast }) => {
   const [searchParams] = useSearchParams();
@@ -53,7 +55,7 @@ const Setting = ({ user, onShowToast }) => {
         }
       }, 150);
     }
-  }, [searchParams]); // 🔥 FIX: Depend on searchParams, bukan tabFromURL
+  }, [searchParams]);
 
   useEffect(() => {
     if (user) {
@@ -73,7 +75,7 @@ const Setting = ({ user, onShowToast }) => {
       const { data: settings, error } = await supabase
         .from("school_settings")
         .select("setting_key, setting_value")
-        .in("setting_key", ["school_name", "school_level"]); // 🔧 Hapus "grades"
+        .in("setting_key", ["school_name", "school_level"]);
 
       if (error) throw error;
 
@@ -125,7 +127,7 @@ const Setting = ({ user, onShowToast }) => {
     window.history.replaceState(null, "", `/setting?tab=${tabId}`);
   };
 
-  // ✅ Tabs - hanya admin yang bisa akses Maintenance Mode
+  // ✅ Tabs - hanya admin yang bisa akses tab tertentu
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
     ...(user?.role === "admin"
@@ -133,6 +135,7 @@ const Setting = ({ user, onShowToast }) => {
           { id: "school", label: "Manajemen Sekolah", icon: School },
           { id: "academic", label: "Tahun Ajaran", icon: Calendar },
           { id: "settings", label: "Pengaturan Sekolah", icon: Building2 },
+          { id: "raport", label: "Konfigurasi E-Raport", icon: FileText },
           { id: "system", label: "System", icon: Database },
           { id: "maintenance", label: "Maintenance", icon: AlertCircle },
         ]
@@ -166,6 +169,8 @@ const Setting = ({ user, onShowToast }) => {
         return <AcademicYearTab {...commonProps} />;
       case "settings":
         return <SchoolSettingsTab {...commonProps} />;
+      case "raport":
+        return <RaportConfig {...commonProps} />;
       case "maintenance":
         return <MaintenanceModeTab {...commonProps} />;
       case "system":

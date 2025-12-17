@@ -1,13 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Settings, RotateCcw, Moon, Sun } from "lucide-react";
 
 const MaintenancePage = ({ message }) => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const navigate = useNavigate();
+  const [darkMode, setDarkMode] = useState(false);
 
+  // Check system preference and localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("darkMode");
+    if (savedTheme) {
+      setDarkMode(savedTheme === "true");
+    } else {
+      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setDarkMode(isDark);
+    }
+  }, []);
+
+  // Save dark mode preference
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode.toString());
+  }, [darkMode]);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  // ✅ Handle Refresh - Clear session & redirect to login
   const handleRefresh = () => {
     try {
-      setIsRefreshing(true);
-
       // Clear all session data
       localStorage.removeItem("user");
       localStorage.removeItem("userSession");
@@ -15,11 +37,11 @@ const MaintenancePage = ({ message }) => {
 
       console.log("🔄 Refreshing... Redirecting to login");
 
-      // Small delay for UX
-      setTimeout(() => {
-        // Force redirect to login
-        window.location.href = "/";
-      }, 500);
+      // Redirect to login
+      navigate("/", { replace: true });
+
+      // Force reload untuk clear state
+      window.location.reload();
     } catch (error) {
       console.error("❌ Refresh error:", error);
       // Force redirect anyway
@@ -28,45 +50,103 @@ const MaintenancePage = ({ message }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 transition-colors duration-200">
-      <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 md:p-10 rounded-3xl shadow-2xl max-w-md sm:max-w-lg w-full text-center transition-colors duration-200 border border-blue-100 dark:border-gray-700">
-        <div className="text-7xl sm:text-8xl mb-5 sm:mb-6 animate-pulse">
-          🔧
+    <div
+      className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
+        darkMode
+          ? "bg-gradient-to-br from-gray-900 via-gray-800 to-slate-900"
+          : "bg-gradient-to-br from-red-50 via-orange-50 to-red-100"
+      }`}>
+      {/* Dark Mode Toggle */}
+      <button
+        onClick={toggleDarkMode}
+        className={`fixed top-4 right-4 sm:top-6 sm:right-6 p-2 sm:p-3 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 z-50 ${
+          darkMode
+            ? "bg-gray-700 text-yellow-400 hover:bg-gray-600 focus:ring-yellow-400"
+            : "bg-white text-red-600 hover:bg-gray-50 focus:ring-red-500"
+        }`}
+        aria-label="Toggle Dark Mode">
+        {darkMode ? (
+          <Sun className="w-5 h-5 sm:w-6 sm:h-6" />
+        ) : (
+          <Moon className="w-5 h-5 sm:w-6 sm:h-6" />
+        )}
+      </button>
+
+      {/* Main Card */}
+      <div
+        className={`p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl md:rounded-3xl shadow-2xl max-w-xs sm:max-w-sm md:max-w-lg lg:max-w-2xl xl:max-w-3xl w-full text-center transition-all duration-300 ${
+          darkMode
+            ? "bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700"
+            : "bg-white border border-red-100"
+        }`}>
+        {/* Icon Header */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <Settings
+            className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 animate-spin ${
+              darkMode ? "text-red-500" : "text-red-600"
+            }`}
+            style={{ animationDuration: "3s" }}
+          />
+          <h1
+            className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold ${
+              darkMode ? "text-red-500" : "text-red-600"
+            }`}>
+            Whoops !!!
+          </h1>
+          <Settings
+            className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 animate-spin ${
+              darkMode ? "text-red-500" : "text-red-600"
+            }`}
+            style={{ animationDuration: "3s" }}
+          />
         </div>
 
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-red-700 dark:text-red-300 mb-4 sm:mb-5">
-          Sedang Maintenance
-        </h1>
+        {/* Main Title */}
+        <h2
+          className={`text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 ${
+            darkMode ? "text-red-500" : "text-red-600"
+          }`}>
+          Aplikasi Tidak Dapat Di Akses
+        </h2>
 
-        <p className="text-gray-600 dark:text-gray-300 text-base sm:text-lg md:text-xl mb-6 sm:mb-8 leading-relaxed">
-          {message ||
-            "Aplikasi Sedang Dalam maintenance. Kami Akan Kembali Segera!"}
-        </p>
+        {/* Divider */}
+        <div
+          className={`w-16 sm:w-20 md:w-24 h-1 mx-auto mb-4 sm:mb-6 rounded-full ${
+            darkMode ? "bg-red-500" : "bg-red-600"
+          }`}></div>
 
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="inline-flex items-center justify-center gap-3 px-7 sm:px-8 py-3.5 min-h-[44px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 focus:ring-offset-2 dark:focus:ring-offset-gray-800 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed">
-          <svg
-            className={`w-5 h-5 ${isRefreshing ? "animate-spin" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span className="text-base sm:text-lg">
-            {isRefreshing ? "Refreshing..." : "Refresh"}
-          </span>
-        </button>
-
-        <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg mt-4 font-semibold">
+        {/* Messages */}
+        <p
+          className={`text-sm sm:text-base md:text-lg mb-3 sm:mb-4 leading-relaxed px-2 ${
+            darkMode ? "text-gray-300" : "text-gray-700"
+          }`}>
           Mohon maaf atas ketidaknyamanannya 🙏
         </p>
+
+        <p
+          className={`text-sm sm:text-base md:text-lg mb-6 sm:mb-8 md:mb-10 leading-relaxed px-2 ${
+            darkMode ? "text-gray-400" : "text-gray-600"
+          }`}>
+          {message ||
+            "Silahkan Login Ulang Aplikasi Anda atau Klik Tombol Refresh"}
+        </p>
+
+        {/* Refresh Button */}
+        <button
+          onClick={handleRefresh}
+          className={`inline-flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 min-h-[44px] sm:min-h-[50px] md:min-h-[56px] rounded-lg md:rounded-xl transition-all shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 font-bold text-sm sm:text-base md:text-lg ${
+            darkMode
+              ? "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 focus:ring-offset-gray-800"
+              : "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 focus:ring-offset-white"
+          }`}>
+          <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+          <span>Refresh</span>
+        </button>
+
+        {/* Footer Icon */}
+        <div className="mt-6 sm:mt-8 md:mt-10 text-3xl sm:text-4xl md:text-5xl animate-bounce">
+          🔧
+        </div>
       </div>
     </div>
   );
