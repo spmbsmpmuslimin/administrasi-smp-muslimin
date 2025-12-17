@@ -5,16 +5,16 @@ import ExcelJS from "exceljs";
 import { Upload, Plus, Trash2, Edit2, Save, X } from "lucide-react";
 
 function InputTP({ user, onShowToast, darkMode }) {
-  // Di awal component, ganti initial state:
-  const [kelas, setKelas] = useState(""); // Kosong dulu
-  const [selectedMapel, setSelectedMapel] = useState(""); // Kosong dulu
+  const [kelas, setKelas] = useState("");
+  const [selectedMapel, setSelectedMapel] = useState("");
+  const [semester, setSemester] = useState(""); // Tambah state semester
   const [tpList, setTpList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [academicYear, setAcademicYear] = useState(null);
   const [teacherAssignments, setTeacherAssignments] = useState([]);
-  const [availableClasses, setAvailableClasses] = useState([]); // Format: [{id: "7E", grade: "7E"}]
-  const [availableSubjects, setAvailableSubjects] = useState([]); // Format: ["BAHASA INGGRIS"]
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -23,7 +23,7 @@ function InputTP({ user, onShowToast, darkMode }) {
     if (kelasNumber >= 1 && kelasNumber <= 2) return "A";
     if (kelasNumber >= 3 && kelasNumber <= 4) return "B";
     if (kelasNumber >= 5 && kelasNumber <= 6) return "C";
-    if (kelasNumber >= 7 && kelasNumber <= 9) return "D"; // Untuk SMP (7-9)
+    if (kelasNumber >= 7 && kelasNumber <= 9) return "D";
     return "D";
   };
 
@@ -32,17 +32,25 @@ function InputTP({ user, onShowToast, darkMode }) {
     loadUserAndAssignments();
   }, []);
 
-  // Load TP ketika mapel dan kelas dipilih
+  // Load TP ketika mapel, kelas, dan semester dipilih
   useEffect(() => {
-    if (selectedMapel && academicYear && kelas) {
+    if (selectedMapel && academicYear && kelas && semester) {
       loadTP();
     }
-  }, [selectedMapel, academicYear, kelas]);
+  }, [selectedMapel, academicYear, kelas, semester]);
 
   const loadUserAndAssignments = async () => {
     try {
       setLoading(true);
       setErrorMessage("");
+
+      // PERUBAHAN 1: Pisahkan teacherCode (VARCHAR) dan userId (UUID)
+      const teacherCode = user.teacher_id;
+      const userId = user.id;
+
+      if (!teacherCode) {
+        throw new Error("Teacher ID tidak ditemukan dalam session.");
+      }
 
       // 1. CEK SESSION & DEBUG
       console.log("📱 User Data from Props:", user);
@@ -54,15 +62,10 @@ function InputTP({ user, onShowToast, darkMode }) {
         throw new Error("Session tidak valid. Silakan login ulang.");
       }
 
-      // 2. Ambil teacher_id (coba dari teacher_id atau id)
-      const teacherId = user.teacher_id || user.id;
-      console.log("👨‍🏫 Teacher ID yang digunakan:", teacherId);
+      console.log("👨‍🏫 Teacher Code yang digunakan:", teacherCode);
+      console.log("👨‍🏫 User ID yang digunakan:", userId);
 
-      if (!teacherId) {
-        throw new Error("Teacher ID tidak ditemukan dalam session.");
-      }
-
-      // 3. Ambil academic year aktif
+      // 2. Ambil academic year aktif
       const { data: academicYearData, error: ayError } = await supabase
         .from("academic_years")
         .select("*")
@@ -77,15 +80,15 @@ function InputTP({ user, onShowToast, darkMode }) {
       setAcademicYear(academicYearData);
       console.log("📅 Academic Year:", academicYearData);
 
-      // 4. Ambil teacher assignments (HANYA SEKALI!)
+      // PERUBAHAN 2: Query teacher_assignments menggunakan teacherCode (VARCHAR)
       console.log("📚 Querying teacher_assignments...");
-      console.log("   - teacher_id:", teacherId);
+      console.log("   - teacher_id:", teacherCode);
       console.log("   - academic_year_id:", academicYearData.id);
 
       const { data: assignments, error: assignmentsError } = await supabase
         .from("teacher_assignments")
         .select("*")
-        .eq("teacher_id", teacherId)
+        .eq("teacher_id", teacherCode)
         .eq("academic_year_id", academicYearData.id);
 
       console.log("📦 Assignments result:", assignments);
@@ -104,7 +107,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         return;
       }
 
-      // 5. Ambil data classes secara terpisah
+      // 3. Ambil data classes secara terpisah
       const classIds = [...new Set(assignments.map((a) => a.class_id))];
       console.log("🎓 Class IDs to fetch:", classIds);
 
@@ -119,7 +122,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         console.error("❌ Classes error:", classesError);
       }
 
-      // 6. Gabungkan data assignments dengan classes
+      // 4. Gabungkan data assignments dengan classes
       const assignmentsWithClasses = assignments.map((assignment) => ({
         ...assignment,
         classes: classesData?.find((c) => c.id === assignment.class_id) || null,
@@ -129,7 +132,7 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       setTeacherAssignments(assignmentsWithClasses);
 
-      // 7. Ekstrak data unik untuk dropdown (HANYA SEKALI!)
+      // 5. Ekstrak data unik untuk dropdown (HANYA SEKALI!)
       const uniqueClasses = [];
       const uniqueSubjects = [];
       const seenClasses = new Set();
@@ -145,8 +148,8 @@ function InputTP({ user, onShowToast, darkMode }) {
         if (classId && classData && !seenClasses.has(classId)) {
           seenClasses.add(classId);
           uniqueClasses.push({
-            id: classData.id, // "7E"
-            grade: classData.id, // "7E" untuk display
+            id: classData.id,
+            grade: classData.id,
           });
         }
 
@@ -183,6 +186,7 @@ function InputTP({ user, onShowToast, darkMode }) {
       console.log("=== LOAD TP DEBUG ===");
       console.log("Kelas selected:", kelas);
       console.log("Mapel selected:", selectedMapel);
+      console.log("Semester selected:", semester);
       console.log("Academic Year:", academicYear);
 
       // Cari class_id dari kelas yang dipilih
@@ -197,12 +201,13 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       console.log("Selected Class ID:", selectedClass.id);
 
-      // Query TP
+      // Query TP dengan filter semester
       const { data, error } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
         .eq("class_id", selectedClass.id)
         .eq("mata_pelajaran", selectedMapel)
+        .eq("semester", semester) // Tambah filter semester
         .eq("tahun_ajaran_id", academicYear?.id)
         .order("urutan");
 
@@ -221,9 +226,15 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       if (onShowToast) {
         if (data?.length > 0) {
-          onShowToast(`${data.length} TP ditemukan`, "info");
+          onShowToast(
+            `${data.length} TP ditemukan untuk semester ${semester}`,
+            "info"
+          );
         } else {
-          onShowToast("Belum ada data TP untuk kelas/mapel ini", "warning");
+          onShowToast(
+            "Belum ada data TP untuk kelas/mapel/semester ini",
+            "warning"
+          );
         }
       }
     } catch (error) {
@@ -234,7 +245,6 @@ function InputTP({ user, onShowToast, darkMode }) {
     }
   };
 
-  // Rest of the code remains the same...
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -272,7 +282,7 @@ function InputTP({ user, onShowToast, darkMode }) {
               urutan: Number(noCell),
               mata_pelajaran: selectedMapel,
               tahun_ajaran_id: academicYear?.id,
-              semester: academicYear?.semester,
+              semester: semester, // Gunakan semester yang dipilih
             });
           }
         }
@@ -292,7 +302,7 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       if (onShowToast)
         onShowToast(
-          `Import berhasil! ${imported.length} data TP ditambahkan.`,
+          `Import berhasil! ${imported.length} data TP ditambahkan untuk semester ${semester}.`,
           "success"
         );
       loadTP();
@@ -306,6 +316,13 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleDownloadTemplate = () => {
     try {
+      // Validasi semester dipilih
+      if (!semester) {
+        if (onShowToast)
+          onShowToast("Pilih semester terlebih dahulu!", "warning");
+        return;
+      }
+
       // Ambil angka kelas dari grade
       const kelasNumber = parseInt(kelas.match(/\d+/)?.[0] || "0");
       const tingkatDefault = kelasNumber;
@@ -318,6 +335,7 @@ function InputTP({ user, onShowToast, darkMode }) {
       worksheet.mergeCells("A1:D1");
       worksheet.mergeCells("A2:D2");
       worksheet.mergeCells("A3:D3");
+      worksheet.mergeCells("A4:D4");
 
       worksheet.getCell("A1").value = "TEMPLATE TUJUAN PEMBELAJARAN";
       worksheet.getCell("A1").font = {
@@ -349,8 +367,15 @@ function InputTP({ user, onShowToast, darkMode }) {
         horizontal: "left",
       };
 
+      worksheet.getCell("A4").value = `Semester: ${semester}`;
+      worksheet.getCell("A4").font = { bold: true, size: 12 };
+      worksheet.getCell("A4").alignment = {
+        vertical: "middle",
+        horizontal: "left",
+      };
+
       // Table header
-      const headerRow = worksheet.getRow(5);
+      const headerRow = worksheet.getRow(6);
       const headers = ["NO", "TINGKAT", "FASE", "TUJUAN PEMBELAJARAN"];
 
       headers.forEach((header, i) => {
@@ -390,7 +415,7 @@ function InputTP({ user, onShowToast, darkMode }) {
       ];
 
       exampleRows.forEach((rowData, idx) => {
-        const row = worksheet.getRow(6 + idx);
+        const row = worksheet.getRow(7 + idx);
         rowData.forEach((value, i) => {
           const cell = row.getCell(i + 1);
           cell.value = value;
@@ -414,7 +439,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Template_TP_${selectedMapel}_${kelas}.xlsx`;
+        a.download = `Template_TP_${selectedMapel}_${kelas}_Semester_${semester}.xlsx`;
         a.click();
         window.URL.revokeObjectURL(url);
 
@@ -429,6 +454,13 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleAddRow = async () => {
     try {
+      // Validasi semester dipilih
+      if (!semester) {
+        if (onShowToast)
+          onShowToast("Pilih semester terlebih dahulu!", "warning");
+        return;
+      }
+
       // Cari class_id dari kelas yang dipilih
       const selectedClass = availableClasses.find((c) => c.grade === kelas);
       if (!selectedClass) {
@@ -449,7 +481,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         urutan: tpList.length + 1,
         mata_pelajaran: selectedMapel,
         tahun_ajaran_id: academicYear?.id,
-        semester: academicYear?.semester,
+        semester: semester, // Gunakan semester yang dipilih
       };
 
       const { data, error } = await supabase
@@ -486,6 +518,7 @@ function InputTP({ user, onShowToast, darkMode }) {
           tingkat: editData.tingkat,
           fase: editData.fase,
           deskripsi_tp: editData.deskripsi_tp,
+          semester: semester, // Update semester juga
         })
         .eq("id", editingId);
 
@@ -636,8 +669,8 @@ function InputTP({ user, onShowToast, darkMode }) {
             }`}>
             INPUT TUJUAN PEMBELAJARAN (TP)
           </h2>
-          {/* Filter Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {/* Filter Section - Diubah menjadi 3 kolom */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div>
               <label
                 className={`block text-sm font-semibold mb-2 transition-colors ${
@@ -653,7 +686,6 @@ function InputTP({ user, onShowToast, darkMode }) {
                     ? "bg-gray-700 border-gray-600 text-white focus:ring-red-400"
                     : "bg-white border-gray-300 text-gray-900 focus:ring-red-500"
                 }`}>
-                {/* ✅ TAMBAH OPTION DEFAULT KOSONG */}
                 <option value="" disabled>
                   -- Pilih Kelas --
                 </option>
@@ -680,7 +712,6 @@ function InputTP({ user, onShowToast, darkMode }) {
                     ? "bg-gray-700 border-gray-600 text-white focus:ring-red-400"
                     : "bg-white border-gray-300 text-gray-900 focus:ring-red-500"
                 }`}>
-                {/* ✅ TAMBAH OPTION DEFAULT KOSONG */}
                 <option value="" disabled>
                   -- Pilih Mata Pelajaran --
                 </option>
@@ -691,43 +722,46 @@ function InputTP({ user, onShowToast, darkMode }) {
                 ))}
               </select>
             </div>
-          </div>
-          {/* Academic Year Info */}
-          {academicYear && (
-            <div
-              className={`mb-6 p-4 border-l-4 rounded-r-lg ${
-                darkMode
-                  ? "bg-red-900/20 border-red-500"
-                  : "bg-red-50 border-red-500"
-              }`}>
-              <p
-                className={`text-sm sm:text-base ${
+
+            {/* Tambah dropdown semester */}
+            <div>
+              <label
+                className={`block text-sm font-semibold mb-2 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-700"
                 }`}>
-                <span className="font-semibold">Tahun Ajaran:</span>{" "}
-                {academicYear.year} - Semester {academicYear.semester}
-              </p>
-              <p
-                className={`text-sm mt-1 ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
+                Pilih Semester
+              </label>
+              <select
+                value={semester}
+                onChange={(e) => setSemester(e.target.value)}
+                className={`w-full p-3 border rounded-lg focus:ring-2 transition-all text-sm sm:text-base min-h-[44px] ${
+                  darkMode
+                    ? "bg-gray-700 border-gray-600 text-white focus:ring-red-400"
+                    : "bg-white border-gray-300 text-gray-900 focus:ring-red-500"
                 }`}>
-                Data TP akan tersimpan untuk semester ini
-              </p>
+                <option value="" disabled>
+                  -- Pilih Semester --
+                </option>
+                <option value="1">Semester Ganjil</option>
+                <option value="2">Semester Genap</option>
+              </select>
             </div>
-          )}
-          {!selectedMapel || !kelas ? (
+          </div>
+
+          {!selectedMapel || !kelas || !semester ? (
             <div
               className={`text-center py-8 sm:py-12 ${
                 darkMode ? "text-gray-400" : "text-gray-500"
               }`}>
               <p className="text-base sm:text-lg">
-                Silakan pilih Kelas dan Mata Pelajaran terlebih dahulu
+                Silakan pilih Kelas, Mata Pelajaran, dan Semester terlebih
+                dahulu
               </p>
             </div>
           ) : (
             <>
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6 justify-end">
                 <button
                   onClick={handleAddRow}
                   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors min-h-[44px] w-full sm:w-auto text-sm sm:text-base ${
@@ -795,10 +829,10 @@ function InputTP({ user, onShowToast, darkMode }) {
                         Tujuan Pembelajaran
                       </th>
                       <th
-                        className={`border-b border-r p-2 sm:p-3 w-24 text-sm sm:text-base ${
+                        className={`border-b border-r p-2 sm:p-3 w-28 text-sm sm:text-base ${
                           darkMode ? "border-red-800" : "border-red-700"
                         }`}>
-                        Status
+                        Semester
                       </th>
                       <th
                         className={`border-b p-2 sm:p-3 w-32 text-sm sm:text-base ${
@@ -816,8 +850,8 @@ function InputTP({ user, onShowToast, darkMode }) {
                           className={`text-center py-8 ${
                             darkMode ? "text-gray-400" : "text-gray-500"
                           }`}>
-                          Belum ada data Tujuan Pembelajaran. Tambah atau import
-                          data.
+                          Belum ada data Tujuan Pembelajaran untuk semester{" "}
+                          {semester}. Tambah atau import data.
                         </td>
                       </tr>
                     ) : (
@@ -913,12 +947,16 @@ function InputTP({ user, onShowToast, darkMode }) {
                                     : "border-gray-200"
                                 }`}>
                                 <span
-                                  className={`px-2 py-1 rounded text-xs sm:text-sm font-medium ${
-                                    darkMode
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                    semester === "1"
+                                      ? darkMode
+                                        ? "bg-orange-900/30 text-orange-300"
+                                        : "bg-orange-100 text-orange-800"
+                                      : darkMode
                                       ? "bg-green-900/30 text-green-300"
                                       : "bg-green-100 text-green-800"
                                   }`}>
-                                  Aktif
+                                  {semester === "1" ? "Ganjil" : "Genap"}
                                 </span>
                               </td>
                               <td className="p-2 sm:p-3">
@@ -977,12 +1015,16 @@ function InputTP({ user, onShowToast, darkMode }) {
                                     : "border-gray-200"
                                 }`}>
                                 <span
-                                  className={`px-2 py-1 rounded text-xs sm:text-sm font-medium ${
-                                    darkMode
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                    tp.semester === "1"
+                                      ? darkMode
+                                        ? "bg-orange-900/30 text-orange-300"
+                                        : "bg-orange-100 text-orange-800"
+                                      : darkMode
                                       ? "bg-green-900/30 text-green-300"
                                       : "bg-green-100 text-green-800"
                                   }`}>
-                                  Aktif
+                                  {tp.semester === "1" ? "Ganjil" : "Genap"}
                                 </span>
                               </td>
                               <td className="p-2 sm:p-3">

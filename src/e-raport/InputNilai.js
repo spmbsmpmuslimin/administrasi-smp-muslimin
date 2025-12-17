@@ -343,7 +343,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
           student_id: siswa.id,
           class_id: selectedClass.id,
           mata_pelajaran: selectedMapel,
-          guru_id: userId, // ✅ GANTI dari teacherId
+          guru_id: userId,
           tahun_ajaran_id: academicYear.id,
           semester: semester,
           nh1: null,
@@ -359,8 +359,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
           status: "draft",
           is_finalized: false,
           finalized_at: null,
-          created_by: userId, // ✅ GANTI dari teacherId
-          updated_by: userId, // ✅ GANTI dari teacherId
+          created_by: userId,
+          updated_by: userId,
           updated_at: new Date().toISOString(),
         };
 
@@ -587,8 +587,10 @@ function InputNilai({ user, onShowToast, darkMode }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-3 text-gray-600">Memuat data mengajar...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className={`mt-3 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+            Memuat data mengajar...
+          </p>
         </div>
       </div>
     );
@@ -596,41 +598,50 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
   return (
     <div
-      className={`min-h-screen py-4 sm:py-8 px-4 ${
-        darkMode ? "bg-gray-900" : "bg-gray-50"
+      className={`min-h-screen py-4 sm:py-8 px-3 sm:px-4 lg:px-6 ${
+        darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-50 to-blue-100"
       }`}>
       <div className="max-w-7xl mx-auto">
         <div
-          className={`rounded-xl shadow-lg p-4 sm:p-6 ${
-            darkMode ? "bg-gray-800" : "bg-white"
+          className={`rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 ${
+            darkMode
+              ? "bg-gray-800 border border-gray-700"
+              : "bg-white border border-blue-200"
           }`}>
           <h2
-            className={`text-xl font-bold mb-6 ${
-              darkMode ? "text-white" : "text-gray-900"
+            className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-6 pb-4 border-b ${
+              darkMode
+                ? "text-white border-gray-700"
+                : "text-blue-800 border-blue-100"
             }`}>
-            Input Nilai
+            Input Nilai e-Raport
           </h2>
 
           {/* Filter Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-8">
             <div>
               <label
-                className={`block text-sm font-medium mb-2 ${
-                  darkMode ? "text-gray-300" : "text-gray-700"
+                className={`block text-sm sm:text-base font-semibold mb-2 ${
+                  darkMode ? "text-gray-300" : "text-blue-700"
                 }`}>
                 Pilih Kelas
               </label>
               <select
                 value={kelas}
                 onChange={(e) => setKelas(e.target.value)}
-                className={`w-full p-3 rounded-lg border ${
+                className={`w-full p-3 sm:p-4 rounded-xl border text-sm sm:text-base transition-all duration-200 ${
                   darkMode
-                    ? "bg-gray-700 border-gray-600 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
                 }`}>
-                <option value="">-- Pilih Kelas --</option>
+                <option value="" className="dark:bg-gray-800">
+                  -- Pilih Kelas --
+                </option>
                 {availableClasses.map((cls) => (
-                  <option key={cls.id} value={cls.grade}>
+                  <option
+                    key={cls.id}
+                    value={cls.grade}
+                    className="dark:bg-gray-800">
                     Kelas {cls.grade}
                   </option>
                 ))}
@@ -639,22 +650,27 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
             <div>
               <label
-                className={`block text-sm font-medium mb-2 ${
-                  darkMode ? "text-gray-300" : "text-gray-700"
+                className={`block text-sm sm:text-base font-semibold mb-2 ${
+                  darkMode ? "text-gray-300" : "text-blue-700"
                 }`}>
                 Pilih Mata Pelajaran
               </label>
               <select
                 value={selectedMapel}
                 onChange={(e) => setSelectedMapel(e.target.value)}
-                className={`w-full p-3 rounded-lg border ${
+                className={`w-full p-3 sm:p-4 rounded-xl border text-sm sm:text-base transition-all duration-200 ${
                   darkMode
-                    ? "bg-gray-700 border-gray-600 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
                 }`}>
-                <option value="">-- Pilih Mata Pelajaran --</option>
+                <option value="" className="dark:bg-gray-800">
+                  -- Pilih Mata Pelajaran --
+                </option>
                 {availableSubjects.map((subject, idx) => (
-                  <option key={idx} value={subject}>
+                  <option
+                    key={idx}
+                    value={subject}
+                    className="dark:bg-gray-800">
                     {subject}
                   </option>
                 ))}
@@ -663,22 +679,28 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
             <div>
               <label
-                className={`block text-sm font-medium mb-2 ${
-                  darkMode ? "text-gray-300" : "text-gray-700"
+                className={`block text-sm sm:text-base font-semibold mb-2 ${
+                  darkMode ? "text-gray-300" : "text-blue-700"
                 }`}>
                 Pilih Semester
               </label>
               <select
                 value={semester}
                 onChange={(e) => setSemester(e.target.value)}
-                className={`w-full p-3 rounded-lg border ${
+                className={`w-full p-3 sm:p-4 rounded-xl border text-sm sm:text-base transition-all duration-200 ${
                   darkMode
-                    ? "bg-gray-700 border-gray-600 text-white"
-                    : "bg-white border-gray-300 text-gray-900"
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
                 }`}>
-                <option value="">-- Pilih Semester --</option>
-                <option value="1">Semester Ganjil</option>
-                <option value="2">Semester Genap</option>
+                <option value="" className="dark:bg-gray-800">
+                  -- Pilih Semester --
+                </option>
+                <option value="1" className="dark:bg-gray-800">
+                  Semester Ganjil
+                </option>
+                <option value="2" className="dark:bg-gray-800">
+                  Semester Genap
+                </option>
               </select>
             </div>
           </div>
@@ -686,16 +708,16 @@ function InputNilai({ user, onShowToast, darkMode }) {
           {kelas && selectedMapel && semester && (
             <>
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 justify-end">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-8 justify-end">
                 <button
                   onClick={handleDownloadTemplate}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors text-sm">
-                  <Download size={18} />
+                  className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 min-h-[44px] rounded-xl bg-green-600 hover:bg-green-700 text-white transition-all duration-200 text-sm sm:text-base font-medium shadow-md hover:shadow-lg">
+                  <Download size={20} />
                   Download Template
                 </button>
 
-                <label className="flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer bg-blue-600 hover:bg-blue-700 text-white transition-colors text-sm">
-                  <Upload size={18} />
+                <label className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 min-h-[44px] rounded-xl cursor-pointer bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 text-sm sm:text-base font-medium shadow-md hover:shadow-lg">
+                  <Upload size={20} />
                   Import dari Excel
                   <input
                     ref={fileInputRef}
@@ -709,39 +731,50 @@ function InputNilai({ user, onShowToast, darkMode }) {
                 <button
                   onClick={handleSave}
                   disabled={saving || siswaList.length === 0}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Save size={18} />
+                  className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 min-h-[44px] rounded-xl bg-blue-700 hover:bg-blue-800 text-white transition-all duration-200 text-sm sm:text-base font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                  <Save size={20} />
                   Simpan Semua Data
                 </button>
               </div>
 
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-                  <p className="mt-2 text-gray-600">Memuat data siswa...</p>
+                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                  <p
+                    className={`mt-3 text-sm sm:text-base ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}>
+                    Memuat data siswa...
+                  </p>
                 </div>
               ) : siswaList.length > 0 ? (
-                <div className="overflow-x-auto rounded-lg border">
+                <div className="overflow-x-auto rounded-xl border shadow-sm">
                   <table className="w-full border-collapse">
-                    <thead className="bg-red-800 text-white">
+                    <thead
+                      className={
+                        darkMode
+                          ? "bg-gray-700 text-white"
+                          : "bg-blue-700 text-white"
+                      }>
                       <tr>
-                        <th className="p-3 text-center border-r border-red-700">
+                        {/* URUTAN YANG BENAR: No → NIS → Nama Siswa */}
+                        <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 text-xs sm:text-sm lg:text-base">
                           No
                         </th>
-                        <th className="p-3 text-left border-r border-red-700">
+                        <th className="p-3 sm:p-4 text-left border-r border-gray-600 dark:border-gray-600 text-xs sm:text-sm lg:text-base">
+                          NIS
+                        </th>
+                        <th className="p-3 sm:p-4 text-left border-r border-gray-600 dark:border-gray-600 text-xs sm:text-sm lg:text-base">
                           Nama Siswa
                         </th>
-                        <th className="p-3 text-left border-r border-red-700">
-                          NISN
+                        <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 text-xs sm:text-sm lg:text-base">
+                          Nilai Akhir
                         </th>
-                        <th className="p-3 text-center border-r border-red-700">
-                          Nilai
+                        <th className="p-3 sm:p-4 text-left border-r border-gray-600 dark:border-gray-600 text-xs sm:text-sm lg:text-base">
+                          TP Tercapai
                         </th>
-                        <th className="p-3 text-left border-r border-red-700">
-                          TP Yang diukur dan Tercapai dengan Optimal
-                        </th>
-                        <th className="p-3 text-left">
-                          TP yang diukur dan Perlu Peningkatan
+                        <th className="p-3 sm:p-4 text-left text-xs sm:text-sm lg:text-base">
+                          TP Perlu Peningkatan
                         </th>
                       </tr>
                     </thead>
@@ -751,36 +784,50 @@ function InputNilai({ user, onShowToast, darkMode }) {
                           key={siswa.id}
                           className={`border-b ${
                             darkMode
-                              ? "border-gray-700 hover:bg-gray-800"
-                              : "border-gray-200 hover:bg-gray-50"
+                              ? "border-gray-700 hover:bg-gray-800/50"
+                              : "border-blue-100 hover:bg-blue-50/50"
                           }`}>
-                          <td className="p-3 text-center border-r">
+                          {/* URUTAN YANG BENAR: No → NIS → Nama Siswa */}
+                          <td
+                            className={`p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 text-sm sm:text-base ${
+                              darkMode ? "text-white" : "text-gray-900"
+                            }`}>
                             {idx + 1}
                           </td>
-                          <td className="p-3 border-r">{siswa.full_name}</td>
-                          <td className="p-3 border-r">{siswa.nis}</td>
-                          <td className="p-3 text-center border-r">
+                          <td
+                            className={`p-3 sm:p-4 border-r border-gray-600 dark:border-gray-600 text-sm sm:text-base font-mono ${
+                              darkMode ? "text-white" : "text-gray-900"
+                            }`}>
+                            {siswa.nis}
+                          </td>
+                          <td
+                            className={`p-3 sm:p-4 border-r border-gray-600 dark:border-gray-600 text-sm sm:text-base ${
+                              darkMode ? "text-white" : "text-gray-900"
+                            }`}>
+                            {siswa.full_name}
+                          </td>
+                          <td className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600">
                             <input
                               type="number"
                               value={siswa.nilai_akhir || ""}
                               onChange={(e) =>
                                 handleNilaiChange(siswa.id, e.target.value)
                               }
-                              className={`w-16 p-2 text-center rounded border ${
+                              className={`w-16 sm:w-20 p-2 sm:p-3 text-center rounded-lg border text-sm sm:text-base transition-all duration-200 ${
                                 darkMode
-                                  ? "bg-gray-700 border-gray-600 text-white"
-                                  : "bg-white border-gray-300 text-gray-900"
+                                  ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                  : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                               }`}
                               min="0"
                               max="100"
                             />
                           </td>
-                          <td className="p-3 border-r">
-                            <div className="space-y-1 text-sm">
+                          <td className="p-3 sm:p-4 border-r border-gray-600 dark:border-gray-600">
+                            <div className="space-y-1 text-xs sm:text-sm">
                               {tpList.map((tp) => (
                                 <label
                                   key={tp.id}
-                                  className="flex items-start gap-2 cursor-pointer hover:bg-green-50 p-1 rounded">
+                                  className="flex items-start gap-2 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/10 p-2 rounded-lg transition-colors duration-150 min-h-[32px]">
                                   <input
                                     type="checkbox"
                                     checked={siswa.tp_tercapai?.includes(tp.id)}
@@ -791,26 +838,26 @@ function InputNilai({ user, onShowToast, darkMode }) {
                                         "tercapai"
                                       )
                                     }
-                                    className="mt-1 accent-green-600"
+                                    className="mt-0.5 accent-green-600 w-4 h-4 sm:w-4 sm:h-4"
                                   />
                                   <span
-                                    className={
+                                    className={`flex-1 pt-0.5 text-xs sm:text-sm ${
                                       darkMode
                                         ? "text-gray-300"
                                         : "text-gray-700"
-                                    }>
+                                    }`}>
                                     {tp.deskripsi_tp}
                                   </span>
                                 </label>
                               ))}
                             </div>
                           </td>
-                          <td className="p-3">
-                            <div className="space-y-1 text-sm">
+                          <td className="p-3 sm:p-4">
+                            <div className="space-y-1 text-xs sm:text-sm">
                               {tpList.map((tp) => (
                                 <label
                                   key={tp.id}
-                                  className="flex items-start gap-2 cursor-pointer hover:bg-yellow-50 p-1 rounded">
+                                  className="flex items-start gap-2 cursor-pointer hover:bg-yellow-50 dark:hover:bg-yellow-900/10 p-2 rounded-lg transition-colors duration-150 min-h-[32px]">
                                   <input
                                     type="checkbox"
                                     checked={siswa.tp_perlu_peningkatan?.includes(
@@ -823,14 +870,14 @@ function InputNilai({ user, onShowToast, darkMode }) {
                                         "peningkatan"
                                       )
                                     }
-                                    className="mt-1 accent-yellow-600 w-6 h-6"
+                                    className="mt-0.5 accent-yellow-600 w-4 h-4 sm:w-4 sm:h-4"
                                   />
                                   <span
-                                    className={
+                                    className={`flex-1 pt-0.5 text-xs sm:text-sm ${
                                       darkMode
                                         ? "text-gray-300"
                                         : "text-gray-700"
-                                    }>
+                                    }`}>
                                     {tp.deskripsi_tp}
                                   </span>
                                 </label>
@@ -843,16 +890,60 @@ function InputNilai({ user, onShowToast, darkMode }) {
                   </table>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Tidak ada data siswa untuk kelas ini
+                <div className="text-center py-12 rounded-xl border border-dashed">
+                  <div
+                    className={`${
+                      darkMode ? "text-gray-500" : "text-gray-400"
+                    } mb-2`}>
+                    <svg
+                      className="w-16 h-16 mx-auto"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                      />
+                    </svg>
+                  </div>
+                  <p
+                    className={`text-sm sm:text-base ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Tidak ada data siswa untuk kelas ini
+                  </p>
                 </div>
               )}
             </>
           )}
 
           {!kelas && !loading && (
-            <div className="text-center py-8 text-gray-500">
-              Silakan pilih Kelas, Mata Pelajaran, dan Semester
+            <div className="text-center py-12 rounded-xl border border-dashed">
+              <div
+                className={`${
+                  darkMode ? "text-gray-500" : "text-blue-400"
+                } mb-3`}>
+                <svg
+                  className="w-16 h-16 mx-auto"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+              <p
+                className={`text-sm sm:text-base ${
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                }`}>
+                Silakan pilih Kelas, Mata Pelajaran, dan Semester untuk memulai
+              </p>
             </div>
           )}
         </div>
@@ -860,26 +951,42 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
       {/* Save Progress Overlay */}
       {saving && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50 p-4">
           <div
-            className={`rounded-xl p-6 ${
-              darkMode ? "bg-gray-800" : "bg-white"
+            className={`rounded-2xl p-6 sm:p-8 w-full max-w-md shadow-2xl ${
+              darkMode
+                ? "bg-gray-800 border border-gray-700"
+                : "bg-white border border-blue-200"
             }`}>
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <h3 className="text-lg font-bold mb-2">Menyimpan Data...</h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <div className="animate-spin rounded-full h-14 w-14 border-b-3 border-blue-600 mx-auto mb-5"></div>
+              <h3
+                className={`text-lg sm:text-xl font-bold mb-3 ${
+                  darkMode ? "text-white" : "text-blue-800"
+                }`}>
+                Menyimpan Data...
+              </h3>
+              <p
+                className={`text-sm sm:text-base mb-5 ${
+                  darkMode ? "text-gray-300" : "text-blue-600"
+                }`}>
                 {saveProgress.current} dari {saveProgress.total} siswa
               </p>
-              <div className="w-64 bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 sm:h-3.5 mb-2 overflow-hidden">
                 <div
-                  className="bg-red-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${
                       (saveProgress.current / saveProgress.total) * 100
                     }%`,
                   }}></div>
               </div>
+              <p
+                className={`text-xs sm:text-sm mt-2 ${
+                  darkMode ? "text-gray-400" : "text-blue-500"
+                }`}>
+                Mohon tunggu sebentar...
+              </p>
             </div>
           </div>
         </div>
