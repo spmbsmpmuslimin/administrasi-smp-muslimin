@@ -1,4 +1,3 @@
-//[file name]: InputTP.js
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import ExcelJS from "exceljs";
@@ -7,7 +6,7 @@ import { Upload, Plus, Trash2, Edit2, Save, X } from "lucide-react";
 function InputTP({ user, onShowToast, darkMode }) {
   const [kelas, setKelas] = useState("");
   const [selectedMapel, setSelectedMapel] = useState("");
-  const [semester, setSemester] = useState(""); // Tambah state semester
+  const [semester, setSemester] = useState("");
   const [tpList, setTpList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
@@ -18,7 +17,6 @@ function InputTP({ user, onShowToast, darkMode }) {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Fungsi untuk mendapatkan fase berdasarkan angka kelas
   const getFaseByKelas = (kelasNumber) => {
     if (kelasNumber >= 1 && kelasNumber <= 2) return "A";
     if (kelasNumber >= 3 && kelasNumber <= 4) return "B";
@@ -27,12 +25,10 @@ function InputTP({ user, onShowToast, darkMode }) {
     return "D";
   };
 
-  // Load data awal
   useEffect(() => {
     loadUserAndAssignments();
   }, []);
 
-  // Load TP ketika mapel, kelas, dan semester dipilih
   useEffect(() => {
     if (selectedMapel && academicYear && kelas && semester) {
       loadTP();
@@ -44,7 +40,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       setLoading(true);
       setErrorMessage("");
 
-      // PERUBAHAN 1: Pisahkan teacherCode (VARCHAR) dan userId (UUID)
       const teacherCode = user.teacher_id;
       const userId = user.id;
 
@@ -52,7 +47,6 @@ function InputTP({ user, onShowToast, darkMode }) {
         throw new Error("Teacher ID tidak ditemukan dalam session.");
       }
 
-      // 1. CEK SESSION & DEBUG
       console.log("📱 User Data from Props:", user);
       console.log("🔍 User Keys:", Object.keys(user || {}));
       console.log("🆔 user.teacher_id:", user?.teacher_id);
@@ -65,7 +59,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       console.log("👨‍🏫 Teacher Code yang digunakan:", teacherCode);
       console.log("👨‍🏫 User ID yang digunakan:", userId);
 
-      // 2. Ambil academic year aktif
       const { data: academicYearData, error: ayError } = await supabase
         .from("academic_years")
         .select("*")
@@ -80,7 +73,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       setAcademicYear(academicYearData);
       console.log("📅 Academic Year:", academicYearData);
 
-      // PERUBAHAN 2: Query teacher_assignments menggunakan teacherCode (VARCHAR)
       console.log("📚 Querying teacher_assignments...");
       console.log("   - teacher_id:", teacherCode);
       console.log("   - academic_year_id:", academicYearData.id);
@@ -107,7 +99,6 @@ function InputTP({ user, onShowToast, darkMode }) {
         return;
       }
 
-      // 3. Ambil data classes secara terpisah
       const classIds = [...new Set(assignments.map((a) => a.class_id))];
       console.log("🎓 Class IDs to fetch:", classIds);
 
@@ -122,7 +113,6 @@ function InputTP({ user, onShowToast, darkMode }) {
         console.error("❌ Classes error:", classesError);
       }
 
-      // 4. Gabungkan data assignments dengan classes
       const assignmentsWithClasses = assignments.map((assignment) => ({
         ...assignment,
         classes: classesData?.find((c) => c.id === assignment.class_id) || null,
@@ -132,7 +122,6 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       setTeacherAssignments(assignmentsWithClasses);
 
-      // 5. Ekstrak data unik untuk dropdown (HANYA SEKALI!)
       const uniqueClasses = [];
       const uniqueSubjects = [];
       const seenClasses = new Set();
@@ -141,7 +130,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       assignmentsWithClasses.forEach((assignment) => {
         console.log("📝 Processing assignment:", assignment);
 
-        // Kelas - GUNAKAN classes.id (7E, 8A, dst)
         const classId = assignment.class_id;
         const classData = assignment.classes;
 
@@ -153,7 +141,6 @@ function InputTP({ user, onShowToast, darkMode }) {
           });
         }
 
-        // Mapel (subject)
         if (assignment.subject && !seenSubjects.has(assignment.subject)) {
           seenSubjects.add(assignment.subject);
           uniqueSubjects.push(assignment.subject);
@@ -189,7 +176,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       console.log("Semester selected:", semester);
       console.log("Academic Year:", academicYear);
 
-      // Cari class_id dari kelas yang dipilih
       const selectedClass = availableClasses.find((c) => c.grade === kelas);
       if (!selectedClass) {
         console.error("Selected class not found");
@@ -201,13 +187,12 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       console.log("Selected Class ID:", selectedClass.id);
 
-      // Query TP dengan filter semester
       const { data, error } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
         .eq("class_id", selectedClass.id)
         .eq("mata_pelajaran", selectedMapel)
-        .eq("semester", semester) // Tambah filter semester
+        .eq("semester", semester)
         .eq("tahun_ajaran_id", academicYear?.id)
         .order("urutan");
 
@@ -250,14 +235,12 @@ function InputTP({ user, onShowToast, darkMode }) {
     if (!file) return;
 
     try {
-      // Cari class_id dari kelas yang dipilih
       const selectedClass = availableClasses.find((c) => c.grade === kelas);
       if (!selectedClass) {
         if (onShowToast) onShowToast("Kelas tidak ditemukan!", "error");
         return;
       }
 
-      // Ambil angka kelas dari grade (misal: "7E" → 7)
       const kelasNumber = parseInt(kelas.match(/\d+/)?.[0] || "0");
       const tingkatDefault = kelasNumber;
       const faseDefault = getFaseByKelas(kelasNumber);
@@ -271,7 +254,6 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber > 6) {
-          // Skip header
           const noCell = row.getCell(1).value;
           if (noCell && !isNaN(noCell)) {
             imported.push({
@@ -282,7 +264,7 @@ function InputTP({ user, onShowToast, darkMode }) {
               urutan: Number(noCell),
               mata_pelajaran: selectedMapel,
               tahun_ajaran_id: academicYear?.id,
-              semester: semester, // Gunakan semester yang dipilih
+              semester: semester,
             });
           }
         }
@@ -316,14 +298,12 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleDownloadTemplate = () => {
     try {
-      // Validasi semester dipilih
       if (!semester) {
         if (onShowToast)
           onShowToast("Pilih semester terlebih dahulu!", "warning");
         return;
       }
 
-      // Ambil angka kelas dari grade
       const kelasNumber = parseInt(kelas.match(/\d+/)?.[0] || "0");
       const tingkatDefault = kelasNumber;
       const faseDefault = getFaseByKelas(kelasNumber);
@@ -331,7 +311,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Template TP");
 
-      // Header
       worksheet.mergeCells("A1:D1");
       worksheet.mergeCells("A2:D2");
       worksheet.mergeCells("A3:D3");
@@ -346,7 +325,7 @@ function InputTP({ user, onShowToast, darkMode }) {
       worksheet.getCell("A1").fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FF7B1FA2" },
+        fgColor: { argb: "FF0D47A1" }, // Biru professional
       };
       worksheet.getCell("A1").alignment = {
         vertical: "middle",
@@ -374,7 +353,6 @@ function InputTP({ user, onShowToast, darkMode }) {
         horizontal: "left",
       };
 
-      // Table header
       const headerRow = worksheet.getRow(6);
       const headers = ["NO", "TINGKAT", "FASE", "TUJUAN PEMBELAJARAN"];
 
@@ -385,7 +363,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         cell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FF0D47A1" },
+          fgColor: { argb: "FF0D47A1" }, // Biru professional
         };
         cell.alignment = { horizontal: "center", vertical: "middle" };
         cell.border = {
@@ -396,13 +374,11 @@ function InputTP({ user, onShowToast, darkMode }) {
         };
       });
 
-      // Column widths
       worksheet.getColumn(1).width = 5;
       worksheet.getColumn(2).width = 10;
       worksheet.getColumn(3).width = 8;
       worksheet.getColumn(4).width = 70;
 
-      // Example data
       const exampleRows = [
         [
           1,
@@ -431,7 +407,6 @@ function InputTP({ user, onShowToast, darkMode }) {
         });
       });
 
-      // Download
       workbook.xlsx.writeBuffer().then((buffer) => {
         const blob = new Blob([buffer], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -454,21 +429,18 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleAddRow = async () => {
     try {
-      // Validasi semester dipilih
       if (!semester) {
         if (onShowToast)
           onShowToast("Pilih semester terlebih dahulu!", "warning");
         return;
       }
 
-      // Cari class_id dari kelas yang dipilih
       const selectedClass = availableClasses.find((c) => c.grade === kelas);
       if (!selectedClass) {
         if (onShowToast) onShowToast("Kelas tidak ditemukan!", "error");
         return;
       }
 
-      // Ambil angka kelas
       const kelasNumber = parseInt(kelas.match(/\d+/)?.[0] || "0");
       const tingkatDefault = kelasNumber;
       const faseDefault = getFaseByKelas(kelasNumber);
@@ -481,7 +453,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         urutan: tpList.length + 1,
         mata_pelajaran: selectedMapel,
         tahun_ajaran_id: academicYear?.id,
-        semester: semester, // Gunakan semester yang dipilih
+        semester: semester,
       };
 
       const { data, error } = await supabase
@@ -518,7 +490,7 @@ function InputTP({ user, onShowToast, darkMode }) {
           tingkat: editData.tingkat,
           fase: editData.fase,
           deskripsi_tp: editData.deskripsi_tp,
-          semester: semester, // Update semester juga
+          semester: semester,
         })
         .eq("id", editingId);
 
@@ -568,7 +540,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
-            : "bg-gradient-to-br from-blue-50 to-indigo-100"
+            : "bg-gradient-to-br from-blue-50 to-sky-100"
         }`}>
         <div className="text-center">
           <div
@@ -577,7 +549,7 @@ function InputTP({ user, onShowToast, darkMode }) {
             }`}></div>
           <p
             className={`text-sm sm:text-base font-medium transition-colors ${
-              darkMode ? "text-gray-300" : "text-gray-600"
+              darkMode ? "text-gray-300" : "text-gray-700"
             }`}>
             Memuat data mengajar...
           </p>
@@ -592,23 +564,23 @@ function InputTP({ user, onShowToast, darkMode }) {
         className={`min-h-screen py-4 sm:py-8 px-4 transition-colors duration-300 ${
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
-            : "bg-gradient-to-br from-blue-50 to-indigo-100"
+            : "bg-gradient-to-br from-blue-50 to-sky-100"
         }`}>
         <div className="max-w-7xl mx-auto">
           <div
             className={`rounded-2xl shadow-2xl p-4 sm:p-8 border transition-colors ${
               darkMode
                 ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
+                : "bg-white border-blue-200"
             }`}>
             <div className="text-center py-8 sm:py-12">
               <div
                 className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 ${
-                  darkMode ? "bg-red-900/30" : "bg-red-100"
+                  darkMode ? "bg-blue-900/30" : "bg-blue-100"
                 }`}>
                 <svg
                   className={`w-7 h-7 sm:w-8 sm:h-8 ${
-                    darkMode ? "text-red-400" : "text-red-600"
+                    darkMode ? "text-blue-400" : "text-blue-600"
                   }`}
                   fill="none"
                   stroke="currentColor"
@@ -629,17 +601,17 @@ function InputTP({ user, onShowToast, darkMode }) {
               </h3>
               <p
                 className={`text-sm sm:text-base mb-6 transition-colors ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
+                  darkMode ? "text-gray-300" : "text-gray-600"
                 }`}>
                 {errorMessage}
               </p>
               <button
                 onClick={() => window.location.reload()}
-                className={`px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 min-h-[44px] ${
                   darkMode
-                    ? "bg-red-600 hover:bg-red-700 text-white"
-                    : "bg-red-600 hover:bg-red-700 text-white"
-                } min-h-[44px]`}>
+                    ? "bg-blue-600 hover:bg-blue-500 text-white"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}>
                 Coba Lagi
               </button>
             </div>
@@ -654,26 +626,27 @@ function InputTP({ user, onShowToast, darkMode }) {
       className={`min-h-screen py-4 sm:py-8 px-4 transition-colors duration-300 ${
         darkMode
           ? "bg-gradient-to-br from-gray-900 to-gray-800"
-          : "bg-gradient-to-br from-blue-50 to-indigo-100"
+          : "bg-gradient-to-br from-blue-50 to-sky-100"
       }`}>
       <div className="max-w-7xl mx-auto">
         <div
-          className={`rounded-2xl shadow-2xl p-4 sm:p-8 border transition-colors ${
+          className={`rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 border transition-colors ${
             darkMode
               ? "bg-gray-800 border-gray-700"
-              : "bg-white border-gray-200"
+              : "bg-white border-blue-200"
           }`}>
           <h2
-            className={`text-base md:text-lg lg:text-xl font-bold mb-4 md:mb-6 transition-colors ${
+            className={`text-lg md:text-xl lg:text-2xl font-bold mb-6 md:mb-8 transition-colors ${
               darkMode ? "text-white" : "text-gray-900"
             }`}>
             INPUT TUJUAN PEMBELAJARAN (TP)
           </h2>
-          {/* Filter Section - Diubah menjadi 3 kolom */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+
+          {/* Filter Section - Responsive Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 md:mb-8">
             <div>
               <label
-                className={`block text-sm font-semibold mb-2 transition-colors ${
+                className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-700"
                 }`}>
                 Pilih Kelas
@@ -681,12 +654,12 @@ function InputTP({ user, onShowToast, darkMode }) {
               <select
                 value={kelas}
                 onChange={(e) => setKelas(e.target.value)}
-                className={`w-full p-3 border rounded-lg focus:ring-2 transition-all text-sm sm:text-base min-h-[44px] ${
+                className={`w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[44px] ${
                   darkMode
-                    ? "bg-gray-700 border-gray-600 text-white focus:ring-red-400"
-                    : "bg-white border-gray-300 text-gray-900 focus:ring-red-500"
+                    ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
+                    : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
                 }`}>
-                <option value="" disabled>
+                <option value="" disabled className="text-gray-400">
                   -- Pilih Kelas --
                 </option>
                 {availableClasses.map((cls) => (
@@ -699,7 +672,7 @@ function InputTP({ user, onShowToast, darkMode }) {
 
             <div>
               <label
-                className={`block text-sm font-semibold mb-2 transition-colors ${
+                className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-700"
                 }`}>
                 Pilih Mata Pelajaran
@@ -707,12 +680,12 @@ function InputTP({ user, onShowToast, darkMode }) {
               <select
                 value={selectedMapel}
                 onChange={(e) => setSelectedMapel(e.target.value)}
-                className={`w-full p-3 border rounded-lg focus:ring-2 transition-all text-sm sm:text-base min-h-[44px] ${
+                className={`w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[44px] ${
                   darkMode
-                    ? "bg-gray-700 border-gray-600 text-white focus:ring-red-400"
-                    : "bg-white border-gray-300 text-gray-900 focus:ring-red-500"
+                    ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
+                    : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
                 }`}>
-                <option value="" disabled>
+                <option value="" disabled className="text-gray-400">
                   -- Pilih Mata Pelajaran --
                 </option>
                 {availableSubjects.map((subject, idx) => (
@@ -723,10 +696,9 @@ function InputTP({ user, onShowToast, darkMode }) {
               </select>
             </div>
 
-            {/* Tambah dropdown semester */}
-            <div>
+            <div className="md:col-span-2 lg:col-span-1">
               <label
-                className={`block text-sm font-semibold mb-2 transition-colors ${
+                className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-700"
                 }`}>
                 Pilih Semester
@@ -734,12 +706,12 @@ function InputTP({ user, onShowToast, darkMode }) {
               <select
                 value={semester}
                 onChange={(e) => setSemester(e.target.value)}
-                className={`w-full p-3 border rounded-lg focus:ring-2 transition-all text-sm sm:text-base min-h-[44px] ${
+                className={`w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[44px] ${
                   darkMode
-                    ? "bg-gray-700 border-gray-600 text-white focus:ring-red-400"
-                    : "bg-white border-gray-300 text-gray-900 focus:ring-red-500"
+                    ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
+                    : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
                 }`}>
-                <option value="" disabled>
+                <option value="" disabled className="text-gray-400">
                   -- Pilih Semester --
                 </option>
                 <option value="1">Semester Ganjil</option>
@@ -750,46 +722,68 @@ function InputTP({ user, onShowToast, darkMode }) {
 
           {!selectedMapel || !kelas || !semester ? (
             <div
-              className={`text-center py-8 sm:py-12 ${
-                darkMode ? "text-gray-400" : "text-gray-500"
+              className={`text-center py-8 sm:py-12 rounded-xl border-2 border-dashed ${
+                darkMode
+                  ? "text-gray-400 border-gray-700 bg-gray-800/50"
+                  : "text-gray-500 border-blue-300 bg-blue-50"
               }`}>
-              <p className="text-base sm:text-lg">
-                Silakan pilih Kelas, Mata Pelajaran, dan Semester terlebih
-                dahulu
+              <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <svg
+                  className={`w-12 h-12 ${
+                    darkMode ? "text-gray-600" : "text-blue-400"
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+              <p className="text-base sm:text-lg font-medium mb-2">
+                Pilih Kelas, Mata Pelajaran, dan Semester
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Untuk memulai input Tujuan Pembelajaran
               </p>
             </div>
           ) : (
             <>
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6 justify-end">
+              {/* Action Buttons - Tetap di Kanan dengan Responsive Layout */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 md:mb-8 justify-end">
                 <button
                   onClick={handleAddRow}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors min-h-[44px] w-full sm:w-auto text-sm sm:text-base ${
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 min-h-[44px] w-full sm:w-auto ${
                     darkMode
-                      ? "bg-red-700 hover:bg-red-600 text-white"
-                      : "bg-red-800 hover:bg-red-900 text-white"
+                      ? "bg-blue-600 hover:bg-blue-500 text-white"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
                   }`}>
                   <Plus size={18} />
-                  <span>Tambah TP</span>
+                  <span className="text-sm sm:text-base">Tambah TP</span>
                 </button>
                 <button
                   onClick={handleDownloadTemplate}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors min-h-[44px] w-full sm:w-auto text-sm sm:text-base ${
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 min-h-[44px] w-full sm:w-auto ${
                     darkMode
-                      ? "bg-red-700 hover:bg-red-600 text-white"
-                      : "bg-red-800 hover:bg-red-900 text-white"
+                      ? "bg-blue-700 hover:bg-blue-600 text-white"
+                      : "bg-blue-700 hover:bg-blue-800 text-white"
                   }`}>
                   <Upload size={18} />
-                  <span>Download Template</span>
+                  <span className="text-sm sm:text-base">
+                    Download Template
+                  </span>
                 </button>
                 <label
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg cursor-pointer transition-colors min-h-[44px] w-full sm:w-auto text-sm sm:text-base ${
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 min-h-[44px] w-full sm:w-auto ${
                     darkMode
-                      ? "bg-red-700 hover:bg-red-600 text-white"
-                      : "bg-red-800 hover:bg-red-900 text-white"
+                      ? "bg-blue-800 hover:bg-blue-700 text-white"
+                      : "bg-blue-800 hover:bg-blue-900 text-white"
                   }`}>
                   <Upload size={18} />
-                  <span>Import TP</span>
+                  <span className="text-sm sm:text-base">Import TP</span>
                   <input
                     type="file"
                     accept=".xlsx"
@@ -799,265 +793,291 @@ function InputTP({ user, onShowToast, darkMode }) {
                 </label>
               </div>
 
-              {/* Table */}
-              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                <table className="w-full min-w-[640px]">
-                  <thead>
-                    <tr className={darkMode ? "bg-red-900" : "bg-red-800"}>
-                      <th
-                        className={`border-b border-r p-2 sm:p-3 w-16 text-sm sm:text-base ${
-                          darkMode ? "border-red-800" : "border-red-700"
-                        }`}>
-                        No
-                      </th>
-                      <th
-                        className={`border-b border-r p-2 sm:p-3 w-24 text-sm sm:text-base ${
-                          darkMode ? "border-red-800" : "border-red-700"
-                        }`}>
-                        Tingkat
-                      </th>
-                      <th
-                        className={`border-b border-r p-2 sm:p-3 w-24 text-sm sm:text-base ${
-                          darkMode ? "border-red-800" : "border-red-700"
-                        }`}>
-                        Fase
-                      </th>
-                      <th
-                        className={`border-b border-r p-2 sm:p-3 text-sm sm:text-base ${
-                          darkMode ? "border-red-800" : "border-red-700"
-                        }`}>
-                        Tujuan Pembelajaran
-                      </th>
-                      <th
-                        className={`border-b border-r p-2 sm:p-3 w-28 text-sm sm:text-base ${
-                          darkMode ? "border-red-800" : "border-red-700"
-                        }`}>
-                        Semester
-                      </th>
-                      <th
-                        className={`border-b p-2 sm:p-3 w-32 text-sm sm:text-base ${
-                          darkMode ? "border-red-800" : "border-red-700"
-                        }`}>
-                        Aksi
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tpList.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className={`text-center py-8 ${
-                            darkMode ? "text-gray-400" : "text-gray-500"
+              {/* Table - Mobile Responsive */}
+              <div className="overflow-hidden rounded-xl border">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px]">
+                    <thead>
+                      <tr className={darkMode ? "bg-blue-900" : "bg-blue-700"}>
+                        <th
+                          className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
+                            darkMode ? "border-blue-800" : "border-blue-600"
                           }`}>
-                          Belum ada data Tujuan Pembelajaran untuk semester{" "}
-                          {semester}. Tambah atau import data.
-                        </td>
+                          No
+                        </th>
+                        <th
+                          className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
+                            darkMode ? "border-blue-800" : "border-blue-600"
+                          }`}>
+                          Tingkat
+                        </th>
+                        <th
+                          className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
+                            darkMode ? "border-blue-800" : "border-blue-600"
+                          }`}>
+                          Fase
+                        </th>
+                        <th
+                          className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium border-r ${
+                            darkMode ? "border-blue-800" : "border-blue-600"
+                          }`}>
+                          Tujuan Pembelajaran
+                        </th>
+                        <th
+                          className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
+                            darkMode ? "border-blue-800" : "border-blue-600"
+                          }`}>
+                          Semester
+                        </th>
+                        <th
+                          className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium ${
+                            darkMode ? "border-blue-800" : "border-blue-600"
+                          }`}>
+                          Aksi
+                        </th>
                       </tr>
-                    ) : (
-                      tpList.map((tp, idx) => (
-                        <tr
-                          key={tp.id}
-                          className={`border-b ${
-                            darkMode
-                              ? "border-gray-700 hover:bg-gray-700"
-                              : "border-gray-200 hover:bg-gray-50"
-                          }`}>
+                    </thead>
+                    <tbody>
+                      {tpList.length === 0 ? (
+                        <tr>
                           <td
-                            className={`border-r p-2 sm:p-3 text-center text-sm sm:text-base ${
-                              darkMode ? "border-gray-700" : "border-gray-200"
+                            colSpan="6"
+                            className={`text-center py-8 sm:py-12 ${
+                              darkMode
+                                ? "text-gray-400 bg-gray-800/50"
+                                : "text-gray-500 bg-blue-50"
                             }`}>
-                            {idx + 1}
+                            <div className="flex flex-col items-center">
+                              <svg
+                                className={`w-12 h-12 mb-3 ${
+                                  darkMode ? "text-gray-600" : "text-blue-300"
+                                }`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.5}
+                                  d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"
+                                />
+                              </svg>
+                              <p className="text-base font-medium mb-1">
+                                Belum ada data Tujuan Pembelajaran
+                              </p>
+                              <p className="text-sm">
+                                Tambah data atau import dari Excel
+                              </p>
+                            </div>
                           </td>
-
-                          {editingId === tp.id ? (
-                            <>
-                              <td
-                                className={`border-r p-2 sm:p-3 ${
-                                  darkMode
-                                    ? "border-gray-700"
-                                    : "border-gray-200"
-                                }`}>
-                                <input
-                                  type="text"
-                                  value={editData.tingkat || ""}
-                                  onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
-                                      tingkat: e.target.value,
-                                    })
-                                  }
-                                  className={`w-full p-2 border rounded text-center text-sm sm:text-base min-h-[44px] ${
-                                    darkMode
-                                      ? "bg-gray-600 border-gray-500 text-white"
-                                      : "bg-white border-gray-300 text-gray-900"
-                                  }`}
-                                  placeholder="7"
-                                />
-                              </td>
-                              <td
-                                className={`border-r p-2 sm:p-3 ${
-                                  darkMode
-                                    ? "border-gray-700"
-                                    : "border-gray-200"
-                                }`}>
-                                <input
-                                  type="text"
-                                  value={editData.fase || ""}
-                                  onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
-                                      fase: e.target.value,
-                                    })
-                                  }
-                                  className={`w-full p-2 border rounded text-center text-sm sm:text-base min-h-[44px] ${
-                                    darkMode
-                                      ? "bg-gray-600 border-gray-500 text-white"
-                                      : "bg-white border-gray-300 text-gray-900"
-                                  }`}
-                                  placeholder="D"
-                                />
-                              </td>
-                              <td
-                                className={`border-r p-2 sm:p-3 ${
-                                  darkMode
-                                    ? "border-gray-700"
-                                    : "border-gray-200"
-                                }`}>
-                                <textarea
-                                  value={editData.deskripsi_tp || ""}
-                                  onChange={(e) =>
-                                    setEditData({
-                                      ...editData,
-                                      deskripsi_tp: e.target.value,
-                                    })
-                                  }
-                                  className={`w-full p-2 border rounded text-sm sm:text-base min-h-[60px] ${
-                                    darkMode
-                                      ? "bg-gray-600 border-gray-500 text-white"
-                                      : "bg-white border-gray-300 text-gray-900"
-                                  }`}
-                                  placeholder="Masukkan tujuan pembelajaran..."
-                                />
-                              </td>
-                              <td
-                                className={`border-r p-2 sm:p-3 text-center ${
-                                  darkMode
-                                    ? "border-gray-700"
-                                    : "border-gray-200"
-                                }`}>
-                                <span
-                                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                                    semester === "1"
-                                      ? darkMode
-                                        ? "bg-orange-900/30 text-orange-300"
-                                        : "bg-orange-100 text-orange-800"
-                                      : darkMode
-                                      ? "bg-green-900/30 text-green-300"
-                                      : "bg-green-100 text-green-800"
-                                  }`}>
-                                  {semester === "1" ? "Ganjil" : "Genap"}
-                                </span>
-                              </td>
-                              <td className="p-2 sm:p-3">
-                                <div className="flex gap-2 justify-center">
-                                  <button
-                                    onClick={handleSave}
-                                    className={`p-2 sm:p-3 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
-                                      darkMode
-                                        ? "bg-green-700 hover:bg-green-600 text-white"
-                                        : "bg-green-600 hover:bg-green-700 text-white"
-                                    }`}
-                                    title="Simpan">
-                                    <Save size={16} />
-                                  </button>
-                                  <button
-                                    onClick={handleCancel}
-                                    className={`p-2 sm:p-3 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
-                                      darkMode
-                                        ? "bg-gray-700 hover:bg-gray-600 text-white"
-                                        : "bg-gray-600 hover:bg-gray-700 text-white"
-                                    }`}
-                                    title="Batal">
-                                    <X size={16} />
-                                  </button>
-                                </div>
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              <td
-                                className={`border-r p-2 sm:p-3 text-center text-sm sm:text-base ${
-                                  darkMode
-                                    ? "border-gray-700"
-                                    : "border-gray-200"
-                                }`}>
-                                {tp.tingkat}
-                              </td>
-                              <td
-                                className={`border-r p-2 sm:p-3 text-center text-sm sm:text-base ${
-                                  darkMode
-                                    ? "border-gray-700"
-                                    : "border-gray-200"
-                                }`}>
-                                {tp.fase}
-                              </td>
-                              <td
-                                className={`border-r p-2 sm:p-3 text-sm sm:text-base ${
-                                  darkMode ? "text-gray-100" : "text-gray-900"
-                                }`}>
-                                {tp.deskripsi_tp}
-                              </td>
-                              <td
-                                className={`border-r p-2 sm:p-3 text-center ${
-                                  darkMode
-                                    ? "border-gray-700"
-                                    : "border-gray-200"
-                                }`}>
-                                <span
-                                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                                    tp.semester === "1"
-                                      ? darkMode
-                                        ? "bg-orange-900/30 text-orange-300"
-                                        : "bg-orange-100 text-orange-800"
-                                      : darkMode
-                                      ? "bg-green-900/30 text-green-300"
-                                      : "bg-green-100 text-green-800"
-                                  }`}>
-                                  {tp.semester === "1" ? "Ganjil" : "Genap"}
-                                </span>
-                              </td>
-                              <td className="p-2 sm:p-3">
-                                <div className="flex gap-2 justify-center">
-                                  <button
-                                    onClick={() => handleEdit(tp)}
-                                    className={`p-2 sm:p-3 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
-                                      darkMode
-                                        ? "bg-blue-700 hover:bg-blue-600 text-white"
-                                        : "bg-blue-600 hover:bg-blue-700 text-white"
-                                    }`}
-                                    title="Edit">
-                                    <Edit2 size={16} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(tp.id)}
-                                    className={`p-2 sm:p-3 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
-                                      darkMode
-                                        ? "bg-red-700 hover:bg-red-600 text-white"
-                                        : "bg-red-600 hover:bg-red-700 text-white"
-                                    }`}
-                                    title="Hapus">
-                                    <Trash2 size={16} />
-                                  </button>
-                                </div>
-                              </td>
-                            </>
-                          )}
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : (
+                        tpList.map((tp, idx) => (
+                          <tr
+                            key={tp.id}
+                            className={`border-b ${
+                              darkMode
+                                ? "border-gray-700 hover:bg-gray-700/50"
+                                : "border-blue-100 hover:bg-blue-50"
+                            }`}>
+                            <td
+                              className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
+                                darkMode
+                                  ? "border-gray-700 text-gray-300"
+                                  : "border-blue-100 text-gray-700"
+                              }`}>
+                              {idx + 1}
+                            </td>
+
+                            {editingId === tp.id ? (
+                              <>
+                                <td
+                                  className={`p-2 sm:p-3 border-r ${
+                                    darkMode
+                                      ? "border-gray-700"
+                                      : "border-blue-100"
+                                  }`}>
+                                  <input
+                                    type="text"
+                                    value={editData.tingkat || ""}
+                                    onChange={(e) =>
+                                      setEditData({
+                                        ...editData,
+                                        tingkat: e.target.value,
+                                      })
+                                    }
+                                    className={`w-full p-2 sm:p-2.5 border rounded text-center text-sm sm:text-base min-h-[44px] ${
+                                      darkMode
+                                        ? "bg-gray-600 border-gray-500 text-white focus:ring-blue-400 focus:border-blue-400"
+                                        : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                                    }`}
+                                    placeholder="7"
+                                  />
+                                </td>
+                                <td
+                                  className={`p-2 sm:p-3 border-r ${
+                                    darkMode
+                                      ? "border-gray-700"
+                                      : "border-blue-100"
+                                  }`}>
+                                  <input
+                                    type="text"
+                                    value={editData.fase || ""}
+                                    onChange={(e) =>
+                                      setEditData({
+                                        ...editData,
+                                        fase: e.target.value,
+                                      })
+                                    }
+                                    className={`w-full p-2 sm:p-2.5 border rounded text-center text-sm sm:text-base min-h-[44px] ${
+                                      darkMode
+                                        ? "bg-gray-600 border-gray-500 text-white focus:ring-blue-400 focus:border-blue-400"
+                                        : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                                    }`}
+                                    placeholder="D"
+                                  />
+                                </td>
+                                <td
+                                  className={`p-2 sm:p-3 border-r ${
+                                    darkMode
+                                      ? "border-gray-700"
+                                      : "border-blue-100"
+                                  }`}>
+                                  <textarea
+                                    value={editData.deskripsi_tp || ""}
+                                    onChange={(e) =>
+                                      setEditData({
+                                        ...editData,
+                                        deskripsi_tp: e.target.value,
+                                      })
+                                    }
+                                    className={`w-full p-2 sm:p-2.5 border rounded text-sm sm:text-base min-h-[60px] resize-y ${
+                                      darkMode
+                                        ? "bg-gray-600 border-gray-500 text-white focus:ring-blue-400 focus:border-blue-400"
+                                        : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                                    }`}
+                                    placeholder="Masukkan tujuan pembelajaran..."
+                                  />
+                                </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-center border-r ${
+                                    darkMode
+                                      ? "border-gray-700"
+                                      : "border-blue-100"
+                                  }`}>
+                                  <span
+                                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+                                      semester === "1"
+                                        ? darkMode
+                                          ? "bg-orange-900/30 text-orange-300"
+                                          : "bg-orange-100 text-orange-800"
+                                        : darkMode
+                                        ? "bg-green-900/30 text-green-300"
+                                        : "bg-green-100 text-green-800"
+                                    }`}>
+                                    {semester === "1" ? "Ganjil" : "Genap"}
+                                  </span>
+                                </td>
+                                <td className="p-2 sm:p-3">
+                                  <div className="flex gap-2 justify-center">
+                                    <button
+                                      onClick={handleSave}
+                                      className={`p-2 sm:p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
+                                        darkMode
+                                          ? "bg-green-600 hover:bg-green-500 text-white"
+                                          : "bg-green-600 hover:bg-green-700 text-white"
+                                      }`}
+                                      title="Simpan">
+                                      <Save size={18} />
+                                    </button>
+                                    <button
+                                      onClick={handleCancel}
+                                      className={`p-2 sm:p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
+                                        darkMode
+                                          ? "bg-gray-600 hover:bg-gray-500 text-white"
+                                          : "bg-gray-600 hover:bg-gray-700 text-white"
+                                      }`}
+                                      title="Batal">
+                                      <X size={18} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td
+                                  className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
+                                    darkMode
+                                      ? "border-gray-700 text-gray-300"
+                                      : "border-blue-100 text-gray-700"
+                                  }`}>
+                                  {tp.tingkat}
+                                </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
+                                    darkMode
+                                      ? "border-gray-700 text-gray-300"
+                                      : "border-blue-100 text-gray-700"
+                                  }`}>
+                                  {tp.fase}
+                                </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-sm sm:text-base border-r ${
+                                    darkMode ? "text-gray-200" : "text-gray-900"
+                                  }`}>
+                                  {tp.deskripsi_tp}
+                                </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-center border-r ${
+                                    darkMode
+                                      ? "border-gray-700"
+                                      : "border-blue-100"
+                                  }`}>
+                                  <span
+                                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+                                      tp.semester === "1"
+                                        ? darkMode
+                                          ? "bg-orange-900/30 text-orange-300"
+                                          : "bg-orange-100 text-orange-800"
+                                        : darkMode
+                                        ? "bg-green-900/30 text-green-300"
+                                        : "bg-green-100 text-green-800"
+                                    }`}>
+                                    {tp.semester === "1" ? "Ganjil" : "Genap"}
+                                  </span>
+                                </td>
+                                <td className="p-2 sm:p-3">
+                                  <div className="flex gap-2 justify-center">
+                                    <button
+                                      onClick={() => handleEdit(tp)}
+                                      className={`p-2 sm:p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
+                                        darkMode
+                                          ? "bg-blue-600 hover:bg-blue-500 text-white"
+                                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                                      }`}
+                                      title="Edit">
+                                      <Edit2 size={18} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDelete(tp.id)}
+                                      className={`p-2 sm:p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
+                                        darkMode
+                                          ? "bg-red-600 hover:bg-red-500 text-white"
+                                          : "bg-red-600 hover:bg-red-700 text-white"
+                                      }`}
+                                      title="Hapus">
+                                      <Trash2 size={18} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </>
           )}

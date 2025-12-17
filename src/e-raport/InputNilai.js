@@ -187,6 +187,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
     id,
     student_id,
     nilai_akhir,
+    deskripsi_capaian,
     nilai_eraport_detail (
       id,
       tujuan_pembelajaran_id,
@@ -224,6 +225,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
           nis: siswa.nis,
           full_name: siswa.full_name,
           nilai_akhir: nilaiAkhir,
+          deskripsi_capaian: nilai?.deskripsi_capaian || "", // ⬅⬅⬅ TAMBAH INI
           kkm: kkm,
           rapor_id: nilai?.id,
           tp_tercapai:
@@ -338,7 +340,6 @@ function InputNilai({ user, onShowToast, darkMode }) {
       for (let i = 0; i < siswaList.length; i++) {
         const siswa = siswaList[i];
         let raporId = siswa.rapor_id;
-
         const nilaiData = {
           student_id: siswa.id,
           class_id: selectedClass.id,
@@ -354,7 +355,10 @@ function InputNilai({ user, onShowToast, darkMode }) {
           rata_nh: null,
           nilai_akhir: siswa.nilai_akhir || 0,
           predikat: "",
-          deskripsi_capaian: null,
+
+          // ⬇⬇⬇ TAMBAHIN INI DI SINI ⬇⬇⬇
+          deskripsi_capaian: siswa.deskripsi_capaian || "",
+
           kkm: kkm,
           status: "draft",
           is_finalized: false,

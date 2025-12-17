@@ -374,7 +374,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                 <div
                   className={`mb-6 p-4 rounded-lg border ${
                     darkMode
-                      ? "bg-gray-700/50 border-gray-600"
+                      ? "bg-blue-900/20 border-blue-500"
                       : "bg-blue-50 border-blue-200"
                   }`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -387,7 +387,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                       </h3>
                       <p
                         className={`text-sm ${
-                          darkMode ? "text-gray-300" : "text-blue-700"
+                          darkMode ? "text-blue-300" : "text-blue-700"
                         } mt-1`}>
                         {waliKelasName}
                       </p>
@@ -395,7 +395,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                     <div
                       className={`px-4 py-2 rounded-full ${
                         darkMode
-                          ? "bg-gray-700 text-white"
+                          ? "bg-blue-800 text-blue-100"
                           : "bg-blue-600 text-white"
                       }`}>
                       <span className="text-sm font-medium">Wali Kelas</span>
@@ -468,7 +468,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                   <div className="flex flex-wrap justify-end gap-3 mb-6">
                     <button
                       onClick={handleImportExcel}
-                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors text-sm min-h-[44px] min-w-[44px]"
+                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors text-sm min-h-[44px] min-w-[44px] shadow-sm hover:shadow-md"
                       aria-label="Import Excel">
                       <Upload size={18} />
                       <span className="hidden sm:inline">Import Excel</span>
@@ -476,7 +476,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                     <button
                       onClick={handleExportExcel}
                       disabled={siswaList.length === 0}
-                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors text-sm min-h-[44px] min-w-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors text-sm min-h-[44px] min-w-[44px] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                       aria-label="Export Excel">
                       <Download size={18} />
                       <span className="hidden sm:inline">Export Excel</span>
@@ -484,7 +484,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                     <button
                       onClick={handleSave}
                       disabled={saving || siswaList.length === 0}
-                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-700 hover:bg-blue-800 text-white transition-colors text-sm min-h-[44px] min-w-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-700 hover:bg-blue-800 text-white transition-colors text-sm min-h-[44px] min-w-[44px] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                       aria-label="Simpan Semua Kehadiran">
                       <Save size={18} />
                       <span className="hidden sm:inline">Simpan Semua</span>
@@ -506,7 +506,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                       <div
                         className={`mb-4 p-3 rounded-lg ${
                           darkMode
-                            ? "bg-gray-700 text-gray-300"
+                            ? "bg-blue-900/20 text-blue-300"
                             : "bg-blue-50 text-blue-700"
                         }`}>
                         <p className="text-sm">
@@ -514,31 +514,31 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                           {semester === "1" ? "Ganjil" : "Genap"}
                         </p>
                       </div>
-                      <div className="overflow-x-auto rounded-lg border">
+                      <div className="overflow-x-auto rounded-lg border shadow-sm">
                         <table className="w-full border-collapse min-w-[640px]">
                           <thead
                             className={
                               darkMode
-                                ? "bg-gray-700 text-white"
+                                ? "bg-blue-900 text-white"
                                 : "bg-blue-700 text-white"
                             }>
                             <tr>
-                              <th className="p-3 text-center border-r border-gray-600 dark:border-gray-600 w-16 text-sm sm:text-base">
+                              <th className="p-3 text-center border-r border-blue-600 w-16 text-sm sm:text-base">
                                 No
                               </th>
-                              <th className="p-3 text-left border-r border-gray-600 dark:border-gray-600 w-40 text-sm sm:text-base">
+                              <th className="p-3 text-left border-r border-blue-600 w-40 text-sm sm:text-base">
                                 NIS
                               </th>
-                              <th className="p-3 text-left border-r border-gray-600 dark:border-gray-600 min-w-[180px] text-sm sm:text-base">
+                              <th className="p-3 text-left border-r border-blue-600 min-w-[180px] text-sm sm:text-base">
                                 Nama Siswa
                               </th>
-                              <th className="p-3 text-center border-r border-gray-600 dark:border-gray-600 w-32 text-sm sm:text-base">
+                              <th className="p-3 text-center border-r border-blue-600 w-32 text-sm sm:text-base">
                                 Sakit
                               </th>
-                              <th className="p-3 text-center border-r border-gray-600 dark:border-gray-600 w-32 text-sm sm:text-base">
+                              <th className="p-3 text-center border-r border-blue-600 w-32 text-sm sm:text-base">
                                 Ijin
                               </th>
-                              <th className="p-3 text-center border-r border-gray-600 dark:border-gray-600 w-40 text-sm sm:text-base">
+                              <th className="p-3 text-center border-r border-blue-600 w-40 text-sm sm:text-base">
                                 Tanpa Keterangan
                               </th>
                               <th className="p-3 text-center w-40 text-sm sm:text-base">
@@ -557,25 +557,28 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                   key={siswa.id}
                                   className={`border-b ${
                                     darkMode
-                                      ? "border-gray-700 hover:bg-gray-700/50"
-                                      : "border-gray-200 hover:bg-blue-50/50"
+                                      ? "border-gray-700 hover:bg-gray-800/50"
+                                      : "border-blue-100 hover:bg-blue-50/50"
                                   }`}>
-                                  <td className="p-3 text-center border-r border-gray-600 dark:border-gray-600 text-sm sm:text-base">
+                                  <td
+                                    className={`p-3 text-center border-r border-blue-100 dark:border-gray-700 text-sm sm:text-base ${
+                                      darkMode ? "text-white" : "text-gray-900"
+                                    }`}>
                                     {idx + 1}
                                   </td>
                                   <td
-                                    className={`p-3 border-r border-gray-600 dark:border-gray-600 font-medium text-sm sm:text-base ${
+                                    className={`p-3 border-r border-blue-100 dark:border-gray-700 font-medium text-sm sm:text-base ${
                                       darkMode ? "text-white" : "text-gray-900"
                                     }`}>
                                     {siswa.nis}
                                   </td>
                                   <td
-                                    className={`p-3 border-r border-gray-600 dark:border-gray-600 font-medium text-sm sm:text-base ${
+                                    className={`p-3 border-r border-blue-100 dark:border-gray-700 font-medium text-sm sm:text-base ${
                                       darkMode ? "text-white" : "text-gray-900"
                                     }`}>
                                     {siswa.full_name}
                                   </td>
-                                  <td className="p-3 border-r border-gray-600 dark:border-gray-600">
+                                  <td className="p-3 border-r border-blue-100 dark:border-gray-700">
                                     <input
                                       type="number"
                                       min="0"
@@ -596,7 +599,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                       aria-label={`Sakit untuk ${siswa.full_name}`}
                                     />
                                   </td>
-                                  <td className="p-3 border-r border-gray-600 dark:border-gray-600">
+                                  <td className="p-3 border-r border-blue-100 dark:border-gray-700">
                                     <input
                                       type="number"
                                       min="0"
@@ -617,7 +620,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                       aria-label={`Ijin untuk ${siswa.full_name}`}
                                     />
                                   </td>
-                                  <td className="p-3 border-r border-gray-600 dark:border-gray-600">
+                                  <td className="p-3 border-r border-blue-100 dark:border-gray-700">
                                     <input
                                       type="number"
                                       min="0"
