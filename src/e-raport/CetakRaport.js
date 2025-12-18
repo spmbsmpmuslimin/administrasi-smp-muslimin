@@ -55,104 +55,35 @@ function CetakRaport() {
     try {
       setInitialLoading(true);
       setErrorMessage("");
-
-      console.log("🔄 LOAD USER - Cek semua sumber data...");
-
-      // 1. Cek localStorage (sistem lama)
-      const sessionData = localStorage.getItem("userSession");
-      console.log(
-        "📦 localStorage userSession:",
-        sessionData ? "ADA" : "KOSONG"
-      );
-
-      // 2. Cek sessionStorage (mungkin beda storage)
-      const sessionStorageData = sessionStorage.getItem("supabase.auth.token");
-      console.log(
-        "📦 sessionStorage auth:",
-        sessionStorageData ? "ADA" : "KOSONG"
-      );
-
-      // 3. Ambil dari URL atau window object (debug)
-      const urlParams = new URLSearchParams(window.location.search);
-      const debugUser = urlParams.get("debug_user");
+      console.log("🔄 LOAD USER - Reading from localStorage");
 
       let userData = null;
       let homeroomClassId = null;
 
-      // STRATEGY 1: Debug langsung (untuk testing)
-      if (debugUser) {
-        console.log("🐛 DEBUG MODE - User dari URL:", debugUser);
-        // Query user berdasarkan username dari URL
-        const { data: debugUserData, error: debugError } = await supabase
-          .from("users")
-          .select("*")
-          .eq("username", debugUser)
-          .eq("is_active", true)
-          .single();
+      // Baca dari localStorage
+      const sessionData = localStorage.getItem("userSession");
 
-        if (!debugError && debugUserData) {
-          userData = debugUserData;
-          homeroomClassId = debugUserData.homeroom_class_id;
-          console.log(
-            "✅ Debug user found:",
-            userData.username,
-            "Class:",
-            homeroomClassId
-          );
-        }
-      }
-      // STRATEGY 2: Parse localStorage
-      else if (sessionData) {
-        try {
-          userData = JSON.parse(sessionData);
-          homeroomClassId = userData.homeroom_class_id;
-          console.log(
-            "✅ User dari localStorage:",
-            userData.username,
-            "Role:",
-            userData.role,
-            "Class:",
-            homeroomClassId
-          );
-        } catch (e) {
-          console.error("❌ Parse localStorage error:", e);
-        }
-      }
-      // STRATEGY 3: Query semua user wali kelas (fallback)
-      if (!userData || !homeroomClassId) {
-        console.log("🔄 Fallback: Query user dengan homeroom_class_id...");
-
-        // Cari user yang punya homeroom_class_id (wali kelas)
-        const { data: waliKelasList, error: waliError } = await supabase
-          .from("users")
-          .select("id, username, full_name, homeroom_class_id")
-          .not("homeroom_class_id", "is", null)
-          .eq("is_active", true)
-          .limit(1);
-
-        if (!waliError && waliKelasList && waliKelasList.length > 0) {
-          userData = waliKelasList[0];
-          homeroomClassId = userData.homeroom_class_id;
-          console.log(
-            "✅ Fallback user found:",
-            userData.username,
-            "Class:",
-            homeroomClassId
-          );
-
-          // Simpan ke localStorage untuk next time
-          localStorage.setItem("userSession", JSON.stringify(userData));
-        }
+      if (!sessionData) {
+        throw new Error("Session tidak ditemukan. Silakan login ulang.");
       }
 
-      // VALIDASI: Pastikan ada user dan class_id
-      if (!userData || !homeroomClassId) {
+      userData = JSON.parse(sessionData);
+      homeroomClassId = userData.homeroom_class_id;
+
+      console.log(
+        "✅ User loaded:",
+        userData.username,
+        "Kelas:",
+        homeroomClassId
+      );
+
+      if (!homeroomClassId) {
         throw new Error(
           "Tidak ditemukan data wali kelas. Pastikan Anda login sebagai wali kelas."
         );
       }
 
-      // VALIDASI KELAS
+      // Validasi kelas
       const { data: classData, error: classError } = await supabase
         .from("classes")
         .select("id, grade, is_active")
@@ -166,31 +97,17 @@ function CetakRaport() {
         );
       }
 
-      console.log(
-        "✅ Kelas valid:",
-        classData.grade,
-        "Active:",
-        classData.is_active
-      );
+      console.log("✅ Kelas valid:", classData.grade);
 
-      // SET STATE
+      // Set state
       setIsWaliKelas(true);
       setWaliKelasName(userData.full_name || userData.username || "Wali Kelas");
       setClassId(homeroomClassId);
-
-      console.log(
-        "✅ SET STATE - WaliKelas:",
-        true,
-        "Name:",
-        waliKelasName,
-        "ClassId:",
-        classId
-      );
-
       setInitialLoading(false);
+
       console.log("✅ LOAD USER COMPLETE");
     } catch (error) {
-      console.error("❌ Error in loadUserAndAssignments:", error);
+      console.error("❌ Error:", error.message);
       setIsWaliKelas(false);
       setErrorMessage(error.message || "Terjadi kesalahan saat memuat data.");
       setInitialLoading(false);

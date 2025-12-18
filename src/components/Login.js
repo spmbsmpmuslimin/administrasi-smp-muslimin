@@ -142,17 +142,15 @@ export const Login = ({ onLogin, onShowToast }) => {
         created_at: data.created_at,
       };
 
-      // 🔥 Call onLogin WITHOUT toast
-      onLogin(userData, rememberMe);
+      // 🔥 TAMBAHAN: Simpan ke localStorage (konsisten semua browser!)
+      localStorage.setItem("userSession", JSON.stringify(userData));
+      console.log("✅ Session saved to localStorage:", userData.username);
 
-      // 🔥 HAPUS TOAST - biar ProtectedRoute/Dashboard yang handle
-      // if (onShowToast) {
-      //   onShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
-      // }
+      // Call onLogin
+      onLogin(userData, rememberMe);
     } catch (error) {
       setErrors({ general: error.message });
 
-      // Toast error tetap ada
       if (onShowToast) {
         onShowToast(error.message, "error");
       }
