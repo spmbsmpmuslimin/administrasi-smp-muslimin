@@ -325,7 +325,7 @@ function CetakRaport() {
       if (nilaiError) throw nilaiError;
 
       console.log(
-        "🔍 Mata pelajaran ditemukan:",
+        "📚 Mata pelajaran ditemukan:",
         nilaiData?.map((n) => n.mata_pelajaran)
       );
 
@@ -344,9 +344,9 @@ function CetakRaport() {
           .from("student_ekstrakurikuler")
           .select(
             `
-            *,
-            ekstrakurikuler:ekstrakurikuler_id (nama_kegiatan)
-          `
+          *,
+          ekstrakurikuler:ekstrakurikuler_id (nama_kegiatan)
+        `
           )
           .eq("student_id", siswa.id)
           .eq("tahun_ajaran_id", academicYear?.id)
@@ -386,17 +386,22 @@ function CetakRaport() {
         .eq("semester", semester)
         .single();
 
+      // 🔥 AMBIL USER YANG LOGIN (BUKAN QUERY BY HOMEROOM!)
+      const sessionData = localStorage.getItem("userSession");
+      const currentUser = sessionData ? JSON.parse(sessionData) : null;
+
       const { data: waliKelas } = await supabase
         .from("users")
         .select("full_name, nip")
-        .eq("homeroom_class_id", classId)
-        .eq("role", "teacher") // ✅ BENAR
+        .eq("id", currentUser?.id) // 🔥 User yang login!
         .single();
 
-      // Ambil tanggal dari raport_metadata
+      // 🔥 AMBIL METADATA LENGKAP (TERMASUK KEPALA SEKOLAH)
       const { data: metadataData } = await supabase
         .from("raport_metadata")
-        .select("tanggal_raport, tempat")
+        .select(
+          "tanggal_raport, tempat, nama_kepala_sekolah, nip_kepala_sekolah"
+        )
         .eq("tahun_ajaran_id", academicYear?.id)
         .eq("semester", semester)
         .single();
@@ -409,6 +414,12 @@ function CetakRaport() {
             year: "numeric",
           })
         : "20 Desember 2024";
+
+      // 🔥 DATA KEPALA SEKOLAH DARI METADATA
+      const namaKepalaSekolah =
+        metadataData?.nama_kepala_sekolah || "YAYAN HAEDAR, S.Pd";
+      const nipKepalaSekolah =
+        metadataData?.nip_kepala_sekolah || "196704041988031005";
 
       if (!isFirstStudent) doc.addPage();
 
@@ -657,10 +668,16 @@ function CetakRaport() {
         align: "center",
       });
 
+      // 🔥 NAMA WALI KELAS DINAMIS (YANG LOGIN)
       doc.setFont("helvetica", "bold");
-      doc.text(waliKelas?.full_name || "LITA PURNAMA, S.Pd", ttdCol2, yPos, {
-        align: "center",
-      });
+      doc.text(
+        waliKelas?.full_name || currentUser?.full_name || "Wali Kelas",
+        ttdCol2,
+        yPos,
+        {
+          align: "center",
+        }
+      );
       doc.setFont("helvetica", "normal");
       doc.text(
         waliKelas?.nip ? `NIP. ${waliKelas.nip}` : "NIP.",
@@ -676,20 +693,13 @@ function CetakRaport() {
       doc.text("Kepala Sekolah", 105, yPos, { align: "center" });
       yPos += 20;
 
+      // 🔥 KEPALA SEKOLAH DARI METADATA
       doc.setFont("helvetica", "bold");
-      doc.text(
-        schoolSettings.principal_name || "YAYAN HAEDAR,S.Pd",
-        105,
-        yPos,
-        { align: "center" }
-      );
+      doc.text(namaKepalaSekolah, 105, yPos, { align: "center" });
       doc.setFont("helvetica", "normal");
-      doc.text(
-        `NIP. ${schoolSettings.principal_nip || "196704041988031005"}`,
-        105,
-        yPos + 4,
-        { align: "center" }
-      );
+      doc.text(`NIP. ${nipKepalaSekolah}`, 105, yPos + 4, { align: "center" });
+
+      yPos += 8;
 
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
