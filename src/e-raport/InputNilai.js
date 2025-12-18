@@ -300,6 +300,31 @@ function InputNilai({ user, onShowToast, darkMode }) {
     setSiswaList(updatedSiswaList);
   };
 
+  const generateDeskripsi = (tpTercapai, tpPerluPeningkatan) => {
+    let deskripsi = "";
+
+    const tpTercapaiText = tpList
+      .filter((tp) => tpTercapai.includes(tp.id))
+      .map((tp) => tp.deskripsi_tp)
+      .join(", ");
+
+    const tpPerluPeningkatanText = tpList
+      .filter((tp) => tpPerluPeningkatan.includes(tp.id))
+      .map((tp) => tp.deskripsi_tp)
+      .join(", ");
+
+    if (tpTercapaiText) {
+      deskripsi += `Siswa sudah mampu ${tpTercapaiText.toLowerCase()}`;
+    }
+
+    if (tpPerluPeningkatanText) {
+      if (deskripsi) deskripsi += ". ";
+      deskripsi += `Namun masih perlu peningkatan dalam ${tpPerluPeningkatanText.toLowerCase()}`;
+    }
+
+    return deskripsi;
+  };
+
   const handleSave = async () => {
     if (!kelas || !selectedMapel || !semester) {
       if (onShowToast)
@@ -334,12 +359,35 @@ function InputNilai({ user, onShowToast, darkMode }) {
         .eq("mata_pelajaran", selectedMapel)
         .eq("tahun_ajaran_id", academicYear.id)
         .single();
-
       const kkm = kkmData?.kkm || 75;
+
+      let saved = 0;
+      let updated = 0;
+      let inserted = 0;
+      let skipped = 0;
 
       for (let i = 0; i < siswaList.length; i++) {
         const siswa = siswaList[i];
+
+        // FILTER: Skip siswa yang belum ada data
+        const hasNilai = siswa.nilai_akhir && siswa.nilai_akhir > 0;
+        const hasTP =
+          siswa.tp_tercapai?.length > 0 ||
+          siswa.tp_perlu_peningkatan?.length > 0;
+
+        if (!hasNilai && !hasTP) {
+          skipped++;
+          setSaveProgress({ current: i + 1, total: siswaList.length });
+          continue;
+        }
+
         let raporId = siswa.rapor_id;
+
+        const deskripsiGenerated = generateDeskripsi(
+          siswa.tp_tercapai || [],
+          siswa.tp_perlu_peningkatan || []
+        );
+
         const nilaiData = {
           student_id: siswa.id,
           class_id: selectedClass.id,
@@ -355,10 +403,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
           rata_nh: null,
           nilai_akhir: siswa.nilai_akhir || 0,
           predikat: "",
-
-          // ⬇⬇⬇ TAMBAHIN INI DI SINI ⬇⬇⬇
-          deskripsi_capaian: siswa.deskripsi_capaian || "",
-
+          deskripsi_capaian: deskripsiGenerated,
           kkm: kkm,
           status: "draft",
           is_finalized: false,
@@ -380,6 +425,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
               `Gagal update siswa ${siswa.full_name}: ${updateError.message}`
             );
           }
+          updated++;
+          saved++;
         } else {
           const { data: newRapor, error: insertError } = await supabase
             .from("nilai_eraport")
@@ -396,6 +443,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
           }
 
           raporId = newRapor?.id;
+          inserted++;
+          saved++;
         }
 
         if (raporId) {
@@ -425,7 +474,9 @@ function InputNilai({ user, onShowToast, darkMode }) {
         setSaveProgress({ current: i + 1, total: siswaList.length });
       }
 
-      if (onShowToast) onShowToast("Data berhasil disimpan!", "success");
+      // Tampilkan summary
+      const message = `Berhasil menyimpan ${saved} siswa (${updated} diperbarui, ${inserted} baru ditambahkan, ${skipped} dilewati karena belum ada data)`;
+      if (onShowToast) onShowToast(message, "success");
       await loadData();
     } catch (error) {
       console.error("Error saving data:", error);

@@ -63,6 +63,12 @@ const customStyles = `
   .animate-progress {
     animation: progress 2s ease-in-out infinite;
   }
+  
+  /* ✅ FIX DROPDOWN Z-INDEX - TAMBAH INI */
+  select {
+    z-index: 1 !important;
+    position: relative !important;
+  }
 `;
 
 // 🎨 HELPER COMPONENT

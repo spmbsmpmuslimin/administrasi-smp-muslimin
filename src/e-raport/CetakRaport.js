@@ -8,12 +8,12 @@ import {
   ChevronUp,
   Save,
 } from "lucide-react";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
 function CetakRaport() {
-  const [kelas, setKelas] = useState("");
-  const [periode, setPeriode] = useState("");
+  const [classId, setClassId] = useState("");
+  const [semester, setSemester] = useState("");
   const [siswaList, setSiswaList] = useState([]);
   const [academicYear, setAcademicYear] = useState(null);
   const [schoolSettings, setSchoolSettings] = useState({});
@@ -33,29 +33,167 @@ function CetakRaport() {
   const [savingDetail, setSavingDetail] = useState(false);
   const [expandedMapel, setExpandedMapel] = useState({});
 
+  // STATE VALIDASI WALI KELAS
+  const [isWaliKelas, setIsWaliKelas] = useState(false);
+  const [waliKelasName, setWaliKelasName] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [initialLoading, setInitialLoading] = useState(true);
+
   useEffect(() => {
-    loadUserData();
+    loadUserAndAssignments();
     loadActiveAcademicYear();
     loadSchoolSettings();
   }, []);
 
   useEffect(() => {
-    if (kelas && academicYear && periode) {
+    if (classId && academicYear && semester) {
       loadSiswa();
     }
-  }, [kelas, academicYear, periode]);
+  }, [classId, academicYear, semester]);
 
-  const loadUserData = () => {
-    const sessionData = localStorage.getItem("userSession");
-    if (sessionData) {
-      try {
-        const userData = JSON.parse(sessionData);
-        if (userData.kelas) {
-          setKelas(userData.kelas);
+  const loadUserAndAssignments = async () => {
+    try {
+      setInitialLoading(true);
+      setErrorMessage("");
+
+      console.log("🔄 LOAD USER - Cek semua sumber data...");
+
+      // 1. Cek localStorage (sistem lama)
+      const sessionData = localStorage.getItem("userSession");
+      console.log(
+        "📦 localStorage userSession:",
+        sessionData ? "ADA" : "KOSONG"
+      );
+
+      // 2. Cek sessionStorage (mungkin beda storage)
+      const sessionStorageData = sessionStorage.getItem("supabase.auth.token");
+      console.log(
+        "📦 sessionStorage auth:",
+        sessionStorageData ? "ADA" : "KOSONG"
+      );
+
+      // 3. Ambil dari URL atau window object (debug)
+      const urlParams = new URLSearchParams(window.location.search);
+      const debugUser = urlParams.get("debug_user");
+
+      let userData = null;
+      let homeroomClassId = null;
+
+      // STRATEGY 1: Debug langsung (untuk testing)
+      if (debugUser) {
+        console.log("🐛 DEBUG MODE - User dari URL:", debugUser);
+        // Query user berdasarkan username dari URL
+        const { data: debugUserData, error: debugError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("username", debugUser)
+          .eq("is_active", true)
+          .single();
+
+        if (!debugError && debugUserData) {
+          userData = debugUserData;
+          homeroomClassId = debugUserData.homeroom_class_id;
+          console.log(
+            "✅ Debug user found:",
+            userData.username,
+            "Class:",
+            homeroomClassId
+          );
         }
-      } catch (error) {
-        console.error("Error parsing session:", error);
       }
+      // STRATEGY 2: Parse localStorage
+      else if (sessionData) {
+        try {
+          userData = JSON.parse(sessionData);
+          homeroomClassId = userData.homeroom_class_id;
+          console.log(
+            "✅ User dari localStorage:",
+            userData.username,
+            "Role:",
+            userData.role,
+            "Class:",
+            homeroomClassId
+          );
+        } catch (e) {
+          console.error("❌ Parse localStorage error:", e);
+        }
+      }
+      // STRATEGY 3: Query semua user wali kelas (fallback)
+      if (!userData || !homeroomClassId) {
+        console.log("🔄 Fallback: Query user dengan homeroom_class_id...");
+
+        // Cari user yang punya homeroom_class_id (wali kelas)
+        const { data: waliKelasList, error: waliError } = await supabase
+          .from("users")
+          .select("id, username, full_name, homeroom_class_id")
+          .not("homeroom_class_id", "is", null)
+          .eq("is_active", true)
+          .limit(1);
+
+        if (!waliError && waliKelasList && waliKelasList.length > 0) {
+          userData = waliKelasList[0];
+          homeroomClassId = userData.homeroom_class_id;
+          console.log(
+            "✅ Fallback user found:",
+            userData.username,
+            "Class:",
+            homeroomClassId
+          );
+
+          // Simpan ke localStorage untuk next time
+          localStorage.setItem("userSession", JSON.stringify(userData));
+        }
+      }
+
+      // VALIDASI: Pastikan ada user dan class_id
+      if (!userData || !homeroomClassId) {
+        throw new Error(
+          "Tidak ditemukan data wali kelas. Pastikan Anda login sebagai wali kelas."
+        );
+      }
+
+      // VALIDASI KELAS
+      const { data: classData, error: classError } = await supabase
+        .from("classes")
+        .select("id, grade, is_active")
+        .eq("id", homeroomClassId)
+        .eq("is_active", true)
+        .single();
+
+      if (classError || !classData) {
+        throw new Error(
+          `Kelas ${homeroomClassId} tidak ditemukan atau tidak aktif.`
+        );
+      }
+
+      console.log(
+        "✅ Kelas valid:",
+        classData.grade,
+        "Active:",
+        classData.is_active
+      );
+
+      // SET STATE
+      setIsWaliKelas(true);
+      setWaliKelasName(userData.full_name || userData.username || "Wali Kelas");
+      setClassId(homeroomClassId);
+
+      console.log(
+        "✅ SET STATE - WaliKelas:",
+        true,
+        "Name:",
+        waliKelasName,
+        "ClassId:",
+        classId
+      );
+
+      setInitialLoading(false);
+      console.log("✅ LOAD USER COMPLETE");
+    } catch (error) {
+      console.error("❌ Error in loadUserAndAssignments:", error);
+      setIsWaliKelas(false);
+      setErrorMessage(error.message || "Terjadi kesalahan saat memuat data.");
+      setInitialLoading(false);
     }
   };
 
@@ -78,27 +216,28 @@ function CetakRaport() {
   };
 
   const loadSiswa = async () => {
+    if (!isWaliKelas) return;
+
     setLoading(true);
     const { data } = await supabase
       .from("students")
       .select("*")
-      .eq("kelas", kelas)
+      .eq("class_id", classId)
       .eq("is_active", true)
-      .order("nama_siswa");
+      .order("full_name");
     setSiswaList(data || []);
     setLoading(false);
   };
 
   const getFase = (kelasNum) => {
-    if (kelasNum <= 2) return "A";
-    if (kelasNum <= 4) return "B";
-    return "C";
+    if (kelasNum <= 2) return "A"; // Kelas 1-2 SD
+    if (kelasNum <= 4) return "B"; // Kelas 3-4 SD
+    if (kelasNum <= 6) return "C"; // Kelas 5-6 SD
+    return "D"; // Kelas 7-9 SMP
   };
 
-  const getPeriodeText = () => {
-    return periode === "mid_ganjil"
-      ? "Mid Semester Ganjil"
-      : "Mid Semester Genap";
+  const getSemesterText = () => {
+    return semester === "1" ? "Semester Ganjil" : "Semester Genap";
   };
 
   const generateCapaianKompetensi = (nilaiData) => {
@@ -107,10 +246,10 @@ function CetakRaport() {
 
     nilaiData.forEach((item) => {
       item.nilai_eraport_detail?.forEach((detail) => {
-        if (detail.status === "sudah_menguasai" && detail.tujuan_pembelajaran) {
+        if (detail.status_tercapai === true && detail.tujuan_pembelajaran) {
           tercapai.push(detail.tujuan_pembelajaran.deskripsi_tp);
         } else if (
-          detail.status === "perlu_perbaikan" &&
+          detail.status_tercapai === false &&
           detail.tujuan_pembelajaran
         ) {
           peningkatan.push(detail.tujuan_pembelajaran.deskripsi_tp);
@@ -120,44 +259,21 @@ function CetakRaport() {
 
     let text = "";
     if (tercapai.length > 0) {
-      text += `Mencapai kompetensi dengan baik dalam hal ${tercapai.join(
+      text += `Mencapai Kompetensi dengan sangat baik dalam hal ${tercapai.join(
         ", "
       )}.`;
     }
     if (peningkatan.length > 0) {
-      if (text) text += " ";
+      if (text) text += "\n";
       text += `Perlu peningkatan dalam hal ${peningkatan.join(", ")}.`;
     }
     return text || "-";
   };
 
-  // Taruh setelah fungsi generateCapaianKompetensi
-  const isMapelWajib = (namaMapel) => {
-    const mapel = namaMapel.toLowerCase().trim();
-
-    const mapelWajibList = [
-      "paibp",
-      "pendidikan pancasila",
-      "bahasa indonesia",
-      "ipas",
-      "matematika",
-      "seni budaya",
-      "pjok",
-    ];
-
-    return mapelWajibList.some((m) => mapel.includes(m));
-  };
-
-  const isMapelPilihan = (namaMapel) => {
-    const mapel = namaMapel.toLowerCase().trim();
-
-    const mapelPilihanList = ["bahasa inggris", "bahasa sunda"];
-
-    return mapelPilihanList.some((m) => mapel.includes(m));
-  };
-
   // MODAL FUNCTIONS
   const openDetailModal = async (siswa) => {
+    if (!isWaliKelas) return;
+
     setSelectedSiswa(siswa);
     setShowDetailModal(true);
     setLoadingDetail(true);
@@ -168,31 +284,25 @@ function CetakRaport() {
         .from("nilai_eraport")
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", siswa.id)
-        .eq("semester", academicYear?.semester)
+        .eq("class_id", classId)
         .eq("tahun_ajaran_id", academicYear?.id)
-        .eq("periode", periode)
+        .eq("semester", semester)
+        .eq("is_finalized", true)
         .order("mata_pelajaran");
 
-      // Query TP dengan class_id dari siswa (bisa UUID atau string kelas)
-      let tpQuery = supabase
+      const { data: tpData, error: tpError } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
-        .eq("tahun_ajaran", academicYear?.year)
-        .eq("periode", periode);
-
-      // Coba dulu pakai tingkat (kelas angka)
-      if (siswa.kelas) {
-        tpQuery = tpQuery.eq("tingkat", siswa.kelas);
-      }
-
-      const { data: tpData, error: tpError } = await tpQuery
+        .eq("class_id", classId)
+        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("semester", semester)
         .order("mata_pelajaran")
         .order("urutan");
 
       console.log("DEBUG:", {
-        siswa_kelas: siswa.kelas,
-        tahun_ajaran: academicYear?.year,
-        periode: periode,
+        class_id: classId,
+        tahun_ajaran: academicYear?.id,
+        semester: semester,
         tp_found: tpData?.length,
         tp_error: tpError,
       });
@@ -205,12 +315,12 @@ function CetakRaport() {
             ) || [];
           const detailsMap = {};
           nilai.nilai_eraport_detail?.forEach((detail) => {
-            detailsMap[detail.tujuan_pembelajaran_id] = detail.status;
+            detailsMap[detail.tujuan_pembelajaran_id] = detail.status_tercapai;
           });
 
           const tpWithStatus = tpForMapel.map((tp) => ({
             ...tp,
-            status: detailsMap[tp.id] || "belum_dinilai",
+            status_tercapai: detailsMap[tp.id] ?? null,
             detail_id: nilai.nilai_eraport_detail?.find(
               (d) => d.tujuan_pembelajaran_id === tp.id
             )?.id,
@@ -229,7 +339,8 @@ function CetakRaport() {
 
   const handleStatusChange = (nilaiIndex, tpIndex, newStatus) => {
     const updated = [...nilaiDetailList];
-    updated[nilaiIndex].tujuan_pembelajaran_list[tpIndex].status = newStatus;
+    updated[nilaiIndex].tujuan_pembelajaran_list[tpIndex].status_tercapai =
+      newStatus;
     setNilaiDetailList(updated);
   };
 
@@ -238,6 +349,8 @@ function CetakRaport() {
   };
 
   const handleSimpanDetail = async () => {
+    if (!isWaliKelas) return;
+
     setSavingDetail(true);
     let successCount = 0;
     let errorCount = 0;
@@ -245,12 +358,12 @@ function CetakRaport() {
     try {
       for (const nilai of nilaiDetailList) {
         for (const tp of nilai.tujuan_pembelajaran_list) {
-          if (tp.status === "belum_dinilai") continue;
+          if (tp.status_tercapai === null) continue;
 
           if (tp.detail_id) {
             const { error } = await supabase
               .from("nilai_eraport_detail")
-              .update({ status: tp.status })
+              .update({ status_tercapai: tp.status_tercapai })
               .eq("id", tp.detail_id);
             if (error) errorCount++;
             else successCount++;
@@ -260,7 +373,7 @@ function CetakRaport() {
               .insert({
                 nilai_eraport_id: nilai.id,
                 tujuan_pembelajaran_id: tp.id,
-                status: tp.status,
+                status_tercapai: tp.status_tercapai,
               });
             if (error) errorCount++;
             else successCount++;
@@ -286,9 +399,10 @@ function CetakRaport() {
         .from("nilai_eraport")
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", siswa.id)
-        .eq("semester", academicYear?.semester)
+        .eq("class_id", classId)
         .eq("tahun_ajaran_id", academicYear?.id)
-        .eq("periode", periode)
+        .eq("semester", semester)
+        .eq("is_finalized", true)
         .order("mata_pelajaran");
 
       if (nilaiError) throw nilaiError;
@@ -298,19 +412,40 @@ function CetakRaport() {
         nilaiData?.map((n) => n.mata_pelajaran)
       );
 
-      const mapelWajib =
-        nilaiData?.filter((n) => isMapelWajib(n.mata_pelajaran)) || [];
-      const mapelPilihan =
-        nilaiData?.filter((n) => isMapelPilihan(n.mata_pelajaran)) || [];
+      const { data: kelasData } = await supabase
+        .from("classes")
+        .select("grade")
+        .eq("id", classId)
+        .single();
 
-      console.log(
-        "✅ Mapel Wajib:",
-        mapelWajib.map((m) => m.mata_pelajaran)
-      );
-      console.log(
-        "📚 Mapel Pilihan:",
-        mapelPilihan.map((m) => m.mata_pelajaran)
-      );
+      const kelasGrade = kelasData?.grade || "";
+
+      // Query data ekstrakurikuler
+      let ekskulBody = [["1", "-", "-", "-"]];
+      try {
+        const { data: ekskulData } = await supabase
+          .from("student_ekstrakurikuler")
+          .select(
+            `
+            *,
+            ekstrakurikuler:ekstrakurikuler_id (nama_kegiatan)
+          `
+          )
+          .eq("student_id", siswa.id)
+          .eq("tahun_ajaran_id", academicYear?.id)
+          .eq("semester", semester);
+
+        if (ekskulData && ekskulData.length > 0) {
+          ekskulBody = ekskulData.map((item, idx) => [
+            idx + 1,
+            item.ekstrakurikuler?.nama_kegiatan || "-",
+            item.predikat || "-",
+            item.keterangan || "-",
+          ]);
+        }
+      } catch (error) {
+        console.log("Ekstrakurikuler data not available:", error.message);
+      }
 
       const { data: kehadiranData } = await supabase
         .from("attendance")
@@ -329,16 +464,34 @@ function CetakRaport() {
         .from("catatan_eraport")
         .select("*")
         .eq("student_id", siswa.id)
-        .eq("academic_year_id", academicYear?.id)
-        .eq("semester", academicYear?.semester)
+        .eq("class_id", classId)
+        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("semester", semester)
         .single();
 
       const { data: waliKelas } = await supabase
         .from("users")
-        .select("full_name")
-        .eq("kelas", kelas)
-        .eq("role", "guru_kelas")
+        .select("full_name, nip")
+        .eq("homeroom_class_id", classId)
+        .eq("role", "teacher") // ✅ BENAR
         .single();
+
+      // Ambil tanggal dari raport_metadata
+      const { data: metadataData } = await supabase
+        .from("raport_metadata")
+        .select("tanggal_raport, tempat")
+        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("semester", semester)
+        .single();
+
+      const tempat = metadataData?.tempat || "Bandung Barat";
+      const tanggalRaport = metadataData?.tanggal_raport
+        ? new Date(metadataData.tanggal_raport).toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })
+        : "20 Desember 2024";
 
       if (!isFirstStudent) doc.addPage();
 
@@ -352,25 +505,25 @@ function CetakRaport() {
 
         // Kolom KIRI
         doc.text("Nama Murid", 20, yPos);
-        doc.text(`: ${siswa.nama_siswa.toUpperCase()}`, 55, yPos);
+        doc.text(`: ${siswa.full_name.toUpperCase()}`, 55, yPos);
         doc.text("Kelas", 135, yPos);
-        doc.text(`: Kelas ${kelas}`, 165, yPos);
+        doc.text(`: Kelas ${kelasGrade}`, 165, yPos);
         yPos += 5;
 
-        doc.text("NIS/NISN", 20, yPos);
-        doc.text(`: ${siswa.nis || siswa.nisn} / ${siswa.nisn}`, 55, yPos);
+        doc.text("NIS", 20, yPos);
+        doc.text(`: ${siswa.nis || "-"}`, 55, yPos);
         doc.text("Fase", 135, yPos);
-        doc.text(`: ${getFase(parseInt(kelas))}`, 165, yPos);
+        doc.text(`: ${getFase(parseInt(kelasGrade))}`, 165, yPos);
         yPos += 5;
 
-        doc.text("Sekolah", 20, yPos);
+        doc.text("Nama Sekolah", 20, yPos);
         doc.text(
-          `: ${schoolSettings.school_name || "SD NEGERI 1 PASIRPOGOR"}`,
+          `: ${schoolSettings.school_name || "SMP MUSLIMIN CILILIN"}`,
           55,
           yPos
         );
         doc.text("Semester", 135, yPos);
-        doc.text(`: ${academicYear?.semester}`, 165, yPos);
+        doc.text(`: ${getSemesterText()}`, 165, yPos);
         yPos += 5;
 
         doc.text("Alamat", 20, yPos);
@@ -395,9 +548,10 @@ function CetakRaport() {
       // ========== RENDER HEADER HALAMAN 1 ==========
       renderHeader(1);
 
-      // ========== TABEL MATA PELAJARAN ==========
-      const tableDataWajib = mapelWajib.map((nilai, idx) => {
-        const capaian = generateCapaianKompetensi([nilai]);
+      // ========== TABEL MATA PELAJARAN (SEMUA MAPEL DI SATU TABEL) ==========
+      const tableData = (nilaiData || []).map((nilai, idx) => {
+        const capaian =
+          nilai.deskripsi_capaian || generateCapaianKompetensi([nilai]) || "-";
         return [
           idx + 1,
           nilai.mata_pelajaran,
@@ -405,55 +559,11 @@ function CetakRaport() {
           capaian,
         ];
       });
-
-      const tableDataPilihan = mapelPilihan.map((nilai, idx) => {
-        const capaian = generateCapaianKompetensi([nilai]);
-        return [
-          idx + 1,
-          nilai.mata_pelajaran,
-          nilai.nilai_akhir || "-",
-          capaian,
-        ];
-      });
-
-      const fullTableBody = [
-        [
-          {
-            content: "Mata Pelajaran Wajib",
-            colSpan: 4,
-            styles: {
-              fontStyle: "bold",
-              halign: "left",
-              fillColor: [255, 255, 255],
-              textColor: [0, 0, 0],
-            },
-          },
-        ],
-        ...tableDataWajib,
-      ];
-
-      if (mapelPilihan.length > 0) {
-        fullTableBody.push(
-          [
-            {
-              content: "Mata Pelajaran Pilihan",
-              colSpan: 4,
-              styles: {
-                fontStyle: "bold",
-                halign: "left",
-                fillColor: [255, 255, 255],
-                textColor: [0, 0, 0],
-              },
-            },
-          ],
-          ...tableDataPilihan
-        );
-      }
 
       doc.autoTable({
         startY: yPos,
         head: [["No", "Mata Pelajaran", "Nilai Akhir", "Capaian Kompetensi"]],
-        body: fullTableBody,
+        body: tableData,
         theme: "plain",
         styles: {
           fontSize: 8,
@@ -474,9 +584,9 @@ function CetakRaport() {
         },
         columnStyles: {
           0: { cellWidth: 10, halign: "center", valign: "middle" },
-          1: { cellWidth: 40, valign: "middle" },
+          1: { cellWidth: 45, valign: "middle" },
           2: { cellWidth: 20, halign: "center", valign: "middle" },
-          3: { cellWidth: 100, halign: "justify", valign: "middle" },
+          3: { cellWidth: 95, halign: "justify", valign: "middle" },
         },
         margin: { left: 20, right: 20 },
       });
@@ -484,58 +594,44 @@ function CetakRaport() {
       yPos = doc.lastAutoTable.finalY + 10;
 
       // ========== CEK APAKAH PERLU PAGE BREAK ==========
-      const remainingSpace = 270 - yPos; // 270 = batas aman sebelum footer (285 - 15)
-      const neededSpace = 130; // Perkiraan tinggi: Kokurikuler(35) + Ekstrakurikuler(25) + 2Kolom(48) + TTD(22)
-
-      console.log(
-        `📏 Space Check - Remaining: ${remainingSpace}, Needed: ${neededSpace}`
-      );
+      const remainingSpace = 270 - yPos;
+      const neededSpace = 130;
 
       if (remainingSpace < neededSpace) {
-        console.log("⚠️ Space tidak cukup, bikin halaman baru");
-
-        // FOOTER HALAMAN 1
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
         doc.text(
-          `Kelas ${kelas} | ${siswa.nama_siswa.toUpperCase()} | ${siswa.nisn}`,
+          `Kelas ${kelasGrade} | ${siswa.full_name.toUpperCase()} | ${
+            siswa.nisn
+          }`,
           20,
           285
         );
         doc.text(`Halaman : 1`, 180, 285);
 
-        // BIKIN HALAMAN BARU
         doc.addPage();
         yPos = 20;
         currentPage = 2;
-
-        // RENDER HEADER HALAMAN 2
         renderHeader(2);
-      } else {
-        console.log("✅ Space cukup, lanjut di halaman yang sama");
-        // Tidak ada footer halaman 1 karena masih satu halaman
       }
 
       // ========== KOKURIKULER ==========
-      // Header
       doc.rect(20, yPos, 170, 10);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.text("Kokurikuler", 105, yPos + 7, { align: "center" });
       yPos += 10;
-
-      // Content area (empty space below header)
       doc.rect(20, yPos, 170, 30);
       yPos += 35;
 
       // ========== TABEL EKSTRAKURIKULER ==========
       doc.autoTable({
         startY: yPos,
-        head: [["No", "Ekstrakurikuler", "Keterangan"]],
-        body: [["1", "", ""]],
+        head: [["No", "Kegiatan Ekstrakurikuler", "Predikat", "Keterangan"]],
+        body: ekskulBody,
         theme: "plain",
         styles: {
-          fontSize: 9,
+          fontSize: 8,
           cellPadding: 3,
           lineColor: [0, 0, 0],
           lineWidth: 0.1,
@@ -545,13 +641,12 @@ function CetakRaport() {
           textColor: [0, 0, 0],
           fontStyle: "bold",
           halign: "center",
-          lineColor: [0, 0, 0],
-          lineWidth: 0.1,
         },
         columnStyles: {
-          0: { cellWidth: 15, halign: "center", valign: "middle" },
-          1: { cellWidth: 50, halign: "left", valign: "middle" },
-          2: { cellWidth: 105, halign: "left", valign: "middle" },
+          0: { cellWidth: 15, halign: "center" },
+          1: { cellWidth: 50, halign: "left" },
+          2: { cellWidth: 25, halign: "center" },
+          3: { cellWidth: 80, halign: "left" },
         },
         margin: { left: 20, right: 20 },
       });
@@ -564,7 +659,6 @@ function CetakRaport() {
       const startBoxY = yPos;
 
       // BOX KIRI: KETIDAKHADIRAN
-      // Header Ketidakhadiran
       doc.rect(col1X, startBoxY, boxWidth, 10);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
@@ -572,7 +666,6 @@ function CetakRaport() {
         align: "center",
       });
 
-      // Tabel ketidakhadiran
       doc.autoTable({
         startY: startBoxY + 10,
         body: [
@@ -598,15 +691,11 @@ function CetakRaport() {
       const ketidakhadiranFinalY = doc.lastAutoTable.finalY;
 
       // BOX KANAN: CATATAN WALI KELAS
-      // Header Catatan Wali Kelas
       doc.rect(col2X, startBoxY, boxWidth, 10);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
       doc.text("Catatan Wali Kelas", col2X + boxWidth / 2, startBoxY + 7, {
         align: "center",
       });
 
-      // Content catatan (tinggi menyesuaikan dengan box ketidakhadiran)
       const catatanHeight = ketidakhadiranFinalY - (startBoxY + 10);
       doc.rect(col2X, startBoxY + 10, boxWidth, catatanHeight);
       doc.setFont("helvetica", "normal");
@@ -618,7 +707,6 @@ function CetakRaport() {
       yPos = ketidakhadiranFinalY + 8;
 
       // ========== TANGGAPAN ORANG TUA/WALI MURID ==========
-      // Header
       doc.rect(20, yPos, 170, 10);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
@@ -626,34 +714,28 @@ function CetakRaport() {
         align: "center",
       });
       yPos += 10;
-
-      // Content area (empty space below header)
       doc.rect(20, yPos, 170, 40);
       yPos += 45;
 
-      // ========== JARAK KOSONG 2 BARIS ==========
       yPos += 4;
 
       // ========== TANDA TANGAN ==========
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
 
-      // ========== LOKASI DAN TANGGAL (KANAN ATAS) ==========
-      const ttdCol1 = 50; // Orang Tua Murid (kiri)
-      const ttdCol2 = 155; // Wali Kelas (kanan)
+      const ttdCol1 = 50;
+      const ttdCol2 = 155;
 
-      doc.text("Sindangkerta, 22 Desember 2025", ttdCol2, yPos, {
+      doc.text(`${tempat}, ${tanggalRaport}`, ttdCol2, yPos, {
         align: "center",
       });
-      yPos += 6; // Jarak kecil antara tanggal dan Wali Kelas
+      yPos += 6;
 
-      // ========== 2 KOLOM: ORANG TUA (KIRI) & WALI KELAS (KANAN) ==========
       doc.text("Orang Tua Murid", ttdCol1, yPos, { align: "center" });
       doc.text("Wali Kelas", ttdCol2, yPos, { align: "center" });
 
-      yPos += 20; // Jarak untuk tanda tangan
+      yPos += 20;
 
-      // NAMA - Orang Tua (titik-titik) & Wali Kelas
       doc.text(".....................................", ttdCol1, yPos, {
         align: "center",
       });
@@ -672,9 +754,8 @@ function CetakRaport() {
         }
       );
 
-      yPos += 8; // Jarak sebelum Kepala Sekolah
+      yPos += 8;
 
-      // ========== KEPALA SEKOLAH (TENGAH BAWAH) ==========
       doc.text("Kepala Sekolah", 105, yPos, { align: "center" });
       yPos += 20;
 
@@ -693,11 +774,12 @@ function CetakRaport() {
         { align: "center" }
       );
 
-      // ========== FOOTER HALAMAN TERAKHIR ==========
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
       doc.text(
-        `Kelas ${kelas} | ${siswa.nama_siswa.toUpperCase()} | ${siswa.nisn}`,
+        `Kelas ${kelasGrade} | ${siswa.full_name.toUpperCase()} | ${
+          siswa.nisn
+        }`,
         20,
         285
       );
@@ -711,6 +793,8 @@ function CetakRaport() {
   };
 
   const handlePrint = async (siswa) => {
+    if (!isWaliKelas) return;
+
     setGenerating(true);
     setGenerateProgress({ current: 1, total: 1, action: "print" });
     try {
@@ -730,13 +814,17 @@ function CetakRaport() {
   };
 
   const handleDownloadPDF = async (siswa) => {
+    if (!isWaliKelas) return;
+
     setGenerating(true);
     setGenerateProgress({ current: 1, total: 1, action: "download" });
     try {
+      const jsPDF = (await import("jspdf")).jsPDF;
+      await import("jspdf-autotable");
       const doc = new jsPDF();
       await addStudentPages(doc, siswa, true);
       doc.save(
-        `RAPOR_${siswa.nama_siswa}_Kelas${kelas}_${getPeriodeText()}_${
+        `RAPOR_${siswa.full_name}_Kelas${classId}_${getSemesterText()}_${
           academicYear?.year
         }.pdf`
       );
@@ -748,12 +836,14 @@ function CetakRaport() {
   };
 
   const handleDownloadAllPDF = async () => {
+    if (!isWaliKelas) return;
+
     if (siswaList.length === 0) {
       alert("Tidak ada siswa!");
       return;
     }
-    if (!periode) {
-      alert("Pilih periode terlebih dahulu!");
+    if (!semester) {
+      alert("Pilih semester terlebih dahulu!");
       return;
     }
 
@@ -773,7 +863,7 @@ function CetakRaport() {
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
       doc.save(
-        `RAPOR_Kelas${kelas}_${getPeriodeText()}_${academicYear?.year}.pdf`
+        `RAPOR_Kelas${classId}_${getSemesterText()}_${academicYear?.year}.pdf`
       );
       alert("Berhasil! File PDF telah didownload.");
     } catch (error) {
@@ -783,9 +873,94 @@ function CetakRaport() {
     setGenerateProgress({ current: 0, total: 0, action: "" });
   };
 
+  // RENDER KONTEN BERDASARKAN STATUS WALI KELAS
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-gray-700">Memuat data wali kelas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            Akses Dibatasi
+          </h3>
+          <p className="text-gray-600 mb-6">{errorMessage}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isWaliKelas) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            Akses Terbatas
+          </h3>
+          <p className="text-gray-600">
+            Hanya wali kelas yang dapat mengakses fitur ini.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-6 lg:p-8">
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 md:p-6">
+        {/* INFO WALI KELAS */}
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-500 rounded-xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                Anda adalah wali kelas
+              </h3>
+              <p className="text-gray-700 dark:text-gray-300 mt-1">
+                {waliKelasName} - Kelas {classId}
+              </p>
+            </div>
+            <div className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium whitespace-nowrap">
+              Wali Kelas
+            </div>
+          </div>
+        </div>
+
         <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-4 md:mb-6 text-gray-900 dark:text-white">
           CETAK RAPORT
         </h2>
@@ -797,27 +972,27 @@ function CetakRaport() {
             </label>
             <input
               type="text"
-              value={kelas ? `Kelas ${kelas}` : ""}
+              value={classId ? `Kelas ${classId}` : ""}
               disabled
               className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-red-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium"
             />
           </div>
           <div>
             <label className="block font-semibold mb-2 text-gray-800 dark:text-gray-200">
-              Periode
+              Semester
             </label>
             <select
-              value={periode}
-              onChange={(e) => setPeriode(e.target.value)}
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
               className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400">
-              <option value="">-- Pilih Periode --</option>
-              <option value="mid_ganjil">Mid Semester Ganjil</option>
-              <option value="mid_genap">Mid Semester Genap</option>
+              <option value="">-- Pilih Semester --</option>
+              <option value="1">Semester Ganjil</option>
+              <option value="2">Semester Genap</option>
             </select>
           </div>
         </div>
 
-        {!loading && siswaList.length > 0 && periode && (
+        {!loading && siswaList.length > 0 && semester && (
           <div className="flex justify-end mb-4 md:mb-6">
             <button
               onClick={handleDownloadAllPDF}
@@ -832,7 +1007,7 @@ function CetakRaport() {
           </div>
         )}
 
-        {!loading && siswaList.length > 0 && periode && (
+        {!loading && siswaList.length > 0 && semester && (
           <div className="overflow-x-auto -mx-4 md:mx-0">
             <table className="w-full border-collapse text-xs md:text-sm min-w-[768px]">
               <thead>
@@ -841,7 +1016,7 @@ function CetakRaport() {
                     No
                   </th>
                   <th className="border border-red-600 dark:border-red-800 p-2 md:p-3 w-32 md:w-40 text-center">
-                    NISN
+                    NIS
                   </th>
                   <th className="border border-red-600 dark:border-red-800 p-2 md:p-3 text-center">
                     Nama Siswa
@@ -867,13 +1042,13 @@ function CetakRaport() {
                       {idx + 1}
                     </td>
                     <td className="border border-gray-300 dark:border-gray-700 p-2 md:p-3 text-center font-mono">
-                      {siswa.nisn}
+                      {siswa.nis}
                     </td>
                     <td className="border border-gray-300 dark:border-gray-700 p-2 md:p-3 font-medium">
-                      {siswa.nama_siswa}
+                      {siswa.full_name}
                     </td>
                     <td className="border border-gray-300 dark:border-gray-700 p-2 md:p-3 text-center">
-                      Kelas {kelas}
+                      Kelas {siswa.class_id}
                     </td>
                     <td className="border border-gray-300 dark:border-gray-700 p-2 text-center">
                       <div className="flex gap-2 justify-center flex-wrap">
@@ -923,21 +1098,22 @@ function CetakRaport() {
           </div>
         )}
 
-        {!loading && siswaList.length === 0 && kelas && periode && (
+        {!loading && siswaList.length === 0 && classId && semester && (
           <div className="text-center py-6 md:py-8 text-gray-500 dark:text-gray-400">
             <p className="text-sm md:text-base">Tidak ada siswa aktif.</p>
           </div>
         )}
 
-        {!loading && kelas && !periode && (
+        {!loading && classId && !semester && (
           <div className="text-center py-6 md:py-8 text-gray-500 dark:text-gray-400">
             <p className="text-sm md:text-base">
-              Silakan pilih periode terlebih dahulu.
+              Silakan pilih semester terlebih dahulu.
             </p>
           </div>
         )}
       </div>
 
+      {/* MODAL & OVERLAY (tetap sama) */}
       {generating && (
         <div className="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-900 rounded-xl md:rounded-2xl p-6 md:p-8 shadow-2xl max-w-md w-full mx-4">
@@ -1002,7 +1178,7 @@ function CetakRaport() {
                   Input Detail Capaian Kompetensi
                 </h3>
                 <p className="text-sm text-blue-100 mt-1">
-                  {selectedSiswa?.nama_siswa} - {selectedSiswa?.nisn}
+                  {selectedSiswa?.full_name} - {selectedSiswa?.nis}
                 </p>
               </div>
               <button
@@ -1071,11 +1247,11 @@ function CetakRaport() {
                                             handleStatusChange(
                                               nilaiIndex,
                                               tpIndex,
-                                              "sudah_menguasai"
+                                              true
                                             )
                                           }
                                           className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                                            tp.status === "sudah_menguasai"
+                                            tp.status_tercapai === true
                                               ? "bg-green-600 text-white shadow-md"
                                               : "bg-green-100 text-green-700 hover:bg-green-200"
                                           }`}>
@@ -1086,11 +1262,11 @@ function CetakRaport() {
                                             handleStatusChange(
                                               nilaiIndex,
                                               tpIndex,
-                                              "perlu_perbaikan"
+                                              false
                                             )
                                           }
                                           className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                                            tp.status === "perlu_perbaikan"
+                                            tp.status_tercapai === false
                                               ? "bg-yellow-600 text-white shadow-md"
                                               : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
                                           }`}>
@@ -1099,17 +1275,17 @@ function CetakRaport() {
                                       </div>
                                     </div>
                                     <div className="flex-shrink-0">
-                                      {tp.status === "sudah_menguasai" && (
+                                      {tp.status_tercapai === true && (
                                         <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
                                           ✓ Sudah
                                         </span>
                                       )}
-                                      {tp.status === "perlu_perbaikan" && (
+                                      {tp.status_tercapai === false && (
                                         <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
                                           ⚠ Perlu
                                         </span>
                                       )}
-                                      {tp.status === "belum_dinilai" && (
+                                      {tp.status_tercapai === null && (
                                         <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-xs font-medium">
                                           - Belum
                                         </span>

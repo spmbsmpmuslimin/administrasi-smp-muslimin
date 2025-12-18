@@ -156,57 +156,55 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
   // Fetch jadwal hari ini
   const fetchTodaySchedule = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !teacherId) return; // Tambahkan cek teacherId
 
     try {
       const today = new Date();
       const dayName = getDayName(today.getDay());
 
+      // Query sederhana dulu
       const { data: schedules, error: scheduleError } = await supabase
         .from("teacher_schedules")
-        .select(
-          `
-          *,
-          classes:class_id (
-            id,
-            grade
-          )
-        `
-        )
+        .select("*")
         .eq("teacher_id", userId)
         .eq("day", dayName)
         .order("start_time", { ascending: true });
 
       if (scheduleError) throw scheduleError;
 
-      // Get subject info from teacher_assignments
-      const scheduleIds = schedules?.map((s) => s.class_id) || [];
+      // Jika tidak ada jadwal, set empty array
+      if (!schedules || schedules.length === 0) {
+        setTodaySchedule([]);
+        return;
+      }
+
+      // Ambil class_ids dari schedules
+      const classIds = [...new Set(schedules.map((s) => s.class_id))];
+
+      // Cari subject dari teacher_assignments
       const { data: assignments } = await supabase
         .from("teacher_assignments")
         .select("class_id, subject")
         .eq("teacher_id", teacherId)
-        .in("class_id", scheduleIds);
+        .in("class_id", classIds);
 
-      // Merge schedule with subject data
-      const enrichedSchedules =
-        schedules?.map((schedule) => {
-          const assignment = assignments?.find(
-            (a) => a.class_id === schedule.class_id
-          );
-          return {
-            ...schedule,
-            subject: assignment?.subject || "N/A",
-          };
-        }) || [];
+      // Merge data
+      const enrichedSchedules = schedules.map((schedule) => {
+        const assignment = assignments?.find(
+          (a) => a.class_id === schedule.class_id
+        );
+        return {
+          ...schedule,
+          subject: assignment?.subject || "N/A",
+        };
+      });
 
-      // Gabungkan jadwal berurutan
-      const mergedSchedules = mergeConsecutiveSchedules(enrichedSchedules);
-
-      setTodaySchedule(mergedSchedules);
+      setTodaySchedule(mergeConsecutiveSchedules(enrichedSchedules));
     } catch (err) {
       console.error("❌ Error fetching today's schedule:", err);
+      setTodaySchedule([]); // Set empty array on error
     }
-  }, [userId, teacherId]);
+  }, [userId, teacherId]); // Tambahkan teacherId ke dependencies
 
   // Memoize fetchHomeroomDashboardData untuk prevent re-creation
   const fetchHomeroomDashboardData = useCallback(async () => {
@@ -283,22 +281,10 @@ const HomeroomTeacherDashboard = ({ user }) => {
           .order("created_at", { ascending: false })
           .limit(5),
 
-        // Teacher assignments (all classes taught by this teacher)
+        // Teacher assignments (all classes taught by this teacher) - FIXED
         supabase
           .from("teacher_assignments")
-          .select(
-            `
-              id,
-              class_id,
-              subject,
-              academic_year,
-              classes!inner (
-                id,
-                grade,
-                academic_year
-              )
-            `
-          )
+          .select("id, class_id, subject, academic_year") // ✅ HAPUS nested select classes
           .eq("teacher_id", teacherId)
           .eq("academic_year", currentYear),
       ]);
@@ -316,7 +302,27 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
       const students = studentsResult.data || [];
       const attendances = attendanceResult.data || [];
-      const assignments = teachingResult.data || [];
+      let assignments = teachingResult.data || [];
+
+      // Tambah error handling untuk assignments
+      if (teachingResult.error) {
+        console.error("❌ Teacher assignments error:", teachingResult.error);
+        assignments = [];
+      }
+
+      // ✅ TAMBAH INI - FETCH CLASS INFO SEPARATELY
+      let classesData = [];
+      if (assignments.length > 0) {
+        const classIds = [...new Set(assignments.map((a) => a.class_id))];
+        const { data: fetchedClasses } = await supabase
+          .from("classes")
+          .select("id, grade, academic_year")
+          .in("id", classIds)
+          .eq("academic_year", currentYear);
+
+        classesData = fetchedClasses || [];
+        console.log("🏫 Fetched classes:", classesData);
+      }
 
       // Calculate gender stats
       const maleCount = students.filter((s) => s.gender === "L").length;
@@ -361,14 +367,25 @@ const HomeroomTeacherDashboard = ({ user }) => {
         ]);
       }
 
-      // Process teaching data
+      // ✅ Process teaching data - DIPERBAIKI
       const subjects = [...new Set(assignments.map((a) => a.subject))];
-      const classesTaught = assignments.map((a) => ({
-        id: a.class_id,
-        className: a.classes.id,
-        grade: a.classes.grade,
-        subject: a.subject,
-      }));
+      const classesTaught = assignments.map((a) => {
+        const classInfo = classesData.find((c) => c.id === a.class_id);
+        return {
+          id: a.class_id,
+          className: classInfo?.id || a.class_id,
+          grade: classInfo?.grade || "",
+          subject: a.subject,
+        };
+      });
+
+      console.log("🔍 DEBUG Teaching Data:", {
+        assignments: assignments,
+        assignmentsLength: assignments?.length,
+        subjects: subjects,
+        classesTaught: classesTaught,
+        classesData: classesData,
+      });
 
       setStats({
         totalStudents: students.length,
@@ -387,6 +404,17 @@ const HomeroomTeacherDashboard = ({ user }) => {
         subjects,
         classesTaught,
         totalClassesTaught: assignments.length,
+      });
+
+      // ✅ TAMBAH INI
+      console.log("🔍 DEBUG Teaching Data:", {
+        assignments: assignments,
+        assignmentsLength: assignments?.length,
+        subjects: subjects,
+        classesTaught: classesTaught,
+        teacherId: teacherId,
+        currentYear: currentYear,
+        teachingResult: teachingResult,
       });
 
       setAnnouncements(announcementsResult.data || []);
@@ -567,42 +595,6 @@ const HomeroomTeacherDashboard = ({ user }) => {
           </div>
           <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
             Data Siswa
-          </span>
-        </button>
-      </div>
-
-      {/* Baris 3 */}
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          onClick={handleCatatanSiswa}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30 hover:border-yellow-300 dark:hover:border-yellow-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg sm:text-xl">📝</span>
-          </div>
-          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
-            Catatan Siswa
-          </span>
-        </button>
-
-        <button
-          onClick={handleJadwalSaya}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg sm:text-xl">📅</span>
-          </div>
-          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
-            Jadwal Saya
-          </span>
-        </button>
-
-        <button
-          onClick={handleReports}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-300 dark:hover:border-red-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
-            <span className="text-white text-lg sm:text-xl">📄</span>
-          </div>
-          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 text-center">
-            Laporan
           </span>
         </button>
       </div>
@@ -872,17 +864,17 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 </button>
               )}
 
-              {/* Laporan */}
+              {/* Data Siswa */}
               <button
-                onClick={handleReports}
+                onClick={handleStudents}
                 className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <span className="text-white text-lg sm:text-xl">📊</span>
+                    <span className="text-white text-lg sm:text-xl">👥</span>
                   </div>
                   <div className="text-left">
                     <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
-                      Laporan
+                      Data Siswa
                     </h4>
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                       Kelas {stats.className}
@@ -897,7 +889,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 md:gap-6 mb-4 sm:mb-6 md:mb-8">
           {/* Mata Pelajaran & Kelas */}
-          {teachingData.subjects.length > 0 && (
+          {teachingData.classesTaught.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200">
               <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
                 <span className="mr-2">📖</span>
