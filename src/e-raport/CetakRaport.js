@@ -310,9 +310,20 @@ function CetakRaport() {
     setSavingDetail(false);
   };
 
+  // BAGIAN YANG DIREVISI - REPLACE fungsi addStudentPages dengan ini:
+
   const addStudentPages = async (doc, siswa, isFirstStudent) => {
     try {
-      const { data: nilaiData, error: nilaiError } = await supabase
+      // ========== DEBUG: CEK QUERY NILAI ==========
+      console.log("🔍 QUERY NILAI ERAPORT:", {
+        student_id: siswa.id,
+        class_id: classId,
+        tahun_ajaran_id: academicYear?.id,
+        semester: semester,
+      });
+
+      // Query 1: Coba ambil data yang sudah finalized
+      let { data: nilaiData, error: nilaiError } = await supabase
         .from("nilai_eraport")
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", siswa.id)
@@ -322,12 +333,52 @@ function CetakRaport() {
         .eq("is_finalized", true)
         .order("mata_pelajaran");
 
-      if (nilaiError) throw nilaiError;
+      if (nilaiError) {
+        console.error("❌ Error query nilai_eraport:", nilaiError);
+        throw nilaiError;
+      }
 
-      console.log(
-        "📚 Mata pelajaran ditemukan:",
-        nilaiData?.map((n) => n.mata_pelajaran)
-      );
+      // ========== FALLBACK: Jika tidak ada data finalized, coba ambil semua ==========
+      if (!nilaiData || nilaiData.length === 0) {
+        console.warn("⚠️ Tidak ada data dengan is_finalized=true");
+        console.log("🔄 Mencoba query tanpa filter is_finalized...");
+
+        const { data: nilaiDataAll, error: nilaiErrorAll } = await supabase
+          .from("nilai_eraport")
+          .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
+          .eq("student_id", siswa.id)
+          .eq("class_id", classId)
+          .eq("tahun_ajaran_id", academicYear?.id)
+          .eq("semester", semester)
+          .order("mata_pelajaran");
+
+        if (!nilaiErrorAll && nilaiDataAll && nilaiDataAll.length > 0) {
+          nilaiData = nilaiDataAll;
+          console.log(
+            "✅ Ditemukan data (tanpa filter finalized):",
+            nilaiData.length
+          );
+        }
+      }
+
+      // ========== DEBUG: CEK HASIL QUERY ==========
+      console.log("📊 DATA NILAI HASIL QUERY:", {
+        jumlah_record: nilaiData?.length || 0,
+        data_sample: nilaiData?.[0] || null,
+      });
+
+      if (!nilaiData || nilaiData.length === 0) {
+        console.error("❌ TIDAK ADA DATA NILAI untuk siswa:", siswa.full_name);
+        console.error("💡 Troubleshooting:");
+        console.error("   1. Pastikan data nilai ada di tabel nilai_eraport");
+        console.error("   2. Cek student_id:", siswa.id);
+        console.error("   3. Cek class_id:", classId);
+        console.error("   4. Cek tahun_ajaran_id:", academicYear?.id);
+        console.error("   5. Cek semester:", semester);
+
+        // Tetap lanjut generate PDF tapi dengan data kosong
+        console.warn("⚠️ Melanjutkan generate PDF dengan tabel kosong...");
+      }
 
       const { data: kelasData } = await supabase
         .from("classes")
@@ -337,66 +388,119 @@ function CetakRaport() {
 
       const kelasGrade = kelasData?.grade || "";
 
-      // Query data ekstrakurikuler
+      // Query data ekstrakurikuler - HANDLE 404 ERROR
       let ekskulBody = [["1", "-", "-", "-"]];
       try {
-        const { data: ekskulData } = await supabase
+        const { data: ekskulData, error: ekskulError } = await supabase
           .from("student_ekstrakurikuler")
-          .select(
-            `
-          *,
-          ekstrakurikuler:ekstrakurikuler_id (nama_kegiatan)
-        `
-          )
+          .select(`*, ekstrakurikuler:ekstrakurikuler_id (nama_kegiatan)`)
           .eq("student_id", siswa.id)
           .eq("tahun_ajaran_id", academicYear?.id)
           .eq("semester", semester);
 
-        if (ekskulData && ekskulData.length > 0) {
+        if (ekskulError) {
+          console.warn(
+            "⚠️ Tabel student_ekstrakurikuler tidak ada atau tidak bisa diakses:",
+            ekskulError.message
+          );
+        } else if (ekskulData && ekskulData.length > 0) {
           ekskulBody = ekskulData.map((item, idx) => [
             idx + 1,
             item.ekstrakurikuler?.nama_kegiatan || "-",
             item.predikat || "-",
             item.keterangan || "-",
           ]);
+          console.log("✅ Data ekstrakurikuler ditemukan:", ekskulData.length);
+        } else {
+          console.log("ℹ️ Tidak ada data ekstrakurikuler");
         }
       } catch (error) {
-        console.log("Ekstrakurikuler data not available:", error.message);
+        console.warn("⚠️ Error ekstrakurikuler (diabaikan):", error.message);
       }
 
-      const { data: kehadiranData } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("nisn", siswa.nisn)
-        .eq("tahun_ajaran", academicYear?.year);
+      // ========== QUERY CATATAN & KEHADIRAN (SEMUA DARI catatan_eraport) ==========
+      let sakit = 0;
+      let izin = 0;
+      let alpha = 0;
+      let catatanData = null;
 
-      const sakit =
-        kehadiranData?.filter((k) => k.status === "Sakit").length || 0;
-      const izin =
-        kehadiranData?.filter((k) => k.status === "Izin").length || 0;
-      const alpha =
-        kehadiranData?.filter((k) => k.status === "Alpha").length || 0;
+      try {
+        console.log("🔍 Querying catatan_eraport for kehadiran & catatan:", {
+          student_id: siswa.id,
+          class_id: classId,
+          tahun_ajaran_id: academicYear?.id,
+          semester: semester,
+        });
 
-      const { data: catatanData } = await supabase
-        .from("catatan_eraport")
-        .select("*")
-        .eq("student_id", siswa.id)
-        .eq("class_id", classId)
-        .eq("tahun_ajaran_id", academicYear?.id)
-        .eq("semester", semester)
-        .single();
+        const { data, error } = await supabase
+          .from("catatan_eraport")
+          .select("*")
+          .eq("student_id", siswa.id)
+          .eq("class_id", classId)
+          .eq("tahun_ajaran_id", academicYear?.id)
+          .eq("semester", semester)
+          .maybeSingle();
 
-      // 🔥 AMBIL USER YANG LOGIN (BUKAN QUERY BY HOMEROOM!)
+        if (error) {
+          console.error("❌ Error query catatan_eraport:", error);
+        } else if (data) {
+          catatanData = data;
+
+          // Ambil data kehadiran dari kolom catatan_eraport
+          sakit = data.sakit || 0;
+          izin = data.ijin || 0; // Perhatikan: namanya 'ijin' bukan 'izin'
+          alpha = data.tanpa_keterangan || 0;
+
+          console.log("✅ Data dari catatan_eraport:", {
+            sakit,
+            izin,
+            alpha,
+            catatan_wali_kelas: data.catatan_wali_kelas ? "Ada" : "Kosong",
+          });
+        } else {
+          console.log("ℹ️ Tidak ada data catatan_eraport untuk siswa ini");
+        }
+      } catch (error) {
+        console.error("❌ Error loading catatan_eraport:", error.message);
+      }
+
       const sessionData = localStorage.getItem("userSession");
       const currentUser = sessionData ? JSON.parse(sessionData) : null;
 
-      const { data: waliKelas } = await supabase
-        .from("users")
-        .select("full_name, nip")
-        .eq("id", currentUser?.id) // 🔥 User yang login!
-        .single();
+      // Query wali kelas - HANDLE 400 ERROR
+      let waliKelas = null;
+      try {
+        const { data: waliKelasData, error: waliKelasError } = await supabase
+          .from("users")
+          .select("full_name, nip")
+          .eq("id", currentUser?.id)
+          .maybeSingle();
 
-      // 🔥 AMBIL METADATA LENGKAP (TERMASUK KEPALA SEKOLAH)
+        if (waliKelasError) {
+          console.warn(
+            "⚠️ Tidak bisa query tabel users (RLS):",
+            waliKelasError.message
+          );
+          console.log("💡 Menggunakan data dari localStorage sebagai fallback");
+          // Fallback ke data dari localStorage
+          waliKelas = {
+            full_name:
+              currentUser?.full_name || currentUser?.username || "Wali Kelas",
+            nip: currentUser?.nip || "-",
+          };
+        } else {
+          waliKelas = waliKelasData;
+          console.log("✅ Data wali kelas dari database:", waliKelas);
+        }
+      } catch (error) {
+        console.warn("⚠️ Error query users (diabaikan), gunakan localStorage");
+        waliKelas = {
+          full_name:
+            currentUser?.full_name || currentUser?.username || "Wali Kelas",
+          nip: currentUser?.nip || "-",
+        };
+      }
+
       const { data: metadataData } = await supabase
         .from("raport_metadata")
         .select(
@@ -415,56 +519,64 @@ function CetakRaport() {
           })
         : "20 Desember 2024";
 
-      // 🔥 DATA KEPALA SEKOLAH DARI METADATA
       const namaKepalaSekolah =
-        metadataData?.nama_kepala_sekolah || "YAYAN HAEDAR, S.Pd";
-      const nipKepalaSekolah =
-        metadataData?.nip_kepala_sekolah || "196704041988031005";
+        metadataData?.nama_kepala_sekolah || "Ade Nurmugni";
+      const nipKepalaSekolah = metadataData?.nip_kepala_sekolah || "-";
 
       if (!isFirstStudent) doc.addPage();
 
-      let yPos = 20;
+      let yPos = 15;
       let currentPage = 1;
 
-      // ========== FUNCTION UNTUK RENDER HEADER ==========
+      // ========== HEADER SECTION ==========
       const renderHeader = (pageNum) => {
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
 
-        // Kolom KIRI
-        doc.text("Nama Murid", 20, yPos);
-        doc.text(`: ${siswa.full_name.toUpperCase()}`, 55, yPos);
-        doc.text("Kelas", 135, yPos);
-        doc.text(`: Kelas ${kelasGrade}`, 165, yPos);
+        doc.text("Nama", 15, yPos);
+        doc.text(":", 50, yPos);
+        doc.text(siswa.full_name.toUpperCase(), 53, yPos);
+
+        doc.text("Kelas", 140, yPos);
+        doc.text(":", 165, yPos);
+        doc.text(`Kelas ${kelasGrade}`, 168, yPos);
         yPos += 5;
 
-        doc.text("NIS", 20, yPos);
-        doc.text(`: ${siswa.nis || "-"}`, 55, yPos);
-        doc.text("Fase", 135, yPos);
-        doc.text(`: ${getFase(parseInt(kelasGrade))}`, 165, yPos);
+        doc.text("NIS", 15, yPos);
+        doc.text(":", 50, yPos);
+        doc.text(`${siswa.nis || "-"} / ${siswa.nisn || "-"}`, 53, yPos);
+
+        doc.text("Fase", 140, yPos);
+        doc.text(":", 165, yPos);
+        doc.text(getFase(parseInt(kelasGrade)), 168, yPos);
         yPos += 5;
 
-        doc.text("Nama Sekolah", 20, yPos);
+        doc.text("Nama Sekolah", 15, yPos);
+        doc.text(":", 50, yPos);
         doc.text(
-          `: ${schoolSettings.school_name || "SMP MUSLIMIN CILILIN"}`,
-          55,
+          schoolSettings.school_name || "SMP MUSLIMIN CILILIN",
+          53,
           yPos
         );
-        doc.text("Semester", 135, yPos);
-        doc.text(`: ${getSemesterText()}`, 165, yPos);
+
+        doc.text("Semester", 140, yPos);
+        doc.text(":", 165, yPos);
+        doc.text(semester === "1" ? "1" : "2", 168, yPos);
         yPos += 5;
 
-        doc.text("Alamat", 20, yPos);
+        doc.text("Alamat", 15, yPos);
+        doc.text(":", 50, yPos);
         doc.text(
-          `: ${schoolSettings.school_address || "Kp. Bojongloa"}`,
-          55,
+          schoolSettings.school_address || "JL. RAYA WARUNGAWI",
+          53,
           yPos
         );
-        doc.text("Tahun Ajaran", 135, yPos);
-        doc.text(`: ${academicYear?.year}`, 165, yPos);
-        yPos += 10;
 
-        // JUDUL (hanya di halaman 1)
+        doc.text("Tahun Pelajaran", 140, yPos);
+        doc.text(":", 165, yPos);
+        doc.text(academicYear?.year || "2024/2025", 168, yPos);
+        yPos += 8;
+
         if (pageNum === 1) {
           doc.setFontSize(12);
           doc.setFont("helvetica", "bold");
@@ -473,13 +585,22 @@ function CetakRaport() {
         }
       };
 
-      // ========== RENDER HEADER HALAMAN 1 ==========
       renderHeader(1);
 
-      // ========== TABEL MATA PELAJARAN (SEMUA MAPEL DI SATU TABEL) ==========
+      // ========== TABEL MATA PELAJARAN ==========
+      console.log("📝 MEMBUAT TABEL - Jumlah data:", nilaiData?.length || 0);
+
       const tableData = (nilaiData || []).map((nilai, idx) => {
+        console.log(`   Mapel ${idx + 1}:`, {
+          mata_pelajaran: nilai.mata_pelajaran,
+          nilai_akhir: nilai.nilai_akhir,
+          deskripsi_capaian: nilai.deskripsi_capaian?.substring(0, 50) + "...",
+          ada_detail: nilai.nilai_eraport_detail?.length || 0,
+        });
+
         const capaian =
           nilai.deskripsi_capaian || generateCapaianKompetensi([nilai]) || "-";
+
         return [
           idx + 1,
           nilai.mata_pelajaran,
@@ -488,6 +609,14 @@ function CetakRaport() {
         ];
       });
 
+      console.log("✅ TABLE DATA SIAP:", tableData.length, "rows");
+
+      // Jika tidak ada data, buat tabel dengan 1 baris kosong
+      if (tableData.length === 0) {
+        tableData.push([1, "-", "-", "Belum ada data nilai"]);
+        console.warn("⚠️ Menampilkan tabel kosong karena tidak ada data");
+      }
+
       doc.autoTable({
         startY: yPos,
         head: [["No", "Mata Pelajaran", "Nilai Akhir", "Capaian Kompetensi"]],
@@ -495,10 +624,11 @@ function CetakRaport() {
         theme: "plain",
         styles: {
           fontSize: 8,
-          cellPadding: 3,
+          cellPadding: 2.5,
           lineColor: [0, 0, 0],
-          lineWidth: 0.1,
+          lineWidth: 0.3,
           overflow: "linebreak",
+          valign: "middle",
         },
         headStyles: {
           fillColor: [255, 255, 255],
@@ -506,51 +636,60 @@ function CetakRaport() {
           fontStyle: "bold",
           halign: "center",
           lineColor: [0, 0, 0],
-          lineWidth: 0.1,
-          fontSize: 9,
-          cellPadding: 2,
+          lineWidth: 0.3,
+          fontSize: 8,
+          cellPadding: 2.5,
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: "center", valign: "middle" },
-          1: { cellWidth: 45, valign: "middle" },
-          2: { cellWidth: 20, halign: "center", valign: "middle" },
-          3: { cellWidth: 95, halign: "justify", valign: "middle" },
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: 50, valign: "middle" },
+          2: { cellWidth: 20, halign: "center" },
+          3: { cellWidth: 100, halign: "left", valign: "middle" },
         },
-        margin: { left: 20, right: 20 },
+        margin: { left: 15, right: 15 },
+        didDrawCell: (data) => {
+          if (data.section === "body") {
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+          }
+        },
       });
 
-      yPos = doc.lastAutoTable.finalY + 10;
+      yPos = doc.lastAutoTable.finalY + 8;
 
-      // ========== CEK APAKAH PERLU PAGE BREAK ==========
-      const remainingSpace = 270 - yPos;
-      const neededSpace = 130;
+      // ========== CEK PAGE BREAK ==========
+      const remainingSpace = 280 - yPos;
+      const neededSpace = 120;
 
       if (remainingSpace < neededSpace) {
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
         doc.text(
           `Kelas ${kelasGrade} | ${siswa.full_name.toUpperCase()} | ${
-            siswa.nisn
+            siswa.nis
           }`,
-          20,
+          15,
           285
         );
-        doc.text(`Halaman : 1`, 180, 285);
+        doc.text(`Halaman : 1`, 175, 285);
 
         doc.addPage();
-        yPos = 20;
+        yPos = 15;
         currentPage = 2;
         renderHeader(2);
       }
 
-      // ========== KOKURIKULER ==========
-      doc.rect(20, yPos, 170, 10);
-      doc.setFontSize(10);
+      // ========== KOKURIKULER SECTION ==========
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Kokurikuler", 105, yPos + 7, { align: "center" });
-      yPos += 10;
-      doc.rect(20, yPos, 170, 30);
-      yPos += 35;
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.3);
+      doc.rect(15, yPos, 180, 8);
+      doc.text("Kokurikuler", 105, yPos + 5.5, { align: "center" });
+      yPos += 8;
+
+      doc.rect(15, yPos, 180, 20);
+      yPos += 22;
 
       // ========== TABEL EKSTRAKURIKULER ==========
       doc.autoTable({
@@ -560,42 +699,43 @@ function CetakRaport() {
         theme: "plain",
         styles: {
           fontSize: 8,
-          cellPadding: 3,
+          cellPadding: 2.5,
           lineColor: [0, 0, 0],
-          lineWidth: 0.1,
+          lineWidth: 0.3,
         },
         headStyles: {
           fillColor: [255, 255, 255],
           textColor: [0, 0, 0],
           fontStyle: "bold",
           halign: "center",
+          fontSize: 8,
         },
         columnStyles: {
           0: { cellWidth: 15, halign: "center" },
-          1: { cellWidth: 50, halign: "left" },
+          1: { cellWidth: 70, halign: "left" },
           2: { cellWidth: 25, halign: "center" },
-          3: { cellWidth: 80, halign: "left" },
+          3: { cellWidth: 70, halign: "left" },
         },
-        margin: { left: 20, right: 20 },
+        margin: { left: 15, right: 15 },
       });
       yPos = doc.lastAutoTable.finalY + 8;
 
       // ========== LAYOUT 2 KOLOM: KETIDAKHADIRAN & CATATAN ==========
-      const col1X = 20;
-      const col2X = 108;
-      const boxWidth = 82;
+      const col1X = 15;
+      const col2X = 105;
+      const boxWidth = 90;
       const startBoxY = yPos;
 
-      // BOX KIRI: KETIDAKHADIRAN
-      doc.rect(col1X, startBoxY, boxWidth, 10);
+      doc.setLineWidth(0.3);
+      doc.rect(col1X, startBoxY, boxWidth, 8);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Ketidakhadiran", col1X + boxWidth / 2, startBoxY + 7, {
+      doc.text("Ketidakhadiran", col1X + boxWidth / 2, startBoxY + 5.5, {
         align: "center",
       });
 
       doc.autoTable({
-        startY: startBoxY + 10,
+        startY: startBoxY + 8,
         body: [
           ["Sakit", `: ${sakit} hari`],
           ["Izin", `: ${izin} hari`],
@@ -604,13 +744,13 @@ function CetakRaport() {
         theme: "plain",
         styles: {
           fontSize: 8,
-          cellPadding: 3,
+          cellPadding: 2.5,
           lineColor: [0, 0, 0],
-          lineWidth: 0.1,
+          lineWidth: 0.3,
         },
         columnStyles: {
-          0: { cellWidth: 50, halign: "left" },
-          1: { cellWidth: 32, halign: "left" },
+          0: { cellWidth: 55, halign: "left" },
+          1: { cellWidth: 35, halign: "left" },
         },
         margin: { left: col1X, right: 0 },
         tableWidth: boxWidth,
@@ -618,103 +758,99 @@ function CetakRaport() {
 
       const ketidakhadiranFinalY = doc.lastAutoTable.finalY;
 
-      // BOX KANAN: CATATAN WALI KELAS
-      doc.rect(col2X, startBoxY, boxWidth, 10);
-      doc.text("Catatan Wali Kelas", col2X + boxWidth / 2, startBoxY + 7, {
+      doc.rect(col2X, startBoxY, boxWidth, 8);
+      doc.text("Catatan Wali Kelas", col2X + boxWidth / 2, startBoxY + 5.5, {
         align: "center",
       });
 
-      const catatanHeight = ketidakhadiranFinalY - (startBoxY + 10);
-      doc.rect(col2X, startBoxY + 10, boxWidth, catatanHeight);
+      const catatanHeight = ketidakhadiranFinalY - (startBoxY + 8);
+      doc.rect(col2X, startBoxY + 8, boxWidth, catatanHeight);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       const catatan = catatanData?.catatan_wali_kelas || "";
       const wrappedCatatan = doc.splitTextToSize(catatan, boxWidth - 6);
-      doc.text(wrappedCatatan, col2X + 3, startBoxY + 15);
+      doc.text(wrappedCatatan, col2X + 3, startBoxY + 13);
 
       yPos = ketidakhadiranFinalY + 8;
 
-      // ========== TANGGAPAN ORANG TUA/WALI MURID ==========
-      doc.rect(20, yPos, 170, 10);
+      // ========== TANGGAPAN ORANG TUA ==========
+      doc.setLineWidth(0.3);
+      doc.rect(15, yPos, 180, 8);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Tanggapan Orang Tua/Wali Murid", 105, yPos + 7, {
+      doc.text("Tanggapan Orang Tua/Wali Murid", 105, yPos + 5.5, {
         align: "center",
       });
-      yPos += 10;
-      doc.rect(20, yPos, 170, 40);
-      yPos += 45;
-
-      yPos += 4;
+      yPos += 8;
+      doc.rect(15, yPos, 180, 30);
+      yPos += 35;
 
       // ========== TANDA TANGAN ==========
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
 
-      const ttdCol1 = 50;
-      const ttdCol2 = 155;
-
-      doc.text(`${tempat}, ${tanggalRaport}`, ttdCol2, yPos, {
-        align: "center",
-      });
+      doc.text(`${tempat}, ${tanggalRaport}`, 105, yPos, { align: "center" });
       yPos += 6;
 
-      doc.text("Orang Tua Murid", ttdCol1, yPos, { align: "center" });
-      doc.text("Wali Kelas", ttdCol2, yPos, { align: "center" });
+      const ttdCol1 = 42;
+      const ttdCol2 = 105;
+      const ttdCol3 = 168;
 
+      doc.text("Orang Tua/Wali,", ttdCol1, yPos, { align: "center" });
+      doc.text("Wali Kelas,", ttdCol3, yPos, { align: "center" });
       yPos += 20;
 
-      doc.text(".....................................", ttdCol1, yPos, {
+      doc.text("..........................", ttdCol1, yPos, {
         align: "center",
       });
 
-      // 🔥 NAMA WALI KELAS DINAMIS (YANG LOGIN)
       doc.setFont("helvetica", "bold");
       doc.text(
         waliKelas?.full_name || currentUser?.full_name || "Wali Kelas",
-        ttdCol2,
+        ttdCol3,
         yPos,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
+
       doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
       doc.text(
-        waliKelas?.nip ? `NIP. ${waliKelas.nip}` : "NIP.",
-        ttdCol2,
+        waliKelas?.nip ? `NIP. ${waliKelas.nip}` : "NIP. -",
+        ttdCol3,
         yPos + 4,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
 
       yPos += 8;
 
-      doc.text("Kepala Sekolah", 105, yPos, { align: "center" });
+      doc.setFontSize(9);
+      doc.text("Mengetahui", ttdCol2, yPos, { align: "center" });
+      yPos += 4;
+      doc.text("Kepala Sekolah", ttdCol2, yPos, { align: "center" });
       yPos += 20;
 
-      // 🔥 KEPALA SEKOLAH DARI METADATA
       doc.setFont("helvetica", "bold");
-      doc.text(namaKepalaSekolah, 105, yPos, { align: "center" });
+      doc.text(namaKepalaSekolah, ttdCol2, yPos, { align: "center" });
       doc.setFont("helvetica", "normal");
-      doc.text(`NIP. ${nipKepalaSekolah}`, 105, yPos + 4, { align: "center" });
+      doc.setFontSize(8);
+      doc.text(`NIP. ${nipKepalaSekolah}`, ttdCol2, yPos + 4, {
+        align: "center",
+      });
 
-      yPos += 8;
-
+      // ========== FOOTER ==========
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
       doc.text(
-        `Kelas ${kelasGrade} | ${siswa.full_name.toUpperCase()} | ${
-          siswa.nisn
-        }`,
-        20,
+        `Kelas ${kelasGrade} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
+        15,
         285
       );
-      doc.text(`Halaman : ${currentPage}`, 180, 285);
+      doc.text(`Halaman : ${currentPage}`, 175, 285);
 
+      console.log("✅ PDF PAGE UNTUK", siswa.full_name, "SELESAI");
       return doc;
     } catch (error) {
-      console.error("Error:", error);
+      console.error("❌ Error generating PDF for", siswa.full_name, ":", error);
       throw error;
     }
   };
@@ -871,27 +1007,6 @@ function CetakRaport() {
   return (
     <div className="p-4 md:p-6 lg:p-8">
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 md:p-6">
-        {/* INFO WALI KELAS */}
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-500 rounded-xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex-1">
-              <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                Anda adalah wali kelas
-              </h3>
-              <p className="text-gray-700 dark:text-gray-300 mt-1">
-                {waliKelasName} - Kelas {classId}
-              </p>
-            </div>
-            <div className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium whitespace-nowrap">
-              Wali Kelas
-            </div>
-          </div>
-        </div>
-
-        <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-4 md:mb-6 text-gray-900 dark:text-white">
-          CETAK RAPORT
-        </h2>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 md:mb-6 bg-gray-50 dark:bg-gray-800 p-3 md:p-4 rounded-lg">
           <div>
             <label className="block font-semibold mb-2 text-gray-800 dark:text-gray-200">

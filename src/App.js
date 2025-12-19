@@ -40,7 +40,7 @@ import InputNilai from "./e-raport/InputNilai";
 import InputKehadiran from "./e-raport/InputKehadiran";
 import InputCatatan from "./e-raport/InputCatatan";
 import CekNilai from "./e-raport/CekNilai";
-import CetakRaport from "./e-raport/CetakRaport";
+import RaportPage from "./e-raport/RaportPage";
 
 // 🔥 PROTECTED ROUTE COMPONENT - WITH MAINTENANCE MODE
 // 🔥 FIXED: Complete ProtectedRoute Component
@@ -1058,7 +1058,7 @@ function App() {
               onShowToast={handleShowToast}
               allowedRoles={["admin", "teacher", "homeroom"]}>
               <LayoutWrapper>
-                <CetakRaport
+                <RaportPage
                   user={user}
                   onShowToast={handleShowToast}
                   darkMode={darkMode}

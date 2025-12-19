@@ -126,7 +126,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
       }
 
       const { data: existingKehadiran, error: kehadiranError } = await supabase
-        .from("kehadiran_siswa")
+        .from("catatan_eraport")
         .select("*")
         .eq("class_id", selectedClass.id)
         .eq("tahun_ajaran_id", academicYear.id)
@@ -162,8 +162,51 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
     }
   };
 
+  // ✅ FIXED: Handling input number yang lebih baik
   const handleKehadiranChange = (studentId, field, value) => {
-    const numValue = parseInt(value) || 0;
+    // Jika value kosong, set ke string kosong (biar bisa ketik lagi)
+    if (value === "" || value === null || value === undefined) {
+      const updated = siswaList.map((siswa) => {
+        if (siswa.id === studentId) {
+          return { ...siswa, [field]: "" };
+        }
+        return siswa;
+      });
+      setSiswaList(updated);
+      return;
+    }
+
+    // Hapus karakter non-angka
+    const numericValue = value.replace(/[^\d]/g, "");
+
+    // Kalau kosong setelah cleaning, set ke string kosong
+    if (numericValue === "") {
+      const updated = siswaList.map((siswa) => {
+        if (siswa.id === studentId) {
+          return { ...siswa, [field]: "" };
+        }
+        return siswa;
+      });
+      setSiswaList(updated);
+      return;
+    }
+
+    // Parse ke integer (otomatis hapus leading zero)
+    let numValue = parseInt(numericValue, 10);
+
+    // Jika NaN, set ke string kosong
+    if (isNaN(numValue)) {
+      const updated = siswaList.map((siswa) => {
+        if (siswa.id === studentId) {
+          return { ...siswa, [field]: "" };
+        }
+        return siswa;
+      });
+      setSiswaList(updated);
+      return;
+    }
+
+    // Validation
     if (numValue < 0) return;
 
     if (numValue > 100) {
@@ -194,7 +237,8 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
     }
 
     const hasError = siswaList.some((siswa) => {
-      const total = siswa.sakit + siswa.ijin + siswa.tanpa_keterangan;
+      const total =
+        (siswa.sakit || 0) + (siswa.ijin || 0) + (siswa.tanpa_keterangan || 0);
       return total > 120;
     });
 
@@ -225,23 +269,32 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
         const siswa = siswaList[i];
         const kehadiranId = siswa.kehadiran_id;
 
+        // Hitung total tidak hadir
+        const totalTidakHadir =
+          (siswa.sakit || 0) +
+          (siswa.ijin || 0) +
+          (siswa.tanpa_keterangan || 0);
+
         const kehadiranData = {
           student_id: siswa.id,
-          nis: siswa.nis || "",
           class_id: selectedClass.id,
           tahun_ajaran_id: academicYear.id,
           semester: semester,
           sakit: siswa.sakit || 0,
           ijin: siswa.ijin || 0,
           tanpa_keterangan: siswa.tanpa_keterangan || 0,
+          total_hadir: totalTidakHadir, // ⚠️ Pakai nama kolom lama dulu (meskipun namanya misleading)
+          catatan_kepribadian: "",
+          catatan_ekskul: "",
+          catatan_prestasi: "",
+          saran: "",
           created_by: userId,
-          updated_by: userId,
           updated_at: new Date().toISOString(),
         };
 
         if (kehadiranId) {
           const { error: updateError } = await supabase
-            .from("kehadiran_siswa")
+            .from("catatan_eraport")
             .update(kehadiranData)
             .eq("id", kehadiranId);
 
@@ -253,7 +306,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
           }
         } else {
           const { error: insertError } = await supabase
-            .from("kehadiran_siswa")
+            .from("catatan_eraport")
             .insert(kehadiranData);
 
           if (insertError) {
@@ -549,9 +602,9 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                           <tbody>
                             {siswaList.map((siswa, idx) => {
                               const totalTidakHadir =
-                                siswa.sakit +
-                                siswa.ijin +
-                                siswa.tanpa_keterangan;
+                                (siswa.sakit || 0) +
+                                (siswa.ijin || 0) +
+                                (siswa.tanpa_keterangan || 0);
                               return (
                                 <tr
                                   key={siswa.id}
@@ -580,10 +633,12 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                   </td>
                                   <td className="p-3 border-r border-blue-100 dark:border-gray-700">
                                     <input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={siswa.sakit}
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
+                                      value={
+                                        siswa.sakit === 0 ? "" : siswa.sakit
+                                      }
                                       onChange={(e) =>
                                         handleKehadiranChange(
                                           siswa.id,
@@ -596,15 +651,16 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                           ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500"
                                           : "bg-white border-blue-200 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
                                       }`}
+                                      placeholder="0"
                                       aria-label={`Sakit untuk ${siswa.full_name}`}
                                     />
                                   </td>
                                   <td className="p-3 border-r border-blue-100 dark:border-gray-700">
                                     <input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={siswa.ijin}
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
+                                      value={siswa.ijin === 0 ? "" : siswa.ijin}
                                       onChange={(e) =>
                                         handleKehadiranChange(
                                           siswa.id,
@@ -617,15 +673,20 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                           ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500"
                                           : "bg-white border-blue-200 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
                                       }`}
+                                      placeholder="0"
                                       aria-label={`Ijin untuk ${siswa.full_name}`}
                                     />
                                   </td>
                                   <td className="p-3 border-r border-blue-100 dark:border-gray-700">
                                     <input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={siswa.tanpa_keterangan}
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
+                                      value={
+                                        siswa.tanpa_keterangan === 0
+                                          ? ""
+                                          : siswa.tanpa_keterangan
+                                      }
                                       onChange={(e) =>
                                         handleKehadiranChange(
                                           siswa.id,
@@ -638,6 +699,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                           ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500"
                                           : "bg-white border-blue-200 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
                                       }`}
+                                      placeholder="0"
                                       aria-label={`Tanpa keterangan untuk ${siswa.full_name}`}
                                     />
                                   </td>

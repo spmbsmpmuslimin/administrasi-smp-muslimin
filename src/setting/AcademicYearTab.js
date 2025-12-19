@@ -97,19 +97,19 @@ const AcademicYearTab = ({
         .from("students")
         .select(
           `
-        id, 
-        nis, 
-        full_name, 
-        gender, 
-        class_id, 
-        is_active,
-        academic_year,
-        classes (
-          id,
-          grade,
-          academic_year
-        )
-      `
+    id, 
+    nis, 
+    full_name, 
+    gender, 
+    class_id, 
+    is_active,
+    academic_year,
+    classes:class_id (
+      id,
+      grade,
+      academic_year
+    )
+  `
         )
         .eq("is_active", true)
         .eq("academic_year", academicYear)
