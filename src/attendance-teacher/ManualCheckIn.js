@@ -1,5 +1,6 @@
 // src/attendance-teacher/ManualCheckIn.js
 import React, { useState, useEffect } from "react";
+import CustomDatePicker from "./CustomDatePicker";
 import {
   Calendar,
   Clock,
@@ -488,36 +489,20 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           </div>
         )}
 
-        {/* 🎨 ENHANCED DATE PICKER */}
-        <div>
-          <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-            <Calendar size={18} className="text-blue-600 dark:text-blue-400" />
-            Tanggal Presensi
-          </label>
-          <div className="relative">
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleChange("date", e.target.value)}
-              max={isAdmin ? undefined : today}
-              required
-              className="w-full px-4 py-3 sm:py-4 pr-12 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium text-base transition-all hover:border-gray-400 dark:hover:border-gray-500 cursor-pointer"
-              style={{
-                colorScheme: "light dark",
-              }}
-            />
-            <Calendar
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
-              size={20}
-            />
-          </div>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-            {isAdmin
+        {/* 🎨 CUSTOM DATE PICKER */}
+        <CustomDatePicker
+          value={formData.date}
+          onChange={(newDate) => handleChange("date", newDate)}
+          maxDate={isAdmin ? undefined : today}
+          disabled={loading}
+          label="Tanggal Presensi"
+          showInfo={true}
+          infoText={
+            isAdmin
               ? "Admin dapat memilih tanggal kapan saja"
-              : "Bisa pilih tanggal mundur untuk input presensi yang terlupa"}
-          </p>
-        </div>
+              : "Bisa pilih tanggal mundur untuk input presensi yang terlupa"
+          }
+        />
 
         <div>
           <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">

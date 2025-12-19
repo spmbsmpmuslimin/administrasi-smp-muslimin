@@ -276,8 +276,8 @@ const RecapModal = ({
       // Calculate totals
       Object.keys(studentSummary).forEach((studentId) => {
         const student = studentSummary[studentId];
-        student.total =
-          student.hadir + student.sakit + student.izin + student.alpa;
+        // ✅ FIX: Gunakan jumlah hari efektif, bukan jumlah kehadiran
+        student.total = attendanceDates.length;
         student.percentage =
           student.total > 0
             ? Math.round((student.hadir / student.total) * 100)
