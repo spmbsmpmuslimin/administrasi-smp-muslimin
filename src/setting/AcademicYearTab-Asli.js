@@ -13,8 +13,7 @@ import {
   PlayCircle,
   PauseCircle,
   Trash2,
-  Copy,
-  Info, // ← TAMBAHKAN INI untuk tooltip
+  Copy, // ← TAMBAHKAN INI
 } from "lucide-react";
 import Simulator from "./Simulator";
 
@@ -53,12 +52,6 @@ const AcademicYearTab = ({
     targetYear: "",
     targetSemester: 2,
   });
-  const [assignmentPreview, setAssignmentPreview] = useState(null); // ← TAMBAHKAN INI
-
-  // ========== FITUR BARU: SMART SEMESTER SWITCH ==========
-  const [activeSemester, setActiveSemester] = useState(null);
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [switchPreview, setSwitchPreview] = useState(null);
 
   const config = {
     schoolName: schoolConfig?.schoolName || "SMP Muslimin Cililin",
@@ -79,95 +72,7 @@ const AcademicYearTab = ({
   useEffect(() => {
     loadSchoolData();
     loadSemesters();
-    loadActiveSemester(); // ← TAMBAHKAN INI
   }, []);
-
-  useEffect(() => {
-    if (copyConfig.sourceYear && copyConfig.sourceSemester) {
-      loadAssignmentPreview(copyConfig.sourceYear, copyConfig.sourceSemester); // ← TAMBAHKAN INI
-    } else {
-      setAssignmentPreview(null);
-    }
-  }, [copyConfig.sourceYear, copyConfig.sourceSemester]);
-
-  const loadActiveSemester = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("academic_years")
-        .select("*")
-        .eq("is_active", true)
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
-      setActiveSemester(data);
-
-      // Generate preview if active semester exists
-      if (data) {
-        const targetSemester = data.semester === 1 ? 2 : 1;
-        const targetSemesterName = targetSemester === 1 ? "Ganjil" : "Genap";
-
-        setSwitchPreview({
-          current: {
-            year: data.year,
-            semester: data.semester,
-            name: data.semester === 1 ? "Ganjil" : "Genap",
-          },
-          target: {
-            year: data.year,
-            semester: targetSemester,
-            name: targetSemesterName,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Error loading active semester:", error);
-    }
-  };
-
-  const loadAssignmentPreview = async (sourceYear, sourceSemester) => {
-    try {
-      const { data, error, count } = await supabase
-        .from("teacher_assignments")
-        .select("*", { count: "exact", head: true })
-        .eq("academic_year", sourceYear)
-        .eq("semester", sourceSemester);
-
-      if (error) throw error;
-      setAssignmentPreview({ count: count || 0 });
-    } catch (error) {
-      console.error("Error loading assignment preview:", error);
-      setAssignmentPreview({ count: 0 });
-    }
-  };
-
-  const validateCopyConfig = () => {
-    const errors = [];
-
-    // Check if source selected
-    if (!copyConfig.sourceYear || !copyConfig.sourceSemester) {
-      errors.push("❌ Pilih source semester terlebih dahulu");
-    }
-
-    // Check if target selected
-    if (!copyConfig.targetYear || !copyConfig.targetSemester) {
-      errors.push("❌ Pilih target semester terlebih dahulu");
-    }
-
-    // Check if source = target
-    if (
-      copyConfig.sourceYear === copyConfig.targetYear &&
-      copyConfig.sourceSemester === copyConfig.targetSemester
-    ) {
-      errors.push("❌ Source dan target tidak boleh sama");
-    }
-
-    // Check if source has data
-    if (assignmentPreview && assignmentPreview.count === 0) {
-      errors.push("⚠️ Source semester tidak memiliki data assignment");
-    }
-
-    return errors;
-  };
 
   const loadSemesters = async () => {
     try {
@@ -179,213 +84,9 @@ const AcademicYearTab = ({
 
       if (error) throw error;
       setSemesters(data || []);
-
-      // Reload active semester after loading all semesters
-      await loadActiveSemester();
     } catch (error) {
       console.error("Error loading semesters:", error);
       showToast("Gagal memuat data semester: " + error.message, "error");
-    }
-  };
-
-  // ========== FITUR BARU: SMART SEMESTER SWITCH ==========
-  const executeSmartSemesterSwitch = async () => {
-    if (!activeSemester) {
-      showToast("❌ Tidak ada semester aktif yang ditemukan!", "error");
-      return;
-    }
-
-    // STEP 1: Triple Confirmation
-    const confirm1 = window.confirm(
-      `🔄 KONFIRMASI PERPINDAHAN SEMESTER\n\n` +
-        `Dari: ${activeSemester.year} - Semester ${
-          activeSemester.semester === 1 ? "Ganjil" : "Genap"
-        }\n` +
-        `Ke: ${activeSemester.year} - Semester ${
-          activeSemester.semester === 1 ? "Genap" : "Ganjil"
-        }\n\n` +
-        `Proses yang akan dilakukan:\n` +
-        `✅ Check & create semester baru (jika belum ada)\n` +
-        `✅ Copy semua teacher assignments\n` +
-        `✅ Aktifkan semester baru\n` +
-        `✅ Non-aktifkan semester lama\n\n` +
-        `Lanjutkan?`
-    );
-
-    if (!confirm1) return;
-
-    const confirm2 = prompt(
-      `Ketik "PINDAH SEMESTER" (huruf besar) untuk konfirmasi:`
-    );
-
-    if (confirm2 !== "PINDAH SEMESTER") {
-      showToast("Perpindahan semester dibatalkan", "info");
-      return;
-    }
-
-    try {
-      setIsSwitching(true);
-      const targetSemester = activeSemester.semester === 1 ? 2 : 1;
-
-      // STEP 2: Check if target semester exists
-      showToast("🔍 Mengecek semester target...", "info");
-      const { data: existingSemester } = await supabase
-        .from("academic_years")
-        .select("*")
-        .eq("year", activeSemester.year)
-        .eq("semester", targetSemester)
-        .single();
-
-      let targetSemesterId;
-
-      // STEP 3: Create semester if not exists
-      if (!existingSemester) {
-        showToast("📝 Membuat semester baru...", "info");
-
-        // Auto-calculate dates
-        const currentStartDate = new Date(activeSemester.start_date);
-        const currentEndDate = new Date(activeSemester.end_date);
-
-        let newStartDate, newEndDate;
-
-        if (targetSemester === 2) {
-          // Semester 2 starts after semester 1 ends
-          newStartDate = new Date(currentEndDate);
-          newStartDate.setDate(newStartDate.getDate() + 1);
-
-          newEndDate = new Date(newStartDate);
-          newEndDate.setMonth(newEndDate.getMonth() + 6);
-        } else {
-          // Semester 1 starts in new academic year
-          newStartDate = new Date(currentEndDate);
-          newStartDate.setDate(newStartDate.getDate() + 1);
-
-          newEndDate = new Date(newStartDate);
-          newEndDate.setMonth(newEndDate.getMonth() + 6);
-        }
-
-        const { data: newSemester, error: createError } = await supabase
-          .from("academic_years")
-          .insert({
-            year: activeSemester.year,
-            semester: targetSemester,
-            start_date: newStartDate.toISOString().split("T")[0],
-            end_date: newEndDate.toISOString().split("T")[0],
-            is_active: false,
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        targetSemesterId = newSemester.id;
-
-        showToast("✅ Semester baru berhasil dibuat!", "success");
-      } else {
-        targetSemesterId = existingSemester.id;
-        showToast("✅ Semester target sudah ada, melanjutkan...", "info");
-      }
-
-      // STEP 4: Copy teacher assignments
-      showToast("📋 Mengambil data teacher assignments...", "info");
-
-      const { data: assignments, error: fetchError } = await supabase
-        .from("teacher_assignments")
-        .select("*")
-        .eq("academic_year", activeSemester.year)
-        .eq("semester", activeSemester.semester);
-
-      if (fetchError) throw fetchError;
-
-      if (assignments && assignments.length > 0) {
-        showToast(`📊 Ditemukan ${assignments.length} assignments`, "info");
-
-        // Delete existing assignments in target semester
-        const { error: deleteError } = await supabase
-          .from("teacher_assignments")
-          .delete()
-          .eq("academic_year", activeSemester.year)
-          .eq("semester", targetSemester);
-
-        if (deleteError) throw deleteError;
-
-        // Copy assignments
-        const newAssignments = assignments.map((a) => ({
-          teacher_id: a.teacher_id,
-          subject: a.subject,
-          class_id: a.class_id,
-          academic_year: activeSemester.year,
-          semester: targetSemester,
-          academic_year_id: targetSemesterId,
-        }));
-
-        const { error: insertError } = await supabase
-          .from("teacher_assignments")
-          .insert(newAssignments);
-
-        if (insertError) throw insertError;
-
-        showToast(
-          `✅ ${assignments.length} assignments berhasil di-copy!`,
-          "success"
-        );
-      } else {
-        showToast("ℹ️ Tidak ada assignments untuk di-copy", "info");
-      }
-
-      // STEP 5: Switch active semester
-      showToast("🔄 Mengaktifkan semester baru...", "info");
-
-      // Deactivate current
-      const { error: deactivateError } = await supabase
-        .from("academic_years")
-        .update({ is_active: false })
-        .eq("id", activeSemester.id);
-
-      if (deactivateError) throw deactivateError;
-
-      // Activate target
-      const { error: activateError } = await supabase
-        .from("academic_years")
-        .update({ is_active: true })
-        .eq("id", targetSemesterId);
-
-      if (activateError) throw activateError;
-
-      // STEP 6: Success
-      showToast(
-        `✅ Berhasil pindah ke Semester ${
-          targetSemester === 1 ? "Ganjil" : "Genap"
-        }!\n\n` +
-          `📅 Tahun Ajaran: ${activeSemester.year}\n` +
-          `📚 Semester: ${
-            targetSemester === 1 ? "Ganjil" : "Genap"
-          } (${targetSemester})\n` +
-          `📋 ${assignments?.length || 0} teacher assignments di-copy\n\n` +
-          `Sistem sekarang menggunakan semester baru.`,
-        "success"
-      );
-
-      // Reload data
-      await loadActiveSemester();
-      await loadSemesters();
-    } catch (error) {
-      console.error("Error:", error);
-
-      let errorMessage = "❌ Gagal pindah semester: ";
-
-      if (error.message.includes("duplicate key")) {
-        errorMessage += "Data sudah ada (duplikat)";
-      } else if (error.message.includes("foreign key")) {
-        errorMessage += "Data terkait dengan data lain (tidak bisa dihapus)";
-      } else if (error.code === "PGRST116") {
-        errorMessage += "Data tidak ditemukan";
-      } else {
-        errorMessage += error.message;
-      }
-
-      showToast(errorMessage, "error");
-    } finally {
-      setIsSwitching(false);
     }
   };
 
@@ -537,24 +238,11 @@ const AcademicYearTab = ({
       return;
     }
 
-    // Enhanced triple confirmation
-    const confirm1 = window.confirm(
-      `⚠️ PERINGATAN: HAPUS SEMESTER\n\n` +
-        `Anda akan menghapus semester ini secara permanen.\n\n` +
-        `Tindakan ini TIDAK DAPAT DIBATALKAN!\n\n` +
-        `Lanjutkan?`
+    const confirmed = window.confirm(
+      "Hapus semester ini?\n\nTindakan ini tidak dapat dibatalkan."
     );
 
-    if (!confirm1) return;
-
-    const confirm2 = prompt(
-      `Untuk konfirmasi, ketik "DELETE" (huruf besar semua):`
-    );
-
-    if (confirm2 !== "DELETE") {
-      showToast("Penghapusan semester dibatalkan", "info");
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setLoading(true);
@@ -570,17 +258,7 @@ const AcademicYearTab = ({
       loadSemesters();
     } catch (error) {
       console.error("Error deleting semester:", error);
-
-      let errorMessage = "❌ Gagal menghapus semester: ";
-
-      if (error.message.includes("foreign key")) {
-        errorMessage +=
-          "Semester terkait dengan data lain (teacher assignments, dll)";
-      } else {
-        errorMessage += error.message;
-      }
-
-      showToast(errorMessage, "error");
+      showToast("Gagal menghapus semester: " + error.message, "error");
     } finally {
       setLoading(false);
     }
@@ -589,21 +267,14 @@ const AcademicYearTab = ({
   // ========== FITUR BARU: COPY TEACHER ASSIGNMENTS ==========
 
   const handleOpenCopyModal = () => {
-    const activeSem = semesters.find((s) => s.is_active);
+    const activeSemester = semesters.find((s) => s.is_active);
 
-    if (activeSem) {
+    if (activeSemester) {
       setCopyConfig({
-        sourceYear: activeSem.year,
-        sourceSemester: activeSem.semester,
-        targetYear: activeSem.year,
-        targetSemester: activeSem.semester === 1 ? 2 : 1,
-      });
-    } else {
-      setCopyConfig({
-        sourceYear: "",
-        sourceSemester: 1,
-        targetYear: "",
-        targetSemester: 2,
+        sourceYear: activeSemester.year,
+        sourceSemester: activeSemester.semester,
+        targetYear: activeSemester.year,
+        targetSemester: activeSemester.semester === 1 ? 2 : 1,
       });
     }
 
@@ -619,17 +290,10 @@ const AcademicYearTab = ({
       return;
     }
 
-    const validationErrors = validateCopyConfig();
-    if (validationErrors.length > 0) {
-      showToast(validationErrors[0], "error");
-      return;
-    }
-
     const confirmed = window.confirm(
       `Copy semua teacher assignments dari:\n\n` +
         `📚 Source: ${sourceYear} Semester ${sourceSemester}\n` +
         `📝 Target: ${targetYear} Semester ${targetSemester}\n\n` +
-        `📊 ${assignmentPreview?.count || 0} assignments akan di-copy\n\n` +
         `Data assignment yang sudah ada di target akan DITIMPA!\n\n` +
         `Lanjutkan?`
     );
@@ -710,18 +374,7 @@ const AcademicYearTab = ({
       setShowCopyModal(false);
     } catch (error) {
       console.error("Error copying assignments:", error);
-
-      let errorMessage = "❌ Gagal copy assignments: ";
-
-      if (error.message.includes("duplicate key")) {
-        errorMessage += "Data sudah ada (duplikat)";
-      } else if (error.message.includes("foreign key")) {
-        errorMessage += "Data terkait dengan data lain";
-      } else {
-        errorMessage += error.message;
-      }
-
-      showToast(errorMessage, "error");
+      showToast("❌ Gagal copy assignments: " + error.message, "error");
     } finally {
       setLoading(false);
     }
@@ -901,45 +554,36 @@ const AcademicYearTab = ({
   const executeYearTransition = async () => {
     const { preview } = yearTransition;
 
-    // Enhanced triple confirmation
-    const confirm1 = window.confirm(
-      `⚠️ PERINGATAN: TRANSISI TAHUN AJARAN\n\n` +
-        `Anda akan melakukan transisi tahun ajaran dari:\n` +
-        `${preview.currentYear} → ${preview.newYear}\n\n` +
-        `Proses yang akan dilakukan:\n` +
-        `• Membuat 18 kelas baru\n` +
-        `• Menaikkan ${
-          Object.values(preview.promotions).flat().length
-        } siswa\n` +
-        `• Memasukkan ${preview.newStudents.length} siswa baru\n` +
-        `• Meluluskan ${preview.graduating.length} siswa\n` +
-        `• Mereset assignment guru\n\n` +
-        `Tindakan ini TIDAK DAPAT DIBATALKAN!\n\n` +
-        `Lanjutkan?`
-    );
+    const { data: latestSiswaBaruData } = await supabase
+      .from("siswa_baru")
+      .select("id", { count: "exact" })
+      .eq("is_transferred", false)
+      .eq("academic_year", yearTransition.newYear)
+      .not("kelas", "is", null);
 
-    if (!confirm1) return;
+    const latestSiswaBaruCount = latestSiswaBaruData?.length || 0;
+    const previewSiswaBaruCount = preview.newStudents.length;
 
-    const confirm2 = prompt(
-      `Untuk konfirmasi, ketik "EXECUTE" (huruf besar semua):`
-    );
+    const totalPromotions = Object.values(preview.promotions).flat().length;
 
-    if (confirm2 !== "EXECUTE") {
-      showToast("Transisi tahun ajaran dibatalkan", "info");
-      return;
+    let warningMessage = "";
+    if (latestSiswaBaruCount !== previewSiswaBaruCount) {
+      warningMessage = `\n⚠️ PERHATIAN: Data siswa baru berubah!\n   Preview: ${previewSiswaBaruCount} siswa → Sekarang: ${latestSiswaBaruCount} siswa\n`;
     }
 
-    // Final countdown confirmation
-    const confirm3 = window.confirm(
-      `⏳ Final Warning!\n\n` +
-        `Transisi tahun ajaran akan dimulai dalam 3 detik.\n\n` +
-        `Tekan OK untuk melanjutkan, Cancel untuk membatalkan.`
+    const confirmed = window.confirm(
+      `PERINGATAN: Tindakan ini akan:\n\n` +
+        `1. Membuat 18 kelas baru untuk tahun ajaran ${yearTransition.newYear}\n` +
+        `2. Menaikkan ${totalPromotions} siswa ke kelas berikutnya\n` +
+        `3. Memasukkan ${latestSiswaBaruCount} siswa baru ke grade 7\n` +
+        `4. Meluluskan ${preview.graduating.length} siswa grade ${graduatingGrade}\n` +
+        `5. Mereset assignment guru\n` +
+        `6. Mengubah tahun ajaran menjadi ${yearTransition.newYear}\n` +
+        warningMessage +
+        `\nTindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
     );
 
-    if (!confirm3) {
-      showToast("Transisi tahun ajaran dibatalkan", "info");
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       setLoading(true);
@@ -1077,9 +721,7 @@ const AcademicYearTab = ({
       showToast(
         `✅ Tahun ajaran ${yearTransition.newYear} berhasil dimulai!\n\n` +
           `📊 ${preview.newStudents.length} siswa baru masuk grade 7\n` +
-          `⬆️ ${
-            Object.values(preview.promotions).flat().length
-          } siswa naik kelas\n` +
+          `⬆️ ${totalPromotions} siswa naik kelas\n` +
           `🎓 ${preview.graduating.length} siswa lulus\n` +
           `👨‍🏫 Silakan assign guru ke kelas baru`,
         "success"
@@ -1089,18 +731,7 @@ const AcademicYearTab = ({
       setYearTransition({ preview: null, newYear: "", inProgress: false });
     } catch (error) {
       console.error("Error executing year transition:", error);
-
-      let errorMessage = "❌ Gagal memulai tahun ajaran baru: ";
-
-      if (error.message.includes("duplicate key")) {
-        errorMessage += "Kelas sudah ada (duplikat)";
-      } else if (error.message.includes("foreign key")) {
-        errorMessage += "Data terkait dengan data lain";
-      } else {
-        errorMessage += error.message;
-      }
-
-      showToast(errorMessage, "error");
+      showToast("Error memulai tahun ajaran baru: " + error.message, "error");
     } finally {
       setLoading(false);
       setYearTransition((prev) => ({ ...prev, inProgress: false }));
@@ -1108,6 +739,7 @@ const AcademicYearTab = ({
   };
 
   const studentsByGrade = getStudentsByGrade();
+  const activeSemester = semesters.find((s) => s.is_active);
 
   return (
     <div className="p-3 sm:p-4 md:p-6 dark:bg-gray-900 min-h-screen">
@@ -1168,182 +800,6 @@ const AcademicYearTab = ({
         </div>
       </div>
 
-      {/* ========== FITUR BARU: SMART SEMESTER SWITCH ========== */}
-      {activeSemester && (
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-4 sm:p-5 md:p-6 rounded-xl mb-6 sm:mb-8 border-2 border-blue-200 dark:border-blue-700 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-4">
-                <RefreshCw
-                  className="text-blue-600 dark:text-blue-400"
-                  size={20}
-                />
-                <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
-                  Perpindahan Semester
-                </h3>
-                <div
-                  className="cursor-help"
-                  title="Fitur ini akan otomatis membuat semester baru, copy assignments, dan mengaktifkannya. Proses ini aman dan tidak mengubah data semester lama.">
-                  <Info className="text-blue-500" size={16} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {/* Current Semester */}
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-600">
-                  <div className="flex items-center gap-3 mb-3">
-                    <PlayCircle
-                      className="text-blue-600 dark:text-blue-400"
-                      size={20}
-                    />
-                    <div>
-                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
-                        Semester Aktif
-                      </p>
-                      <p className="text-lg font-bold text-blue-900 dark:text-blue-200">
-                        {activeSemester.semester === 1
-                          ? "Ganjil (1)"
-                          : "Genap (2)"}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {activeSemester.year}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    {new Date(activeSemester.start_date).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      }
-                    )}{" "}
-                    s/d{" "}
-                    {new Date(activeSemester.end_date).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      }
-                    )}
-                  </p>
-                </div>
-
-                {/* Target Semester */}
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-2 border-green-300 dark:border-green-600">
-                  <div className="flex items-center gap-3 mb-3">
-                    <CheckCircle
-                      className="text-green-600 dark:text-green-500"
-                      size={20}
-                    />
-                    <div>
-                      <p className="text-sm font-semibold text-green-800 dark:text-green-300">
-                        Semester Tujuan
-                      </p>
-                      <p className="text-lg font-bold text-green-900 dark:text-green-200">
-                        {activeSemester.semester === 1
-                          ? "Genap (2)"
-                          : "Ganjil (1)"}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {activeSemester.year}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Tanggal akan dihitung otomatis
-                  </p>
-                </div>
-              </div>
-
-              {/* Process Info */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
-                <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                  💡 Proses Otomatis:
-                </p>
-                <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle size={14} className="text-green-500" />
-                    <span>Check & create semester jika belum ada</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle size={14} className="text-green-500" />
-                    <span>Copy semua teacher assignments</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle size={14} className="text-green-500" />
-                    <span>Aktifkan semester baru</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle size={14} className="text-green-500" />
-                    <span>Non-aktifkan semester lama</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="lg:w-1/3 flex items-center">
-              <button
-                onClick={executeSmartSemesterSwitch}
-                disabled={loading || isSwitching}
-                className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg disabled:opacity-50 font-bold text-lg transition-all duration-300 transform hover:scale-[1.02] min-h-[60px] flex items-center justify-center gap-3">
-                {isSwitching ? (
-                  <>
-                    <RefreshCw className="animate-spin" size={20} />
-                    <span>Memproses...</span>
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw size={20} />
-                    <span>
-                      🚀 Pindah ke Semester{" "}
-                      {activeSemester.semester === 1 ? "Genap" : "Ganjil"}
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Panduan Penggunaan (Collapsible) */}
-      <details className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
-        <summary className="cursor-pointer font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-2">
-          <span>💡 Panduan Penggunaan Manajemen Semester</span>
-        </summary>
-
-        <div className="mt-4 space-y-4 text-sm text-blue-700 dark:text-blue-400">
-          <div>
-            <h4 className="font-semibold mb-2">
-              🔄 Perpindahan Semester (Rekomendasi)
-            </h4>
-            <p>
-              Gunakan fitur "Pindah ke Semester X" untuk perpindahan semester
-              dalam tahun ajaran yang sama. Fitur ini otomatis dan aman.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-2">📋 Copy Assignments (Manual)</h4>
-            <p>
-              Gunakan jika ingin copy assignments antar tahun ajaran atau dalam
-              kondisi khusus. Pilih source dan target dengan hati-hati.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-2">📅 Transisi Tahun Ajaran</h4>
-            <p>
-              Gunakan di akhir tahun ajaran untuk naik kelas otomatis. Pastikan
-              data siswa baru sudah di-input di SPMB.
-            </p>
-          </div>
-        </div>
-      </details>
-
       {/* Semester Management */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 md:p-6 mb-6 sm:mb-8 shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
@@ -1391,9 +847,7 @@ const AcademicYearTab = ({
                   Semester Aktif Sekarang
                 </p>
                 <p className="text-lg font-bold text-blue-900 dark:text-blue-200">
-                  {activeSemester.year} - Semester{" "}
-                  {activeSemester.semester === 1 ? "Ganjil" : "Genap"} (
-                  {activeSemester.semester})
+                  {activeSemester.year} - Semester {activeSemester.semester}
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                   {new Date(activeSemester.start_date).toLocaleDateString(
@@ -1454,8 +908,8 @@ const AcademicYearTab = ({
                     })
                   }
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                  <option value={1}>Semester 1 (Ganjil)</option>
-                  <option value={2}>Semester 2 (Genap)</option>
+                  <option value={1}>Semester 1</option>
+                  <option value={2}>Semester 2</option>
                 </select>
               </div>
 
@@ -1518,21 +972,12 @@ const AcademicYearTab = ({
         {/* Semester List */}
         <div className="space-y-3">
           {semesters.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <Calendar size={64} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Belum Ada Semester
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                Untuk memulai, tambahkan semester pertama dengan klik tombol
-                "Tambah Semester" di atas.
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <Clock size={40} className="mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Belum ada data semester</p>
+              <p className="text-xs mt-1">
+                Klik "Tambah Semester" untuk memulai
               </p>
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg max-w-md mx-auto">
-                <p className="text-sm text-blue-700 dark:text-blue-400">
-                  💡 <strong>Tip:</strong> Biasanya semester 1 (Ganjil) dimulai
-                  Juli-Desember, semester 2 (Genap) Januari-Juni.
-                </p>
-              </div>
             </div>
           ) : (
             semesters.map((semester) => (
@@ -1559,9 +1004,7 @@ const AcademicYearTab = ({
                     <div className="flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <span className="font-semibold text-gray-800 dark:text-gray-100">
-                          {semester.year} - Semester{" "}
-                          {semester.semester === 1 ? "Ganjil" : "Genap"} (
-                          {semester.semester})
+                          {semester.year} - Semester {semester.semester}
                         </span>
                         {semester.is_active && (
                           <span className="px-3 py-1 bg-blue-600 dark:bg-blue-700 text-white text-xs rounded-full font-medium">
@@ -1649,16 +1092,9 @@ const AcademicYearTab = ({
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 md:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
-                Transisi Tahun Ajaran
-              </h3>
-              <div
-                className="cursor-help"
-                title="Proses ini akan membuat tahun ajaran baru, menaikkan semua siswa ke kelas berikutnya, meluluskan siswa kelas 9, dan memasukkan siswa baru dari SPMB.">
-                <Info className="text-orange-500" size={16} />
-              </div>
-            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
+              Transisi Tahun Ajaran
+            </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru
               Dari SPMB)
@@ -1868,24 +1304,11 @@ const AcademicYearTab = ({
                         })
                       }
                       className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                      <option value={1}>Semester 1 (Ganjil)</option>
-                      <option value={2}>Semester 2 (Genap)</option>
+                      <option value={1}>Semester 1</option>
+                      <option value={2}>Semester 2</option>
                     </select>
                   </div>
                 </div>
-
-                {/* Preview Count */}
-                {assignmentPreview && (
-                  <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded border border-blue-100 dark:border-blue-800">
-                    <p className="text-xs text-blue-600 dark:text-blue-400">
-                      📊 Preview:{" "}
-                      <span className="font-bold">
-                        {assignmentPreview.count}
-                      </span>{" "}
-                      assignments akan di-copy
-                    </p>
-                  </div>
-                )}
               </div>
 
               {/* Arrow */}
@@ -1937,31 +1360,12 @@ const AcademicYearTab = ({
                         })
                       }
                       className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                      <option value={1}>Semester 1 (Ganjil)</option>
-                      <option value={2}>Semester 2 (Genap)</option>
+                      <option value={1}>Semester 1</option>
+                      <option value={2}>Semester 2</option>
                     </select>
                   </div>
                 </div>
               </div>
-
-              {/* Validation Errors */}
-              {(() => {
-                const errors = validateCopyConfig();
-                if (errors.length > 0) {
-                  return (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
-                      {errors.map((error, idx) => (
-                        <p
-                          key={idx}
-                          className="text-xs text-red-600 dark:text-red-400 mb-1 last:mb-0">
-                          {error}
-                        </p>
-                      ))}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
 
               {/* Warning */}
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
@@ -1984,7 +1388,9 @@ const AcademicYearTab = ({
               </button>
               <button
                 onClick={handleCopyAssignments}
-                disabled={loading || validateCopyConfig().length > 0}
+                disabled={
+                  loading || !copyConfig.sourceYear || !copyConfig.targetYear
+                }
                 className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-medium disabled:opacity-50 transition min-h-[44px]">
                 {loading ? "Menyalin..." : "Copy Sekarang"}
               </button>

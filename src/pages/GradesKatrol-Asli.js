@@ -674,7 +674,9 @@ const GradesKatrol = ({
         .single();
 
       if (yearError) {
-        console.log("Tahun ajaran tidak ada di academic_years table");
+        console.log(
+          "Tahun ajaran tidak ada di academic_years table, menggunakan fallback"
+        );
         setAcademicYearId(null);
       } else {
         setAcademicYearId(yearData.id);
@@ -685,9 +687,9 @@ const GradesKatrol = ({
         .from("grades_katrol")
         .select(
           `
-        *,
-        students:student_id (nis, full_name)
-      `
+          *,
+          students:student_id (nis, full_name)
+        `
         )
         .eq("class_id", selectedClassId)
         .ilike("subject", selectedSubjectState)
@@ -721,22 +723,13 @@ const GradesKatrol = ({
           psts_k: item.psts_katrol,
           psas_k: item.psas_katrol,
           nilai_akhir_k: item.nilai_akhir_katrol,
-          status:
-            item.nilai_akhir_katrol >= item.kkm ? "Tuntas" : "Belum Tuntas",
+          status: item.nilai_akhir_k >= item.kkm ? "Tuntas" : "Belum Tuntas",
         }));
 
-        // ✅ SORT BY NAMA
-        formattedKatrol.sort((a, b) =>
-          a.nama_siswa.localeCompare(b.nama_siswa)
-        );
-
-        // ✅ SET KE HASIL KATROL
         setHasilKatrol(formattedKatrol);
         setShowPreview(false);
-        setDataNilai([]);
-
         showMessage(
-          `✅ Berhasil memuat ${formattedKatrol.length} data nilai KATROL yang sudah tersimpan`,
+          `✅ Berhasil memuat ${formattedKatrol.length} data nilai KATROL`,
           "success"
         );
         return;
@@ -745,6 +738,7 @@ const GradesKatrol = ({
       // 3️⃣ KALAU BELUM ADA DATA KATROL, LOAD GRADES untuk preview
       console.log(`ℹ️ Tidak ada data katrol, memuat nilai ASLI...`);
 
+      // Ambil siswa aktif di kelas
       const { data: studentsData, error: studentsError } = await supabase
         .from("students")
         .select("id, full_name, nis")
@@ -760,6 +754,7 @@ const GradesKatrol = ({
         return;
       }
 
+      // Ambil semua nilai untuk kelas, subject, tahun ajaran, semester
       const { data: gradesData, error: gradesError } = await supabase
         .from("grades")
         .select("*")
@@ -771,6 +766,7 @@ const GradesKatrol = ({
 
       if (gradesError) throw gradesError;
 
+      // Format data preview
       const previewData = studentsData.map((student) => {
         const studentGrades =
           gradesData?.filter((g) => g.student_id === student.id) || [];
@@ -806,17 +802,15 @@ const GradesKatrol = ({
           student_id: student.id,
           nis: student.nis,
           nama_siswa: student.full_name,
-          nh1,
-          nh2,
-          nh3,
-          psts,
-          psas,
-          rata_nh,
-          nilai_akhir,
+          nh1: nh1,
+          nh2: nh2,
+          nh3: nh3,
+          psts: psts,
+          psas: psas,
+          rata_nh: rata_nh,
+          nilai_akhir: nilai_akhir,
         };
       });
-
-      previewData.sort((a, b) => a.nama_siswa.localeCompare(b.nama_siswa));
 
       setDataNilai(previewData);
       setShowPreview(true);
@@ -941,7 +935,7 @@ const GradesKatrol = ({
         psas_k: item.psas_katrol,
         rata_nh_k: item.rata_nh_katrol,
         nilai_akhir_k: item.nilai_akhir_katrol,
-        status: item.nilai_akhir_katrol >= item.kkm ? "Tuntas" : "Belum Tuntas",
+        status: item.nilai_akhir_katrol >= kkm ? "Tuntas" : "Belum Tuntas",
       }));
 
       setHasilKatrol(formattedHasil);

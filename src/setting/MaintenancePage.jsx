@@ -79,22 +79,22 @@ const MaintenancePage = ({ message }) => {
             ? "bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700"
             : "bg-white border border-red-100"
         }`}>
-        {/* Icon Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        {/* Icon Header - FIXED: Always horizontal */}
+        <div className="flex flex-row items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <Settings
-            className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 animate-spin ${
+            className={`w-6 h-6 sm:w-10 sm:h-10 md:w-12 md:h-12 animate-spin flex-shrink-0 ${
               darkMode ? "text-red-500" : "text-red-600"
             }`}
             style={{ animationDuration: "3s" }}
           />
           <h1
-            className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold ${
+            className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold whitespace-nowrap ${
               darkMode ? "text-red-500" : "text-red-600"
             }`}>
             Whoops !!!
           </h1>
           <Settings
-            className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 animate-spin ${
+            className={`w-6 h-6 sm:w-10 sm:h-10 md:w-12 md:h-12 animate-spin flex-shrink-0 ${
               darkMode ? "text-red-500" : "text-red-600"
             }`}
             style={{ animationDuration: "3s" }}

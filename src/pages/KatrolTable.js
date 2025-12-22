@@ -1,4 +1,4 @@
-// 📊 KatrolTable.js - Component tabel hasil katrol (SIMPLE & CLEAN)
+// 📊 KatrolTable.js - Component tabel hasil katrol (FIXED DARK MODE + FIREFOX)
 import React from "react";
 
 const KatrolTable = ({
@@ -31,24 +31,24 @@ const KatrolTable = ({
     const selisih = hitungSelisih(nilaiAsli, nilaiKatrol);
 
     return (
-      <div className="flex flex-col items-center justify-center gap-1 min-h-[3rem]">
+      <div className="flex flex-col items-center justify-center gap-1 min-h-[3rem] py-1">
         {/* Nilai Asli → Katrol */}
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-400 min-w-[1.5rem]">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+          <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 min-w-[1.5rem]">
             {formatNilai(nilaiAsli)}
           </span>
 
           {naik && (
-            <span className="text-green-600 dark:text-green-400 text-xs">
+            <span className="text-blue-500 dark:text-blue-400 text-xs font-bold">
               →
             </span>
           )}
 
           <span
-            className={`text-sm font-semibold min-w-[1.5rem] ${
+            className={`text-xs sm:text-sm font-bold min-w-[1.5rem] ${
               naik
-                ? "text-green-600 dark:text-green-400"
-                : "text-gray-900 dark:text-gray-100"
+                ? "text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-200"
             }`}>
             {formatNilai(nilaiKatrol)}
           </span>
@@ -56,7 +56,7 @@ const KatrolTable = ({
 
         {/* Selisih (hanya kalau naik) */}
         {naik && (
-          <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded">
+          <span className="text-[10px] sm:text-xs text-blue-700 dark:text-blue-300 font-bold bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-full">
             +{Math.round(selisih)}
           </span>
         )}
@@ -70,10 +70,10 @@ const KatrolTable = ({
     return (
       <div className="flex justify-center">
         <span
-          className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium ${
+          className={`inline-flex items-center px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold ${
             lulus
-              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-              : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+              ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
+              : "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700"
           }`}>
           {lulus ? "✓ Tuntas" : "✗ Belum"}
         </span>
@@ -82,120 +82,136 @@ const KatrolTable = ({
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        {/* HEADER */}
-        <thead className={`${isDarkMode ? "bg-gray-700" : "bg-gray-50"}`}>
-          <tr>
-            <th className="px-4 py-3.5 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              No
-            </th>
-            <th className="px-4 py-3.5 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NIS
-            </th>
-            <th className="px-4 py-3.5 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Nama Siswa
-            </th>
-            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH1
-            </th>
-            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH2
-            </th>
-            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              NH3
-            </th>
-            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Rata NH
-            </th>
-            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              PSTS
-            </th>
-            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              PSAS
-            </th>
-            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Nilai Akhir
-            </th>
-            <th className="px-4 py-3.5 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Status
-            </th>
-          </tr>
-        </thead>
+    <div className="w-full">
+      {/* Wrapper dengan shadow dan rounded */}
+      <div className="rounded-xl border-2 border-blue-300 dark:border-blue-800 shadow-lg overflow-hidden bg-white dark:bg-gray-800">
+        {/* Scrollable container untuk mobile */}
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-blue-500 dark:scrollbar-thumb-blue-600 scrollbar-track-gray-200 dark:scrollbar-track-gray-700">
+          <table className="min-w-full divide-y-2 divide-blue-300 dark:divide-blue-800">
+            {/* HEADER */}
+            <thead className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 dark:from-blue-800 dark:via-blue-900 dark:to-gray-900">
+              <tr>
+                <th className="sticky left-0 z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-600 dark:bg-blue-900 border-r-2 border-blue-500 dark:border-blue-700 shadow-lg">
+                  No
+                </th>
+                <th className="sticky left-[52px] sm:left-[68px] z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-600 dark:bg-blue-900 border-r-2 border-blue-500 dark:border-blue-700 shadow-lg min-w-[100px] sm:min-w-[130px]">
+                  NIS
+                </th>
+                <th className="sticky left-[152px] sm:left-[198px] z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-700 dark:bg-blue-900 border-r-4 border-blue-400 dark:border-blue-600 shadow-xl min-w-[160px] sm:min-w-[200px]">
+                  Nama Siswa
+                </th>
+                <th className="px-2 sm:px-3 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[70px] sm:min-w-[85px]">
+                  NH1
+                </th>
+                <th className="px-2 sm:px-3 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[70px] sm:min-w-[85px]">
+                  NH2
+                </th>
+                <th className="px-2 sm:px-3 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[70px] sm:min-w-[85px]">
+                  NH3
+                </th>
+                <th className="px-2 sm:px-3 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[75px] sm:min-w-[90px]">
+                  Rata NH
+                </th>
+                <th className="px-2 sm:px-3 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[70px] sm:min-w-[85px]">
+                  PSTS
+                </th>
+                <th className="px-2 sm:px-3 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[70px] sm:min-w-[85px]">
+                  PSAS
+                </th>
+                <th className="px-2 sm:px-3 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[85px] sm:min-w-[100px]">
+                  Nilai Akhir
+                </th>
+                <th className="px-3 sm:px-4 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[100px] sm:min-w-[110px]">
+                  Status
+                </th>
+              </tr>
+            </thead>
 
-        {/* BODY */}
-        <tbody
-          className={`${
-            isDarkMode ? "bg-gray-800" : "bg-white"
-          } divide-y divide-gray-200 dark:divide-gray-700`}>
-          {hasilKatrol.map((item, index) => (
-            <tr
-              key={item.student_id}
-              className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
-              {/* No */}
-              <td className="px-4 py-4 text-sm text-gray-900 dark:text-gray-100 font-medium">
-                {index + 1}
-              </td>
+            {/* BODY */}
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-blue-200 dark:divide-gray-700">
+              {hasilKatrol.map((item, index) => (
+                <tr
+                  key={item.student_id}
+                  className="hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200">
+                  {/* No - Sticky */}
+                  <td className="sticky left-0 z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm text-gray-800 dark:text-gray-200 font-bold bg-white dark:bg-gray-800 border-r border-blue-200 dark:border-gray-700 shadow-sm">
+                    {index + 1}
+                  </td>
 
-              {/* NIS */}
-              <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                {item.nis}
-              </td>
+                  {/* NIS - Sticky */}
+                  <td className="sticky left-[52px] sm:left-[68px] z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-400 bg-white dark:bg-gray-800 border-r border-blue-200 dark:border-gray-700 shadow-sm">
+                    {item.nis}
+                  </td>
 
-              {/* Nama */}
-              <td className="px-4 py-4 text-sm text-gray-900 dark:text-gray-100">
-                {item.nama_siswa}
-              </td>
+                  {/* Nama - Sticky */}
+                  <td className="sticky left-[152px] sm:left-[198px] z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm text-gray-800 dark:text-gray-100 font-semibold bg-blue-50 dark:bg-gray-900 border-r-2 border-blue-300 dark:border-gray-600 shadow-md">
+                    {item.nama_siswa}
+                  </td>
 
-              {/* NH1 */}
-              <td className="px-4 py-4">
-                <NilaiCell nilaiAsli={item.nh1} nilaiKatrol={item.nh1_k} />
-              </td>
+                  {/* NH1 */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                    <NilaiCell nilaiAsli={item.nh1} nilaiKatrol={item.nh1_k} />
+                  </td>
 
-              {/* NH2 */}
-              <td className="px-4 py-4">
-                <NilaiCell nilaiAsli={item.nh2} nilaiKatrol={item.nh2_k} />
-              </td>
+                  {/* NH2 */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                    <NilaiCell nilaiAsli={item.nh2} nilaiKatrol={item.nh2_k} />
+                  </td>
 
-              {/* NH3 */}
-              <td className="px-4 py-4">
-                <NilaiCell nilaiAsli={item.nh3} nilaiKatrol={item.nh3_k} />
-              </td>
+                  {/* NH3 */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                    <NilaiCell nilaiAsli={item.nh3} nilaiKatrol={item.nh3_k} />
+                  </td>
 
-              {/* Rata NH */}
-              <td className="px-4 py-4">
-                <NilaiCell
-                  nilaiAsli={item.rata_nh}
-                  nilaiKatrol={item.rata_nh_k}
-                />
-              </td>
+                  {/* Rata NH */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-blue-100 dark:bg-blue-950/30">
+                    <NilaiCell
+                      nilaiAsli={item.rata_nh}
+                      nilaiKatrol={item.rata_nh_k}
+                    />
+                  </td>
 
-              {/* PSTS */}
-              <td className="px-4 py-4">
-                <NilaiCell nilaiAsli={item.psts} nilaiKatrol={item.psts_k} />
-              </td>
+                  {/* PSTS */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                    <NilaiCell
+                      nilaiAsli={item.psts}
+                      nilaiKatrol={item.psts_k}
+                    />
+                  </td>
 
-              {/* PSAS */}
-              <td className="px-4 py-4">
-                <NilaiCell nilaiAsli={item.psas} nilaiKatrol={item.psas_k} />
-              </td>
+                  {/* PSAS */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                    <NilaiCell
+                      nilaiAsli={item.psas}
+                      nilaiKatrol={item.psas_k}
+                    />
+                  </td>
 
-              {/* Nilai Akhir */}
-              <td className="px-4 py-4">
-                <NilaiCell
-                  nilaiAsli={item.nilai_akhir}
-                  nilaiKatrol={item.nilai_akhir_k}
-                />
-              </td>
+                  {/* Nilai Akhir */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-blue-100 dark:bg-blue-950/30">
+                    <NilaiCell
+                      nilaiAsli={item.nilai_akhir}
+                      nilaiKatrol={item.nilai_akhir_k}
+                    />
+                  </td>
 
-              {/* Status */}
-              <td className="px-4 py-4">
-                <StatusBadge nilaiAkhir={item.nilai_akhir_k} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  {/* Status */}
+                  <td className="px-3 sm:px-4 py-3.5 sm:py-4">
+                    <StatusBadge nilaiAkhir={item.nilai_akhir_k} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Info untuk mobile - Scroll hint */}
+      <div className="mt-3 text-center lg:hidden">
+        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium bg-blue-50 dark:bg-blue-950/20 py-2 px-4 rounded-lg border border-blue-200 dark:border-blue-800">
+          ← Geser tabel ke kiri/kanan untuk lihat semua kolom →
+        </p>
+      </div>
     </div>
   );
 };
