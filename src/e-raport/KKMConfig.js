@@ -3,217 +3,225 @@ import { supabase } from "../supabaseClient";
 import { Settings, Save, Trash2, Plus, RefreshCw } from "lucide-react";
 
 function KKMConfig({ user, onShowToast, darkMode }) {
+  // State utama
+  const [semester, setSemester] = useState("1"); // 1: Ganjil, 2: Genap
   const [academicYear, setAcademicYear] = useState(null);
-  const [availableClasses, setAvailableClasses] = useState([]);
-  const [availableMapel, setAvailableMapel] = useState([]); // Mapel dari database
+  const [jenjang, setJenjang] = useState("");
+  const [mapel, setMapel] = useState("");
+  const [kkmValue, setKkmValue] = useState(75);
+
+  // Data dropdown
+  const [mapelOptions, setMapelOptions] = useState([]);
   const [kkmList, setKkmList] = useState([]);
+
+  // Loading state
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [selectedClass, setSelectedClass] = useState("");
-  const [showAddForm, setShowAddForm] = useState(false);
   const [loadingMapel, setLoadingMapel] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    class_id: "",
-    mata_pelajaran: "",
-    kkm: 75,
-  });
+  // Daftar tetap
+  const jenjangList = [7, 8, 9];
+  const semesterOptions = [
+    { value: "1", label: "Ganjil" },
+    { value: "2", label: "Genap" },
+  ];
 
+  // Load tahun ajaran aktif saat pertama kali
   useEffect(() => {
-    loadInitialData();
+    loadAcademicYear();
   }, []);
 
+  // Load mapel options saat jenjang berubah
   useEffect(() => {
-    if (selectedClass && academicYear) {
-      loadKKMData();
+    if (jenjang && academicYear) {
+      loadMapelOptions();
+    } else {
+      setMapelOptions([]);
+      setMapel("");
     }
-  }, [selectedClass, academicYear]);
+  }, [jenjang, academicYear, semester]);
 
+  // Load KKM data saat semua filter terisi
   useEffect(() => {
-    // Load mata pelajaran dari database
-    loadMapelFromDatabase();
-  }, []);
+    if (academicYear && jenjang && mapel && semester) {
+      loadKKMData();
+    } else {
+      setKkmList([]);
+    }
+  }, [academicYear, jenjang, mapel, semester]);
 
-  const loadInitialData = async () => {
+  // 1. Load tahun ajaran aktif
+  const loadAcademicYear = async () => {
     try {
       setLoading(true);
-
-      // Load academic year aktif
-      const { data: ayData, error: ayError } = await supabase
+      const { data, error } = await supabase
         .from("academic_years")
         .select("*")
         .eq("is_active", true)
         .single();
 
-      if (ayError || !ayData) {
-        throw new Error("Tahun ajaran aktif tidak ditemukan.");
-      }
-
-      setAcademicYear(ayData);
-
-      // Load semua kelas - tampilkan id (misal "7A") sebagai label
-      const { data: classesData, error: classesError } = await supabase
-        .from("classes")
-        .select("id, grade, academic_year")
-        .order("id"); // Urut berdasarkan id kelas
-
-      if (classesError) {
-        throw new Error("Gagal load data kelas.");
-      }
-
-      setAvailableClasses(classesData || []);
-
-      if (onShowToast) onShowToast("Data berhasil dimuat!", "success");
+      if (error) throw error;
+      setAcademicYear(data);
     } catch (error) {
-      console.error("Error loading initial data:", error);
-      if (onShowToast) onShowToast(`Error: ${error.message}`, "error");
+      console.error("Error loading academic year:", error);
+      onShowToast?.("Gagal memuat tahun ajaran", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const loadMapelFromDatabase = async () => {
+  // 2. Load mapel options dari database
+  const loadMapelOptions = async () => {
+    if (!jenjang || !academicYear) return;
+
     try {
       setLoadingMapel(true);
 
-      // Ambil mata pelajaran unik dari tabel nilai_eraport
+      // Ambil semua kelas untuk jenjang ini (misal 7A, 7B, 7C, dst)
+      const { data: classesData, error: classesError } = await supabase
+        .from("classes")
+        .select("id")
+        .ilike("id", `${jenjang}%`);
+
+      if (classesError) throw classesError;
+      if (!classesData?.length) {
+        setMapelOptions([]);
+        return;
+      }
+
+      const classIds = classesData.map((c) => c.id);
+
+      // Ambil mapel unik dari nilai_eraport
       const { data, error } = await supabase
         .from("nilai_eraport")
         .select("mata_pelajaran")
-        .order("mata_pelajaran");
+        .in("class_id", classIds)
+        .eq("tahun_ajaran_id", academicYear.id)
+        .eq("semester", semester);
 
       if (error) throw error;
 
-      // Ekstrak mata pelajaran unik
       const uniqueMapel = [
         ...new Set(data?.map((item) => item.mata_pelajaran) || []),
       ];
+      const sortedMapel = uniqueMapel.sort();
 
-      // Urutkan alfabet
-      uniqueMapel.sort();
-
-      setAvailableMapel(uniqueMapel);
+      setMapelOptions(sortedMapel);
     } catch (error) {
-      console.error("Error loading mata pelajaran:", error);
-      if (onShowToast)
-        onShowToast(`Gagal load mata pelajaran: ${error.message}`, "error");
+      console.error("Error loading mapel options:", error);
+      onShowToast?.("Gagal memuat daftar mapel", "error");
+      setMapelOptions([]);
     } finally {
       setLoadingMapel(false);
     }
   };
 
+  // 3. Load KKM data yang sudah ada
   const loadKKMData = async () => {
+    if (!academicYear || !jenjang || !mapel || !semester) return;
+
     try {
       setLoading(true);
-
       const { data, error } = await supabase
         .from("raport_config")
         .select("*")
-        .eq("class_id", selectedClass)
         .eq("tahun_ajaran_id", academicYear.id)
-        .order("mata_pelajaran");
+        .eq("semester", semester)
+        .eq("jenjang", jenjang)
+        .eq("mata_pelajaran", mapel)
+        .order("updated_at", { ascending: false });
 
       if (error) throw error;
 
       setKkmList(data || []);
+
+      // Set nilai KKM terbaru jika ada
+      if (data?.length > 0) {
+        setKkmValue(data[0].kkm);
+      } else {
+        setKkmValue(75); // Reset ke default jika tidak ada
+      }
     } catch (error) {
       console.error("Error loading KKM:", error);
-      if (onShowToast) onShowToast(`Gagal load KKM: ${error.message}`, "error");
+      onShowToast?.("Gagal memuat data KKM", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddKKM = async () => {
-    if (!formData.class_id || !formData.mata_pelajaran) {
-      if (onShowToast) onShowToast("Lengkapi semua field!", "warning");
+  // 4. Simpan/Update KKM
+  const handleSaveKKM = async () => {
+    if (!academicYear || !jenjang || !mapel || !semester) {
+      onShowToast?.("Harap lengkapi semua filter", "warning");
       return;
     }
 
-    if (formData.kkm < 0 || formData.kkm > 100) {
-      if (onShowToast) onShowToast("KKM harus antara 0-100!", "warning");
-      return;
-    }
-
-    // Check duplicate
-    const exists = kkmList.find(
-      (item) =>
-        item.class_id === formData.class_id &&
-        item.mata_pelajaran === formData.mata_pelajaran
-    );
-
-    if (exists) {
-      if (onShowToast)
-        onShowToast("KKM untuk mapel ini sudah ada! Gunakan edit.", "warning");
+    if (kkmValue < 0 || kkmValue > 100) {
+      onShowToast?.("KKM harus antara 0-100", "warning");
       return;
     }
 
     try {
       setSaving(true);
 
-      const newKKM = {
-        class_id: formData.class_id,
-        mata_pelajaran: formData.mata_pelajaran,
-        tahun_ajaran_id: academicYear.id,
-        kkm: formData.kkm,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      // Cek apakah sudah ada
+      const { data: existing, error: checkError } = await supabase
+        .from("raport_config")
+        .select("id")
+        .eq("tahun_ajaran_id", academicYear.id)
+        .eq("semester", semester)
+        .eq("jenjang", jenjang)
+        .eq("mata_pelajaran", mapel)
+        .single();
 
-      const { error } = await supabase.from("raport_config").insert([newKKM]);
+      let result;
 
-      if (error) throw error;
+      if (existing) {
+        // Update existing
+        result = await supabase
+          .from("raport_config")
+          .update({
+            kkm: kkmValue,
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id,
+          })
+          .eq("id", existing.id);
 
-      if (onShowToast) onShowToast("KKM berhasil ditambahkan!", "success");
+        if (result.error) throw result.error;
+        onShowToast?.("✅ KKM berhasil diperbarui", "success");
+      } else {
+        // Insert new
+        result = await supabase.from("raport_config").insert([
+          {
+            tahun_ajaran_id: academicYear.id,
+            semester,
+            jenjang,
+            mata_pelajaran: mapel,
+            kkm: kkmValue,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            created_by: user?.id,
+            updated_by: user?.id,
+          },
+        ]);
 
-      // Reset form & reload
-      setFormData({ class_id: "", mata_pelajaran: "", kkm: 75 });
-      setShowAddForm(false);
+        if (result.error) throw result.error;
+        onShowToast?.("✅ KKM berhasil disimpan", "success");
+      }
+
+      // Refresh data
       await loadKKMData();
     } catch (error) {
-      console.error("Error adding KKM:", error);
-      if (onShowToast)
-        onShowToast(`Gagal tambah KKM: ${error.message}`, "error");
+      console.error("Error saving KKM:", error);
+      onShowToast?.("❌ Gagal menyimpan KKM", "error");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleUpdateKKM = async (id, newKKM) => {
-    if (newKKM < 0 || newKKM > 100) {
-      if (onShowToast) onShowToast("KKM harus antara 0-100!", "warning");
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from("raport_config")
-        .update({
-          kkm: newKKM,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      // Update local state
-      setKkmList(
-        kkmList.map((item) =>
-          item.id === id ? { ...item, kkm: newKKM } : item
-        )
-      );
-
-      if (onShowToast) onShowToast("KKM berhasil diupdate!", "success");
-    } catch (error) {
-      console.error("Error updating KKM:", error);
-      if (onShowToast)
-        onShowToast(`Gagal update KKM: ${error.message}`, "error");
-    }
-  };
-
-  const handleDeleteKKM = async (id, mapel) => {
-    if (!window.confirm(`Hapus KKM untuk ${mapel}?`)) return;
+  // 5. Hapus KKM
+  const handleDeleteKKM = async (id) => {
+    if (!window.confirm("Yakin hapus KKM ini?")) return;
 
     try {
       const { error } = await supabase
@@ -223,94 +231,62 @@ function KKMConfig({ user, onShowToast, darkMode }) {
 
       if (error) throw error;
 
-      setKkmList(kkmList.filter((item) => item.id !== id));
-      if (onShowToast) onShowToast("KKM berhasil dihapus!", "success");
+      // Update state
+      const updatedList = kkmList.filter((item) => item.id !== id);
+      setKkmList(updatedList);
+
+      // Reset value jika semua data dihapus
+      if (updatedList.length === 0) {
+        setKkmValue(75);
+      }
+
+      onShowToast?.("✅ KKM berhasil dihapus", "success");
     } catch (error) {
       console.error("Error deleting KKM:", error);
-      if (onShowToast)
-        onShowToast(`Gagal hapus KKM: ${error.message}`, "error");
+      onShowToast?.("❌ Gagal menghapus KKM", "error");
     }
   };
 
-  const handleBulkSetKKM = async () => {
-    if (!selectedClass) {
-      if (onShowToast) onShowToast("Pilih kelas terlebih dahulu!", "warning");
+  // 6. Set KKM dengan prompt (bulk)
+  const handleSetKKM = async () => {
+    if (!academicYear || !jenjang || !mapel || !semester) {
+      onShowToast?.("Harap lengkapi semua filter", "warning");
       return;
     }
 
-    const kkm = window.prompt(
-      "Set KKM untuk SEMUA mata pelajaran (0-100):",
-      "75"
+    const newKKM = window.prompt(
+      `Set KKM untuk ${mapel} (0-100):`,
+      kkmValue.toString()
     );
-    if (!kkm) return;
+    if (!newKKM) return;
 
-    const kkmValue = parseInt(kkm);
-    if (isNaN(kkmValue) || kkmValue < 0 || kkmValue > 100) {
-      if (onShowToast) onShowToast("KKM tidak valid!", "error");
+    const kkmNum = parseInt(newKKM);
+    if (isNaN(kkmNum) || kkmNum < 0 || kkmNum > 100) {
+      onShowToast?.("KKM harus angka 0-100", "error");
       return;
     }
 
-    // Tampilkan nama kelas yang dipilih
-    const selectedClassData = availableClasses.find(
-      (cls) => cls.id === selectedClass
-    );
-    const className = selectedClassData
-      ? `Kelas ${selectedClassData.id}`
-      : `Kelas ${selectedClass}`;
-
-    if (
-      !window.confirm(
-        `Set KKM ${kkmValue} untuk SEMUA mata pelajaran di ${className}?`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      const bulkData = availableMapel.map((mapel) => ({
-        class_id: selectedClass,
-        mata_pelajaran: mapel,
-        tahun_ajaran_id: academicYear.id,
-        kkm: kkmValue,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }));
-
-      // Delete existing KKM untuk kelas ini
-      const { error: deleteError } = await supabase
-        .from("raport_config")
-        .delete()
-        .eq("class_id", selectedClass)
-        .eq("tahun_ajaran_id", academicYear.id);
-
-      if (deleteError) throw deleteError;
-
-      // Insert KKM baru
-      const { error: insertError } = await supabase
-        .from("raport_config")
-        .insert(bulkData);
-
-      if (insertError) throw insertError;
-
-      if (onShowToast)
-        onShowToast(
-          `KKM ${kkmValue} berhasil di-set untuk ${availableMapel.length} mapel!`,
-          "success"
-        );
-
-      await loadKKMData();
-    } catch (error) {
-      console.error("Error bulk set KKM:", error);
-      if (onShowToast)
-        onShowToast(`Gagal set KKM massal: ${error.message}`, "error");
-    } finally {
-      setSaving(false);
-    }
+    setKkmValue(kkmNum);
+    await handleSaveKKM();
   };
 
-  if (loading && !selectedClass) {
+  // 7. Reset semua filter
+  const handleReset = () => {
+    setJenjang("");
+    setMapel("");
+    setMapelOptions([]);
+    setKkmList([]);
+    setKkmValue(75);
+  };
+
+  // 8. Refresh data
+  const handleRefresh = () => {
+    loadMapelOptions();
+    loadKKMData();
+  };
+
+  // Loading state awal
+  if (loading && !academicYear) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -325,355 +301,346 @@ function KKMConfig({ user, onShowToast, darkMode }) {
 
   return (
     <div
-      className={`min-h-screen py-4 sm:py-8 px-3 sm:px-4 lg:px-6 ${
-        darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-50 to-blue-100"
-      }`}>
-      <div className="max-w-7xl mx-auto">
+      className={`min-h-screen p-4 ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+      <div className="max-w-6xl mx-auto">
+        {/* Card utama */}
         <div
-          className={`rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 ${
-            darkMode
-              ? "bg-gray-800 border border-gray-700"
-              : "bg-white border border-blue-200"
+          className={`rounded-xl shadow-lg ${
+            darkMode ? "bg-gray-800" : "bg-white"
           }`}>
           {/* Header */}
-          <div className="flex items-center justify-between mb-6 pb-4 border-b">
-            <div>
-              <h2
-                className={`text-xl sm:text-2xl lg:text-3xl font-bold flex items-center gap-2 ${
-                  darkMode ? "text-white" : "text-blue-800"
-                }`}>
-                <Settings className="text-blue-600" size={28} />
-                Pengaturan KKM
-              </h2>
-              <p
-                className={`text-sm mt-1 ${
-                  darkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
-                Kriteria Ketuntasan Minimal per Kelas & Mata Pelajaran
-              </p>
+          <div
+            className={`p-6 border-b ${
+              darkMode ? "border-gray-700" : "border-gray-200"
+            }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1
+                  className={`text-2xl font-bold flex items-center gap-2 ${
+                    darkMode ? "text-white" : "text-gray-800"
+                  }`}>
+                  <Settings className="text-blue-500" />
+                  Pengaturan KKM
+                </h1>
+                <p
+                  className={`mt-1 ${
+                    darkMode ? "text-gray-400" : "text-gray-600"
+                  }`}>
+                  Set Kriteria Ketuntasan Minimal per Mapel
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRefresh}
+                  className="p-2 rounded-lg hover:bg-gray-700"
+                  title="Refresh">
+                  <RefreshCw
+                    size={20}
+                    className={darkMode ? "text-gray-400" : "text-gray-600"}
+                  />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Filter Kelas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label
-                className={`block text-sm font-semibold mb-2 ${
-                  darkMode ? "text-gray-300" : "text-blue-700"
-                }`}>
-                Pilih Kelas
-              </label>
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className={`w-full p-3 rounded-xl border transition-all duration-200 ${
-                  darkMode
-                    ? "bg-gray-700 border-gray-600 text-white"
-                    : "bg-white border-blue-300 text-blue-900"
-                }`}>
-                <option value="">-- Pilih Kelas --</option>
-                {availableClasses.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.id} (Kelas {cls.grade})
+          {/* Filter Section */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Tahun Ajaran (readonly) */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                  Tahun Ajaran
+                </label>
+                <div
+                  className={`p-3 rounded-lg ${
+                    darkMode
+                      ? "bg-gray-700 text-gray-300"
+                      : "bg-gray-100 text-gray-600"
+                  }`}>
+                  {academicYear?.year || "-"}
+                </div>
+              </div>
+
+              {/* Semester */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                  Semester
+                </label>
+                <select
+                  value={semester}
+                  onChange={(e) => setSemester(e.target.value)}
+                  className={`w-full p-3 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}>
+                  {semesterOptions.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Jenjang */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                  Jenjang Kelas
+                </label>
+                <select
+                  value={jenjang}
+                  onChange={(e) => setJenjang(e.target.value)}
+                  className={`w-full p-3 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}>
+                  <option value="">Pilih Jenjang</option>
+                  {jenjangList.map((j) => (
+                    <option key={j} value={j}>
+                      Kelas {j}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Mapel Dropdown */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                  Mata Pelajaran
+                  {loadingMapel && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      (loading...)
+                    </span>
+                  )}
+                </label>
+                <select
+                  value={mapel}
+                  onChange={(e) => setMapel(e.target.value)}
+                  disabled={!jenjang || loadingMapel}
+                  className={`w-full p-3 rounded-lg border ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300"
+                  } ${!jenjang ? "opacity-50 cursor-not-allowed" : ""}`}>
+                  <option value="">
+                    {jenjang ? "Pilih Mapel" : "Pilih jenjang dulu"}
                   </option>
-                ))}
-              </select>
+                  {mapelOptions.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label
-                className={`block text-sm font-semibold mb-2 ${
-                  darkMode ? "text-gray-300" : "text-blue-700"
+            {/* Status */}
+            {jenjang && mapel && (
+              <div
+                className={`p-4 rounded-lg mb-6 ${
+                  darkMode ? "bg-blue-900/30" : "bg-blue-50"
                 }`}>
-                Tahun Ajaran
-              </label>
-              <input
-                type="text"
-                value={academicYear?.year || "-"}
-                disabled
-                className={`w-full p-3 rounded-xl border ${
-                  darkMode
-                    ? "bg-gray-700 border-gray-600 text-gray-400"
-                    : "bg-gray-100 border-gray-300 text-gray-600"
-                }`}
-              />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3
+                      className={`font-semibold ${
+                        darkMode ? "text-white" : "text-blue-900"
+                      }`}>
+                      KKM untuk {mapel}
+                    </h3>
+                    <p
+                      className={`text-sm ${
+                        darkMode ? "text-blue-300" : "text-blue-700"
+                      }`}>
+                      Kelas {jenjang} • Semester{" "}
+                      {semester === "1" ? "Ganjil" : "Genap"} •{" "}
+                      {academicYear?.year}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={kkmValue}
+                      onChange={(e) => setKkmValue(parseInt(e.target.value))}
+                      className="w-48"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-2xl font-bold ${
+                          darkMode ? "text-white" : "text-blue-900"
+                        }`}>
+                        {kkmValue}
+                      </span>
+                      <span
+                        className={`text-sm ${
+                          darkMode ? "text-gray-400" : "text-gray-600"
+                        }`}>
+                        / 100
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p
+                  className={`text-sm mt-2 ${
+                    darkMode ? "text-blue-300" : "text-blue-700"
+                  }`}>
+                  Berlaku untuk semua kelas {jenjang}A sampai {jenjang}F
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={handleSaveKKM}
+                disabled={saving || !jenjang || !mapel}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  saving || !jenjang || !mapel
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                } text-white`}>
+                <Save size={18} />
+                {saving ? "Menyimpan..." : "Simpan KKM"}
+              </button>
+
+              <button
+                onClick={handleSetKKM}
+                disabled={saving || !jenjang || !mapel}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  saving || !jenjang || !mapel
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
+                } text-white`}>
+                <Settings size={18} />
+                Set KKM
+              </button>
+
+              <button
+                onClick={handleReset}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-gray-500 hover:bg-gray-600 text-white transition-colors">
+                Reset Filter
+              </button>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          {selectedClass && (
-            <div className="flex flex-wrap gap-3 mb-6">
-              <button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
-                <Plus size={20} />
-                Tambah KKM
-              </button>
-
-              <button
-                onClick={handleBulkSetKKM}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50">
-                <Settings size={20} />
-                Set KKM Massal
-              </button>
-
-              <button
-                onClick={loadKKMData}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-600 hover:bg-gray-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
-                <RefreshCw size={20} />
-                Refresh
-              </button>
-            </div>
-          )}
-
-          {/* Add Form */}
-          {showAddForm && (
-            <div
-              className={`p-4 rounded-xl mb-6 border-2 ${
-                darkMode
-                  ? "bg-gray-700 border-blue-500"
-                  : "bg-blue-50 border-blue-300"
-              }`}>
+          {/* History Table */}
+          {kkmList.length > 0 && (
+            <div className="p-6 border-t">
               <h3
-                className={`text-lg font-bold mb-4 ${
-                  darkMode ? "text-white" : "text-blue-800"
+                className={`text-lg font-semibold mb-4 ${
+                  darkMode ? "text-white" : "text-gray-800"
                 }`}>
-                Tambah KKM Baru
+                Riwayat KKM
               </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}>
-                    Kelas
-                  </label>
-                  <select
-                    value={formData.class_id}
-                    onChange={(e) =>
-                      setFormData({ ...formData, class_id: e.target.value })
-                    }
-                    className={`w-full p-3 rounded-lg border ${
-                      darkMode
-                        ? "bg-gray-600 border-gray-500 text-white"
-                        : "bg-white border-blue-300"
-                    }`}>
-                    <option value="">-- Pilih --</option>
-                    {availableClasses.map((cls) => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.id} (Kelas {cls.grade})
-                      </option>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="min-w-full">
+                  <thead className={darkMode ? "bg-gray-700" : "bg-gray-100"}>
+                    <tr>
+                      <th className="p-3 text-left text-sm font-medium">No</th>
+                      <th className="p-3 text-left text-sm font-medium">
+                        Mapel
+                      </th>
+                      <th className="p-3 text-left text-sm font-medium">
+                        Jenjang
+                      </th>
+                      <th className="p-3 text-left text-sm font-medium">
+                        Semester
+                      </th>
+                      <th className="p-3 text-left text-sm font-medium">KKM</th>
+                      <th className="p-3 text-left text-sm font-medium">
+                        Update Terakhir
+                      </th>
+                      <th className="p-3 text-left text-sm font-medium">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {kkmList.map((item, index) => (
+                      <tr
+                        key={item.id}
+                        className={`border-b ${
+                          darkMode
+                            ? "border-gray-700 hover:bg-gray-800/50"
+                            : "border-gray-200 hover:bg-gray-50"
+                        }`}>
+                        <td className="p-3">{index + 1}</td>
+                        <td className="p-3">{item.mata_pelajaran}</td>
+                        <td className="p-3">Kelas {item.jenjang}</td>
+                        <td className="p-3">
+                          {item.semester === "1" ? "Ganjil" : "Genap"}
+                        </td>
+                        <td className="p-3 font-bold">{item.kkm}</td>
+                        <td className="p-3 text-sm">
+                          {new Date(item.updated_at).toLocaleDateString(
+                            "id-ID"
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <button
+                            onClick={() => handleDeleteKKM(item.id)}
+                            className="p-2 text-red-500 hover:text-red-700 rounded hover:bg-red-50"
+                            title="Hapus">
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
+                      </tr>
                     ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}>
-                    Mata Pelajaran
-                    {loadingMapel && (
-                      <span className="text-xs text-gray-500 ml-2">
-                        (loading...)
-                      </span>
-                    )}
-                  </label>
-                  <select
-                    value={formData.mata_pelajaran}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        mata_pelajaran: e.target.value,
-                      })
-                    }
-                    disabled={loadingMapel}
-                    className={`w-full p-3 rounded-lg border ${
-                      darkMode
-                        ? "bg-gray-600 border-gray-500 text-white"
-                        : "bg-white border-blue-300"
-                    } ${loadingMapel ? "opacity-50" : ""}`}>
-                    <option value="">-- Pilih --</option>
-                    {availableMapel.map((mapel) => (
-                      <option key={mapel} value={mapel}>
-                        {mapel}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}>
-                    KKM (0-100)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.kkm}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        kkm: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className={`w-full p-3 rounded-lg border ${
-                      darkMode
-                        ? "bg-gray-600 border-gray-500 text-white"
-                        : "bg-white border-blue-300"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={handleAddKKM}
-                  disabled={saving || loadingMapel}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-50">
-                  <Save size={18} />
-                  Simpan
-                </button>
-                <button
-                  onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 rounded-lg bg-gray-500 hover:bg-gray-600 text-white font-medium">
-                  Batal
-                </button>
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
-          {/* KKM List */}
-          {selectedClass && (
-            <>
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                  <p
-                    className={`mt-3 ${
-                      darkMode ? "text-gray-300" : "text-gray-600"
-                    }`}>
-                    Memuat data KKM...
-                  </p>
-                </div>
-              ) : kkmList.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border shadow-sm">
-                  <table className="w-full border-collapse">
-                    <thead className={darkMode ? "bg-gray-700" : "bg-blue-700"}>
-                      <tr>
-                        <th className="p-4 text-left text-white border-r border-gray-600">
-                          No
-                        </th>
-                        <th className="p-4 text-left text-white border-r border-gray-600">
-                          Kelas
-                        </th>
-                        <th className="p-4 text-left text-white border-r border-gray-600">
-                          Mata Pelajaran
-                        </th>
-                        <th className="p-4 text-center text-white border-r border-gray-600">
-                          KKM
-                        </th>
-                        <th className="p-4 text-center text-white">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {kkmList.map((item, idx) => (
-                        <tr
-                          key={item.id}
-                          className={`border-b ${
-                            darkMode
-                              ? "border-gray-700 hover:bg-gray-800/50"
-                              : "border-blue-100 hover:bg-blue-50/50"
-                          }`}>
-                          <td
-                            className={`p-4 border-r border-gray-600 ${
-                              darkMode ? "text-white" : "text-gray-900"
-                            }`}>
-                            {idx + 1}
-                          </td>
-                          <td
-                            className={`p-4 border-r border-gray-600 font-medium ${
-                              darkMode ? "text-white" : "text-gray-900"
-                            }`}>
-                            {item.class_id}
-                          </td>
-                          <td
-                            className={`p-4 border-r border-gray-600 ${
-                              darkMode ? "text-white" : "text-gray-900"
-                            }`}>
-                            {item.mata_pelajaran}
-                          </td>
-                          <td className="p-4 text-center border-r border-gray-600">
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={item.kkm}
-                              onChange={(e) =>
-                                handleUpdateKKM(
-                                  item.id,
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              className={`w-20 p-2 text-center rounded-lg border font-bold ${
-                                darkMode
-                                  ? "bg-gray-700 border-gray-600 text-white"
-                                  : "bg-white border-blue-300 text-blue-900"
-                              }`}
-                            />
-                          </td>
-                          <td className="p-4 text-center">
-                            <button
-                              onClick={() =>
-                                handleDeleteKKM(item.id, item.mata_pelajaran)
-                              }
-                              className="p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors">
-                              <Trash2 size={18} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-12 rounded-xl border border-dashed">
-                  <Settings
-                    className={`w-16 h-16 mx-auto mb-3 ${
-                      darkMode ? "text-gray-500" : "text-gray-400"
-                    }`}
-                  />
-                  <p
-                    className={`${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
-                    Belum ada data KKM untuk kelas ini
-                  </p>
-                  <p
-                    className={`text-sm mt-2 ${
-                      darkMode ? "text-gray-500" : "text-gray-400"
-                    }`}>
-                    Klik "Tambah KKM" atau "Set KKM Massal" untuk mulai
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-
-          {!selectedClass && (
-            <div className="text-center py-12 rounded-xl border border-dashed">
+          {/* Empty State */}
+          {!jenjang && !mapel && (
+            <div className="p-6 text-center">
               <Settings
-                className={`w-16 h-16 mx-auto mb-3 ${
-                  darkMode ? "text-gray-500" : "text-blue-400"
+                className={`w-16 h-16 mx-auto mb-4 ${
+                  darkMode ? "text-gray-600" : "text-gray-400"
                 }`}
               />
-              <p className={`${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                Silakan pilih kelas untuk melihat & mengatur KKM
+              <h3
+                className={`text-lg font-medium mb-2 ${
+                  darkMode ? "text-gray-300" : "text-gray-600"
+                }`}>
+                Atur KKM dengan Mudah
+              </h3>
+              <p
+                className={`${
+                  darkMode ? "text-gray-400" : "text-gray-500"
+                } mb-4`}>
+                1. Pilih Semester
+                <br />
+                2. Pilih Jenjang Kelas (7, 8, atau 9)
+                <br />
+                3. Pilih Mata Pelajaran dari dropdown
+                <br />
+                4. Atur nilai KKM
+                <br />
+                5. Klik Simpan
+              </p>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-500" : "text-gray-400"
+                }`}>
+                KKM akan berlaku untuk semua kelas paralel dalam jenjang yang
+                sama
               </p>
             </div>
           )}

@@ -266,7 +266,7 @@ const Grades = ({ user, onShowToast }) => {
 
       const { data: gradesData, error: gradesError } = await supabase
         .from("grades")
-        .select("*")
+        .select("id, student_id, assignment_type, score") // ✅ Hanya ambil kolom yang diperlukan
         .eq("teacher_id", teacherUser.id)
         .eq("subject", selectedSubject)
         .eq("semester", semester)
@@ -377,7 +377,6 @@ const Grades = ({ user, onShowToast }) => {
     });
   };
 
-  // Save grades function - OPTIMIZED
   const saveGrades = async () => {
     if (!teacherId || !selectedSubject || !selectedClass) {
       const msg = "Pilih mata pelajaran dan kelas terlebih dahulu!";
@@ -408,8 +407,7 @@ const Grades = ({ user, onShowToast }) => {
         throw new Error("Gagal mengambil data guru: " + teacherError.message);
 
       const teacherUUID = teacherUser.id;
-      const gradesToSave = [];
-      const gradesToUpdate = [];
+      const allGrades = [];
 
       students.forEach((student) => {
         const studentGrades = grades[student.id];
@@ -420,7 +418,7 @@ const Grades = ({ user, onShowToast }) => {
               const scoreValue = parseFloat(gradeData.score);
 
               if (!isNaN(scoreValue) && scoreValue >= 0 && scoreValue <= 100) {
-                const gradeRecord = {
+                allGrades.push({
                   student_id: student.id,
                   teacher_id: teacherUUID,
                   class_id: selectedClass,
@@ -429,130 +427,92 @@ const Grades = ({ user, onShowToast }) => {
                   score: scoreValue,
                   semester: semester,
                   academic_year: academicYear,
-                };
-
-                if (
-                  !gradeRecord.student_id ||
-                  !gradeRecord.teacher_id ||
-                  !gradeRecord.class_id ||
-                  !gradeRecord.subject ||
-                  !gradeRecord.assignment_type ||
-                  !gradeRecord.semester ||
-                  !gradeRecord.academic_year
-                ) {
-                  throw new Error(
-                    `Data tidak lengkap untuk siswa ${student.full_name}, assignment ${type}`
-                  );
-                }
-
-                if (gradeData.id) {
-                  gradesToUpdate.push({ ...gradeRecord, id: gradeData.id });
-                } else {
-                  gradesToSave.push(gradeRecord);
-                }
+                });
               }
             }
           });
         }
       });
 
+      if (allGrades.length === 0) {
+        throw new Error(
+          "Tidak ada data yang valid untuk disimpan. Pastikan Anda mengisi nilai terlebih dahulu."
+        );
+      }
+
+      setLoadingMessage(`Menyimpan ${allGrades.length} data nilai...`);
+
+      const BATCH_SIZE = 50;
       let successCount = 0;
       let errorCount = 0;
       const errorDetails = [];
 
-      // INSERT - Batch processing
-      if (gradesToSave.length > 0) {
-        setLoadingMessage(`Menyimpan ${gradesToSave.length} nilai baru...`);
-        const BATCH_SIZE = 10; // Increased batch size for better performance
-        for (let i = 0; i < gradesToSave.length; i += BATCH_SIZE) {
-          const batch = gradesToSave.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < allGrades.length; i += BATCH_SIZE) {
+        const batch = allGrades.slice(i, i + BATCH_SIZE);
+        const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(allGrades.length / BATCH_SIZE);
 
-          try {
-            const { data, error } = await supabase
-              .from("grades")
-              .insert(batch)
-              .select();
+        setLoadingMessage(`Menyimpan batch ${batchNum}/${totalBatches}...`);
 
-            if (error) {
-              errorCount += batch.length;
-              errorDetails.push(
-                `Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`
-              );
-            } else {
-              successCount += data?.length || batch.length;
-            }
-          } catch (batchError) {
+        try {
+          const { data, error } = await supabase
+            .from("grades")
+            .upsert(batch, {
+              onConflict:
+                "student_id,teacher_id,class_id,subject,assignment_type,semester,academic_year",
+              ignoreDuplicates: false,
+            })
+            .select();
+
+          if (error) {
+            console.error(`Batch ${batchNum} error:`, error);
             errorCount += batch.length;
-            errorDetails.push(
-              `Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batchError.message}`
-            );
+            errorDetails.push(`Batch ${batchNum}: ${error.message}`);
+          } else {
+            successCount += data?.length || batch.length;
           }
+        } catch (batchError) {
+          console.error(`Batch ${batchNum} exception:`, batchError);
+          errorCount += batch.length;
+          errorDetails.push(`Batch ${batchNum}: ${batchError.message}`);
         }
       }
 
-      // UPDATE - Batch processing (OPTIMIZED)
-      if (gradesToUpdate.length > 0) {
-        setLoadingMessage(`Memperbarui ${gradesToUpdate.length} nilai...`);
-
-        // Group updates by student to reduce number of queries
-        const BATCH_SIZE = 10;
-        for (let i = 0; i < gradesToUpdate.length; i += BATCH_SIZE) {
-          const batch = gradesToUpdate.slice(i, i + BATCH_SIZE);
-
-          // Execute updates in parallel for better performance
-          const updatePromises = batch.map(async (grade) => {
-            const { id, ...updateData } = grade;
-            try {
-              const { error } = await supabase
-                .from("grades")
-                .update(updateData)
-                .eq("id", id);
-
-              if (error) {
-                return { success: false, id, error: error.message };
-              }
-              return { success: true };
-            } catch (updateError) {
-              return { success: false, id, error: updateError.message };
-            }
-          });
-
-          const results = await Promise.all(updatePromises);
-
-          results.forEach((result) => {
-            if (result.success) {
-              successCount++;
-            } else {
-              errorCount++;
-              errorDetails.push(`Update ID ${result.id}: ${result.error}`);
-            }
-          });
-        }
-      }
-
-      if (errorCount > 0) {
-        const errorMsg = `Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.\nDetail error:\n${errorDetails.join(
-          "\n"
-        )}`;
-        throw new Error(errorMsg);
-      }
-
-      if (successCount === 0) {
+      if (errorCount > 0 && successCount === 0) {
         throw new Error(
-          "Tidak ada data yang berhasil disimpan. Pastikan Anda mengisi nilai terlebih dahulu."
+          `Semua data gagal disimpan.\nDetail:\n${errorDetails.join("\n")}`
         );
       }
 
-      const successMsg = `Nilai berhasil disimpan! (${successCount} records)`;
-      setMessage(successMsg);
-      if (onShowToast) onShowToast(successMsg, "success");
+      if (errorCount > 0) {
+        const warningMsg = `Berhasil: ${successCount} data | Gagal: ${errorCount} data\n${errorDetails.join(
+          "\n"
+        )}`;
+        setMessage(warningMsg);
+        if (onShowToast) onShowToast(warningMsg, "warning");
+      } else {
+        const successMsg = `✅ Berhasil menyimpan ${successCount} data nilai!`;
+        setMessage(successMsg);
+        if (onShowToast) onShowToast(successMsg, "success");
 
-      setLoadingMessage("Memuat ulang data...");
-      setTimeout(() => {
-        fetchStudentsAndGrades(selectedClass);
-        setMessage("");
-      }, 1000);
+        // Update state langsung tanpa fetch ulang
+        setGrades((prev) => {
+          const updated = { ...prev };
+          allGrades.forEach((grade) => {
+            if (updated[grade.student_id]) {
+              updated[grade.student_id][grade.assignment_type].id =
+                grade.id || updated[grade.student_id][grade.assignment_type].id;
+            }
+          });
+          return updated;
+        });
+
+        setTimeout(() => {
+          setMessage("");
+        }, 2000);
+      } // ✅ INI YANG KURANG
     } catch (error) {
+      console.error("Save error:", error);
       const errorMsg = "Gagal menyimpan nilai: " + error.message;
       setMessage(errorMsg);
       if (onShowToast) onShowToast(errorMsg, "error");

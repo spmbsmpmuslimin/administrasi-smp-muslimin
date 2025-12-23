@@ -23,6 +23,7 @@ import SystemTab from "./SystemTab";
 import MaintenanceModeTab from "./MaintenanceModeTab";
 import RaportConfig from "../e-raport/RaportConfig";
 import TeacherAssignmentTab from "./TeacherAssignmentTab";
+import UserManagementTab from "./UserManagementTab";
 
 const Setting = ({ user, onShowToast }) => {
   const [searchParams] = useSearchParams();
@@ -52,7 +53,7 @@ const Setting = ({ user, onShowToast }) => {
         }
       }, 150);
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   useEffect(() => {
     if (user) {
@@ -129,29 +130,36 @@ const Setting = ({ user, onShowToast }) => {
       available: true,
     },
     {
-      id: "school",
-      title: "Manajemen Sekolah",
-      description: "Kelola data dan informasi sekolah",
-      icon: School,
+      id: "user-management",
+      title: "Manajemen User",
+      description: "Kelola akun pengguna dan hak akses",
+      icon: Users,
       available: user?.role === "admin",
     },
     {
+      id: "school",
+      title: "Manajemen Sekolah",
+      description: "Kelola data siswa dan kelas",
+      icon: School,
+      available: user?.role === "admin" || user?.role === "guru_bk",
+    },
+    {
       id: "academic",
-      title: "Tahun Ajaran",
+      title: "Manajemen Tahun Ajaran",
       description: "Atur periode dan tahun ajaran",
       icon: Calendar,
       available: user?.role === "admin",
     },
     {
       id: "assignment",
-      title: "Penugasan Guru",
+      title: "Manajemen Penugasan Guru",
       description: "Kelola penugasan guru dan mata pelajaran",
       icon: Users,
       available: user?.role === "admin",
     },
     {
       id: "settings",
-      title: "Pengaturan Sekolah",
+      title: "Manajemen Pengaturan Sekolah",
       description: "Konfigurasi umum sistem sekolah",
       icon: Building2,
       available: user?.role === "admin",
@@ -165,7 +173,7 @@ const Setting = ({ user, onShowToast }) => {
     },
     {
       id: "system",
-      title: "System",
+      title: "Manajemen System",
       description: "Pengaturan sistem dan database",
       icon: Database,
       available: user?.role === "admin",
@@ -185,7 +193,7 @@ const Setting = ({ user, onShowToast }) => {
     return availableCards.find((card) => card.id === activeTab);
   };
 
-  // Render Active Tab
+  // ✅ Render Active Tab dengan Navigation Handler
   const renderActiveTab = () => {
     const commonProps = {
       userId: user?.id,
@@ -195,11 +203,15 @@ const Setting = ({ user, onShowToast }) => {
       showToast: onShowToast,
       schoolConfig,
       refreshSchoolConfig: loadSchoolConfig,
+      // ✅ CRITICAL: Handler untuk navigasi antar tab
+      onNavigateToUserManagement: () => changeTab("user-management"),
     };
 
     switch (activeTab) {
       case "profile":
         return <ProfileTab {...commonProps} />;
+      case "user-management":
+        return <UserManagementTab {...commonProps} />;
       case "school":
         return <SchoolManagementTab {...commonProps} />;
       case "academic":
