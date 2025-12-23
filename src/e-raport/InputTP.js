@@ -4,7 +4,7 @@ import ExcelJS from "exceljs";
 import { Upload, Plus, Trash2, Edit2, Save, X } from "lucide-react";
 
 function InputTP({ user, onShowToast, darkMode }) {
-  const [kelas, setKelas] = useState("");
+  const [tingkat, setTingkat] = useState("");
   const [selectedMapel, setSelectedMapel] = useState("");
   const [semester, setSemester] = useState("");
   const [tpList, setTpList] = useState([]);
@@ -12,16 +12,15 @@ function InputTP({ user, onShowToast, darkMode }) {
   const [editData, setEditData] = useState({});
   const [academicYear, setAcademicYear] = useState(null);
   const [teacherAssignments, setTeacherAssignments] = useState([]);
-  const [availableClasses, setAvailableClasses] = useState([]);
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const getFaseByKelas = (kelasNumber) => {
-    if (kelasNumber >= 1 && kelasNumber <= 2) return "A";
-    if (kelasNumber >= 3 && kelasNumber <= 4) return "B";
-    if (kelasNumber >= 5 && kelasNumber <= 6) return "C";
-    if (kelasNumber >= 7 && kelasNumber <= 9) return "D";
+  const getFaseByTingkat = (tingkatNumber) => {
+    if (tingkatNumber >= 1 && tingkatNumber <= 2) return "A";
+    if (tingkatNumber >= 3 && tingkatNumber <= 4) return "B";
+    if (tingkatNumber >= 5 && tingkatNumber <= 6) return "C";
+    if (tingkatNumber >= 7 && tingkatNumber <= 9) return "D";
     return "D";
   };
 
@@ -30,10 +29,10 @@ function InputTP({ user, onShowToast, darkMode }) {
   }, []);
 
   useEffect(() => {
-    if (selectedMapel && academicYear && kelas && semester) {
+    if (selectedMapel && academicYear && tingkat && semester) {
       loadTP();
     }
-  }, [selectedMapel, academicYear, kelas, semester]);
+  }, [selectedMapel, academicYear, tingkat, semester]);
 
   const loadUserAndAssignments = async () => {
     try {
@@ -41,8 +40,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       setErrorMessage("");
 
       const teacherCode = user.teacher_id;
-      const userId = user.id;
-
       if (!teacherCode) {
         throw new Error("Teacher ID tidak ditemukan dalam session.");
       }
@@ -57,7 +54,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       }
 
       console.log("👨‍🏫 Teacher Code yang digunakan:", teacherCode);
-      console.log("👨‍🏫 User ID yang digunakan:", userId);
 
       const { data: academicYearData, error: ayError } = await supabase
         .from("academic_years")
@@ -79,7 +75,7 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       const { data: assignments, error: assignmentsError } = await supabase
         .from("teacher_assignments")
-        .select("*")
+        .select("subject")
         .eq("teacher_id", teacherCode)
         .eq("academic_year_id", academicYearData.id);
 
@@ -99,58 +95,9 @@ function InputTP({ user, onShowToast, darkMode }) {
         return;
       }
 
-      const classIds = [...new Set(assignments.map((a) => a.class_id))];
-      console.log("🎓 Class IDs to fetch:", classIds);
-
-      const { data: classesData, error: classesError } = await supabase
-        .from("classes")
-        .select("id, grade")
-        .in("id", classIds);
-
-      console.log("🏫 Classes data:", classesData);
-
-      if (classesError) {
-        console.error("❌ Classes error:", classesError);
-      }
-
-      const assignmentsWithClasses = assignments.map((assignment) => ({
-        ...assignment,
-        classes: classesData?.find((c) => c.id === assignment.class_id) || null,
-      }));
-
-      console.log("✅ Final assignments with classes:", assignmentsWithClasses);
-
-      setTeacherAssignments(assignmentsWithClasses);
-
-      const uniqueClasses = [];
-      const uniqueSubjects = [];
-      const seenClasses = new Set();
-      const seenSubjects = new Set();
-
-      assignmentsWithClasses.forEach((assignment) => {
-        console.log("📝 Processing assignment:", assignment);
-
-        const classId = assignment.class_id;
-        const classData = assignment.classes;
-
-        if (classId && classData && !seenClasses.has(classId)) {
-          seenClasses.add(classId);
-          uniqueClasses.push({
-            id: classData.id,
-            grade: classData.id,
-          });
-        }
-
-        if (assignment.subject && !seenSubjects.has(assignment.subject)) {
-          seenSubjects.add(assignment.subject);
-          uniqueSubjects.push(assignment.subject);
-        }
-      });
-
-      console.log("🎓 Unique Classes:", uniqueClasses);
+      const uniqueSubjects = [...new Set(assignments.map((a) => a.subject))];
       console.log("📚 Unique Subjects:", uniqueSubjects);
 
-      setAvailableClasses(uniqueClasses);
       setAvailableSubjects(uniqueSubjects);
       setLoading(false);
 
@@ -171,27 +118,16 @@ function InputTP({ user, onShowToast, darkMode }) {
   const loadTP = async () => {
     try {
       console.log("=== LOAD TP DEBUG ===");
-      console.log("Kelas selected:", kelas);
+      console.log("Tingkat selected:", tingkat);
       console.log("Mapel selected:", selectedMapel);
       console.log("Semester selected:", semester);
       console.log("Academic Year:", academicYear);
 
-      const selectedClass = availableClasses.find((c) => c.grade === kelas);
-      if (!selectedClass) {
-        console.error("Selected class not found");
-        if (onShowToast) {
-          onShowToast("Kelas tidak ditemukan dalam data!", "error");
-        }
-        return;
-      }
-
-      console.log("Selected Class ID:", selectedClass.id);
-
       const { data, error } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
-        .eq("class_id", selectedClass.id)
         .eq("mata_pelajaran", selectedMapel)
+        .eq("tingkat", parseInt(tingkat))
         .eq("semester", semester)
         .eq("tahun_ajaran_id", academicYear?.id)
         .order("urutan");
@@ -217,7 +153,7 @@ function InputTP({ user, onShowToast, darkMode }) {
           );
         } else {
           onShowToast(
-            "Belum ada data TP untuk kelas/mapel/semester ini",
+            "Belum ada data TP untuk mapel/tingkat/semester ini",
             "warning"
           );
         }
@@ -235,15 +171,7 @@ function InputTP({ user, onShowToast, darkMode }) {
     if (!file) return;
 
     try {
-      const selectedClass = availableClasses.find((c) => c.grade === kelas);
-      if (!selectedClass) {
-        if (onShowToast) onShowToast("Kelas tidak ditemukan!", "error");
-        return;
-      }
-
-      const kelasNumber = parseInt(kelas.match(/\d+/)?.[0] || "0");
-      const tingkatDefault = kelasNumber;
-      const faseDefault = getFaseByKelas(kelasNumber);
+      const faseDefault = getFaseByTingkat(parseInt(tingkat));
 
       const workbook = new ExcelJS.Workbook();
       const buffer = await file.arrayBuffer();
@@ -257,14 +185,14 @@ function InputTP({ user, onShowToast, darkMode }) {
           const noCell = row.getCell(1).value;
           if (noCell && !isNaN(noCell)) {
             imported.push({
-              class_id: selectedClass.id,
-              tingkat: row.getCell(2).value || tingkatDefault,
+              tingkat: parseInt(tingkat),
               fase: row.getCell(3).value || faseDefault,
               deskripsi_tp: row.getCell(4).value,
               urutan: Number(noCell),
               mata_pelajaran: selectedMapel,
               tahun_ajaran_id: academicYear?.id,
               semester: semester,
+              is_active: true,
             });
           }
         }
@@ -298,15 +226,13 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleDownloadTemplate = () => {
     try {
-      if (!semester) {
+      if (!semester || !tingkat) {
         if (onShowToast)
-          onShowToast("Pilih semester terlebih dahulu!", "warning");
+          onShowToast("Pilih tingkat dan semester terlebih dahulu!", "warning");
         return;
       }
 
-      const kelasNumber = parseInt(kelas.match(/\d+/)?.[0] || "0");
-      const tingkatDefault = kelasNumber;
-      const faseDefault = getFaseByKelas(kelasNumber);
+      const faseDefault = getFaseByTingkat(parseInt(tingkat));
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Template TP");
@@ -339,7 +265,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         horizontal: "left",
       };
 
-      worksheet.getCell("A3").value = `Kelas: ${kelas}`;
+      worksheet.getCell("A3").value = `Tingkat: ${tingkat}`;
       worksheet.getCell("A3").font = { bold: true, size: 12 };
       worksheet.getCell("A3").alignment = {
         vertical: "middle",
@@ -382,12 +308,12 @@ function InputTP({ user, onShowToast, darkMode }) {
       const exampleRows = [
         [
           1,
-          tingkatDefault,
+          parseInt(tingkat),
           faseDefault,
           "Siswa mampu menjelaskan konsep dasar...",
         ],
-        [2, tingkatDefault, faseDefault, "Siswa mampu menganalisis..."],
-        [3, tingkatDefault, faseDefault, "Siswa mampu membuat..."],
+        [2, parseInt(tingkat), faseDefault, "Siswa mampu menganalisis..."],
+        [3, parseInt(tingkat), faseDefault, "Siswa mampu membuat..."],
       ];
 
       exampleRows.forEach((rowData, idx) => {
@@ -414,7 +340,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Template_TP_${selectedMapel}_${kelas}_Semester_${semester}.xlsx`;
+        a.download = `Template_TP_${selectedMapel}_Tingkat${tingkat}_Semester${semester}.xlsx`;
         a.click();
         window.URL.revokeObjectURL(url);
 
@@ -429,31 +355,23 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleAddRow = async () => {
     try {
-      if (!semester) {
+      if (!semester || !tingkat) {
         if (onShowToast)
-          onShowToast("Pilih semester terlebih dahulu!", "warning");
+          onShowToast("Pilih tingkat dan semester terlebih dahulu!", "warning");
         return;
       }
 
-      const selectedClass = availableClasses.find((c) => c.grade === kelas);
-      if (!selectedClass) {
-        if (onShowToast) onShowToast("Kelas tidak ditemukan!", "error");
-        return;
-      }
-
-      const kelasNumber = parseInt(kelas.match(/\d+/)?.[0] || "0");
-      const tingkatDefault = kelasNumber;
-      const faseDefault = getFaseByKelas(kelasNumber);
+      const faseDefault = getFaseByTingkat(parseInt(tingkat));
 
       const newRow = {
-        class_id: selectedClass.id,
-        tingkat: tingkatDefault,
+        tingkat: parseInt(tingkat),
         fase: faseDefault,
         deskripsi_tp: "",
         urutan: tpList.length + 1,
         mata_pelajaran: selectedMapel,
         tahun_ajaran_id: academicYear?.id,
         semester: semester,
+        is_active: true,
       };
 
       const { data, error } = await supabase
@@ -531,6 +449,28 @@ function InputTP({ user, onShowToast, darkMode }) {
       console.error("❌ Delete error:", error);
       if (onShowToast)
         onShowToast(`Gagal menghapus: ${error.message}`, "error");
+    }
+  };
+
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      const { error } = await supabase
+        .from("tujuan_pembelajaran")
+        .update({ is_active: !currentStatus })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      loadTP();
+      if (onShowToast) {
+        onShowToast(
+          `TP ${!currentStatus ? "diaktifkan" : "dinonaktifkan"}`,
+          "success"
+        );
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      if (onShowToast) onShowToast(`Gagal: ${error.message}`, "error");
     }
   };
 
@@ -649,24 +589,22 @@ function InputTP({ user, onShowToast, darkMode }) {
                 className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-700"
                 }`}>
-                Pilih Kelas
+                Pilih Tingkat
               </label>
               <select
-                value={kelas}
-                onChange={(e) => setKelas(e.target.value)}
+                value={tingkat}
+                onChange={(e) => setTingkat(e.target.value)}
                 className={`w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[44px] ${
                   darkMode
                     ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
                     : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
                 }`}>
-                <option value="" disabled className="text-gray-400">
-                  -- Pilih Kelas --
+                <option value="" disabled>
+                  -- Pilih Tingkat --
                 </option>
-                {availableClasses.map((cls) => (
-                  <option key={cls.id} value={cls.grade}>
-                    {cls.grade}
-                  </option>
-                ))}
+                <option value="7">Tingkat 7</option>
+                <option value="8">Tingkat 8</option>
+                <option value="9">Tingkat 9</option>
               </select>
             </div>
 
@@ -720,7 +658,7 @@ function InputTP({ user, onShowToast, darkMode }) {
             </div>
           </div>
 
-          {!selectedMapel || !kelas || !semester ? (
+          {!selectedMapel || !tingkat || !semester ? (
             <div
               className={`text-center py-8 sm:py-12 rounded-xl border-2 border-dashed ${
                 darkMode
@@ -744,7 +682,7 @@ function InputTP({ user, onShowToast, darkMode }) {
                 </svg>
               </div>
               <p className="text-base sm:text-lg font-medium mb-2">
-                Pilih Kelas, Mata Pelajaran, dan Semester
+                Pilih Mata Pelajaran, Tingkat, dan Semester
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Untuk memulai input Tujuan Pembelajaran
@@ -818,6 +756,12 @@ function InputTP({ user, onShowToast, darkMode }) {
                           Fase
                         </th>
                         <th
+                          className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
+                            darkMode ? "border-blue-800" : "border-blue-600"
+                          }`}>
+                          Semester
+                        </th>
+                        <th
                           className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium border-r ${
                             darkMode ? "border-blue-800" : "border-blue-600"
                           }`}>
@@ -827,13 +771,13 @@ function InputTP({ user, onShowToast, darkMode }) {
                           className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
                             darkMode ? "border-blue-800" : "border-blue-600"
                           }`}>
-                          Semester
+                          Status
                         </th>
                         <th
                           className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium ${
                             darkMode ? "border-blue-800" : "border-blue-600"
                           }`}>
-                          Aksi
+                          Hapus
                         </th>
                       </tr>
                     </thead>
@@ -841,7 +785,7 @@ function InputTP({ user, onShowToast, darkMode }) {
                       {tpList.length === 0 ? (
                         <tr>
                           <td
-                            colSpan="6"
+                            colSpan="7"
                             className={`text-center py-8 sm:py-12 ${
                               darkMode
                                 ? "text-gray-400 bg-gray-800/50"
@@ -880,17 +824,16 @@ function InputTP({ user, onShowToast, darkMode }) {
                                 ? "border-gray-700 hover:bg-gray-700/50"
                                 : "border-blue-100 hover:bg-blue-50"
                             }`}>
-                            <td
-                              className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
-                                darkMode
-                                  ? "border-gray-700 text-gray-300"
-                                  : "border-blue-100 text-gray-700"
-                              }`}>
-                              {idx + 1}
-                            </td>
-
                             {editingId === tp.id ? (
                               <>
+                                <td
+                                  className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
+                                    darkMode
+                                      ? "border-gray-700 text-gray-300"
+                                      : "border-blue-100 text-gray-700"
+                                  }`}>
+                                  {idx + 1}
+                                </td>
                                 <td
                                   className={`p-2 sm:p-3 border-r ${
                                     darkMode
@@ -938,6 +881,25 @@ function InputTP({ user, onShowToast, darkMode }) {
                                   />
                                 </td>
                                 <td
+                                  className={`p-3 sm:p-4 text-center border-r ${
+                                    darkMode
+                                      ? "border-gray-700"
+                                      : "border-blue-100"
+                                  }`}>
+                                  <span
+                                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
+                                      semester === "1"
+                                        ? darkMode
+                                          ? "bg-orange-900/30 text-orange-300"
+                                          : "bg-orange-100 text-orange-800"
+                                        : darkMode
+                                        ? "bg-green-900/30 text-green-300"
+                                        : "bg-green-100 text-green-800"
+                                    }`}>
+                                    {semester === "1" ? "Ganjil" : "Genap"}
+                                  </span>
+                                </td>
+                                <td
                                   className={`p-2 sm:p-3 border-r ${
                                     darkMode
                                       ? "border-gray-700"
@@ -959,26 +921,7 @@ function InputTP({ user, onShowToast, darkMode }) {
                                     placeholder="Masukkan tujuan pembelajaran..."
                                   />
                                 </td>
-                                <td
-                                  className={`p-3 sm:p-4 text-center border-r ${
-                                    darkMode
-                                      ? "border-gray-700"
-                                      : "border-blue-100"
-                                  }`}>
-                                  <span
-                                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
-                                      semester === "1"
-                                        ? darkMode
-                                          ? "bg-orange-900/30 text-orange-300"
-                                          : "bg-orange-100 text-orange-800"
-                                        : darkMode
-                                        ? "bg-green-900/30 text-green-300"
-                                        : "bg-green-100 text-green-800"
-                                    }`}>
-                                    {semester === "1" ? "Ganjil" : "Genap"}
-                                  </span>
-                                </td>
-                                <td className="p-2 sm:p-3">
+                                <td colSpan="2" className="p-2 sm:p-3">
                                   <div className="flex gap-2 justify-center">
                                     <button
                                       onClick={handleSave}
@@ -1011,6 +954,14 @@ function InputTP({ user, onShowToast, darkMode }) {
                                       ? "border-gray-700 text-gray-300"
                                       : "border-blue-100 text-gray-700"
                                   }`}>
+                                  {idx + 1}
+                                </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
+                                    darkMode
+                                      ? "border-gray-700 text-gray-300"
+                                      : "border-blue-100 text-gray-700"
+                                  }`}>
                                   {tp.tingkat}
                                 </td>
                                 <td
@@ -1020,12 +971,6 @@ function InputTP({ user, onShowToast, darkMode }) {
                                       : "border-blue-100 text-gray-700"
                                   }`}>
                                   {tp.fase}
-                                </td>
-                                <td
-                                  className={`p-3 sm:p-4 text-sm sm:text-base border-r ${
-                                    darkMode ? "text-gray-200" : "text-gray-900"
-                                  }`}>
-                                  {tp.deskripsi_tp}
                                 </td>
                                 <td
                                   className={`p-3 sm:p-4 text-center border-r ${
@@ -1046,29 +991,47 @@ function InputTP({ user, onShowToast, darkMode }) {
                                     {tp.semester === "1" ? "Ganjil" : "Genap"}
                                   </span>
                                 </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-sm sm:text-base border-r ${
+                                    darkMode ? "text-gray-200" : "text-gray-900"
+                                  }`}>
+                                  {tp.deskripsi_tp}
+                                </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-center border-r ${
+                                    darkMode
+                                      ? "border-gray-700"
+                                      : "border-blue-100"
+                                  }`}>
+                                  <button
+                                    onClick={() =>
+                                      handleToggleStatus(tp.id, tp.is_active)
+                                    }
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                      tp.is_active
+                                        ? "bg-green-500"
+                                        : "bg-gray-300"
+                                    }`}>
+                                    <span
+                                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                        tp.is_active
+                                          ? "translate-x-6"
+                                          : "translate-x-1"
+                                      }`}
+                                    />
+                                  </button>
+                                </td>
                                 <td className="p-2 sm:p-3">
-                                  <div className="flex gap-2 justify-center">
-                                    <button
-                                      onClick={() => handleEdit(tp)}
-                                      className={`p-2 sm:p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
-                                        darkMode
-                                          ? "bg-blue-600 hover:bg-blue-500 text-white"
-                                          : "bg-blue-600 hover:bg-blue-700 text-white"
-                                      }`}
-                                      title="Edit">
-                                      <Edit2 size={18} />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDelete(tp.id)}
-                                      className={`p-2 sm:p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
-                                        darkMode
-                                          ? "bg-red-600 hover:bg-red-500 text-white"
-                                          : "bg-red-600 hover:bg-red-700 text-white"
-                                      }`}
-                                      title="Hapus">
-                                      <Trash2 size={18} />
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={() => handleDelete(tp.id)}
+                                    className={`p-2 sm:p-2.5 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${
+                                      darkMode
+                                        ? "bg-red-600 hover:bg-red-500 text-white"
+                                        : "bg-red-600 hover:bg-red-700 text-white"
+                                    }`}
+                                    title="Hapus">
+                                    <Trash2 size={18} />
+                                  </button>
                                 </td>
                               </>
                             )}

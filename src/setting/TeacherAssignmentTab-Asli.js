@@ -77,6 +77,12 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const [validationResult, setValidationResult] = useState(null);
   const [importMode, setImportMode] = useState("skip"); // 'skip' or 'update'
 
+  // ✅ TAMBAH INI - State untuk Modal Delete
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingAssignment, setDeletingAssignment] = useState(false);
+
   // Load initial data
   useEffect(() => {
     loadAllData();
@@ -477,28 +483,49 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     }
   };
 
-  const handleDelete = async (assignment) => {
-    if (
-      !window.confirm(
-        `Hapus penugasan ${assignment.users?.full_name} - ${assignment.classes?.name} - ${assignment.subject}?`
-      )
-    ) {
+  // ✅ Fungsi untuk buka modal hapus
+  const handleOpenDeleteModal = (assignment) => {
+    setDeleteTarget(assignment);
+    setDeleteConfirmText("");
+    setShowDeleteModal(true);
+  };
+
+  // ✅ Fungsi untuk close modal hapus
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
+    setDeleteConfirmText("");
+  };
+
+  // ✅ Fungsi untuk proses hapus (setelah konfirmasi)
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    // Validasi konfirmasi text
+    const expectedText = "HAPUS";
+    if (deleteConfirmText.toUpperCase() !== expectedText) {
+      showToast?.(`Ketik "${expectedText}" untuk konfirmasi`, "error");
       return;
     }
+
+    setDeletingAssignment(true);
 
     try {
       const { error } = await supabase
         .from("teacher_assignments")
         .delete()
-        .eq("id", assignment.id);
+        .eq("id", deleteTarget.id);
 
       if (error) throw error;
 
       showToast?.("Penugasan berhasil dihapus", "success");
+      handleCloseDeleteModal();
       loadAssignments();
     } catch (error) {
       console.error("Error deleting assignment:", error);
       showToast?.("Gagal menghapus penugasan: " + error.message, "error");
+    } finally {
+      setDeletingAssignment(false);
     }
   };
 
@@ -726,52 +753,15 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
 
   return (
     <div className="p-4 md:p-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-            <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-            Manajemen Penugasan Guru
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Kelola penugasan guru ke kelas dan mata pelajaran
-          </p>
-        </div>
-        {/* ✅ GANTI BAGIAN INI */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleDownloadTemplate}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-lg font-medium transition-all flex items-center gap-2">
-            <FileText size={18} />
-            Template
-          </button>
-          <button
-            onClick={handleExportData}
-            disabled={assignments.length === 0}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50">
-            <Download size={18} />
-            Export
-          </button>
-          <button
-            onClick={handleImportClick}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white rounded-lg font-medium transition-all flex items-center gap-2">
-            <Upload size={18} />
-            Import
-          </button>
-          <button
-            onClick={handleCopyToNewYear}
-            disabled={submitting || !selectedAcademicYear}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50">
-            <Copy size={18} />
-            Copy ke TA Baru
-          </button>
-          <button
-            onClick={() => handleOpenModal("create")}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center gap-2">
-            <Plus size={18} />
-            Tambah Penugasan
-          </button>
-        </div>
+      {/* Header - TANPA TOMBOL */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+          <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+          Manajemen Penugasan Guru
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Kelola penugasan guru ke kelas dan mata pelajaran
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -844,6 +834,44 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             </div>
             <AlertCircle className="w-10 h-10 text-purple-600/30 dark:text-purple-400/30" />
           </div>
+        </div>
+      </div>
+
+      {/* ✅ TAMBAH INI - Action Buttons Bar */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4 mb-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => handleOpenModal("create")}
+            className="flex-1 min-w-[140px] px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+            <Plus size={20} />
+            <span className="hidden sm:inline">Tambah Penugasan</span>
+          </button>
+          <button
+            onClick={handleCopyToNewYear}
+            disabled={submitting || !selectedAcademicYear}
+            className="flex-1 min-w-[140px] px-4 py-3 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            <Copy size={20} />
+            <span className="hidden sm:inline">Copy ke TA Baru</span>
+          </button>
+          <button
+            onClick={handleDownloadTemplate}
+            className="flex-1 min-w-[140px] px-4 py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+            <FileText size={20} />
+            <span className="hidden sm:inline">Template</span>
+          </button>
+          <button
+            onClick={handleExportData}
+            disabled={assignments.length === 0}
+            className="flex-1 min-w-[140px] px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            <Download size={20} />
+            <span className="hidden sm:inline">Export</span>
+          </button>
+          <button
+            onClick={handleImportClick}
+            className="flex-1 min-w-[140px] px-4 py-3 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+            <Upload size={20} />
+            <span className="hidden sm:inline">Import</span>
+          </button>
         </div>
       </div>
 
@@ -1049,7 +1077,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => handleDelete(assignment)}
+                            onClick={() => handleOpenDeleteModal(assignment)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-all"
                             title="Hapus">
                             <Trash2 size={16} />
@@ -1124,10 +1152,177 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         </div>
       </div>
 
-      {/* Modal Form - Yang udah ada */}
+      {/* ✅ Modal Form - CREATE & EDIT */}
       {showModal && (
-        <div className="fixed inset-0 z-50...">
-          {/* ... existing modal code ... */}
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 p-6 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {modalMode === "edit" ? (
+                    <Edit2 className="w-6 h-6 text-white" />
+                  ) : (
+                    <Plus className="w-6 h-6 text-white" />
+                  )}
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      {modalMode === "edit"
+                        ? "Edit Penugasan"
+                        : "Tambah Penugasan Baru"}
+                    </h3>
+                    <p className="text-sm text-blue-100 mt-1">
+                      {modalMode === "edit"
+                        ? "Update data penugasan guru"
+                        : "Tambahkan penugasan guru ke kelas"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCloseModal}
+                  disabled={submitting}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50">
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="space-y-5">
+                {/* Guru */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Guru <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.teacher_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, teacher_id: e.target.value })
+                    }
+                    required
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">-- Pilih Guru --</option>
+                    {teachers.map((teacher) => (
+                      <option
+                        key={teacher.teacher_id}
+                        value={teacher.teacher_id}>
+                        {teacher.teacher_id} - {teacher.full_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Kelas */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Kelas <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.class_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, class_id: e.target.value })
+                    }
+                    required
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">-- Pilih Kelas --</option>
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Mata Pelajaran */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Mata Pelajaran <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.subject}
+                    onChange={(e) =>
+                      setFormData({ ...formData, subject: e.target.value })
+                    }
+                    placeholder="Contoh: Matematika, Bahasa Indonesia"
+                    required
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Tahun Ajaran & Semester */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Tahun Ajaran <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.academic_year_id}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          academic_year_id: e.target.value,
+                        })
+                      }
+                      required
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <option value="">-- Pilih TA --</option>
+                      {academicYears.map((year) => (
+                        <option key={year.id} value={year.id}>
+                          {year.year} {year.is_active && "✓"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Semester <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.semester}
+                      onChange={(e) =>
+                        setFormData({ ...formData, semester: e.target.value })
+                      }
+                      required
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      <option value="">-- Pilih --</option>
+                      <option value="1">Semester 1</option>
+                      <option value="2">Semester 2</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  disabled={submitting}
+                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50">
+                  {submitting ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={18} />
+                      {modalMode === "edit" ? "Update" : "Simpan"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -1503,6 +1698,144 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   )}
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Modal Delete Confirmation - VALIDASI KUAT */}
+      {showDeleteModal && deleteTarget && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md">
+            {/* Header - RED WARNING */}
+            <div className="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 p-6 rounded-t-xl">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white/20 rounded-full">
+                  <AlertCircle className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">
+                    Konfirmasi Penghapusan
+                  </h3>
+                  <p className="text-sm text-red-100 mt-1">
+                    Tindakan ini tidak dapat dibatalkan!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {/* Info Data yang akan dihapus */}
+              <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+                <p className="text-sm font-semibold text-red-900 dark:text-red-300 mb-3">
+                  Data yang akan dihapus:
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-red-700 dark:text-red-400">
+                      Guru:
+                    </span>
+                    <span className="font-semibold text-red-900 dark:text-red-200">
+                      {deleteTarget.users?.full_name || "-"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-red-700 dark:text-red-400">
+                      Kelas:
+                    </span>
+                    <span className="font-semibold text-red-900 dark:text-red-200">
+                      {deleteTarget.classes?.name || deleteTarget.class_id}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-red-700 dark:text-red-400">
+                      Mata Pelajaran:
+                    </span>
+                    <span className="font-semibold text-red-900 dark:text-red-200">
+                      {deleteTarget.subject}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-red-700 dark:text-red-400">
+                      Tahun Ajaran:
+                    </span>
+                    <span className="font-semibold text-red-900 dark:text-red-200">
+                      {deleteTarget.academic_years?.year || "-"} - Semester{" "}
+                      {deleteTarget.semester}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning Message */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-orange-800 dark:text-orange-300">
+                    <p className="font-semibold mb-1">Peringatan:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Data yang dihapus tidak dapat dikembalikan</li>
+                      <li>History penugasan akan hilang permanen</li>
+                      <li>Pastikan data sudah benar sebelum menghapus</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Konfirmasi Input - User harus ketik "HAPUS" */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Ketik{" "}
+                  <span className="text-red-600 font-mono bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded">
+                    HAPUS
+                  </span>{" "}
+                  untuk konfirmasi:
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Ketik HAPUS (huruf besar)"
+                  className="w-full px-4 py-2.5 border-2 border-red-300 dark:border-red-700 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  * Untuk keamanan, Anda harus mengetik kata "HAPUS" dengan
+                  huruf besar
+                </p>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 rounded-b-xl flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCloseDeleteModal}
+                disabled={deletingAssignment}
+                className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-white dark:hover:bg-gray-600 transition-colors disabled:opacity-50">
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={
+                  deletingAssignment ||
+                  deleteConfirmText.toUpperCase() !== "HAPUS"
+                }
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                {deletingAssignment ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    Menghapus...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={18} />
+                    Hapus Permanen
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

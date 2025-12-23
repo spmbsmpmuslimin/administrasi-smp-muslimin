@@ -40,11 +40,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
 
-  // Pagination States
-  const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage] = useState(20);
-  const [totalUsers, setTotalUsers] = useState(0);
-
   // CRUD States
   const [showUserModal, setShowUserModal] = useState(false);
   const [modalMode, setModalMode] = useState("add");
@@ -66,12 +61,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
   const [newGeneratedPassword, setNewGeneratedPassword] = useState("");
   const [resetting, setResetting] = useState(false);
   const [passwordCopied, setPasswordCopied] = useState(false);
-
-  // Delete Modal States
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [deletingUser, setDeletingUser] = useState(false);
 
   const isInitialLoad = useRef(true);
 
@@ -96,24 +85,20 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     }
   }, []);
 
-  // LOGIC: Search Users (Admin) dengan Pagination
+  // LOGIC: Search Users (Admin)
   const searchUsers = useCallback(
-    async (query, page = 1) => {
+    async (query) => {
       try {
         setSearching(true);
-        const from = (page - 1) * usersPerPage;
-        const to = from + usersPerPage - 1;
 
         let queryBuilder = supabase
           .from("users")
           .select(
-            "id, username, full_name, role, teacher_id, is_active, created_at, no_hp",
-            { count: "exact" }
+            "id, username, full_name, role, teacher_id, is_active, created_at, no_hp"
           )
           .neq("role", "admin")
           .order("teacher_id", { ascending: true, nullsFirst: false })
-          .order("full_name", { ascending: true })
-          .range(from, to);
+          .order("full_name", { ascending: true });
 
         if (query.trim()) {
           queryBuilder = queryBuilder.or(
@@ -121,7 +106,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           );
         }
 
-        const { data, error, count } = await queryBuilder;
+        queryBuilder = queryBuilder.limit(100);
+
+        const { data, error } = await queryBuilder;
 
         if (error) {
           console.error("Error searching users:", error);
@@ -130,8 +117,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         }
 
         setUserSearchResults(data || []);
-        setTotalUsers(count || 0);
-        setCurrentPage(page);
       } catch (err) {
         console.error("Error in searchUsers:", err);
         showToast("Terjadi kesalahan saat memuat pengguna", "error");
@@ -139,7 +124,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         setSearching(false);
       }
     },
-    [showToast, usersPerPage]
+    [showToast]
   );
 
   // LOGIC: Load User Profile
@@ -456,69 +441,39 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     setShowUserModal(true);
   };
 
-  // LOGIC: Form Validation (Updated)
+  // LOGIC: Form Validation
   const validateForm = () => {
     const errors = {};
 
     if (!formData.username.trim()) {
       errors.username = "Username wajib diisi";
-    } else if (formData.username.length < 3) {
-      errors.username = "Username minimal 3 karakter";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      errors.username = "Username hanya boleh huruf, angka, dan underscore";
     }
 
     if (!formData.full_name.trim()) {
       errors.full_name = "Nama lengkap wajib diisi";
-    } else if (formData.full_name.length < 3) {
-      errors.full_name = "Nama minimal 3 karakter";
     }
 
     if (modalMode === "add" && !formData.password) {
       errors.password = "Password wajib diisi";
     }
-    if (formData.password && formData.password.length < 6) {
+
+    if (
+      modalMode === "add" &&
+      formData.password &&
+      formData.password.length < 6
+    ) {
       errors.password = "Password minimal 6 karakter";
     }
 
-    if (formData.role === "teacher") {
-      if (!formData.teacher_id.trim()) {
-        errors.teacher_id = "ID Guru wajib diisi untuk role teacher";
-      } else if (!/^G-\d{2,3}$/.test(formData.teacher_id)) {
-        errors.teacher_id = "Format salah! Contoh: G-01, G-12, G-100";
-      }
-    }
-
-    if (formData.no_hp && formData.no_hp.trim()) {
-      const cleanPhone = formData.no_hp.replace(/[\s-]/g, "");
-      if (!/^(\+62|62|0)[0-9]{9,12}$/.test(cleanPhone)) {
-        errors.no_hp = "Format nomor HP tidak valid (contoh: 08123456789)";
-      }
+    if (formData.role === "teacher" && !formData.teacher_id.trim()) {
+      errors.teacher_id = "ID Guru wajib diisi untuk role teacher";
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // LOGIC: Audit Logging
-  const logAuditActivity = async (action, targetUser, details = {}) => {
-    try {
-      await supabase.from("audit_logs").insert([
-        {
-          user_id: userId,
-          action: action,
-          target_user_id: targetUser?.id || null,
-          target_user_name: targetUser?.full_name || null,
-          details: details,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-    } catch (err) {
-      console.error("Failed to log audit:", err);
-    }
-  };
-
-  // HANDLER: Form Submit (Add/Edit) - Updated
+  // HANDLER: Form Submit (Add/Edit)
   const handleSubmit = async () => {
     if (!validateForm()) {
       showToast("Mohon lengkapi semua field yang wajib diisi", "error");
@@ -528,54 +483,17 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     try {
       setSubmitting(true);
 
-      // Check username uniqueness
-      const { data: existingUsername } = await supabase
-        .from("users")
-        .select("id")
-        .eq("username", formData.username)
-        .neq("id", editingUser?.id || "00000000-0000-0000-0000-000000000000")
-        .maybeSingle();
-
-      if (existingUsername) {
-        showToast(`Username "${formData.username}" sudah digunakan!`, "error");
-        setFormErrors({ username: "Username sudah digunakan" });
-        setSubmitting(false);
-        return;
-      }
-
-      // Check teacher_id uniqueness
-      if (formData.role === "teacher" && formData.teacher_id) {
-        const { data: existingTeacherId } = await supabase
-          .from("users")
-          .select("id, full_name")
-          .eq("teacher_id", formData.teacher_id)
-          .neq("id", editingUser?.id || "00000000-0000-0000-0000-000000000000")
-          .maybeSingle();
-
-        if (existingTeacherId) {
-          showToast(
-            `ID Guru "${formData.teacher_id}" sudah dipakai oleh ${existingTeacherId.full_name}!`,
-            "error"
-          );
-          setFormErrors({
-            teacher_id: `Sudah dipakai oleh ${existingTeacherId.full_name}`,
-          });
-          setSubmitting(false);
-          return;
-        }
-      }
-
-      // Proceed with insert/update
       if (modalMode === "add") {
+        // INSERT LANGSUNG KE DATABASE (PLAIN TEXT PASSWORD)
         const { error: insertError } = await supabase.from("users").insert([
           {
             username: formData.username,
-            password: formData.password,
+            password: formData.password, // ✅ PASSWORD DI-INSERT!
             full_name: formData.full_name,
             role: formData.role,
             teacher_id:
               formData.role === "teacher" ? formData.teacher_id : null,
-            no_hp: formData.no_hp || null,
+            no_hp: formData.no_hp || null, // ✅ NO_HP DI-INSERT!
             is_active: formData.is_active,
           },
         ]);
@@ -589,12 +507,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           return;
         }
 
-        await logAuditActivity("CREATE_USER", null, {
-          created_username: formData.username,
-          created_role: formData.role,
-          created_teacher_id: formData.teacher_id,
-        });
-
         showToast("User berhasil ditambahkan!", "success");
         searchUsers("");
         setShowUserModal(false);
@@ -604,12 +516,13 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           full_name: formData.full_name,
           role: formData.role,
           teacher_id: formData.role === "teacher" ? formData.teacher_id : null,
-          no_hp: formData.no_hp || null,
+          no_hp: formData.no_hp || null, // ✅ NO_HP DI-UPDATE!
           is_active: formData.is_active,
         };
 
+        // Update password only if provided
         if (formData.password) {
-          updateData.password = formData.password;
+          updateData.password = formData.password; // ✅ PASSWORD DI-UPDATE KALAU ADA!
         }
 
         const { error: updateError } = await supabase
@@ -622,10 +535,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           setSubmitting(false);
           return;
         }
-
-        await logAuditActivity("UPDATE_USER", editingUser, {
-          updated_fields: Object.keys(updateData),
-        });
 
         showToast("User berhasil diupdate!", "success");
         searchUsers("");
@@ -645,54 +554,40 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     }
   };
 
-  // HANDLER: Delete User (Updated)
-  const handleOpenDeleteModal = (deleteUser) => {
+  // HANDLER: Delete User
+  const handleDelete = async (deleteUser) => {
     if (deleteUser.id === userId) {
       showToast("Anda tidak bisa menghapus akun sendiri!", "error");
       return;
     }
-    setDeleteTarget(deleteUser);
-    setDeleteConfirmText("");
-    setShowDeleteModal(true);
-  };
-
-  const handleCloseDeleteModal = () => {
-    setShowDeleteModal(false);
-    setDeleteTarget(null);
-    setDeleteConfirmText("");
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
-    const expectedText = "HAPUS";
-    if (deleteConfirmText.toUpperCase() !== expectedText) {
-      showToast(`Ketik "${expectedText}" untuk konfirmasi`, "error");
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus user "${deleteUser.full_name}"? Tindakan ini tidak bisa dibatalkan!`
+      )
+    ) {
       return;
     }
-    setDeletingUser(true);
     try {
-      const { error } = await supabase
+      setLoading(true);
+      const { error: deleteError } = await supabase
         .from("users")
         .delete()
-        .eq("id", deleteTarget.id);
-      if (error) throw error;
-
-      await logAuditActivity("DELETE_USER", deleteTarget, {
-        deleted_user_role: deleteTarget.role,
-        deleted_user_teacher_id: deleteTarget.teacher_id,
-      });
-
-      showToast(
-        `User "${deleteTarget.full_name}" berhasil dihapus!`,
-        "success"
-      );
-      handleCloseDeleteModal();
+        .eq("id", deleteUser.id);
+      if (deleteError) {
+        showToast(`Gagal menghapus user: ${deleteError.message}`, "error");
+        setLoading(false);
+        return;
+      }
+      showToast("User berhasil dihapus!", "success");
       searchUsers("");
-      if (targetUserId === deleteTarget.id) setTargetUserId(userId);
+      if (targetUserId === deleteUser.id) {
+        setTargetUserId(userId);
+      }
+      setLoading(false);
     } catch (err) {
-      showToast("Gagal menghapus user", "error");
-    } finally {
-      setDeletingUser(false);
+      console.error("Error deleting user:", err);
+      showToast("Terjadi kesalahan saat menghapus user", "error");
+      setLoading(false);
     }
   };
 
@@ -734,10 +629,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         setResetting(false);
         return;
       }
-
-      await logAuditActivity("RESET_PASSWORD", resetPasswordUser, {
-        reset_by_admin: true,
-      });
 
       showToast(
         `Password berhasil direset untuk ${resetPasswordUser.full_name}!`,
@@ -1027,7 +918,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleOpenDeleteModal(listUser);
+                                  handleDelete(listUser);
                                 }}
                                 className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                                 title="Hapus User">
@@ -1040,42 +931,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     </div>
                   )}
                 </div>
-
-                {/* Pagination UI */}
-                {filteredUsers.length > 0 && (
-                  <div className="flex items-center justify-between p-4 border-t border-blue-200 dark:border-gray-700">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Menampilkan {(currentPage - 1) * usersPerPage + 1} -{" "}
-                      {Math.min(currentPage * usersPerPage, totalUsers)} dari{" "}
-                      {totalUsers} user
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          searchUsers(searchQuery, currentPage - 1)
-                        }
-                        disabled={currentPage === 1 || searching}
-                        className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-gray-700 hover:bg-blue-200 text-gray-800 dark:text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]">
-                        ← Prev
-                      </button>
-                      <span className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 flex items-center">
-                        Hal {currentPage} /{" "}
-                        {Math.ceil(totalUsers / usersPerPage)}
-                      </span>
-                      <button
-                        onClick={() =>
-                          searchUsers(searchQuery, currentPage + 1)
-                        }
-                        disabled={
-                          currentPage >= Math.ceil(totalUsers / usersPerPage) ||
-                          searching
-                        }
-                        className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-gray-700 hover:bg-blue-200 text-gray-800 dark:text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]">
-                        Next →
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -1698,11 +1553,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   className="w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-blue-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base min-h-[44px]"
                   placeholder="Masukkan nomor HP (opsional)"
                 />
-                {formErrors.no_hp && (
-                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle size={12} /> {formErrors.no_hp}
-                  </p>
-                )}
               </div>
               {/* Is Active */}
               <div className="flex items-center">
@@ -1862,142 +1712,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   <>
                     <Shield size={16} />
                     Reset Sekarang
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =================================================================== */}
-      {/* ======================= MODAL: DELETE USER ======================== */}
-      {/* =================================================================== */}
-      {showDeleteModal && deleteTarget && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 rounded-t-2xl">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white/20 rounded-full">
-                  <AlertCircle className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">
-                    Konfirmasi Penghapusan User
-                  </h3>
-                  <p className="text-sm text-red-100 mt-1">
-                    Tindakan ini tidak dapat dibatalkan!
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-sm font-semibold text-red-900 dark:text-red-300 mb-3">
-                  User yang akan dihapus:
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-red-700">Nama:</span>
-                    <span className="font-semibold text-red-900">
-                      {deleteTarget.full_name}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-red-700">Username:</span>
-                    <span className="font-semibold text-red-900">
-                      @{deleteTarget.username}
-                    </span>
-                  </div>
-                  {deleteTarget.teacher_id && (
-                    <div className="flex justify-between">
-                      <span className="text-red-700">ID Guru:</span>
-                      <span className="font-semibold text-red-900 font-mono">
-                        {deleteTarget.teacher_id}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-red-700">Role:</span>
-                    <span className="font-semibold text-red-900">
-                      {deleteTarget.role === "admin" ? "Administrator" : "Guru"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-lg p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-orange-800">
-                    <p className="font-semibold mb-1">Peringatan:</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs">
-                      <li>Data user akan dihapus permanen</li>
-                      <li>Semua penugasan terkait akan hilang</li>
-                      <li>History login akan terhapus</li>
-                      <li>Tindakan ini TIDAK BISA dibatalkan</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              {deleteTarget.role === "admin" && (
-                <div className="bg-red-100 dark:bg-red-900/30 border-2 border-red-400 rounded-lg p-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-red-700 mt-0.5" />
-                    <div className="text-sm text-red-900">
-                      <p className="font-bold mb-1">⚠️ PERHATIAN KHUSUS!</p>
-                      <p className="text-xs">
-                        Anda akan menghapus user dengan role{" "}
-                        <strong>ADMINISTRATOR</strong>. Pastikan masih ada admin
-                        lain!
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Ketik{" "}
-                  <span className="text-red-600 font-mono bg-red-100 px-2 py-0.5 rounded">
-                    HAPUS
-                  </span>{" "}
-                  untuk konfirmasi:
-                </label>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Ketik HAPUS (huruf besar)"
-                  className="w-full px-4 py-3 border-2 border-red-300 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 font-mono min-h-[44px]"
-                  autoFocus
-                />
-                <p className="text-xs text-gray-600 mt-2">
-                  * Untuk keamanan, Anda harus mengetik kata "HAPUS" dengan
-                  huruf besar
-                </p>
-              </div>
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 rounded-b-2xl flex gap-3">
-              <button
-                onClick={handleCloseDeleteModal}
-                disabled={deletingUser}
-                className="flex-1 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors disabled:opacity-50 min-h-[44px]">
-                Batal
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={
-                  deletingUser || deleteConfirmText.toUpperCase() !== "HAPUS"
-                }
-                className="flex-1 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]">
-                {deletingUser ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    Menghapus...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={18} />
-                    Hapus Permanen
                   </>
                 )}
               </button>

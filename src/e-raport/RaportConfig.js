@@ -27,6 +27,7 @@ export default function RaportConfig({ user, showToast }) {
   const [classes, setClasses] = useState([]);
   const [configs, setConfigs] = useState([]);
   const [editingConfig, setEditingConfig] = useState(null);
+  const [availableSubjects, setAvailableSubjects] = useState([]); // NEW: untuk dropdown mapel
   const [newConfig, setNewConfig] = useState({
     mata_pelajaran: "",
     kkm: 75,
@@ -54,6 +55,7 @@ export default function RaportConfig({ user, showToast }) {
   useEffect(() => {
     if (selectedClass && selectedAcademicYear) {
       fetchConfigs();
+      fetchAvailableSubjects(); // NEW: ambil mata pelajaran saat kelas dan tahun ajaran dipilih
     }
   }, [selectedClass, selectedAcademicYear]);
 
@@ -73,10 +75,10 @@ export default function RaportConfig({ user, showToast }) {
 
       if (settings) setEraportSettings(settings);
 
-      // Fetch Classes
+      // Fetch Classes - AMBIL SEMUA DATA KELAS
       const { data: classData } = await supabase
         .from("classes")
-        .select("*")
+        .select("id, grade, academic_year, is_active")
         .eq("is_active", true)
         .order("grade");
 
@@ -100,6 +102,49 @@ export default function RaportConfig({ user, showToast }) {
       alert("Gagal memuat data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // NEW: Fungsi untuk mengambil mata pelajaran yang tersedia berdasarkan kelas dan tahun ajaran
+  const fetchAvailableSubjects = async () => {
+    try {
+      console.log("🔍 Fetching subjects for:", {
+        class_id: selectedClass,
+        academic_year_id: selectedAcademicYear,
+      });
+
+      const { data, error } = await supabase
+        .from("teacher_assignments")
+        .select("subject")
+        .eq("class_id", selectedClass)
+        .eq("academic_year_id", selectedAcademicYear)
+        .order("subject");
+      // 👇 TAMBAHKAN 3 BARIS INI
+      console.log(
+        "🔍 Filter: class_id =",
+        selectedClass,
+        "academic_year_id =",
+        selectedAcademicYear
+      );
+      console.log("📚 Data mapel:", data);
+      console.log("📊 Jumlah mapel:", data?.length);
+
+      if (error) {
+        console.error("❌ Error fetching subjects:", error);
+        return;
+      }
+
+      console.log("📚 Subjects found:", data);
+
+      // Hapus duplikat mata pelajaran
+      const uniqueSubjects = [
+        ...new Set(data?.map((item) => item.subject) || []),
+      ];
+
+      console.log("✅ Unique subjects:", uniqueSubjects);
+      setAvailableSubjects(uniqueSubjects);
+    } catch (error) {
+      console.error("💥 Exception:", error);
     }
   };
 
@@ -196,6 +241,11 @@ export default function RaportConfig({ user, showToast }) {
   };
 
   const handleSaveConfig = async (config) => {
+    if (!config.mata_pelajaran) {
+      showToast("Mata pelajaran harus dipilih!", "error");
+      return;
+    }
+
     if (!validateBobot(config.bobot_nh, config.bobot_pts, config.bobot_pas)) {
       showToast("Total bobot harus 100%!", "error");
       return;
@@ -217,6 +267,16 @@ export default function RaportConfig({ user, showToast }) {
 
         if (error) throw error;
       } else {
+        // Cek dulu apakah mapel untuk kelas ini sudah ada konfigurasinya
+        const existingConfig = configs.find(
+          (c) => c.mata_pelajaran === config.mata_pelajaran
+        );
+
+        if (existingConfig) {
+          showToast("Mata pelajaran ini sudah ada konfigurasinya!", "error");
+          return;
+        }
+
         // Insert
         const { error } = await supabase.from("raport_config").insert({
           class_id: selectedClass,
@@ -506,7 +566,7 @@ export default function RaportConfig({ user, showToast }) {
                 <option value="">Pilih Kelas</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.grade}
+                    {c.id} - {c.academic_year}
                   </option>
                 ))}
               </select>
@@ -534,9 +594,8 @@ export default function RaportConfig({ user, showToast }) {
               <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <h3 className="font-medium mb-3">Tambah Mata Pelajaran</h3>
                 <div className="grid grid-cols-5 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Mata Pelajaran"
+                  {/* DROPDOWN untuk pilih mata pelajaran */}
+                  <select
                     value={newConfig.mata_pelajaran}
                     onChange={(e) =>
                       setNewConfig((prev) => ({
@@ -544,8 +603,14 @@ export default function RaportConfig({ user, showToast }) {
                         mata_pelajaran: e.target.value,
                       }))
                     }
-                    className="px-3 py-2 border rounded"
-                  />
+                    className="px-3 py-2 border rounded">
+                    <option value="">Pilih Mata Pelajaran</option>
+                    {availableSubjects.map((subject, index) => (
+                      <option key={index} value={subject}>
+                        {subject}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     type="number"
                     placeholder="KKM"

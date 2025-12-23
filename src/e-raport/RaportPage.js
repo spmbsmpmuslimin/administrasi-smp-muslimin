@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import PreviewNilai from "./PreviewNilai";
 import PreviewRaport from "./PreviewRaport";
 import CetakRaport from "./CetakRaport";
 
 function RaportPage() {
-  const [activeTab, setActiveTab] = useState("preview"); // 'preview' atau 'cetak'
+  const [activeTab, setActiveTab] = useState("nilai"); // 'nilai', 'preview', atau 'cetak'
   const [classId, setClassId] = useState("");
   const [semester, setSemester] = useState("");
   const [academicYear, setAcademicYear] = useState(null);
@@ -34,7 +35,7 @@ function RaportPage() {
 
       if (!homeroomClassId) {
         throw new Error(
-          "Tidak ditemukan data wali kelas. Pastikan Anda login sebagai wali kelas."
+          "Anda bukan wali kelas. Fitur ini hanya untuk wali kelas."
         );
       }
 
@@ -169,32 +170,55 @@ function RaportPage() {
           </div>
         </div>
 
-        {/* TAB NAVIGATION */}
+        {/* TAB NAVIGATION - 3 TABS */}
         <div className="border-b border-gray-200 dark:border-gray-700">
-          <div className="flex">
+          <div className="flex overflow-x-auto">
+            {/* TAB 1: PREVIEW NILAI */}
+            <button
+              onClick={() => setActiveTab("nilai")}
+              className={`flex-1 min-w-[120px] px-4 py-4 text-center font-semibold transition-all duration-200 ${
+                activeTab === "nilai"
+                  ? "text-green-600 dark:text-green-400 border-b-4 border-green-600 dark:border-green-400 bg-green-50 dark:bg-green-900/20"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}>
+              <span className="text-xs md:text-base">📊 Preview Nilai</span>
+            </button>
+
+            {/* TAB 2: PREVIEW RAPORT */}
             <button
               onClick={() => setActiveTab("preview")}
-              className={`flex-1 px-4 py-4 text-center font-semibold transition-all duration-200 ${
+              className={`flex-1 min-w-[120px] px-4 py-4 text-center font-semibold transition-all duration-200 ${
                 activeTab === "preview"
                   ? "text-blue-600 dark:text-blue-400 border-b-4 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}>
-              <span className="text-sm md:text-base">📋 Preview Raport</span>
+              <span className="text-xs md:text-base">📋 Preview Raport</span>
             </button>
+
+            {/* TAB 3: CETAK RAPORT */}
             <button
               onClick={() => setActiveTab("cetak")}
-              className={`flex-1 px-4 py-4 text-center font-semibold transition-all duration-200 ${
+              className={`flex-1 min-w-[120px] px-4 py-4 text-center font-semibold transition-all duration-200 ${
                 activeTab === "cetak"
                   ? "text-red-600 dark:text-red-400 border-b-4 border-red-600 dark:border-red-400 bg-red-50 dark:bg-red-900/20"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}>
-              <span className="text-sm md:text-base">🖨️ Cetak Raport</span>
+              <span className="text-xs md:text-base">🖨️ Cetak Raport</span>
             </button>
           </div>
         </div>
 
         {/* TAB CONTENT */}
         <div className="p-4 md:p-6">
+          {activeTab === "nilai" && (
+            <PreviewNilai
+              classId={classId}
+              semester={semester}
+              setSemester={setSemester}
+              academicYear={academicYear}
+            />
+          )}
+
           {activeTab === "preview" && (
             <PreviewRaport
               classId={classId}

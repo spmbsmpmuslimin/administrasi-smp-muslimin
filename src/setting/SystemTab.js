@@ -1,3 +1,4 @@
+//[file name]: SystemTab.js
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import {
@@ -207,6 +208,12 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         { name: "system_health_logs", display: "System Health Logs" },
         { name: "cleanup_history", display: "Riwayat Cleanup" },
         { name: "spmb_settings", display: "Pengaturan SPMB" },
+        // ✅ TAMBAH 5 TABEL E-RAPORT
+        { name: "eraport_settings", display: "Pengaturan E-Raport" },
+        { name: "eraport_tp", display: "Tujuan Pembelajaran" },
+        { name: "eraport_nilai", display: "Nilai E-Raport" },
+        { name: "eraport_kehadiran", display: "Kehadiran E-Raport" },
+        { name: "eraport_catatan", display: "Catatan E-Raport" },
       ];
 
       let exportedCount = 0;
@@ -296,6 +303,12 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         systemHealthLogsRes,
         cleanupHistoryRes,
         spmbSettingsRes,
+        // ✅ TAMBAH 5 QUERY E-RAPORT
+        eraportSettingsRes,
+        eraportTpRes,
+        eraportNilaiRes,
+        eraportKehadiranRes,
+        eraportCatatanRes,
       ] = await Promise.all([
         supabase.from("academic_years").select("*"),
         supabase.from("users").select("*"),
@@ -313,6 +326,12 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         supabase.from("system_health_logs").select("*"),
         supabase.from("cleanup_history").select("*"),
         supabase.from("spmb_settings").select("*"),
+        // ✅ TAMBAH 5 QUERY E-RAPORT
+        supabase.from("eraport_settings").select("*"),
+        supabase.from("eraport_tp").select("*"),
+        supabase.from("eraport_nilai").select("*"),
+        supabase.from("eraport_kehadiran").select("*"),
+        supabase.from("eraport_catatan").select("*"),
       ]);
 
       const errors = [
@@ -332,6 +351,12 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         systemHealthLogsRes.error,
         cleanupHistoryRes.error,
         spmbSettingsRes.error,
+        // ✅ TAMBAH 5 ERROR CHECKS E-RAPORT
+        eraportSettingsRes.error,
+        eraportTpRes.error,
+        eraportNilaiRes.error,
+        eraportKehadiranRes.error,
+        eraportCatatanRes.error,
       ].filter(Boolean);
 
       if (errors.length > 0) {
@@ -365,6 +390,12 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           system_health_logs: systemHealthLogsRes.data,
           cleanup_history: cleanupHistoryRes.data,
           spmb_settings: spmbSettingsRes.data,
+          // ✅ TAMBAH 5 DATA E-RAPORT
+          eraport_settings: eraportSettingsRes.data,
+          eraport_tp: eraportTpRes.data,
+          eraport_nilai: eraportNilaiRes.data,
+          eraport_kehadiran: eraportKehadiranRes.data,
+          eraport_catatan: eraportCatatanRes.data,
         },
         stats: {
           total_academic_years: academicYearsRes.data?.length || 0,
@@ -382,6 +413,12 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           total_system_health_logs: systemHealthLogsRes.data?.length || 0,
           total_cleanup_history: cleanupHistoryRes.data?.length || 0,
           total_spmb_settings: spmbSettingsRes.data?.length || 0,
+          // ✅ TAMBAH 5 STATS E-RAPORT
+          total_eraport_settings: eraportSettingsRes.data?.length || 0,
+          total_eraport_tp: eraportTpRes.data?.length || 0,
+          total_eraport_nilai: eraportNilaiRes.data?.length || 0,
+          total_eraport_kehadiran: eraportKehadiranRes.data?.length || 0,
+          total_eraport_catatan: eraportCatatanRes.data?.length || 0,
         },
       };
 
@@ -483,7 +520,20 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         } riwayat cleanup\n` +
         `- ${
           restorePreview.stats?.total_spmb_settings || 0
-        } pengaturan SPMB\n\n` +
+        } pengaturan SPMB\n` +
+        `- ${
+          restorePreview.stats?.total_eraport_settings || 0
+        } pengaturan E-Raport\n` +
+        `- ${
+          restorePreview.stats?.total_eraport_tp || 0
+        } tujuan pembelajaran\n` +
+        `- ${restorePreview.stats?.total_eraport_nilai || 0} nilai E-Raport\n` +
+        `- ${
+          restorePreview.stats?.total_eraport_kehadiran || 0
+        } kehadiran E-Raport\n` +
+        `- ${
+          restorePreview.stats?.total_eraport_catatan || 0
+        } catatan E-Raport\n\n` +
         `Tindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
     );
 
@@ -533,6 +583,28 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             .delete()
             .neq("id", "00000000-0000-0000-0000-000000000000");
 
+          // ✅ TAMBAH DELETE E-RAPORT TABLES
+          await supabase
+            .from("eraport_nilai")
+            .delete()
+            .neq("id", "00000000-0000-0000-0000-000000000000");
+          await supabase
+            .from("eraport_kehadiran")
+            .delete()
+            .neq("id", "00000000-0000-0000-0000-000000000000");
+          await supabase
+            .from("eraport_catatan")
+            .delete()
+            .neq("id", "00000000-0000-0000-0000-000000000000");
+          await supabase
+            .from("eraport_tp")
+            .delete()
+            .neq("id", "00000000-0000-0000-0000-000000000000");
+          await supabase
+            .from("eraport_settings")
+            .delete()
+            .neq("id", "00000000-0000-0000-0000-000000000000");
+
           setExportProgress("Menghapus data lama (2/3)...");
 
           await supabase
@@ -572,7 +644,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             .neq("id", "00000000-0000-0000-0000-000000000000");
 
           let insertedTables = 0;
-          const totalTables = 16;
+          const totalTables = 21; // ✅ GANTI dari 16 jadi 21
 
           if (backupData.data.academic_years?.length > 0) {
             setExportProgress(
@@ -739,6 +811,59 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               .from("spmb_settings")
               .insert(backupData.data.spmb_settings);
             if (error) console.error("Error inserting spmb_settings:", error);
+          }
+
+          // ✅ TAMBAH INSERT E-RAPORT TABLES
+          if (backupData.data.eraport_settings?.length > 0) {
+            setExportProgress(
+              `Restore E-Raport settings (${++insertedTables}/${totalTables})...`
+            );
+            const { error } = await supabase
+              .from("eraport_settings")
+              .insert(backupData.data.eraport_settings);
+            if (error)
+              console.error("Error inserting eraport_settings:", error);
+          }
+
+          if (backupData.data.eraport_tp?.length > 0) {
+            setExportProgress(
+              `Restore Tujuan Pembelajaran (${++insertedTables}/${totalTables})...`
+            );
+            const { error } = await supabase
+              .from("eraport_tp")
+              .insert(backupData.data.eraport_tp);
+            if (error) console.error("Error inserting eraport_tp:", error);
+          }
+
+          if (backupData.data.eraport_nilai?.length > 0) {
+            setExportProgress(
+              `Restore Nilai E-Raport (${++insertedTables}/${totalTables})...`
+            );
+            const { error } = await supabase
+              .from("eraport_nilai")
+              .insert(backupData.data.eraport_nilai);
+            if (error) console.error("Error inserting eraport_nilai:", error);
+          }
+
+          if (backupData.data.eraport_kehadiran?.length > 0) {
+            setExportProgress(
+              `Restore Kehadiran E-Raport (${++insertedTables}/${totalTables})...`
+            );
+            const { error } = await supabase
+              .from("eraport_kehadiran")
+              .insert(backupData.data.eraport_kehadiran);
+            if (error)
+              console.error("Error inserting eraport_kehadiran:", error);
+          }
+
+          if (backupData.data.eraport_catatan?.length > 0) {
+            setExportProgress(
+              `Restore Catatan E-Raport (${++insertedTables}/${totalTables})...`
+            );
+            const { error } = await supabase
+              .from("eraport_catatan")
+              .insert(backupData.data.eraport_catatan);
+            if (error) console.error("Error inserting eraport_catatan:", error);
           }
 
           showToast("✅ Database berhasil di-restore!", "success");
@@ -985,6 +1110,55 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             <span className="truncate">Export Riwayat Cleanup</span>
           </button>
 
+          {/* Group 7: E-Raport Data */}
+          <button
+            onClick={() =>
+              exportTableToCSV("eraport_settings", "Pengaturan E-Raport")
+            }
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Pengaturan E-Raport</span>
+          </button>
+
+          <button
+            onClick={() =>
+              exportTableToCSV("eraport_tp", "Tujuan Pembelajaran")
+            }
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Tujuan Pembelajaran</span>
+          </button>
+
+          <button
+            onClick={() => exportTableToCSV("eraport_nilai", "Nilai E-Raport")}
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Nilai E-Raport</span>
+          </button>
+
+          <button
+            onClick={() =>
+              exportTableToCSV("eraport_kehadiran", "Kehadiran E-Raport")
+            }
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Kehadiran E-Raport</span>
+          </button>
+
+          <button
+            onClick={() =>
+              exportTableToCSV("eraport_catatan", "Catatan E-Raport")
+            }
+            disabled={loading}
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            <Table size={16} />
+            <span className="truncate">Export Catatan E-Raport</span>
+          </button>
+
           {/* Export All Button */}
           <div className="sm:col-span-2 lg:col-span-3">
             <button
@@ -993,7 +1167,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               className="flex items-center justify-center gap-3 px-5 py-4 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-bold transition-colors w-full min-h-[44px]">
               <FileText size={20} />
               <span className="text-base">
-                {loading ? "Exporting..." : "Export Semua Tabel (16 Tabel)"}
+                {loading ? "Exporting..." : "Export Semua Tabel (21 Tabel)"}
               </span>
             </button>
           </div>
@@ -1001,7 +1175,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
-            ℹ️ Total 16 tabel yang didukung untuk export
+            ℹ️ Total 21 tabel yang didukung untuk export (termasuk 5 tabel
+            E-Raport)
           </p>
         </div>
       </div>
@@ -1031,7 +1206,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
           <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-3">
-            ℹ️ Backup akan berisi semua data dari 16 tabel:
+            ℹ️ Backup akan berisi semua data dari 21 tabel:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-blue-700 dark:text-blue-400">
             <div className="flex items-center gap-1">
@@ -1065,6 +1240,27 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
               <span>Data Konseling</span>
+            </div>
+            {/* ✅ TAMBAH 5 ITEM E-RAPORT */}
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+              <span>Pengaturan E-Raport</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+              <span>Tujuan Pembelajaran</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+              <span>Nilai E-Raport</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+              <span>Kehadiran E-Raport</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+              <span>Catatan E-Raport</span>
             </div>
           </div>
         </div>

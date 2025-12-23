@@ -267,12 +267,10 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
               onChange={(e) => setSelectedSiswaId(e.target.value)}
               disabled={loading || !classId}
               className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">
-              <option value="">
-                -- Pilih Siswa ({siswaList.length} siswa) --
-              </option>
+              <option value="">-- Pilih Siswa --</option>
               {siswaList.map((siswa) => (
                 <option key={siswa.id} value={siswa.id}>
-                  {siswa.full_name} - {siswa.nis}
+                  {siswa.full_name}
                 </option>
               ))}
             </select>
@@ -324,12 +322,6 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
               </div>
 
               <div className="flex gap-2">
-                <button
-                  onClick={handlePrint}
-                  className="bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-800 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
-                  <Printer size={18} />
-                  Print
-                </button>
                 <button
                   onClick={loadPreviewData}
                   className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
@@ -529,28 +521,6 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
           </p>
         </div>
       )}
-
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #preview-content,
-          #preview-content * {
-            visibility: visible;
-          }
-          #preview-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

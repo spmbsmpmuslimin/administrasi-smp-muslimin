@@ -344,14 +344,6 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                 }`}>
                 {errorMessage}
               </p>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                <p>User: {currentUser?.full_name}</p>
-                <p>Teacher ID: {currentUser?.teacher_id}</p>
-                <p>
-                  Homeroom Class ID:{" "}
-                  {currentUser?.homeroom_class_id || "Tidak ada"}
-                </p>
-              </div>
             </div>
           </div>
         </div>
