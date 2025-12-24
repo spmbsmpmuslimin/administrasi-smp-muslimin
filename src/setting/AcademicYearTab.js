@@ -795,9 +795,11 @@ const AcademicYearTab = ({
 
       console.log("📊 Siswa baru ditemukan:", siswaBaruData?.length || 0);
 
+      // ✅ GANTI JADI INI
       const { data: existingStudents } = await supabase
         .from("students")
-        .select("nis");
+        .select("nis")
+        .eq("is_active", true); // ✅ Filter active students only
 
       const existingNIS = new Set(existingStudents?.map((s) => s.nis) || []);
 
@@ -948,6 +950,68 @@ const AcademicYearTab = ({
       showToast("Membuat 18 kelas baru...", "info");
       const newClasses = await createNewClasses(yearTransition.newYear);
 
+      // ========== REVISI FIX #2A: CREATE/GET ACADEMIC YEAR ID ==========
+      showToast("🔍 Mengecek semester untuk tahun ajaran baru...", "info");
+
+      let targetAcademicYearId;
+
+      // Deactivate all semesters from old year
+      const { error: deactivateOldError } = await supabase
+        .from("academic_years")
+        .update({ is_active: false })
+        .eq("year", preview.currentYear);
+
+      if (deactivateOldError) {
+        console.warn("Warning deactivating old semesters:", deactivateOldError);
+      }
+
+      // Check if semester 1 for new year already exists
+      const { data: existingAcademicYear } = await supabase
+        .from("academic_years")
+        .select("id")
+        .eq("year", yearTransition.newYear)
+        .eq("semester", 1)
+        .single();
+
+      if (existingAcademicYear) {
+        // Semester already exists, just activate it
+        targetAcademicYearId = existingAcademicYear.id;
+
+        const { error: activateError } = await supabase
+          .from("academic_years")
+          .update({ is_active: true })
+          .eq("id", targetAcademicYearId);
+
+        if (activateError) throw activateError;
+
+        showToast("✅ Semester 1 sudah ada, mengaktifkan...", "info");
+      } else {
+        // Create new semester 1
+        showToast("📅 Membuat semester 1 untuk tahun ajaran baru...", "info");
+
+        const [startYear] = yearTransition.newYear.split("/");
+        const semesterStartDate = `${startYear}-07-01`;
+        const semesterEndDate = `${startYear}-12-31`;
+
+        const { data: newAcademicYear, error: createError } = await supabase
+          .from("academic_years")
+          .insert({
+            year: yearTransition.newYear,
+            semester: 1,
+            start_date: semesterStartDate,
+            end_date: semesterEndDate,
+            is_active: true,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+
+        targetAcademicYearId = newAcademicYear.id;
+        showToast("✅ Semester 1 berhasil dibuat!", "success");
+      }
+      // ========== END REVISI FIX #2A ==========
+
       if (preview.graduating.length > 0) {
         showToast(`Meluluskan ${preview.graduating.length} siswa...`, "info");
         const graduatingIds = preview.graduating.map((s) => s.id);
@@ -968,11 +1032,13 @@ const AcademicYearTab = ({
 
         const studentIds = students.map((s) => s.id);
 
+        // ========== REVISI FIX #2B: UPDATE PROMOTE STUDENTS ==========
         const { error: promoteError } = await supabase
           .from("students")
           .update({
             class_id: newClassId,
             academic_year: yearTransition.newYear,
+            academic_year_id: targetAcademicYearId, // ← ADD THIS LINE
           })
           .in("id", studentIds);
 
@@ -1023,12 +1089,14 @@ const AcademicYearTab = ({
           )) {
             if (siswaList.length === 0) continue;
 
+            // ========== REVISI FIX #2C: UPDATE INSERT NEW STUDENTS ==========
             const newStudentsData = siswaList.map((siswa) => ({
               nis: siswa.nisn || null,
               full_name: siswa.nama_lengkap,
               gender: siswa.jenis_kelamin,
               class_id: classId,
               academic_year: yearTransition.newYear,
+              academic_year_id: targetAcademicYearId, // ← ADD THIS LINE
               is_active: true,
             }));
 
@@ -1062,6 +1130,7 @@ const AcademicYearTab = ({
 
       if (teacherResetError) throw teacherResetError;
 
+      // ✅ FIX #3: CODE INI SUDAH ADA DAN BENAR
       const { error: settingError } = await supabase
         .from("school_settings")
         .update({ setting_value: yearTransition.newYear })

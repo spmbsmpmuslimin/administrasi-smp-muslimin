@@ -17,7 +17,7 @@ import {
 import { supabase } from "../supabaseClient";
 import ProfileTab from "./ProfileTab";
 import SchoolManagementTab from "./SchoolManagementTab";
-import AcademicYearTab from "./AcademicYearTab";
+import AcademicYearTab from "./academic/AcademicYearTab";
 import SchoolSettingsTab from "./SchoolSettingsTab";
 import SystemTab from "./SystemTab";
 import MaintenanceModeTab from "./MaintenanceModeTab";

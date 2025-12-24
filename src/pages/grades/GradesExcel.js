@@ -1,6 +1,6 @@
 // src/pages/GradesExcel.js - Utility Functions for Excel Import/Export
 import ExcelJS from "exceljs";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 
 // Calculate NA
 // Perubahan: uts -> psts, uas -> psas

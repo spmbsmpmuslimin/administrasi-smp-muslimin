@@ -466,13 +466,6 @@ const SchoolManagementTab = ({
     });
   }, [students, studentFilters.kelas, studentFilters.search]);
 
-  const resetFilters = useCallback(() => {
-    setStudentFilters({ kelas: "", search: "" });
-  }, []);
-
-  // ✅ HAPUS: toggleTeacherStatus() - Pindah ke UserManagementTab
-  // ✅ HAPUS: updateTeacherClass() - Pindah ke UserManagementTab
-
   const updateStudentClass = useCallback(
     async (studentId, newClassId) => {
       try {
@@ -664,19 +657,6 @@ const SchoolManagementTab = ({
                 mobileMenuOpen ? "rotate-45" : ""
               } text-gray-700 dark:text-gray-300`}
             />
-          </button>
-        </div>
-
-        <div
-          className={`flex flex-col sm:flex-row gap-3 ${
-            mobileMenuOpen ? "flex" : "hidden"
-          } sm:flex`}>
-          {/* ✅ HAPUS: Tambah Guru button - Pindah ke UserManagementTab */}
-          <button
-            onClick={() => openStudentModal("add")}
-            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 dark:from-green-700 dark:hover:from-green-800 dark:hover:to-emerald-800 text-white rounded-xl text-sm sm:text-base font-semibold transition-all active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg">
-            <Plus size={16} />
-            <span>Tambah Siswa</span>
           </button>
         </div>
       </div>
@@ -922,15 +902,18 @@ const SchoolManagementTab = ({
               </select>
             </div>
 
+            {/* ✅ TOMBOL TAMBAH SISWA */}
             <div className="w-full md:w-auto">
               <button
-                onClick={resetFilters}
-                className="w-full md:w-auto px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 dark:from-gray-600 dark:to-gray-700 dark:hover:from-gray-700 dark:hover:to-gray-800 text-white rounded-xl transition-all text-sm font-semibold min-h-[44px] shadow-md">
-                Reset Filter
+                onClick={() => openStudentModal("add")}
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 sm:px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 dark:from-green-700 dark:hover:from-green-800 dark:hover:to-emerald-800 text-white rounded-xl text-sm sm:text-base font-semibold transition-all active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg">
+                <Plus size={16} />
+                <span>Tambah Siswa</span>
               </button>
             </div>
           </div>
 
+          {/* Pesan filter aktif */}
           {(studentFilters.kelas || studentFilters.search) && (
             <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">

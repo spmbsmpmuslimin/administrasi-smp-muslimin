@@ -1,6 +1,6 @@
-// 📁 GradesKatrol.js - VERSI FLEXIBLE NO LOCK
+// 📁 GradesKatrol.js - VERSI FLEXIBLE NO LOCK (REVISED)
 import React, { useState, useEffect } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 import {
   Calculator,
   Download,
@@ -221,6 +221,9 @@ const GradesKatrol = ({
   const [dataNilai, setDataNilai] = useState([]);
   const [hasilKatrol, setHasilKatrol] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
+
+  // ✅ REVISI 1: TAMBAH STATE minMaxData
+  const [minMaxData, setMinMaxData] = useState(null);
 
   // ✅ STATE KKM FLEXIBLE (TANPA LOCK)
   const [kkm, setKkm] = useState(75);
@@ -654,7 +657,7 @@ const GradesKatrol = ({
     setTimeout(() => setMessage({ text: "", type: "" }), 5000);
   };
 
-  // ✅ FETCH DATA NILAI (dengan Utils.js)
+  // ✅ FETCH DATA NILAI (dengan Utils.js) - REVISI 2: FIX MAPPING KOLOM
   const fetchDataNilai = async () => {
     if (!selectedClassId || !selectedSubjectState || !selectedAcademicYear) {
       showMessage(
@@ -683,12 +686,7 @@ const GradesKatrol = ({
       // 1️⃣ CEK DULU: Ada data di grades_katrol?
       const { data: katrolData, error: katrolError } = await supabase
         .from("grades_katrol")
-        .select(
-          `
-        *,
-        students:student_id (nis, full_name)
-      `
-        )
+        .select(`*`)
         .eq("class_id", selectedClassId)
         .ilike("subject", selectedSubjectState)
         .eq("academic_year", selectedAcademicYear)
@@ -702,27 +700,41 @@ const GradesKatrol = ({
           `✅ Ditemukan ${katrolData.length} data KATROL (sudah diproses)`
         );
 
-        // Format data dari database
+        // ✅ REVISI 2: Ambil data siswa untuk mapping nama & NIS secara terpisah
+        const { data: studentsData } = await supabase
+          .from("students")
+          .select("id, full_name, nis")
+          .in(
+            "id",
+            katrolData.map((k) => k.student_id)
+          );
+
+        const studentMap = Object.fromEntries(
+          studentsData?.map((s) => [s.id, s]) || []
+        );
+
+        // ✅ REVISI 2: Format data dari database dengan kolom yang BENAR
         const formattedKatrol = katrolData.map((item) => ({
           student_id: item.student_id,
-          nis: item.students?.nis || "-",
-          nama_siswa: item.students?.full_name || "-",
-          nh1: item.nh1_mentah,
-          nh2: item.nh2_mentah,
-          nh3: item.nh3_mentah,
-          rata_nh: item.rata_nh_mentah,
-          psts: item.psts_mentah,
-          psas: item.psas_mentah,
-          nilai_akhir: item.nilai_akhir_mentah,
-          nh1_k: item.nh1_katrol,
-          nh2_k: item.nh2_katrol,
-          nh3_k: item.nh3_katrol,
-          rata_nh_k: item.rata_nh_katrol,
-          psts_k: item.psts_katrol,
-          psas_k: item.psas_katrol,
-          nilai_akhir_k: item.nilai_akhir_katrol,
-          status:
-            item.nilai_akhir_katrol >= item.kkm ? "Tuntas" : "Belum Tuntas",
+          nis: studentMap[item.student_id]?.nis || "-",
+          nama_siswa: studentMap[item.student_id]?.full_name || "-",
+          // ✅ NILAI MENTAH (dari kolom database yang benar)
+          nh1: item.nh1,
+          nh2: item.nh2,
+          nh3: item.nh3,
+          rata_nh: item.rata_nh,
+          psts: item.psts,
+          psas: item.psas,
+          nilai_akhir: item.nilai_akhir,
+          // ✅ NILAI KATROL (dari kolom database yang benar)
+          nh1_k: item.nh1_k,
+          nh2_k: item.nh2_k,
+          nh3_k: item.nh3_k,
+          rata_nh_k: item.rata_nh_k,
+          psts_k: item.psts_k,
+          psas_k: item.psas_k,
+          nilai_akhir_k: item.nilai_akhir_k,
+          status: item.nilai_akhir_k >= item.kkm ? "Tuntas" : "Belum Tuntas",
         }));
 
         // ✅ SORT BY NAMA
@@ -834,7 +846,7 @@ const GradesKatrol = ({
     }
   };
 
-  // ✅ PROSES KATROL (dengan Utils.js) - VERSI DIPERBAIKI
+  // ✅ PROSES KATROL (dengan Utils.js) - REVISI 3: SIMPAN minMaxData
   const prosesKatrol = async () => {
     // ✅ VALIDASI SEDERHANA: Cek KKM sudah di-set
     if (!kkm || !nilaiMaksimal) {
@@ -886,6 +898,10 @@ const GradesKatrol = ({
       // ✅ PAKAI FUNGSI DARI UTILS.JS
       const organizedGrades = organizeGradesByStudent(gradesData);
       const minMax = calculateMinMaxKelas(organizedGrades);
+
+      // ✅ REVISI 3: SIMPAN minMax KE STATE
+      setMinMaxData(minMax);
+      console.log("📊 Min/Max Kelas:", minMax);
 
       const additionalInfo = {
         class_id: selectedClassId,
@@ -1021,6 +1037,8 @@ const GradesKatrol = ({
     await processSaveToDatabase();
   };
 
+  // ✅ REVISI 4: processSaveToDatabase - GUNAKAN minMaxData
+  // ✅ REVISI 4: processSaveToDatabase - FIX MAPPING FIELD
   const processSaveToDatabase = async () => {
     setSaving(true);
 
@@ -1055,6 +1073,8 @@ const GradesKatrol = ({
           academic_year: selectedAcademicYear,
           academic_year_id: academicYearId,
           semester: selectedSemester,
+          // ✅ FIX: hasilKatrol sudah dalam format display (nh1, nh1_k)
+          // Tapi kita perlu pass ke formatDataForDatabase dengan format yang diharapkan
           nh1_mentah: item.nh1,
           nh2_mentah: item.nh2,
           nh3_mentah: item.nh3,
@@ -1072,8 +1092,9 @@ const GradesKatrol = ({
           kkm: kkm,
           target_max: nilaiMaksimal,
           target_min: kkm,
-          nilai_min_kelas: null,
-          nilai_max_kelas: null,
+          // ✅ REVISI 4: ISI DARI STATE minMaxData
+          nilai_min_kelas: minMaxData?.nilai_akhir?.min || null,
+          nilai_max_kelas: minMaxData?.nilai_akhir?.max || null,
           jumlah_siswa_kelas: hasilKatrol.length,
         };
 
@@ -1092,6 +1113,7 @@ const GradesKatrol = ({
         "success"
       );
 
+      // ✅ REVISI 6: AUTO-RELOAD SETELAH SAVE
       await fetchDataNilai();
     } catch (error) {
       console.error("❌ Error saving katrol:", error);
@@ -1490,6 +1512,7 @@ const GradesKatrol = ({
               )}
             </button>
 
+            {/* ✅ REVISI 5: BUTTON LABEL - CONDITIONAL TEXT */}
             <button
               onClick={prosesKatrol}
               disabled={!selectedClassId || !selectedSubjectState || processing}
@@ -1502,7 +1525,9 @@ const GradesKatrol = ({
               ) : (
                 <>
                   <Calculator className="w-4 h-4" />
-                  Proses Katrol
+                  {hasilKatrol.length > 0
+                    ? "Proses Katrol Ulang"
+                    : "Proses Katrol"}
                 </>
               )}
             </button>

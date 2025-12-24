@@ -24,17 +24,23 @@ export const calculateKatrolValue = (
   nilai,
   minKelas,
   maxKelas,
-  kkm = 75,
-  targetMax = 100
+  kkm,
+  targetMax
 ) => {
+  // Validasi input
   if (nilai === null || nilai === undefined) return null;
-  if (nilai >= kkm) return roundToTwo(nilai);
-  if (minKelas === maxKelas) return roundToTwo(kkm);
   if (minKelas === null || maxKelas === null) return roundToTwo(nilai);
 
+  // Edge case: semua nilai sama
+  if (minKelas === maxKelas) return roundToTwo(kkm);
+
+  // ✅ RUMUS KATROL - DITERAPKAN KE SEMUA NILAI (tidak peduli >= KKM atau tidak)
   const result =
     kkm + ((nilai - minKelas) / (maxKelas - minKelas)) * (targetMax - kkm);
+
+  // Limit maksimal ke targetMax
   const limitedResult = Math.min(result, targetMax);
+
   return roundToTwo(limitedResult);
 };
 

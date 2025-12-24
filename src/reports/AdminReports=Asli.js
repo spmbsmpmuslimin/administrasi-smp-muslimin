@@ -1,27 +1,33 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import {
   FileText,
-  CheckCircle,
+  Users,
+  GraduationCap,
   BarChart3,
   Eye,
+  Building,
+  CheckCircle,
+  Filter,
   X,
+  ChevronDown,
   FileSpreadsheet,
   TrendingUp,
   AlertCircle,
   AlertTriangle,
   TrendingDown,
-  MessageCircle,
-  HelpCircle,
 } from "lucide-react";
 import { exportToExcel } from "./ReportExcel";
 import ReportModal from "./modals/AdminReportModal";
 
 import {
+  fetchTeachersData,
+  fetchStudentsData,
   fetchAttendanceRecapData,
   fetchGradesData,
   calculateFinalGrades,
   buildFilterDescription,
+  TEACHER_ROLES,
   REPORT_HEADERS,
 } from "./ReportHelpers";
 
@@ -29,6 +35,9 @@ import {
 
 const calculateAtRiskStudents = async (classId = null) => {
   try {
+    // Ambil attendance recap
+    const filters = classId ? { class_id: classId } : {};
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -43,6 +52,7 @@ const calculateAtRiskStudents = async (classId = null) => {
 
     const { data: attendanceData } = await attendanceQuery;
 
+    // Calculate attendance percentage per student
     const studentAttendance = {};
     attendanceData?.forEach((record) => {
       const key = record.student_id;
@@ -61,6 +71,7 @@ const calculateAtRiskStudents = async (classId = null) => {
       }
     });
 
+    // Filter students dengan absensi < 75%
     const atRiskAttendance = Object.values(studentAttendance)
       .filter((s) => s.total >= 10 && (s.present / s.total) * 100 < 75)
       .map((s) => ({
@@ -89,8 +100,10 @@ const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
 
     const { data: gradesData } = await gradesQuery;
 
+    // Calculate final grades
     const finalGrades = calculateFinalGrades(gradesData || []);
 
+    // Filter students dengan nilai < threshold di multiple subjects
     const studentGrades = {};
     finalGrades.forEach((grade) => {
       const key = grade.student_id;
@@ -109,6 +122,7 @@ const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
       });
     });
 
+    // Calculate average dan filter
     const atRiskGrades = Object.values(studentGrades)
       .map((s) => ({
         ...s,
@@ -131,13 +145,7 @@ const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
 };
 
 const calculateHighRiskStudents = (atRiskAttendance, atRiskGrades) => {
-  const calculateRiskScore = (attendance, grade) => {
-    const attendanceRisk = Math.max(0, (75 - attendance) / 75);
-    const gradeRisk = Math.max(0, (70 - grade) / 70);
-    const riskScore = (attendanceRisk * 0.6 + gradeRisk * 0.4) * 100;
-    return Math.round(Math.max(0, Math.min(100, riskScore)));
-  };
-
+  // Combine both lists: students yang ada di both lists
   const highRisk = [];
 
   atRiskAttendance.forEach((attStudent) => {
@@ -149,123 +157,16 @@ const calculateHighRiskStudents = (atRiskAttendance, atRiskGrades) => {
         class_id: attStudent.class_id,
         attendanceRate: attStudent.attendanceRate,
         averageGrade: gradeStudent.averageGrade,
-        riskScore: calculateRiskScore(
-          attStudent.attendanceRate,
-          gradeStudent.averageGrade
-        ),
+        riskScore: Math.round(
+          ((75 - attStudent.attendanceRate) / 25 +
+            (70 - gradeStudent.averageGrade) / 70) *
+            50
+        ), // 0-100
       });
     }
   });
 
   return highRisk.sort((a, b) => b.riskScore - a.riskScore);
-};
-
-// ==================== KONSELING HELPERS ====================
-
-const fetchKonselingData = async (filters = {}) => {
-  try {
-    let query = supabase
-      .from("konseling")
-      .select(
-        `
-        *,
-        students!inner(nis, full_name, class_id),
-        users!konseling_counselor_id_fkey(full_name)
-      `
-      )
-      .order("tanggal", { ascending: false });
-
-    if (filters.academic_year) {
-      query = query.eq("academic_year", filters.academic_year);
-    }
-
-    if (filters.semester) {
-      query = query.eq("semester", filters.semester);
-    }
-
-    if (filters.class_id) {
-      query = query.eq("students.class_id", filters.class_id);
-    }
-
-    if (filters.date_from) {
-      query = query.gte("tanggal", filters.date_from);
-    }
-
-    if (filters.date_to) {
-      query = query.lte("tanggal", filters.date_to);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    const fullData = data.map((k) => ({
-      Tanggal: k.tanggal
-        ? new Date(k.tanggal).toLocaleDateString("id-ID")
-        : "-",
-      NIS: k.students?.nis || "-",
-      "Nama Siswa": k.students?.full_name || "-",
-      Kelas: k.students?.class_id || "-",
-      Kategori: k.kategori || "-",
-      Deskripsi: k.deskripsi || "-",
-      "Tindak Lanjut": k.tindak_lanjut || "-",
-      Status: k.status || "-",
-      Konselor: k.users?.full_name || "-",
-    }));
-
-    const summary = calculateKonselingStats(data);
-
-    return {
-      fullData,
-      headers: Object.keys(fullData[0] || {}),
-      summary,
-    };
-  } catch (err) {
-    console.error("Error fetching konseling data:", err);
-    throw err;
-  }
-};
-
-const calculateKonselingStats = (data) => {
-  const total = data.length;
-
-  const byKategori = data.reduce((acc, k) => {
-    const kat = k.kategori || "Lainnya";
-    acc[kat] = (acc[kat] || 0) + 1;
-    return acc;
-  }, {});
-
-  const topKategori = Object.entries(byKategori)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([k, v]) => `${k}: ${v}`);
-
-  const byStatus = data.reduce((acc, k) => {
-    const status = k.status || "Pending";
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {});
-
-  const studentSessions = data.reduce((acc, k) => {
-    const nis = k.students?.nis;
-    if (nis) {
-      acc[nis] = (acc[nis] || 0) + 1;
-    }
-    return acc;
-  }, {});
-
-  const frequentStudents = Object.entries(studentSessions).filter(
-    ([nis, count]) => count >= 2
-  ).length;
-
-  return {
-    totalSessions: total,
-    byKategori,
-    topKategori,
-    byStatus,
-    frequentStudents,
-    completedSessions: byStatus["Selesai"] || 0,
-    pendingSessions: byStatus["Pending"] || 0,
-  };
 };
 
 // ==================== MONITORING CARDS ====================
@@ -380,52 +281,13 @@ const StatCard = ({ icon: Icon, label, value, subtitle, colorClass }) => (
   </div>
 );
 
-// ==================== REPORT CARDS TEMPLATE ====================
-
-const REPORT_CARDS_TEMPLATE = [
-  {
-    id: "attendance-analytics",
-    icon: CheckCircle,
-    title: "Analisis Kehadiran",
-    description: "Trend & pattern kehadiran semua kelas",
-    colorCard:
-      "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
-    colorIcon:
-      "bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-300",
-  },
-  {
-    id: "grades-analytics",
-    icon: BarChart3,
-    title: "Analisis Nilai Akademik",
-    description: "Distribusi & performa per mata pelajaran",
-    colorCard:
-      "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800",
-    colorIcon:
-      "bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300",
-  },
-  {
-    id: "counseling-summary",
-    icon: MessageCircle,
-    title: "Laporan Konseling",
-    description: "Summary sesi konseling & kasus siswa",
-    colorCard:
-      "bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800",
-    colorIcon: "bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300",
-  },
-];
-
 // ==================== MAIN COMPONENT ====================
 
 const AdminReports = ({ user, onShowToast }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [stats, setStats] = useState({
-    attendanceToday: 0,
-    averageGrade: 0,
-    totalCounseling: 0,
-    atRiskStudents: 0,
-  });
+  const [stats, setStats] = useState({});
   const [filters, setFilters] = useState({});
   const [previewModal, setPreviewModal] = useState({
     isOpen: false,
@@ -433,6 +295,7 @@ const AdminReports = ({ user, onShowToast }) => {
     type: null,
   });
   const [classOptions, setClassOptions] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
 
   // Monitoring data
   const [atRiskAttendance, setAtRiskAttendance] = useState([]);
@@ -440,53 +303,77 @@ const AdminReports = ({ user, onShowToast }) => {
   const [highRiskStudents, setHighRiskStudents] = useState([]);
   const [monitoringLoading, setMonitoringLoading] = useState(false);
 
+  const REPORT_CARDS = [
+    {
+      id: "teachers",
+      icon: Users,
+      title: "Data Guru",
+      description: "Master data lengkap semua guru",
+      stats: `${stats.totalTeachers || 0} guru`,
+      colorCard:
+        "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
+      colorIcon:
+        "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300",
+    },
+    {
+      id: "students",
+      icon: GraduationCap,
+      title: "Data Siswa",
+      description: "Master data semua siswa aktif",
+      stats: `${stats.totalStudents || 0} siswa`,
+      colorCard:
+        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
+      colorIcon:
+        "bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300",
+    },
+    {
+      id: "attendance-recap",
+      icon: CheckCircle,
+      title: "Rekapitulasi Kehadiran",
+      description: "Statistik kehadiran per siswa",
+      stats: `Rata-rata: ${stats.attendanceToday || 0}%`,
+      colorCard:
+        "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
+      colorIcon:
+        "bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-300",
+    },
+    {
+      id: "grades",
+      icon: BarChart3,
+      title: "Data Nilai",
+      description: "Nilai akademik semua mata pelajaran",
+      stats: `Rata-rata Akhir: ${stats.averageGrade || 0}`,
+      colorCard:
+        "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800",
+      colorIcon:
+        "bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300",
+    },
+  ];
+
   useEffect(() => {
     fetchInitialData();
   }, []);
 
   const fetchInitialData = async () => {
     setLoading(true);
-    const errors = [];
-
     try {
-      await fetchStats();
+      await Promise.all([
+        fetchStats(),
+        fetchClassOptions(),
+        fetchAcademicYears(),
+        fetchMonitoringData(),
+      ]);
     } catch (err) {
-      errors.push("stats");
-      console.error("Stats error:", err);
+      setError("Gagal memuat data awal");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    try {
-      await fetchClassOptions();
-    } catch (err) {
-      errors.push("classes");
-      console.error("Classes error:", err);
-    }
-
-    try {
-      await fetchMonitoringData();
-    } catch (err) {
-      errors.push("monitoring");
-      console.error("Monitoring error:", err);
-    }
-
-    if (errors.length > 0) {
-      const errorMsg = `Beberapa data gagal dimuat: ${errors.join(", ")}`;
-      if (onShowToast) {
-        onShowToast(errorMsg, "error");
-      } else {
-        setError(errorMsg);
-      }
-    }
-
-    setLoading(false);
   };
 
   const fetchStats = async () => {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const firstDayOfMonth = new Date();
-      firstDayOfMonth.setDate(1);
-      const monthStart = firstDayOfMonth.toISOString().split("T")[0];
 
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
@@ -496,21 +383,35 @@ const AdminReports = ({ user, onShowToast }) => {
           ? `${currentYear}/${currentYear + 1}`
           : `${currentYear - 1}/${currentYear}`;
 
-      const [attendanceResult, gradesResult, konselingResult] =
-        await Promise.all([
-          supabase.from("attendances").select("status").eq("date", today),
-          supabase
-            .from("grades")
-            .select("*, students(nis, full_name, class_id)")
-            .eq("academic_year", currentAcademicYear),
-          supabase
-            .from("konseling")
-            .select("id", { count: "exact" })
-            .gte("tanggal", monthStart)
-            .lte("tanggal", today),
-        ]);
+      const [
+        teachersResult,
+        studentsResult,
+        classesResult,
+        attendanceResult,
+        gradesResult,
+      ] = await Promise.all([
+        supabase
+          .from("users")
+          .select("id", { count: "exact" })
+          .in("role", TEACHER_ROLES)
+          .neq("username", "adenurmughni")
+          .eq("is_active", true),
 
-      // Calculate attendance rate
+        supabase
+          .from("students")
+          .select("id", { count: "exact" })
+          .eq("is_active", true),
+
+        supabase.from("classes").select("id", { count: "exact" }),
+
+        supabase.from("attendances").select("status").eq("date", today),
+
+        supabase
+          .from("grades")
+          .select("*, students(nis, full_name, class_id)")
+          .eq("academic_year", currentAcademicYear),
+      ]);
+
       const attendanceData = attendanceResult.data || [];
       const presentCount = attendanceData.filter(
         (a) => a.status?.toLowerCase() === "hadir"
@@ -520,7 +421,6 @@ const AdminReports = ({ user, onShowToast }) => {
           ? Math.round((presentCount / attendanceData.length) * 100)
           : 0;
 
-      // Calculate average grade
       const finalGrades = calculateFinalGrades(gradesResult.data || []);
       const finalScores = finalGrades
         .map((g) => g.final_score)
@@ -532,22 +432,16 @@ const AdminReports = ({ user, onShowToast }) => {
             ).toFixed(1)
           : 0;
 
-      // Calculate at-risk students count
-      const [attRisk, gradeRisk] = await Promise.all([
-        calculateAtRiskStudents(),
-        calculateLowGradeStudents(null, 70),
-      ]);
-      const atRiskCount = attRisk.length + gradeRisk.length;
-
       setStats({
+        totalTeachers: teachersResult.count || 0,
+        totalStudents: studentsResult.count || 0,
+        totalClasses: classesResult.count || 0,
+        activeUsers: (teachersResult.count || 0) + (studentsResult.count || 0),
         attendanceToday: attendanceRate,
         averageGrade: avgGrade,
-        totalCounseling: konselingResult.count || 0,
-        atRiskStudents: atRiskCount,
       });
     } catch (err) {
       console.error("Error fetching stats:", err);
-      throw err;
     }
   };
 
@@ -566,7 +460,6 @@ const AdminReports = ({ user, onShowToast }) => {
       setHighRiskStudents(calculateHighRiskStudents(attRisk, gradeRisk));
     } catch (err) {
       console.error("Error fetching monitoring data:", err);
-      throw err;
     } finally {
       setMonitoringLoading(false);
     }
@@ -583,31 +476,27 @@ const AdminReports = ({ user, onShowToast }) => {
       setClassOptions(data?.map((c) => c.id) || []);
     } catch (err) {
       console.error("Error fetching classes:", err);
-      throw err;
     }
   };
 
-  const getCardStats = (cardId) => {
-    switch (cardId) {
-      case "attendance-analytics":
-        return `Kehadiran rata-rata: ${stats.attendanceToday || 0}%`;
-      case "grades-analytics":
-        return `Rata-rata nilai: ${stats.averageGrade || 0}`;
-      case "counseling-summary":
-        return `${stats.totalCounseling || 0} sesi bulan ini`;
-      default:
-        return "";
+  const fetchAcademicYears = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("academic_year")
+        .order("academic_year", { ascending: false });
+
+      if (error) throw error;
+
+      const uniqueYears = [
+        ...new Set(data?.map((s) => s.academic_year).filter(Boolean)),
+      ];
+      setAcademicYears(uniqueYears);
+    } catch (err) {
+      console.error("Error fetching academic years:", err);
+      setAcademicYears(["2025/2026", "2024/2025", "2023/2024"]);
     }
   };
-
-  const REPORT_CARDS = useMemo(
-    () =>
-      REPORT_CARDS_TEMPLATE.map((card) => ({
-        ...card,
-        stats: getCardStats(card.id),
-      })),
-    [stats]
-  );
 
   const fetchReportData = async (reportType) => {
     let reportTitle = "";
@@ -615,44 +504,38 @@ const AdminReports = ({ user, onShowToast }) => {
 
     try {
       switch (reportType) {
-        case "attendance-analytics":
-          reportTitle = "ANALISIS KEHADIRAN";
+        case "teachers":
+          reportTitle = "DATA GURU";
+          result = await fetchTeachersData(filters);
+          break;
+
+        case "students":
+          reportTitle = "DATA SISWA";
+          result = await fetchStudentsData(filters, true);
+          break;
+
+        case "attendance-recap":
+          reportTitle = "REKAPITULASI KEHADIRAN";
           result = await fetchAttendanceRecapData(filters);
           break;
 
-        case "grades-analytics":
-          reportTitle = "ANALISIS NILAI AKADEMIK";
+        case "grades":
+          reportTitle = "DATA NILAI AKADEMIK";
           result = await fetchGradesData(filters, null, true);
-          result.headers = REPORT_HEADERS.gradesFinalOnly || [
-            "NIS",
-            "Nama Siswa",
-            "Kelas",
-            "Mata Pelajaran",
-            "Nilai Akhir",
-            "Grade",
-            "Status",
-          ];
-          break;
-
-        case "counseling-summary":
-          reportTitle = "LAPORAN KONSELING";
-          result = await fetchKonselingData(filters);
-          result.headers = result.headers || [
-            "Tanggal",
-            "NIS",
-            "Nama Siswa",
-            "Kelas",
-            "Kategori",
-            "Deskripsi",
-            "Tindak Lanjut",
-            "Status",
-            "Konselor",
-          ];
+          result.headers = REPORT_HEADERS.gradesFinalOnly;
           break;
 
         default:
           throw new Error("Tipe laporan tidak valid");
       }
+
+      // DEBUG: Log data structure
+      console.log(`📊 ${reportType} Data:`, {
+        fullData: result.fullData?.length || 0,
+        headers: result.headers?.length || 0,
+        summary: result.summary,
+        reportTitle,
+      });
 
       return {
         ...result,
@@ -669,8 +552,11 @@ const AdminReports = ({ user, onShowToast }) => {
     setLoading(true);
     setError(null);
     try {
+      console.log(`🔄 Starting preview for: ${reportType}`);
+
       const data = await fetchReportData(reportType);
 
+      // PASTIKAN data structure benar
       const modalData = {
         ...data,
         fullData: data.fullData || [],
@@ -679,6 +565,8 @@ const AdminReports = ({ user, onShowToast }) => {
         reportTitle: data.reportTitle || `LAPORAN ${reportType.toUpperCase()}`,
         reportType: data.reportType || reportType,
       };
+
+      console.log("📨 Sending to modal:", modalData);
 
       setPreviewModal({
         isOpen: true,
@@ -709,6 +597,7 @@ const AdminReports = ({ user, onShowToast }) => {
     setLoading(true);
     setError(null);
     try {
+      // Gunakan data dari modal jika ada, atau fetch baru
       const data = previewModal.data || (await fetchReportData(reportType));
 
       if (!data.fullData || data.fullData.length === 0) {
@@ -764,6 +653,17 @@ const AdminReports = ({ user, onShowToast }) => {
     fetchMonitoringData();
   };
 
+  // DEBUG: Log modal state changes
+  useEffect(() => {
+    if (previewModal.isOpen) {
+      console.log("🪟 Modal Opened:", {
+        isOpen: previewModal.isOpen,
+        data: previewModal.data,
+        type: previewModal.type,
+      });
+    }
+  }, [previewModal.isOpen]);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
@@ -816,43 +716,41 @@ const AdminReports = ({ user, onShowToast }) => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <StatCard
-            icon={CheckCircle}
-            label="Kehadiran Hari Ini"
-            value={`${stats.attendanceToday || 0}%`}
-            subtitle="Rata-rata kehadiran"
-            colorClass="bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-300"
+            icon={Users}
+            label="Total Guru"
+            value={stats.totalTeachers || 0}
+            subtitle="Guru aktif"
+            colorClass="bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300"
           />
           <StatCard
-            icon={BarChart3}
-            label="Rata-rata Nilai"
-            value={stats.averageGrade || 0}
-            subtitle="Nilai akhir semester"
+            icon={GraduationCap}
+            label="Total Siswa"
+            value={stats.totalStudents || 0}
+            subtitle="Siswa aktif"
+            colorClass="bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300"
+          />
+          <StatCard
+            icon={Building}
+            label="Total Kelas"
+            value={stats.totalClasses || 0}
+            subtitle="Semua tingkat"
             colorClass="bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300"
           />
           <StatCard
-            icon={MessageCircle}
-            label="Konseling Bulan Ini"
-            value={stats.totalCounseling || 0}
-            subtitle="Total sesi konseling"
-            colorClass="bg-teal-100 dark:bg-teal-800 text-teal-600 dark:text-teal-300"
-          />
-          <StatCard
-            icon={AlertTriangle}
-            label="Siswa Butuh Perhatian"
-            value={stats.atRiskStudents || 0}
-            subtitle="Attendance/grades rendah"
-            colorClass="bg-red-100 dark:bg-red-800 text-red-600 dark:text-red-300"
+            icon={TrendingUp}
+            label="Kehadiran Hari Ini"
+            value={`${stats.attendanceToday || 0}%`}
+            subtitle={`Rata-rata nilai akhir: ${stats.averageGrade || 0}`}
+            colorClass="bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300"
           />
         </div>
 
         {/* MONITORING SECTION */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0" />
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-200">
-              Monitoring & Alerts
-            </h2>
-          </div>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400 flex-shrink-0" />
+            Monitoring Siswa
+          </h2>
 
           {/* Filter Controls */}
           <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-3 sm:p-4 mb-4 sm:mb-6">
@@ -925,26 +823,15 @@ const AdminReports = ({ user, onShowToast }) => {
           )}
         </div>
 
-        {/* ANALYTICS REPORTS SECTION */}
+        {/* EXPORT REPORTS SECTION */}
         <div className="mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-200">
-              Laporan Analitik
-            </h2>
-            <button
-              className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400"
-              title="Laporan ini berisi analisis dan insights. Untuk export master data, silakan ke menu Pengaturan.">
-              <HelpCircle className="w-4 h-4" />
-            </button>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Export summary reports, bukan raw data
-          </p>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-200">
+            Export Laporan Lengkap
+          </h2>
         </div>
 
         {/* Report Cards */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {REPORT_CARDS.map((card) => {
             const Icon = card.icon;
             return (
@@ -996,9 +883,6 @@ const AdminReports = ({ user, onShowToast }) => {
               <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
               <p className="text-slate-700 dark:text-slate-300 font-medium text-sm sm:text-base text-center">
                 Memproses laporan...
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 text-center">
-                Mohon tunggu sebentar
               </p>
             </div>
           </div>
