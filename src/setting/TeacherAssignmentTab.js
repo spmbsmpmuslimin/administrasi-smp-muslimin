@@ -9,6 +9,13 @@ import {
   generateErrorReport,
 } from "./TeacherAssignmentExcel";
 import {
+  getActiveAcademicInfo, // ✅ TAMBAH: Untuk mendapatkan info akademik lengkap
+  getActiveSemester, // ✅ TAMBAH: Hanya semester aktif
+  getActiveYearString, // ✅ TAMBAH: Hanya tahun ajaran string
+  getActiveAcademicYearId, // ✅ TAMBAH: Hanya UUID tahun ajaran
+  applyAcademicFilters, // ✅ TAMBAH: Helper untuk filter query
+} from "../services/academicYearService"; // ✅ TAMBAH: Import service
+import {
   Plus,
   Edit2,
   Trash2,
@@ -25,8 +32,8 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
-  Download, // ✅ TAMBAH
-  Upload, // ✅ TAMBAH
+  Download,
+  Upload,
 } from "lucide-react";
 
 const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
@@ -38,6 +45,10 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
+
+  // ✅ TAMBAH: State untuk academic info dinamis
+  const [academicInfo, setAcademicInfo] = useState(null);
+  const [academicLoading, setAcademicLoading] = useState(true);
 
   // Filter states
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
@@ -83,14 +94,43 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletingAssignment, setDeletingAssignment] = useState(false);
 
+  // ✅ TAMBAH: Load academic info saat component mount
+  useEffect(() => {
+    const loadAcademicInfo = async () => {
+      try {
+        setAcademicLoading(true);
+        const info = await getActiveAcademicInfo();
+        setAcademicInfo(info);
+
+        // ✅ Set default semester dari data dinamis
+        if (info) {
+          setSelectedSemester(info.semester.toString());
+          setFormData((prev) => ({
+            ...prev,
+            semester: info.semester.toString(),
+          }));
+        }
+      } catch (error) {
+        console.error("Error loading academic info:", error);
+        showToast?.("Gagal memuat info tahun ajaran", "error");
+      } finally {
+        setAcademicLoading(false);
+      }
+    };
+
+    loadAcademicInfo();
+  }, []);
+
   // Load initial data
   useEffect(() => {
-    loadAllData();
-  }, []);
+    if (!academicLoading) {
+      loadAllData();
+    }
+  }, [academicLoading]);
 
   // Load filtered assignments when filters change
   useEffect(() => {
-    if (academicYears.length > 0) {
+    if (academicYears.length > 0 && !academicLoading) {
       loadAssignments();
     }
   }, [
@@ -99,6 +139,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     selectedClass,
     selectedTeacher,
     selectedSubject,
+    academicLoading,
   ]);
 
   const loadAllData = async () => {
@@ -125,7 +166,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
       .select("id, teacher_id, full_name, username, role")
       .not("teacher_id", "is", null)
       .eq("is_active", true)
-      .order("teacher_id"); // ✅ GANTI: Sort by teacher_id, bukan full_name
+      .order("teacher_id");
 
     if (error) throw error;
     setTeachers(data || []);
@@ -160,7 +201,6 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   };
 
   const loadSubjects = async () => {
-    // ✅ Ambil SEMUA mata pelajaran, bukan dari filtered
     const { data, error } = await supabase
       .from("teacher_assignments")
       .select("subject")
@@ -179,18 +219,40 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
 
   const loadAssignments = async () => {
     try {
+      // ✅ UPDATED: Gunakan academic info untuk filter default
+      const { semester: activeSemester, yearId: activeYearId } =
+        await getActiveAcademicInfo();
+
       let query = supabase
         .from("teacher_assignments")
         .select("*")
         .order("created_at", { ascending: false });
 
-      // Apply filters
-      if (selectedAcademicYear) {
-        query = query.eq("academic_year_id", selectedAcademicYear);
+      // ✅ UPDATED: Gunakan applyAcademicFilters untuk konsistensi
+      if (selectedAcademicYear || selectedSemester) {
+        // Jika ada filter manual, gunakan yang dipilih user
+        if (selectedAcademicYear) {
+          query = query.eq("academic_year_id", selectedAcademicYear);
+        }
+        if (selectedSemester) {
+          query = query.eq("semester", selectedSemester);
+        }
+      } else {
+        // Jika tidak ada filter, gunakan akademik aktif
+        query = await applyAcademicFilters(query, {
+          filterSemester: true,
+          filterYearId: true,
+        });
+
+        // Set filter UI ke akademik aktif
+        const activeYear = academicYears.find((y) => y.is_active);
+        if (activeYear) {
+          setSelectedAcademicYear(activeYear.id);
+          setSelectedSemester(activeSemester.toString());
+        }
       }
-      if (selectedSemester) {
-        query = query.eq("semester", selectedSemester);
-      }
+
+      // Filter lainnya tetap sama
       if (selectedClass) {
         query = query.eq("class_id", selectedClass);
       }
@@ -323,43 +385,51 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     }
   };
 
-  const calculateStats = (assignmentData) => {
-    const activeYear = academicYears.find((y) => y.is_active);
-    const activeAssignments = assignmentData.filter(
-      (a) => a.academic_year_id === activeYear?.id
-    );
+  const calculateStats = async (assignmentData) => {
+    try {
+      // ✅ UPDATED: Gunakan academic info dinamis
+      const { yearId: activeYearId } = await getActiveAcademicInfo();
 
-    const assignedTeacherIds = new Set(
-      activeAssignments.map((a) => a.teacher_id)
-    );
-    const teachersWithoutAssignment = teachers.filter(
-      (t) => !assignedTeacherIds.has(t.teacher_id)
-    ).length;
+      const activeAssignments = assignmentData.filter(
+        (a) => a.academic_year_id === activeYearId
+      );
 
-    const assignedClassIds = new Set(activeAssignments.map((a) => a.class_id));
-    const classesWithoutTeacher = classes.filter(
-      (c) => !assignedClassIds.has(c.id)
-    ).length;
+      const assignedTeacherIds = new Set(
+        activeAssignments.map((a) => a.teacher_id)
+      );
+      const teachersWithoutAssignment = teachers.filter(
+        (t) => !assignedTeacherIds.has(t.teacher_id)
+      ).length;
 
-    // Hitung mata pelajaran tanpa guru di tahun aktif
-    const allSubjects = [...new Set(activeAssignments.map((a) => a.subject))];
-    const subjectsWithoutTeacher = allSubjects.filter((subject) => {
-      const teachersForSubject = activeAssignments
-        .filter((a) => a.subject === subject)
-        .map((a) => a.teacher_id);
-      return teachersForSubject.length === 0;
-    }).length;
+      const assignedClassIds = new Set(
+        activeAssignments.map((a) => a.class_id)
+      );
+      const classesWithoutTeacher = classes.filter(
+        (c) => !assignedClassIds.has(c.id)
+      ).length;
 
-    setStats({
-      totalAssignments: assignmentData.length,
-      activeAssignments: activeAssignments.length,
-      teachersWithoutAssignment,
-      classesWithoutTeacher,
-      subjectsWithoutTeacher,
-    });
+      // Hitung mata pelajaran tanpa guru di tahun aktif
+      const allSubjects = [...new Set(activeAssignments.map((a) => a.subject))];
+      const subjectsWithoutTeacher = allSubjects.filter((subject) => {
+        const teachersForSubject = activeAssignments
+          .filter((a) => a.subject === subject)
+          .map((a) => a.teacher_id);
+        return teachersForSubject.length === 0;
+      }).length;
+
+      setStats({
+        totalAssignments: assignmentData.length,
+        activeAssignments: activeAssignments.length,
+        teachersWithoutAssignment,
+        classesWithoutTeacher,
+        subjectsWithoutTeacher,
+      });
+    } catch (error) {
+      console.error("Error calculating stats:", error);
+    }
   };
 
-  const handleOpenModal = (mode, assignment = null) => {
+  const handleOpenModal = async (mode, assignment = null) => {
     setModalMode(mode);
     setEditingAssignment(assignment);
 
@@ -372,13 +442,29 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         semester: assignment.semester,
       });
     } else {
-      setFormData({
-        teacher_id: "",
-        class_id: "",
-        subject: "",
-        academic_year_id: selectedAcademicYear || "",
-        semester: selectedSemester || "1",
-      });
+      try {
+        // ✅ UPDATED: Set default semester dari data dinamis
+        const { semester: activeSemester, yearId: activeYearId } =
+          await getActiveAcademicInfo();
+
+        setFormData({
+          teacher_id: "",
+          class_id: "",
+          subject: "",
+          academic_year_id: selectedAcademicYear || activeYearId || "",
+          semester: selectedSemester || activeSemester.toString() || "1",
+        });
+      } catch (error) {
+        console.error("Error getting academic info:", error);
+        // Fallback ke default jika error
+        setFormData({
+          teacher_id: "",
+          class_id: "",
+          subject: "",
+          academic_year_id: selectedAcademicYear || "",
+          semester: selectedSemester || "1",
+        });
+      }
     }
 
     setShowModal(true);
@@ -596,14 +682,29 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     }
   };
 
-  const handleResetFilters = () => {
-    const activeYear = academicYears.find((y) => y.is_active);
-    setSelectedAcademicYear(activeYear?.id || "");
-    setSelectedSemester("");
-    setSelectedClass("");
-    setSelectedTeacher("");
-    setSelectedSubject("");
-    setSearchQuery("");
+  const handleResetFilters = async () => {
+    try {
+      // ✅ UPDATED: Reset ke akademik aktif
+      const { semester: activeSemester, yearId: activeYearId } =
+        await getActiveAcademicInfo();
+      const activeYear = academicYears.find((y) => y.is_active);
+
+      setSelectedAcademicYear(activeYear?.id || "");
+      setSelectedSemester(activeSemester.toString());
+      setSelectedClass("");
+      setSelectedTeacher("");
+      setSelectedSubject("");
+      setSearchQuery("");
+    } catch (error) {
+      console.error("Error resetting filters:", error);
+      const activeYear = academicYears.find((y) => y.is_active);
+      setSelectedAcademicYear(activeYear?.id || "");
+      setSelectedSemester("");
+      setSelectedClass("");
+      setSelectedTeacher("");
+      setSelectedSubject("");
+      setSearchQuery("");
+    }
   };
 
   const toggleRowExpand = (assignmentId) => {
@@ -619,16 +720,34 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   };
 
   const handleExportData = async () => {
-    const filters = {
-      academicYear: academicYears.find((y) => y.id === selectedAcademicYear)
-        ?.year,
-      semester: selectedSemester ? `Semester ${selectedSemester}` : null,
-      class: selectedClass,
-      teacher: teachers.find((t) => t.teacher_id === selectedTeacher)
-        ?.full_name,
-      subject: selectedSubject,
-    };
-    await exportAssignments(assignments, filters, showToast);
+    try {
+      // ✅ UPDATED: Gunakan academic info dinamis
+      const { displayText, semesterText } = await getActiveAcademicInfo();
+
+      const filters = {
+        academicYear: academicYears.find((y) => y.id === selectedAcademicYear)
+          ?.year,
+        semester: selectedSemester ? `Semester ${selectedSemester}` : null,
+        class: selectedClass,
+        teacher: teachers.find((t) => t.teacher_id === selectedTeacher)
+          ?.full_name,
+        subject: selectedSubject,
+        academicInfo: displayText, // ✅ Tambahkan info akademik
+      };
+      await exportAssignments(assignments, filters, showToast);
+    } catch (error) {
+      console.error("Error getting academic info for export:", error);
+      const filters = {
+        academicYear: academicYears.find((y) => y.id === selectedAcademicYear)
+          ?.year,
+        semester: selectedSemester ? `Semester ${selectedSemester}` : null,
+        class: selectedClass,
+        teacher: teachers.find((t) => t.teacher_id === selectedTeacher)
+          ?.full_name,
+        subject: selectedSubject,
+      };
+      await exportAssignments(assignments, filters, showToast);
+    }
   };
 
   const handleImportClick = () => {
@@ -740,6 +859,20 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     setImportStep("upload");
   };
 
+  // ✅ TAMBAH: Loading state untuk academic info
+  if (academicLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
+          <p className="text-gray-600 dark:text-gray-400">
+            Memuat info tahun ajaran...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -753,15 +886,36 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
 
   return (
     <div className="p-4 md:p-6">
-      {/* Header - TANPA TOMBOL */}
+      {/* Header - DENGAN INFO AKADEMIK DINAMIS */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-          <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
-          Manajemen Penugasan Guru
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Kelola penugasan guru ke kelas dan mata pelajaran
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+              <Users className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+              Manajemen Penugasan Guru
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Kelola penugasan guru ke kelas dan mata pelajaran
+            </p>
+          </div>
+
+          {/* ✅ TAMBAH: Display akademik aktif */}
+          {academicInfo && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 px-4 py-3 rounded-xl border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                    {academicInfo.displayText}
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    {academicInfo.semesterText}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -904,7 +1058,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             </div>
           </div>
 
-          {/* Teacher - PINDAH KE DEPAN */}
+          {/* Teacher */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Guru
@@ -922,7 +1076,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             </select>
           </div>
 
-          {/* Subject - KEDUA */}
+          {/* Subject */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Mata Pelajaran
@@ -940,7 +1094,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             </select>
           </div>
 
-          {/* Class - KETIGA */}
+          {/* Class */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Kelas
@@ -958,7 +1112,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             </select>
           </div>
 
-          {/* Academic Year - KEEMPAT */}
+          {/* Academic Year */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Tahun Ajaran
@@ -976,7 +1130,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             </select>
           </div>
 
-          {/* Semester - KELIMA */}
+          {/* Semester */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Semester
@@ -1152,7 +1306,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         </div>
       </div>
 
-      {/* ✅ Modal Form - CREATE & EDIT */}
+      {/* Modal Form - CREATE & EDIT */}
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl">
@@ -1326,7 +1480,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         </div>
       )}
 
-      {/* ✅ TAMBAH INI - Import Modal */}
+      {/* Import Modal */}
       {showImportModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -1703,7 +1857,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         </div>
       )}
 
-      {/* ✅ Modal Delete Confirmation - VALIDASI KUAT */}
+      {/* Modal Delete Confirmation */}
       {showDeleteModal && deleteTarget && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md">

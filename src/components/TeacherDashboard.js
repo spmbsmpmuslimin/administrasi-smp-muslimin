@@ -1,13 +1,15 @@
-//[file name]: TeacherDashboard.js
+//[file name]: TeacherDashboard.js - WITH ACADEMIC YEAR SERVICE
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import AnnouncementPopup from "./AnnouncementPopup";
+import { getActiveAcademicInfo } from "../services/academicYearService";
 
 const TeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeAcademicInfo, setActiveAcademicInfo] = useState(null);
   const [currentAcademicYearId, setCurrentAcademicYearId] = useState(null);
 
   const [stats, setStats] = useState({
@@ -20,6 +22,15 @@ const TeacherDashboard = ({ user }) => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Load active academic info
+  useEffect(() => {
+    const loadActiveAcademicInfo = async () => {
+      const info = await getActiveAcademicInfo();
+      setActiveAcademicInfo(info);
+    };
+    loadActiveAcademicInfo();
+  }, []);
 
   // Dark mode detection
   useEffect(() => {
@@ -75,19 +86,26 @@ const TeacherDashboard = ({ user }) => {
 
   useEffect(() => {
     console.log("🎯 TeacherDashboard received user:", user);
+    console.log("📅 Active Academic Info:", activeAcademicInfo);
 
-    if (user?.teacher_id || user?.id) {
+    if (user?.teacher_id && activeAcademicInfo) {
+      // ✅ TAMBAH CEK activeAcademicInfo
       const teacherCode = user.teacher_id;
       const teacherUUID = user.id;
       console.log("✅ Found teacher_id:", teacherCode);
       console.log("✅ Found user.id:", teacherUUID);
+      console.log("✅ Active Semester:", activeAcademicInfo.semester);
       fetchTeacherData(teacherCode, teacherUUID);
-    } else {
+    } else if (user?.teacher_id && !activeAcademicInfo) {
+      // ✅ JIKA USER ADA TAPI academicInfo BELUM
+      console.log("⏳ Waiting for academic info...");
+      // Biarin loading aja
+    } else if (!user?.teacher_id) {
       console.log("❌ Teacher ID not found in user object:", user);
       setError("Teacher ID tidak ditemukan. Pastikan data guru sudah lengkap.");
       setLoading(false);
     }
-  }, [user]);
+  }, [user, activeAcademicInfo]); // ✅ TAMBAH activeAcademicInfo KE DEPENDENCY
 
   // Fetch jadwal hari ini
   const fetchTodaySchedule = async (
@@ -146,12 +164,16 @@ const TeacherDashboard = ({ user }) => {
         classMap[c.id] = { id: c.id, grade: c.grade };
       });
 
-      // Get subject dari teacher_assignments
+      // ✅ GUNAKAN SEMESTER DARI ACADEMIC YEAR SERVICE
+      const activeSemester = activeAcademicInfo.semester; // ✅ UDAH PASTI ADA
+      console.log("📅 Active Semester (from service):", activeSemester);
+
       const { data: assignments } = await supabase
         .from("teacher_assignments")
         .select("class_id, subject")
         .eq("teacher_id", teacherCode)
         .eq("academic_year_id", academicYearId)
+        .eq("semester", activeSemester) // ✅ GUNAKAN DARI SERVICE
         .in("class_id", classIds);
 
       console.log("📚 Assignments for schedule:", assignments);
@@ -243,12 +265,17 @@ const TeacherDashboard = ({ user }) => {
         academicYearData.year
       );
 
-      // 2. Get teacher assignments
+      // ✅ GUNAKAN SEMESTER DARI ACADEMIC YEAR SERVICE
+      const activeSemester = activeAcademicInfo?.semester || 1;
+      console.log("📅 Active Semester (from service):", activeSemester);
+
+      // 2. Get teacher assignments - FILTER BY SEMESTER DARI SERVICE
       const { data: assignments, error: assignError } = await supabase
         .from("teacher_assignments")
-        .select("id, class_id, subject, academic_year_id")
+        .select("id, class_id, subject, academic_year_id, semester")
         .eq("teacher_id", teacherCode)
-        .eq("academic_year_id", academicYearId);
+        .eq("academic_year_id", academicYearId)
+        .eq("semester", activeSemester); // ✅ FILTER SEMESTER AKTIF DARI SERVICE
 
       if (assignError) {
         console.error("❌ Teacher assignments error:", assignError);
@@ -257,7 +284,9 @@ const TeacherDashboard = ({ user }) => {
 
       if (!assignments || assignments.length === 0) {
         throw new Error(
-          `Tidak ada penugasan mengajar untuk tahun ajaran ${academicYearData.year}`
+          `Tidak ada penugasan untuk ${
+            activeAcademicInfo?.displayText || "semester ini"
+          }`
         );
       }
 
@@ -437,6 +466,11 @@ const TeacherDashboard = ({ user }) => {
             <p className="text-slate-600 dark:text-gray-400">
               Memuat dashboard...
             </p>
+            {activeAcademicInfo?.displayText && (
+              <p className="text-xs text-slate-500 dark:text-gray-500 mt-2">
+                {activeAcademicInfo.displayText}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -461,6 +495,11 @@ const TeacherDashboard = ({ user }) => {
               <p className="text-red-600 dark:text-red-400 mb-4 text-sm sm:text-base">
                 {error}
               </p>
+              {activeAcademicInfo?.displayText && (
+                <p className="text-xs text-slate-600 dark:text-gray-400 mb-4">
+                  Semester Aktif: {activeAcademicInfo.displayText}
+                </p>
+              )}
               <button
                 onClick={handleRetry}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
@@ -514,6 +553,12 @@ const TeacherDashboard = ({ user }) => {
                   {stats.subjects.length > 1 && (
                     <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                       {stats.subjects.length} Mata Pelajaran
+                    </span>
+                  )}
+                  {/* ✅ TAMBAHAN: Info Semester Aktif */}
+                  {activeAcademicInfo?.displayText && (
+                    <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                      {activeAcademicInfo.displayText}
                     </span>
                   )}
                 </div>

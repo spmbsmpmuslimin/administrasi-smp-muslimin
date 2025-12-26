@@ -25,7 +25,7 @@ const KatrolTable = ({
     return nilaiKatrol - nilaiAsli;
   };
 
-  // Cell component dengan styling sederhana
+  // Cell component dengan styling sederhana - REVISI
   const NilaiCell = ({ nilaiAsli, nilaiKatrol }) => {
     const naik = isKatrolled(nilaiAsli, nilaiKatrol);
     const selisih = hitungSelisih(nilaiAsli, nilaiKatrol);
@@ -34,7 +34,8 @@ const KatrolTable = ({
       <div className="flex flex-col items-center justify-center gap-1 min-h-[3rem] py-1">
         {/* Nilai Asli → Katrol */}
         <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-          <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 min-w-[1.5rem]">
+          {/* NILAI ASLI - REVISI: HITAM BOLD */}
+          <span className="text-xs sm:text-sm font-bold text-black dark:text-white min-w-[1.5rem]">
             {formatNilai(nilaiAsli)}
           </span>
 
@@ -44,11 +45,12 @@ const KatrolTable = ({
             </span>
           )}
 
+          {/* NILAI KATROL */}
           <span
             className={`text-xs sm:text-sm font-bold min-w-[1.5rem] ${
               naik
-                ? "text-blue-600 dark:text-blue-400"
-                : "text-gray-700 dark:text-gray-200"
+                ? "text-blue-700 dark:text-blue-400"
+                : "text-black dark:text-white"
             }`}>
             {formatNilai(nilaiKatrol)}
           </span>
@@ -91,15 +93,21 @@ const KatrolTable = ({
             {/* HEADER */}
             <thead className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 dark:from-blue-800 dark:via-blue-900 dark:to-gray-900">
               <tr>
-                <th className="sticky left-0 z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-600 dark:bg-blue-900 border-r-2 border-blue-500 dark:border-blue-700 shadow-lg">
+                {/* Kolom No */}
+                <th className="sticky left-0 z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-600 dark:bg-blue-900 border-r-2 border-blue-500 dark:border-blue-700 shadow-lg w-[50px] sm:w-[60px]">
                   No
                 </th>
-                <th className="sticky left-[52px] sm:left-[68px] z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-600 dark:bg-blue-900 border-r-2 border-blue-500 dark:border-blue-700 shadow-lg min-w-[100px] sm:min-w-[130px]">
+
+                {/* Kolom NIS - REVISI: PERBAIKI LEBAR */}
+                <th className="sticky left-[50px] sm:left-[60px] z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-600 dark:bg-blue-900 border-r-2 border-blue-500 dark:border-blue-700 shadow-lg w-[100px] sm:w-[120px]">
                   NIS
                 </th>
-                <th className="sticky left-[152px] sm:left-[198px] z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-700 dark:bg-blue-900 border-r-4 border-blue-400 dark:border-blue-600 shadow-xl min-w-[160px] sm:min-w-[200px]">
+
+                {/* Kolom Nama Siswa - REVISI: PERBAIKI LEBAR */}
+                <th className="sticky left-[150px] sm:left-[180px] z-20 px-3 sm:px-4 py-3.5 sm:py-4 text-left text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide bg-blue-700 dark:bg-blue-900 border-r-4 border-blue-400 dark:border-blue-600 shadow-xl w-[180px] sm:w-[220px]">
                   Nama Siswa
                 </th>
+
                 <th className="px-2 sm:px-3 py-3.5 sm:py-4 text-center text-[10px] sm:text-xs font-extrabold text-white uppercase tracking-wide min-w-[70px] sm:min-w-[85px]">
                   NH1
                 </th>
@@ -127,44 +135,44 @@ const KatrolTable = ({
               </tr>
             </thead>
 
-            {/* BODY */}
+            {/* BODY - REVISI: HAPUS HOVER */}
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-blue-200 dark:divide-gray-700">
               {hasilKatrol.map((item, index) => (
                 <tr
                   key={item.student_id}
-                  className="hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all duration-200">
+                  className="border-b border-gray-200 dark:border-gray-700">
                   {/* No - Sticky */}
-                  <td className="sticky left-0 z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm text-gray-800 dark:text-gray-200 font-bold bg-white dark:bg-gray-800 border-r border-blue-200 dark:border-gray-700 shadow-sm">
+                  <td className="sticky left-0 z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 border-r border-blue-200 dark:border-gray-700 w-[50px] sm:w-[60px]">
                     {index + 1}
                   </td>
 
-                  {/* NIS - Sticky */}
-                  <td className="sticky left-[52px] sm:left-[68px] z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-400 bg-white dark:bg-gray-800 border-r border-blue-200 dark:border-gray-700 shadow-sm">
+                  {/* NIS - Sticky - REVISI: PERBAIKI POSISI */}
+                  <td className="sticky left-[50px] sm:left-[60px] z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-400 bg-white dark:bg-gray-800 border-r border-blue-200 dark:border-gray-700 w-[100px] sm:w-[120px]">
                     {item.nis}
                   </td>
 
-                  {/* Nama - Sticky */}
-                  <td className="sticky left-[152px] sm:left-[198px] z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm text-gray-800 dark:text-gray-100 font-semibold bg-blue-50 dark:bg-gray-900 border-r-2 border-blue-300 dark:border-gray-600 shadow-md">
+                  {/* Nama - Sticky - REVISI: PERBAIKI POSISI */}
+                  <td className="sticky left-[150px] sm:left-[180px] z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 bg-white dark:bg-gray-800 border-r-2 border-blue-300 dark:border-gray-600 w-[180px] sm:w-[220px]">
                     {item.nama_siswa}
                   </td>
 
                   {/* NH1 */}
-                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4">
                     <NilaiCell nilaiAsli={item.nh1} nilaiKatrol={item.nh1_k} />
                   </td>
 
                   {/* NH2 */}
-                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4">
                     <NilaiCell nilaiAsli={item.nh2} nilaiKatrol={item.nh2_k} />
                   </td>
 
                   {/* NH3 */}
-                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4">
                     <NilaiCell nilaiAsli={item.nh3} nilaiKatrol={item.nh3_k} />
                   </td>
 
-                  {/* Rata NH */}
-                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-blue-100 dark:bg-blue-950/30">
+                  {/* Rata NH - REVISI: HAPUS BG */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4">
                     <NilaiCell
                       nilaiAsli={item.rata_nh}
                       nilaiKatrol={item.rata_nh_k}
@@ -172,7 +180,7 @@ const KatrolTable = ({
                   </td>
 
                   {/* PSTS */}
-                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4">
                     <NilaiCell
                       nilaiAsli={item.psts}
                       nilaiKatrol={item.psts_k}
@@ -180,15 +188,15 @@ const KatrolTable = ({
                   </td>
 
                   {/* PSAS */}
-                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-gray-50 dark:bg-gray-900/50">
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4">
                     <NilaiCell
                       nilaiAsli={item.psas}
                       nilaiKatrol={item.psas_k}
                     />
                   </td>
 
-                  {/* Nilai Akhir */}
-                  <td className="px-2 sm:px-3 py-3.5 sm:py-4 bg-blue-100 dark:bg-blue-950/30">
+                  {/* Nilai Akhir - REVISI: HAPUS BG */}
+                  <td className="px-2 sm:px-3 py-3.5 sm:py-4">
                     <NilaiCell
                       nilaiAsli={item.nilai_akhir}
                       nilaiKatrol={item.nilai_akhir_k}

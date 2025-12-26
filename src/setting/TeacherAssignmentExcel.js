@@ -1,5 +1,9 @@
 import * as XLSX from "xlsx";
 import { supabase } from "../supabaseClient";
+import {
+  getActiveAcademicInfo,
+  applyAcademicFilters,
+} from "../services/academicYearService";
 
 /**
  * 📥 DOWNLOAD TEMPLATE KOSONG
@@ -7,6 +11,18 @@ import { supabase } from "../supabaseClient";
  */
 export const downloadTemplate = async (showToast) => {
   try {
+    // Get active academic info
+    let activeAcademicInfo;
+    try {
+      activeAcademicInfo = await getActiveAcademicInfo();
+    } catch (error) {
+      console.error("Error fetching academic info:", error);
+      activeAcademicInfo = {
+        year: "2025/2026",
+        semester: "1",
+      };
+    }
+
     // Fetch data untuk helper sheets
     const [teachersRes, classesRes, yearsRes, subjectsRes] = await Promise.all([
       supabase
@@ -38,8 +54,20 @@ export const downloadTemplate = async (showToast) => {
     // ===== SHEET 1: TEMPLATE PENUGASAN =====
     const templateData = [
       ["teacher_id", "class_id", "subject", "academic_year", "semester"],
-      ["G-01", "7A", "MATEMATIKA", "2025/2026", "1"],
-      ["G-02", "7B", "BAHASA INDONESIA", "2025/2026", "1"],
+      [
+        "G-01",
+        "7A",
+        "MATEMATIKA",
+        activeAcademicInfo.year,
+        activeAcademicInfo.semester,
+      ],
+      [
+        "G-02",
+        "7B",
+        "BAHASA INDONESIA",
+        activeAcademicInfo.year,
+        activeAcademicInfo.semester,
+      ],
       ["CONTOH", "CONTOH", "CONTOH - HAPUS BARIS INI", "CONTOH", "CONTOH"],
     ];
     const ws1 = XLSX.utils.aoa_to_sheet(templateData);
@@ -114,9 +142,14 @@ export const downloadTemplate = async (showToast) => {
       ],
       [
         "4. academic_year",
-        "Tahun ajaran (contoh: 2025/2026) - Lihat di sheet TAHUN AJARAN",
+        `Tahun ajaran (contoh: ${activeAcademicInfo.year}) - Lihat di sheet TAHUN AJARAN`,
       ],
-      ["5. semester", "1 atau 2"],
+      [
+        "5. semester",
+        "1 atau 2 (Saat ini semester aktif: " +
+          activeAcademicInfo.semester +
+          ")",
+      ],
       [""],
       ["TIPS:"],
       ["• Gunakan Copy-Paste dari sheet helper untuk menghindari typo"],
@@ -171,6 +204,19 @@ export const exportAssignments = async (assignments, filters, showToast) => {
       return false;
     }
 
+    // Get active academic info for export metadata
+    let activeAcademicInfo;
+    try {
+      activeAcademicInfo = await getActiveAcademicInfo();
+    } catch (error) {
+      console.error("Error fetching academic info for export:", error);
+      activeAcademicInfo = {
+        year: "N/A",
+        semester: "N/A",
+        displayText: "Informasi Akademik Tidak Tersedia",
+      };
+    }
+
     // Prepare data untuk export
     const exportData = [
       [
@@ -215,6 +261,8 @@ export const exportAssignments = async (assignments, filters, showToast) => {
       ["INFORMASI EXPORT"],
       ["Tanggal Export", new Date().toLocaleString("id-ID")],
       ["Total Data", assignments.length],
+      ["Tahun Ajaran Aktif", activeAcademicInfo.year],
+      ["Semester Aktif", activeAcademicInfo.semester],
       [""],
       ["FILTER YANG DIGUNAKAN:"],
       ["Tahun Ajaran", filters?.academicYear || "Semua"],
@@ -253,6 +301,18 @@ export const validateImportData = async (jsonData, showToast) => {
     const errors = [];
     const warnings = [];
     const validData = [];
+
+    // Get active academic info for validation
+    let activeAcademicInfo;
+    try {
+      activeAcademicInfo = await getActiveAcademicInfo();
+      warnings.push(
+        `Semester aktif saat ini: ${activeAcademicInfo.semesterText}`
+      );
+    } catch (error) {
+      console.error("Error fetching academic info for validation:", error);
+      warnings.push("Informasi akademik aktif tidak tersedia");
+    }
 
     // Fetch reference data dari database
     const [teachersRes, classesRes, yearsRes] = await Promise.all([
@@ -334,6 +394,13 @@ export const validateImportData = async (jsonData, showToast) => {
         rowErrors.push("semester kosong");
       } else if (!["1", "2", 1, 2].includes(row.semester)) {
         rowErrors.push("semester harus 1 atau 2");
+      } else if (
+        activeAcademicInfo &&
+        row.semester != activeAcademicInfo.semester
+      ) {
+        warnings.push(
+          `Baris ${rowNum}: Semester ${row.semester} berbeda dengan semester aktif (${activeAcademicInfo.semester})`
+        );
       }
 
       // Jika ada error di row ini
@@ -380,27 +447,61 @@ export const validateImportData = async (jsonData, showToast) => {
       });
     }
 
-    // Check duplicates dengan database
+    // Check duplicates dengan database menggunakan filter akademik
     if (validData.length > 0) {
-      const { data: existingData } = await supabase
+      let query = supabase
         .from("teacher_assignments")
         .select("teacher_id, class_id, subject, academic_year_id, semester");
 
-      const existingSet = new Set(
-        existingData?.map(
-          (item) =>
-            `${item.teacher_id}-${item.class_id}-${item.subject}-${item.academic_year_id}-${item.semester}`
-        ) || []
-      );
+      try {
+        // Apply academic filters untuk memfilter data yang sudah ada
+        query = await applyAcademicFilters(query, {
+          filterYearId: true, // Filter berdasarkan academic_year_id aktif
+        });
 
-      validData.forEach((item, idx) => {
-        const key = `${item.teacher_id}-${item.class_id}-${item.subject}-${item.academic_year_id}-${item.semester}`;
-        if (existingSet.has(key)) {
-          warnings.push(
-            `Baris ${idx + 2}: Data sudah ada di database (akan di-skip)`
-          );
-        }
-      });
+        const { data: existingData } = await query;
+
+        const existingSet = new Set(
+          existingData?.map(
+            (item) =>
+              `${item.teacher_id}-${item.class_id}-${item.subject}-${item.academic_year_id}-${item.semester}`
+          ) || []
+        );
+
+        validData.forEach((item, idx) => {
+          const key = `${item.teacher_id}-${item.class_id}-${item.subject}-${item.academic_year_id}-${item.semester}`;
+          if (existingSet.has(key)) {
+            warnings.push(
+              `Baris ${idx + 2}: Data sudah ada di database (akan di-skip)`
+            );
+          }
+        });
+      } catch (error) {
+        console.error(
+          "Error checking duplicates with academic filters:",
+          error
+        );
+        // Fallback: check without filters
+        const { data: existingData } = await supabase
+          .from("teacher_assignments")
+          .select("teacher_id, class_id, subject, academic_year_id, semester");
+
+        const existingSet = new Set(
+          existingData?.map(
+            (item) =>
+              `${item.teacher_id}-${item.class_id}-${item.subject}-${item.academic_year_id}-${item.semester}`
+          ) || []
+        );
+
+        validData.forEach((item, idx) => {
+          const key = `${item.teacher_id}-${item.class_id}-${item.subject}-${item.academic_year_id}-${item.semester}`;
+          if (existingSet.has(key)) {
+            warnings.push(
+              `Baris ${idx + 2}: Data sudah ada di database (akan di-skip)`
+            );
+          }
+        });
+      }
     }
 
     return {
@@ -414,6 +515,7 @@ export const validateImportData = async (jsonData, showToast) => {
         invalid: errors.length,
         warnings: warnings.length,
       },
+      activeAcademicInfo,
     };
   } catch (error) {
     console.error("Error validating data:", error);
@@ -443,14 +545,37 @@ export const importAssignments = async (
       return { success: false, inserted: 0, skipped: 0, updated: 0 };
     }
 
+    // Get active academic info untuk logging
+    let activeAcademicInfo;
+    try {
+      activeAcademicInfo = await getActiveAcademicInfo();
+      console.log(
+        `Importing data for active academic year: ${activeAcademicInfo.displayText}`
+      );
+    } catch (error) {
+      console.error("Error fetching academic info for import:", error);
+    }
+
     let inserted = 0;
     let skipped = 0;
     let updated = 0;
 
-    // Check existing data
-    const { data: existingData } = await supabase
+    // Check existing data dengan applyAcademicFilters
+    let query = supabase
       .from("teacher_assignments")
       .select("id, teacher_id, class_id, subject, academic_year_id, semester");
+
+    try {
+      // Apply academic filters untuk mencari data yang sudah ada
+      query = await applyAcademicFilters(query, {
+        filterYearId: true, // Filter berdasarkan academic_year_id aktif
+      });
+    } catch (error) {
+      console.error("Error applying academic filters:", error);
+      // Continue without filters
+    }
+
+    const { data: existingData } = await query;
 
     const existingMap = new Map();
     existingData?.forEach((item) => {
@@ -502,7 +627,11 @@ export const importAssignments = async (
       }
     }
 
-    const message = `Import selesai: ${inserted} baru, ${updated} diupdate, ${skipped} di-skip`;
+    const message = `Import selesai: ${inserted} baru, ${updated} diupdate, ${skipped} di-skip ${
+      activeAcademicInfo
+        ? `(Semester aktif: ${activeAcademicInfo.semesterText})`
+        : ""
+    }`;
     showToast?.(message, "success");
 
     return {
@@ -563,10 +692,18 @@ export const readExcelFile = (file) => {
  * 📊 GENERATE ERROR REPORT
  * Generate Excel file berisi error details
  */
-export const generateErrorReport = (validationResult) => {
+export const generateErrorReport = async (validationResult) => {
   try {
     if (!validationResult.errors || validationResult.errors.length === 0) {
       return false;
+    }
+
+    // Get active academic info untuk report
+    let activeAcademicInfo;
+    try {
+      activeAcademicInfo = await getActiveAcademicInfo();
+    } catch (error) {
+      console.error("Error fetching academic info for report:", error);
     }
 
     const wb = XLSX.utils.book_new();
@@ -592,6 +729,25 @@ export const generateErrorReport = (validationResult) => {
       { wch: 50 },
     ];
     XLSX.utils.book_append_sheet(wb, ws, "Errors");
+
+    // Add summary sheet
+    const summaryData = [
+      ["LAPORAN VALIDASI IMPORT"],
+      ["Tanggal", new Date().toLocaleString("id-ID")],
+      ["Total Data", validationResult.summary?.total || 0],
+      ["Data Valid", validationResult.summary?.valid || 0],
+      ["Data Invalid", validationResult.summary?.invalid || 0],
+      ["Warning", validationResult.summary?.warnings || 0],
+      [""],
+      ["INFORMASI AKADEMIK AKTIF"],
+      ["Tahun Ajaran", activeAcademicInfo?.year || "Tidak Tersedia"],
+      ["Semester", activeAcademicInfo?.semester || "Tidak Tersedia"],
+      ["Status", activeAcademicInfo?.semesterText || "Tidak Tersedia"],
+    ];
+
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary["!cols"] = [{ wch: 25 }, { wch: 30 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
 
     // Download
     const timestamp = new Date().toISOString().split("T")[0];

@@ -3,6 +3,12 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 import { Calendar } from "lucide-react";
 
+// Import academic year service
+import {
+  getActiveAcademicInfo,
+  applyAcademicFilters,
+} from "../../services/academicYearService";
+
 // Import child components
 import SemesterManagement from "./SemesterManagement";
 import YearTransition from "./YearTransition";
@@ -16,11 +22,11 @@ const AcademicYearTab = ({
   schoolConfig,
 }) => {
   // Shared states
+  const [academicInfo, setAcademicInfo] = useState(null);
   const [schoolStats, setSchoolStats] = useState({
-    academic_year: "2025/2026",
+    academic_year: "",
     total_students: 0,
   });
-
   const [studentsByClass, setStudentsByClass] = useState({});
   const [showCopyModal, setShowCopyModal] = useState(false);
 
@@ -39,28 +45,45 @@ const AcademicYearTab = ({
     ],
   };
 
-  // Load school data on component mount
+  // Load academic info dan school data
   useEffect(() => {
-    loadSchoolData();
+    loadAcademicInfo();
   }, []);
 
+  // Load academic info from service
+  const loadAcademicInfo = async () => {
+    try {
+      const info = await getActiveAcademicInfo();
+      setAcademicInfo(info);
+      setSchoolStats((prev) => ({
+        ...prev,
+        academic_year: info.year || "Tahun Ajaran Belum Ditentukan",
+      }));
+
+      // Load school data setelah mendapatkan academic info
+      await loadSchoolData(info);
+    } catch (error) {
+      console.error("Error loading academic info:", error);
+      showToast(
+        "Gagal memuat informasi tahun ajaran: " + error.message,
+        "error"
+      );
+    }
+  };
+
   // Fungsi utama untuk load data sekolah
-  const loadSchoolData = async () => {
+  const loadSchoolData = async (academicInfo = null) => {
     try {
       setLoading(true);
 
-      // Ambil tahun ajaran aktif dari settings
-      const { data: settingsData, error: settingsError } = await supabase
-        .from("school_settings")
-        .select("setting_key, setting_value")
-        .eq("setting_key", "academic_year");
+      // Gunakan academicInfo yang sudah di-load atau load ulang
+      const activeInfo = academicInfo || (await getActiveAcademicInfo());
+      if (!academicInfo) {
+        setAcademicInfo(activeInfo);
+      }
 
-      if (settingsError) throw settingsError;
-
-      const academicYear = settingsData?.[0]?.setting_value || "2025/2026";
-
-      // Ambil data siswa aktif
-      const { data: studentsData, error: studentsError } = await supabase
+      // Build query untuk data siswa aktif dengan academic filter
+      let query = supabase
         .from("students")
         .select(
           `
@@ -79,8 +102,16 @@ const AcademicYearTab = ({
         `
         )
         .eq("is_active", true)
-        .eq("academic_year", academicYear)
         .order("full_name");
+
+      // Apply academic filters
+      query = await applyAcademicFilters(query, {
+        filterYear: true,
+        filterSemester: false, // Tidak perlu filter semester untuk students
+        filterYearId: false,
+      });
+
+      const { data: studentsData, error: studentsError } = await query;
 
       if (studentsError) throw studentsError;
 
@@ -104,7 +135,7 @@ const AcademicYearTab = ({
 
       setStudentsByClass(studentsByClass);
       setSchoolStats({
-        academic_year: academicYear,
+        academic_year: activeInfo.year || "Tahun Ajaran Belum Ditentukan",
         total_students: studentsData?.length || 0,
       });
     } catch (error) {
@@ -131,6 +162,20 @@ const AcademicYearTab = ({
 
   const studentsByGrade = getStudentsByGrade();
 
+  // Loading state untuk academic info
+  if (loading && !academicInfo) {
+    return (
+      <div className="p-6 dark:bg-gray-900 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            Memuat informasi tahun ajaran...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-3 sm:p-4 md:p-6 dark:bg-gray-900 min-h-screen">
       {/* Header */}
@@ -142,6 +187,11 @@ const AcademicYearTab = ({
           <div>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100">
               Manajemen Tahun Ajaran
+              {academicInfo?.displayText && (
+                <span className="block text-sm font-normal text-gray-600 dark:text-gray-400 mt-1">
+                  {academicInfo.displayText}
+                </span>
+              )}
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               {config.schoolName} - {config.schoolLevel}
@@ -176,6 +226,11 @@ const AcademicYearTab = ({
               </span>{" "}
               kelas
             </p>
+            {academicInfo?.semesterText && (
+              <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+                {academicInfo.semesterText}
+              </p>
+            )}
           </div>
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-blue-200 dark:border-blue-600 w-full sm:w-auto">
             <div className="text-center">
@@ -198,6 +253,7 @@ const AcademicYearTab = ({
         showToast={showToast}
         onSemesterChange={loadSchoolData}
         onOpenCopyModal={() => setShowCopyModal(true)}
+        academicInfo={academicInfo} // Pass academicInfo ke child component
       />
 
       {/* Students by Grade Cards */}
@@ -237,6 +293,7 @@ const AcademicYearTab = ({
         showToast={showToast}
         user={user}
         onTransitionComplete={loadSchoolData}
+        academicInfo={academicInfo} // Pass academicInfo ke child component
       />
 
       {/* Copy Assignments Modal */}
@@ -246,6 +303,7 @@ const AcademicYearTab = ({
         loading={loading}
         setLoading={setLoading}
         showToast={showToast}
+        academicInfo={academicInfo} // Pass academicInfo ke child component
       />
     </div>
   );

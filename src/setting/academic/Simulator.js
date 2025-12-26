@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Zap,
   BarChart3,
@@ -17,6 +17,12 @@ import {
   PieChart,
 } from "lucide-react";
 
+import {
+  getActiveAcademicInfo,
+  getActiveYearString,
+  applyAcademicFilters,
+} from "../../services/academicYearService"; // ✅ Path benar
+
 // ========================================
 // 🔧 PROCESSING LOGIC - REUSABLE FUNCTION
 // ========================================
@@ -26,9 +32,15 @@ import {
  * @param {Object} preview - Data dari yearTransition.preview
  * @param {Object} schoolStats - Stats sekolah saat ini
  * @param {Object} config - Konfigurasi sekolah (grades, classes, dll)
+ * @param {Object} academicInfo - Info tahun ajaran aktif dari service
  * @returns {Object} Simulation data lengkap
  */
-export const processSimulation = (preview, schoolStats, config) => {
+export const processSimulation = (
+  preview,
+  schoolStats,
+  config,
+  academicInfo = null
+) => {
   if (!preview) return null;
 
   const SCHOOL_CONFIG = {
@@ -42,6 +54,10 @@ export const processSimulation = (preview, schoolStats, config) => {
   };
 
   try {
+    // ✅ 2. GUNAKAN ACADEMIC INFO DINAMIS JIKA TERSEDIA
+    const currentAcademicYear = academicInfo?.year || preview.currentYear;
+    const nextAcademicYear = getNextAcademicYear(currentAcademicYear);
+
     // 1️⃣ ANALISA SISWA BARU (DARI PREVIEW!)
     const newStudentDistribution = preview.newStudentDistribution || {};
     const newStudents = preview.newStudents || [];
@@ -191,7 +207,7 @@ export const processSimulation = (preview, schoolStats, config) => {
     // 5️⃣ REKOMENDASI
     const recommendations = [];
 
-    recommendations.push(`🏫 **Struktur Kelas untuk ${preview.newYear}:**`);
+    recommendations.push(`🏫 **Struktur Kelas untuk ${nextAcademicYear}:**`);
     recommendations.push(
       `• Kelas 7: ${grade7Classes.length} paralel (${grade7Total} siswa, rata² ${avgGrade7}/kelas)`
     );
@@ -275,14 +291,26 @@ export const processSimulation = (preview, schoolStats, config) => {
       recommendations,
       isValid: warnings.filter((w) => w.severity === "high").length === 0,
       academicYearChange: {
-        from: preview.currentYear,
-        to: preview.newYear,
+        from: currentAcademicYear,
+        to: nextAcademicYear,
       },
     };
   } catch (error) {
     console.error("Error processing simulation:", error);
     return null;
   }
+};
+
+// ✅ 3. HELPER FUNCTION UNTUK MENDAPATKAN TAHUN AJARAN BERIKUTNYA
+const getNextAcademicYear = (currentYear) => {
+  if (!currentYear || !currentYear.includes("/")) {
+    // Fallback ke kalkulasi manual jika format tidak valid
+    const currentYearNum = new Date().getFullYear();
+    return `${currentYearNum}/${currentYearNum + 1}`;
+  }
+
+  const [startYear, endYear] = currentYear.split("/").map(Number);
+  return `${startYear + 1}/${endYear + 1}`;
 };
 
 // ========================================
@@ -294,11 +322,13 @@ export const processSimulation = (preview, schoolStats, config) => {
  * @param {Object} data - Hasil dari processSimulation()
  * @param {boolean} showRecommendations - Show/hide recommendations
  * @param {function} onClose - Callback untuk close
+ * @param {Object} academicInfo - Info tahun ajaran aktif
  */
 export const SimulationResults = ({
   data,
   showRecommendations = true,
   onClose,
+  academicInfo = null,
 }) => {
   const [showDetails, setShowDetails] = useState({});
 
@@ -327,6 +357,12 @@ export const SimulationResults = ({
             </h3>
             <p className="text-xs text-gray-600 dark:text-gray-400">
               {new Date(data.timestamp).toLocaleString("id-ID")}
+              {/* ✅ 4. TAMBAHKAN INFO TAHUN AJARAN JIKA ADA */}
+              {academicInfo && (
+                <span className="ml-2 text-blue-600 dark:text-blue-400">
+                  • {academicInfo.displayText}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -733,22 +769,48 @@ const Simulator = ({
   loading,
   onSimulate,
 }) => {
+  // ✅ 5. TAMBAHKAN STATE UNTUK ACADEMIC INFO
+  const [academicInfo, setAcademicInfo] = useState(null);
+  const [academicLoading, setAcademicLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationResult, setSimulationResult] = useState(null);
 
+  // ✅ 6. LOAD ACADEMIC INFO SAAT COMPONENT MOUNT
+  useEffect(() => {
+    const loadAcademicInfo = async () => {
+      try {
+        setAcademicLoading(true);
+        const info = await getActiveAcademicInfo();
+        setAcademicInfo(info);
+      } catch (error) {
+        console.error("Error loading academic info:", error);
+      } finally {
+        setAcademicLoading(false);
+      }
+    };
+
+    loadAcademicInfo();
+  }, []);
+
   // Mode "preview" = auto-process & display
   if (mode === "preview" && preview) {
-    const result = processSimulation(preview, schoolStats, config);
+    const result = processSimulation(
+      preview,
+      schoolStats,
+      config,
+      academicInfo
+    );
     return (
       <SimulationResults
         data={result}
         showRecommendations={false}
         onClose={null}
+        academicInfo={academicInfo}
       />
     );
   }
 
-  // Mode "analysis" = manual trigger dengan button
+  // ✅ 7. UPDATE HANDLE SIMULATE DENGAN ACADEMIC INFO
   const handleSimulate = async () => {
     if (!preview) {
       alert("Generate preview transisi terlebih dahulu!");
@@ -758,7 +820,12 @@ const Simulator = ({
     setIsSimulating(true);
 
     try {
-      const result = processSimulation(preview, schoolStats, config);
+      const result = processSimulation(
+        preview,
+        schoolStats,
+        config,
+        academicInfo
+      );
       setSimulationResult(result);
 
       if (onSimulate) {
@@ -771,6 +838,21 @@ const Simulator = ({
       setIsSimulating(false);
     }
   };
+
+  // ✅ 8. HANDLE LOADING STATE UNTUK ACADEMIC INFO
+  if (academicLoading) {
+    return (
+      <div className="border-2 border-blue-300 dark:border-blue-700 border-dashed rounded-lg p-8 text-center">
+        <RefreshCw
+          className="animate-spin mx-auto text-blue-500 dark:text-blue-400"
+          size={28}
+        />
+        <p className="mt-3 font-medium text-blue-700 dark:text-blue-300">
+          Memuat informasi tahun ajaran...
+        </p>
+      </div>
+    );
+  }
 
   // Jika belum ada preview
   if (!preview) {
@@ -810,13 +892,20 @@ const Simulator = ({
                 </h3>
                 <p className="text-blue-700 dark:text-blue-300 text-sm">
                   Analisis kebutuhan kelas dan distribusi siswa secara otomatis
+                  {/* ✅ 9. TAMBAHKAN INFO TAHUN AJARAN DI DESCRIPTION */}
+                  {academicInfo && (
+                    <span className="block mt-1 text-xs font-medium">
+                      Tahun Ajaran: {academicInfo.year} •{" "}
+                      {academicInfo.semesterText}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
 
             <button
               onClick={handleSimulate}
-              disabled={isSimulating || loading}
+              disabled={isSimulating || loading || !academicInfo}
               className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 dark:hover:from-blue-800 dark:hover:to-blue-900 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors shadow-md min-h-[44px] w-full sm:w-auto">
               {isSimulating ? (
                 <>
@@ -858,8 +947,10 @@ const Simulator = ({
             <p className="font-medium text-gray-800 dark:text-gray-200">
               Preview Transisi
             </p>
+            {/* ✅ 10. UPDATE DISPLAY TAHUN AJARAN MENJADI DINAMIS */}
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {preview.currentYear} → {preview.newYear}
+              {academicInfo ? academicInfo.year : preview.currentYear} →{" "}
+              {getNextAcademicYear(academicInfo?.year || preview.currentYear)}
             </p>
           </div>
         </div>
@@ -895,6 +986,12 @@ const Simulator = ({
             <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
             <p className="font-medium text-emerald-600 dark:text-emerald-400">
               Preview Siap
+              {/* ✅ 11. TAMBAHKAN INFO SEMESTER JIKA ADA */}
+              {academicInfo && (
+                <span className="block text-xs text-gray-500">
+                  Semester {academicInfo.semester}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -906,6 +1003,7 @@ const Simulator = ({
           data={simulationResult}
           showRecommendations={true}
           onClose={() => setSimulationResult(null)}
+          academicInfo={academicInfo}
         />
       )}
 
@@ -921,12 +1019,17 @@ const Simulator = ({
           </p>
           <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
             Menghitung distribusi, kapasitas, dan rekomendasi sistem
+            {academicInfo && (
+              <span className="block mt-1">
+                Tahun Ajaran: {academicInfo.year}
+              </span>
+            )}
           </p>
         </div>
       )}
 
       {/* EMPTY STATE - No preview */}
-      {!preview && (
+      {!preview && !academicLoading && (
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/30 dark:to-gray-900/20 border-2 border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
           <BarChart3
             className="mx-auto text-gray-400 dark:text-gray-600"

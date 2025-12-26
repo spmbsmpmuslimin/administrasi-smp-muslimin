@@ -1,6 +1,6 @@
-// SchoolManagementTab.js - REVISI LENGKAP ✅ FOKUS AKADEMIK & SISWA
+// SchoolManagementTab.js - REFACTORED VERSION DENGAN ACADEMIC YEAR SERVICE
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 import {
   Plus,
   Users,
@@ -8,337 +8,138 @@ import {
   BookOpen,
   Edit3,
   Trash2,
-  CheckSquare,
-  X,
-  Search,
-  Eye,
-  EyeOff,
   ArrowRight,
+  Search,
+  Download,
+  Upload,
+  X,
 } from "lucide-react";
 
-// ✅ FUNGSI MODAL SISWA (TETAP)
-const StudentModal = React.memo(
-  ({
-    modal,
-    setModal,
-    form,
-    setForm,
-    loading,
-    availableClasses,
-    onSubmit,
-    onCancel,
-  }) => {
-    const firstInputRef = React.useRef(null);
+// ✅ 1. IMPORT ACADEMIC YEAR SERVICE SESUAI DOKUMENTASI
+import {
+  getActiveAcademicInfo,
+  applyAcademicFilters,
+} from "../../services/academicYearService";
 
-    React.useEffect(() => {
-      if (modal.show && firstInputRef.current) {
-        setTimeout(() => {
-          firstInputRef.current?.focus();
-        }, 100);
-      }
-    }, [modal.show]);
+import { StudentModal, DeleteConfirmModal } from "./StudentModals";
+import { ImportModal, exportStudentsToExcel } from "./BulkImportModals";
+import { useStudentManagement } from "./StudentManagement";
 
-    const handleNisChange = useCallback(
-      (e) => {
-        setForm((prev) => ({ ...prev, nis: e.target.value }));
-      },
-      [setForm]
-    );
+// SMP Config - DI LUAR COMPONENT BIAR GA DUPLIKAT
+const SMP_CONFIG = {
+  schoolName: "SMP Muslimin Cililin",
+  schoolLevel: "SMP",
+  grades: ["7", "8", "9"],
+};
 
-    const handleFullNameChange = useCallback(
-      (e) => {
-        setForm((prev) => ({ ...prev, full_name: e.target.value }));
-      },
-      [setForm]
-    );
-
-    const handleGenderChange = useCallback(
-      (e) => {
-        setForm((prev) => ({ ...prev, gender: e.target.value }));
-      },
-      [setForm]
-    );
-
-    const handleClassChange = useCallback(
-      (e) => {
-        setForm((prev) => ({ ...prev, class_id: e.target.value }));
-      },
-      [setForm]
-    );
-
-    const handleActiveChange = useCallback(
-      (e) => {
-        setForm((prev) => ({ ...prev, is_active: e.target.checked }));
-      },
-      [setForm]
-    );
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4 transition-colors duration-200">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transition-colors duration-200 border border-gray-200 dark:border-gray-700">
-          <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-5 sm:p-6 rounded-t-2xl flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <Users size={20} className="sm:size-24" />
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold">
-                  {modal.mode === "add" ? "Tambah Siswa" : "Edit Siswa"}
-                </h2>
-                <p className="text-green-100 text-xs sm:text-sm">
-                  SMP Muslimin Cililin
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="p-1.5 sm:p-2 hover:bg-green-700 rounded-lg transition-colors"
-              aria-label="Tutup modal">
-              <X size={18} className="sm:size-20" />
-            </button>
-          </div>
-
-          <div className="p-4 sm:p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                NIS *
-              </label>
-              <input
-                ref={firstInputRef}
-                type="text"
-                value={form.nis}
-                onChange={handleNisChange}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-green-500/50 focus:border-green-500 dark:focus:ring-green-400/50 focus:outline-none transition-all bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white"
-                placeholder="Masukkan NIS siswa"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Nama Siswa *
-              </label>
-              <input
-                type="text"
-                value={form.full_name}
-                onChange={handleFullNameChange}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-green-500/50 focus:border-green-500 dark:focus:ring-green-400/50 focus:outline-none transition-all bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white"
-                placeholder="Masukkan nama lengkap siswa"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Jenis Kelamin *
-              </label>
-              <select
-                value={form.gender}
-                onChange={handleGenderChange}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-green-500/50 focus:border-green-500 dark:focus:ring-green-400/50 focus:outline-none transition-all bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white"
-                required>
-                <option value="L">Laki-laki</option>
-                <option value="P">Perempuan</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Kelas *
-              </label>
-              <select
-                value={form.class_id}
-                onChange={handleClassChange}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-green-500/50 focus:border-green-500 dark:focus:ring-green-400/50 focus:outline-none transition-all bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white"
-                required>
-                <option value="">Pilih Kelas</option>
-                {availableClasses.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    Kelas {cls.id}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-200 dark:border-gray-600">
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={handleActiveChange}
-                className="rounded border-gray-300 dark:border-gray-600 text-green-600 dark:text-green-400 focus:ring-green-500 dark:focus:ring-green-400 transition-colors size-5"
-              />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Siswa Aktif
-              </span>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onSubmit}
-                disabled={
-                  loading || !form.nis || !form.full_name || !form.class_id
-                }
-                className="flex-1 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 dark:from-green-700 dark:hover:from-green-800 dark:hover:to-emerald-800 text-white rounded-xl disabled:opacity-50 font-semibold transition-all active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg">
-                {loading
-                  ? "Menyimpan..."
-                  : modal.mode === "add"
-                  ? "Tambah Siswa"
-                  : "Update Siswa"}
-              </button>
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={loading}
-                className="px-5 py-3 bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:from-gray-400 hover:to-gray-500 dark:hover:from-gray-700 dark:hover:to-gray-800 disabled:opacity-50 transition-all active:scale-[0.98] min-h-[44px] shadow-md font-semibold">
-                Batal
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-);
-
-const DeleteConfirmModal = React.memo(
-  ({ confirm, onConfirm, onCancel, loading }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4 transition-colors duration-200">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transition-colors duration-200 border border-gray-200 dark:border-gray-700">
-        <div className="bg-gradient-to-r from-red-100 to-red-50 dark:from-red-900/20 dark:to-red-900/10 border-b border-red-200 dark:border-red-800 p-5 sm:p-6 rounded-t-2xl">
-          <div className="flex items-center gap-3">
-            <X className="text-red-600 dark:text-red-400" size={24} />
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-300">
-                Konfirmasi Hapus
-              </h2>
-              <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
-                Data siswa akan dihapus permanen
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-5 sm:p-6">
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Apakah Anda yakin ingin menghapus siswa{" "}
-            <strong className="text-red-600 dark:text-red-400">
-              {confirm.data?.full_name}
-            </strong>
-            ?
-          </p>
-          <p className="text-sm text-red-600 dark:text-red-400 mb-6 font-medium">
-            ⚠️ Tindakan ini tidak dapat dibatalkan!
-          </p>
-
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={loading}
-              className="flex-1 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:from-red-700 dark:hover:from-red-800 dark:hover:to-red-900 text-white rounded-xl disabled:opacity-50 font-semibold transition-all active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg">
-              {loading ? "Menghapus..." : "Ya, Hapus"}
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={loading}
-              className="px-5 py-3 bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:from-gray-400 hover:to-gray-500 dark:hover:from-gray-700 dark:hover:to-gray-800 disabled:opacity-50 transition-all active:scale-[0.98] min-h-[44px] shadow-md font-semibold">
-              Batal
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-);
-
-// ✅ MAIN COMPONENT - FOKUS AKADEMIK & SISWA
 const SchoolManagementTab = ({
   user,
   loading,
   setLoading,
   showToast,
-  onNavigateToUserManagement, // ✅ NEW PROP untuk navigasi ke User Management
+  onNavigateToUserManagement,
+  onNavigateToYearTransition,
 }) => {
-  const [teachers, setTeachers] = useState([]); // ✅ READ-ONLY ONLY
+  console.log("🔄 SchoolManagementTab RE-RENDER");
+
+  // State untuk data sekolah
+  const [teachers, setTeachers] = useState([]);
   const [students, setStudents] = useState([]);
   const [studentsByClass, setStudentsByClass] = useState({});
-  const [activeAcademicYear, setActiveAcademicYear] = useState(null);
+
+  // ✅ 2. UPDATE STATE DENGAN ACADEMIC INFO LENGKAP
+  const [academicInfo, setAcademicInfo] = useState(null);
+  const [academicLoading, setAcademicLoading] = useState(true);
+
+  const [oldYearStudents, setOldYearStudents] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showOldYearWarning, setShowOldYearWarning] = useState(false);
   const [schoolStats, setSchoolStats] = useState({
     total_students: 0,
-    total_teachers: 0, // ✅ Read-only statistic
+    total_teachers: 0,
     active_siswa_baru: 0,
     siswa_baru_year: null,
   });
-
-  const SMP_CONFIG = {
-    schoolName: "SMP Muslimin Cililin",
-    schoolLevel: "SMP",
-    grades: ["7", "8", "9"],
-  };
-
   const [studentFilters, setStudentFilters] = useState({
     kelas: "",
     search: "",
   });
-
-  const [studentModal, setStudentModal] = useState({
-    show: false,
-    mode: "add",
-    data: null,
-  });
-
-  const [deleteConfirm, setDeleteConfirm] = useState({
-    show: false,
-    type: "",
-    data: null,
-  });
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const [studentForm, setStudentForm] = useState({
-    nis: "",
-    full_name: "",
-    gender: "L",
-    class_id: "",
-    is_active: true,
-  });
-
   const [availableClasses, setAvailableClasses] = useState([]);
 
-  // ✅ HAPUS: generateNextTeacherId() - Pindah ke UserManagementTab
-  // ✅ HAPUS: TeacherModal component
-  // ✅ HAPUS: semua teacher CRUD functions
+  // State untuk import/export
+  const [importModal, setImportModal] = useState({
+    show: false,
+    mode: "upload",
+    data: null,
+  });
+  const [importScope, setImportScope] = useState({
+    type: "all",
+    value: null,
+  });
+  const [importPreview, setImportPreview] = useState({
+    rows: [],
+    validRows: [],
+    invalidRows: [],
+    totalCount: 0,
+    validCount: 0,
+    invalidCount: 0,
+  });
+  const [importErrors, setImportErrors] = useState([]);
+  const [importProgress, setImportProgress] = useState({
+    current: 0,
+    total: 0,
+    percentage: 0,
+    status: "idle",
+  });
 
-  const fetchActiveAcademicYear = useCallback(async () => {
+  // ✅ 3. LOAD ACADEMIC INFO DENGAN SERVICE (REPLACE MANUAL FETCH)
+  const fetchAcademicInfo = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("academic_years")
-        .select("year")
-        .eq("is_active", true)
-        .maybeSingle();
+      setAcademicLoading(true);
+      const info = await getActiveAcademicInfo();
 
-      if (error) {
-        console.error("Error fetching active academic year:", error);
+      if (!info) {
+        console.warn("⚠️ No active academic year found");
+        setAcademicInfo(null);
         return null;
       }
 
-      return data?.year || null;
-    } catch (err) {
-      console.error("Error in fetchActiveAcademicYear:", err);
+      setAcademicInfo(info);
+      return info;
+    } catch (error) {
+      console.error("Error fetching academic info:", error);
+      showToast("Error loading academic year: " + error.message, "error");
+      setAcademicInfo(null);
       return null;
+    } finally {
+      setAcademicLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
+  // Load available classes
   const loadAvailableClasses = useCallback(
     async (academicYear) => {
       try {
-        const { data: classesData, error } = await supabase
+        if (!academicYear) {
+          console.warn("No academic year provided for loading classes");
+          setAvailableClasses([]);
+          return;
+        }
+
+        // ✅ 4. GUNAKAN APPLYACADEMICFILTERS UNTUK QUERY
+        let query = supabase
           .from("classes")
           .select("id, grade, academic_year")
-          .eq("academic_year", academicYear)
           .order("grade")
           .order("id");
+
+        // Apply academic filters (filter by year saja, classes gak ada semester)
+        query = await applyAcademicFilters(query, {
+          filterYear: true,
+          filterSemester: false, // Classes table doesn't have semester column
+        });
+
+        const { data: classesData, error } = await query;
 
         if (error) throw error;
         setAvailableClasses(classesData || []);
@@ -350,55 +151,88 @@ const SchoolManagementTab = ({
     [showToast]
   );
 
+  // ✅ 5. UPDATE LOAD SCHOOL DATA DENGAN ACADEMIC INFO
   const loadSchoolData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const activeYear = await fetchActiveAcademicYear();
+      // Load academic info menggunakan service
+      const academicInfo = await fetchAcademicInfo();
 
-      if (!activeYear) {
+      if (!academicInfo) {
         showToast("Tidak ada tahun ajaran aktif!", "error");
         setLoading(false);
         return;
       }
 
-      setActiveAcademicYear(activeYear);
-      await loadAvailableClasses(activeYear);
+      await loadAvailableClasses(academicInfo.year);
 
-      // ✅ READ-ONLY: Load teachers hanya untuk display (tidak untuk edit)
-      // ✅ GANTI JADI INI - Hanya teacher dan guru_bk
+      // Load teachers
       const { data: teachersData, error: teachersError } = await supabase
         .from("users")
         .select(
           "id, username, full_name, role, homeroom_class_id, is_active, teacher_id"
         )
-        .in("role", ["teacher", "guru_bk"]) // ✅ Admin excluded
-        .order("teacher_id", { ascending: true, nullsFirst: false }) // ✅ TAMBAH INI
-        .order("full_name", { ascending: true }); // ✅ TAMBAH INI
+        .in("role", ["teacher", "guru_bk"])
+        .order("teacher_id", { ascending: true, nullsFirst: false })
+        .order("full_name", { ascending: true });
 
       if (teachersError) throw teachersError;
 
-      const { data: studentsData, error: studentsError } = await supabase
+      // ✅ 6. LOAD STUDENTS DENGAN APPLYACADEMICFILTERS
+      let studentsQuery = supabase
         .from("students")
         .select(
-          "id, nis, full_name, gender, class_id, is_active, academic_year"
+          "id, nis, full_name, gender, class_id, is_active, academic_year, academic_year_id"
         )
         .eq("is_active", true)
-        .eq("academic_year", activeYear)
         .order("full_name");
+
+      // Apply academic filters untuk students
+      studentsQuery = await applyAcademicFilters(studentsQuery, {
+        filterYear: true,
+        filterYearId: true,
+      });
+
+      const { data: studentsData, error: studentsError } = await studentsQuery;
 
       if (studentsError) throw studentsError;
 
-      const { data: classesData, error: classesError } = await supabase
+      // ✅ 7. LOAD CLASSES DENGAN APPLYACADEMICFILTERS
+      let classesQuery = supabase
         .from("classes")
         .select("id, grade, academic_year")
-        .eq("academic_year", activeYear)
         .order("grade")
         .order("id");
 
+      // Apply academic filters untuk classes
+      classesQuery = await applyAcademicFilters(classesQuery, {
+        filterYear: true,
+        filterSemester: false, // Classes table doesn't have semester
+      });
+
+      const { data: classesData, error: classesError } = await classesQuery;
+
       if (classesError) throw classesError;
 
-      // ✅ SISWA: Map dengan kelas
+      // ✅ 8. CEK SISWA TAHUN AJARAN LAMA DENGAN YEAR ID
+      if (academicInfo.yearId) {
+        const { count: oldCount, error: oldCountError } = await supabase
+          .from("students")
+          .select("id", { count: "exact", head: true })
+          .eq("is_active", true)
+          .neq("academic_year_id", academicInfo.yearId);
+
+        if (!oldCountError && oldCount > 0) {
+          setOldYearStudents(oldCount);
+          setShowOldYearWarning(true);
+        } else {
+          setOldYearStudents(0);
+          setShowOldYearWarning(false);
+        }
+      }
+
+      // Process students with class info
       const studentsWithClass = (studentsData || []).map((student) => {
         const studentClass = classesData.find((c) => c.id === student.class_id);
         return {
@@ -409,18 +243,23 @@ const SchoolManagementTab = ({
         };
       });
 
-      const nextYear = activeYear
-        ? `${parseInt(activeYear.split("/")[0]) + 1}/${
-            parseInt(activeYear.split("/")[1]) + 1
-          }`
-        : null;
+      // ✅ 9. KALKULASI NEXT YEAR (HARUS TETAP KARENA UNTUK SISWA BARU)
+      const calculateNextYear = (currentYear) => {
+        if (!currentYear || !currentYear.includes("/")) return null;
+        const [start, end] = currentYear.split("/").map(Number);
+        return `${start + 1}/${end + 1}`;
+      };
 
+      const nextYear = calculateNextYear(academicInfo.year);
+
+      // Load siswa baru untuk tahun ajaran berikutnya
       const { data: siswaBaru } = await supabase
         .from("siswa_baru")
         .select("id, nama_lengkap, academic_year, status")
         .eq("status", "diterima")
         .eq("academic_year", nextYear);
 
+      // Group students by class
       const studentsByClass = {};
       studentsWithClass.forEach((student) => {
         const className = student.classes?.name || "Belum Ada Kelas";
@@ -430,7 +269,7 @@ const SchoolManagementTab = ({
         studentsByClass[className].push(student);
       });
 
-      // ✅ GURU: Set untuk display read-only
+      // Update states
       setTeachers(teachersData || []);
       setStudents(studentsWithClass);
       setStudentsByClass(studentsByClass);
@@ -445,13 +284,37 @@ const SchoolManagementTab = ({
       showToast("Error loading school data: " + error.message, "error");
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
-  }, [fetchActiveAcademicYear, loadAvailableClasses, setLoading, showToast]);
+  }, [fetchAcademicInfo, loadAvailableClasses, setLoading, showToast]);
 
+  // Use custom hook untuk student management
+  const {
+    studentModal,
+    setStudentModal,
+    deleteConfirm,
+    setDeleteConfirm,
+    studentForm,
+    setStudentForm,
+    openStudentModal,
+    handleAddStudent,
+    handleEditStudent,
+    handleDeleteStudent,
+    updateStudentClass,
+  } = useStudentManagement({
+    academicInfo, // ✅ 10. PASS ACADEMIC INFO (ganti activeAcademicYear)
+    availableClasses,
+    setLoading,
+    showToast,
+    loadSchoolData,
+  });
+
+  // Load data on mount
   useEffect(() => {
     loadSchoolData();
   }, [loadSchoolData]);
 
+  // Filter students
   const filteredStudents = useCallback(() => {
     return students.filter((student) => {
       const matchesKelas =
@@ -466,164 +329,67 @@ const SchoolManagementTab = ({
     });
   }, [students, studentFilters.kelas, studentFilters.search]);
 
-  const updateStudentClass = useCallback(
-    async (studentId, newClassId) => {
-      try {
-        setLoading(true);
-        const { error } = await supabase
-          .from("students")
-          .update({ class_id: newClassId || null })
-          .eq("id", studentId);
-
-        if (error) throw error;
-        showToast("Kelas siswa berhasil diupdate!", "success");
-        await loadSchoolData();
-      } catch (error) {
-        console.error("Error updating student class:", error);
-        showToast("Error mengupdate kelas siswa", "error");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [setLoading, showToast, loadSchoolData]
-  );
-
-  // ✅ HAPUS: openTeacherModal() - Pindah ke UserManagementTab
-  // ✅ HAPUS: handleAddTeacher() - Pindah ke UserManagementTab
-  // ✅ HAPUS: handleEditTeacher() - Pindah ke UserManagementTab
-  // ✅ HAPUS: handleDeleteTeacher() - Pindah ke UserManagementTab
-
-  const openStudentModal = useCallback((mode = "add", studentData = null) => {
-    if (mode === "edit" && studentData) {
-      setStudentForm({
-        nis: studentData.nis,
-        full_name: studentData.full_name,
-        gender: studentData.gender,
-        class_id: studentData.class_id || "",
-        is_active: studentData.is_active,
-      });
-    } else {
-      setStudentForm({
-        nis: "",
-        full_name: "",
-        gender: "L",
-        class_id: "",
-        is_active: true,
-      });
-    }
-
-    setStudentModal({ show: true, mode, data: studentData });
-  }, []);
-
-  const handleAddStudent = useCallback(async () => {
+  // Handler untuk execute import
+  const handleExecuteImport = async (validatedData) => {
     try {
-      setLoading(true);
+      const { executeImport } = await import("./BulkImportModals");
+      const result = await executeImport(
+        validatedData,
+        academicInfo, // ✅ 11. PASS ACADEMIC INFO
+        setImportProgress,
+        showToast
+      );
 
-      if (!activeAcademicYear) {
-        showToast("Tahun ajaran aktif tidak ditemukan!", "error");
-        return;
+      if (result.failedRows.length === 0) {
+        setImportModal({ show: true, mode: "success", data: result });
+      } else {
+        setImportErrors(result.failedRows);
+        setImportModal({ show: true, mode: "error", data: result.failedRows });
       }
 
-      const { error } = await supabase.from("students").insert([
-        {
-          nis: studentForm.nis,
-          full_name: studentForm.full_name,
-          gender: studentForm.gender,
-          class_id: studentForm.class_id || null,
-          is_active: studentForm.is_active,
-          academic_year: activeAcademicYear,
-        },
-      ]);
-
-      if (error) throw error;
-
-      showToast("Siswa berhasil ditambahkan!", "success");
-      setStudentModal({ show: false, mode: "add", data: null });
-      setStudentForm({
-        nis: "",
-        full_name: "",
-        gender: "L",
-        class_id: "",
-        is_active: true,
-      });
       await loadSchoolData();
     } catch (error) {
-      console.error("Error adding student:", error);
-      showToast("Error menambah siswa: " + error.message, "error");
-    } finally {
-      setLoading(false);
+      showToast("Error saat import: " + error.message, "error");
     }
-  }, [studentForm, activeAcademicYear, setLoading, showToast, loadSchoolData]);
+  };
 
-  const handleEditStudent = useCallback(async () => {
+  // Handler untuk export Excel
+  const handleExportExcel = () => {
     try {
-      setLoading(true);
-      const { error } = await supabase
-        .from("students")
-        .update({
-          nis: studentForm.nis,
-          full_name: studentForm.full_name,
-          gender: studentForm.gender,
-          class_id: studentForm.class_id || null,
-          is_active: studentForm.is_active,
-        })
-        .eq("id", studentModal.data.id);
-
-      if (error) throw error;
-
-      showToast("Siswa berhasil diupdate!", "success");
-      setStudentModal({ show: false, mode: "add", data: null });
-      setStudentForm({
-        nis: "",
-        full_name: "",
-        gender: "L",
-        class_id: "",
-        is_active: true,
-      });
-      await loadSchoolData();
+      const result = exportStudentsToExcel(
+        filteredStudents(),
+        importScope,
+        academicInfo // ✅ 12. PASS ACADEMIC INFO
+      );
+      showToast(`✅ Berhasil export ${result.count} siswa ke Excel`, "success");
     } catch (error) {
-      console.error("Error updating student:", error);
-      showToast("Error mengupdate siswa: " + error.message, "error");
-    } finally {
-      setLoading(false);
+      showToast(`Error export Excel: ${error.message}`, "error");
     }
-  }, [studentForm, studentModal.data, setLoading, showToast, loadSchoolData]);
+  };
 
-  const handleDeleteStudent = useCallback(
-    async (studentId) => {
-      try {
-        setLoading(true);
-        const { error } = await supabase
-          .from("students")
-          .delete()
-          .eq("id", studentId);
-
-        if (error) throw error;
-
-        showToast("Siswa berhasil dihapus!", "success");
-        setDeleteConfirm({ show: false, type: "", data: null });
-        await loadSchoolData();
-      } catch (error) {
-        console.error("Error deleting student:", error);
-        showToast("Error menghapus siswa: " + error.message, "error");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [setLoading, showToast, loadSchoolData]
-  );
-
+  // Helper functions
   const uniqueClassNames = [
     ...new Set(availableClasses.map((c) => c.id)),
   ].sort();
 
-  if (loading && !activeAcademicYear) {
+  // ✅ 13. UPDATE WARNING UNTUK ACADEMIC INFO
+  useEffect(() => {
+    if (!loading && !isInitialLoad && !academicInfo && !academicLoading) {
+      showToast(
+        "⚠️ PERHATIAN: Tidak ada tahun ajaran aktif! Silakan ke Settings → Academic Year untuk mengatur tahun ajaran.",
+        "warning"
+      );
+    }
+  }, [academicInfo, loading, isInitialLoad, academicLoading, showToast]);
+
+  // ✅ 14. UPDATE LOADING STATE DENGAN ACADEMIC LOADING
+  if ((loading || academicLoading) && !academicInfo) {
     return (
       <div className="flex items-center justify-center p-8 sm:p-12 bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-400 text-sm sm:text-base font-medium">
-            Memuat data sekolah...
+            Memuat tahun ajaran dan data sekolah...
           </p>
         </div>
       </div>
@@ -632,36 +398,128 @@ const SchoolManagementTab = ({
 
   return (
     <div className="p-4 sm:p-6 transition-colors duration-200 bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-        <div className="flex items-center justify-between w-full sm:w-auto">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
-              Manajemen Sekolah
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-              {SMP_CONFIG.schoolName} - {SMP_CONFIG.schoolLevel}
-              {activeAcademicYear && (
-                <span className="ml-2 text-blue-600 dark:text-blue-400 font-semibold">
-                  ({activeAcademicYear})
-                </span>
-              )}
-            </p>
-          </div>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="sm:hidden p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm"
-            aria-label="Toggle menu mobile">
-            <Plus
-              size={20}
-              className={`transform transition-transform ${
-                mobileMenuOpen ? "rotate-45" : ""
-              } text-gray-700 dark:text-gray-300`}
-            />
-          </button>
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
+            Manajemen Sekolah
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+            {SMP_CONFIG.schoolName} - {SMP_CONFIG.schoolLevel}
+            {/* ✅ 15. UPDATE DISPLAY DENGAN SEMESTER INFO */}
+            {academicInfo && (
+              <span className="ml-2 text-blue-600 dark:text-blue-400 font-semibold">
+                (
+                {academicInfo.displayText ||
+                  `${academicInfo.year} - Semester ${academicInfo.semester}`}
+                )
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
-      {/* STATS CARDS dengan dark mode */}
+      {/* ✅ 16. UPDATE ACADEMIC YEAR BANNER */}
+      {academicInfo ? (
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
+                <BookOpen className="text-white" size={20} />
+              </div>
+              <div>
+                <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                  📅 Tahun Ajaran Aktif
+                </p>
+                <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                  {academicInfo.year}
+                </p>
+                {academicInfo.semester && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Semester {academicInfo.semester} •{" "}
+                    {academicInfo.semesterText}
+                  </p>
+                )}
+              </div>
+            </div>
+            {onNavigateToYearTransition && (
+              <button
+                onClick={onNavigateToYearTransition}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md">
+                <ArrowRight size={16} />
+                <span>Kelola Tahun Ajaran</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 p-4 rounded-xl border border-red-200 dark:border-red-800 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
+                <BookOpen className="text-white" size={20} />
+              </div>
+              <div>
+                <p className="text-sm text-red-700 dark:text-red-300 font-medium">
+                  ⚠️ Tidak Ada Tahun Ajaran Aktif
+                </p>
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  Silakan aktifkan tahun ajaran di Settings untuk mengelola data
+                  siswa
+                </p>
+              </div>
+            </div>
+            {onNavigateToYearTransition && (
+              <button
+                onClick={onNavigateToYearTransition}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md">
+                <ArrowRight size={16} />
+                <span>Atur Tahun Ajaran</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* WARNING SISWA TAHUN LAMA */}
+      {showOldYearWarning && oldYearStudents > 0 && (
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 rounded-xl border border-yellow-300 dark:border-yellow-700 mb-6 animate-pulse">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-500 dark:bg-yellow-600 rounded-lg flex items-center justify-center">
+                <Users className="text-white" size={20} />
+              </div>
+              <div>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 font-bold">
+                  ⚠️ PERHATIAN: Ada Siswa dari Tahun Ajaran Lama!
+                </p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-1">
+                  <strong>{oldYearStudents} siswa</strong> masih menggunakan
+                  tahun ajaran lama dan perlu di-update
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              {onNavigateToYearTransition && (
+                <button
+                  onClick={onNavigateToYearTransition}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800 text-white rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md">
+                  <ArrowRight size={16} />
+                  <span>Proses Perpindahan</span>
+                </button>
+              )}
+              <button
+                onClick={() => setShowOldYearWarning(false)}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium transition-all">
+                <X size={16} />
+                <span>Tutup</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STATS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 p-4 sm:p-5 rounded-xl border border-blue-200 dark:border-blue-800 transition-all duration-200 hover:shadow-md">
           <div className="flex items-center gap-2 mb-3">
@@ -673,6 +531,11 @@ const SchoolManagementTab = ({
           <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
             {schoolStats.total_students}
           </p>
+          {academicInfo && (
+            <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+              Tahun {academicInfo.year}
+            </p>
+          )}
         </div>
 
         <div className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10 p-4 sm:p-5 rounded-xl border border-green-200 dark:border-green-800 transition-all duration-200 hover:shadow-md">
@@ -732,7 +595,7 @@ const SchoolManagementTab = ({
         </div>
       </div>
 
-      {/* ✅ READ-ONLY: DAFTAR GURU SECTION */}
+      {/* READ-ONLY: DAFTAR GURU SECTION */}
       <div className="mb-6 sm:mb-8">
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 sm:p-5 rounded-xl mb-4 border border-blue-200 dark:border-blue-700">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -743,7 +606,7 @@ const SchoolManagementTab = ({
               />
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
-                  Daftar Guru & Staff
+                  Daftar Guru
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   Untuk mengelola data guru, silakan ke halaman User Management
@@ -762,7 +625,7 @@ const SchoolManagementTab = ({
           </div>
         </div>
 
-        {/* ✅ READ-ONLY: TABEL GURU */}
+        {/* READ-ONLY: TABEL GURU */}
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <table className="w-full min-w-[600px]">
             <thead className="bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-gray-800 dark:to-gray-700">
@@ -782,7 +645,6 @@ const SchoolManagementTab = ({
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
                   Status
                 </th>
-                {/* ✅ NO ACTIONS COLUMN */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
@@ -831,7 +693,6 @@ const SchoolManagementTab = ({
                         {teacher.is_active ? "Aktif" : "Nonaktif"}
                       </span>
                     </td>
-                    {/* ✅ NO EDIT/DELETE BUTTONS */}
                   </tr>
                 ))
               ) : (
@@ -848,7 +709,7 @@ const SchoolManagementTab = ({
         </div>
       </div>
 
-      {/* ✅ MANAGEMENT SISWA SECTION */}
+      {/* MANAGEMENT SISWA SECTION */}
       <div className="mb-6 sm:mb-8">
         <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-4">
           Management Siswa
@@ -902,16 +763,59 @@ const SchoolManagementTab = ({
               </select>
             </div>
 
-            {/* ✅ TOMBOL TAMBAH SISWA */}
-            <div className="w-full md:w-auto">
+            {/* TOMBOL TAMBAH SISWA & IMPORT CSV & EXPORT */}
+            <div className="flex gap-3 w-full md:w-auto">
               <button
                 onClick={() => openStudentModal("add")}
-                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 sm:px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 dark:from-green-700 dark:hover:from-green-800 dark:hover:to-emerald-800 text-white rounded-xl text-sm sm:text-base font-semibold transition-all active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg">
+                disabled={!activeAcademicYear || loading}
+                className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all min-h-[44px] shadow-md ${
+                  !activeAcademicYear || loading
+                    ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed opacity-60"
+                    : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 dark:from-green-700 dark:hover:from-green-800 dark:hover:to-emerald-800 text-white hover:shadow-lg active:scale-[0.98]"
+                }`}>
                 <Plus size={16} />
                 <span>Tambah Siswa</span>
               </button>
+
+              <button
+                onClick={() =>
+                  setImportModal({ show: true, mode: "upload", data: null })
+                }
+                disabled={!activeAcademicYear || loading}
+                className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all min-h-[44px] shadow-md ${
+                  !activeAcademicYear || loading
+                    ? "bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed opacity-60"
+                    : "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white hover:shadow-lg active:scale-[0.98]"
+                }`}>
+                <Upload size={16} />
+                <span>Import CSV</span>
+              </button>
+
+              <button
+                onClick={handleExportExcel}
+                disabled={
+                  !activeAcademicYear ||
+                  loading ||
+                  filteredStudents().length === 0
+                }
+                className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all min-h-[44px] shadow-md ${
+                  !activeAcademicYear ||
+                  loading ||
+                  filteredStudents().length === 0
+                    ? "bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed opacity-60"
+                    : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white hover:shadow-lg active:scale-[0.98]"
+                }`}>
+                <Download size={16} />
+                <span>Export Excel</span>
+              </button>
             </div>
           </div>
+
+          {!activeAcademicYear && (
+            <p className="text-red-600 dark:text-red-400 text-xs mt-2 font-medium text-center">
+              ⚠️ Aktifkan tahun ajaran terlebih dahulu
+            </p>
+          )}
 
           {/* Pesan filter aktif */}
           {(studentFilters.kelas || studentFilters.search) && (
@@ -1104,8 +1008,24 @@ const SchoolManagementTab = ({
         />
       )}
 
-      {/* ✅ HAPUS: TeacherModal */}
-      {/* ✅ HAPUS: Delete confirmation untuk teacher */}
+      {/* BULK IMPORT MODAL */}
+      <ImportModal
+        modal={importModal}
+        setModal={setImportModal}
+        importScope={importScope}
+        setImportScope={setImportScope}
+        importPreview={importPreview}
+        setImportPreview={setImportPreview}
+        importErrors={importErrors}
+        setImportErrors={setImportErrors}
+        importProgress={importProgress}
+        setImportProgress={setImportProgress}
+        activeAcademicYear={activeAcademicYear}
+        availableClasses={availableClasses}
+        onExecuteImport={handleExecuteImport}
+        loading={loading}
+        showToast={showToast}
+      />
     </div>
   );
 };

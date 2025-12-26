@@ -1,13 +1,14 @@
-//[file name]: HomeroomTeacherDashboard.js - REVISED VERSION (REMOVED DARK MODE TOGGLE)
+//[file name]: HomeroomTeacherDashboard.js - REVISED VERSION (WITH ACADEMIC YEAR SERVICE)
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import AnnouncementPopup from "./AnnouncementPopup";
+import { getActiveAcademicInfo } from "../services/academicYearService";
 
 const HomeroomTeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeAcademicInfo, setActiveAcademicInfo] = useState(null);
 
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -39,6 +40,15 @@ const HomeroomTeacherDashboard = ({ user }) => {
   const userId = user?.id; // UUID untuk teacher_schedules
   const userRole = user?.role;
 
+  // Load active academic info
+  useEffect(() => {
+    const loadActiveAcademicInfo = async () => {
+      const info = await getActiveAcademicInfo();
+      setActiveAcademicInfo(info);
+    };
+    loadActiveAcademicInfo();
+  }, []);
+
   // Check if mobile device
   useEffect(() => {
     const checkMobile = () => {
@@ -52,33 +62,6 @@ const HomeroomTeacherDashboard = ({ user }) => {
       window.removeEventListener("resize", checkMobile);
     };
   }, []);
-
-  // Check dark mode preference
-  useEffect(() => {
-    // Check localStorage first
-    const savedTheme = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-
-    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode;
-    setIsDarkMode(newDarkMode);
-
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
 
   // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
   const getDayName = (dayIndex) => {
@@ -151,8 +134,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       console.log("🏠 HomeroomTeacherDashboard mounted with user:", username);
+      console.log("📅 Active Academic Info:", activeAcademicInfo);
     }
-  }, [username]);
+  }, [username, activeAcademicInfo]);
 
   // Fetch jadwal hari ini
   const fetchTodaySchedule = useCallback(async () => {
@@ -222,6 +206,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
       setLoading(true);
       if (process.env.NODE_ENV === "development") {
         console.log("📊 Fetching data for homeroom class:", homeroomClassId);
+        console.log("📅 Using academic info:", activeAcademicInfo);
       }
 
       // Get class info
@@ -252,7 +237,10 @@ const HomeroomTeacherDashboard = ({ user }) => {
         console.log("🏫 Homeroom class ID:", homeroomClassId);
       }
 
-      // Parallel fetch data
+      // ✅ GUNAKAN SEMESTER DARI ACADEMIC YEAR SERVICE
+      const activeSemester = activeAcademicInfo?.semester || 1;
+      console.log("📅 Active Semester (from service):", activeSemester);
+
       const [
         studentsResult,
         attendanceResult,
@@ -281,12 +269,13 @@ const HomeroomTeacherDashboard = ({ user }) => {
           .order("created_at", { ascending: false })
           .limit(5),
 
-        // Teacher assignments (all classes taught by this teacher) - FIXED
+        // Teacher assignments - DYNAMIC SEMESTER
         supabase
           .from("teacher_assignments")
-          .select("id, class_id, subject, academic_year") // ✅ HAPUS nested select classes
+          .select("id, class_id, subject, academic_year, semester")
           .eq("teacher_id", teacherId)
-          .eq("academic_year", currentYear),
+          .eq("academic_year", currentYear)
+          .eq("semester", activeSemester), // ✅ GUNAKAN DARI SERVICE!
       ]);
 
       if (process.env.NODE_ENV === "development") {
@@ -415,6 +404,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         teacherId: teacherId,
         currentYear: currentYear,
         teachingResult: teachingResult,
+        activeSemester: activeSemester,
       });
 
       setAnnouncements(announcementsResult.data || []);
@@ -435,6 +425,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
     fullName,
     username,
     fetchTodaySchedule,
+    activeAcademicInfo, // ✅ TAMBAHKAN DEPENDENCY INI
   ]);
 
   // Fetch data - HANYA ketika dependency berubah
@@ -517,8 +508,6 @@ const HomeroomTeacherDashboard = ({ user }) => {
     const today = new Date();
     return getDayName(today.getDay());
   }, []);
-
-  // 🆕 REVISI: DARK MODE TOGGLE COMPONENT DIHAPUS SEPENUHNYA
 
   // Quick Actions Component untuk Mobile
   const QuickActionsMobile = () => (
@@ -612,7 +601,6 @@ const HomeroomTeacherDashboard = ({ user }) => {
             </span>
           </div>
         </div>
-        {/* 🆕 DARK MODE TOGGLE DIHAPUS DARI LOADING STATE */}
       </div>
     );
   }
@@ -637,6 +625,13 @@ const HomeroomTeacherDashboard = ({ user }) => {
               Role: {userRole}
               <br />
               Homeroom Class: {homeroomClassId || "Tidak ada"}
+              <br />
+              {activeAcademicInfo?.displayText && (
+                <>
+                  Semester: {activeAcademicInfo.displayText}
+                  <br />
+                </>
+              )}
             </p>
             <button
               onClick={handleRetry}
@@ -645,7 +640,6 @@ const HomeroomTeacherDashboard = ({ user }) => {
             </button>
           </div>
         </div>
-        {/* 🆕 DARK MODE TOGGLE DIHAPUS DARI ERROR STATE */}
       </div>
     );
   }
@@ -653,8 +647,6 @@ const HomeroomTeacherDashboard = ({ user }) => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
       <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
-        {/* 🆕 REVISI: DARK MODE TOGGLE BUTTON DIHAPUS DARI SINI */}
-
         {/* 🆕 Pop-up Pengumuman */}
         <AnnouncementPopup userId={user?.id} userRole="walikelas" />
 
@@ -672,6 +664,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 {primarySubject && (
                   <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     Guru {primarySubject}
+                  </span>
+                )}
+                {/* ✅ TAMBAHAN: Info Semester Aktif */}
+                {activeAcademicInfo?.displayText && (
+                  <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                    {activeAcademicInfo.displayText}
                   </span>
                 )}
               </div>

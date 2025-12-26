@@ -10,9 +10,15 @@ import {
   CheckCircle,
   Info,
   Trash2,
-  ArrowLeft, // ← Tambahkan ini
-  ArrowRight, // ← Tambahkan ini
 } from "lucide-react";
+
+// Import academic year service
+import {
+  getActiveAcademicInfo,
+  applyAcademicFilters,
+  getActiveSemester,
+  getActiveYearString,
+} from "../../services/academicYearService";
 
 const SemesterManagement = ({
   schoolConfig,
@@ -21,6 +27,7 @@ const SemesterManagement = ({
   showToast,
   onSemesterChange,
   onOpenCopyModal,
+  academicInfo, // ← Diterima dari parent component
 }) => {
   // State untuk management semester
   const [semesters, setSemesters] = useState([]);
@@ -33,12 +40,43 @@ const SemesterManagement = ({
     end_date: "",
   });
   const [isSwitching, setIsSwitching] = useState(false);
+  const [localAcademicInfo, setLocalAcademicInfo] = useState(academicInfo);
 
-  // Load data semester saat component mount
+  // Load academic info dan data semester saat component mount
   useEffect(() => {
+    loadAcademicInfo();
     loadSemesters();
-    loadActiveSemester();
   }, []);
+
+  // Update localAcademicInfo jika prop berubah
+  useEffect(() => {
+    if (academicInfo) {
+      setLocalAcademicInfo(academicInfo);
+      setActiveSemester(academicInfo);
+    }
+  }, [academicInfo]);
+
+  // Fungsi untuk load academic info dari service
+  const loadAcademicInfo = async () => {
+    try {
+      if (academicInfo) {
+        // Jika sudah ada dari parent, gunakan itu
+        setLocalAcademicInfo(academicInfo);
+        setActiveSemester(academicInfo);
+      } else {
+        // Jika tidak, load sendiri
+        const info = await getActiveAcademicInfo();
+        setLocalAcademicInfo(info);
+        setActiveSemester(info);
+      }
+    } catch (error) {
+      console.error("Error loading academic info:", error);
+      showToast(
+        "Gagal memuat informasi semester aktif: " + error.message,
+        "error"
+      );
+    }
+  };
 
   // Fungsi untuk load semua semester
   const loadSemesters = async () => {
@@ -57,19 +95,17 @@ const SemesterManagement = ({
     }
   };
 
-  // Fungsi untuk load semester aktif
+  // Fungsi untuk load semester aktif dari service
   const loadActiveSemester = async () => {
     try {
-      const { data, error } = await supabase
-        .from("academic_years")
-        .select("*")
-        .eq("is_active", true)
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
-      setActiveSemester(data);
+      const info = await getActiveAcademicInfo();
+      setActiveSemester(info);
+      setLocalAcademicInfo(info);
+      return info;
     } catch (error) {
       console.error("Error loading active semester:", error);
+      showToast("Gagal memuat semester aktif: " + error.message, "error");
+      return null;
     }
   };
 
@@ -109,6 +145,7 @@ const SemesterManagement = ({
 
       // Reload data dan notify parent
       await loadSemesters();
+      await loadAcademicInfo();
       if (onSemesterChange) onSemesterChange();
     } catch (error) {
       console.error("Error adding semester:", error);
@@ -147,7 +184,7 @@ const SemesterManagement = ({
 
       showToast("✅ Semester berhasil diaktifkan!", "success");
 
-      // Reload data dan notify parent
+      // Reload data dari service dan notify parent
       await loadSemesters();
       await loadActiveSemester();
       if (onSemesterChange) onSemesterChange();
@@ -220,19 +257,22 @@ const SemesterManagement = ({
 
   // ========== SMART SEMESTER SWITCH ==========
   const executeSmartSemesterSwitch = async () => {
-    if (!activeSemester) {
-      showToast("❌ Tidak ada semester aktif yang ditemukan!", "error");
+    if (!localAcademicInfo) {
+      showToast(
+        "❌ Tidak ada informasi semester aktif yang ditemukan!",
+        "error"
+      );
       return;
     }
 
     // STEP 1: Triple Confirmation
     const confirm1 = window.confirm(
       `🔄 KONFIRMASI PERPINDAHAN SEMESTER\n\n` +
-        `Dari: ${activeSemester.year} - Semester ${
-          activeSemester.semester === 1 ? "Ganjil" : "Genap"
+        `Dari: ${localAcademicInfo.year} - Semester ${
+          localAcademicInfo.semester === 1 ? "Ganjil" : "Genap"
         }\n` +
-        `Ke: ${activeSemester.year} - Semester ${
-          activeSemester.semester === 1 ? "Genap" : "Ganjil"
+        `Ke: ${localAcademicInfo.year} - Semester ${
+          localAcademicInfo.semester === 1 ? "Genap" : "Ganjil"
         }\n\n` +
         `Proses yang akan dilakukan:\n` +
         `✅ Check & create semester baru (jika belum ada)\n` +
@@ -255,14 +295,14 @@ const SemesterManagement = ({
 
     try {
       setIsSwitching(true);
-      const targetSemester = activeSemester.semester === 1 ? 2 : 1;
+      const targetSemester = localAcademicInfo.semester === 1 ? 2 : 1;
 
       // STEP 2: Check if target semester exists
       showToast("🔍 Mengecek semester target...", "info");
       const { data: existingSemester } = await supabase
         .from("academic_years")
         .select("*")
-        .eq("year", activeSemester.year)
+        .eq("year", localAcademicInfo.year)
         .eq("semester", targetSemester)
         .single();
 
@@ -273,8 +313,8 @@ const SemesterManagement = ({
         showToast("📝 Membuat semester baru...", "info");
 
         // Auto-calculate dates
-        const currentStartDate = new Date(activeSemester.start_date);
-        const currentEndDate = new Date(activeSemester.end_date);
+        const currentStartDate = new Date(localAcademicInfo.start_date);
+        const currentEndDate = new Date(localAcademicInfo.end_date);
 
         let newStartDate, newEndDate;
 
@@ -297,7 +337,7 @@ const SemesterManagement = ({
         const { data: newSemester, error: createError } = await supabase
           .from("academic_years")
           .insert({
-            year: activeSemester.year,
+            year: localAcademicInfo.year,
             semester: targetSemester,
             start_date: newStartDate.toISOString().split("T")[0],
             end_date: newEndDate.toISOString().split("T")[0],
@@ -315,14 +355,19 @@ const SemesterManagement = ({
         showToast("✅ Semester target sudah ada, melanjutkan...", "info");
       }
 
-      // STEP 4: Copy teacher assignments
+      // STEP 4: Copy teacher assignments dengan filter akademik dinamis
       showToast("📋 Mengambil data teacher assignments...", "info");
 
-      const { data: assignments, error: fetchError } = await supabase
-        .from("teacher_assignments")
-        .select("*")
-        .eq("academic_year", activeSemester.year)
-        .eq("semester", activeSemester.semester);
+      // Build query dengan applyAcademicFilters
+      let assignmentsQuery = supabase.from("teacher_assignments").select("*");
+
+      assignmentsQuery = await applyAcademicFilters(assignmentsQuery, {
+        filterYear: true,
+        filterSemester: true,
+        filterYearId: true,
+      });
+
+      const { data: assignments, error: fetchError } = await assignmentsQuery;
 
       if (fetchError) throw fetchError;
 
@@ -333,17 +378,17 @@ const SemesterManagement = ({
         const { error: deleteError } = await supabase
           .from("teacher_assignments")
           .delete()
-          .eq("academic_year", activeSemester.year)
+          .eq("academic_year", localAcademicInfo.year)
           .eq("semester", targetSemester);
 
         if (deleteError) throw deleteError;
 
-        // Copy assignments
+        // Copy assignments dengan academic_year_id yang benar
         const newAssignments = assignments.map((a) => ({
           teacher_id: a.teacher_id,
           subject: a.subject,
           class_id: a.class_id,
-          academic_year: activeSemester.year,
+          academic_year: localAcademicInfo.year,
           semester: targetSemester,
           academic_year_id: targetSemesterId,
         }));
@@ -369,7 +414,7 @@ const SemesterManagement = ({
       const { error: deactivateError } = await supabase
         .from("academic_years")
         .update({ is_active: false })
-        .eq("id", activeSemester.id);
+        .eq("id", localAcademicInfo.yearId);
 
       if (deactivateError) throw deactivateError;
 
@@ -386,7 +431,7 @@ const SemesterManagement = ({
         `✅ Berhasil pindah ke Semester ${
           targetSemester === 1 ? "Ganjil" : "Genap"
         }!\n\n` +
-          `📅 Tahun Ajaran: ${activeSemester.year}\n` +
+          `📅 Tahun Ajaran: ${localAcademicInfo.year}\n` +
           `📚 Semester: ${
             targetSemester === 1 ? "Ganjil" : "Genap"
           } (${targetSemester})\n` +
@@ -395,7 +440,7 @@ const SemesterManagement = ({
         "success"
       );
 
-      // Reload data dan notify parent
+      // Reload data dari service dan notify parent
       await loadActiveSemester();
       await loadSemesters();
       if (onSemesterChange) onSemesterChange();
@@ -423,7 +468,7 @@ const SemesterManagement = ({
   return (
     <div className="space-y-6">
       {/* ========== SMART SEMESTER SWITCH SECTION ========== */}
-      {activeSemester && (
+      {localAcademicInfo && (
         <div className="mb-8">
           {/* Process Info Header */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-800 shadow-lg mb-6">
@@ -469,7 +514,7 @@ const SemesterManagement = ({
             {/* Semester Ganjil Card */}
             <div
               className={`p-6 rounded-xl border-2 transition-all ${
-                activeSemester.semester === 1
+                localAcademicInfo.semester === 1
                   ? "bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg"
                   : "bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
               }`}>
@@ -479,14 +524,14 @@ const SemesterManagement = ({
                   Semester Ganjil
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  {activeSemester.year}
+                  {localAcademicInfo.year}
                 </p>
-                {activeSemester.semester === 1 && (
+                {localAcademicInfo.semester === 1 && (
                   <span className="inline-block px-3 py-1 bg-green-500 text-white text-sm rounded-full font-semibold">
                     ✓ Aktif
                   </span>
                 )}
-                {activeSemester.semester !== 1 && (
+                {localAcademicInfo.semester !== 1 && (
                   <span className="inline-block px-3 py-1 bg-gray-400 text-white text-sm rounded-full">
                     Tidak Aktif
                   </span>
@@ -508,7 +553,7 @@ const SemesterManagement = ({
                 ) : (
                   <>
                     <div className="flex items-center gap-3">
-                      {activeSemester.semester === 1 ? (
+                      {localAcademicInfo.semester === 1 ? (
                         <>
                           <span className="text-2xl">→</span>
                         </>
@@ -521,7 +566,7 @@ const SemesterManagement = ({
                     <span className="text-base">🚀 PINDAH</span>
                     <span className="text-sm font-normal">
                       ke Semester{" "}
-                      {activeSemester.semester === 1 ? "Genap" : "Ganjil"}
+                      {localAcademicInfo.semester === 1 ? "Genap" : "Ganjil"}
                     </span>
                   </>
                 )}
@@ -531,7 +576,7 @@ const SemesterManagement = ({
             {/* Semester Genap Card */}
             <div
               className={`p-6 rounded-xl border-2 transition-all ${
-                activeSemester.semester === 2
+                localAcademicInfo.semester === 2
                   ? "bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg"
                   : "bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
               }`}>
@@ -541,14 +586,14 @@ const SemesterManagement = ({
                   Semester Genap
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  {activeSemester.year}
+                  {localAcademicInfo.year}
                 </p>
-                {activeSemester.semester === 2 && (
+                {localAcademicInfo.semester === 2 && (
                   <span className="inline-block px-3 py-1 bg-green-500 text-white text-sm rounded-full font-semibold">
                     ✓ Aktif
                   </span>
                 )}
-                {activeSemester.semester !== 2 && (
+                {localAcademicInfo.semester !== 2 && (
                   <span className="inline-block px-3 py-1 bg-gray-400 text-white text-sm rounded-full">
                     Tidak Aktif
                   </span>
@@ -629,7 +674,7 @@ const SemesterManagement = ({
         </div>
 
         {/* Active Semester Highlight */}
-        {activeSemester && (
+        {localAcademicInfo && (
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg mb-5 border border-blue-200 dark:border-blue-600">
             <div className="flex items-center gap-3">
               <PlayCircle
@@ -641,29 +686,31 @@ const SemesterManagement = ({
                   Semester Aktif Sekarang
                 </p>
                 <p className="text-lg font-bold text-blue-900 dark:text-blue-200">
-                  {activeSemester.year} - Semester{" "}
-                  {activeSemester.semester === 1 ? "Ganjil" : "Genap"} (
-                  {activeSemester.semester})
+                  {localAcademicInfo.year} - Semester{" "}
+                  {localAcademicInfo.semester === 1 ? "Ganjil" : "Genap"} (
+                  {localAcademicInfo.semester})
                 </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  {new Date(activeSemester.start_date).toLocaleDateString(
-                    "id-ID",
-                    {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    }
-                  )}{" "}
-                  s/d{" "}
-                  {new Date(activeSemester.end_date).toLocaleDateString(
-                    "id-ID",
-                    {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    }
-                  )}
-                </p>
+                {localAcademicInfo.start_date && localAcademicInfo.end_date && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    {new Date(localAcademicInfo.start_date).toLocaleDateString(
+                      "id-ID",
+                      {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      }
+                    )}{" "}
+                    s/d{" "}
+                    {new Date(localAcademicInfo.end_date).toLocaleDateString(
+                      "id-ID",
+                      {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      }
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           </div>

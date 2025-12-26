@@ -12,8 +12,12 @@ import {
   Download,
   Upload,
   Loader2,
+  Shield,
 } from "lucide-react";
 import { exportToExcel, importFromExcel } from "./GradesExcel";
+
+// ✅ TAMBAH IMPORT SERVICE
+import { getActiveAcademicInfo } from "../../services/academicYearService";
 
 // Loading Overlay Component
 const LoadingOverlay = ({ message }) => (
@@ -54,8 +58,41 @@ const Grades = ({ user, onShowToast }) => {
   const [loadingMessage, setLoadingMessage] = useState("");
   const [message, setMessage] = useState("");
 
+  // ✅ TAMBAH STATE UNTUK ACTIVE ACADEMIC INFO
+  const [activeAcademicInfo, setActiveAcademicInfo] = useState(null);
+  const [loadingAcademicInfo, setLoadingAcademicInfo] = useState(true);
+
   // Assignment types
   const assignmentTypes = ["NH1", "NH2", "NH3", "PSTS", "PSAS"];
+
+  // ✅ EFFECT UNTUK LOAD ACTIVE ACADEMIC INFO
+  useEffect(() => {
+    const loadActiveAcademicInfo = async () => {
+      try {
+        setLoadingAcademicInfo(true);
+        const info = await getActiveAcademicInfo();
+        setActiveAcademicInfo(info);
+        console.log("✅ Active Academic Info loaded for Grades:", info);
+
+        // Set default academic year jika belum ada
+        if (!academicYear && info?.year) {
+          setAcademicYear(info.year);
+        }
+
+        // Set default semester jika belum ada
+        if (info?.semester) {
+          setSemester(info.semester.toString());
+        }
+      } catch (error) {
+        console.error("❌ Error loading active academic info:", error);
+        setMessage("Error: Gagal memuat informasi tahun ajaran aktif");
+      } finally {
+        setLoadingAcademicInfo(false);
+      }
+    };
+
+    loadActiveAcademicInfo();
+  }, []);
 
   // Auth check
   useEffect(() => {
@@ -89,16 +126,17 @@ const Grades = ({ user, onShowToast }) => {
     checkAuth();
   }, [user]);
 
-  // Fetch Academic Years
+  // ✅ UPDATE: Fetch Academic Years dengan filter semester aktif
   useEffect(() => {
     const fetchAcademicYears = async () => {
-      if (!teacherId) return;
+      if (!teacherId || !activeAcademicInfo) return;
 
       try {
         const { data: assignmentData, error: assignmentError } = await supabase
           .from("teacher_assignments")
-          .select("academic_year")
-          .eq("teacher_id", teacherId);
+          .select("academic_year, semester")
+          .eq("teacher_id", teacherId)
+          .order("academic_year", { ascending: false });
 
         if (assignmentError) {
           console.error("Error fetching academic years:", assignmentError);
@@ -112,9 +150,12 @@ const Grades = ({ user, onShowToast }) => {
           return;
         }
 
+        // Ambil tahun akademik unik
         const uniqueYears = [
           ...new Set(assignmentData.map((item) => item.academic_year)),
         ];
+
+        // Urutkan descending
         const sortedYears = uniqueYears.sort((a, b) => {
           const yearA = parseInt(a.split("/")[0]);
           const yearB = parseInt(b.split("/")[0]);
@@ -123,8 +164,9 @@ const Grades = ({ user, onShowToast }) => {
 
         setAcademicYears(sortedYears);
 
-        if (!academicYear && sortedYears.length > 0) {
-          setAcademicYear(sortedYears[0]);
+        // Set default academic year dari active info jika belum ada
+        if (!academicYear && activeAcademicInfo?.year) {
+          setAcademicYear(activeAcademicInfo.year);
         }
       } catch (error) {
         console.error("Error in fetchAcademicYears:", error);
@@ -135,9 +177,9 @@ const Grades = ({ user, onShowToast }) => {
     };
 
     fetchAcademicYears();
-  }, [teacherId]);
+  }, [teacherId, activeAcademicInfo]);
 
-  // Fetch subjects
+  // ✅ UPDATE: Fetch subjects dengan konsistensi
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!teacherId || !academicYear) {
@@ -148,7 +190,7 @@ const Grades = ({ user, onShowToast }) => {
       try {
         const { data, error } = await supabase
           .from("teacher_assignments")
-          .select("subject")
+          .select("subject, semester")
           .eq("teacher_id", teacherId)
           .eq("academic_year", academicYear)
           .eq("semester", semester);
@@ -162,7 +204,7 @@ const Grades = ({ user, onShowToast }) => {
         if (!data || data.length === 0) {
           setSubjects([]);
           setMessage(
-            `Tidak ada mata pelajaran untuk tahun ${academicYear} semester ${semester}`
+            `Tidak ada mata pelajaran untuk ${academicYear} Semester ${semester}`
           );
           return;
         }
@@ -182,7 +224,7 @@ const Grades = ({ user, onShowToast }) => {
     fetchSubjects();
   }, [teacherId, academicYear, semester]);
 
-  // Fetch classes
+  // ✅ UPDATE: Fetch classes dengan filter semester yang konsisten
   useEffect(() => {
     const fetchClasses = async () => {
       if (!selectedSubject || !teacherId || !academicYear) {
@@ -191,18 +233,30 @@ const Grades = ({ user, onShowToast }) => {
       }
 
       try {
+        console.log("🔍 Fetching classes with:", {
+          teacherId,
+          selectedSubject,
+          academicYear,
+          semester,
+        });
+
         const { data: assignmentData, error: assignmentError } = await supabase
           .from("teacher_assignments")
           .select("class_id")
           .eq("teacher_id", teacherId)
           .eq("subject", selectedSubject)
           .eq("academic_year", academicYear)
-          .eq("semester", semester);
+          .eq("semester", semester); // ✅ FILTER SEMESTER KONSISTEN
+
+        console.log("📊 Assignment data for classes:", assignmentData);
 
         if (assignmentError) throw assignmentError;
+
         if (!assignmentData?.length) {
           setClasses([]);
-          setMessage("Tidak ada kelas untuk mata pelajaran ini");
+          setMessage(
+            `Tidak ada kelas untuk ${selectedSubject} Semester ${semester}`
+          );
           return;
         }
 
@@ -221,6 +275,7 @@ const Grades = ({ user, onShowToast }) => {
           displayName: `Kelas ${cls.id}`,
         }));
 
+        console.log("✅ Classes loaded:", formattedClasses);
         setClasses(formattedClasses);
       } catch (error) {
         console.error("Error fetching classes:", error);
@@ -266,7 +321,7 @@ const Grades = ({ user, onShowToast }) => {
 
       const { data: gradesData, error: gradesError } = await supabase
         .from("grades")
-        .select("id, student_id, assignment_type, score") // ✅ Hanya ambil kolom yang diperlukan
+        .select("id, student_id, assignment_type, score")
         .eq("teacher_id", teacherUser.id)
         .eq("subject", selectedSubject)
         .eq("semester", semester)
@@ -510,7 +565,7 @@ const Grades = ({ user, onShowToast }) => {
         setTimeout(() => {
           setMessage("");
         }, 2000);
-      } // ✅ INI YANG KURANG
+      }
     } catch (error) {
       console.error("Save error:", error);
       const errorMsg = "Gagal menyimpan nilai: " + error.message;
@@ -543,6 +598,7 @@ const Grades = ({ user, onShowToast }) => {
       academicYear,
       semester,
       teacherId,
+      activeSemester: activeAcademicInfo?.semester, // ✅ TAMBAH INFO SEMESTER AKTIF
     });
 
     setMessage(result.message);
@@ -576,6 +632,7 @@ const Grades = ({ user, onShowToast }) => {
       selectedClass,
       academicYear,
       semester,
+      activeSemester: activeAcademicInfo?.semester, // ✅ TAMBAH INFO SEMESTER AKTIF
     });
 
     setMessage(result.message);
@@ -625,7 +682,21 @@ const Grades = ({ user, onShowToast }) => {
     return stats;
   };
 
-  // Loading state
+  // Loading state untuk academic info
+  if (loadingAcademicInfo) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Calculator className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-600 dark:text-indigo-400 mx-auto mb-4 animate-spin" />
+          <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base">
+            Memuat informasi tahun ajaran...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state untuk auth
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center p-4">
@@ -676,6 +747,26 @@ const Grades = ({ user, onShowToast }) => {
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
                 Kelola Nilai Siswa Untuk Mata Pelajaran
               </p>
+
+              {/* ✅ TAMBAH INFO SEMESTER AKTIF */}
+              {activeAcademicInfo && (
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs">
+                    <Shield size={12} />
+                    <span>Semester Aktif:</span>
+                    <span className="font-bold">
+                      {activeAcademicInfo.displayText}
+                    </span>
+                  </div>
+                  {academicYear !== activeAcademicInfo.year && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg text-xs">
+                      <span>
+                        ⚠️ Filter: {academicYear} - Semester {semester}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -876,10 +967,15 @@ const Grades = ({ user, onShowToast }) => {
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                     {selectedSubject} • {academicYear} • Semester {semester}
+                    {academicYear !== activeAcademicInfo?.year && (
+                      <span className="text-orange-600 dark:text-orange-400 ml-2">
+                        (Mode arsip)
+                      </span>
+                    )}
                   </p>
                 </div>
 
-                {/* Action Buttons - SELALU HORIZONTAL */}
+                {/* Action Buttons */}
                 <div className="flex flex-row gap-2 sm:gap-3">
                   <button
                     onClick={saveGrades}
@@ -1183,7 +1279,7 @@ const Grades = ({ user, onShowToast }) => {
               </h3>
               <p className="text-sm sm:text-base text-slate-400 dark:text-slate-500">
                 Tidak ada siswa aktif di kelas ini untuk tahun akademik{" "}
-                {academicYear}
+                {academicYear} Semester {semester}
               </p>
             </div>
           )}
@@ -1195,7 +1291,7 @@ const Grades = ({ user, onShowToast }) => {
               Tidak ada kelas
             </h3>
             <p className="text-sm sm:text-base text-slate-400 dark:text-slate-500">
-              Tidak ada kelas untuk mata pelajaran ini di semester {semester}
+              Tidak ada kelas untuk {selectedSubject} Semester {semester}
             </p>
           </div>
         )}
@@ -1208,6 +1304,11 @@ const Grades = ({ user, onShowToast }) => {
             </h3>
             <p className="text-sm sm:text-base text-slate-400 dark:text-slate-500">
               Silakan lengkapi semua filter untuk mulai input nilai
+              {activeAcademicInfo && (
+                <div className="mt-2 text-blue-600 dark:text-blue-400 text-sm">
+                  Semester Aktif: {activeAcademicInfo.displayText}
+                </div>
+              )}
             </p>
           </div>
         )}

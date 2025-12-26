@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import ProfileTab from "./ProfileTab";
-import SchoolManagementTab from "./SchoolManagementTab";
+import SchoolManagementTab from "./school-management/SchoolManagementTab";
 import AcademicYearTab from "./academic/AcademicYearTab";
 import SchoolSettingsTab from "./SchoolSettingsTab";
 import SystemTab from "./SystemTab";

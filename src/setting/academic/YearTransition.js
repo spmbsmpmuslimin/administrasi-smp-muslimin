@@ -1,8 +1,14 @@
 // src/components/settings/academic/YearTransition.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 import { Eye, CheckCircle, AlertTriangle, RefreshCw, Info } from "lucide-react";
 import Simulator from "./Simulator";
+
+// Import academic year service
+import {
+  getActiveAcademicInfo,
+  getActiveYearString,
+} from "../../services/academicYearService";
 
 const YearTransition = ({
   schoolStats,
@@ -13,6 +19,7 @@ const YearTransition = ({
   showToast,
   user,
   onTransitionComplete,
+  academicInfo, // ← Diterima dari parent component
 }) => {
   // State untuk year transition
   const [yearTransition, setYearTransition] = useState({
@@ -20,6 +27,7 @@ const YearTransition = ({
     newYear: "",
     inProgress: false,
   });
+  const [localAcademicInfo, setLocalAcademicInfo] = useState(academicInfo);
 
   // Config dari schoolConfig
   const config = {
@@ -38,12 +46,41 @@ const YearTransition = ({
 
   const graduatingGrade = config.grades[config.grades.length - 1];
 
+  // Load academic info jika tidak ada dari parent
+  useEffect(() => {
+    const loadAcademicInfo = async () => {
+      if (academicInfo) {
+        setLocalAcademicInfo(academicInfo);
+      } else {
+        try {
+          const info = await getActiveAcademicInfo();
+          setLocalAcademicInfo(info);
+        } catch (error) {
+          console.error("Error loading academic info:", error);
+          showToast(
+            "Gagal memuat informasi tahun ajaran: " + error.message,
+            "error"
+          );
+        }
+      }
+    };
+
+    loadAcademicInfo();
+  }, [academicInfo]);
+
   // Fungsi untuk generate preview transisi
   const generateYearTransitionPreview = async () => {
     try {
       setLoading(true);
 
-      const currentYear = schoolStats.academic_year;
+      if (!localAcademicInfo) {
+        showToast("Informasi tahun ajaran belum dimuat", "error");
+        return;
+      }
+
+      const currentYear = localAcademicInfo.year || schoolStats.academic_year;
+
+      // Generate new year berdasarkan tahun aktif dinamis
       const [startYear] = currentYear.split("/");
       const newYear = `${parseInt(startYear) + 1}/${parseInt(startYear) + 2}`;
 
@@ -96,11 +133,12 @@ const YearTransition = ({
 
       console.log("📊 Siswa baru ditemukan:", siswaBaruData?.length || 0);
 
-      // Ambil NIS siswa yang sudah aktif
+      // Ambil NIS siswa yang sudah aktif dengan filter tahun ajaran
       const { data: existingStudents } = await supabase
         .from("students")
         .select("nis")
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .eq("academic_year", currentYear);
 
       const existingNIS = new Set(existingStudents?.map((s) => s.nis) || []);
 
@@ -143,6 +181,7 @@ const YearTransition = ({
         preview: {
           currentYear,
           newYear,
+          currentSemester: localAcademicInfo.semester,
           promotions: promotionPlan,
           graduating: graduatingStudents,
           newStudents: validNewStudents,
@@ -196,11 +235,18 @@ const YearTransition = ({
   const executeYearTransition = async () => {
     const { preview } = yearTransition;
 
+    if (!preview) {
+      showToast("Preview tidak tersedia", "error");
+      return;
+    }
+
     // Enhanced triple confirmation
     const confirm1 = window.confirm(
       `⚠️ PERINGATAN: TRANSISI TAHUN AJARAN\n\n` +
         `Anda akan melakukan transisi tahun ajaran dari:\n` +
-        `${preview.currentYear} → ${preview.newYear}\n\n` +
+        `${preview.currentYear} (Semester ${
+          preview.currentSemester || localAcademicInfo?.semester || "?"
+        }) → ${preview.newYear} (Semester 1)\n\n` +
         `Proses yang akan dilakukan:\n` +
         `• Membuat 18 kelas baru\n` +
         `• Menaikkan ${
@@ -208,7 +254,8 @@ const YearTransition = ({
         } siswa\n` +
         `• Memasukkan ${preview.newStudents.length} siswa baru\n` +
         `• Meluluskan ${preview.graduating.length} siswa\n` +
-        `• Mereset assignment guru\n\n` +
+        `• Mereset assignment guru\n` +
+        `• Membuat semester 1 untuk tahun ajaran baru\n\n` +
         `Tindakan ini TIDAK DAPAT DIBATALKAN!\n\n` +
         `Lanjutkan?`
     );
@@ -244,18 +291,17 @@ const YearTransition = ({
       showToast("Membuat 18 kelas baru...", "info");
       const newClasses = await createNewClasses(yearTransition.newYear);
 
-      // STEP 2: Handle academic year semester
-      showToast("🔍 Mengecek semester untuk tahun ajaran baru...", "info");
+      // STEP 2: Handle academic year semester - buat semester 1 untuk tahun baru
+      showToast("📅 Membuat semester 1 untuk tahun ajaran baru...", "info");
       let targetAcademicYearId;
 
-      // Deactivate semua semester dari tahun lama
-      const { error: deactivateOldError } = await supabase
+      // Deactivate semua semester yang aktif
+      const { error: deactivateAllError } = await supabase
         .from("academic_years")
-        .update({ is_active: false })
-        .eq("year", preview.currentYear);
+        .update({ is_active: false });
 
-      if (deactivateOldError) {
-        console.warn("Warning deactivating old semesters:", deactivateOldError);
+      if (deactivateAllError) {
+        console.warn("Warning deactivating all semesters:", deactivateAllError);
       }
 
       // Cek apakah semester 1 untuk tahun baru sudah ada
@@ -279,9 +325,7 @@ const YearTransition = ({
 
         showToast("✅ Semester 1 sudah ada, mengaktifkan...", "info");
       } else {
-        // Buat semester 1 baru
-        showToast("📅 Membuat semester 1 untuk tahun ajaran baru...", "info");
-
+        // Buat semester 1 baru untuk tahun ajaran baru
         const [startYear] = yearTransition.newYear.split("/");
         const semesterStartDate = `${startYear}-07-01`;
         const semesterEndDate = `${startYear}-12-31`;
@@ -317,7 +361,7 @@ const YearTransition = ({
         if (graduateError) throw graduateError;
       }
 
-      // STEP 4: Naikkan siswa (7→8, 8→9)
+      // STEP 4: Naikkan siswa (7→8, 8→9) dengan academic_year_id yang benar
       for (const [newClassId, students] of Object.entries(preview.promotions)) {
         if (students.length === 0) continue;
 
@@ -333,7 +377,7 @@ const YearTransition = ({
           .update({
             class_id: newClassId,
             academic_year: yearTransition.newYear,
-            academic_year_id: targetAcademicYearId,
+            academic_year_id: targetAcademicYearId, // ← Gunakan ID semester baru
           })
           .in("id", studentIds);
 
@@ -381,7 +425,7 @@ const YearTransition = ({
             distributionByClass[kelas].push(siswa);
           });
 
-          // Insert siswa baru ke database
+          // Insert siswa baru ke database dengan academic_year_id yang benar
           for (const [classId, siswaList] of Object.entries(
             distributionByClass
           )) {
@@ -393,7 +437,7 @@ const YearTransition = ({
               gender: siswa.jenis_kelamin,
               class_id: classId,
               academic_year: yearTransition.newYear,
-              academic_year_id: targetAcademicYearId,
+              academic_year_id: targetAcademicYearId, // ← Gunakan ID semester baru
               is_active: true,
             }));
 
@@ -419,16 +463,17 @@ const YearTransition = ({
         }
       }
 
-      // STEP 6: Reset teacher assignments
-      showToast("Mereset assignment guru...", "info");
+      // STEP 6: Reset teacher assignments untuk tahun ajaran lama
+      showToast("Mereset assignment guru untuk tahun ajaran lama...", "info");
       const { error: teacherResetError } = await supabase
         .from("teacher_assignments")
         .delete()
-        .eq("academic_year", schoolStats.academic_year);
+        .eq("academic_year", preview.currentYear);
 
       if (teacherResetError) throw teacherResetError;
 
       // STEP 7: Update academic year setting
+      showToast("Memperbarui pengaturan tahun ajaran...", "info");
       const { error: settingError } = await supabase
         .from("school_settings")
         .update({ setting_value: yearTransition.newYear })
@@ -439,6 +484,7 @@ const YearTransition = ({
       // Success message
       showToast(
         `✅ Tahun ajaran ${yearTransition.newYear} berhasil dimulai!\n\n` +
+          `📅 Tahun Ajaran Baru: ${yearTransition.newYear} - Semester 1\n` +
           `📊 ${preview.newStudents.length} siswa baru masuk grade 7\n` +
           `⬆️ ${
             Object.values(preview.promotions).flat().length
@@ -454,6 +500,14 @@ const YearTransition = ({
         newYear: "",
         inProgress: false,
       });
+
+      // Reload academic info
+      try {
+        const newAcademicInfo = await getActiveAcademicInfo();
+        setLocalAcademicInfo(newAcademicInfo);
+      } catch (error) {
+        console.error("Error reloading academic info:", error);
+      }
 
       if (onTransitionComplete) {
         onTransitionComplete();
@@ -496,13 +550,19 @@ const YearTransition = ({
             Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru
             Dari SPMB)
           </p>
+          {localAcademicInfo && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+              Tahun Ajaran Aktif: {localAcademicInfo.year} - Semester{" "}
+              {localAcademicInfo.semester}
+            </p>
+          )}
         </div>
 
         {!yearTransition.preview && (
           <div className="flex gap-3 w-full sm:w-auto">
             <button
               onClick={generateYearTransitionPreview}
-              disabled={loading}
+              disabled={loading || !localAcademicInfo}
               className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition w-full sm:w-auto min-h-[44px] font-medium">
               <Eye size={16} />
               <span>Preview Naik Kelas</span>
@@ -524,8 +584,11 @@ const YearTransition = ({
                 Preview Transisi Tahun Ajaran
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {yearTransition.preview.currentYear} →{" "}
-                {yearTransition.preview.newYear}
+                {yearTransition.preview.currentYear} (Semester{" "}
+                {yearTransition.preview.currentSemester ||
+                  localAcademicInfo?.semester ||
+                  "?"}
+                ) → {yearTransition.preview.newYear} (Semester 1)
               </p>
             </div>
           </div>
@@ -570,6 +633,7 @@ const YearTransition = ({
             config={config}
             loading={loading}
             onSimulate={() => {}}
+            academicInfo={localAcademicInfo} // ← Pass academic info ke Simulator
           />
 
           {/* Execute Warning */}
@@ -593,7 +657,12 @@ const YearTransition = ({
                   <li>Siswa kelas {graduatingGrade} akan diluluskan</li>
                   <li>Assignment guru akan direset</li>
                   <li>
-                    Tahun ajaran berubah ke {yearTransition.preview.newYear}
+                    Tahun ajaran berubah ke {yearTransition.preview.newYear} -
+                    Semester 1
+                  </li>
+                  <li>
+                    Semester yang aktif akan diubah ke Semester 1 Tahun{" "}
+                    {yearTransition.preview.newYear}
                   </li>
                 </ul>
 

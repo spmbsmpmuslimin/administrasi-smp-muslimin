@@ -15,6 +15,10 @@ import {
   List,
 } from "lucide-react";
 import TeacherScheduleExcel from "./TeacherScheduleExcel";
+import {
+  getActiveAcademicInfo,
+  applyAcademicFilters,
+} from "../services/academicYearService";
 
 const JAM_SCHEDULE = {
   Senin: {
@@ -80,6 +84,8 @@ const TeacherSchedule = ({ user }) => {
   const [editingId, setEditingId] = useState(null);
   const [classes, setClasses] = useState([]);
   const [viewMode, setViewMode] = useState("grid");
+  const [academicInfo, setAcademicInfo] = useState(null);
+  const [academicLoading, setAcademicLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     day: "Senin",
@@ -91,23 +97,52 @@ const TeacherSchedule = ({ user }) => {
   const days = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
   useEffect(() => {
-    if (user && user.id) {
+    const loadAcademicData = async () => {
+      try {
+        setAcademicLoading(true);
+        const info = await getActiveAcademicInfo();
+        setAcademicInfo(info);
+      } catch (err) {
+        console.error("Error loading academic info:", err);
+        setError("Gagal memuat informasi tahun ajaran");
+      } finally {
+        setAcademicLoading(false);
+      }
+    };
+
+    loadAcademicData();
+  }, []);
+
+  useEffect(() => {
+    if (user && user.id && academicInfo) {
       fetchSchedules();
       fetchClasses();
     }
-  }, [user]);
+  }, [user, academicInfo]);
 
   const fetchSchedules = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("teacher_schedules")
         .select("*")
         .eq("teacher_id", user.id)
         .order("day")
         .order("start_time");
 
+      // Gunakan filter dengan cara manual jika kolom academic_year_id tidak ada
+      const { semester, year } = academicInfo;
+
+      // Cek apakah tabel memiliki kolom academic_year_id atau tidak
+      // Untuk sementara, kita asumsikan tabel belum memiliki kolom tersebut
+      // Jadi kita tidak filter berdasarkan academic_year_id
+
+      const { data, error } = await query;
+
       if (error) throw error;
+
+      // Filter di sisi client jika perlu
+      // Atau biarkan tanpa filter jika tabel belum mendukung filtering per tahun ajaran
       setSchedules(data || []);
     } catch (err) {
       setError("Gagal memuat jadwal: " + err.message);
@@ -131,6 +166,8 @@ const TeacherSchedule = ({ user }) => {
 
       console.log("🔑 Using teacher_id:", user.teacher_id);
 
+      // Untuk teacher_assignments, gunakan filter tanpa academic_year_id
+      // karena mungkin tabel ini juga belum memiliki kolom tersebut
       const { data: assignments, error: assignError } = await supabase
         .from("teacher_assignments")
         .select("class_id")
@@ -199,6 +236,8 @@ const TeacherSchedule = ({ user }) => {
 
   const saveImportedSchedules = async (importedSchedules) => {
     try {
+      // Hapus jadwal guru untuk tahun ajaran ini
+      // Karena belum ada academic_year_id, kita hapus semua dulu (sementara)
       const { error: deleteError } = await supabase
         .from("teacher_schedules")
         .delete()
@@ -206,6 +245,7 @@ const TeacherSchedule = ({ user }) => {
 
       if (deleteError) throw deleteError;
 
+      // Simpan jadwal baru
       const { error: insertError } = await supabase
         .from("teacher_schedules")
         .insert(importedSchedules);
@@ -226,7 +266,8 @@ const TeacherSchedule = ({ user }) => {
       const result = await TeacherScheduleExcel.exportToExcel(
         schedules,
         user,
-        days
+        days,
+        academicInfo
       );
 
       if (result.success) {
@@ -248,7 +289,11 @@ const TeacherSchedule = ({ user }) => {
 
     setLoading(true);
     try {
-      const result = await TeacherScheduleExcel.importFromExcel(file, user.id);
+      const result = await TeacherScheduleExcel.importFromExcel(
+        file,
+        user.id,
+        academicInfo
+      );
 
       if (result.success) {
         if (result.schedules && result.schedules.length > 0) {
@@ -282,7 +327,10 @@ const TeacherSchedule = ({ user }) => {
 
   const handleDownloadTemplate = async () => {
     try {
-      const result = await TeacherScheduleExcel.downloadTemplate(user);
+      const result = await TeacherScheduleExcel.downloadTemplate(
+        user,
+        academicInfo
+      );
       if (result.success) {
         setSuccess(result.message);
         setTimeout(() => setSuccess(null), 3000);
@@ -420,12 +468,15 @@ const TeacherSchedule = ({ user }) => {
       const startTime = daySchedule[formData.start_period].start;
       const endTime = daySchedule[formData.end_period].end;
 
+      // Hanya tambahkan academic_year_id jika kolomnya ada di tabel
+      // Untuk sementara kita tidak tambahkan karena tabel belum punya kolom tersebut
       const scheduleData = {
         day: formData.day,
         start_time: startTime,
         end_time: endTime,
         class_id: formData.class_id,
         teacher_id: user.id,
+        // academic_year_id: academicInfo.yearId, // Jangan tambahkan dulu
       };
 
       if (editingId) {
@@ -520,10 +571,40 @@ const TeacherSchedule = ({ user }) => {
 
   const scheduleGrid = generateScheduleGrid();
 
+  if (academicLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600 dark:text-gray-400">
+            Memuat informasi tahun ajaran...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!academicInfo) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-6 py-4 rounded-lg max-w-md">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="w-5 h-5" />
+            <h3 className="font-bold">Gagal Memuat Data</h3>
+          </div>
+          <p>
+            Informasi tahun ajaran tidak tersedia. Silakan hubungi
+            administrator.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* ✅ CARD 1: Header Info */}
+        {/* ✅ CARD 1: Header Info - MENGGUNAKAN DATA DINAMIS */}
         <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 p-4 sm:p-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -534,7 +615,11 @@ const TeacherSchedule = ({ user }) => {
                 JADWAL MENGAJAR
               </h1>
               <p className="text-sm sm:text-base text-slate-600 dark:text-gray-400 font-semibold">
-                TAHUN AJARAN 2025/2026 SEMESTER GANJIL
+                {/* ✅ TAHUN AJARAN MENGGUNAKAN DATA DINAMIS */}
+                TAHUN AJARAN {academicInfo.year}{" "}
+                {academicInfo.semester === 1
+                  ? "SEMESTER GANJIL"
+                  : "SEMESTER GENAP"}
               </p>
             </div>
           </div>
@@ -634,25 +719,20 @@ const TeacherSchedule = ({ user }) => {
             </h2>
 
             <div
-              className={`
-                grid gap-2
-                ${
-                  getGroupedTodaySchedules().length <= 4
-                    ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
-                    : ""
-                }
-                ${
-                  getGroupedTodaySchedules().length > 4 &&
-                  getGroupedTodaySchedules().length <= 6
-                    ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3"
-                    : ""
-                }
-                ${
-                  getGroupedTodaySchedules().length > 6
-                    ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-                    : ""
-                }
-              `}>
+              className={`grid gap-2 ${
+                getGroupedTodaySchedules().length <= 4
+                  ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
+                  : ""
+              } ${
+                getGroupedTodaySchedules().length > 4 &&
+                getGroupedTodaySchedules().length <= 6
+                  ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3"
+                  : ""
+              } ${
+                getGroupedTodaySchedules().length > 6
+                  ? "grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+                  : ""
+              }`}>
               {getGroupedTodaySchedules().map((group, idx) => {
                 const first = group[0];
                 const last = group[group.length - 1];

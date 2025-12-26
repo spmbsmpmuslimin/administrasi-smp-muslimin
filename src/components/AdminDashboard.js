@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+// ✅ 1. Import service
+import { getActiveAcademicInfo } from "../services/academicYearService";
 
 const AdminDashboard = ({ user }) => {
   const navigate = useNavigate();
@@ -11,6 +13,9 @@ const AdminDashboard = ({ user }) => {
     totalStudents: 0,
     studentsByGrade: [],
   });
+
+  // ✅ 2. State baru untuk academic info
+  const [activeAcademicInfo, setActiveAcademicInfo] = useState(null);
 
   // 🆕 UPDATED: Teacher attendance state dengan presensiList
   const [teacherAttendance, setTeacherAttendance] = useState({
@@ -40,6 +45,15 @@ const AdminDashboard = ({ user }) => {
     target_role: "semua",
     is_active: true,
   });
+
+  // ✅ 3. Effect untuk load academic info
+  useEffect(() => {
+    const loadActiveAcademicInfo = async () => {
+      const info = await getActiveAcademicInfo();
+      setActiveAcademicInfo(info);
+    };
+    loadActiveAcademicInfo();
+  }, []);
 
   // Check dark mode preference
   useEffect(() => {
@@ -211,6 +225,10 @@ const AdminDashboard = ({ user }) => {
       setLoading(true);
       setError(null);
 
+      // ✅ 4. Gunakan activeAcademicInfo jika ada
+      const academicYear = activeAcademicInfo?.academicYear;
+      const semester = activeAcademicInfo?.semester;
+
       const { data: activeYear, error: yearError } = await supabase
         .from("classes")
         .select("academic_year")
@@ -222,7 +240,9 @@ const AdminDashboard = ({ user }) => {
         console.warn("Error fetching academic year:", yearError.message);
       }
 
-      const currentYear = activeYear?.academic_year || "2025/2026";
+      // Prioritize activeAcademicInfo, fallback to query result
+      const currentYear =
+        academicYear || activeYear?.academic_year || "2025/2026";
 
       const [
         teachersResult,
@@ -241,11 +261,15 @@ const AdminDashboard = ({ user }) => {
           .from("classes")
           .select("id", { count: "exact", head: true })
           .eq("academic_year", currentYear),
+        // ✅ Tambah filter semester untuk students jika ada
         supabase
           .from("students")
           .select("id, class_id", { count: "exact" })
           .eq("academic_year", currentYear)
-          .eq("is_active", true),
+          .eq("is_active", true)
+          // ✅ Filter semester jika ada di students table
+          .eq("semester", semester || 1), // Fallback ke semester 1 jika undefined
+        // ✅ Tambah filter semester untuk classes jika ada
         supabase
           .from("classes")
           .select("id, grade")
@@ -309,6 +333,13 @@ const AdminDashboard = ({ user }) => {
       setLoading(false);
     }
   };
+
+  // Re-fetch dashboard data ketika activeAcademicInfo berubah
+  useEffect(() => {
+    if (activeAcademicInfo) {
+      fetchDashboardData();
+    }
+  }, [activeAcademicInfo]);
 
   const createAnnouncement = async (data) => {
     try {
@@ -628,6 +659,12 @@ const AdminDashboard = ({ user }) => {
                 <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                   Kelola Seluruh Data Sekolah
                 </span>
+                {/* ✅ 5. UI menampilkan info semester aktif */}
+                {activeAcademicInfo?.displayText && (
+                  <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    📚 {activeAcademicInfo.displayText}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -907,7 +944,7 @@ const AdminDashboard = ({ user }) => {
                             className="flex items-center justify-between py-1.5 px-2 bg-white/60 dark:bg-slate-700/60 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
                             <div className="flex items-center flex-1 min-w-0">
                               <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-6 flex-shrink-0">
-                                {item.id}.
+                                {item.id}.}
                               </span>
                               <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate flex-1">
                                 {item.full_name}
@@ -948,7 +985,9 @@ const AdminDashboard = ({ user }) => {
         {/* Stats Cards - REVISI: Optimized Grid */}
         <div className="mb-4 sm:mb-6 md:mb-8">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">
-            Statistik Sekolah
+            Statistik Sekolah{" "}
+            {activeAcademicInfo?.displayText &&
+              `(${activeAcademicInfo.displayText})`}
           </h2>
 
           {/* Responsive grid dengan 4 breakpoints */}
@@ -982,6 +1021,12 @@ const AdminDashboard = ({ user }) => {
                   <p className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
                     {stats.totalClasses}
                   </p>
+                  {/* ✅ Info tahun ajaran */}
+                  {activeAcademicInfo?.academicYear && (
+                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                      Tahun {activeAcademicInfo.academicYear}
+                    </p>
+                  )}
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <span className="text-sm sm:text-lg md:text-xl text-white">
@@ -1001,6 +1046,12 @@ const AdminDashboard = ({ user }) => {
                   <p className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold text-slate-800 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
                     {stats.totalStudents}
                   </p>
+                  {/* ✅ Info semester */}
+                  {activeAcademicInfo?.semester && (
+                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                      Semester {activeAcademicInfo.semester}
+                    </p>
+                  )}
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <span className="text-sm sm:text-lg md:text-xl text-white">

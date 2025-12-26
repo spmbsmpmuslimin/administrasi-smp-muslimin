@@ -18,30 +18,28 @@ import {
   Phone,
 } from "lucide-react";
 
+// ✅ AFTER
+import {
+  getActiveAcademicInfo,
+  formatSemesterDisplay,
+} from "../services/academicYearService";
+
 const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
   const [profileData, setProfileData] = useState(null);
-  const [activeAcademicYear, setActiveAcademicYear] = useState(null);
+  const [activeAcademicInfo, setActiveAcademicInfo] = useState(null); // ✅ GANTI: dari activeAcademicYear
   const [showHistory, setShowHistory] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const isInitialLoad = useRef(true);
 
-  // LOGIC: Fetch Active Academic Year
-  const fetchActiveAcademicYear = useCallback(async () => {
+  // ✅ LOGIC: Fetch Active Academic Info (using service)
+  const fetchActiveAcademicInfo = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("academic_years")
-        .select("year")
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching active academic year:", error);
-        return null;
-      }
-
-      return data?.year || null;
+      const info = await getActiveAcademicInfo();
+      setActiveAcademicInfo(info);
+      console.log("✅ Active Academic Info loaded:", info);
+      return info;
     } catch (err) {
-      console.error("Error in fetchActiveAcademicYear:", err);
+      console.error("❌ Error in fetchActiveAcademicInfo:", err);
       return null;
     }
   }, []);
@@ -59,8 +57,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         return;
       }
 
-      const activeYear = await fetchActiveAcademicYear();
-      setActiveAcademicYear(activeYear);
+      const academicInfo = await fetchActiveAcademicInfo(); // ✅ GANTI: dari fetchActiveAcademicYear
 
       const { data: userData, error: userError } = await supabase
         .from("users")
@@ -108,8 +105,14 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         }
       }
 
-      if (userData.teacher_id && activeYear) {
-        await loadTeachingAssignments(userData.teacher_id, activeYear, false);
+      // ✅ GANTI: tambah parameter semester
+      if (userData.teacher_id && academicInfo?.year) {
+        await loadTeachingAssignments(
+          userData.teacher_id,
+          academicInfo.year,
+          academicInfo.semester,
+          false
+        );
       }
 
       setLoading(false);
@@ -118,27 +121,34 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
       showToast("Terjadi kesalahan saat memuat profil", "error");
       setLoading(false);
     }
-  }, [fetchActiveAcademicYear, setLoading, showToast, userId]);
+  }, [fetchActiveAcademicInfo, setLoading, showToast, userId]); // ✅ GANTI: dependency
 
-  // LOGIC: Load Teaching Assignments
+  // ✅ LOGIC: Load Teaching Assignments (MODIFIED - tambah parameter semester)
   const loadTeachingAssignments = useCallback(
-    async (teacherId, activeYear, includeHistory = false) => {
+    async (teacherId, activeYear, activeSemester, includeHistory = false) => {
       try {
         if (includeHistory) {
           setLoadingHistory(true);
         }
 
-        // ✅ DEBUG LOG - TAMBAHKAN INI
+        // ✅ DEBUG LOG
         console.log("=== DEBUG loadTeachingAssignments ===");
         console.log("teacherId:", teacherId, "| type:", typeof teacherId);
         console.log("activeYear:", activeYear, "| type:", typeof activeYear);
+        console.log(
+          "activeSemester:",
+          activeSemester,
+          "| type:",
+          typeof activeSemester
+        );
         console.log("activeYear length:", activeYear?.length);
         console.log("includeHistory:", includeHistory);
         console.log("=====================================");
 
-        console.log("📝 Loading assignments for:", {
+        console.log("🔍 Loading assignments for:", {
           teacherId,
           activeYear,
+          activeSemester, // ✅ TAMBAH INI!
           includeHistory,
         });
 
@@ -197,24 +207,25 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               .from("teacher_assignments")
               .select(
                 `
-    id, 
-    subject, 
-    class_id,
-    academic_year, 
-    semester,
-    classes:class_id (
-      id,
-      grade,
-      academic_year,
-      is_active
-    )
-  `
+                id, 
+                subject, 
+                class_id,
+                academic_year, 
+                semester,
+                classes:class_id (
+                  id,
+                  grade,
+                  academic_year,
+                  is_active
+                )
+              `
               )
               .eq("teacher_id", teacherId)
               .eq("academic_year", activeYear)
+              .eq("semester", activeSemester) // ✅ TAMBAH BARIS INI! (FIX DUPLICATE!)
               .order("semester", { ascending: false });
 
-          // ✅ DEBUG LOG - TAMBAHKAN INI
+          // ✅ DEBUG LOG
           console.log("=== QUERY RESULT ===");
           console.log("currentAssignments:", currentAssignments);
           console.log("currentAssignments length:", currentAssignments?.length);
@@ -235,6 +246,10 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             console.log(
               "First assignment.academic_year:",
               currentAssignments[0].academic_year
+            );
+            console.log(
+              "First assignment.semester:",
+              currentAssignments[0].semester
             );
           }
           console.log("====================");
@@ -281,23 +296,26 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     }
   }, [userId, loadUserProfile]);
 
-  // LOGIC: Effects for loading assignments
+  // ✅ LOGIC: Effects for loading assignments (MODIFIED)
   useEffect(() => {
     if (
       !isInitialLoad.current &&
       profileData?.teacher_id &&
-      activeAcademicYear
+      activeAcademicInfo?.year &&
+      activeAcademicInfo?.semester // ✅ TAMBAH CHECK INI!
     ) {
       loadTeachingAssignments(
         profileData.teacher_id,
-        activeAcademicYear,
+        activeAcademicInfo.year,
+        activeAcademicInfo.semester, // ✅ PASS SEMESTER!
         showHistory
       );
     }
   }, [
     showHistory,
     profileData?.teacher_id,
-    activeAcademicYear,
+    activeAcademicInfo?.year, // ✅ GANTI
+    activeAcademicInfo?.semester, // ✅ TAMBAH!
     loadTeachingAssignments,
   ]);
 
@@ -348,9 +366,11 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
   const { teaching_assignments: assignments = [] } = profileData;
 
-  // Filter current assignments
+  // ✅ GANTI: Filter current assignments dengan semester
   const currentAssignments = assignments.filter(
-    (a) => a.academic_year === activeAcademicYear
+    (a) =>
+      a.academic_year === activeAcademicInfo?.year &&
+      a.semester === activeAcademicInfo?.semester // ✅ CRITICAL FIX!
   );
 
   // Calculate stats for current year
@@ -458,7 +478,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             </div>
             {/* Right Side - Academic Info */}
             <div className="flex flex-col gap-3 flex-shrink-0 mt-4 md:mt-0 w-full sm:w-auto">
-              {activeAcademicYear && (
+              {/* ✅ GANTI: displayText dari activeAcademicInfo */}
+              {activeAcademicInfo?.displayText && (
                 <div className="bg-blue-50 dark:bg-gray-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 dark:border-gray-600">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                     <Calendar
@@ -467,7 +488,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     />
                     <span className="font-medium">Tahun Ajaran:</span>
                     <span className="font-bold text-blue-700 dark:text-blue-300">
-                      {activeAcademicYear}
+                      {activeAcademicInfo.displayText}
                     </span>
                   </div>
                 </div>
@@ -622,9 +643,10 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               {/* Stats Bar - Current Year */}
               {!showHistory && (
                 <>
+                  {/* ✅ GANTI: displayText dari activeAcademicInfo */}
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 border-b pb-3 border-blue-100 dark:border-gray-700">
                     Statistik Penugasan Tahun Ajaran Aktif (
-                    {activeAcademicYear || "N/A"})
+                    {activeAcademicInfo?.displayText || "N/A"})
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                     {/* Stat Card: Total Mengajar */}
