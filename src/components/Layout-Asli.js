@@ -278,7 +278,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     });
   };
 
-  // 🔥 UPDATE: Menambahkan halaman nilai-katrol
+  // 🔥 UPDATE: Menambahkan halaman E-RAPORT
   const getCurrentPage = () => {
     const path = location.pathname;
     if (path === "/dashboard") return "dashboard";
@@ -288,8 +288,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     if (path === "/attendance") return "attendance";
     if (path === "/attendance-management") return "attendance-management";
     if (path === "/attendance-teacher") return "attendance-teacher";
-    if (path === "/grades") return "nilai-asli"; // 🔥 UPDATE: untuk submenu Nilai Asli
-    if (path === "/grades-katrol") return "nilai-katrol"; // 🔥 UPDATE: untuk submenu Nilai Katrol
+    if (path === "/grades") return "nilai-asli";
+    if (path === "/grades-katrol") return "nilai-katrol";
     if (path === "/jadwal-saya") return "jadwal-saya";
     if (path === "/catatan-siswa") return "catatan-siswa";
     if (path === "/konseling") return "konseling";
@@ -297,10 +297,22 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     if (path === "/spmb") return "spmb";
     if (path === "/settings") return "settings";
     if (path === "/monitor-sistem") return "monitor-sistem";
+
+    // 🔥 UPDATE: Tambah halaman E-RAPORT
+    if (path === "/era-dashboard-admin") return "era-dashboard-admin";
+    if (path === "/era-dashboard-teacher") return "era-dashboard-teacher";
+    if (path === "/era-dashboard-homeroom") return "era-dashboard-homeroom";
+    if (path === "/era-input-tp") return "era-input-tp";
+    if (path === "/era-input-nilai") return "era-input-nilai";
+    if (path === "/era-input-kehadiran") return "era-input-kehadiran";
+    if (path === "/era-input-catatan") return "era-input-catatan";
+    if (path === "/era-cek-kelengkapan") return "era-cek-kelengkapan";
+    if (path === "/era-cetak-raport") return "era-cetak-raport";
+
     return "dashboard";
   };
 
-  // 🔥 UPDATE: Menambahkan nama halaman untuk nilai-katrol
+  // 🔥 UPDATE: Menambahkan nama halaman untuk E-RAPORT
   const getCurrentPageName = () => {
     const pathMap = {
       "/dashboard": "Dashboard",
@@ -310,8 +322,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       "/attendance": "Kehadiran",
       "/attendance-management": "Management Presensi",
       "/attendance-teacher": "Presensi Guru",
-      "/grades": "Nilai Asli", // 🔥 UPDATE
-      "/grades-katrol": "Nilai Katrol", // 🔥 UPDATE
+      "/grades": "Nilai Asli",
+      "/grades-katrol": "Nilai Katrol",
       "/jadwal-saya": "Jadwal Saya",
       "/catatan-siswa": "Catatan Siswa",
       "/konseling": "Konseling",
@@ -319,11 +331,22 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       "/spmb": "SPMB",
       "/settings": "Pengaturan",
       "/monitor-sistem": "Monitor Sistem",
+
+      // 🔥 UPDATE: Tambah halaman E-RAPORT
+      "/era-dashboard-admin": "Dashboard Admin - E-Raport",
+      "/era-dashboard-teacher": "Dashboard Guru - E-Raport",
+      "/era-dashboard-homeroom": "Dashboard Walikelas - E-Raport",
+      "/era-input-tp": "Input Tujuan Pembelajaran - E-Raport",
+      "/era-input-nilai": "Input Nilai - E-Raport",
+      "/era-input-kehadiran": "Input Kehadiran - E-Raport",
+      "/era-input-catatan": "Input Catatan - E-Raport",
+      "/era-cek-kelengkapan": "Cek Kelengkapan - E-Raport",
+      "/era-cetak-raport": "Cetak Raport - E-Raport",
     };
     return pathMap[location.pathname] || "Dashboard";
   };
 
-  // 🔥 UPDATE: Menambahkan subtitle untuk halaman nilai
+  // 🔥 UPDATE: Menambahkan subtitle untuk halaman E-RAPORT
   const getPageSubtitle = () => {
     if (!user) return "SMP Muslimin";
 
@@ -339,8 +362,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         Kehadiran: "Kelola Kehadiran Siswa",
         "Management Presensi": "Edit, Ubah Tanggal, atau Hapus Data Presensi",
         "Presensi Guru": "Kelola Presensi dan Absensi Guru",
-        "Nilai Asli": "Kelola Nilai Asli Akademik Siswa", // 🔥 UPDATE
-        "Nilai Katrol": "Kelola Nilai Katrol Akademik Siswa", // 🔥 UPDATE
+        "Nilai Asli": "Kelola Nilai Asli Akademik Siswa",
+        "Nilai Katrol": "Kelola Nilai Katrol Akademik Siswa",
         "Jadwal Saya": "Lihat Jadwal Mengajar",
         "Catatan Siswa": "Kelola Catatan Perkembangan Siswa",
         Konseling: "Kelola Data Konseling BK/BP",
@@ -348,6 +371,16 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         SPMB: "Seleksi Penerimaan Murid Baru",
         Pengaturan: "Pengaturan Sistem Sekolah",
         "Monitor Sistem": "Pemeriksaan Kesehatan Sistem dan Integritas Data",
+
+        // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk admin
+        "Dashboard Admin - E-Raport": "Monitor Semua Data E-Raport Sekolah",
+        "Input Tujuan Pembelajaran - E-Raport":
+          "Kelola Tujuan Pembelajaran Semua Kelas",
+        "Input Nilai - E-Raport": "Input Nilai Akademik Siswa",
+        "Input Kehadiran - E-Raport": "Kelola Kehadiran Siswa untuk Raport",
+        "Input Catatan - E-Raport": "Kelola Catatan Guru untuk Raport",
+        "Cek Kelengkapan - E-Raport": "Verifikasi Kelengkapan Data Raport",
+        "Cetak Raport - E-Raport": "Generate dan Cetak Laporan Raport",
       },
       guru_bk: {
         Dashboard: "Dashboard Bimbingan Konseling",
@@ -367,12 +400,21 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Kehadiran: `Input kehadiran Kelas`,
             "Management Presensi": "Kelola Data Presensi yang Sudah Diinput",
             "Presensi Guru": "Input Presensi dan Absensi Guru",
-            "Nilai Asli": `Input Nilai Asli Kelas`, // 🔥 UPDATE
-            "Nilai Katrol": `Input Nilai Katrol Kelas`, // 🔥 UPDATE
+            "Nilai Asli": `Input Nilai Asli Kelas`,
+            "Nilai Katrol": `Input Nilai Katrol Kelas`,
             "Catatan Siswa": `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
             "Jadwal Saya": "Lihat Jadwal Mengajar Kelas",
             Laporan: `Laporan Kelas`,
             Pengaturan: "Pengaturan Akun",
+
+            // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk wali kelas
+            "Dashboard Walikelas - E-Raport": `Dashboard E-Raport Kelas ${homeroom_class_id}`,
+            "Input Tujuan Pembelajaran - E-Raport": `Input TP untuk Kelas ${homeroom_class_id}`,
+            "Input Nilai - E-Raport": `Input Nilai untuk Kelas ${homeroom_class_id}`,
+            "Input Kehadiran - E-Raport": `Input Kehadiran untuk Raport Kelas ${homeroom_class_id}`,
+            "Input Catatan - E-Raport": `Input Catatan Guru untuk Raport Kelas ${homeroom_class_id}`,
+            "Cek Kelengkapan - E-Raport": `Cek Kelengkapan Data Raport Kelas ${homeroom_class_id}`,
+            "Cetak Raport - E-Raport": `Cetak Raport Siswa Kelas ${homeroom_class_id}`,
           }
         : {
             Dashboard: "Monitor semua kelas yang diampu",
@@ -382,18 +424,25 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Kehadiran: "Input kehadiran mata pelajaran",
             "Management Presensi": "Kelola Data Presensi Mata Pelajaran",
             "Presensi Guru": "Input Presensi dan Absensi Guru",
-            "Nilai Asli": "Input nilai asli mata pelajaran", // 🔥 UPDATE
-            "Nilai Katrol": "Input nilai katrol mata pelajaran", // 🔥 UPDATE
+            "Nilai Asli": "Input nilai asli mata pelajaran",
+            "Nilai Katrol": "Input nilai katrol mata pelajaran",
             "Jadwal Saya": "Lihat Jadwal Mengajar",
             Laporan: "Laporan mata pelajaran",
             Pengaturan: "Pengaturan akun",
+
+            // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk guru
+            "Dashboard Guru - E-Raport": "Dashboard E-Raport untuk Guru",
+            "Input Tujuan Pembelajaran - E-Raport": "Input Tujuan Pembelajaran",
+            "Input Nilai - E-Raport": "Input Nilai Akademik",
+            "Input Kehadiran - E-Raport": "Input Kehadiran untuk Raport",
+            "Input Catatan - E-Raport": "Input Catatan Guru",
           },
     };
 
     return subtitles[role]?.[currentPage] || "SMP Muslimin";
   };
 
-  // 🔥 UPDATE: Menambahkan route untuk nilai-katrol
+  // 🔥 UPDATE: Menambahkan route untuk E-RAPORT
   const handleNavigate = useCallback(
     (page) => {
       if (isNavigating) return;
@@ -406,8 +455,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         attendance: "/attendance",
         "attendance-management": "/attendance-management",
         "attendance-teacher": "/attendance-teacher",
-        "nilai-asli": "/grades", // 🔥 UPDATE: untuk submenu Nilai Asli
-        "nilai-katrol": "/grades-katrol", // 🔥 UPDATE: untuk submenu Nilai Katrol
+        "nilai-asli": "/grades",
+        "nilai-katrol": "/grades-katrol",
         "jadwal-saya": "/jadwal-saya",
         "catatan-siswa": "/catatan-siswa",
         konseling: "/konseling",
@@ -415,6 +464,17 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         spmb: "/spmb",
         settings: "/settings",
         "monitor-sistem": "/monitor-sistem",
+
+        // 🔥 UPDATE: Tambah route E-RAPORT
+        "era-dashboard-admin": "/era-dashboard-admin",
+        "era-dashboard-teacher": "/era-dashboard-teacher",
+        "era-dashboard-homeroom": "/era-dashboard-homeroom",
+        "era-input-tp": "/era-input-tp",
+        "era-input-nilai": "/era-input-nilai",
+        "era-input-kehadiran": "/era-input-kehadiran",
+        "era-input-catatan": "/era-input-catatan",
+        "era-cek-kelengkapan": "/era-cek-kelengkapan",
+        "era-cetak-raport": "/era-cetak-raport",
       };
 
       const path = routes[page];

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Save } from "lucide-react";
+import { getActiveAcademicInfo } from "../services/academicYearService";
 
 function InputCatatan({ user, onShowToast, darkMode }) {
   const [kelas, setKelas] = useState("");
@@ -49,17 +50,20 @@ function InputCatatan({ user, onShowToast, darkMode }) {
         return;
       }
 
-      const { data: academicYearData, error: ayError } = await supabase
-        .from("academic_years")
-        .select("*")
-        .eq("is_active", true)
-        .single();
+      // ✅ PAKAI getActiveAcademicInfo dari service
+      const academicInfo = await getActiveAcademicInfo();
 
-      if (ayError || !academicYearData) {
+      if (!academicInfo || !academicInfo.yearId) {
         throw new Error("Tahun ajaran aktif tidak ditemukan.");
       }
 
-      setAcademicYear(academicYearData);
+      // ✅ Set dengan format yang konsisten
+      setAcademicYear({
+        id: academicInfo.yearId,
+        year: academicInfo.year,
+        semester: academicInfo.semester,
+        is_active: academicInfo.isActive,
+      });
 
       const { data: classData, error: classError } = await supabase
         .from("classes")
@@ -131,7 +135,7 @@ function InputCatatan({ user, onShowToast, darkMode }) {
         .from("catatan_eraport")
         .select("*")
         .eq("class_id", selectedClass.id)
-        .eq("tahun_ajaran_id", academicYear.id)
+        .eq("academic_year_id", academicYear.id) // ✅ GANTI INI
         .eq("semester", semester);
 
       if (catatanError) {
@@ -202,7 +206,7 @@ function InputCatatan({ user, onShowToast, darkMode }) {
         const catatanData = {
           student_id: siswa.id,
           class_id: selectedClass.id,
-          tahun_ajaran_id: academicYear.id,
+          academic_year_id: academicYear.id, // ✅ GANTI INI
           semester: semester,
           catatan_wali_kelas: siswa.catatan_wali_kelas || "",
           created_by: userId,
@@ -294,6 +298,65 @@ function InputCatatan({ user, onShowToast, darkMode }) {
             }`}>
             Input Catatan Wali Kelas
           </h2>
+
+          {/* Info Akademik */}
+          {academicYear && (
+            <div
+              className="mb-6 p-4 rounded-lg border bg-opacity-50"
+              style={{
+                backgroundColor: darkMode
+                  ? "rgba(30, 58, 138, 0.2)"
+                  : "rgba(219, 234, 254, 0.5)",
+                borderColor: darkMode ? "#374151" : "#bfdbfe",
+              }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Tahun Ajaran Aktif
+                  </span>
+                  <span
+                    className={`font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}>
+                    {academicYear.year}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Semester Aktif di Sistem
+                  </span>
+                  <span
+                    className={`font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}>
+                    {academicYear.semester === 1
+                      ? "Semester 1 (Ganjil)"
+                      : "Semester 2 (Genap)"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Status Tahun Ajaran
+                  </span>
+                  <span
+                    className={`font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}>
+                    {academicYear.is_active ? "Aktif" : "Tidak Aktif"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {errorMessage ? (
             <div className="text-center py-12 rounded-xl border-2 border-dashed">

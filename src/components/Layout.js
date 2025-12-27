@@ -302,6 +302,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     if (path === "/era-dashboard-admin") return "era-dashboard-admin";
     if (path === "/era-dashboard-teacher") return "era-dashboard-teacher";
     if (path === "/era-dashboard-homeroom") return "era-dashboard-homeroom";
+    if (path === "/era-dashboard") return "era-dashboard"; // Tambah untuk handle dari sidebar
     if (path === "/era-input-tp") return "era-input-tp";
     if (path === "/era-input-nilai") return "era-input-nilai";
     if (path === "/era-input-kehadiran") return "era-input-kehadiran";
@@ -336,6 +337,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       "/era-dashboard-admin": "Dashboard Admin - E-Raport",
       "/era-dashboard-teacher": "Dashboard Guru - E-Raport",
       "/era-dashboard-homeroom": "Dashboard Walikelas - E-Raport",
+      "/era-dashboard": "Dashboard E-Raport", // Generic untuk semua user
       "/era-input-tp": "Input Tujuan Pembelajaran - E-Raport",
       "/era-input-nilai": "Input Nilai - E-Raport",
       "/era-input-kehadiran": "Input Kehadiran - E-Raport",
@@ -374,6 +376,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
 
         // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk admin
         "Dashboard Admin - E-Raport": "Monitor Semua Data E-Raport Sekolah",
+        "Dashboard E-Raport": "Monitor Semua Data E-Raport Sekolah",
         "Input Tujuan Pembelajaran - E-Raport":
           "Kelola Tujuan Pembelajaran Semua Kelas",
         "Input Nilai - E-Raport": "Input Nilai Akademik Siswa",
@@ -409,6 +412,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
 
             // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk wali kelas
             "Dashboard Walikelas - E-Raport": `Dashboard E-Raport Kelas ${homeroom_class_id}`,
+            "Dashboard E-Raport": `Dashboard E-Raport Kelas ${homeroom_class_id}`,
             "Input Tujuan Pembelajaran - E-Raport": `Input TP untuk Kelas ${homeroom_class_id}`,
             "Input Nilai - E-Raport": `Input Nilai untuk Kelas ${homeroom_class_id}`,
             "Input Kehadiran - E-Raport": `Input Kehadiran untuk Raport Kelas ${homeroom_class_id}`,
@@ -432,6 +436,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
 
             // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk guru
             "Dashboard Guru - E-Raport": "Dashboard E-Raport untuk Guru",
+            "Dashboard E-Raport": "Dashboard E-Raport untuk Guru",
             "Input Tujuan Pembelajaran - E-Raport": "Input Tujuan Pembelajaran",
             "Input Nilai - E-Raport": "Input Nilai Akademik",
             "Input Kehadiran - E-Raport": "Input Kehadiran untuk Raport",
@@ -442,7 +447,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     return subtitles[role]?.[currentPage] || "SMP Muslimin";
   };
 
-  // 🔥 UPDATE: Menambahkan route untuk E-RAPORT
+  // 🔥 UPDATE: Menambahkan route untuk E-RAPORT dengan LOGIKA YANG SAMA DENGAN App.js
   const handleNavigate = useCallback(
     (page) => {
       if (isNavigating) return;
@@ -466,9 +471,6 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         "monitor-sistem": "/monitor-sistem",
 
         // 🔥 UPDATE: Tambah route E-RAPORT
-        "era-dashboard-admin": "/era-dashboard-admin",
-        "era-dashboard-teacher": "/era-dashboard-teacher",
-        "era-dashboard-homeroom": "/era-dashboard-homeroom",
         "era-input-tp": "/era-input-tp",
         "era-input-nilai": "/era-input-nilai",
         "era-input-kehadiran": "/era-input-kehadiran",
@@ -477,7 +479,21 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         "era-cetak-raport": "/era-cetak-raport",
       };
 
-      const path = routes[page];
+      let path = routes[page];
+
+      // 🔥 FIX: LOGIKA DASHBOARD E-RAPORT SAMA DENGAN App.js
+      if (page === "era-dashboard") {
+        if (user?.role === "admin") {
+          path = "/era-dashboard-admin";
+        } else if (user?.homeroom_class_id) {
+          // Wali Kelas (teacher dengan homeroom_class_id tidak null)
+          path = "/era-dashboard-homeroom";
+        } else {
+          // Guru Mapel (teacher dengan homeroom_class_id null)
+          path = "/era-dashboard-teacher";
+        }
+      }
+
       if (!path) return;
 
       if (path === "/attendance-management" && user?.role !== "admin") {

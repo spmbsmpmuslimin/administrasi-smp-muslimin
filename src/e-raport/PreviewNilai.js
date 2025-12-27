@@ -2,20 +2,47 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { FileSpreadsheet, Download, RefreshCw } from "lucide-react";
 import ExcelJS from "exceljs";
+import {
+  getActiveAcademicInfo,
+  applyAcademicFilters,
+} from "../services/academicYearService";
 
 function PreviewNilai({ classId, semester, setSemester, academicYear }) {
   const [loading, setLoading] = useState(false);
+  const [academicInfo, setAcademicInfo] = useState(null);
+  const [academicLoading, setAcademicLoading] = useState(true);
   const [siswaList, setSiswaList] = useState([]);
   const [mapelList, setMapelList] = useState([]);
   const [nilaiData, setNilaiData] = useState({});
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
 
+  // Load academic info on component mount
   useEffect(() => {
-    if (classId && academicYear && semester) {
+    loadAcademicInfo();
+  }, []);
+
+  // Load leger data when dependencies change
+  useEffect(() => {
+    if (classId && academicInfo && semester) {
       loadLegerData();
     }
-  }, [classId, academicYear, semester]);
+  }, [classId, academicInfo, semester]);
+
+  // Load academic information from service
+  const loadAcademicInfo = async () => {
+    setAcademicLoading(true);
+    try {
+      const info = await getActiveAcademicInfo();
+      setAcademicInfo(info);
+      console.log("Academic Info:", info);
+    } catch (error) {
+      setError("Gagal memuat informasi tahun ajaran: " + error.message);
+      console.error("Error loading academic info:", error);
+    } finally {
+      setAcademicLoading(false);
+    }
+  };
 
   const loadLegerData = async () => {
     if (!classId) {
@@ -28,7 +55,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       return;
     }
 
-    if (!academicYear) {
+    if (!academicInfo) {
       setError("Data tahun ajaran aktif belum tersedia");
       return;
     }
@@ -47,20 +74,26 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
 
       if (siswaError) throw siswaError;
 
-      // 2. Load semua nilai dari tabel nilai_eraport
-      const { data: nilai, error: nilaiError } = await supabase
+      // 2. Load semua nilai dari tabel nilai_eraport menggunakan applyAcademicFilters
+      let query = supabase
         .from("nilai_eraport")
         .select("student_id, mata_pelajaran, nilai_akhir, kkm")
-        .eq("class_id", classId)
-        .eq("tahun_ajaran_id", academicYear?.id)
-        .eq("semester", semester); // Langsung pakai semester "1" atau "2"
+        .eq("class_id", classId);
+
+      // Apply academic filters
+      query = await applyAcademicFilters(query, {
+        filterYearId: true, // Filter by academic_year_id
+        customSemester: semester, // Gunakan semester yang dipilih
+      });
+
+      const { data: nilai, error: nilaiError } = await query;
 
       if (nilaiError) throw nilaiError;
 
       console.log("Data Siswa:", siswa);
       console.log("Data Nilai:", nilai);
 
-      // 3. Mapping nama mapel ke singkatan - ✅ PERBAIKAN: Koding & AI → KKA
+      // 3. Mapping nama mapel ke singkatan
       const mapelMapping = {
         "Pendidikan Agama Islam dan Budi Pekerti": "PAIBP",
         "Pendidikan Pancasila": "PPKn",
@@ -79,14 +112,14 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
         Informatika: "INF",
         "Muatan Lokal Bahasa Daerah": "BSUN",
         "Bahasa Daerah": "BSUN",
-        "Koding & AI": "KKA", // ✅ DIUBAH: dari "KAI" jadi "KKA"
-        "Koding dan AI": "KKA", // ✅ TAMBAHAN: untuk format lain
+        "Koding & AI": "KKA",
+        "Koding dan AI": "KKA",
         "Seni Tari": "SENTAR",
         "Seni Rupa": "SENRUP",
         Prakarya: "PRA",
       };
 
-      // Urutan standar mapel - ✅ UPDATE: "KKA" menggantikan "KAI"
+      // Urutan standar mapel
       const mapelUrutan = [
         "PAIBP",
         "PPKn",
@@ -98,7 +131,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
         "PJOK",
         "INF",
         "BSUN",
-        "KKA", // ✅ DIUBAH: dari "KAI" jadi "KKA"
+        "KKA",
         "SENTAR",
         "SENRUP",
         "PRA",
@@ -153,6 +186,11 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
 
   // FUNGSI EXPORT EXCEL - 2 SHEET (NILAI + PERINGKAT)
   const exportExcel = async () => {
+    if (!academicInfo) {
+      setError("Informasi tahun ajaran belum tersedia");
+      return;
+    }
+
     if (siswaList.length === 0 || mapelList.length === 0) {
       setError("Tidak ada data untuk di-export");
       return;
@@ -163,8 +201,10 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
 
     try {
       const workbook = new ExcelJS.Workbook();
-      const semesterLabel = semester === "1" ? "Ganjil" : "Genap";
-      const tahunAjaran = academicYear?.year || "2025/2026";
+      const semesterLabel =
+        academicInfo.semesterText ||
+        (academicInfo.semester === "1" ? "Ganjil" : "Genap");
+      const tahunAjaran = academicInfo.year || "Tahun Ajaran";
 
       // ========== SHEET 1: LEGER NILAI (Urut Nama) ==========
       const wsNilai = workbook.addWorksheet("Leger Nilai");
@@ -172,7 +212,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       const headerNilai = [
         ["SMP MUSLIMIN CILILIN"],
         ["LEGER NILAI KELAS " + classId],
-        [`Tahun Ajaran: ${tahunAjaran} - Semester ${semesterLabel}`],
+        [`Tahun Ajaran: ${tahunAjaran} - ${semesterLabel}`],
         [""],
       ];
 
@@ -180,7 +220,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       headerNilai.forEach((row) => {
         const r = wsNilai.getRow(rowNilai++);
         r.getCell(1).value = row[0];
-        const totalColumns = mapelList.length + 5; // No, NIS, Nama, Mapel..., JML, Rata2
+        const totalColumns = mapelList.length + 5;
         const lastColumn = String.fromCharCode(65 + totalColumns - 1);
         wsNilai.mergeCells(`A${rowNilai - 1}:${lastColumn}${rowNilai - 1}`);
         r.getCell(1).font = {
@@ -227,8 +267,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       // Column widths
       const columns = [{ width: 5 }, { width: 12 }, { width: 30 }];
       mapelList.forEach(() => columns.push({ width: 8 }));
-      columns.push({ width: 11 }); // JML
-      columns.push({ width: 11 }); // Rata2
+      columns.push({ width: 11 });
+      columns.push({ width: 11 });
       wsNilai.columns = columns;
 
       rowNilai++;
@@ -266,8 +306,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
             const data = nilaiData[siswa.id]?.[mapel];
             return data?.nilai_akhir || "-";
           }),
-          jumlah, // JUMLAH tanpa desimal
-          rataRata, // RATA-RATA dengan desimal
+          jumlah,
+          rataRata,
         ];
 
         const r = wsNilai.addRow(rowData);
@@ -291,7 +331,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
             // Kolom JML (sebelum terakhir)
             cell.alignment = { vertical: "middle", horizontal: "center" };
             if (cell.value !== "-" && !isNaN(cell.value)) {
-              cell.numFmt = "0"; // FORMAT TANPA DESIMAL
+              cell.numFmt = "0";
               cell.font = { bold: true };
               cell.fill = {
                 type: "pattern",
@@ -303,7 +343,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
             // Kolom Rata2 (terakhir)
             cell.alignment = { vertical: "middle", horizontal: "center" };
             if (cell.value !== "-" && !isNaN(cell.value)) {
-              cell.numFmt = "0.00"; // FORMAT DENGAN 2 DESIMAL
+              cell.numFmt = "0.00";
               cell.font = { bold: true };
             }
           } else {
@@ -330,7 +370,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       const headerPeringkat = [
         ["SMP MUSLIMIN CILILIN"],
         ["LEGER PERINGKAT KELAS " + classId],
-        [`Tahun Ajaran: ${tahunAjaran} - Semester ${semesterLabel}`],
+        [`Tahun Ajaran: ${tahunAjaran} - ${semesterLabel}`],
         ["(Diurutkan berdasarkan Jumlah Nilai - Tertinggi ke Terendah)"],
         [""],
       ];
@@ -429,8 +469,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
             const data = nilaiData[item.siswa.id]?.[mapel];
             return data?.nilai_akhir || "-";
           }),
-          item.jumlahNilai, // JUMLAH tanpa desimal
-          item.rataRata, // RATA-RATA dengan desimal
+          item.jumlahNilai,
+          item.rataRata,
         ];
 
         const r = wsPeringkat.addRow(rowData);
@@ -477,7 +517,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
             // Kolom JML (sebelum terakhir)
             cell.alignment = { vertical: "middle", horizontal: "center" };
             if (cell.value !== "-" && !isNaN(cell.value)) {
-              cell.numFmt = "0"; // FORMAT TANPA DESIMAL
+              cell.numFmt = "0";
               cell.font = { bold: true };
               cell.fill = {
                 type: "pattern",
@@ -489,7 +529,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
             // Kolom Rata2 (terakhir)
             cell.alignment = { vertical: "middle", horizontal: "center" };
             if (cell.value !== "-" && !isNaN(cell.value)) {
-              cell.numFmt = "0.00"; // FORMAT DENGAN 2 DESIMAL
+              cell.numFmt = "0.00";
               cell.font = { bold: true };
             }
           } else {
@@ -532,11 +572,11 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       const a = document.createElement("a");
       a.href = url;
 
-      const semesterShort = semester === "1" ? "Ganjil" : "Genap";
+      const semesterShort = semesterLabel;
       const tahunAjaranShort =
-        academicYear?.year?.replace("/", "-") || "2025-2026";
+        academicInfo.year?.replace("/", "-") || "Tahun-Ajaran";
 
-      a.download = `Leger_Nilai_Kelas_${classId}_Semester_${semesterShort}_${tahunAjaranShort}.xlsx`;
+      a.download = `Leger_Nilai_Kelas_${classId}_${semesterShort}_${tahunAjaranShort}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -548,6 +588,33 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       setExporting(false);
     }
   };
+
+  // Loading state untuk data akademik
+  if (academicLoading) {
+    return (
+      <div className="p-6 text-center">
+        <div className="inline-flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-700 font-medium">
+            Memuat informasi tahun ajaran...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!academicInfo) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚠️</span>
+            <span>Gagal memuat informasi tahun ajaran aktif</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-3 sm:p-4 md:p-6">
@@ -565,7 +632,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
               </span>
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Kelas {classId} - {academicYear?.year}
+              Kelas {classId} - {academicInfo.displayText || academicInfo.year}
             </p>
           </div>
 

@@ -94,7 +94,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
     try {
       const { data, error } = await supabase
         .from("students")
-        .select("id, full_name, nis") // 🔧 HAPUS nisn karena kolom tidak ada
+        .select("id, full_name, nis")
         .eq("class_id", classId)
         .eq("is_active", true)
         .order("full_name");
@@ -136,39 +136,46 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
   const loadPreviewData = async () => {
     setLoadingPreview(true);
     try {
-      // Load siswa data
+      // Load siswa data (hanya siswa aktif)
       const { data: siswa, error: siswaError } = await supabase
         .from("students")
         .select("*")
         .eq("id", selectedSiswaId)
+        .eq("is_active", true)
         .single();
 
-      if (siswaError) throw new Error("Siswa tidak ditemukan");
+      if (siswaError) throw new Error("Siswa tidak ditemukan atau tidak aktif");
 
-      // Load nilai data - COBA FINALIZED DULU
+      // Load nilai data - COBA FINALIZED DULU (hanya siswa aktif)
       let { data: nilai } = await supabase
         .from("nilai_eraport")
-        .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
+        .select(
+          `*, nilai_eraport_detail(*, tujuan_pembelajaran(*)), students!inner(is_active)`
+        )
         .eq("student_id", selectedSiswaId)
         .eq("class_id", classId)
-        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("academic_year_id", academicYear?.id)
         .eq("semester", semester)
         .eq("is_finalized", true)
+        .eq("students.is_active", true)
         .order("mata_pelajaran");
 
       console.log("📊 Nilai Finalized:", nilai?.length || 0);
 
-      // 🆕 FALLBACK: Kalau ngga ada yang finalized, ambil semua (termasuk draft)
+      // 🆕 FALLBACK: Kalau ngga ada yang finalized, ambil semua (termasuk draft, tapi tetap siswa aktif)
       if (!nilai || nilai.length === 0) {
         console.log("⚠️ Tidak ada nilai finalized, coba ambil semua data...");
 
         const { data: nilaiAll } = await supabase
           .from("nilai_eraport")
-          .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
+          .select(
+            `*, nilai_eraport_detail(*, tujuan_pembelajaran(*)), students!inner(is_active)`
+          )
           .eq("student_id", selectedSiswaId)
           .eq("class_id", classId)
-          .eq("tahun_ajaran_id", academicYear?.id)
+          .eq("academic_year_id", academicYear?.id)
           .eq("semester", semester)
+          .eq("students.is_active", true)
           .order("mata_pelajaran");
 
         nilai = nilaiAll;

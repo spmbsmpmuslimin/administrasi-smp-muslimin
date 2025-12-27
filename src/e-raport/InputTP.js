@@ -2,15 +2,22 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import ExcelJS from "exceljs";
 import { Upload, Plus, Trash2, Edit2, Save, X } from "lucide-react";
+import {
+  getActiveAcademicInfo,
+  getActiveSemester,
+  getActiveYearString,
+  getActiveAcademicYearId,
+  applyAcademicFilters,
+} from "../services/academicYearService";
 
 function InputTP({ user, onShowToast, darkMode }) {
   const [tingkat, setTingkat] = useState("");
   const [selectedMapel, setSelectedMapel] = useState("");
-  const [semester, setSemester] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState(""); // TETAP ADA!
   const [tpList, setTpList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
-  const [academicYear, setAcademicYear] = useState(null);
+  const [academicInfo, setAcademicInfo] = useState(null);
   const [teacherAssignments, setTeacherAssignments] = useState([]);
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,19 +32,30 @@ function InputTP({ user, onShowToast, darkMode }) {
   };
 
   useEffect(() => {
-    loadUserAndAssignments();
+    loadAcademicInfoAndAssignments();
   }, []);
 
   useEffect(() => {
-    if (selectedMapel && academicYear && tingkat && semester) {
+    if (selectedMapel && academicInfo && tingkat && selectedSemester) {
       loadTP();
     }
-  }, [selectedMapel, academicYear, tingkat, semester]);
+  }, [selectedMapel, academicInfo, tingkat, selectedSemester]);
 
-  const loadUserAndAssignments = async () => {
+  const loadAcademicInfoAndAssignments = async () => {
     try {
       setLoading(true);
       setErrorMessage("");
+
+      // Load academic info terlebih dahulu
+      const academicInfo = await getActiveAcademicInfo();
+      setAcademicInfo(academicInfo);
+
+      // Set semester aktif sebagai default pilihan
+      if (academicInfo && academicInfo.semester) {
+        setSelectedSemester(academicInfo.semester.toString());
+      }
+
+      console.log("📅 Academic Info loaded:", academicInfo);
 
       const teacherCode = user.teacher_id;
       if (!teacherCode) {
@@ -54,30 +72,17 @@ function InputTP({ user, onShowToast, darkMode }) {
       }
 
       console.log("👨‍🏫 Teacher Code yang digunakan:", teacherCode);
-
-      const { data: academicYearData, error: ayError } = await supabase
-        .from("academic_years")
-        .select("*")
-        .eq("is_active", true)
-        .single();
-
-      if (ayError || !academicYearData) {
-        console.error("❌ Academic year error:", ayError);
-        throw new Error("Tahun ajaran aktif tidak ditemukan.");
-      }
-
-      setAcademicYear(academicYearData);
-      console.log("📅 Academic Year:", academicYearData);
+      console.log("🎯 Academic Year ID untuk query:", academicInfo.yearId);
 
       console.log("📚 Querying teacher_assignments...");
       console.log("   - teacher_id:", teacherCode);
-      console.log("   - academic_year_id:", academicYearData.id);
+      console.log("   - academic_year_id:", academicInfo.yearId);
 
       const { data: assignments, error: assignmentsError } = await supabase
         .from("teacher_assignments")
         .select("subject")
         .eq("teacher_id", teacherCode)
-        .eq("academic_year_id", academicYearData.id);
+        .eq("academic_year_id", academicInfo.yearId);
 
       console.log("📦 Assignments result:", assignments);
       console.log("❌ Assignments error:", assignmentsError);
@@ -105,7 +110,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         onShowToast("Data mengajar berhasil dimuat!", "success");
       }
     } catch (error) {
-      console.error("❌ Error in loadUserAndAssignments:", error);
+      console.error("❌ Error in loadAcademicInfoAndAssignments:", error);
       setErrorMessage(error.message || "Terjadi kesalahan saat memuat data.");
       setLoading(false);
 
@@ -117,19 +122,26 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const loadTP = async () => {
     try {
+      if (!academicInfo || !selectedSemester) {
+        console.error("Academic info atau semester belum dipilih");
+        return;
+      }
+
       console.log("=== LOAD TP DEBUG ===");
       console.log("Tingkat selected:", tingkat);
       console.log("Mapel selected:", selectedMapel);
-      console.log("Semester selected:", semester);
-      console.log("Academic Year:", academicYear);
+      console.log("Semester selected:", selectedSemester);
+      console.log("Academic Year:", academicInfo.year);
+      console.log("Academic Year ID:", academicInfo.yearId);
 
+      // Query dengan semester yang dipilih (bukan semester aktif)
       const { data, error } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
         .eq("mata_pelajaran", selectedMapel)
         .eq("tingkat", parseInt(tingkat))
-        .eq("semester", semester)
-        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("semester", selectedSemester)
+        .eq("academic_year_id", academicInfo.yearId) // ✅ GANTI INI!
         .order("urutan");
 
       if (error) {
@@ -148,7 +160,9 @@ function InputTP({ user, onShowToast, darkMode }) {
       if (onShowToast) {
         if (data?.length > 0) {
           onShowToast(
-            `${data.length} TP ditemukan untuk semester ${semester}`,
+            `${data.length} TP ditemukan untuk semester ${
+              selectedSemester === "1" ? "Ganjil" : "Genap"
+            }`,
             "info"
           );
         } else {
@@ -168,7 +182,7 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleImportExcel = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !academicInfo || !selectedSemester) return;
 
     try {
       const faseDefault = getFaseByTingkat(parseInt(tingkat));
@@ -190,8 +204,8 @@ function InputTP({ user, onShowToast, darkMode }) {
               deskripsi_tp: row.getCell(4).value,
               urutan: Number(noCell),
               mata_pelajaran: selectedMapel,
-              tahun_ajaran_id: academicYear?.id,
-              semester: semester,
+              academic_year_id: academicInfo.yearId, // ✅ GANTI INI!
+              semester: selectedSemester,
               is_active: true,
             });
           }
@@ -212,7 +226,11 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       if (onShowToast)
         onShowToast(
-          `Import berhasil! ${imported.length} data TP ditambahkan untuk semester ${semester}.`,
+          `Import berhasil! ${
+            imported.length
+          } data TP ditambahkan untuk semester ${
+            selectedSemester === "1" ? "Ganjil" : "Genap"
+          }.`,
           "success"
         );
       loadTP();
@@ -224,9 +242,9 @@ function InputTP({ user, onShowToast, darkMode }) {
     }
   };
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadTemplate = async () => {
     try {
-      if (!semester || !tingkat) {
+      if (!academicInfo || !tingkat || !selectedSemester) {
         if (onShowToast)
           onShowToast("Pilih tingkat dan semester terlebih dahulu!", "warning");
         return;
@@ -251,7 +269,7 @@ function InputTP({ user, onShowToast, darkMode }) {
       worksheet.getCell("A1").fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FF0D47A1" }, // Biru professional
+        fgColor: { argb: "FF0D47A1" },
       };
       worksheet.getCell("A1").alignment = {
         vertical: "middle",
@@ -272,7 +290,9 @@ function InputTP({ user, onShowToast, darkMode }) {
         horizontal: "left",
       };
 
-      worksheet.getCell("A4").value = `Semester: ${semester}`;
+      worksheet.getCell("A4").value = `Semester: ${
+        selectedSemester === "1" ? "Ganjil" : "Genap"
+      }`;
       worksheet.getCell("A4").font = { bold: true, size: 12 };
       worksheet.getCell("A4").alignment = {
         vertical: "middle",
@@ -289,7 +309,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         cell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: "FF0D47A1" }, // Biru professional
+          fgColor: { argb: "FF0D47A1" },
         };
         cell.alignment = { horizontal: "center", vertical: "middle" };
         cell.border = {
@@ -340,7 +360,9 @@ function InputTP({ user, onShowToast, darkMode }) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Template_TP_${selectedMapel}_Tingkat${tingkat}_Semester${semester}.xlsx`;
+        a.download = `Template_TP_${selectedMapel}_Tingkat${tingkat}_Semester${
+          selectedSemester === "1" ? "Ganjil" : "Genap"
+        }.xlsx`;
         a.click();
         window.URL.revokeObjectURL(url);
 
@@ -355,7 +377,7 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleAddRow = async () => {
     try {
-      if (!semester || !tingkat) {
+      if (!academicInfo || !tingkat || !selectedSemester) {
         if (onShowToast)
           onShowToast("Pilih tingkat dan semester terlebih dahulu!", "warning");
         return;
@@ -369,8 +391,8 @@ function InputTP({ user, onShowToast, darkMode }) {
         deskripsi_tp: "",
         urutan: tpList.length + 1,
         mata_pelajaran: selectedMapel,
-        tahun_ajaran_id: academicYear?.id,
-        semester: semester,
+        academic_year_id: academicInfo.yearId, // ✅ GANTI INI!
+        semester: selectedSemester,
         is_active: true,
       };
 
@@ -402,13 +424,18 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleSave = async () => {
     try {
+      if (!academicInfo || !selectedSemester) {
+        if (onShowToast) onShowToast("Data akademik tidak tersedia", "error");
+        return;
+      }
+
       const { error } = await supabase
         .from("tujuan_pembelajaran")
         .update({
           tingkat: editData.tingkat,
           fase: editData.fase,
           deskripsi_tp: editData.deskripsi_tp,
-          semester: semester,
+          semester: selectedSemester, // Tetap update semester dari dropdown
         })
         .eq("id", editingId);
 
@@ -560,7 +587,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       </div>
     );
   }
-
   return (
     <div
       className={`min-h-screen py-4 sm:py-8 px-4 transition-colors duration-300 ${
@@ -575,12 +601,79 @@ function InputTP({ user, onShowToast, darkMode }) {
               ? "bg-gray-800 border-gray-700"
               : "bg-white border-blue-200"
           }`}>
-          <h2
-            className={`text-lg md:text-xl lg:text-2xl font-bold mb-6 md:mb-8 transition-colors ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}>
-            INPUT TUJUAN PEMBELAJARAN (TP)
-          </h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+            <h2
+              className={`text-lg md:text-xl lg:text-2xl font-bold mb-4 sm:mb-0 transition-colors ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}>
+              INPUT TUJUAN PEMBELAJARAN (TP)
+            </h2>
+            <div
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                darkMode
+                  ? "bg-blue-900/30 text-blue-300"
+                  : "bg-blue-100 text-blue-800"
+              }`}>
+              {academicInfo ? academicInfo.displayText : "Memuat..."}
+            </div>
+          </div>
+
+          {/* Info Akademik */}
+          {academicInfo && (
+            <div
+              className="mb-6 p-4 rounded-lg border bg-opacity-50"
+              style={{
+                backgroundColor: darkMode
+                  ? "rgba(30, 58, 138, 0.2)"
+                  : "rgba(219, 234, 254, 0.5)",
+                borderColor: darkMode ? "#374151" : "#bfdbfe",
+              }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Tahun Ajaran
+                  </span>
+                  <span
+                    className={`font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}>
+                    {academicInfo.year}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Semester Aktif di Sistem
+                  </span>
+                  <span
+                    className={`font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}>
+                    {academicInfo.semesterText}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Status Tahun Ajaran
+                  </span>
+                  <span
+                    className={`font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}>
+                    {academicInfo.isActive ? "Aktif" : "Tidak Aktif"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Filter Section - Responsive Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 md:mb-8">
@@ -642,8 +735,8 @@ function InputTP({ user, onShowToast, darkMode }) {
                 Pilih Semester
               </label>
               <select
-                value={semester}
-                onChange={(e) => setSemester(e.target.value)}
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
                 className={`w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[44px] ${
                   darkMode
                     ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
@@ -655,10 +748,18 @@ function InputTP({ user, onShowToast, darkMode }) {
                 <option value="1">Semester Ganjil</option>
                 <option value="2">Semester Genap</option>
               </select>
+              {academicInfo && (
+                <p
+                  className={`text-xs mt-1 ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  }`}>
+                  Semester aktif sistem: {academicInfo.semesterText}
+                </p>
+              )}
             </div>
           </div>
 
-          {!selectedMapel || !tingkat || !semester ? (
+          {!selectedMapel || !tingkat || !selectedSemester ? (
             <div
               className={`text-center py-8 sm:py-12 rounded-xl border-2 border-dashed ${
                 darkMode
@@ -687,10 +788,22 @@ function InputTP({ user, onShowToast, darkMode }) {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Untuk memulai input Tujuan Pembelajaran
               </p>
+              {academicInfo && (
+                <div
+                  className={`mt-4 px-4 py-2 rounded-lg inline-block ${
+                    darkMode
+                      ? "bg-blue-900/30 text-blue-300"
+                      : "bg-blue-100 text-blue-800"
+                  }`}>
+                  <span className="text-sm font-medium">
+                    Tahun Ajaran: {academicInfo.year}
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <>
-              {/* Action Buttons - Tetap di Kanan dengan Responsive Layout */}
+              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 md:mb-8 justify-end">
                 <button
                   onClick={handleAddRow}
@@ -812,6 +925,15 @@ function InputTP({ user, onShowToast, darkMode }) {
                               <p className="text-sm">
                                 Tambah data atau import dari Excel
                               </p>
+                              <div
+                                className={`mt-3 px-3 py-1.5 rounded-lg text-sm ${
+                                  darkMode
+                                    ? "bg-blue-900/30 text-blue-300"
+                                    : "bg-blue-100 text-blue-800"
+                                }`}>
+                                Semester:{" "}
+                                {selectedSemester === "1" ? "Ganjil" : "Genap"}
+                              </div>
                             </div>
                           </td>
                         </tr>
@@ -888,7 +1010,7 @@ function InputTP({ user, onShowToast, darkMode }) {
                                   }`}>
                                   <span
                                     className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${
-                                      semester === "1"
+                                      selectedSemester === "1"
                                         ? darkMode
                                           ? "bg-orange-900/30 text-orange-300"
                                           : "bg-orange-100 text-orange-800"
@@ -896,7 +1018,9 @@ function InputTP({ user, onShowToast, darkMode }) {
                                         ? "bg-green-900/30 text-green-300"
                                         : "bg-green-100 text-green-800"
                                     }`}>
-                                    {semester === "1" ? "Ganjil" : "Genap"}
+                                    {selectedSemester === "1"
+                                      ? "Ganjil"
+                                      : "Genap"}
                                   </span>
                                 </td>
                                 <td

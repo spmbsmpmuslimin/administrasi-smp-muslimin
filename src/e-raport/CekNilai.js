@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import {
+  getActiveAcademicInfo,
+  applyAcademicFilters,
+} from "../services/academicYearService";
 
-// ✅ TAMBAHKAN FUNGSI INI DI ATAS (sebelum const CekNilai)
+// ✅ FUNGSI MAPPING NAMA MAPEL
 const mapelToRaportName = (mapelTeacher) => {
   const mapping = {
+    // Format dari teacher_assignments → Format di nilai_eraport
     "PENDIDIKAN AGAMA ISLAM": "Pendidikan Agama Islam dan Budi Pekerti",
     "PENDIDIKAN PANCASILA": "Pendidikan Pancasila",
     "BAHASA INDONESIA": "Bahasa Indonesia",
@@ -19,8 +24,22 @@ const mapelToRaportName = (mapelTeacher) => {
     PRAKARYA: "Prakarya",
     "SENI RUPA": "Seni Rupa",
     "BP/BK": "BP/BK",
+
+    // Tambahan mapping dari format yang mungkin ada di database
+    "PENDIDIKAN AGAMA ISLAM DAN BUDI PEKERTI":
+      "Pendidikan Agama Islam dan Budi Pekerti",
+    "MATEMATIKA (UMUM)": "Matematika (Umum)",
+    "ILMU PENGETAHUAN ALAM (IPA)": "Ilmu Pengetahuan Alam (IPA)",
+    "ILMU PENGETAHUAN SOSIAL (IPS)": "Ilmu Pengetahuan Sosial (IPS)",
+    "PENDIDIKAN JASMANI, OLAHRAGA DAN KESEHATAN":
+      "Pendidikan Jasmani, Olahraga dan Kesehatan",
+    "MUATAN LOKAL BAHASA DAERAH": "Muatan Lokal Bahasa Daerah",
+    "KODING DAN AI": "Koding dan AI",
   };
-  return mapping[mapelTeacher] || mapelTeacher;
+
+  // Return mapping jika ada, jika tidak return as-is
+  const mapped = mapping[mapelTeacher?.toUpperCase()] || mapelTeacher;
+  return mapped;
 };
 
 const CekNilai = ({ user, darkMode, onShowToast }) => {
@@ -29,10 +48,10 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
   const [statusData, setStatusData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalSiswa, setTotalSiswa] = useState(0);
-  const [tahunAjaranId, setTahunAjaranId] = useState("");
-  const [semester, setSemester] = useState("");
+  const [academicInfo, setAcademicInfo] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showDebug, setShowDebug] = useState(false); // For debugging
 
   // Load user data dan tahun ajaran aktif saat component mount
   useEffect(() => {
@@ -43,12 +62,12 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
 
   // Load status penilaian ketika kelas dipilih
   useEffect(() => {
-    if (selectedKelas && tahunAjaranId && semester) {
+    if (selectedKelas && academicInfo) {
       loadStatusPenilaian();
     }
-  }, [selectedKelas, tahunAjaranId, semester]);
+  }, [selectedKelas, academicInfo]);
 
-  // Di loadInitialData function:
+  // Load initial data
   const loadInitialData = async () => {
     try {
       setLoading(true);
@@ -59,46 +78,22 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
       // 1. Set current user dari props
       setCurrentUser(user);
 
-      // 2. Get tahun ajaran aktif dari academic_years
-      const { data: academicYear, error: ayError } = await supabase
-        .from("academic_years")
-        .select("id, year, semester")
-        .eq("is_active", true)
-        .single();
+      // ✅ 2. Pakai getActiveAcademicInfo dari service
+      const academicData = await getActiveAcademicInfo();
 
-      if (ayError) {
-        console.error("Error loading academic year:", ayError);
-        // Fallback: coba ambil semester dari eraport_settings
-        const { data: eraportSettings, error: settingsError } = await supabase
-          .from("eraport_settings")
-          .select("academic_year_id, semester")
-          .eq("is_active", true)
-          .single();
-
-        if (settingsError) {
-          throw new Error("Tahun ajaran aktif tidak ditemukan.");
-        }
-
-        const { data: ayData, error: ayDataError } = await supabase
-          .from("academic_years")
-          .select("id, year, semester")
-          .eq("id", eraportSettings.academic_year_id)
-          .single();
-
-        if (ayDataError) throw ayDataError;
-
-        setTahunAjaranId(ayData.id);
-        setSemester(eraportSettings.semester || "1");
-      } else {
-        setTahunAjaranId(academicYear.id);
-        setSemester(academicYear.semester || "1");
+      if (!academicData) {
+        throw new Error("Informasi tahun ajaran aktif tidak ditemukan.");
       }
 
+      setAcademicInfo(academicData);
+
       console.log(
-        "📅 Academic Year ID:",
-        academicYear?.id,
+        "📅 Academic Info:",
+        academicData,
+        "Year ID:",
+        academicData.yearId,
         "Semester:",
-        academicYear?.semester
+        academicData.semester
       );
 
       // 3. Load kelas list (kelas yang dia jadi wali kelas)
@@ -111,7 +106,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         const { data: kelasData, error: kelasError } = await supabase
           .from("classes")
           .select("id, grade")
-          .eq("id", user.homeroom_class_id) // PAKAI ID, bukan grade!
+          .eq("id", user.homeroom_class_id)
           .eq("is_active", true);
 
         if (kelasError) {
@@ -122,8 +117,8 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
 
           // Format data untuk dropdown: tampilkan ID (7F) sebagai label
           const formattedClasses = kelasData.map((kelas) => ({
-            id: kelas.id, // "7F"
-            grade: kelas.id, // Tampilkan ID sebagai display name
+            id: kelas.id,
+            grade: kelas.id,
           }));
 
           setKelasList(formattedClasses);
@@ -152,15 +147,23 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
   };
 
   const loadStatusPenilaian = async () => {
+    if (!academicInfo) {
+      setErrorMessage("Informasi tahun ajaran belum tersedia");
+      return;
+    }
+
     setLoading(true);
     setStatusData([]);
     try {
-      console.log("📊 Loading status penilaian for class:", selectedKelas);
+      console.log("📊 ========== START LOAD STATUS ==========");
+      console.log("📊 Class:", selectedKelas);
+      console.log("📊 Academic Year ID:", academicInfo.yearId);
+      console.log("📊 Semester:", academicInfo.semester);
 
       // 1. Hitung total siswa di kelas
       const { data: siswaData, error: siswaError } = await supabase
         .from("students")
-        .select("id")
+        .select("id, full_name")
         .eq("class_id", selectedKelas)
         .eq("is_active", true);
 
@@ -169,44 +172,118 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
       const jumlahSiswa = siswaData?.length || 0;
       setTotalSiswa(jumlahSiswa);
 
-      console.log("👥 Total siswa:", jumlahSiswa);
+      console.log("👥 Total siswa aktif:", jumlahSiswa);
 
-      // 2. Get semua mata pelajaran dari teacher_assignments
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from("teacher_assignments")
-        .select("subject")
+      // 2. Cek data langsung dari nilai_eraport untuk debugging
+      const { data: nilaiDebug, error: nilaiDebugError } = await supabase
+        .from("nilai_eraport")
+        .select("mata_pelajaran")
         .eq("class_id", selectedKelas)
-        .eq("academic_year_id", tahunAjaranId)
-        .eq("semester", semester);
+        .eq("academic_year_id", academicInfo.yearId)
+        .eq("semester", academicInfo.semester);
+
+      if (!nilaiDebugError && nilaiDebug) {
+        // Group manual untuk debugging
+        const mapelCount = nilaiDebug.reduce((acc, item) => {
+          acc[item.mata_pelajaran] = (acc[item.mata_pelajaran] || 0) + 1;
+          return acc;
+        }, {});
+        console.log("🔍 Mata pelajaran di nilai_eraport:", mapelCount);
+      }
+
+      // 3. Load teacher assignments dengan applyAcademicFilters
+      let assignmentsQuery = supabase
+        .from("teacher_assignments")
+        .select("subject, teacher_id")
+        .eq("class_id", selectedKelas);
+
+      assignmentsQuery = await applyAcademicFilters(assignmentsQuery, {
+        filterYearId: true,
+        filterSemester: true,
+      });
+
+      const { data: assignmentsData, error: assignmentsError } =
+        await assignmentsQuery;
 
       if (assignmentsError) {
         console.error("Error loading teacher assignments:", assignmentsError);
         throw assignmentsError;
       }
 
+      console.log(
+        "📚 Teacher assignments found:",
+        assignmentsData?.length || 0
+      );
+
       // Get unique subjects dari teacher_assignments
       const subjectsFromTeacher = [
         ...new Set(assignmentsData?.map((item) => item.subject) || []),
       ];
 
+      console.log("📚 Subjects from teacher_assignments:", subjectsFromTeacher);
+
       // ✅ MAPPING NAMA MAPEL KE FORMAT RAPORT
-      const subjects = subjectsFromTeacher.map((mapel) =>
-        mapelToRaportName(mapel)
-      );
+      const subjects = subjectsFromTeacher.map((mapel) => {
+        const mapped = mapelToRaportName(mapel);
+        console.log(`📚 Mapping: "${mapel}" → "${mapped}"`);
+        return mapped;
+      });
 
-      console.log(
-        "📚 Subjects from teacher_assignments (original):",
-        subjectsFromTeacher
-      );
-      console.log("📚 Subjects mapped to raport format:", subjects);
+      console.log("📚 Final subjects to check:", subjects);
 
-      // Process each subject
+      // 4. Process each subject
       const statusPromises = subjects.map(async (mapel, index) => {
         return await getMapelStatus(mapel, index, jumlahSiswa);
       });
 
       const hasil = await Promise.all(statusPromises);
-      setStatusData(hasil.filter((item) => item !== null));
+
+      // Urutan standar mata pelajaran sesuai kurikulum
+      const urutanMapel = [
+        "Pendidikan Agama Islam dan Budi Pekerti",
+        "Pendidikan Pancasila",
+        "Bahasa Indonesia",
+        "Matematika (Umum)",
+        "Ilmu Pengetahuan Alam (IPA)",
+        "Ilmu Pengetahuan Sosial (IPS)",
+        "Bahasa Inggris",
+        "Informatika",
+        "Pendidikan Jasmani, Olahraga dan Kesehatan",
+        "Seni Tari",
+        "Seni Rupa",
+        "Prakarya",
+        "Muatan Lokal Bahasa Daerah",
+        "Koding dan AI",
+        "BP/BK",
+      ];
+
+      // Filter null dan sort berdasarkan urutan standar
+      const filteredHasil = hasil
+        .filter((item) => item !== null)
+        .sort((a, b) => {
+          const indexA = urutanMapel.indexOf(a.nama_mapel);
+          const indexB = urutanMapel.indexOf(b.nama_mapel);
+
+          // Jika kedua mapel ada di urutan standar
+          if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB;
+          }
+          // Jika mapel A tidak ada di urutan, taruh di belakang
+          if (indexA === -1) return 1;
+          // Jika mapel B tidak ada di urutan, taruh di belakang
+          if (indexB === -1) return -1;
+          // Fallback ke alfabetis
+          return a.nama_mapel.localeCompare(b.nama_mapel);
+        })
+        .map((item, index) => ({
+          ...item,
+          no: index + 1, // Re-assign nomor urut setelah sorting
+        }));
+
+      console.log("📊 Final status data:", filteredHasil);
+      setStatusData(filteredHasil);
+
+      console.log("📊 ========== END LOAD STATUS ==========");
     } catch (error) {
       console.error("Error loading status penilaian:", error);
       setErrorMessage(`Gagal memuat data status penilaian: ${error.message}`);
@@ -219,33 +296,97 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
   };
 
   const getMapelStatus = async (mapel, index, jumlahSiswa) => {
+    if (!academicInfo) return null;
+
     try {
-      // AMBIL DESKRIPSI LANGSUNG DARI nilai_eraport
+      console.log(`🔍 Checking status for: ${mapel}`);
+
+      // Query nilai untuk mata pelajaran ini (hanya siswa aktif) + detail TP
       const { data: nilaiData, error: nilaiError } = await supabase
         .from("nilai_eraport")
-        .select("id, student_id, nilai_akhir, deskripsi_capaian")
+        .select(
+          `
+          id,
+          student_id, 
+          nilai_akhir, 
+          deskripsi_capaian,
+          nilai_eraport_detail(id, status_tercapai),
+          students!inner(is_active)
+        `
+        )
         .eq("class_id", selectedKelas)
         .eq("mata_pelajaran", mapel)
-        .eq("tahun_ajaran_id", tahunAjaranId)
-        .eq("semester", semester);
+        .eq("academic_year_id", academicInfo.yearId)
+        .eq("semester", academicInfo.semester)
+        .eq("students.is_active", true);
 
-      if (nilaiError) return null;
+      if (nilaiError) {
+        console.error(`❌ Error loading nilai for ${mapel}:`, nilaiError);
+        return null;
+      }
 
-      const siswaDenganNilai =
-        nilaiData?.filter((item) => {
-          if (!item.nilai_akhir) return false;
-          const nilai = item.nilai_akhir.toString().trim();
-          return parseFloat(nilai) > 0;
-        }) || [];
+      console.log(`📊 Found ${nilaiData?.length || 0} records for ${mapel}`);
 
-      const jumlahNilai = siswaDenganNilai.length;
+      // Hitung siswa yang sudah ada nilai dan deskripsi
+      const siswaDenganNilaiSet = new Set();
+      const siswaDenganDeskripsiSet = new Set();
 
-      // HITUNG DESKRIPSI dari field deskripsi_capaian
-      const jumlahDeskripsi = siswaDenganNilai.filter(
-        (item) =>
+      nilaiData?.forEach((item) => {
+        const studentId = item.student_id;
+
+        // Cek apakah semua TP sudah dicentang (ada detail dan ada status_tercapai)
+        const detailTP = item.nilai_eraport_detail || [];
+        const semuaTPTercentang =
+          detailTP.length > 0 &&
+          detailTP.every((detail) => detail.status_tercapai !== null);
+
+        // ✅ Cek nilai (SELALU hitung, TIDAK peduli TP)
+        if (item.nilai_akhir !== null && item.nilai_akhir !== undefined) {
+          const nilai = parseFloat(item.nilai_akhir);
+          if (!isNaN(nilai) && nilai > 0) {
+            siswaDenganNilaiSet.add(studentId);
+          }
+        }
+
+        // ✅ Cek deskripsi (HANYA hitung kalau TP udah dicentang semua)
+        if (
+          semuaTPTercentang &&
           item.deskripsi_capaian &&
-          item.deskripsi_capaian.toString().trim() !== ""
-      ).length;
+          item.deskripsi_capaian.toString().trim() !== "" &&
+          item.deskripsi_capaian.toString().trim() !== "null" &&
+          item.deskripsi_capaian.toString().trim() !== "-"
+        ) {
+          siswaDenganDeskripsiSet.add(studentId);
+        }
+      });
+
+      const jumlahNilai = siswaDenganNilaiSet.size;
+      const jumlahDeskripsi = siswaDenganDeskripsiSet.size;
+
+      console.log(
+        `📊 ${mapel}: ${jumlahNilai}/${jumlahSiswa} nilai, ${jumlahDeskripsi}/${jumlahSiswa} deskripsi`
+      );
+
+      // Cek jika ada duplikat data
+      if (nilaiData?.length > jumlahSiswa) {
+        console.warn(
+          `⚠️  Duplikat ditemukan untuk ${mapel}: ${nilaiData.length} records untuk ${jumlahSiswa} siswa`
+        );
+
+        // Hitung duplikat per student
+        const studentCount = {};
+        nilaiData?.forEach((item) => {
+          studentCount[item.student_id] =
+            (studentCount[item.student_id] || 0) + 1;
+        });
+
+        const duplicates = Object.entries(studentCount).filter(
+          ([_, count]) => count > 1
+        );
+        if (duplicates.length > 0) {
+          console.warn(`⚠️  Student dengan data ganda:`, duplicates);
+        }
+      }
 
       return {
         no: index + 1,
@@ -256,6 +397,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         total_siswa: jumlahSiswa,
       };
     } catch (error) {
+      console.error(`❌ Error in getMapelStatus for ${mapel}:`, error);
       return null;
     }
   };
@@ -264,13 +406,87 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
     if (total === 0) return "0 Data";
     if (jumlah === 0) return "0 Data";
     if (jumlah === total) return `${jumlah} Data`;
+    if (jumlah > total) {
+      return `${jumlah} Data ⚠️`;
+    }
     return `${jumlah}/${total} Data`;
   };
 
   const getTextColor = (jumlah, total) => {
     if (jumlah === 0) return "text-red-600 dark:text-red-400";
     if (jumlah === total) return "text-green-700 dark:text-green-400";
+    if (jumlah > total) return "text-purple-600 dark:text-purple-400";
     return "text-amber-600 dark:text-amber-400";
+  };
+
+  const getStatusIcon = (jumlah, total) => {
+    if (jumlah === 0) return "❌";
+    if (jumlah === total) return "✅";
+    if (jumlah > total) return "⚠️";
+    return "🟡";
+  };
+
+  // Fungsi untuk membersihkan data duplikat
+  const cleanDuplicateData = async () => {
+    if (!selectedKelas || !academicInfo) {
+      alert("Pilih kelas terlebih dahulu");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Yakin ingin membersihkan data duplikat? Tindakan ini tidak dapat dibatalkan."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // Ambil semua data nilai untuk kelas dan tahun ajaran ini
+      const { data: allNilai, error } = await supabase
+        .from("nilai_eraport")
+        .select("*")
+        .eq("class_id", selectedKelas)
+        .eq("academic_year_id", academicInfo.yearId)
+        .eq("semester", academicInfo.semester)
+        .order("student_id", { ascending: true })
+        .order("mata_pelajaran", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Identifikasi duplikat (pertahankan yang terbaru)
+      const seen = new Set();
+      const duplicates = [];
+
+      allNilai?.forEach((item) => {
+        const key = `${item.student_id}-${item.mata_pelajaran}`;
+        if (seen.has(key)) {
+          duplicates.push(item.id);
+        } else {
+          seen.add(key);
+        }
+      });
+
+      if (duplicates.length === 0) {
+        alert("✅ Tidak ditemukan data duplikat");
+        return;
+      }
+
+      // Hapus data duplikat
+      const { error: deleteError } = await supabase
+        .from("nilai_eraport")
+        .delete()
+        .in("id", duplicates);
+
+      if (deleteError) throw deleteError;
+
+      alert(`✅ Berhasil menghapus ${duplicates.length} data duplikat`);
+      loadStatusPenilaian(); // Reload data
+    } catch (error) {
+      console.error("Error cleaning duplicate data:", error);
+      alert(`❌ Error: ${error.message}`);
+    }
   };
 
   if (loading && !selectedKelas) {
@@ -365,12 +581,116 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
               ? "bg-gray-800 border-gray-700"
               : "bg-white border-blue-200"
           }`}>
-          <h1
-            className={`text-lg md:text-xl lg:text-2xl font-bold mb-6 md:mb-8 transition-colors ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}>
-            STATUS PENILAIAN OLEH GURU MAPEL
-          </h1>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-4">
+            <h1
+              className={`text-lg md:text-xl lg:text-2xl font-bold transition-colors ${
+                darkMode ? "text-white" : "text-gray-900"
+              }`}>
+              STATUS PENILAIAN OLEH GURU MAPEL
+            </h1>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDebug(!showDebug)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                  darkMode
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}>
+                {showDebug ? "Hide Debug" : "Show Debug"}
+              </button>
+
+              {statusData.some(
+                (item) => item.jumlah_nilai > item.total_siswa
+              ) && (
+                <button
+                  onClick={cleanDuplicateData}
+                  className="px-3 py-2 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-700"
+                  title="Bersihkan data duplikat">
+                  🧹 Clean Duplicates
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ✅ INFO AKADEMIK DINAMIS */}
+          {academicInfo && (
+            <div
+              className="mb-6 p-4 rounded-lg border bg-opacity-50"
+              style={{
+                backgroundColor: darkMode
+                  ? "rgba(30, 58, 138, 0.2)"
+                  : "rgba(219, 234, 254, 0.5)",
+                borderColor: darkMode ? "#374151" : "#bfdbfe",
+              }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Semester Aktif
+                  </span>
+                  <span
+                    className={`font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}>
+                    {academicInfo.semesterText ||
+                      (academicInfo.semester === 1
+                        ? "Semester 1 (Ganjil)"
+                        : "Semester 2 (Genap)")}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Tahun Ajaran
+                  </span>
+                  <span
+                    className={`font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}>
+                    {academicInfo.displayText || academicInfo.year || "Aktif"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}>
+                    Status
+                  </span>
+                  <span
+                    className={`font-medium px-2 py-1 rounded-full text-xs inline-block w-20 text-center ${
+                      academicInfo.isActive
+                        ? darkMode
+                          ? "bg-green-900/30 text-green-300"
+                          : "bg-green-100 text-green-700"
+                        : darkMode
+                        ? "bg-red-900/30 text-red-300"
+                        : "bg-red-100 text-red-700"
+                    }`}>
+                    {academicInfo.isActive ? "Aktif" : "Nonaktif"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Debug Info */}
+              {showDebug && (
+                <div className="mt-4 p-3 rounded bg-gray-800/30 dark:bg-gray-900/30">
+                  <div className="text-xs font-mono">
+                    <div>Year ID: {academicInfo.yearId}</div>
+                    <div>Semester: {academicInfo.semester}</div>
+                    <div>Start: {academicInfo.startDate}</div>
+                    <div>End: {academicInfo.endDate}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* User Info */}
           {currentUser && (
@@ -439,7 +759,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                   </option>
                   {kelasList.map((kelas) => (
                     <option key={kelas.id} value={kelas.id}>
-                      Kelas {kelas.grade} {/* Tampilkan ID (7F) */}
+                      Kelas {kelas.grade}
                     </option>
                   ))}
                 </select>
@@ -501,7 +821,9 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                     Belum ada data penilaian
                   </p>
                   <p className="text-sm">
-                    Guru mapel belum mengisi nilai untuk kelas ini
+                    {academicInfo
+                      ? `Guru mapel belum mengisi nilai untuk kelas ini di semester ${academicInfo.semester}`
+                      : "Guru mapel belum mengisi nilai untuk kelas ini"}
                   </p>
                 </div>
               ) : (
@@ -531,7 +853,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                           className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
                             darkMode ? "border-blue-800" : "border-blue-600"
                           }`}
-                          colSpan="2">
+                          colSpan="3">
                           <div className="font-bold mb-2">Nilai Rapor</div>
                           <div
                             className={`flex border-t ${
@@ -543,7 +865,13 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                               }`}>
                               Nilai Rapor
                             </div>
-                            <div className="flex-1 py-2">Deskripsi</div>
+                            <div
+                              className={`flex-1 py-2 border-r ${
+                                darkMode ? "border-blue-800" : "border-blue-600"
+                              }`}>
+                              Deskripsi
+                            </div>
+                            <div className="flex-1 py-2">Lengkap</div>
                           </div>
                         </th>
                       </tr>
@@ -576,6 +904,11 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                                 : "border-blue-100 text-gray-900"
                             }`}>
                             {item.nama_mapel}
+                            {showDebug && (
+                              <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                ID: {item.jumlah_nilai}/{item.total_siswa}
+                              </div>
+                            )}
                           </td>
                           <td
                             className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
@@ -583,7 +916,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                                 ? "border-gray-700 text-gray-300"
                                 : "border-blue-100 text-gray-700"
                             }`}>
-                            {item.rombel}
+                            {item.kelas}
                           </td>
                           <td
                             className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
@@ -616,6 +949,19 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                                 item.total_siswa
                               )}
                             </span>
+                          </td>
+                          <td
+                            className={`p-3 sm:p-4 text-center text-sm sm:text-base ${
+                              darkMode ? "bg-gray-700/50" : "bg-gray-100"
+                            }`}>
+                            {item.jumlah_nilai === item.total_siswa &&
+                            item.jumlah_deskripsi === item.total_siswa ? (
+                              <span className="text-2xl">✅</span>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-600">
+                                -
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -668,34 +1014,115 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                   ? "bg-gray-800/50 border-gray-700"
                   : "bg-blue-50 border-blue-200"
               }`}>
-              <h3
-                className={`font-semibold mb-3 transition-colors ${
-                  darkMode ? "text-white" : "text-gray-700"
-                }`}>
-                Keterangan Status:
-              </h3>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
+                <h3
+                  className={`font-semibold transition-colors ${
+                    darkMode ? "text-white" : "text-gray-700"
+                  }`}>
+                  Keterangan Status:
+                </h3>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Total Mapel: {statusData.length} | Siswa: {totalSiswa}
+                </div>
+              </div>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 bg-green-700 dark:bg-green-500 rounded"></span>
                   <span
                     className={darkMode ? "text-gray-300" : "text-gray-600"}>
-                    Lengkap (semua siswa sudah dinilai)
+                    ✅ Lengkap (semua siswa sudah dinilai)
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 bg-amber-600 dark:bg-amber-500 rounded"></span>
                   <span
                     className={darkMode ? "text-gray-300" : "text-gray-600"}>
-                    Sebagian (belum semua siswa dinilai)
+                    🟡 Sebagian (belum semua siswa dinilai)
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 bg-red-600 dark:bg-red-500 rounded"></span>
                   <span
                     className={darkMode ? "text-gray-300" : "text-gray-600"}>
-                    Kosong (belum ada yang dinilai)
+                    ❌ Kosong (belum ada yang dinilai)
                   </span>
                 </div>
+                {statusData.some(
+                  (item) => item.jumlah_nilai > item.total_siswa
+                ) && (
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 bg-purple-600 dark:bg-purple-500 rounded"></span>
+                    <span
+                      className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                      ⚠️ Duplikat (data lebih dari jumlah siswa)
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Summary */}
+              <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="text-center">
+                    <div className="font-bold text-green-700 dark:text-green-400">
+                      {
+                        statusData.filter(
+                          (item) => item.jumlah_nilai === item.total_siswa
+                        ).length
+                      }
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">
+                      Lengkap
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-amber-600 dark:text-amber-400">
+                      {
+                        statusData.filter(
+                          (item) =>
+                            item.jumlah_nilai > 0 &&
+                            item.jumlah_nilai < item.total_siswa
+                        ).length
+                      }
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">
+                      Sebagian
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-red-600 dark:text-red-400">
+                      {
+                        statusData.filter((item) => item.jumlah_nilai === 0)
+                          .length
+                      }
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">
+                      Kosong
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-purple-600 dark:text-purple-400">
+                      {
+                        statusData.filter(
+                          (item) => item.jumlah_nilai > item.total_siswa
+                        ).length
+                      }
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">
+                      Duplikat
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⚠️</span>
+                <span className="text-sm">{errorMessage}</span>
               </div>
             </div>
           )}

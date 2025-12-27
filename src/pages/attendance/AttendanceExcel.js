@@ -57,18 +57,18 @@ const ExportModal = ({
 
   // Month names
   const monthNames = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
+    "JANUARI",
+    "FEBRUARI",
+    "MARET",
+    "APRIL",
+    "MEI",
+    "JUNI",
+    "JULI",
+    "AGUSTUS",
+    "SEPTEMBER",
+    "OKTOBER",
+    "NOVEMBER",
+    "DESEMBER",
   ];
 
   // Dark mode class
@@ -537,27 +537,38 @@ export const exportAttendanceToExcel = async (
 
     // Format month name for display
     const monthNames = [
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
+      "JANUARI",
+      "FEBRUARI",
+      "MARET",
+      "APRIL",
+      "MEI",
+      "JUNI",
+      "JULI",
+      "AGUSTUS",
+      "SEPTEMBER",
+      "OKTOBER",
+      "NOVEMBER",
+      "DESEMBER",
     ];
     const monthName = monthNames[parseInt(month) - 1];
     const periodText = `${monthName} ${year}`;
 
+    // Check if this is daily homeroom attendance
+    const isHomeroomDaily = subjectFilter === "Harian";
+
     // Header rows
     const headerData = [
       ["SMP MUSLIMIN CILILIN"],
-      [`REKAP PRESENSI KELAS ${selectedClass}`],
-      [`MATA PELAJARAN: ${selectedSubject} - ${periodText}`],
+      [
+        isHomeroomDaily
+          ? `REKAP PRESENSI HARIAN KELAS ${selectedClass}`
+          : `REKAP PRESENSI KELAS ${selectedClass}`,
+      ],
+      [
+        isHomeroomDaily
+          ? `BULAN : ${periodText}`
+          : `MATA PELAJARAN: ${selectedSubject} - ${periodText}`,
+      ],
       [], // Empty row
       // Table headers
       [
@@ -572,7 +583,6 @@ export const exportAttendanceToExcel = async (
         "Persentase",
       ],
     ];
-
     // Add student data
     const studentData = students.map((student, index) => {
       const studentInfo = studentMatrix[student.id];
@@ -717,9 +727,6 @@ export const exportAttendanceToExcel = async (
 
     // ✅ FOOTER WITH TEACHER NAME - IMPROVED
     const footerStartRow = dataStartRow + students.length + 2;
-
-    // Determine role based on subject type
-    const isHomeroomDaily = subjectFilter === "Harian";
 
     // ✅ CEK APAKAH USER ADALAH WALI KELAS
     const isHomeroom = homeroomClass && homeroomClass === selectedClass;
@@ -910,7 +917,7 @@ const exportSemesterRecapToExcel = async ({
     // School name header
     worksheet.mergeCells(1, 1, 1, totalCols);
     const schoolCell = worksheet.getCell(1, 1);
-    schoolCell.value = namaSekolah;
+    schoolCell.value = namaSekolah.toUpperCase();
     schoolCell.font = { name: "Arial", size: 14, bold: true };
     schoolCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(1).height = 25;
@@ -918,7 +925,7 @@ const exportSemesterRecapToExcel = async ({
     // Title row
     worksheet.mergeCells(2, 1, 2, totalCols);
     const titleCell = worksheet.getCell(2, 1);
-    titleCell.value = `Rekap Presensi Harian - Kelas ${classId}`;
+    titleCell.value = `REKAP PRESENSI - KELAS ${classId.toUpperCase()}`;
     titleCell.font = { name: "Arial", size: 12, bold: true };
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(2).height = 20;
@@ -926,7 +933,7 @@ const exportSemesterRecapToExcel = async ({
     // Subtitle row
     worksheet.mergeCells(3, 1, 3, totalCols);
     const subtitleCell = worksheet.getCell(3, 1);
-    subtitleCell.value = `${subject} | Semester ${semesterText} ${year}`;
+    subtitleCell.value = `${subject.toUpperCase()} | SEMESTER ${semesterText.toUpperCase()} ${year}`;
     subtitleCell.font = { name: "Arial", size: 11 };
     subtitleCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(3).height = 20;
@@ -936,16 +943,16 @@ const exportSemesterRecapToExcel = async ({
     // Header row
     const headerRow = 5;
     const headers = [
-      "No",
+      "NO",
       "NIS",
-      "Nama Siswa",
-      "Hadir",
-      "Sakit",
-      "Izin",
-      "Alpa",
-      "Total",
+      "NAMA SISWA",
+      "HADIR",
+      "SAKIT",
+      "IZIN",
+      "ALPA",
+      "TOTAL",
       "%",
-      "Kategori",
+      "KATEGORI",
     ];
 
     headers.forEach((header, index) => {
@@ -970,7 +977,6 @@ const exportSemesterRecapToExcel = async ({
         right: { style: "thin" },
       };
     });
-
     worksheet.getRow(headerRow).height = 25;
 
     // Data rows

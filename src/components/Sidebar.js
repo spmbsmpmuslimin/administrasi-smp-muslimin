@@ -17,9 +17,10 @@ const Sidebar = ({
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(darkMode);
   const [gradesMenuOpen, setGradesMenuOpen] = useState(false); // State untuk dropdown Nilai Siswa
-  const [eraMenuOpen, setEraMenuOpen] = useState(false); // State untuk dropdown E-RAPORT
-  const [inputDataOpen, setInputDataOpen] = useState(false); // State untuk dropdown Input Data
-  const [cetakNilaiOpen, setCetakNilaiOpen] = useState(false); // State untuk dropdown Cetak Nilai
+
+  // ✅ REMOVE: Hapus state dropdown E-RAPORT karena akan pakai flat list
+  // const [inputDataOpen, setInputDataOpen] = useState(false); // ← HAPUS
+  // const [cetakNilaiOpen, setCetakNilaiOpen] = useState(false); // ← HAPUS
 
   // ✅ TAMBAH STATE UNTUK E-RAPORT STATUS
   const [eraportActive, setEraportActive] = useState(true);
@@ -115,7 +116,7 @@ const Sidebar = ({
   const isNilaiPage =
     currentPage === "nilai-asli" || currentPage === "nilai-katrol";
 
-  // Cek apakah halaman saat ini adalah salah satu dari submenu E-RAPORT
+  // Cek apakah halaman saat ini adalah salah satu dari menu E-RAPORT
   const isEraPage =
     currentPage === "era-dashboard-admin" ||
     currentPage === "era-dashboard-teacher" ||
@@ -611,45 +612,6 @@ const Sidebar = ({
               </div>
             )}
 
-            {/* CATATAN SISWA - DISABLED SEMENTARA */}
-            {/* 
-{(isAdmin || (isWaliKelas && !isGuruBK)) && (
-  <a
-    href="#catatan-siswa"
-    className={`
-      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-      touch-manipulation min-h-[44px]
-      ${isCollapsed ? "justify-center" : ""}
-      ${
-        currentPage === "catatan-siswa"
-          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-          : "hover:text-blue-100 dark:hover:text-gray-100"
-      }
-    `}
-    onClick={(e) => {
-      e.preventDefault();
-      handleMenuClick("catatan-siswa");
-    }}
-    title={isCollapsed ? "Catatan Siswa" : ""}>
-    <svg
-      className="w-5 h-5 flex-shrink-0"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-      />
-    </svg>
-    {!isCollapsed && (
-      <span className="flex-1 text-sm">Catatan Siswa</span>
-    )}
-  </a>
-)}
-*/}
-
             {/* Jadwal Saya */}
             {(isAdmin ||
               (!isGuruBK &&
@@ -764,17 +726,18 @@ const Sidebar = ({
             )}
           </div>
 
-          {/* E-RAPORT - KATEGORI BARU */}
+          {/* ========== E-RAPORT - KATEGORI BARU (UPDATED) ========== */}
           {/* ✅ TAMBAH CONDITIONAL RENDERING DI SINI */}
           {eraportActive && (
             <div className="mb-4 sm:mb-5">
+              {/* ========== HEADER E-RAPORT ========== */}
               {!isCollapsed && (
                 <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
-                  E-RAPORT
+                  📚 E-RAPORT
                 </div>
               )}
 
-              {/* Dashboard E-RAPORT */}
+              {/* ========== DASHBOARD ========== */}
               <a
                 href="#era-dashboard"
                 className={`
@@ -791,15 +754,13 @@ const Sidebar = ({
                 `}
                 onClick={(e) => {
                   e.preventDefault();
-                  // Dashboard berdasarkan role
+                  // Dashboard berdasarkan role sesuai App.js
                   if (isAdmin) {
                     handleEraMenuClick("era-dashboard-admin");
-                  } else if (userRole === "teacher") {
-                    handleEraMenuClick("era-dashboard-teacher");
                   } else if (isWaliKelas) {
                     handleEraMenuClick("era-dashboard-homeroom");
                   } else {
-                    handleEraMenuClick("era-dashboard-admin");
+                    handleEraMenuClick("era-dashboard-teacher");
                   }
                 }}
                 title={isCollapsed ? "Dashboard" : ""}>
@@ -826,34 +787,109 @@ const Sidebar = ({
                 )}
               </a>
 
-              {/* Input Data dengan Submenu */}
-              <div className="mb-1">
-                <a
-                  href="#era-input-data"
-                  className={`
-                    flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                    touch-manipulation min-h-[44px]
-                    ${isCollapsed ? "justify-center" : ""}
-                    ${
-                      currentPage === "era-input-tp" ||
-                      currentPage === "era-input-nilai" ||
-                      currentPage === "era-input-kehadiran" ||
-                      currentPage === "era-input-catatan"
-                        ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                        : "hover:text-blue-100 dark:hover:text-gray-100"
-                    }
-                  `}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (!isCollapsed) {
-                      setInputDataOpen(!inputDataOpen);
-                    } else {
-                      // Jika collapsed, langsung ke halaman default
-                      handleEraMenuClick("era-input-tp");
-                    }
-                  }}
-                  title={isCollapsed ? "Input Data" : ""}>
-                  <div className="flex items-center gap-3">
+              {/* ========== INPUT TP - SEMUA GURU ========== */}
+              <a
+                href="#era-input-tp"
+                className={`
+                  flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                  touch-manipulation min-h-[44px]
+                  ${isCollapsed ? "justify-center" : ""}
+                  ${
+                    currentPage === "era-input-tp"
+                      ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                      : "hover:text-blue-100 dark:hover:text-gray-100"
+                  }
+                `}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleEraMenuClick("era-input-tp");
+                }}
+                title={isCollapsed ? "Input TP" : ""}>
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+                {!isCollapsed && (
+                  <span className="flex-1 text-sm">Input TP</span>
+                )}
+              </a>
+
+              {/* ========== INPUT NILAI - SEMUA GURU ========== */}
+              <a
+                href="#era-input-nilai"
+                className={`
+                  flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                  touch-manipulation min-h-[44px]
+                  ${isCollapsed ? "justify-center" : ""}
+                  ${
+                    currentPage === "era-input-nilai"
+                      ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                      : "hover:text-blue-100 dark:hover:text-gray-100"
+                  }
+                `}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleEraMenuClick("era-input-nilai");
+                }}
+                title={isCollapsed ? "Input Nilai" : ""}>
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                {!isCollapsed && (
+                  <span className="flex-1 text-sm">Input Nilai</span>
+                )}
+              </a>
+
+              {/* ========== SEPARATOR WALI KELAS ========== */}
+              {(isWaliKelas || isAdmin) && (
+                <>
+                  {/* Visual Separator */}
+                  {!isCollapsed && (
+                    <div className="my-3 mx-4 sm:mx-6 border-t border-blue-700 dark:border-gray-700"></div>
+                  )}
+
+                  {/* Label "Menu Wali Kelas" */}
+                  {!isCollapsed && (
+                    <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider flex items-center gap-2">
+                      Menu Wali Kelas
+                    </div>
+                  )}
+
+                  {/* ========== INPUT KEHADIRAN - WALI KELAS ========== */}
+                  <a
+                    href="#era-input-kehadiran"
+                    className={`
+                      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                      touch-manipulation min-h-[44px]
+                      ${isCollapsed ? "justify-center" : ""}
+                      ${
+                        currentPage === "era-input-kehadiran"
+                          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                          : "hover:text-blue-100 dark:hover:text-gray-100"
+                      }
+                    `}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleEraMenuClick("era-input-kehadiran");
+                    }}
+                    title={isCollapsed ? "Input Kehadiran" : ""}>
                     <svg
                       className="w-5 h-5 flex-shrink-0"
                       fill="none"
@@ -863,20 +899,34 @@ const Sidebar = ({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth="2"
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
                       />
                     </svg>
                     {!isCollapsed && (
-                      <span className="flex-1 text-sm">Input Data</span>
+                      <span className="flex-1 text-sm">Input Kehadiran</span>
                     )}
-                  </div>
+                  </a>
 
-                  {/* Dropdown arrow - hanya tampil jika tidak collapsed */}
-                  {!isCollapsed && (
+                  {/* ========== INPUT CATATAN - WALI KELAS ========== */}
+                  <a
+                    href="#era-input-catatan"
+                    className={`
+                      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                      touch-manipulation min-h-[44px]
+                      ${isCollapsed ? "justify-center" : ""}
+                      ${
+                        currentPage === "era-input-catatan"
+                          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                          : "hover:text-blue-100 dark:hover:text-gray-100"
+                      }
+                    `}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleEraMenuClick("era-input-catatan");
+                    }}
+                    title={isCollapsed ? "Input Catatan" : ""}>
                     <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        inputDataOpen ? "rotate-90" : ""
-                      }`}
+                      className="w-5 h-5 flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24">
@@ -884,128 +934,67 @@ const Sidebar = ({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth="2"
-                        d="M9 5l7 7-7 7"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                  )}
-                </a>
-
-                {/* Submenu Input Data - hanya tampil jika tidak collapsed dan dropdown open */}
-                {!isCollapsed && inputDataOpen && (
-                  <div className="ml-8 mt-1 space-y-1">
-                    {/* Input TP */}
-                    <a
-                      href="#era-input-tp"
-                      className={`
-                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                        touch-manipulation min-h-[44px]
-                        ${
-                          currentPage === "era-input-tp"
-                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
-                            : "hover:text-blue-100 dark:hover:text-gray-100"
-                        }
-                      `}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleEraMenuClick("era-input-tp");
-                      }}
-                      title="Input TP">
-                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
-                      <span className="flex-1 text-sm">Input TP</span>
-                    </a>
-
-                    {/* Input Nilai */}
-                    <a
-                      href="#era-input-nilai"
-                      className={`
-                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                        touch-manipulation min-h-[44px]
-                        ${
-                          currentPage === "era-input-nilai"
-                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
-                            : "hover:text-blue-100 dark:hover:text-gray-100"
-                        }
-                      `}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleEraMenuClick("era-input-nilai");
-                      }}
-                      title="Input Nilai">
-                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
-                      <span className="flex-1 text-sm">Input Nilai</span>
-                    </a>
-
-                    {/* Input Kehadiran */}
-                    <a
-                      href="#era-input-kehadiran"
-                      className={`
-                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                        touch-manipulation min-h-[44px]
-                        ${
-                          currentPage === "era-input-kehadiran"
-                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
-                            : "hover:text-blue-100 dark:hover:text-gray-100"
-                        }
-                      `}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleEraMenuClick("era-input-kehadiran");
-                      }}
-                      title="Input Kehadiran">
-                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
-                      <span className="flex-1 text-sm">Input Kehadiran</span>
-                    </a>
-
-                    {/* Input Catatan */}
-                    <a
-                      href="#era-input-catatan"
-                      className={`
-                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                        touch-manipulation min-h-[44px]
-                        ${
-                          currentPage === "era-input-catatan"
-                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
-                            : "hover:text-blue-100 dark:hover:text-gray-100"
-                        }
-                      `}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleEraMenuClick("era-input-catatan");
-                      }}
-                      title="Input Catatan">
-                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
+                    {!isCollapsed && (
                       <span className="flex-1 text-sm">Input Catatan</span>
-                    </a>
-                  </div>
-                )}
-              </div>
+                    )}
+                  </a>
 
-              {/* Cetak Nilai dengan Submenu */}
-              <div className="mb-1">
-                <a
-                  href="#era-cetak-nilai"
-                  className={`
-                    flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                    touch-manipulation min-h-[44px]
-                    ${isCollapsed ? "justify-center" : ""}
-                    ${
-                      currentPage === "era-cek-kelengkapan" ||
-                      currentPage === "era-cetak-raport"
-                        ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                        : "hover:text-blue-100 dark:hover:text-gray-100"
-                    }
-                  `}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (!isCollapsed) {
-                      setCetakNilaiOpen(!cetakNilaiOpen);
-                    } else {
-                      // Jika collapsed, langsung ke halaman default
+                  {/* ========== CEK KELENGKAPAN - WALI KELAS ========== */}
+                  <a
+                    href="#era-cek-kelengkapan"
+                    className={`
+                      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                      touch-manipulation min-h-[44px]
+                      ${isCollapsed ? "justify-center" : ""}
+                      ${
+                        currentPage === "era-cek-kelengkapan"
+                          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                          : "hover:text-blue-100 dark:hover:text-gray-100"
+                      }
+                    `}
+                    onClick={(e) => {
+                      e.preventDefault();
                       handleEraMenuClick("era-cek-kelengkapan");
-                    }
-                  }}
-                  title={isCollapsed ? "Cetak Nilai" : ""}>
-                  <div className="flex items-center gap-3">
+                    }}
+                    title={isCollapsed ? "Cek Kelengkapan" : ""}>
+                    <svg
+                      className="w-5 h-5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                      />
+                    </svg>
+                    {!isCollapsed && (
+                      <span className="flex-1 text-sm">Cek Kelengkapan</span>
+                    )}
+                  </a>
+
+                  {/* ========== CETAK RAPORT - WALI KELAS ========== */}
+                  <a
+                    href="#era-cetak-raport"
+                    className={`
+                      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                      touch-manipulation min-h-[44px]
+                      ${isCollapsed ? "justify-center" : ""}
+                      ${
+                        currentPage === "era-cetak-raport"
+                          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                          : "hover:text-blue-100 dark:hover:text-gray-100"
+                      }
+                    `}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleEraMenuClick("era-cetak-raport");
+                    }}
+                    title={isCollapsed ? "Cetak Raport" : ""}>
                     <svg
                       className="w-5 h-5 flex-shrink-0"
                       fill="none"
@@ -1019,76 +1008,11 @@ const Sidebar = ({
                       />
                     </svg>
                     {!isCollapsed && (
-                      <span className="flex-1 text-sm">Cetak Nilai</span>
-                    )}
-                  </div>
-
-                  {/* Dropdown arrow - hanya tampil jika tidak collapsed */}
-                  {!isCollapsed && (
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        cetakNilaiOpen ? "rotate-90" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  )}
-                </a>
-
-                {/* Submenu Cetak Nilai - hanya tampil jika tidak collapsed dan dropdown open */}
-                {!isCollapsed && cetakNilaiOpen && (
-                  <div className="ml-8 mt-1 space-y-1">
-                    {/* Cek Kelengkapan */}
-                    <a
-                      href="#era-cek-kelengkapan"
-                      className={`
-                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                        touch-manipulation min-h-[44px]
-                        ${
-                          currentPage === "era-cek-kelengkapan"
-                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
-                            : "hover:text-blue-100 dark:hover:text-gray-100"
-                        }
-                      `}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleEraMenuClick("era-cek-kelengkapan");
-                      }}
-                      title="Cek Kelengkapan">
-                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
-                      <span className="flex-1 text-sm">Cek Kelengkapan</span>
-                    </a>
-
-                    {/* Cetak Raport */}
-                    <a
-                      href="#era-cetak-raport"
-                      className={`
-                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                        touch-manipulation min-h-[44px]
-                        ${
-                          currentPage === "era-cetak-raport"
-                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
-                            : "hover:text-blue-100 dark:hover:text-gray-100"
-                        }
-                      `}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleEraMenuClick("era-cetak-raport");
-                      }}
-                      title="Cetak Raport">
-                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
                       <span className="flex-1 text-sm">Cetak Raport</span>
-                    </a>
-                  </div>
-                )}
-              </div>
+                    )}
+                  </a>
+                </>
+              )}
             </div>
           )}
 

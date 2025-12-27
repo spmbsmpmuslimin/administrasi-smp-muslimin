@@ -79,7 +79,7 @@ function CetakRaport() {
 
       if (!homeroomClassId) {
         throw new Error(
-          "Tidak ditemukan data wali kelas. Pastikan Anda login sebagai wali kelas."
+          "Anda bukan wali kelas. Fitur ini hanya untuk wali kelas."
         );
       }
 
@@ -204,7 +204,6 @@ function CetakRaport() {
         .eq("class_id", classId)
         .eq("tahun_ajaran_id", academicYear?.id)
         .eq("semester", semester)
-        .eq("is_finalized", true)
         .order("mata_pelajaran");
 
       const { data: tpData, error: tpError } = await supabase
@@ -310,129 +309,59 @@ function CetakRaport() {
     setSavingDetail(false);
   };
 
-  // BAGIAN YANG DIREVISI - REPLACE fungsi addStudentPages dengan ini:
-
+  // GANTI fungsi addStudentPages yang lama dengan yang ini
   const addStudentPages = async (doc, siswa, isFirstStudent) => {
     try {
-      // ========== DEBUG: CEK QUERY NILAI ==========
-      console.log("🔍 QUERY NILAI ERAPORT:", {
-        student_id: siswa.id,
-        class_id: classId,
-        tahun_ajaran_id: academicYear?.id,
-        semester: semester,
-      });
-
-      // Query 1: Coba ambil data yang sudah finalized
-      let { data: nilaiData, error: nilaiError } = await supabase
+      // Query nilai_eraport (tanpa filter is_finalized)
+      const { data: nilaiData, error: nilaiError } = await supabase
         .from("nilai_eraport")
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", siswa.id)
         .eq("class_id", classId)
         .eq("tahun_ajaran_id", academicYear?.id)
         .eq("semester", semester)
-        .eq("is_finalized", true)
         .order("mata_pelajaran");
 
-      if (nilaiError) {
-        console.error("❌ Error query nilai_eraport:", nilaiError);
-        throw nilaiError;
-      }
-
-      // ========== FALLBACK: Jika tidak ada data finalized, coba ambil semua ==========
-      if (!nilaiData || nilaiData.length === 0) {
-        console.warn("⚠️ Tidak ada data dengan is_finalized=true");
-        console.log("🔄 Mencoba query tanpa filter is_finalized...");
-
-        const { data: nilaiDataAll, error: nilaiErrorAll } = await supabase
-          .from("nilai_eraport")
-          .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
-          .eq("student_id", siswa.id)
-          .eq("class_id", classId)
-          .eq("tahun_ajaran_id", academicYear?.id)
-          .eq("semester", semester)
-          .order("mata_pelajaran");
-
-        if (!nilaiErrorAll && nilaiDataAll && nilaiDataAll.length > 0) {
-          nilaiData = nilaiDataAll;
-          console.log(
-            "✅ Ditemukan data (tanpa filter finalized):",
-            nilaiData.length
-          );
-        }
-      }
-
-      // ========== DEBUG: CEK HASIL QUERY ==========
-      console.log("📊 DATA NILAI HASIL QUERY:", {
-        jumlah_record: nilaiData?.length || 0,
-        data_sample: nilaiData?.[0] || null,
-      });
-
-      if (!nilaiData || nilaiData.length === 0) {
-        console.error("❌ TIDAK ADA DATA NILAI untuk siswa:", siswa.full_name);
-        console.error("💡 Troubleshooting:");
-        console.error("   1. Pastikan data nilai ada di tabel nilai_eraport");
-        console.error("   2. Cek student_id:", siswa.id);
-        console.error("   3. Cek class_id:", classId);
-        console.error("   4. Cek tahun_ajaran_id:", academicYear?.id);
-        console.error("   5. Cek semester:", semester);
-
-        // Tetap lanjut generate PDF tapi dengan data kosong
-        console.warn("⚠️ Melanjutkan generate PDF dengan tabel kosong...");
-      }
+      if (nilaiError) throw nilaiError;
 
       const { data: kelasData } = await supabase
         .from("classes")
-        .select("grade")
+        .select("id, grade")
         .eq("id", classId)
         .single();
 
-      const kelasGrade = kelasData?.grade || "";
+      const kelasId = kelasData?.id || classId; // ID = 7F
+      const kelasGrade = kelasData?.grade || ""; // grade = 7 (untuk getFase)
 
-      // Query data ekstrakurikuler - HANDLE 404 ERROR
-      let ekskulBody = [["1", "-", "-", "-"]];
+      // Query ekstrakurikuler
+      let ekskulBody = [["1", "-", "-"]];
       try {
-        const { data: ekskulData, error: ekskulError } = await supabase
+        const { data: ekskulData } = await supabase
           .from("student_ekstrakurikuler")
           .select(`*, ekstrakurikuler:ekstrakurikuler_id (nama_kegiatan)`)
           .eq("student_id", siswa.id)
           .eq("tahun_ajaran_id", academicYear?.id)
           .eq("semester", semester);
 
-        if (ekskulError) {
-          console.warn(
-            "⚠️ Tabel student_ekstrakurikuler tidak ada atau tidak bisa diakses:",
-            ekskulError.message
-          );
-        } else if (ekskulData && ekskulData.length > 0) {
+        if (ekskulData && ekskulData.length > 0) {
           ekskulBody = ekskulData.map((item, idx) => [
             idx + 1,
             item.ekstrakurikuler?.nama_kegiatan || "-",
-            item.predikat || "-",
             item.keterangan || "-",
           ]);
-          console.log("✅ Data ekstrakurikuler ditemukan:", ekskulData.length);
-        } else {
-          console.log("ℹ️ Tidak ada data ekstrakurikuler");
         }
       } catch (error) {
-        console.warn("⚠️ Error ekstrakurikuler (diabaikan):", error.message);
+        console.warn("Error ekstrakurikuler:", error.message);
       }
 
-      // ========== QUERY CATATAN & KEHADIRAN (SEMUA DARI catatan_eraport) ==========
+      // Query kehadiran & catatan
       let sakit = 0;
       let izin = 0;
       let alpha = 0;
       let catatanData = null;
 
       try {
-        console.log("🔍 Querying catatan_eraport for kehadiran & catatan:", {
-          student_id: siswa.id,
-          class_id: classId,
-          tahun_ajaran_id: academicYear?.id,
-          semester: semester,
-        });
-
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("catatan_eraport")
           .select("*")
           .eq("student_id", siswa.id)
@@ -441,66 +370,38 @@ function CetakRaport() {
           .eq("semester", semester)
           .maybeSingle();
 
-        if (error) {
-          console.error("❌ Error query catatan_eraport:", error);
-        } else if (data) {
+        if (data) {
           catatanData = data;
-
-          // Ambil data kehadiran dari kolom catatan_eraport
           sakit = data.sakit || 0;
-          izin = data.ijin || 0; // Perhatikan: namanya 'ijin' bukan 'izin'
+          izin = data.ijin || 0;
           alpha = data.tanpa_keterangan || 0;
-
-          console.log("✅ Data dari catatan_eraport:", {
-            sakit,
-            izin,
-            alpha,
-            catatan_wali_kelas: data.catatan_wali_kelas ? "Ada" : "Kosong",
-          });
-        } else {
-          console.log("ℹ️ Tidak ada data catatan_eraport untuk siswa ini");
         }
       } catch (error) {
-        console.error("❌ Error loading catatan_eraport:", error.message);
+        console.error("Error catatan_eraport:", error.message);
       }
 
+      // Wali Kelas
       const sessionData = localStorage.getItem("userSession");
       const currentUser = sessionData ? JSON.parse(sessionData) : null;
+      let waliKelas = {
+        full_name:
+          currentUser?.full_name || currentUser?.username || "Wali Kelas",
+        nip: currentUser?.nip || "-",
+      };
 
-      // Query wali kelas - HANDLE 400 ERROR
-      let waliKelas = null;
       try {
-        const { data: waliKelasData, error: waliKelasError } = await supabase
+        const { data: waliKelasData } = await supabase
           .from("users")
           .select("full_name, nip")
           .eq("id", currentUser?.id)
           .maybeSingle();
 
-        if (waliKelasError) {
-          console.warn(
-            "⚠️ Tidak bisa query tabel users (RLS):",
-            waliKelasError.message
-          );
-          console.log("💡 Menggunakan data dari localStorage sebagai fallback");
-          // Fallback ke data dari localStorage
-          waliKelas = {
-            full_name:
-              currentUser?.full_name || currentUser?.username || "Wali Kelas",
-            nip: currentUser?.nip || "-",
-          };
-        } else {
-          waliKelas = waliKelasData;
-          console.log("✅ Data wali kelas dari database:", waliKelas);
-        }
+        if (waliKelasData) waliKelas = waliKelasData;
       } catch (error) {
-        console.warn("⚠️ Error query users (diabaikan), gunakan localStorage");
-        waliKelas = {
-          full_name:
-            currentUser?.full_name || currentUser?.username || "Wali Kelas",
-          nip: currentUser?.nip || "-",
-        };
+        console.warn("Gunakan localStorage untuk wali kelas");
       }
 
+      // Metadata
       const { data: metadataData } = await supabase
         .from("raport_metadata")
         .select(
@@ -525,82 +426,68 @@ function CetakRaport() {
 
       if (!isFirstStudent) doc.addPage();
 
-      let yPos = 15;
+      let yPos = 22;
       let currentPage = 1;
 
-      // ========== HEADER SECTION ==========
+      // ========== RENDER HEADER ==========
       const renderHeader = (pageNum) => {
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
 
-        doc.text("Nama", 15, yPos);
-        doc.text(":", 50, yPos);
-        doc.text(siswa.full_name.toUpperCase(), 53, yPos);
+        doc.text("Nama Murid", 20, yPos);
+        doc.text(`: ${siswa.full_name.toUpperCase()}`, 50, yPos);
+        doc.text("Kelas", 145, yPos); // <-- GESER ANGKA INI (label)
+        doc.text(`: ${kelasId}`, 170, yPos); // <-- GESER ANGKA INI (value)
+        yPos += 4.5;
 
-        doc.text("Kelas", 140, yPos);
-        doc.text(":", 165, yPos);
-        doc.text(`Kelas ${kelasGrade}`, 168, yPos);
-        yPos += 5;
+        doc.text("NIS/NISN", 20, yPos);
+        doc.text(`: ${siswa.nis || "-"} / ${siswa.nisn || "-"}`, 50, yPos);
+        doc.text("Fase", 145, yPos); // <-- GESER ANGKA INI (label)
+        doc.text(`: ${getFase(parseInt(kelasGrade))}`, 170, yPos); // <-- GESER ANGKA INI (value)
+        yPos += 4.5;
 
-        doc.text("NIS", 15, yPos);
-        doc.text(":", 50, yPos);
-        doc.text(`${siswa.nis || "-"} / ${siswa.nisn || "-"}`, 53, yPos);
-
-        doc.text("Fase", 140, yPos);
-        doc.text(":", 165, yPos);
-        doc.text(getFase(parseInt(kelasGrade)), 168, yPos);
-        yPos += 5;
-
-        doc.text("Nama Sekolah", 15, yPos);
-        doc.text(":", 50, yPos);
+        doc.text("Sekolah", 20, yPos);
         doc.text(
-          schoolSettings.school_name || "SMP MUSLIMIN CILILIN",
-          53,
+          `: ${schoolSettings.school_name || "SMP MUSLIMIN CILILIN"}`,
+          50,
           yPos
         );
-
-        doc.text("Semester", 140, yPos);
-        doc.text(":", 165, yPos);
-        doc.text(semester === "1" ? "1" : "2", 168, yPos);
-        yPos += 5;
-
-        doc.text("Alamat", 15, yPos);
-        doc.text(":", 50, yPos);
+        doc.text("Semester", 145, yPos); // <-- GESER ANGKA INI (label)
         doc.text(
-          schoolSettings.school_address || "JL. RAYA WARUNGAWI",
-          53,
+          `: ${semester === "1" ? "Ganjil (1)" : "Genap (2)"}`,
+          170,
+          yPos
+        ); // <-- GESER ANGKA INI (value)
+        yPos += 4.5;
+
+        doc.text("Alamat", 20, yPos);
+        doc.text(
+          `: ${schoolSettings.school_address || "JL. RAYA WARUNGAWI"}`,
+          50,
           yPos
         );
+        doc.text("Tahun Ajaran", 145, yPos); // <-- GESER ANGKA INI (label)
+        doc.text(`: ${academicYear?.year || "2024/2025"}`, 170, yPos); // <-- GESER ANGKA INI (value)
+        yPos += 4;
 
-        doc.text("Tahun Pelajaran", 140, yPos);
-        doc.text(":", 165, yPos);
-        doc.text(academicYear?.year || "2024/2025", 168, yPos);
+        doc.setLineWidth(0.3);
+        doc.line(20, yPos, 190, yPos);
         yPos += 8;
 
         if (pageNum === 1) {
-          doc.setFontSize(12);
+          doc.setFontSize(11);
           doc.setFont("helvetica", "bold");
           doc.text("LAPORAN HASIL BELAJAR", 105, yPos, { align: "center" });
-          yPos += 8;
+          yPos += 6;
         }
       };
 
       renderHeader(1);
 
       // ========== TABEL MATA PELAJARAN ==========
-      console.log("📝 MEMBUAT TABEL - Jumlah data:", nilaiData?.length || 0);
-
       const tableData = (nilaiData || []).map((nilai, idx) => {
-        console.log(`   Mapel ${idx + 1}:`, {
-          mata_pelajaran: nilai.mata_pelajaran,
-          nilai_akhir: nilai.nilai_akhir,
-          deskripsi_capaian: nilai.deskripsi_capaian?.substring(0, 50) + "...",
-          ada_detail: nilai.nilai_eraport_detail?.length || 0,
-        });
-
         const capaian =
           nilai.deskripsi_capaian || generateCapaianKompetensi([nilai]) || "-";
-
         return [
           idx + 1,
           nilai.mata_pelajaran,
@@ -609,69 +496,57 @@ function CetakRaport() {
         ];
       });
 
-      console.log("✅ TABLE DATA SIAP:", tableData.length, "rows");
-
-      // Jika tidak ada data, buat tabel dengan 1 baris kosong
       if (tableData.length === 0) {
         tableData.push([1, "-", "-", "Belum ada data nilai"]);
-        console.warn("⚠️ Menampilkan tabel kosong karena tidak ada data");
       }
 
       doc.autoTable({
         startY: yPos,
         head: [["No", "Mata Pelajaran", "Nilai Akhir", "Capaian Kompetensi"]],
         body: tableData,
-        theme: "plain",
+        theme: "grid",
         styles: {
           fontSize: 8,
-          cellPadding: 2.5,
+          cellPadding: 2,
           lineColor: [0, 0, 0],
-          lineWidth: 0.3,
+          lineWidth: 0.1,
           overflow: "linebreak",
-          valign: "middle",
         },
         headStyles: {
-          fillColor: [255, 255, 255],
+          fillColor: [240, 240, 240],
           textColor: [0, 0, 0],
           fontStyle: "bold",
           halign: "center",
+          valign: "middle",
           lineColor: [0, 0, 0],
-          lineWidth: 0.3,
+          lineWidth: 0.1,
           fontSize: 8,
-          cellPadding: 2.5,
+          cellPadding: 2,
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: "center" },
-          1: { cellWidth: 50, valign: "middle" },
-          2: { cellWidth: 20, halign: "center" },
-          3: { cellWidth: 100, halign: "left", valign: "middle" },
+          0: { cellWidth: 10, halign: "center", valign: "middle" },
+          1: { cellWidth: 45, halign: "left", valign: "middle" },
+          2: { cellWidth: 18, halign: "center", valign: "middle" },
+          3: { cellWidth: 97, halign: "left", valign: "top" },
         },
-        margin: { left: 15, right: 15 },
-        didDrawCell: (data) => {
-          if (data.section === "body") {
-            doc.setDrawColor(0, 0, 0);
-            doc.setLineWidth(0.3);
-          }
-        },
+        margin: { left: 20, right: 20 },
       });
 
       yPos = doc.lastAutoTable.finalY + 8;
 
-      // ========== CEK PAGE BREAK ==========
-      const remainingSpace = 280 - yPos;
-      const neededSpace = 120;
+      // Cek page break
+      const remainingSpace = 270 - yPos;
+      const neededSpace = 105;
 
       if (remainingSpace < neededSpace) {
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
         doc.text(
-          `Kelas ${kelasGrade} | ${siswa.full_name.toUpperCase()} | ${
-            siswa.nis
-          }`,
-          15,
-          285
+          `Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
+          20,
+          287
         );
-        doc.text(`Halaman : 1`, 175, 285);
+        doc.text(`Halaman : 1`, 175, 287);
 
         doc.addPage();
         yPos = 15;
@@ -679,58 +554,66 @@ function CetakRaport() {
         renderHeader(2);
       }
 
-      // ========== KOKURIKULER SECTION ==========
+      // ========== KOKURIKULER ==========
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.1);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, yPos, 170, 8, "F");
+      doc.rect(20, yPos, 170, 8);
+
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.3);
-      doc.rect(15, yPos, 180, 8);
       doc.text("Kokurikuler", 105, yPos + 5.5, { align: "center" });
       yPos += 8;
 
-      doc.rect(15, yPos, 180, 20);
+      doc.rect(20, yPos, 170, 18);
       yPos += 22;
 
-      // ========== TABEL EKSTRAKURIKULER ==========
+      // ========== EKSTRAKURIKULER ==========
       doc.autoTable({
         startY: yPos,
-        head: [["No", "Kegiatan Ekstrakurikuler", "Predikat", "Keterangan"]],
+        head: [["No", "Ekstrakurikuler", "Keterangan"]],
         body: ekskulBody,
-        theme: "plain",
+        theme: "grid",
         styles: {
           fontSize: 8,
-          cellPadding: 2.5,
+          cellPadding: 2,
           lineColor: [0, 0, 0],
-          lineWidth: 0.3,
+          lineWidth: 0.1,
+          minCellHeight: 12,
         },
         headStyles: {
-          fillColor: [255, 255, 255],
+          fillColor: [240, 240, 240],
           textColor: [0, 0, 0],
           fontStyle: "bold",
           halign: "center",
+          valign: "middle",
+          lineColor: [0, 0, 0],
+          lineWidth: 0.1,
           fontSize: 8,
         },
         columnStyles: {
-          0: { cellWidth: 15, halign: "center" },
-          1: { cellWidth: 70, halign: "left" },
-          2: { cellWidth: 25, halign: "center" },
-          3: { cellWidth: 70, halign: "left" },
+          0: { cellWidth: 10, halign: "center", valign: "middle" },
+          1: { cellWidth: 50, halign: "left", valign: "middle" },
+          2: { cellWidth: 110, halign: "left", valign: "middle" },
         },
-        margin: { left: 15, right: 15 },
+        margin: { left: 20, right: 20 },
       });
-      yPos = doc.lastAutoTable.finalY + 8;
+      yPos = doc.lastAutoTable.finalY + 6;
 
-      // ========== LAYOUT 2 KOLOM: KETIDAKHADIRAN & CATATAN ==========
-      const col1X = 15;
-      const col2X = 105;
-      const boxWidth = 90;
+      // ========== 2 KOLOM: KETIDAKHADIRAN & CATATAN ==========
+      const col1X = 20;
+      const col1Width = 60;
+      const col2X = col1X + col1Width;
+      const col2Width = 110;
       const startBoxY = yPos;
 
-      doc.setLineWidth(0.3);
-      doc.rect(col1X, startBoxY, boxWidth, 8);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(col1X, startBoxY, col1Width, 8, "F");
+      doc.rect(col1X, startBoxY, col1Width, 8);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Ketidakhadiran", col1X + boxWidth / 2, startBoxY + 5.5, {
+      doc.text("Ketidakhadiran", col1X + col1Width / 2, startBoxY + 5.5, {
         align: "center",
       });
 
@@ -741,116 +624,106 @@ function CetakRaport() {
           ["Izin", `: ${izin} hari`],
           ["Tanpa Keterangan", `: ${alpha} hari`],
         ],
-        theme: "plain",
+        theme: "grid",
         styles: {
           fontSize: 8,
-          cellPadding: 2.5,
+          cellPadding: 2,
           lineColor: [0, 0, 0],
-          lineWidth: 0.3,
+          lineWidth: 0.1,
+          minCellHeight: 6,
         },
         columnStyles: {
-          0: { cellWidth: 55, halign: "left" },
-          1: { cellWidth: 35, halign: "left" },
+          0: { cellWidth: 40, halign: "left", valign: "middle" },
+          1: { cellWidth: 20, halign: "left", valign: "middle" },
         },
         margin: { left: col1X, right: 0 },
-        tableWidth: boxWidth,
+        tableWidth: col1Width,
       });
 
       const ketidakhadiranFinalY = doc.lastAutoTable.finalY;
 
-      doc.rect(col2X, startBoxY, boxWidth, 8);
-      doc.text("Catatan Wali Kelas", col2X + boxWidth / 2, startBoxY + 5.5, {
+      doc.setFillColor(240, 240, 240);
+      doc.rect(col2X, startBoxY, col2Width, 8, "F");
+      doc.rect(col2X, startBoxY, col2Width, 8);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("Catatan Wali Kelas", col2X + col2Width / 2, startBoxY + 5.5, {
         align: "center",
       });
 
       const catatanHeight = ketidakhadiranFinalY - (startBoxY + 8);
-      doc.rect(col2X, startBoxY + 8, boxWidth, catatanHeight);
+      doc.rect(col2X, startBoxY + 8, col2Width, catatanHeight);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       const catatan = catatanData?.catatan_wali_kelas || "";
-      const wrappedCatatan = doc.splitTextToSize(catatan, boxWidth - 6);
-      doc.text(wrappedCatatan, col2X + 3, startBoxY + 13);
+      const wrappedCatatan = doc.splitTextToSize(catatan, col2Width - 4);
+      doc.text(wrappedCatatan, col2X + 2, startBoxY + 12);
 
-      yPos = ketidakhadiranFinalY + 8;
+      yPos = ketidakhadiranFinalY + 6;
 
       // ========== TANGGAPAN ORANG TUA ==========
-      doc.setLineWidth(0.3);
-      doc.rect(15, yPos, 180, 8);
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, yPos, 170, 8, "F");
+      doc.rect(20, yPos, 170, 8);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
       doc.text("Tanggapan Orang Tua/Wali Murid", 105, yPos + 5.5, {
         align: "center",
       });
       yPos += 8;
-      doc.rect(15, yPos, 180, 30);
-      yPos += 35;
+
+      doc.rect(20, yPos, 170, 22);
+      yPos += 26;
+      yPos += 8;
 
       // ========== TANDA TANGAN ==========
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
 
-      doc.text(`${tempat}, ${tanggalRaport}`, 105, yPos, { align: "center" });
-      yPos += 6;
+      doc.text(`${tempat}, ${tanggalRaport}`, 155, yPos, { align: "center" });
+      yPos += 5;
 
-      const ttdCol1 = 42;
-      const ttdCol2 = 105;
-      const ttdCol3 = 168;
-
-      doc.text("Orang Tua/Wali,", ttdCol1, yPos, { align: "center" });
-      doc.text("Wali Kelas,", ttdCol3, yPos, { align: "center" });
+      doc.text("Orang Tua Murid", 50, yPos, { align: "center" });
+      doc.text("Wali Kelas", 155, yPos, { align: "center" });
       yPos += 20;
 
-      doc.text("..........................", ttdCol1, yPos, {
+      doc.text(".....................................", 50, yPos, {
         align: "center",
       });
-
       doc.setFont("helvetica", "bold");
-      doc.text(
-        waliKelas?.full_name || currentUser?.full_name || "Wali Kelas",
-        ttdCol3,
-        yPos,
-        { align: "center" }
-      );
-
+      doc.text(waliKelas?.full_name || "Wali Kelas", 155, yPos, {
+        align: "center",
+      });
+      yPos += 4;
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text(
-        waliKelas?.nip ? `NIP. ${waliKelas.nip}` : "NIP. -",
-        ttdCol3,
-        yPos + 4,
-        { align: "center" }
-      );
-
+      doc.text(waliKelas?.nip ? `NIP. ${waliKelas.nip}` : "NIP. -", 155, yPos, {
+        align: "center",
+      });
       yPos += 8;
 
-      doc.setFontSize(9);
-      doc.text("Mengetahui", ttdCol2, yPos, { align: "center" });
-      yPos += 4;
-      doc.text("Kepala Sekolah", ttdCol2, yPos, { align: "center" });
+      doc.text("Kepala Sekolah", 105, yPos, { align: "center" });
       yPos += 20;
 
       doc.setFont("helvetica", "bold");
-      doc.text(namaKepalaSekolah, ttdCol2, yPos, { align: "center" });
+      doc.text(namaKepalaSekolah, 105, yPos, { align: "center" });
+      yPos += 4;
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text(`NIP. ${nipKepalaSekolah}`, ttdCol2, yPos + 4, {
-        align: "center",
-      });
+      doc.text(`NIP. ${nipKepalaSekolah}`, 105, yPos, { align: "center" });
 
       // ========== FOOTER ==========
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
       doc.text(
-        `Kelas ${kelasGrade} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
-        15,
-        285
+        `Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
+        20,
+        287
       );
-      doc.text(`Halaman : ${currentPage}`, 175, 285);
+      doc.text(`Halaman : ${currentPage}`, 175, 287);
 
-      console.log("✅ PDF PAGE UNTUK", siswa.full_name, "SELESAI");
+      console.log("✅ PDF SELESAI:", siswa.full_name);
       return doc;
     } catch (error) {
-      console.error("❌ Error generating PDF for", siswa.full_name, ":", error);
+      console.error("❌ Error PDF:", siswa.full_name, error);
       throw error;
     }
   };

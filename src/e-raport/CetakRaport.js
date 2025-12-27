@@ -10,6 +10,10 @@ import {
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import {
+  getActiveAcademicInfo,
+  applyAcademicFilters,
+} from "../services/academicYearService";
 
 function CetakRaport() {
   const [classId, setClassId] = useState("");
@@ -115,12 +119,26 @@ function CetakRaport() {
   };
 
   const loadActiveAcademicYear = async () => {
-    const { data } = await supabase
-      .from("academic_years")
-      .select("*")
-      .eq("is_active", true)
-      .single();
-    setAcademicYear(data);
+    try {
+      const academicInfo = await getActiveAcademicInfo();
+
+      if (!academicInfo) {
+        throw new Error("Informasi tahun ajaran aktif tidak ditemukan.");
+      }
+
+      // Convert ke format yang dipake di CetakRaport
+      setAcademicYear({
+        id: academicInfo.yearId,
+        year: academicInfo.year || academicInfo.displayText,
+        semester: academicInfo.semester,
+        is_active: academicInfo.isActive,
+      });
+
+      console.log("✅ Academic year loaded:", academicInfo);
+    } catch (error) {
+      console.error("❌ Error loading academic year:", error);
+      setErrorMessage(error.message);
+    }
   };
 
   const loadSchoolSettings = async () => {
@@ -202,7 +220,7 @@ function CetakRaport() {
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", siswa.id)
         .eq("class_id", classId)
-        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("academic_year_id", academicYear?.id)
         .eq("semester", semester)
         .order("mata_pelajaran");
 
@@ -210,14 +228,14 @@ function CetakRaport() {
         .from("tujuan_pembelajaran")
         .select("*")
         .eq("class_id", classId)
-        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("academic_year_id", academicYear?.id)
         .eq("semester", semester)
         .order("mata_pelajaran")
         .order("urutan");
 
       console.log("DEBUG:", {
         class_id: classId,
-        tahun_ajaran: academicYear?.id,
+        academic_year: academicYear?.id,
         semester: semester,
         tp_found: tpData?.length,
         tp_error: tpError,
@@ -318,7 +336,7 @@ function CetakRaport() {
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", siswa.id)
         .eq("class_id", classId)
-        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("academic_year_id", academicYear?.id)
         .eq("semester", semester)
         .order("mata_pelajaran");
 
@@ -340,7 +358,7 @@ function CetakRaport() {
           .from("student_ekstrakurikuler")
           .select(`*, ekstrakurikuler:ekstrakurikuler_id (nama_kegiatan)`)
           .eq("student_id", siswa.id)
-          .eq("tahun_ajaran_id", academicYear?.id)
+          .eq("academic_year_id", academicYear?.id)
           .eq("semester", semester);
 
         if (ekskulData && ekskulData.length > 0) {
@@ -366,7 +384,7 @@ function CetakRaport() {
           .select("*")
           .eq("student_id", siswa.id)
           .eq("class_id", classId)
-          .eq("tahun_ajaran_id", academicYear?.id)
+          .eq("academic_year_id", academicYear?.id)
           .eq("semester", semester)
           .maybeSingle();
 
@@ -407,7 +425,7 @@ function CetakRaport() {
         .select(
           "tanggal_raport, tempat, nama_kepala_sekolah, nip_kepala_sekolah"
         )
-        .eq("tahun_ajaran_id", academicYear?.id)
+        .eq("academic_year_id", academicYear?.id)
         .eq("semester", semester)
         .single();
 
@@ -436,14 +454,14 @@ function CetakRaport() {
 
         doc.text("Nama Murid", 20, yPos);
         doc.text(`: ${siswa.full_name.toUpperCase()}`, 50, yPos);
-        doc.text("Kelas", 145, yPos); // <-- GESER ANGKA INI (label)
-        doc.text(`: ${kelasId}`, 170, yPos); // <-- GESER ANGKA INI (value)
+        doc.text("Kelas", 145, yPos);
+        doc.text(`: ${kelasId}`, 170, yPos);
         yPos += 4.5;
 
         doc.text("NIS/NISN", 20, yPos);
         doc.text(`: ${siswa.nis || "-"} / ${siswa.nisn || "-"}`, 50, yPos);
-        doc.text("Fase", 145, yPos); // <-- GESER ANGKA INI (label)
-        doc.text(`: ${getFase(parseInt(kelasGrade))}`, 170, yPos); // <-- GESER ANGKA INI (value)
+        doc.text("Fase", 145, yPos);
+        doc.text(`: ${getFase(parseInt(kelasGrade))}`, 170, yPos);
         yPos += 4.5;
 
         doc.text("Sekolah", 20, yPos);
@@ -452,12 +470,12 @@ function CetakRaport() {
           50,
           yPos
         );
-        doc.text("Semester", 145, yPos); // <-- GESER ANGKA INI (label)
+        doc.text("Semester", 145, yPos);
         doc.text(
           `: ${semester === "1" ? "Ganjil (1)" : "Genap (2)"}`,
           170,
           yPos
-        ); // <-- GESER ANGKA INI (value)
+        );
         yPos += 4.5;
 
         doc.text("Alamat", 20, yPos);
@@ -466,11 +484,13 @@ function CetakRaport() {
           50,
           yPos
         );
-        doc.text("Tahun Ajaran", 145, yPos); // <-- GESER ANGKA INI (label)
-        doc.text(`: ${academicYear?.year || "2024/2025"}`, 170, yPos); // <-- GESER ANGKA INI (value)
+        doc.text("Tahun Ajaran", 145, yPos);
+        doc.text(`: ${academicYear?.year || "2024/2025"}`, 170, yPos);
         yPos += 4;
 
-        doc.setLineWidth(0.3);
+        // GARIS PEMISAH HEADER - KONSISTEN 0.1
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.1);
         doc.line(20, yPos, 190, yPos);
         yPos += 8;
 
@@ -566,6 +586,7 @@ function CetakRaport() {
       doc.text("Kokurikuler", 105, yPos + 5.5, { align: "center" });
       yPos += 8;
 
+      // KOTAK KOSONG KOKURIKULER
       doc.rect(20, yPos, 170, 18);
       yPos += 22;
 
@@ -608,9 +629,12 @@ function CetakRaport() {
       const col2Width = 110;
       const startBoxY = yPos;
 
+      // HEADER KETIDAKHADIRAN
       doc.setFillColor(240, 240, 240);
+      doc.setLineWidth(0.1);
       doc.rect(col1X, startBoxY, col1Width, 8, "F");
       doc.rect(col1X, startBoxY, col1Width, 8);
+
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
       doc.text("Ketidakhadiran", col1X + col1Width / 2, startBoxY + 5.5, {
@@ -642,9 +666,12 @@ function CetakRaport() {
 
       const ketidakhadiranFinalY = doc.lastAutoTable.finalY;
 
+      // HEADER CATATAN
       doc.setFillColor(240, 240, 240);
+      doc.setLineWidth(0.1);
       doc.rect(col2X, startBoxY, col2Width, 8, "F");
       doc.rect(col2X, startBoxY, col2Width, 8);
+
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
       doc.text("Catatan Wali Kelas", col2X + col2Width / 2, startBoxY + 5.5, {
@@ -652,6 +679,7 @@ function CetakRaport() {
       });
 
       const catatanHeight = ketidakhadiranFinalY - (startBoxY + 8);
+      doc.setLineWidth(0.1);
       doc.rect(col2X, startBoxY + 8, col2Width, catatanHeight);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
@@ -663,6 +691,7 @@ function CetakRaport() {
 
       // ========== TANGGAPAN ORANG TUA ==========
       doc.setFillColor(240, 240, 240);
+      doc.setLineWidth(0.1);
       doc.rect(20, yPos, 170, 8, "F");
       doc.rect(20, yPos, 170, 8);
       doc.setFontSize(9);
@@ -672,6 +701,7 @@ function CetakRaport() {
       });
       yPos += 8;
 
+      doc.setLineWidth(0.1);
       doc.rect(20, yPos, 170, 22);
       yPos += 26;
       yPos += 8;
