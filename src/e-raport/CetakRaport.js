@@ -15,6 +15,30 @@ import {
   applyAcademicFilters,
 } from "../services/academicYearService";
 
+// ✅ URUTAN MAPEL STANDAR
+const getMapelOrder = (mapel) => {
+  const order = [
+    "Pendidikan Agama Islam dan Budi Pekerti",
+    "Pendidikan Pancasila",
+    "Bahasa Indonesia",
+    "Matematika (Umum)",
+    "Ilmu Pengetahuan Alam (IPA)",
+    "Ilmu Pengetahuan Sosial (IPS)",
+    "Bahasa Inggris",
+    "Seni Tari",
+    "Seni Rupa",
+    "Pendidikan Jasmani, Olahraga dan Kesehatan",
+    "Informatika",
+    "Muatan Lokal Bahasa Daerah",
+    "Prakarya",
+    "Koding dan AI",
+    "BP/BK",
+  ];
+
+  const index = order.indexOf(mapel);
+  return index === -1 ? 999 : index;
+};
+
 function CetakRaport() {
   const [classId, setClassId] = useState("");
   const [semester, setSemester] = useState("");
@@ -221,8 +245,8 @@ function CetakRaport() {
         .eq("student_id", siswa.id)
         .eq("class_id", classId)
         .eq("academic_year_id", academicYear?.id)
-        .eq("semester", semester)
-        .order("mata_pelajaran");
+        .eq("semester", semester);
+      // ✅ HAPUS .order("mata_pelajaran") - nanti sort manual
 
       const { data: tpData, error: tpError } = await supabase
         .from("tujuan_pembelajaran")
@@ -262,6 +286,15 @@ function CetakRaport() {
 
           return { ...nilai, tujuan_pembelajaran_list: tpWithStatus };
         }) || [];
+
+      // ✅ SORT berdasarkan urutan mapel standar
+      const sortedEnrichedData = enrichedData.sort((a, b) => {
+        return (
+          getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran)
+        );
+      });
+
+      setNilaiDetailList(sortedEnrichedData);
 
       setNilaiDetailList(enrichedData);
     } catch (error) {
@@ -337,8 +370,17 @@ function CetakRaport() {
         .eq("student_id", siswa.id)
         .eq("class_id", classId)
         .eq("academic_year_id", academicYear?.id)
-        .eq("semester", semester)
-        .order("mata_pelajaran");
+        .eq("semester", semester);
+      // ✅ HAPUS .order("mata_pelajaran") - nanti sort manual
+
+      if (nilaiError) throw nilaiError;
+
+      // ✅ SORT berdasarkan urutan mapel standar
+      const sortedNilaiData = (nilaiData || []).sort((a, b) => {
+        return (
+          getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran)
+        );
+      });
 
       if (nilaiError) throw nilaiError;
 
@@ -506,8 +548,19 @@ function CetakRaport() {
 
       // ========== TABEL MATA PELAJARAN ==========
       const tableData = (nilaiData || []).map((nilai, idx) => {
-        const capaian =
+        let capaian =
           nilai.deskripsi_capaian || generateCapaianKompetensi([nilai]) || "-";
+
+        // ✅ Bersihkan deskripsi dari format aneh
+        capaian = capaian
+          .replace(/\s+/g, " ") // Multiple spaces jadi 1 spasi
+          .replace(/\s+\./g, ".") // Hapus spasi sebelum titik
+          .replace(/\s+,/g, ",") // Hapus spasi sebelum koma
+          .replace(/\.\s*,/g, ".") // Hapus ", " jadi "."
+          .replace(/,\s*,/g, ",") // Hapus koma ganda
+          .replace(/\.\s*\./g, ".") // Hapus titik ganda
+          .trim();
+
         return [
           idx + 1,
           nilai.mata_pelajaran,
@@ -547,7 +600,11 @@ function CetakRaport() {
           0: { cellWidth: 10, halign: "center", valign: "middle" },
           1: { cellWidth: 45, halign: "left", valign: "middle" },
           2: { cellWidth: 18, halign: "center", valign: "middle" },
-          3: { cellWidth: 97, halign: "left", valign: "top" },
+          3: {
+            cellWidth: 97,
+            halign: "justify", // ✅ GANTI dari "left" jadi "justify"
+            valign: "top",
+          },
         },
         margin: { left: 20, right: 20 },
       });

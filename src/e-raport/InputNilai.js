@@ -10,6 +10,9 @@ import {
   applyAcademicFilters,
 } from "../services/academicYearService";
 
+// ✅ CONSTANT DEFAULT KKM - Ganti di sini kalau mau ubah default
+const DEFAULT_KKM = 70;
+
 // ✅ STANDARDISASI NAMA MAPEL - KONVERSI UPPERCASE KE TITLE CASE
 const standardizeMapelName = (mapel) => {
   const mapping = {
@@ -72,6 +75,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false); // ✅ TAMBAH INI
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0 });
 
   // ✅ BAGIAN 1: Tambah State untuk Auto-Save
@@ -246,20 +250,44 @@ function InputNilai({ user, onShowToast, darkMode }) {
         return;
       }
 
-      // ✅ GANTI: AMBIL KKM dengan academicInfo.yearId
-      const { data: kkmData, error: kkmError } = await supabase
+      // ✅ GET KKM - dengan konsep baru (per jenjang) + fallback ke legacy
+      const jenjang = kelas.charAt(0); // "7A" → "7"
+
+      // 1. Coba ambil KKM per jenjang (konsep baru)
+      const { data: jenjangKKM } = await supabase
         .from("raport_config")
         .select("kkm")
-        .eq("class_id", kelas)
+        .eq("academic_year_id", academicInfo.yearId)
+        .eq("semester", parseInt(selectedSemester))
+        .eq("jenjang", parseInt(jenjang))
         .eq("mata_pelajaran", selectedMapel)
-        .eq("academic_year_id", academicInfo.yearId) // ✅ FIX: academic_year_id
+        .eq("is_jenjang_default", true)
         .maybeSingle();
 
-      if (kkmError) {
-        console.warn("⚠️ KKM error:", kkmError);
-      }
+      let kkm = DEFAULT_KKM;
 
-      const kkm = kkmData?.kkm || 75;
+      // Jika ada KKM per jenjang, pakai itu
+      if (jenjangKKM?.kkm) {
+        kkm = parseFloat(jenjangKKM.kkm);
+        console.log("✅ KKM found (per jenjang):", kkm);
+      }
+      // Jika tidak ada, coba ambil KKM per kelas (legacy data)
+      else {
+        const { data: kelasKKM } = await supabase
+          .from("raport_config")
+          .select("kkm")
+          .eq("class_id", kelas)
+          .eq("mata_pelajaran", selectedMapel)
+          .eq("academic_year_id", academicInfo.yearId)
+          .maybeSingle();
+
+        if (kelasKKM?.kkm) {
+          kkm = parseFloat(kelasKKM.kkm);
+          console.log("⚠️ KKM found (per kelas - legacy):", kkm);
+        } else {
+          console.log(`⚠️ Using default KKM: ${DEFAULT_KKM}`);
+        }
+      }
 
       // LOAD SISWA
       const { data: students, error: studentsError } = await supabase
@@ -507,22 +535,34 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
   // ✅ BAGIAN 3: Tambah Fungsi triggerAutoSave
   const triggerAutoSave = () => {
+    // ✅ Jangan auto-save kalau sedang save
+    if (saving) {
+      console.log("⏸️ Skipping auto-save, sedang save...");
+      return;
+    }
+
     // Clear timeout sebelumnya
     if (autoSaveTimeout) {
       clearTimeout(autoSaveTimeout);
     }
 
-    // Set timeout baru - auto-save 3 detik setelah user berhenti input
+    // Set timeout baru
     const timeout = setTimeout(() => {
-      handleSave(true, true); // true = auto-save mode, true = silent mode (no toast)
+      handleSave(true, true);
       setLastAutoSave(new Date());
-    }, 3000); // 3 detik delay
+    }, 3000);
 
     setAutoSaveTimeout(timeout);
   };
 
   // ✅ BAGIAN 2: Replace Fungsi handleSave dengan versi baru
   const handleSave = async (isAutoSave = false, silent = false) => {
+    // ✅ Prevent double save
+    if (saving) {
+      console.log("⏸️ Already saving, skipping...");
+      return;
+    }
+
     if (!kelas || !selectedMapel || !selectedSemester || !academicInfo) {
       if (!isAutoSave && onShowToast)
         onShowToast(
@@ -555,6 +595,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
       return;
 
     setSaving(true);
+    setIsAutoSaving(isAutoSave); // ✅ TAMBAH BARIS INI
     setSaveProgress({ current: 0, total: siswaList.length });
 
     try {
@@ -563,15 +604,44 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
       const userId = user.id;
 
-      // ✅ GANTI: Get KKM dengan academicInfo.yearId
-      const { data: kkmData } = await supabase
+      // ✅ GET KKM - dengan konsep baru (per jenjang) + fallback ke legacy
+      const jenjang = kelas.charAt(0); // "7A" → "7"
+
+      // 1. Coba ambil KKM per jenjang (konsep baru)
+      const { data: jenjangKKM } = await supabase
         .from("raport_config")
         .select("kkm")
-        .eq("class_id", kelas)
+        .eq("academic_year_id", academicInfo.yearId)
+        .eq("semester", academicInfo.semester)
+        .eq("jenjang", parseInt(jenjang))
         .eq("mata_pelajaran", selectedMapel)
-        .eq("academic_year_id", academicInfo.yearId) // ✅ FIX: academic_year_id
+        .eq("is_jenjang_default", true)
         .maybeSingle();
-      const kkm = kkmData?.kkm || 75;
+
+      let kkm = DEFAULT_KKM;
+
+      // Jika ada KKM per jenjang, pakai itu
+      if (jenjangKKM?.kkm) {
+        kkm = jenjangKKM.kkm;
+        console.log("✅ KKM found (per jenjang):", kkm);
+      }
+      // Jika tidak ada, coba ambil KKM per kelas (legacy data)
+      else {
+        const { data: kelasKKM } = await supabase
+          .from("raport_config")
+          .select("kkm")
+          .eq("class_id", kelas)
+          .eq("mata_pelajaran", selectedMapel)
+          .eq("academic_year_id", academicInfo.yearId)
+          .maybeSingle();
+
+        if (kelasKKM?.kkm) {
+          kkm = kelasKKM.kkm;
+          console.log("⚠️ KKM found (per kelas - legacy):", kkm);
+        } else {
+          console.log(`⚠️ Using default KKM: ${DEFAULT_KKM}`);
+        }
+      }
 
       // ✅ FILTER: Hanya siswa yang ada datanya
       const siswaWithData = siswaList.filter((siswa) => {
@@ -646,24 +716,31 @@ function InputNilai({ user, onShowToast, darkMode }) {
         setSaveProgress({ current: updatedCount, total: siswaWithData.length });
       }
 
-      // ✅ BULK INSERT (satu query aja!)
+      // ✅ BULK UPSERT (mencegah duplikat!)
       let newRapors = [];
       if (dataToInsert.length > 0) {
         const insertData = dataToInsert.map(
           ({ student_id_key, ...rest }) => rest
         );
+
+        // Pakai upsert dengan onConflict
         const { data: inserted, error: insertError } = await supabase
           .from("nilai_eraport")
-          .insert(insertData)
+          .upsert(insertData, {
+            onConflict:
+              "student_id,class_id,mata_pelajaran,academic_year_id,semester",
+            ignoreDuplicates: false, // Update kalau ada duplikat
+          })
           .select();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error("❌ Upsert error:", insertError);
+          throw insertError;
+        }
+
         newRapors = inserted || [];
         insertedCount = newRapors.length;
-        setSaveProgress({
-          current: updatedCount + insertedCount,
-          total: siswaWithData.length,
-        });
+        console.log(`✅ Upserted ${insertedCount} records (insert or update)`);
       }
 
       // ✅ HAPUS SEMUA TP DETAIL LAMA (BULK DELETE - satu query!)
@@ -727,8 +804,10 @@ function InputNilai({ user, onShowToast, darkMode }) {
             skipped > 0 ? `, ${skipped} dilewati` : ""
           })`;
 
-      // ✅ Cuma tampilkan toast kalau BUKAN silent mode
-      if (onShowToast && !silent) onShowToast(message, "success");
+      // ✅ HANYA tampilkan toast kalau BUKAN silent mode
+      if (onShowToast && !silent) {
+        onShowToast(message, "success");
+      }
 
       // Reload data hanya kalau bukan auto-save
       if (!isAutoSave) {
@@ -736,14 +815,17 @@ function InputNilai({ user, onShowToast, darkMode }) {
       }
     } catch (error) {
       console.error("Error saving data:", error);
-      // ✅ Bedain pesan manual save vs auto-save
+
+      // ✅ Error SELALU ditampilkan (tidak pakai silent check)
       const errorMsg = isAutoSave
         ? `Auto-save gagal: ${error.message}`
         : `Gagal menyimpan: ${error.message}`;
 
+      // Error selalu tampil meskipun silent mode
       if (onShowToast) onShowToast(errorMsg, "error");
     } finally {
       setSaving(false);
+      setIsAutoSaving(false); // ✅ TAMBAH INI
       setSaveProgress({ current: 0, total: 0 });
     }
   };
@@ -1501,8 +1583,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
         </div>
       </div>
 
-      {/* Save Progress Overlay */}
-      {saving && (
+      {/* Save Progress Overlay - HANYA untuk manual save */}
+      {saving && !isAutoSaving && (
         <div className="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50 p-4">
           <div
             className={`rounded-2xl p-6 sm:p-8 w-full max-w-md shadow-2xl ${

@@ -2,6 +2,30 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Printer, Download, RefreshCw } from "lucide-react";
 
+// ✅ URUTAN MAPEL STANDAR
+const getMapelOrder = (mapel) => {
+  const order = [
+    "Pendidikan Agama Islam dan Budi Pekerti",
+    "Pendidikan Pancasila",
+    "Bahasa Indonesia",
+    "Matematika (Umum)",
+    "Ilmu Pengetahuan Alam (IPA)",
+    "Ilmu Pengetahuan Sosial (IPS)",
+    "Bahasa Inggris",
+    "Seni Tari",
+    "Seni Rupa",
+    "Pendidikan Jasmani, Olahraga dan Kesehatan",
+    "Informatika",
+    "Muatan Lokal Bahasa Daerah",
+    "Prakarya",
+    "Koding dan AI",
+    "BP/BK",
+  ];
+
+  const index = order.indexOf(mapel);
+  return index === -1 ? 999 : index; // Kalau ngga ada di list, taruh di belakang
+};
+
 function PreviewRaport({ semester, setSemester, academicYear }) {
   const [loading, setLoading] = useState(false);
   const [siswaList, setSiswaList] = useState([]);
@@ -12,19 +36,19 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
   const [schoolSettings, setSchoolSettings] = useState({});
   const [loadingPreview, setLoadingPreview] = useState(false);
 
-  // 🆕 Ambil classId dari localStorage
+  // Ambil classId dari localStorage
   const [classId, setClassId] = useState("");
   const [isWaliKelas, setIsWaliKelas] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 🆕 Load user dan kelas saat component mount
+  // Load user dan kelas saat component mount
   useEffect(() => {
     loadUserAndClass();
   }, []);
 
   // Load daftar siswa saat classId tersedia
   useEffect(() => {
-    console.log("🔄 useEffect classId triggered, classId:", classId);
+    console.log("📄 useEffect classId triggered, classId:", classId);
     if (classId) {
       console.log("✅ classId ada, memanggil loadSiswaList()");
       loadSiswaList();
@@ -41,7 +65,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
     }
   }, [selectedSiswaId, semester, academicYear]);
 
-  // 🆕 Fungsi untuk load user dan classId
+  // Fungsi untuk load user dan classId
   const loadUserAndClass = async () => {
     try {
       console.log("🔍 DEBUG: Mulai load user dan class");
@@ -157,12 +181,12 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
         .eq("academic_year_id", academicYear?.id)
         .eq("semester", semester)
         .eq("is_finalized", true)
-        .eq("students.is_active", true)
-        .order("mata_pelajaran");
+        .eq("students.is_active", true);
+      // ✅ HAPUS .order("mata_pelajaran") - nanti sort manual
 
       console.log("📊 Nilai Finalized:", nilai?.length || 0);
 
-      // 🆕 FALLBACK: Kalau ngga ada yang finalized, ambil semua (termasuk draft, tapi tetap siswa aktif)
+      // FALLBACK: Kalau ngga ada yang finalized, ambil semua (termasuk draft, tapi tetap siswa aktif)
       if (!nilai || nilai.length === 0) {
         console.log("⚠️ Tidak ada nilai finalized, coba ambil semua data...");
 
@@ -175,15 +199,24 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
           .eq("class_id", classId)
           .eq("academic_year_id", academicYear?.id)
           .eq("semester", semester)
-          .eq("students.is_active", true)
-          .order("mata_pelajaran");
+          .eq("students.is_active", true);
+        // ✅ HAPUS .order("mata_pelajaran") - nanti sort manual
 
         nilai = nilaiAll;
         console.log("📊 Nilai Total (termasuk draft):", nilai?.length || 0);
       }
 
+      // ✅ SORT berdasarkan urutan mapel standar
+      const sortedNilai = (nilai || []).sort((a, b) => {
+        return (
+          getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran)
+        );
+      });
+
+      console.log("✅ Nilai sudah disort berdasarkan urutan mapel standar");
+
       setSiswaData(siswa);
-      setNilaiData(nilai || []);
+      setNilaiData(sortedNilai);
     } catch (err) {
       console.error("Error loading preview:", err);
       alert("Gagal memuat data: " + err.message);
@@ -233,7 +266,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
 
   const fase = kelasInfo ? getFase(parseInt(kelasInfo.grade)) : "D";
 
-  // 🆕 Handle error message
+  // Handle error message
   if (errorMessage) {
     return (
       <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-lg shadow">

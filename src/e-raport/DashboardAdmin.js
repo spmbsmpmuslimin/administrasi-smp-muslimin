@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { Settings, BarChart3, FileText, Users } from "lucide-react";
-import KKMConfig from "./KKMConfig";
-// Import komponen admin lain nanti di sini
+import RaportConfig from "./RaportConfig";
 
 function DashboardAdmin({ user, onShowToast, darkMode }) {
-  const [activeTab, setActiveTab] = useState("monitoring"); // tab aktif
+  const [activeTab, setActiveTab] = useState("monitoring");
 
   // Cek apakah user adalah admin
   if (user?.role !== "admin") {
@@ -51,21 +50,14 @@ function DashboardAdmin({ user, onShowToast, darkMode }) {
               className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-colors ${
                 activeTab === "monitoring"
                   ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
+                  : `border-transparent ${
+                      darkMode
+                        ? "text-gray-400 hover:text-gray-200"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`
               }`}>
               <BarChart3 size={20} />
               Monitoring
-            </button>
-
-            <button
-              onClick={() => setActiveTab("kkm")}
-              className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-colors ${
-                activeTab === "kkm"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}>
-              <Settings size={20} />
-              Pengaturan KKM
             </button>
 
             <button
@@ -73,7 +65,11 @@ function DashboardAdmin({ user, onShowToast, darkMode }) {
               className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-colors ${
                 activeTab === "tp"
                   ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
+                  : `border-transparent ${
+                      darkMode
+                        ? "text-gray-400 hover:text-gray-200"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`
               }`}>
               <FileText size={20} />
               Tujuan Pembelajaran
@@ -84,10 +80,29 @@ function DashboardAdmin({ user, onShowToast, darkMode }) {
               className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-colors ${
                 activeTab === "users"
                   ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
+                  : `border-transparent ${
+                      darkMode
+                        ? "text-gray-400 hover:text-gray-200"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`
               }`}>
               <Users size={20} />
               Manajemen User
+            </button>
+
+            <button
+              onClick={() => setActiveTab("raport")}
+              className={`flex items-center gap-2 px-4 py-3 font-medium border-b-2 transition-colors ${
+                activeTab === "raport"
+                  ? "border-blue-600 text-blue-600"
+                  : `border-transparent ${
+                      darkMode
+                        ? "text-gray-400 hover:text-gray-200"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`
+              }`}>
+              <Settings size={20} />
+              Konfigurasi E-Raport
             </button>
           </div>
         </div>
@@ -97,38 +112,66 @@ function DashboardAdmin({ user, onShowToast, darkMode }) {
       <div className="max-w-7xl mx-auto">
         {activeTab === "monitoring" && (
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-4">Monitoring (Coming Soon)</h2>
-            <p className="text-gray-600">
-              Fitur monitoring akan segera hadir...
-            </p>
+            <div
+              className={`${
+                darkMode ? "bg-gray-800" : "bg-white"
+              } rounded-lg shadow p-6`}>
+              <h2
+                className={`text-xl font-bold mb-4 ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
+                Monitoring (Coming Soon)
+              </h2>
+              <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                Fitur monitoring akan segera hadir...
+              </p>
+            </div>
           </div>
         )}
 
-        {activeTab === "kkm" && (
-          <KKMConfig
+        {activeTab === "raport" && (
+          <RaportConfig
             user={user}
-            onShowToast={onShowToast}
+            showToast={onShowToast}
             darkMode={darkMode}
           />
         )}
 
         {activeTab === "tp" && (
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-4">
-              Tujuan Pembelajaran (Coming Soon)
-            </h2>
-            <p className="text-gray-600">Fitur TP akan segera hadir...</p>
+            <div
+              className={`${
+                darkMode ? "bg-gray-800" : "bg-white"
+              } rounded-lg shadow p-6`}>
+              <h2
+                className={`text-xl font-bold mb-4 ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
+                Tujuan Pembelajaran (Coming Soon)
+              </h2>
+              <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                Fitur TP akan segera hadir...
+              </p>
+            </div>
           </div>
         )}
 
         {activeTab === "users" && (
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-4">
-              Manajemen User (Coming Soon)
-            </h2>
-            <p className="text-gray-600">
-              Fitur user management akan segera hadir...
-            </p>
+            <div
+              className={`${
+                darkMode ? "bg-gray-800" : "bg-white"
+              } rounded-lg shadow p-6`}>
+              <h2
+                className={`text-xl font-bold mb-4 ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
+                Manajemen User (Coming Soon)
+              </h2>
+              <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                Fitur user management akan segera hadir...
+              </p>
+            </div>
           </div>
         )}
       </div>

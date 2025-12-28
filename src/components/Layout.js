@@ -278,9 +278,11 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     });
   };
 
-  // 🔥 UPDATE: Menambahkan halaman E-RAPORT
+  // 🔥 UPDATE: Menambahkan halaman E-RAPORT - SESUAI DOKUMENTASI
   const getCurrentPage = () => {
     const path = location.pathname;
+
+    // Menu Utama & Akademik
     if (path === "/dashboard") return "dashboard";
     if (path === "/teachers") return "teachers";
     if (path === "/students") return "students";
@@ -294,28 +296,36 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     if (path === "/catatan-siswa") return "catatan-siswa";
     if (path === "/konseling") return "konseling";
     if (path === "/reports") return "reports";
+
+    // Sistem (Admin only)
     if (path === "/spmb") return "spmb";
     if (path === "/settings") return "settings";
     if (path === "/monitor-sistem") return "monitor-sistem";
 
-    // 🔥 UPDATE: Tambah halaman E-RAPORT
+    // 🔥 UPDATE: Tambah semua halaman E-RAPORT sesuai dokumentasi
     if (path === "/era-dashboard-admin") return "era-dashboard-admin";
     if (path === "/era-dashboard-teacher") return "era-dashboard-teacher";
     if (path === "/era-dashboard-homeroom") return "era-dashboard-homeroom";
-    if (path === "/era-dashboard") return "era-dashboard"; // Tambah untuk handle dari sidebar
+    if (path === "/era-dashboard") return "era-dashboard"; // Generic untuk semua user
     if (path === "/era-input-tp") return "era-input-tp";
     if (path === "/era-input-nilai") return "era-input-nilai";
     if (path === "/era-input-kehadiran") return "era-input-kehadiran";
     if (path === "/era-input-catatan") return "era-input-catatan";
-    if (path === "/era-cek-kelengkapan") return "era-cek-kelengkapan";
     if (path === "/era-cetak-raport") return "era-cetak-raport";
+
+    // 🆕 TAMBAH INI: Menu baru "Cek Nilai" sesuai dokumentasi
+    if (path === "/era-cek-nilai") return "era-cek-nilai";
+
+    // 🔄 UPDATE INI: Update dari "era-cek-kelengkapan" dengan nama baru sesuai dokumen
+    if (path === "/era-cek-kelengkapan") return "era-cek-kelengkapan";
 
     return "dashboard";
   };
 
-  // 🔥 UPDATE: Menambahkan nama halaman untuk E-RAPORT
+  // 🔥 UPDATE: Menambahkan nama halaman untuk E-RAPORT sesuai dokumentasi
   const getCurrentPageName = () => {
     const pathMap = {
+      // Menu Utama & Akademik
       "/dashboard": "Dashboard",
       "/students": "Data Siswa",
       "/teachers": "Data Guru",
@@ -329,11 +339,13 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       "/catatan-siswa": "Catatan Siswa",
       "/konseling": "Konseling",
       "/reports": "Laporan",
+
+      // Sistem (Admin only)
       "/spmb": "SPMB",
       "/settings": "Pengaturan",
       "/monitor-sistem": "Monitor Sistem",
 
-      // 🔥 UPDATE: Tambah halaman E-RAPORT
+      // 🔥 UPDATE: Halaman E-RAPORT sesuai dokumentasi
       "/era-dashboard-admin": "Dashboard Admin - E-Raport",
       "/era-dashboard-teacher": "Dashboard Guru - E-Raport",
       "/era-dashboard-homeroom": "Dashboard Walikelas - E-Raport",
@@ -342,13 +354,18 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       "/era-input-nilai": "Input Nilai - E-Raport",
       "/era-input-kehadiran": "Input Kehadiran - E-Raport",
       "/era-input-catatan": "Input Catatan - E-Raport",
-      "/era-cek-kelengkapan": "Cek Kelengkapan - E-Raport",
       "/era-cetak-raport": "Cetak Raport - E-Raport",
+
+      // 🆕 TAMBAH INI: Menu baru "Cek Nilai" sesuai dokumentasi
+      "/era-cek-nilai": "Cek Nilai - E-Raport",
+
+      // 🔄 UPDATE INI: Update nama dari "Cek Kelengkapan" menjadi "Cek Status Nilai" sesuai dokumen
+      "/era-cek-kelengkapan": "Cek Status Nilai - E-Raport",
     };
     return pathMap[location.pathname] || "Dashboard";
   };
 
-  // 🔥 UPDATE: Menambahkan subtitle untuk halaman E-RAPORT
+  // 🔥 UPDATE: Menambahkan subtitle untuk halaman E-RAPORT sesuai dokumentasi
   const getPageSubtitle = () => {
     if (!user) return "SMP Muslimin";
 
@@ -357,6 +374,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
 
     const subtitles = {
       admin: {
+        // Menu Utama & Akademik
         Dashboard: "Kelola Semua Data Sekolah",
         "Data Siswa": "Kelola Data Siswa Sekolah",
         "Data Guru": "Kelola Data Guru Sekolah",
@@ -370,11 +388,13 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         "Catatan Siswa": "Kelola Catatan Perkembangan Siswa",
         Konseling: "Kelola Data Konseling BK/BP",
         Laporan: "Generate dan Kelola Laporan",
+
+        // Sistem (Admin only)
         SPMB: "Seleksi Penerimaan Murid Baru",
         Pengaturan: "Pengaturan Sistem Sekolah",
         "Monitor Sistem": "Pemeriksaan Kesehatan Sistem dan Integritas Data",
 
-        // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk admin
+        // 🔥 UPDATE: Subtitle E-RAPORT untuk admin sesuai dokumentasi
         "Dashboard Admin - E-Raport": "Monitor Semua Data E-Raport Sekolah",
         "Dashboard E-Raport": "Monitor Semua Data E-Raport Sekolah",
         "Input Tujuan Pembelajaran - E-Raport":
@@ -382,10 +402,16 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         "Input Nilai - E-Raport": "Input Nilai Akademik Siswa",
         "Input Kehadiran - E-Raport": "Kelola Kehadiran Siswa untuk Raport",
         "Input Catatan - E-Raport": "Kelola Catatan Guru untuk Raport",
-        "Cek Kelengkapan - E-Raport": "Verifikasi Kelengkapan Data Raport",
         "Cetak Raport - E-Raport": "Generate dan Cetak Laporan Raport",
+
+        // 🆕 TAMBAH INI: Subtitle untuk menu baru "Cek Nilai" sesuai dokumentasi
+        "Cek Nilai - E-Raport": "Verifikasi dan Monitor Nilai Siswa",
+
+        // 🔄 UPDATE INI: Update subtitle sesuai dokumen
+        "Cek Status Nilai - E-Raport": "Verifikasi Kelengkapan Data Raport",
       },
       guru_bk: {
+        // Menu Utama & Akademik untuk Guru BK
         Dashboard: "Dashboard Bimbingan Konseling",
         "Data Siswa": "Lihat Data Siswa Sekolah",
         "Data Guru": "Lihat Data Guru Sekolah",
@@ -396,6 +422,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       },
       teacher: homeroom_class_id
         ? {
+            // Menu untuk Wali Kelas (teacher dengan homeroom_class_id)
             Dashboard: `Kelola Data Kelas ${homeroom_class_id}`,
             "Data Siswa": `Kelola Data Siswa Kelas`,
             "Data Guru": "Kelola Data Guru Sekolah",
@@ -410,17 +437,23 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Laporan: `Laporan Kelas`,
             Pengaturan: "Pengaturan Akun",
 
-            // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk wali kelas
+            // 🔥 UPDATE: Subtitle E-RAPORT untuk wali kelas sesuai dokumentasi
             "Dashboard Walikelas - E-Raport": `Dashboard E-Raport Kelas ${homeroom_class_id}`,
             "Dashboard E-Raport": `Dashboard E-Raport Kelas ${homeroom_class_id}`,
             "Input Tujuan Pembelajaran - E-Raport": `Input TP untuk Kelas ${homeroom_class_id}`,
             "Input Nilai - E-Raport": `Input Nilai untuk Kelas ${homeroom_class_id}`,
             "Input Kehadiran - E-Raport": `Input Kehadiran untuk Raport Kelas ${homeroom_class_id}`,
             "Input Catatan - E-Raport": `Input Catatan Guru untuk Raport Kelas ${homeroom_class_id}`,
-            "Cek Kelengkapan - E-Raport": `Cek Kelengkapan Data Raport Kelas ${homeroom_class_id}`,
             "Cetak Raport - E-Raport": `Cetak Raport Siswa Kelas ${homeroom_class_id}`,
+
+            // 🆕 TAMBAH INI: Subtitle untuk menu baru "Cek Nilai" untuk wali kelas
+            "Cek Nilai - E-Raport": `Cek Nilai Siswa Kelas ${homeroom_class_id}`,
+
+            // 🔄 UPDATE INI: Update subtitle sesuai dokumen
+            "Cek Status Nilai - E-Raport": `Cek Kelengkapan Data Raport Kelas ${homeroom_class_id}`,
           }
         : {
+            // Menu untuk Guru Mapel (teacher tanpa homeroom_class_id)
             Dashboard: "Monitor semua kelas yang diampu",
             "Data Siswa": "Lihat data siswa semua kelas",
             "Data Guru": "Lihat data guru sekolah",
@@ -434,25 +467,31 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Laporan: "Laporan mata pelajaran",
             Pengaturan: "Pengaturan akun",
 
-            // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk guru
+            // 🔥 UPDATE: Subtitle E-RAPORT untuk guru mapel sesuai dokumentasi
             "Dashboard Guru - E-Raport": "Dashboard E-Raport untuk Guru",
             "Dashboard E-Raport": "Dashboard E-Raport untuk Guru",
             "Input Tujuan Pembelajaran - E-Raport": "Input Tujuan Pembelajaran",
             "Input Nilai - E-Raport": "Input Nilai Akademik",
             "Input Kehadiran - E-Raport": "Input Kehadiran untuk Raport",
             "Input Catatan - E-Raport": "Input Catatan Guru",
+
+            // 🆕 TAMBAH INI: Subtitle untuk menu baru "Cek Nilai" untuk guru mapel
+            "Cek Nilai - E-Raport": "Cek Nilai Mata Pelajaran",
+
+            // Catatan: Guru mapel tidak memiliki akses ke "Cek Status Nilai"
           },
     };
 
     return subtitles[role]?.[currentPage] || "SMP Muslimin";
   };
 
-  // 🔥 UPDATE: Menambahkan route untuk E-RAPORT dengan LOGIKA YANG SAMA DENGAN App.js
+  // 🔥 UPDATE: Menambahkan route untuk E-RAPORT sesuai dokumentasi
   const handleNavigate = useCallback(
     (page) => {
       if (isNavigating) return;
 
       const routes = {
+        // Menu Utama & Akademik
         dashboard: "/dashboard",
         teachers: "/teachers",
         students: "/students",
@@ -466,22 +505,33 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         "catatan-siswa": "/catatan-siswa",
         konseling: "/konseling",
         reports: "/reports",
+
+        // Sistem (Admin only)
         spmb: "/spmb",
         settings: "/settings",
         "monitor-sistem": "/monitor-sistem",
 
-        // 🔥 UPDATE: Tambah route E-RAPORT
+        // 🔥 UPDATE: Tambah semua route E-RAPORT sesuai dokumentasi
+        "era-dashboard-admin": "/era-dashboard-admin",
+        "era-dashboard-teacher": "/era-dashboard-teacher",
+        "era-dashboard-homeroom": "/era-dashboard-homeroom",
+        "era-dashboard": "/era-dashboard", // ← INI YANG BARU DITAMBAH
         "era-input-tp": "/era-input-tp",
         "era-input-nilai": "/era-input-nilai",
         "era-input-kehadiran": "/era-input-kehadiran",
         "era-input-catatan": "/era-input-catatan",
-        "era-cek-kelengkapan": "/era-cek-kelengkapan",
         "era-cetak-raport": "/era-cetak-raport",
+
+        // 🆕 TAMBAH INI: Route baru "Cek Nilai" sesuai dokumentasi
+        "era-cek-nilai": "/era-cek-nilai",
+
+        // 🔄 UPDATE INI: Tetap gunakan route yang sama untuk "Cek Status Nilai"
+        "era-cek-kelengkapan": "/era-cek-kelengkapan",
       };
 
       let path = routes[page];
 
-      // 🔥 FIX: LOGIKA DASHBOARD E-RAPORT SAMA DENGAN App.js
+      // 🔥 FIX: LOGIKA DASHBOARD E-RAPORT SAMA DENGAN dokumentasi
       if (page === "era-dashboard") {
         if (user?.role === "admin") {
           path = "/era-dashboard-admin";

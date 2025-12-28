@@ -4,7 +4,8 @@ import PreviewNilai from "./PreviewNilai";
 import PreviewRaport from "./PreviewRaport";
 import CetakRaport from "./CetakRaport";
 
-function RaportPage() {
+// TAMBAH PROPS di sini
+function RaportPage({ user, onShowToast, darkMode }) {
   const [activeTab, setActiveTab] = useState("nilai"); // 'nilai', 'preview', atau 'cetak'
   const [classId, setClassId] = useState("");
   const [semester, setSemester] = useState("");
@@ -24,13 +25,24 @@ function RaportPage() {
       setInitialLoading(true);
       setErrorMessage("");
 
-      const sessionData = localStorage.getItem("userSession");
-
-      if (!sessionData) {
+      // GANTI: Gunakan user dari props, bukan localStorage
+      if (!user || !user.id) {
         throw new Error("Session tidak ditemukan. Silakan login ulang.");
       }
 
-      const userData = JSON.parse(sessionData);
+      const userId = user.id;
+
+      // Ambil data lengkap user dari database
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("homeroom_class_id, full_name, username")
+        .eq("id", userId)
+        .single();
+
+      if (userError || !userData) {
+        throw new Error("Data pengguna tidak ditemukan.");
+      }
+
       const homeroomClassId = userData.homeroom_class_id;
 
       if (!homeroomClassId) {
@@ -58,30 +70,50 @@ function RaportPage() {
       setWaliKelasName(userData.full_name || userData.username || "Wali Kelas");
       setClassId(homeroomClassId);
       setInitialLoading(false);
+
+      // Tampilkan toast sukses
+      if (onShowToast) {
+        onShowToast("Data wali kelas berhasil dimuat", "success");
+      }
     } catch (error) {
       console.error("Error:", error.message);
       setIsWaliKelas(false);
       setErrorMessage(error.message || "Terjadi kesalahan saat memuat data.");
       setInitialLoading(false);
+
+      // Tampilkan toast error
+      if (onShowToast) {
+        onShowToast(error.message, "error");
+      }
     }
   };
 
   const loadActiveAcademicYear = async () => {
-    const { data } = await supabase
-      .from("academic_years")
-      .select("*")
-      .eq("is_active", true)
-      .single();
-    setAcademicYear(data);
+    try {
+      const { data } = await supabase
+        .from("academic_years")
+        .select("*")
+        .eq("is_active", true)
+        .single();
+      setAcademicYear(data);
+    } catch (error) {
+      console.error("Gagal memuat tahun ajaran:", error);
+    }
   };
 
-  // RENDER LOADING
+  // RENDER LOADING - Tambahkan dark mode
   if (initialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div
+        className={`min-h-screen flex items-center justify-center p-4 ${
+          darkMode ? "bg-gray-900" : "bg-gray-50"
+        }`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-gray-700 dark:text-gray-300">
+          <div
+            className={`animate-spin rounded-full h-12 w-12 border-b-4 mx-auto mb-3 ${
+              darkMode ? "border-blue-400" : "border-blue-600"
+            }`}></div>
+          <p className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>
             Memuat data wali kelas...
           </p>
         </div>
@@ -89,14 +121,22 @@ function RaportPage() {
     );
   }
 
-  // RENDER ERROR
+  // RENDER ERROR - Tambahkan dark mode
   if (errorMessage) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div
+        className={`min-h-screen flex items-center justify-center p-4 ${
+          darkMode ? "bg-gray-900" : "bg-gray-50"
+        }`}>
         <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+              darkMode ? "bg-red-900/30" : "bg-red-100"
+            }`}>
             <svg
-              className="w-8 h-8 text-red-600 dark:text-red-400"
+              className={`w-8 h-8 ${
+                darkMode ? "text-red-400" : "text-red-600"
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24">
@@ -108,10 +148,13 @@ function RaportPage() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          <h3
+            className={`text-xl font-bold mb-2 ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}>
             Akses Dibatasi
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className={`mb-6 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
             {errorMessage}
           </p>
         </div>
@@ -119,14 +162,22 @@ function RaportPage() {
     );
   }
 
-  // RENDER JIKA BUKAN WALI KELAS
+  // RENDER JIKA BUKAN WALI KELAS - Tambahkan dark mode
   if (!isWaliKelas) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div
+        className={`min-h-screen flex items-center justify-center p-4 ${
+          darkMode ? "bg-gray-900" : "bg-gray-50"
+        }`}>
         <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+              darkMode ? "bg-blue-900/30" : "bg-blue-100"
+            }`}>
             <svg
-              className="w-8 h-8 text-blue-600 dark:text-blue-400"
+              className={`w-8 h-8 ${
+                darkMode ? "text-blue-400" : "text-blue-600"
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24">
@@ -138,10 +189,13 @@ function RaportPage() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          <h3
+            className={`text-xl font-bold mb-2 ${
+              darkMode ? "text-white" : "text-gray-900"
+            }`}>
             Akses Terbatas
           </h3>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
             Hanya wali kelas yang dapat mengakses fitur ini.
           </p>
         </div>
@@ -149,37 +203,68 @@ function RaportPage() {
     );
   }
 
-  // RENDER MAIN CONTENT
+  // RENDER MAIN CONTENT dengan dark mode
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg">
+    <div
+      className={`p-4 md:p-6 lg:p-8 min-h-screen ${
+        darkMode ? "bg-gray-900" : "bg-gray-50"
+      }`}>
+      <div
+        className={`rounded-lg shadow-lg ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        }`}>
         {/* INFO WALI KELAS */}
-        <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
+        <div
+          className={`p-4 md:p-6 border-b ${
+            darkMode ? "border-gray-700" : "border-gray-200"
+          }`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
-              <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+              <h3
+                className={`font-bold text-lg ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}>
                 Anda adalah wali kelas
               </h3>
-              <p className="text-gray-700 dark:text-gray-300 mt-1">
+              <p
+                className={`mt-1 ${
+                  darkMode ? "text-gray-300" : "text-gray-700"
+                }`}>
                 {waliKelasName} - Kelas {classId}
               </p>
             </div>
-            <div className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium whitespace-nowrap">
+            <div
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+                darkMode
+                  ? "bg-blue-700 text-blue-100"
+                  : "bg-blue-600 text-white"
+              }`}>
               Wali Kelas
             </div>
           </div>
         </div>
 
         {/* TAB NAVIGATION - 3 TABS */}
-        <div className="border-b border-gray-200 dark:border-gray-700">
+        <div
+          className={`border-b ${
+            darkMode ? "border-gray-700" : "border-gray-200"
+          }`}>
           <div className="flex overflow-x-auto">
             {/* TAB 1: PREVIEW NILAI */}
             <button
               onClick={() => setActiveTab("nilai")}
               className={`flex-1 min-w-[120px] px-4 py-4 text-center font-semibold transition-all duration-200 ${
                 activeTab === "nilai"
-                  ? "text-green-600 dark:text-green-400 border-b-4 border-green-600 dark:border-green-400 bg-green-50 dark:bg-green-900/20"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  ? `${
+                      darkMode
+                        ? "text-green-400 border-green-400 bg-green-900/20"
+                        : "text-green-600 border-green-600 bg-green-50"
+                    } border-b-4`
+                  : `${
+                      darkMode
+                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`
               }`}>
               <span className="text-xs md:text-base">📊 Preview Nilai</span>
             </button>
@@ -189,8 +274,16 @@ function RaportPage() {
               onClick={() => setActiveTab("preview")}
               className={`flex-1 min-w-[120px] px-4 py-4 text-center font-semibold transition-all duration-200 ${
                 activeTab === "preview"
-                  ? "text-blue-600 dark:text-blue-400 border-b-4 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  ? `${
+                      darkMode
+                        ? "text-blue-400 border-blue-400 bg-blue-900/20"
+                        : "text-blue-600 border-blue-600 bg-blue-50"
+                    } border-b-4`
+                  : `${
+                      darkMode
+                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`
               }`}>
               <span className="text-xs md:text-base">📋 Preview Raport</span>
             </button>
@@ -200,8 +293,16 @@ function RaportPage() {
               onClick={() => setActiveTab("cetak")}
               className={`flex-1 min-w-[120px] px-4 py-4 text-center font-semibold transition-all duration-200 ${
                 activeTab === "cetak"
-                  ? "text-red-600 dark:text-red-400 border-b-4 border-red-600 dark:border-red-400 bg-red-50 dark:bg-red-900/20"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  ? `${
+                      darkMode
+                        ? "text-red-400 border-red-400 bg-red-900/20"
+                        : "text-red-600 border-red-600 bg-red-50"
+                    } border-b-4`
+                  : `${
+                      darkMode
+                        ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`
               }`}>
               <span className="text-xs md:text-base">🖨️ Cetak Raport</span>
             </button>
@@ -216,6 +317,7 @@ function RaportPage() {
               semester={semester}
               setSemester={setSemester}
               academicYear={academicYear}
+              darkMode={darkMode}
             />
           )}
 
@@ -225,10 +327,17 @@ function RaportPage() {
               semester={semester}
               setSemester={setSemester}
               academicYear={academicYear}
+              darkMode={darkMode}
             />
           )}
 
-          {activeTab === "cetak" && <CetakRaport />}
+          {activeTab === "cetak" && (
+            <CetakRaport
+              classId={classId}
+              darkMode={darkMode}
+              onShowToast={onShowToast}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 //[file name]: Sidebar.js
 import React, { useState, useEffect } from "react";
 import sekolahLogo from "../assets/logo_sekolah.png";
-import { supabase } from "../supabaseClient"; // ✅ TAMBAH IMPORT SUPA
+import { supabase } from "../supabaseClient";
 
 const Sidebar = ({
   currentPage,
@@ -16,20 +16,14 @@ const Sidebar = ({
   onToggleCollapse = null,
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(darkMode);
-  const [gradesMenuOpen, setGradesMenuOpen] = useState(false); // State untuk dropdown Nilai Siswa
-
-  // ✅ REMOVE: Hapus state dropdown E-RAPORT karena akan pakai flat list
-  // const [inputDataOpen, setInputDataOpen] = useState(false); // ← HAPUS
-  // const [cetakNilaiOpen, setCetakNilaiOpen] = useState(false); // ← HAPUS
-
-  // ✅ TAMBAH STATE UNTUK E-RAPORT STATUS
+  const [gradesMenuOpen, setGradesMenuOpen] = useState(false);
   const [eraportActive, setEraportActive] = useState(true);
 
   useEffect(() => {
     setIsDarkMode(darkMode);
   }, [darkMode]);
 
-  // ✅ TAMBAH useEffect UNTUK FETCH E-RAPORT STATUS
+  // ✅ FETCH E-RAPORT STATUS
   useEffect(() => {
     const fetchEraportStatus = async () => {
       try {
@@ -41,13 +35,12 @@ const Sidebar = ({
         setEraportActive(data?.is_active ?? true);
       } catch (error) {
         console.error("Error fetching eraport status:", error);
-        setEraportActive(true); // Default aktif kalau error
+        setEraportActive(true);
       }
     };
 
     fetchEraportStatus();
 
-    // ✅ REALTIME SUBSCRIPTION - auto update tanpa refresh!
     const channel = supabase
       .channel("eraport-toggle")
       .on(
@@ -101,32 +94,29 @@ const Sidebar = ({
     if (onClose) onClose();
   };
 
-  // Handle khusus untuk menu Nilai Siswa
   const handleGradesMenuClick = (page) => {
     handleMenuClick(page);
-    setGradesMenuOpen(false); // Tutup dropdown setelah memilih
+    setGradesMenuOpen(false);
   };
 
-  // Handle khusus untuk menu E-RAPORT
   const handleEraMenuClick = (page) => {
     handleMenuClick(page);
   };
 
-  // Cek apakah halaman saat ini adalah salah satu dari submenu nilai
   const isNilaiPage =
     currentPage === "nilai-asli" || currentPage === "nilai-katrol";
-
-  // Cek apakah halaman saat ini adalah salah satu dari menu E-RAPORT
-  const isEraPage =
-    currentPage === "era-dashboard-admin" ||
-    currentPage === "era-dashboard-teacher" ||
-    currentPage === "era-dashboard-homeroom" ||
-    currentPage === "era-input-tp" ||
-    currentPage === "era-input-nilai" ||
-    currentPage === "era-input-kehadiran" ||
-    currentPage === "era-input-catatan" ||
-    currentPage === "era-cek-kelengkapan" ||
-    currentPage === "era-cetak-raport";
+  const isEraPage = [
+    "era-dashboard-admin",
+    "era-dashboard-teacher",
+    "era-dashboard-homeroom",
+    "era-input-tp",
+    "era-input-nilai",
+    "era-cek-nilai",
+    "era-input-kehadiran",
+    "era-input-catatan",
+    "era-cek-kelengkapan",
+    "era-cetak-raport",
+  ].includes(currentPage);
 
   return (
     <div
@@ -142,7 +132,7 @@ const Sidebar = ({
         bg-blue-900 dark:bg-gray-900 text-white border-r border-blue-800 dark:border-gray-800
         overflow-y-auto
       `}>
-        {/* Header - sama seperti sebelumnya */}
+        {/* Header */}
         <div className="p-4 sm:p-6 border-b border-blue-700 dark:border-gray-800">
           {onClose && (
             <button
@@ -211,15 +201,10 @@ const Sidebar = ({
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* ========== NAVIGATION ========== */}
         <nav className="py-4 flex-1">
-          {/* Menu Utama */}
+          {/* ========== 🏠 DASHBOARD ========== */}
           <div className="mb-4 sm:mb-5">
-            {!isCollapsed && (
-              <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
-                Menu Utama
-              </div>
-            )}
             <a
               href="#dashboard"
               className={`
@@ -261,15 +246,15 @@ const Sidebar = ({
             </a>
           </div>
 
-          {/* Master Data */}
+          {/* ========== MASTER DATA ========== */}
           <div className="mb-4 sm:mb-5">
             {!isCollapsed && (
               <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
-                Master Data
+                MASTER DATA
               </div>
             )}
 
-            {/* Data Guru */}
+            {/* 👨‍🏫 Data Guru */}
             <a
               href="#teachers"
               className={`
@@ -304,7 +289,7 @@ const Sidebar = ({
               )}
             </a>
 
-            {/* Data Kelas */}
+            {/* 🏢 Data Kelas */}
             <a
               href="#classes"
               className={`
@@ -339,7 +324,7 @@ const Sidebar = ({
               )}
             </a>
 
-            {/* Data Siswa */}
+            {/* 👨‍🎓 Data Siswa */}
             <a
               href="#students"
               className={`
@@ -375,15 +360,15 @@ const Sidebar = ({
             </a>
           </div>
 
-          {/* Akademik */}
+          {/* ========== AKADEMIK ========== */}
           <div className="mb-4 sm:mb-5">
             {!isCollapsed && (
               <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
-                Akademik
+                AKADEMIK
               </div>
             )}
 
-            {/* ✅ PRESENSI GURU */}
+            {/* ✓ Presensi Guru */}
             {(isAdmin || isTeacher || isGuruBK) && (
               <a
                 href="#attendance-teacher"
@@ -420,7 +405,7 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* Presensi Siswa */}
+            {/* ✓ Presensi Siswa */}
             {(isAdmin || !isGuruBK) && (
               <a
                 href="#attendance"
@@ -457,53 +442,9 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* Management Presensi - HANYA UNTUK ADMIN */}
-            {false && isAdmin && (
-              <a
-                href="#attendance-management"
-                className={`
-                  flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                  touch-manipulation min-h-[44px]
-                  ${isCollapsed ? "justify-center" : ""}
-                  ${
-                    currentPage === "attendance-management"
-                      ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                      : "hover:text-blue-100 dark:hover:text-gray-100"
-                  }
-                `}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleMenuClick("attendance-management");
-                }}
-                title={isCollapsed ? "Management Presensi" : ""}>
-                <svg
-                  className="w-5 h-5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                {!isCollapsed && (
-                  <span className="flex-1 text-sm">Management Presensi</span>
-                )}
-              </a>
-            )}
-
-            {/* NILAI SISWA dengan Submenu */}
+            {/* 📈 Nilai Siswa dengan Submenu */}
             {(isAdmin || !isGuruBK) && (
               <div className="mb-1">
-                {/* Menu Utama Nilai Siswa */}
                 <a
                   href="#nilai-siswa"
                   className={`
@@ -521,7 +462,6 @@ const Sidebar = ({
                     if (!isCollapsed) {
                       setGradesMenuOpen(!gradesMenuOpen);
                     } else {
-                      // Jika collapsed, langsung ke halaman default
                       handleGradesMenuClick("nilai-asli");
                     }
                   }}
@@ -544,7 +484,6 @@ const Sidebar = ({
                     )}
                   </div>
 
-                  {/* Dropdown arrow - hanya tampil jika tidak collapsed */}
                   {!isCollapsed && (
                     <svg
                       className={`w-4 h-4 transition-transform duration-200 ${
@@ -563,10 +502,8 @@ const Sidebar = ({
                   )}
                 </a>
 
-                {/* Submenu Nilai Siswa - hanya tampil jika tidak collapsed dan dropdown open */}
                 {!isCollapsed && gradesMenuOpen && (
                   <div className="ml-8 mt-1 space-y-1">
-                    {/* Submenu Nilai Asli */}
                     <a
                       href="#nilai-asli"
                       className={`
@@ -587,7 +524,6 @@ const Sidebar = ({
                       <span className="flex-1 text-sm">Nilai Asli</span>
                     </a>
 
-                    {/* Submenu Nilai Katrol */}
                     <a
                       href="#nilai-katrol"
                       className={`
@@ -612,7 +548,7 @@ const Sidebar = ({
               </div>
             )}
 
-            {/* Jadwal Saya */}
+            {/* 📅 Jadwal Saya */}
             {(isAdmin ||
               (!isGuruBK &&
                 (userRole === "teacher" || userRole === "homeroom"))) && (
@@ -642,7 +578,7 @@ const Sidebar = ({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
                 {!isCollapsed && (
@@ -651,7 +587,7 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* Konseling */}
+            {/* 📋 Konseling */}
             {(isAdmin || isGuruBK) && (
               <a
                 href="#konseling"
@@ -688,7 +624,7 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* LAPORAN - HANYA UNTUK ADMIN */}
+            {/* 📊 Laporan */}
             {isAdmin && (
               <a
                 href="#reports"
@@ -726,18 +662,16 @@ const Sidebar = ({
             )}
           </div>
 
-          {/* ========== E-RAPORT - KATEGORI BARU (UPDATED) ========== */}
-          {/* ✅ TAMBAH CONDITIONAL RENDERING DI SINI */}
+          {/* ========== E-RAPORT ========== */}
           {eraportActive && (
             <div className="mb-4 sm:mb-5">
-              {/* ========== HEADER E-RAPORT ========== */}
               {!isCollapsed && (
                 <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
-                  📚 E-RAPORT
+                  E-RAPORT
                 </div>
               )}
 
-              {/* ========== DASHBOARD ========== */}
+              {/* 📊 Dashboard */}
               <a
                 href="#era-dashboard"
                 className={`
@@ -754,7 +688,6 @@ const Sidebar = ({
                 `}
                 onClick={(e) => {
                   e.preventDefault();
-                  // Dashboard berdasarkan role sesuai App.js
                   if (isAdmin) {
                     handleEraMenuClick("era-dashboard-admin");
                   } else if (isWaliKelas) {
@@ -787,7 +720,7 @@ const Sidebar = ({
                 )}
               </a>
 
-              {/* ========== INPUT TP - SEMUA GURU ========== */}
+              {/* ✏️ Input TP */}
               <a
                 href="#era-input-tp"
                 className={`
@@ -822,7 +755,7 @@ const Sidebar = ({
                 )}
               </a>
 
-              {/* ========== INPUT NILAI - SEMUA GURU ========== */}
+              {/* 📊 Input Nilai */}
               <a
                 href="#era-input-nilai"
                 className={`
@@ -857,175 +790,210 @@ const Sidebar = ({
                 )}
               </a>
 
-              {/* ========== SEPARATOR WALI KELAS ========== */}
+              {/* 🆕 🔍 Cek Nilai */}
+              <a
+                href="#era-cek-nilai"
+                className={`
+                  flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                  touch-manipulation min-h-[44px]
+                  ${isCollapsed ? "justify-center" : ""}
+                  ${
+                    currentPage === "era-cek-nilai"
+                      ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                      : "hover:text-blue-100 dark:hover:text-gray-100"
+                  }
+                `}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleEraMenuClick("era-cek-nilai");
+                }}
+                title={isCollapsed ? "Cek Nilai" : ""}>
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                {!isCollapsed && (
+                  <span className="flex-1 text-sm">Cek Nilai</span>
+                )}
+              </a>
+
+              {/* ========== SUB-HEADER "WALI KELAS" ========== */}
+              {(isWaliKelas || isAdmin) && !isCollapsed && (
+                <div className="px-6 sm:px-8 pb-1 pt-2">
+                  <div className="text-xs uppercase font-semibold text-blue-200 dark:text-gray-500 tracking-wider">
+                    Menu Wali Kelas
+                  </div>
+                </div>
+              )}
+
+              {/* 📋 Input Kehadiran */}
               {(isWaliKelas || isAdmin) && (
-                <>
-                  {/* Visual Separator */}
+                <a
+                  href="#era-input-kehadiran"
+                  className={`
+                    flex items-center gap-3 px-6 sm:px-8 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                    touch-manipulation min-h-[44px]
+                    ${isCollapsed ? "justify-center" : ""}
+                    ${
+                      currentPage === "era-input-kehadiran"
+                        ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                        : "hover:text-blue-100 dark:hover:text-gray-100"
+                    }
+                  `}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleEraMenuClick("era-input-kehadiran");
+                  }}
+                  title={isCollapsed ? "Input Kehadiran" : ""}>
+                  <svg
+                    className="w-5 h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                    />
+                  </svg>
                   {!isCollapsed && (
-                    <div className="my-3 mx-4 sm:mx-6 border-t border-blue-700 dark:border-gray-700"></div>
+                    <span className="flex-1 text-sm">Input Kehadiran</span>
                   )}
+                </a>
+              )}
 
-                  {/* Label "Menu Wali Kelas" */}
+              {/* 📄 Input Catatan */}
+              {(isWaliKelas || isAdmin) && (
+                <a
+                  href="#era-input-catatan"
+                  className={`
+                    flex items-center gap-3 px-6 sm:px-8 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                    touch-manipulation min-h-[44px]
+                    ${isCollapsed ? "justify-center" : ""}
+                    ${
+                      currentPage === "era-input-catatan"
+                        ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                        : "hover:text-blue-100 dark:hover:text-gray-100"
+                    }
+                  `}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleEraMenuClick("era-input-catatan");
+                  }}
+                  title={isCollapsed ? "Input Catatan" : ""}>
+                  <svg
+                    className="w-5 h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
                   {!isCollapsed && (
-                    <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider flex items-center gap-2">
-                      Menu Wali Kelas
-                    </div>
+                    <span className="flex-1 text-sm">Input Catatan</span>
                   )}
+                </a>
+              )}
 
-                  {/* ========== INPUT KEHADIRAN - WALI KELAS ========== */}
-                  <a
-                    href="#era-input-kehadiran"
-                    className={`
-                      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                      touch-manipulation min-h-[44px]
-                      ${isCollapsed ? "justify-center" : ""}
-                      ${
-                        currentPage === "era-input-kehadiran"
-                          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                          : "hover:text-blue-100 dark:hover:text-gray-100"
-                      }
-                    `}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleEraMenuClick("era-input-kehadiran");
-                    }}
-                    title={isCollapsed ? "Input Kehadiran" : ""}>
-                    <svg
-                      className="w-5 h-5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                      />
-                    </svg>
-                    {!isCollapsed && (
-                      <span className="flex-1 text-sm">Input Kehadiran</span>
-                    )}
-                  </a>
+              {/* ✅ Cek Status Nilai */}
+              {(isWaliKelas || isAdmin) && (
+                <a
+                  href="#era-cek-kelengkapan"
+                  className={`
+                    flex items-center gap-3 px-6 sm:px-8 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                    touch-manipulation min-h-[44px]
+                    ${isCollapsed ? "justify-center" : ""}
+                    ${
+                      currentPage === "era-cek-kelengkapan"
+                        ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                        : "hover:text-blue-100 dark:hover:text-gray-100"
+                    }
+                  `}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleEraMenuClick("era-cek-kelengkapan");
+                  }}
+                  title={isCollapsed ? "Cek Status Nilai" : ""}>
+                  <svg
+                    className="w-5 h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                    />
+                  </svg>
+                  {!isCollapsed && (
+                    <span className="flex-1 text-sm">Cek Status Nilai</span>
+                  )}
+                </a>
+              )}
 
-                  {/* ========== INPUT CATATAN - WALI KELAS ========== */}
-                  <a
-                    href="#era-input-catatan"
-                    className={`
-                      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                      touch-manipulation min-h-[44px]
-                      ${isCollapsed ? "justify-center" : ""}
-                      ${
-                        currentPage === "era-input-catatan"
-                          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                          : "hover:text-blue-100 dark:hover:text-gray-100"
-                      }
-                    `}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleEraMenuClick("era-input-catatan");
-                    }}
-                    title={isCollapsed ? "Input Catatan" : ""}>
-                    <svg
-                      className="w-5 h-5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    {!isCollapsed && (
-                      <span className="flex-1 text-sm">Input Catatan</span>
-                    )}
-                  </a>
-
-                  {/* ========== CEK KELENGKAPAN - WALI KELAS ========== */}
-                  <a
-                    href="#era-cek-kelengkapan"
-                    className={`
-                      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                      touch-manipulation min-h-[44px]
-                      ${isCollapsed ? "justify-center" : ""}
-                      ${
-                        currentPage === "era-cek-kelengkapan"
-                          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                          : "hover:text-blue-100 dark:hover:text-gray-100"
-                      }
-                    `}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleEraMenuClick("era-cek-kelengkapan");
-                    }}
-                    title={isCollapsed ? "Cek Kelengkapan" : ""}>
-                    <svg
-                      className="w-5 h-5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                      />
-                    </svg>
-                    {!isCollapsed && (
-                      <span className="flex-1 text-sm">Cek Kelengkapan</span>
-                    )}
-                  </a>
-
-                  {/* ========== CETAK RAPORT - WALI KELAS ========== */}
-                  <a
-                    href="#era-cetak-raport"
-                    className={`
-                      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                      touch-manipulation min-h-[44px]
-                      ${isCollapsed ? "justify-center" : ""}
-                      ${
-                        currentPage === "era-cetak-raport"
-                          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                          : "hover:text-blue-100 dark:hover:text-gray-100"
-                      }
-                    `}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleEraMenuClick("era-cetak-raport");
-                    }}
-                    title={isCollapsed ? "Cetak Raport" : ""}>
-                    <svg
-                      className="w-5 h-5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                      />
-                    </svg>
-                    {!isCollapsed && (
-                      <span className="flex-1 text-sm">Cetak Raport</span>
-                    )}
-                  </a>
-                </>
+              {/* 🖨️ Cetak Nilai */}
+              {(isWaliKelas || isAdmin) && (
+                <a
+                  href="#era-cetak-raport"
+                  className={`
+                    flex items-center gap-3 px-6 sm:px-8 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+                    touch-manipulation min-h-[44px]
+                    ${isCollapsed ? "justify-center" : ""}
+                    ${
+                      currentPage === "era-cetak-raport"
+                        ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+                        : "hover:text-blue-100 dark:hover:text-gray-100"
+                    }
+                  `}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleEraMenuClick("era-cetak-raport");
+                  }}
+                  title={isCollapsed ? "Cetak Nilai" : ""}>
+                  <svg
+                    className="w-5 h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                    />
+                  </svg>
+                  {!isCollapsed && (
+                    <span className="flex-1 text-sm">Cetak Nilai</span>
+                  )}
+                </a>
               )}
             </div>
           )}
 
-          {/* Admin Settings */}
+          {/* ========== SISTEM (ADMIN ONLY) ========== */}
           {userRole === "admin" && (
             <div className="mb-4">
               {!isCollapsed && (
                 <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
-                  Sistem
+                  SISTEM
                 </div>
               )}
 
-              {/* SPMB */}
+              {/* 📄 SPMB */}
               <a
                 href="#spmb"
                 className={`
@@ -1058,7 +1026,7 @@ const Sidebar = ({
                 {!isCollapsed && <span className="flex-1 text-sm">SPMB</span>}
               </a>
 
-              {/* Pengaturan */}
+              {/* ⚙️ Pengaturan */}
               <a
                 href="#settings"
                 className={`
@@ -1099,7 +1067,7 @@ const Sidebar = ({
                 )}
               </a>
 
-              {/* Monitor Sistem */}
+              {/* 📺 Monitor Sistem */}
               <a
                 href="#monitor-sistem"
                 className={`

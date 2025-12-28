@@ -31,7 +31,7 @@ import MaintenancePage from "./setting/MaintenancePage";
 // Import Presensi Guru
 import TeacherAttendance from "./attendance-teacher/TeacherAttendance";
 
-// Import E-RAPORT modules
+// Import E-RAPORT modules - DIUPDATE SESUAI DOKUMENTASI
 import DashboardAdmin from "./e-raport/DashboardAdmin";
 import DashboardTeacher from "./e-raport/DashboardTeacher";
 import DashboardHomeroomTeacher from "./e-raport/DashboardHomeroomTeacher";
@@ -39,6 +39,7 @@ import InputTP from "./e-raport/InputTP";
 import InputNilai from "./e-raport/InputNilai";
 import InputKehadiran from "./e-raport/InputKehadiran";
 import InputCatatan from "./e-raport/InputCatatan";
+import CekStatusNilai from "./e-raport/CekStatusNilai";
 import CekNilai from "./e-raport/CekNilai";
 import RaportPage from "./e-raport/RaportPage";
 
@@ -66,14 +67,13 @@ const canAccessWaliKelasRoute = (user) => {
 };
 
 // 🔥 PROTECTED ROUTE COMPONENT - WITH MAINTENANCE MODE
-// 🔥 UPDATED: Added requireWaliKelas prop
 const ProtectedRoute = ({
   children,
   user,
   loading,
   darkMode,
   allowedRoles = [],
-  requireWaliKelas = false, // ← NEW PROP: Untuk route khusus wali kelas
+  requireWaliKelas = false, // ← Untuk route khusus wali kelas
   onShowToast,
 }) => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -84,7 +84,7 @@ const ProtectedRoute = ({
   const [roleLoading, setRoleLoading] = useState(true);
   const [userFullData, setUserFullData] = useState(null); // ← Untuk simpan data lengkap user
 
-  // 🔥 Fetch user data with homeroom_class_id - COMPLETELY FIXED
+  // 🔥 Fetch user data with homeroom_class_id
   useEffect(() => {
     const fetchUserData = async () => {
       console.log("🔍 Starting fetchUserData for:", user?.id);
@@ -100,13 +100,12 @@ const ProtectedRoute = ({
       try {
         const { data, error } = await supabase
           .from("users")
-          .select("role, homeroom_class_id") // ← TAMBAH homeroom_class_id
+          .select("role, homeroom_class_id")
           .eq("id", user.id)
-          .maybeSingle(); // ✅ Use maybeSingle instead of single
+          .maybeSingle();
 
         if (error) {
           console.error("❌ Supabase error:", error);
-          // Set default data on error
           setUserRole("teacher");
           setUserFullData({ role: "teacher", homeroom_class_id: null });
           setRoleLoading(false);
@@ -225,7 +224,7 @@ const ProtectedRoute = ({
     };
   }, []);
 
-  // ✅ FIXED: Loading state check
+  // ✅ Loading state check
   const isLoading = loading || maintenanceLoading || roleLoading;
 
   console.log("🎯 Loading check:", {
@@ -345,7 +344,7 @@ const ProtectedRoute = ({
     );
   }
 
-  // ✅ NEW: Wali Kelas Check (SETELAH role check, SEBELUM return children)
+  // ✅ Wali Kelas Check
   if (requireWaliKelas && !canAccessWaliKelasRoute(userFullData)) {
     console.log(`🔴 User ${user.username} bukan Wali Kelas, blocked`);
 
@@ -542,15 +541,12 @@ function App() {
       localStorage.setItem("rememberMe", "false");
       console.log("✅ Session valid for 24 hours");
     }
-
-    // 🔥 Toast dipindah ke ProtectedRoute
   }, []);
 
   const handleLogout = useCallback(() => {
     setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("rememberMe");
-    // Clear welcome toast flag
     if (user?.id) {
       sessionStorage.removeItem(`welcomeShown_${user.id}`);
     }
@@ -563,7 +559,7 @@ function App() {
     setShowToast(true);
   }, []);
 
-  // ✅ FIXED: Toast styling dengan dark mode dan responsive
+  // ✅ Toast styling dengan dark mode dan responsive
   const getToastStyle = () => {
     const baseStyle =
       "fixed top-3 right-3 sm:top-4 sm:right-4 text-white px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform max-w-[calc(100vw-1.5rem)] sm:max-w-md";
@@ -654,7 +650,7 @@ function App() {
         v7_startTransition: true,
         v7_relativeSplatPath: true,
       }}>
-      {/* ✅ FIXED: Toast Notification dengan Dark Mode & Responsive */}
+      {/* ✅ Toast Notification dengan Dark Mode & Responsive */}
       {showToast && (
         <div className={getToastStyle()}>
           <div className="flex items-center gap-2">
@@ -996,7 +992,7 @@ function App() {
           }
         />
 
-        {/* ========== E-RAPORT ROUTES - UPDATED ========== */}
+        {/* ========== E-RAPORT ROUTES - DIUPDATE SESUAI DOKUMENTASI ========== */}
 
         {/* Dashboard Admin */}
         <Route
@@ -1049,10 +1045,8 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["teacher"]} // ← REMOVE "homeroom", use teacher
+              allowedRoles={["teacher"]}
               requireWaliKelas={true}>
-              {" "}
-              {/* ← TAMBAH INI: requireWaliKelas */}
               <LayoutWrapper>
                 <DashboardHomeroomTeacher
                   user={user}
@@ -1074,8 +1068,6 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["admin", "teacher"]}>
-              {" "}
-              {/* ← REMOVE "homeroom" */}
               <LayoutWrapper>
                 <InputTP
                   user={user}
@@ -1097,10 +1089,29 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["admin", "teacher"]}>
-              {" "}
-              {/* ← REMOVE "homeroom" */}
               <LayoutWrapper>
                 <InputNilai
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 🆕 Cek Nilai - SEMUA GURU (Menu baru) */}
+        <Route
+          path="/era-cek-nilai"
+          element={
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}
+              allowedRoles={["admin", "teacher"]}>
+              <LayoutWrapper>
+                <CekNilai
                   user={user}
                   onShowToast={handleShowToast}
                   darkMode={darkMode}
@@ -1119,10 +1130,8 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["teacher"]} // ← REMOVE "admin" & "homeroom"
+              allowedRoles={["teacher"]}
               requireWaliKelas={true}>
-              {" "}
-              {/* ← TAMBAH INI: requireWaliKelas */}
               <LayoutWrapper>
                 <InputKehadiran
                   user={user}
@@ -1143,10 +1152,8 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["teacher"]} // ← REMOVE "admin" & "homeroom"
+              allowedRoles={["teacher"]}
               requireWaliKelas={true}>
-              {" "}
-              {/* ← TAMBAH INI: requireWaliKelas */}
               <LayoutWrapper>
                 <InputCatatan
                   user={user}
@@ -1158,7 +1165,7 @@ function App() {
           }
         />
 
-        {/* Cek Kelengkapan - WALI KELAS ONLY */}
+        {/* 🔄 Cek Status Nilai (dulu Cek Kelengkapan) - WALI KELAS ONLY */}
         <Route
           path="/era-cek-kelengkapan"
           element={
@@ -1167,12 +1174,10 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["teacher"]} // ← REMOVE "admin" & "homeroom"
+              allowedRoles={["teacher"]}
               requireWaliKelas={true}>
-              {" "}
-              {/* ← TAMBAH INI: requireWaliKelas */}
               <LayoutWrapper>
-                <CekNilai
+                <CekStatusNilai
                   user={user}
                   onShowToast={handleShowToast}
                   darkMode={darkMode}
@@ -1182,7 +1187,7 @@ function App() {
           }
         />
 
-        {/* Cetak Raport - WALI KELAS ONLY */}
+        {/* Cetak Raport - WALI KELAS ONLY - GUNAKAN RaportPage */}
         <Route
           path="/era-cetak-raport"
           element={
@@ -1191,10 +1196,8 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["teacher"]} // ← REMOVE "admin" & "homeroom"
+              allowedRoles={["teacher"]}
               requireWaliKelas={true}>
-              {" "}
-              {/* ← TAMBAH INI: requireWaliKelas */}
               <LayoutWrapper>
                 <RaportPage
                   user={user}
