@@ -76,10 +76,7 @@ const CopyAssignmentsModal = ({
       }
     } catch (error) {
       console.error("Error loading academic info:", error);
-      showToast(
-        "Gagal memuat informasi tahun ajaran: " + error.message,
-        "error"
-      );
+      showToast("Gagal memuat informasi tahun ajaran: " + error.message, "error");
     }
   };
 
@@ -95,9 +92,7 @@ const CopyAssignmentsModal = ({
       if (error) throw error;
 
       // Ekstrak tahun unik
-      const uniqueYears = [
-        ...new Set(data?.map((item) => item.year) || []),
-      ].sort();
+      const uniqueYears = [...new Set(data?.map((item) => item.year) || [])].sort();
       setAvailableYears(uniqueYears);
 
       // Jika data ada tapi tidak ada di state, update
@@ -129,18 +124,14 @@ const CopyAssignmentsModal = ({
 
       if (yearError && yearError.code !== "PGRST116") throw yearError;
 
-      let query = supabase
-        .from("teacher_assignments")
-        .select("*", { count: "exact", head: true });
+      let query = supabase.from("teacher_assignments").select("*", { count: "exact", head: true });
 
       // Jika ada academic_year_id, filter menggunakan itu (lebih akurat)
       if (sourceAcademicYear?.id) {
         query = query.eq("academic_year_id", sourceAcademicYear.id);
       } else {
         // Fallback ke filter year dan semester
-        query = query
-          .eq("academic_year", sourceYear)
-          .eq("semester", sourceSemester);
+        query = query.eq("academic_year", sourceYear).eq("semester", sourceSemester);
       }
 
       const { data, error, count } = await query;
@@ -169,10 +160,7 @@ const CopyAssignmentsModal = ({
       if (error && error.code !== "PGRST116") throw error;
       return data?.id || null;
     } catch (error) {
-      console.error(
-        `Error getting academic year id for ${year} semester ${semester}:`,
-        error
-      );
+      console.error(`Error getting academic year id for ${year} semester ${semester}:`, error);
       return null;
     }
   };
@@ -208,9 +196,7 @@ const CopyAssignmentsModal = ({
     if (copyConfig.targetYear && copyConfig.targetSemester) {
       const targetExists = availableYears.includes(copyConfig.targetYear);
       if (!targetExists) {
-        errors.push(
-          `⚠️ Tahun ajaran ${copyConfig.targetYear} belum ada di database`
-        );
+        errors.push(`⚠️ Tahun ajaran ${copyConfig.targetYear} belum ada di database`);
       }
     }
 
@@ -219,8 +205,7 @@ const CopyAssignmentsModal = ({
 
   // Fungsi utama untuk copy assignments
   const handleCopyAssignments = async () => {
-    const { sourceYear, sourceSemester, targetYear, targetSemester } =
-      copyConfig;
+    const { sourceYear, sourceSemester, targetYear, targetSemester } = copyConfig;
 
     const validationErrors = validateCopyConfig();
     if (validationErrors.length > 0) {
@@ -249,14 +234,8 @@ const CopyAssignmentsModal = ({
       showToast("🔄 Mengambil data assignment source...", "info");
 
       // 1. Cari academic_year_id untuk source dan target
-      const sourceAcademicYearId = await getAcademicYearId(
-        sourceYear,
-        sourceSemester
-      );
-      const targetAcademicYearId = await getAcademicYearId(
-        targetYear,
-        targetSemester
-      );
+      const sourceAcademicYearId = await getAcademicYearId(sourceYear, sourceSemester);
+      const targetAcademicYearId = await getAcademicYearId(targetYear, targetSemester);
 
       if (!targetAcademicYearId) {
         showToast(
@@ -273,9 +252,7 @@ const CopyAssignmentsModal = ({
       if (sourceAcademicYearId) {
         sourceQuery = sourceQuery.eq("academic_year_id", sourceAcademicYearId);
       } else {
-        sourceQuery = sourceQuery
-          .eq("academic_year", sourceYear)
-          .eq("semester", sourceSemester);
+        sourceQuery = sourceQuery.eq("academic_year", sourceYear).eq("semester", sourceSemester);
       }
 
       const { data: sourceData, error: sourceError } = await sourceQuery;
@@ -288,10 +265,7 @@ const CopyAssignmentsModal = ({
         return;
       }
 
-      showToast(
-        `📊 Ditemukan ${sourceData.length} assignment untuk di-copy`,
-        "info"
-      );
+      showToast(`📊 Ditemukan ${sourceData.length} assignment untuk di-copy`, "info");
 
       // 3. Hapus data lama di target (jika ada)
       showToast("🗑️ Menghapus data lama di target semester...", "info");
@@ -320,33 +294,21 @@ const CopyAssignmentsModal = ({
       for (let i = 0; i < newAssignments.length; i += BATCH_SIZE) {
         const batch = newAssignments.slice(i, i + BATCH_SIZE);
 
-        const { error: insertError } = await supabase
-          .from("teacher_assignments")
-          .insert(batch);
+        const { error: insertError } = await supabase.from("teacher_assignments").insert(batch);
 
         if (insertError) throw insertError;
 
         totalInserted += batch.length;
-        showToast(
-          `✅ Progress: ${totalInserted}/${newAssignments.length} assignment`,
-          "info"
-        );
+        showToast(`✅ Progress: ${totalInserted}/${newAssignments.length} assignment`, "info");
       }
 
       // Success message dengan info semester
       const semesterText = (sem) => (sem === 1 ? "Ganjil" : "Genap");
       showToast(
         `✅ Berhasil copy ${totalInserted} teacher assignments!\n\n` +
-          `Dari: ${sourceYear} Semester ${semesterText(
-            sourceSemester
-          )} (${sourceSemester})\n` +
-          `Ke: ${targetYear} Semester ${semesterText(
-            targetSemester
-          )} (${targetSemester})\n` +
-          `📅 Menggunakan academic_year_id: ${targetAcademicYearId?.substring(
-            0,
-            8
-          )}...`,
+          `Dari: ${sourceYear} Semester ${semesterText(sourceSemester)} (${sourceSemester})\n` +
+          `Ke: ${targetYear} Semester ${semesterText(targetSemester)} (${targetSemester})\n` +
+          `📅 Menggunakan academic_year_id: ${targetAcademicYearId?.substring(0, 8)}...`,
         "success"
       );
 
@@ -449,7 +411,8 @@ const CopyAssignmentsModal = ({
                       sourceYear: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
                   <option value="">Pilih Tahun</option>
                   {getUniqueYears().map((year) => (
                     <option key={year} value={year}>
@@ -470,7 +433,8 @@ const CopyAssignmentsModal = ({
                       sourceSemester: parseInt(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
                   <option value={1}>
                     Semester 1 (Ganjil){" "}
                     {copyConfig.sourceYear === localAcademicInfo?.year &&
@@ -493,8 +457,7 @@ const CopyAssignmentsModal = ({
             {assignmentPreview && (
               <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded border border-blue-100 dark:border-blue-800">
                 <p className="text-xs text-blue-600 dark:text-blue-400">
-                  📊 Preview:{" "}
-                  <span className="font-bold">{assignmentPreview.count}</span>{" "}
+                  📊 Preview: <span className="font-bold">{assignmentPreview.count}</span>{" "}
                   assignments akan di-copy
                   {assignmentPreview.hasAcademicYearId && (
                     <span className="block text-xs text-green-600 dark:text-green-400 mt-1">
@@ -531,7 +494,8 @@ const CopyAssignmentsModal = ({
                       targetYear: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
                   <option value="">Pilih Tahun</option>
                   {getUniqueYears().map((year) => (
                     <option key={year} value={year}>
@@ -552,7 +516,8 @@ const CopyAssignmentsModal = ({
                       targetSemester: parseInt(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
                   <option value={1}>Semester 1 (Ganjil)</option>
                   <option value={2}>Semester 2 (Genap)</option>
                 </select>
@@ -560,25 +525,21 @@ const CopyAssignmentsModal = ({
             </div>
 
             {/* Warning jika target belum ada di database */}
-            {copyConfig.targetYear &&
-              !availableYears.includes(copyConfig.targetYear) && (
-                <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
-                  <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                    ⚠️ Tahun {copyConfig.targetYear} belum ada di database.
-                    Harus membuat semester terlebih dahulu di Manajemen
-                    Semester.
-                  </p>
-                </div>
-              )}
+            {copyConfig.targetYear && !availableYears.includes(copyConfig.targetYear) && (
+              <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                  ⚠️ Tahun {copyConfig.targetYear} belum ada di database. Harus membuat semester
+                  terlebih dahulu di Manajemen Semester.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Validation Errors */}
           {hasErrors && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
               {validationErrors.map((error, idx) => (
-                <p
-                  key={idx}
-                  className="text-xs text-red-600 dark:text-red-400 mb-1 last:mb-0">
+                <p key={idx} className="text-xs text-red-600 dark:text-red-400 mb-1 last:mb-0">
                   {error}
                 </p>
               ))}
@@ -590,9 +551,8 @@ const CopyAssignmentsModal = ({
             <p className="text-xs text-yellow-800 dark:text-yellow-300 flex items-start gap-2">
               <span className="text-base">⚠️</span>
               <span>
-                <strong>PERINGATAN:</strong> Data assignment yang sudah ada di
-                target akan <strong>DITIMPA</strong> dan tidak dapat
-                dikembalikan!
+                <strong>PERINGATAN:</strong> Data assignment yang sudah ada di target akan{" "}
+                <strong>DITIMPA</strong> dan tidak dapat dikembalikan!
               </span>
             </p>
           </div>
@@ -603,13 +563,15 @@ const CopyAssignmentsModal = ({
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium disabled:opacity-50 transition min-h-[44px]">
+            className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium disabled:opacity-50 transition min-h-[44px]"
+          >
             Batal
           </button>
           <button
             onClick={handleCopyAssignments}
             disabled={loading || hasErrors}
-            className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-medium disabled:opacity-50 transition min-h-[44px]">
+            className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-medium disabled:opacity-50 transition min-h-[44px]"
+          >
             {loading ? "Menyalin..." : "Copy Sekarang"}
           </button>
         </div>

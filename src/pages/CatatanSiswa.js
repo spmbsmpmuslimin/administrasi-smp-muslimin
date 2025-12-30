@@ -41,7 +41,8 @@ const FormView = ({
           </p>
           <button
             onClick={onCancel}
-            className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-gray-300 dark:border-gray-600 font-medium transition min-h-[44px] text-sm sm:text-base">
+            className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-gray-300 dark:border-gray-600 font-medium transition min-h-[44px] text-sm sm:text-base"
+          >
             ← Kembali ke Dashboard
           </button>
         </div>
@@ -68,7 +69,8 @@ const FormView = ({
           <button
             type="button"
             onClick={onCancel}
-            className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 font-medium transition min-h-[44px] text-sm w-full sm:w-auto">
+            className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 font-medium transition min-h-[44px] text-sm w-full sm:w-auto"
+          >
             ← Kembali
           </button>
         </div>
@@ -84,7 +86,8 @@ const FormView = ({
                 value={formData.student_id}
                 onChange={handleInputChange}
                 disabled={editingNote}
-                className="w-full px-3 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+                className="w-full px-3 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200"
+              >
                 <option value="">Pilih Siswa</option>
                 {siswaList.map((siswa) => (
                   <option key={siswa.id} value={siswa.id}>
@@ -102,7 +105,8 @@ const FormView = ({
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+                className="w-full px-3 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:focus:ring-blue-400 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200"
+              >
                 <option value="">Pilih Kategori</option>
                 {kategoris.map((kategori) => (
                   <option key={kategori} value={kategori}>
@@ -124,7 +128,8 @@ const FormView = ({
                     formData.label === "positif"
                       ? "bg-green-100 dark:bg-green-900 border-green-500 dark:border-green-600 text-green-800 dark:text-green-300"
                       : "bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  }`}>
+                  }`}
+                >
                   👍 Positif
                 </button>
                 <button
@@ -134,7 +139,8 @@ const FormView = ({
                     formData.label === "perhatian"
                       ? "bg-red-100 dark:bg-red-900 border-red-500 dark:border-red-600 text-red-800 dark:text-red-300"
                       : "bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  }`}>
+                  }`}
+                >
                   ⚠️ Perhatian
                 </button>
                 <button
@@ -144,7 +150,8 @@ const FormView = ({
                     formData.label === "netral"
                       ? "bg-gray-100 dark:bg-gray-600 border-gray-500 dark:border-gray-500 text-gray-800 dark:text-gray-300"
                       : "bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-                  }`}>
+                  }`}
+                >
                   📝 Biasa
                 </button>
               </div>
@@ -183,7 +190,8 @@ const FormView = ({
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 dark:bg-blue-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm min-h-[44px]">
+              className="bg-blue-600 dark:bg-blue-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm min-h-[44px]"
+            >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -199,7 +207,8 @@ const FormView = ({
               type="button"
               onClick={onCancel}
               disabled={loading}
-              className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-gray-300 dark:border-gray-600 font-semibold hover:bg-gray-100 dark:hover:bg-gray-600 transition disabled:opacity-50 min-h-[44px] text-sm">
+              className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-gray-300 dark:border-gray-600 font-semibold hover:bg-gray-100 dark:hover:bg-gray-600 transition disabled:opacity-50 min-h-[44px] text-sm"
+            >
               Batal
             </button>
           </div>
@@ -229,9 +238,7 @@ const DashboardView = ({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-white">
-            {isAdmin
-              ? "Monitoring Catatan Perkembangan Siswa"
-              : "Catatan Perkembangan Siswa"}
+            {isAdmin ? "Monitoring Catatan Perkembangan Siswa" : "Catatan Perkembangan Siswa"}
           </h2>
           <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">
             {currentClass
@@ -248,7 +255,8 @@ const DashboardView = ({
         {!isAdmin && (
           <button
             onClick={onAddNote}
-            className="bg-blue-600 dark:bg-blue-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 dark:hover:bg-blue-600 transition min-h-[44px] w-full sm:w-auto text-sm sm:text-base">
+            className="bg-blue-600 dark:bg-blue-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 dark:hover:bg-blue-600 transition min-h-[44px] w-full sm:w-auto text-sm sm:text-base"
+          >
             <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Tambah Catatan</span>
           </button>
@@ -258,9 +266,7 @@ const DashboardView = ({
       {/* Stats Grid - RESPONSIVE */}
       <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 md:p-5 rounded-lg shadow-sm dark:shadow-gray-900/50 border-l-4 border-blue-500">
-          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-1">
-            Total Siswa
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-1">Total Siswa</p>
           <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
             {stats.totalSiswa}
           </p>
@@ -284,9 +290,7 @@ const DashboardView = ({
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 md:p-5 rounded-lg shadow-sm dark:shadow-gray-900/50 border-l-4 border-gray-500 dark:border-gray-400">
-          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-1">
-            Catatan Biasa
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-1">Catatan Biasa</p>
           <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-600 dark:text-gray-300">
             {stats.catatanBiasa}
             <span className="text-sm sm:text-base font-normal ml-1">Siswa</span>
@@ -304,8 +308,7 @@ const DashboardView = ({
                 Mode Monitoring Admin
               </p>
               <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-200">
-                Anda dapat memantau semua catatan perkembangan siswa dari semua
-                kelas dan guru.
+                Anda dapat memantau semua catatan perkembangan siswa dari semua kelas dan guru.
               </p>
             </div>
           </div>
@@ -354,7 +357,8 @@ const DashboardView = ({
           filteredSiswa.map((siswa) => (
             <div
               key={siswa.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-3 sm:p-4 border border-gray-100 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-shadow duration-300">
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-3 sm:p-4 border border-gray-100 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-800/50 transition-shadow duration-300"
+            >
               {/* Header */}
               <div className="flex justify-between items-start border-b border-gray-100 dark:border-gray-700 pb-2 sm:pb-3 mb-2 sm:mb-3">
                 <div className="flex-1 min-w-0 pr-2">
@@ -368,7 +372,8 @@ const DashboardView = ({
                 {/* Aksi */}
                 <button
                   onClick={() => onViewDetail(siswa)}
-                  className="flex-shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 font-medium text-xs sm:text-sm min-h-[36px] sm:min-h-[44px] px-2">
+                  className="flex-shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 font-medium text-xs sm:text-sm min-h-[36px] sm:min-h-[44px] px-2"
+                >
                   <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Detail</span>
                 </button>
@@ -377,18 +382,14 @@ const DashboardView = ({
               {/* Stats Grid */}
               <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700 text-sm text-center">
                 <div className="pr-2 sm:pr-3">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">
-                    Positif
-                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Positif</p>
                   <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold text-sm sm:text-base">
                     <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
                     {siswa.positif}
                   </span>
                 </div>
                 <div className="px-2 sm:px-3">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">
-                    Perhatian
-                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Perhatian</p>
                   {siswa.perhatian > 0 ? (
                     <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-semibold text-sm sm:text-base">
                       <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -401,9 +402,7 @@ const DashboardView = ({
                   )}
                 </div>
                 <div className="pl-2 sm:pl-3">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">
-                    Biasa
-                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Biasa</p>
                   {siswa.netral > 0 ? (
                     <span className="inline-flex items-center gap-1 text-gray-600 dark:text-gray-300 font-semibold text-sm sm:text-base">
                       <Info className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -463,16 +462,17 @@ const DashboardView = ({
                   <tr>
                     <td
                       colSpan="7"
-                      className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                      Tidak ada siswa yang sesuai dengan pencarian "{searchTerm}
-                      "
+                      className="px-6 py-8 text-center text-gray-500 dark:text-gray-400"
+                    >
+                      Tidak ada siswa yang sesuai dengan pencarian "{searchTerm}"
                     </td>
                   </tr>
                 ) : (
                   filteredSiswa.map((siswa) => (
                     <tr
                       key={siswa.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                    >
                       <td className="px-4 sm:px-6 py-4">
                         <div className="font-medium text-gray-900 dark:text-white">
                           {siswa.nama}
@@ -494,9 +494,7 @@ const DashboardView = ({
                             {siswa.perhatian}
                           </span>
                         ) : (
-                          <span className="text-gray-400 dark:text-gray-500">
-                            -
-                          </span>
+                          <span className="text-gray-400 dark:text-gray-500">-</span>
                         )}
                       </td>
                       <td className="px-4 sm:px-6 py-4 text-center">
@@ -506,9 +504,7 @@ const DashboardView = ({
                             {siswa.netral}
                           </span>
                         ) : (
-                          <span className="text-gray-400 dark:text-gray-500">
-                            -
-                          </span>
+                          <span className="text-gray-400 dark:text-gray-500">-</span>
                         )}
                       </td>
                       <td className="px-4 sm:px-6 py-4 text-gray-600 dark:text-gray-400 text-sm">
@@ -517,7 +513,8 @@ const DashboardView = ({
                       <td className="px-4 sm:px-6 py-4 text-center">
                         <button
                           onClick={() => onViewDetail(siswa)}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 mx-auto font-medium min-h-[44px] px-3">
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 mx-auto font-medium min-h-[44px] px-3"
+                        >
                           <Eye className="w-4 h-4" />
                           <span>Detail</span>
                         </button>
@@ -552,7 +549,8 @@ const DetailView = ({
     <div className="max-w-5xl mx-auto p-3 sm:p-4 md:p-6">
       <button
         onClick={onBack}
-        className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 mb-4 sm:mb-6 font-medium transition min-h-[44px] text-sm w-full sm:w-auto">
+        className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 mb-4 sm:mb-6 font-medium transition min-h-[44px] text-sm w-full sm:w-auto"
+      >
         ← Kembali ke Dashboard
       </button>
 
@@ -574,25 +572,19 @@ const DetailView = ({
           {/* ✅ RESPONSIVE GRID UNTUK STATS DETAIL */}
           <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 w-full sm:w-auto">
             <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                Catatan Positif
-              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Catatan Positif</p>
               <p className="text-lg sm:text-xl md:text-3xl font-bold text-green-600 dark:text-green-400">
                 {selectedSiswa?.positif}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                Perlu Perhatian
-              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Perlu Perhatian</p>
               <p className="text-lg sm:text-xl md:text-3xl font-bold text-red-600 dark:text-red-400">
                 {selectedSiswa?.perhatian}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                Catatan Biasa
-              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Catatan Biasa</p>
               <p className="text-lg sm:text-xl md:text-3xl font-bold text-gray-600 dark:text-gray-300">
                 {selectedSiswa?.netral}
               </p>
@@ -609,7 +601,8 @@ const DetailView = ({
         {!isAdmin && (
           <button
             onClick={onAddNote}
-            className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm min-h-[44px] w-full sm:w-auto">
+            className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm min-h-[44px] w-full sm:w-auto"
+          >
             <Plus className="w-4 h-4" />
             <span>Tambah Catatan</span>
           </button>
@@ -619,16 +612,12 @@ const DetailView = ({
       {loading ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900/50 p-8 sm:p-12 text-center">
           <div className="inline-block animate-spin rounded-full h-7 w-7 sm:h-8 sm:w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <p className="mt-3 sm:mt-4 text-gray-600 dark:text-gray-400">
-            Memuat catatan...
-          </p>
+          <p className="mt-3 sm:mt-4 text-gray-600 dark:text-gray-400">Memuat catatan...</p>
         </div>
       ) : catatanList.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900/50 p-6 sm:p-8 text-center text-gray-500 dark:text-gray-400">
           <Info className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3 sm:mb-4" />
-          <p className="text-sm sm:text-lg mb-2">
-            Belum ada catatan untuk siswa ini
-          </p>
+          <p className="text-sm sm:text-lg mb-2">Belum ada catatan untuk siswa ini</p>
           {!isAdmin && (
             <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
               Klik "Tambah Catatan" untuk membuat catatan pertama
@@ -648,7 +637,8 @@ const DetailView = ({
                     : catatan.label === "perhatian"
                     ? "#ef4444"
                     : "#6b7280",
-              }}>
+              }}
+            >
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0 mb-3">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <span
@@ -656,7 +646,8 @@ const DetailView = ({
                       catatan.label
                     )} dark:${getLabelBadge(catatan.label)
                       .replace("bg-", "dark:bg-")
-                      .replace("text-", "dark:text-")}`}>
+                      .replace("text-", "dark:text-")}`}
+                  >
                     {getLabelIcon(catatan.label)}
                     {catatan.label === "positif"
                       ? "Positif"
@@ -677,13 +668,15 @@ const DetailView = ({
                     <button
                       onClick={() => onEditNote(catatan)}
                       className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition min-w-[44px] min-h-[44px] flex items-center justify-center"
-                      title="Edit catatan">
+                      title="Edit catatan"
+                    >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => onDeleteNote(catatan.id)}
                       className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition min-w-[44px] min-h-[44px] flex items-center justify-center"
-                      title="Hapus catatan">
+                      title="Hapus catatan"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -719,8 +712,8 @@ const DetailView = ({
                 Perhatian Khusus
               </p>
               <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200">
-                Terdeteksi pola yang perlu diperhatikan. Pertimbangkan untuk
-                melakukan konsultasi lebih lanjut dengan guru BK.
+                Terdeteksi pola yang perlu diperhatikan. Pertimbangkan untuk melakukan konsultasi
+                lebih lanjut dengan guru BK.
               </p>
             </div>
           </div>
@@ -768,8 +761,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
   const kategoris = ["Akademik", "Perilaku", "Sosial", "Karakter", "Kesehatan"];
 
   // TAMBAH: Cek apakah user adalah admin
-  const isAdmin =
-    currentUser?.role === "admin" || currentUser?.role === "administrator";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "administrator";
 
   // Get current user and class info
   useEffect(() => {
@@ -829,8 +821,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
       console.log("📊 User verified:", dbUser);
 
       // FIX: Handle admin user yang gak punya homeroom_class_id
-      const isAdminUser =
-        dbUser.role === "admin" || dbUser.role === "administrator";
+      const isAdminUser = dbUser.role === "admin" || dbUser.role === "administrator";
 
       if (!dbUser.homeroom_class_id && !isAdminUser) {
         console.warn("⚠️ User has no homeroom class assigned and is not admin");
@@ -928,12 +919,8 @@ const CatatanSiswa = ({ user, onShowToast }) => {
       setSiswaList(processedStudents);
 
       // Calculate stats
-      const studentsWithPositif = processedStudents.filter(
-        (s) => s.positif > 0
-      );
-      const studentsWithPerhatian = processedStudents.filter(
-        (s) => s.perhatian > 0
-      );
+      const studentsWithPositif = processedStudents.filter((s) => s.positif > 0);
+      const studentsWithPerhatian = processedStudents.filter((s) => s.perhatian > 0);
       const studentsWithNetral = processedStudents.filter((s) => s.netral > 0);
 
       setStats({
@@ -1023,12 +1010,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
       return;
     }
 
-    if (
-      !formData.student_id ||
-      !formData.category ||
-      !formData.label ||
-      !formData.note_content
-    ) {
+    if (!formData.student_id || !formData.category || !formData.label || !formData.note_content) {
       window.alert("Mohon lengkapi semua field yang wajib diisi!");
       return;
     }
@@ -1054,9 +1036,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
 
       console.log("💾 Creating note:", noteData);
 
-      const { error } = await supabase
-        .from("student_development_notes")
-        .insert([noteData]);
+      const { error } = await supabase.from("student_development_notes").insert([noteData]);
 
       if (error) throw error;
 
@@ -1166,10 +1146,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
     try {
       console.log("🗑️ Deleting note:", noteId);
 
-      const { error } = await supabase
-        .from("student_development_notes")
-        .delete()
-        .eq("id", noteId);
+      const { error } = await supabase.from("student_development_notes").delete().eq("id", noteId);
 
       if (error) throw error;
 
@@ -1314,9 +1291,7 @@ const CatatanSiswa = ({ user, onShowToast }) => {
   const filteredSiswa = useMemo(
     () =>
       siswaList.filter(
-        (s) =>
-          s.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          s.nis.includes(searchTerm)
+        (s) => s.nama.toLowerCase().includes(searchTerm.toLowerCase()) || s.nis.includes(searchTerm)
       ),
     [siswaList, searchTerm]
   );
@@ -1328,12 +1303,11 @@ const CatatanSiswa = ({ user, onShowToast }) => {
         <div className="mb-3 sm:mb-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-400 p-3 sm:p-4 rounded">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" />
-            <p className="text-red-800 dark:text-red-300 text-xs sm:text-sm flex-1">
-              {error}
-            </p>
+            <p className="text-red-800 dark:text-red-300 text-xs sm:text-sm flex-1">{error}</p>
             <button
               onClick={() => setError(null)}
-              className="ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 min-w-[44px] min-h-[44px] flex items-center justify-center">
+              className="ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
@@ -1357,7 +1331,8 @@ const CatatanSiswa = ({ user, onShowToast }) => {
                   setLoading(true);
                   getCurrentUser();
                 }}
-                className="bg-blue-600 dark:bg-blue-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-semibold transition min-h-[44px] w-full sm:w-auto text-sm sm:text-base">
+                className="bg-blue-600 dark:bg-blue-700 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-semibold transition min-h-[44px] w-full sm:w-auto text-sm sm:text-base"
+              >
                 Coba Lagi
               </button>
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">

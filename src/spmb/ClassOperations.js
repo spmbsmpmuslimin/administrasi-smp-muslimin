@@ -34,9 +34,9 @@ const generateSequentialNIS = (classDistribution, academicYear) => {
       nisMapping[student.id] = `${yearPrefix}.${gradePrefix}.${nisNumber}`;
 
       console.log(
-        `  ✅ ${globalCounter}. ${student.jenis_kelamin} - ${
-          student.nama_lengkap
-        }: ${nisMapping[student.id]}`
+        `  ✅ ${globalCounter}. ${student.jenis_kelamin} - ${student.nama_lengkap}: ${
+          nisMapping[student.id]
+        }`
       );
 
       globalCounter++;
@@ -62,9 +62,7 @@ export const saveClassAssignments = async (
   academicYear // 🔥 WAJIB pass dari ClassDivision.js
 ) => {
   if (
-    !window.confirm(
-      "Simpan pembagian kelas ini? NIS akan digenerate otomatis berurutan per kelas."
-    )
+    !window.confirm("Simpan pembagian kelas ini? NIS akan digenerate otomatis berurutan per kelas.")
   ) {
     return;
   }
@@ -137,11 +135,7 @@ export const transferToStudents = async (
     return;
   }
 
-  if (
-    !window.confirm(
-      `Transfer ${studentsWithClass.length} siswa ke tabel Students?`
-    )
-  ) {
+  if (!window.confirm(`Transfer ${studentsWithClass.length} siswa ke tabel Students?`)) {
     return;
   }
 
@@ -174,10 +168,7 @@ export const transferToStudents = async (
       if (updateError) throw updateError;
     }
 
-    showToast(
-      `✅ Berhasil transfer ${studentsWithClass.length} siswa ke Students!`,
-      "success"
-    );
+    showToast(`✅ Berhasil transfer ${studentsWithClass.length} siswa ke Students!`, "success");
 
     if (onRefreshData) {
       await onRefreshData();
@@ -230,10 +221,7 @@ export const resetClassAssignments = async (
       if (error) throw error;
     }
 
-    showToast(
-      `✅ Berhasil reset ${studentsWithClass.length} siswa (kelas + NIS)!`,
-      "success"
-    );
+    showToast(`✅ Berhasil reset ${studentsWithClass.length} siswa (kelas + NIS)!`, "success");
 
     if (onRefreshData) {
       await onRefreshData();
@@ -311,11 +299,7 @@ export const handleMoveStudentSaved = async (
 };
 
 // Export Excel untuk preview
-export const handleExportClassDivision = async (
-  classDistribution,
-  setIsExporting,
-  showToast
-) => {
+export const handleExportClassDivision = async (classDistribution, setIsExporting, showToast) => {
   if (!classDistribution || Object.keys(classDistribution).length === 0) {
     showToast("Tidak ada pembagian kelas untuk di-export", "error");
     return;
@@ -331,11 +315,7 @@ export const handleExportClassDivision = async (
 };
 
 // Export Excel untuk kelas tersimpan
-export const handleExportSavedClasses = async (
-  allStudents,
-  setIsExporting,
-  showToast
-) => {
+export const handleExportSavedClasses = async (allStudents, setIsExporting, showToast) => {
   const studentsWithClass = allStudents.filter(
     (s) => s.kelas && !s.is_transferred && s.status === "diterima"
   );
@@ -402,9 +382,9 @@ export const handleDrop = (
   const newDistribution = JSON.parse(JSON.stringify(currentDistribution));
 
   // Remove dari kelas asal
-  newDistribution[draggedStudent.fromClass] = newDistribution[
-    draggedStudent.fromClass
-  ].filter((s) => s.id !== draggedStudent.student.id);
+  newDistribution[draggedStudent.fromClass] = newDistribution[draggedStudent.fromClass].filter(
+    (s) => s.id !== draggedStudent.student.id
+  );
 
   // Tambah ke kelas tujuan
   newDistribution[toClass].push(draggedStudent.student);
@@ -412,19 +392,10 @@ export const handleDrop = (
   setDistribution(newDistribution);
 
   if (!showSavedClasses) {
-    saveToHistory(
-      newDistribution,
-      [],
-      historyIndex,
-      setHistory,
-      setHistoryIndex
-    );
+    saveToHistory(newDistribution, [], historyIndex, setHistory, setHistoryIndex);
   }
 
-  showToast(
-    `✅ ${draggedStudent.student.nama_lengkap} dipindah ke ${toClass}`,
-    "success"
-  );
+  showToast(`✅ ${draggedStudent.student.nama_lengkap} dipindah ke ${toClass}`, "success");
 
   setDraggedStudent(null);
   setDragOverClass(null);
@@ -448,20 +419,12 @@ export const handleRemoveStudent = (
   const newDistribution = JSON.parse(JSON.stringify(currentDistribution));
   const student = newDistribution[fromClass].find((s) => s.id === studentId);
 
-  newDistribution[fromClass] = newDistribution[fromClass].filter(
-    (s) => s.id !== studentId
-  );
+  newDistribution[fromClass] = newDistribution[fromClass].filter((s) => s.id !== studentId);
 
   setDistribution(newDistribution);
 
   if (!showSavedClasses) {
-    saveToHistory(
-      newDistribution,
-      [],
-      historyIndex,
-      setHistory,
-      setHistoryIndex
-    );
+    saveToHistory(newDistribution, [], historyIndex, setHistory, setHistoryIndex);
   }
 
   showToast(`${student.nama_lengkap} dikeluarkan dari ${fromClass}`, "info");
@@ -489,9 +452,9 @@ export const handleAddStudent = (
 
   if (existingClass) {
     // Pindahkan dari kelas lama
-    newDistribution[existingClass[0]] = newDistribution[
-      existingClass[0]
-    ].filter((s) => s.id !== student.id);
+    newDistribution[existingClass[0]] = newDistribution[existingClass[0]].filter(
+      (s) => s.id !== student.id
+    );
   }
 
   newDistribution[toClass].push(student);
@@ -499,23 +462,14 @@ export const handleAddStudent = (
   setDistribution(newDistribution);
 
   if (!showSavedClasses) {
-    saveToHistory(
-      newDistribution,
-      [],
-      historyIndex,
-      setHistory,
-      setHistoryIndex
-    );
+    saveToHistory(newDistribution, [], historyIndex, setHistory, setHistoryIndex);
   }
 
   showToast(`✅ ${student.nama_lengkap} ditambahkan ke ${toClass}`, "success");
 };
 
 // Get all students in distribution (for swap modal)
-export const getAllStudentsInDistribution = (
-  currentDistribution,
-  showSavedClasses
-) => {
+export const getAllStudentsInDistribution = (currentDistribution, showSavedClasses) => {
   const allInClasses = [];
   Object.entries(currentDistribution).forEach(([className, students]) => {
     students.forEach((student) => {
@@ -575,12 +529,12 @@ export const handleSwapStudents = (
   }
 
   // Remove both students
-  newDistribution[swapStudent1.className] = newDistribution[
-    swapStudent1.className
-  ].filter((s) => s.id !== swapStudent1.student.id);
-  newDistribution[swapStudent2.className] = newDistribution[
-    swapStudent2.className
-  ].filter((s) => s.id !== swapStudent2.student.id);
+  newDistribution[swapStudent1.className] = newDistribution[swapStudent1.className].filter(
+    (s) => s.id !== swapStudent1.student.id
+  );
+  newDistribution[swapStudent2.className] = newDistribution[swapStudent2.className].filter(
+    (s) => s.id !== swapStudent2.student.id
+  );
 
   // Swap them
   newDistribution[swapStudent1.className].push(swapStudent2.student);
@@ -589,13 +543,7 @@ export const handleSwapStudents = (
   setDistribution(newDistribution);
 
   if (!showSavedClasses) {
-    saveToHistory(
-      newDistribution,
-      [],
-      historyIndex,
-      setHistory,
-      setHistoryIndex
-    );
+    saveToHistory(newDistribution, [], historyIndex, setHistory, setHistoryIndex);
   }
 
   showToast(

@@ -122,10 +122,7 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
     if (!timeString) return "-";
 
     try {
-      if (
-        typeof timeString === "string" &&
-        timeString.match(/^\d{2}:\d{2}:\d{2}$/)
-      ) {
+      if (typeof timeString === "string" && timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
         return timeString.substring(0, 5).replace(":", ".") + " WIB";
       }
 
@@ -147,7 +144,8 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 ${config.borderColor}`}>
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 ${config.borderColor}`}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">
@@ -169,37 +167,27 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
 
       <div className="space-y-3">
         <div>
-          <p className={`text-2xl font-bold ${config.textColor}`}>
-            {config.title}
-          </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-            {config.message}
-          </p>
+          <p className={`text-2xl font-bold ${config.textColor}`}>{config.title}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{config.message}</p>
         </div>
 
         {todayAttendance ? (
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
             <div>
-              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
-                Jam Masuk
-              </p>
+              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Jam Masuk</p>
               <p className="text-sm font-semibold text-gray-800 dark:text-white">
                 {formatTime(todayAttendance.clock_in)}
               </p>
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
-                Metode
-              </p>
+              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Metode</p>
               <p className="text-sm font-semibold text-gray-800 dark:text-white">
                 {formatCheckInMethod(todayAttendance.check_in_method) || "-"}
               </p>
             </div>
             {todayAttendance.notes && (
               <div className="col-span-2">
-                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  Catatan
-                </p>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Catatan</p>
                 <p className="text-sm text-gray-700 dark:text-gray-300 italic">
                   {todayAttendance.notes}
                 </p>
@@ -208,9 +196,7 @@ const MyAttendanceStatus = ({ currentUser, refreshTrigger }) => {
           </div>
         ) : (
           <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {config.detail}
-            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{config.detail}</p>
           </div>
         )}
       </div>

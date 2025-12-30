@@ -142,22 +142,9 @@ export const REPORT_HEADERS = {
     "Tanggal Bergabung",
   ],
 
-  students: [
-    "NIS",
-    "Nama Lengkap",
-    "Jenis Kelamin",
-    "Kelas",
-    "Tingkat",
-    "Tahun Ajaran",
-  ],
+  students: ["NIS", "Nama Lengkap", "Jenis Kelamin", "Kelas", "Tingkat", "Tahun Ajaran"],
 
-  studentsSimple: [
-    "NIS",
-    "Nama Lengkap",
-    "Jenis Kelamin",
-    "Kelas",
-    "Tahun Ajaran",
-  ],
+  studentsSimple: ["NIS", "Nama Lengkap", "Jenis Kelamin", "Kelas", "Tahun Ajaran"],
 
   attendance: ["Tanggal", "NIS", "Nama Siswa", "Kelas", "Status Kehadiran"],
 
@@ -312,27 +299,20 @@ export const fetchTeachersData = async (filters = {}) => {
 };
 
 export const fetchStudentsData = async (filters = {}, includeGrade = true) => {
-  let query = supabase
-    .from("students")
-    .select("*, classes(grade)")
-    .eq("is_active", true);
+  let query = supabase.from("students").select("*, classes(grade)").eq("is_active", true);
 
   if (filters.class_id) query = query.eq("class_id", filters.class_id);
-  if (filters.academic_year)
-    query = query.eq("academic_year", filters.academic_year);
+  if (filters.academic_year) query = query.eq("academic_year", filters.academic_year);
 
   query = query.order("class_id").order("full_name");
 
   const { data, error } = await query;
   if (error) throw error;
 
-  const formattedData =
-    data?.map((row) => formatStudentRow(row, includeGrade)) || [];
+  const formattedData = data?.map((row) => formatStudentRow(row, includeGrade)) || [];
 
   return {
-    headers: includeGrade
-      ? REPORT_HEADERS.students
-      : REPORT_HEADERS.studentsSimple,
+    headers: includeGrade ? REPORT_HEADERS.students : REPORT_HEADERS.studentsSimple,
     preview: formattedData.slice(0, 100),
     fullData: formattedData,
     total: formattedData.length,
@@ -340,10 +320,7 @@ export const fetchStudentsData = async (filters = {}, includeGrade = true) => {
   };
 };
 
-export const fetchAttendanceRecapData = async (
-  filters = {},
-  attendanceType = null
-) => {
+export const fetchAttendanceRecapData = async (filters = {}, attendanceType = null) => {
   // ✅ FIXED: Use month/year if provided, else default
   let startDate, endDate;
 
@@ -353,8 +330,7 @@ export const fetchAttendanceRecapData = async (
     endDate = range.endDate;
   } else {
     startDate =
-      filters.start_date ||
-      new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0];
+      filters.start_date || new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0];
     endDate = filters.end_date || new Date().toISOString().split("T")[0];
   }
 
@@ -405,15 +381,13 @@ export const fetchAttendanceRecapData = async (
     if (status === "hadir") recapData[key].hadir++;
     else if (status === "sakit") recapData[key].sakit++;
     else if (status === "izin") recapData[key].izin++;
-    else if (status === "alpa" || status === "tidak_hadir")
-      recapData[key].tidak_hadir++;
+    else if (status === "alpa" || status === "tidak_hadir") recapData[key].tidak_hadir++;
   });
 
   const finalData = Object.values(recapData)
     .map((r) => ({
       ...r,
-      persentase:
-        r.total > 0 ? `${Math.round((r.hadir / r.total) * 100)}%` : "0%",
+      persentase: r.total > 0 ? `${Math.round((r.hadir / r.total) * 100)}%` : "0%",
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -426,16 +400,10 @@ export const fetchAttendanceRecapData = async (
   };
 };
 
-export const fetchGradesData = async (
-  filters = {},
-  teacherId = null,
-  isHomeroom = false
-) => {
+export const fetchGradesData = async (filters = {}, teacherId = null, isHomeroom = false) => {
   let query = supabase
     .from("grades")
-    .select(
-      "*, students!inner(nis, full_name, class_id), users!inner(full_name)"
-    );
+    .select("*, students!inner(nis, full_name, class_id), users!inner(full_name)");
 
   if (teacherId) query = query.eq("teacher_id", teacherId);
 
@@ -445,8 +413,7 @@ export const fetchGradesData = async (
     query = query.eq("students.class_id", filters.class_id);
   }
 
-  if (filters.academic_year)
-    query = query.eq("academic_year", filters.academic_year);
+  if (filters.academic_year) query = query.eq("academic_year", filters.academic_year);
   if (filters.semester) query = query.eq("semester", filters.semester);
   if (filters.subject) query = query.eq("subject", filters.subject);
 
@@ -467,9 +434,7 @@ export const fetchGradesData = async (
       }
     });
 
-    const formattedData = finalGrades.map((row) =>
-      formatFinalGradeRow(row, teacherMap)
-    );
+    const formattedData = finalGrades.map((row) => formatFinalGradeRow(row, teacherMap));
 
     return {
       headers: REPORT_HEADERS.gradesFinalOnly,
@@ -492,10 +457,7 @@ export const fetchGradesData = async (
   };
 };
 
-export const fetchAttendanceDailyData = async (
-  filters = {},
-  attendanceType = null
-) => {
+export const fetchAttendanceDailyData = async (filters = {}, attendanceType = null) => {
   // ✅ FIXED: Use month/year if provided
   let startDate, endDate;
 
@@ -543,14 +505,11 @@ export const fetchAttendanceDailyData = async (
   if (error) throw error;
 
   const includeSubject = attendanceType === "Mata Pelajaran";
-  const formattedData =
-    data?.map((row) => formatAttendanceRow(row, includeSubject)) || [];
+  const formattedData = data?.map((row) => formatAttendanceRow(row, includeSubject)) || [];
 
   const totalRecords = data?.length || 0;
-  const hadirCount =
-    data?.filter((d) => d.status?.toLowerCase() === "hadir").length || 0;
-  const hadirPercent =
-    totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
+  const hadirCount = data?.filter((d) => d.status?.toLowerCase() === "hadir").length || 0;
+  const hadirPercent = totalRecords > 0 ? Math.round((hadirCount / totalRecords) * 100) : 0;
 
   const summary = [
     { label: "Total Records", value: totalRecords },
@@ -559,9 +518,7 @@ export const fetchAttendanceDailyData = async (
   ];
 
   return {
-    headers: includeSubject
-      ? REPORT_HEADERS.attendanceWithSubject
-      : REPORT_HEADERS.attendance,
+    headers: includeSubject ? REPORT_HEADERS.attendanceWithSubject : REPORT_HEADERS.attendance,
     preview: formattedData.slice(0, 100),
     fullData: formattedData,
     total: formattedData.length,
@@ -602,8 +559,7 @@ export const calculateTeacherSummary = (data) => {
 export const calculateAttendanceSummary = (data) => {
   const totalHadir = data.reduce((sum, r) => sum + (r.hadir || 0), 0);
   const totalPresensi = data.reduce((sum, r) => sum + (r.total || 0), 0);
-  const avgAttendance =
-    totalPresensi > 0 ? Math.round((totalHadir / totalPresensi) * 100) : 0;
+  const avgAttendance = totalPresensi > 0 ? Math.round((totalHadir / totalPresensi) * 100) : 0;
   const lowAttendance = data.filter((s) => {
     const pct = parseFloat(s.persentase);
     return pct && pct < 75;
@@ -620,9 +576,7 @@ export const calculateAttendanceSummary = (data) => {
 export const calculateGradeSummary = (data) => {
   const scores = data.map((d) => parseFloat(d.score)).filter((s) => !isNaN(s));
   const avg =
-    scores.length > 0
-      ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
-      : 0;
+    scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) : 0;
   const highest = scores.length > 0 ? Math.max(...scores) : 0;
   const lowest = scores.length > 0 ? Math.min(...scores) : 0;
   const subjects = [...new Set(data.map((g) => g.subject))].filter(Boolean);
@@ -639,14 +593,10 @@ export const calculateGradeSummary = (data) => {
 export const calculateFinalGradeSummary = (finalGrades) => {
   const scores = finalGrades.map((g) => g.final_score).filter((s) => !isNaN(s));
   const avg =
-    scores.length > 0
-      ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
-      : 0;
+    scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) : 0;
   const highest = scores.length > 0 ? Math.max(...scores) : 0;
   const lowest = scores.length > 0 ? Math.min(...scores) : 0;
-  const subjects = [...new Set(finalGrades.map((g) => g.subject))].filter(
-    Boolean
-  );
+  const subjects = [...new Set(finalGrades.map((g) => g.subject))].filter(Boolean);
 
   return [
     { label: "Total Nilai Akhir", value: finalGrades.length },
@@ -665,8 +615,7 @@ export const getDateRange = (filters) => {
   }
 
   const startDate =
-    filters.start_date ||
-    new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0];
+    filters.start_date || new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0];
   const endDate = filters.end_date || new Date().toISOString().split("T")[0];
   return { startDate, endDate };
 };
@@ -676,15 +625,10 @@ export const buildFilterDescription = (filters) => {
 
   if (filters.month && filters.year) {
     const monthNames = getMonthOptions();
-    const monthLabel =
-      monthNames.find((m) => m.value === filters.month)?.label || filters.month;
+    const monthLabel = monthNames.find((m) => m.value === filters.month)?.label || filters.month;
     parts.push(`${monthLabel} ${filters.year}`);
   } else if (filters.start_date && filters.end_date) {
-    parts.push(
-      `Periode ${formatDate(filters.start_date)} - ${formatDate(
-        filters.end_date
-      )}`
-    );
+    parts.push(`Periode ${formatDate(filters.start_date)} - ${formatDate(filters.end_date)}`);
   }
 
   if (filters.class_id) parts.push(`Kelas ${filters.class_id}`);
@@ -755,10 +699,7 @@ export const calculateFinalGrades = (gradesData) => {
 
   Object.values(groupedByStudentSubject).forEach((group) => {
     // ✅ Calculate average NH
-    const avgNH =
-      group.nh.length > 0
-        ? group.nh.reduce((a, b) => a + b, 0) / group.nh.length
-        : 0;
+    const avgNH = group.nh.length > 0 ? group.nh.reduce((a, b) => a + b, 0) / group.nh.length : 0;
 
     const psts = group.psts || 0;
     const psas = group.psas || 0;
@@ -778,11 +719,7 @@ export const calculateFinalGrades = (gradesData) => {
     }
   });
 
-  console.log(
-    "✅ Final grades calculated (STRICT mode):",
-    finalGrades.length,
-    "records"
-  );
+  console.log("✅ Final grades calculated (STRICT mode):", finalGrades.length, "records");
   console.log("📊 Sample:", finalGrades[0]);
 
   return finalGrades;

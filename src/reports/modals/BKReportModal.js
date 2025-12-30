@@ -112,36 +112,31 @@ const BKReportModal = ({
       bg: "bg-teal-50 dark:bg-teal-900/20",
       border: "border-teal-200 dark:border-teal-800",
       text: "text-teal-600 dark:text-teal-400",
-      button:
-        "bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600",
+      button: "bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600",
     },
     red: {
       bg: "bg-red-50 dark:bg-red-900/20",
       border: "border-red-200 dark:border-red-800",
       text: "text-red-600 dark:text-red-400",
-      button:
-        "bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600",
+      button: "bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600",
     },
     yellow: {
       bg: "bg-yellow-50 dark:bg-yellow-900/20",
       border: "border-yellow-200 dark:border-yellow-800",
       text: "text-yellow-600 dark:text-yellow-400",
-      button:
-        "bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600",
+      button: "bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600",
     },
     green: {
       bg: "bg-green-50 dark:bg-green-900/20",
       border: "border-green-200 dark:border-green-800",
       text: "text-green-600 dark:text-green-400",
-      button:
-        "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600",
+      button: "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600",
     },
     cyan: {
       bg: "bg-cyan-50 dark:bg-cyan-900/20",
       border: "border-cyan-200 dark:border-cyan-800",
       text: "text-cyan-600 dark:text-cyan-400",
-      button:
-        "bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-600",
+      button: "bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-600",
     },
   };
 
@@ -185,9 +180,7 @@ const BKReportModal = ({
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((row) =>
-        Object.values(row).some((value) =>
-          String(value).toLowerCase().includes(query)
-        )
+        Object.values(row).some((value) => String(value).toLowerCase().includes(query))
       );
     }
 
@@ -235,68 +228,40 @@ const BKReportModal = ({
   // ✅ Render cell with conditional formatting (dark mode support)
   const renderCell = (header, value) => {
     // Priority colors with dark mode
-    if (
-      header === "Prioritas" ||
-      header === "priority" ||
-      header === "priority_level"
-    ) {
+    if (header === "Prioritas" || header === "priority" || header === "priority_level") {
       const priorityColors = {
         Tinggi: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
         High: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
-        Sedang:
-          "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
-        Medium:
-          "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
-        Rendah:
-          "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
+        Sedang: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
+        Medium: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
+        Rendah: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
         Low: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
       };
       const colorClass =
-        priorityColors[value] ||
-        "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
+        priorityColors[value] || "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
-          {value}
-        </span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>{value}</span>
       );
     }
 
     // Status colors with dark mode
-    if (
-      header === "Status" ||
-      header === "status" ||
-      header === "case_status"
-    ) {
+    if (header === "Status" || header === "status" || header === "case_status") {
       const statusColors = {
-        Selesai:
-          "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
-        Completed:
-          "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
-        "Dalam Proses":
-          "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
-        "In Progress":
-          "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
-        Proses:
-          "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
-        Pending:
-          "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
-        Menunggu:
-          "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
-        Ditunda:
-          "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300",
+        Selesai: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
+        Completed: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
+        "Dalam Proses": "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
+        "In Progress": "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
+        Proses: "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
+        Pending: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
+        Menunggu: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
+        Ditunda: "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300",
         Batal: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
-        Cancelled:
-          "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
+        Cancelled: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
       };
       const colorClass =
-        statusColors[value] ||
-        "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
+        statusColors[value] || "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
-          {value}
-        </span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>{value}</span>
       );
     }
 
@@ -305,29 +270,20 @@ const BKReportModal = ({
       const progressColors = {
         Baik: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
         Good: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
-        Cukup:
-          "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
+        Cukup: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
         Fair: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
         Kurang: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
         Poor: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
       };
       const colorClass =
-        progressColors[value] ||
-        "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
+        progressColors[value] || "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
-          {value}
-        </span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>{value}</span>
       );
     }
 
     // Category/Type highlighting with dark mode
-    if (
-      header === "Jenis Konseling" ||
-      header === "Jenis Kasus" ||
-      header === "Kategori"
-    ) {
+    if (header === "Jenis Konseling" || header === "Jenis Kasus" || header === "Kategori") {
       return (
         <span className="font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2 py-1 rounded text-xs sm:text-sm">
           {value}
@@ -346,9 +302,7 @@ const BKReportModal = ({
 
     // Truncate long text
     if (
-      (header === "Permasalahan" ||
-        header === "Catatan" ||
-        header === "Tindak Lanjut") &&
+      (header === "Permasalahan" || header === "Catatan" || header === "Tindak Lanjut") &&
       typeof value === "string" &&
       value.length > 50
     ) {
@@ -381,23 +335,14 @@ const BKReportModal = ({
         const priority = row.Prioritas || row.priority || row.priority_level;
         const status = row.Status || row.status || row.case_status;
 
-        if (priority === "Tinggi" || priority === "High")
-          priorityCount.Tinggi++;
-        else if (priority === "Sedang" || priority === "Medium")
-          priorityCount.Sedang++;
-        else if (priority === "Rendah" || priority === "Low")
-          priorityCount.Rendah++;
+        if (priority === "Tinggi" || priority === "High") priorityCount.Tinggi++;
+        else if (priority === "Sedang" || priority === "Medium") priorityCount.Sedang++;
+        else if (priority === "Rendah" || priority === "Low") priorityCount.Rendah++;
 
-        if (status === "Selesai" || status === "Completed")
-          statusCount.Selesai++;
-        else if (
-          status === "Proses" ||
-          status === "In Progress" ||
-          status === "Dalam Proses"
-        )
+        if (status === "Selesai" || status === "Completed") statusCount.Selesai++;
+        else if (status === "Proses" || status === "In Progress" || status === "Dalam Proses")
           statusCount.Proses++;
-        else if (status === "Pending" || status === "Menunggu")
-          statusCount.Pending++;
+        else if (status === "Pending" || status === "Menunggu") statusCount.Pending++;
       });
 
       return [
@@ -421,10 +366,9 @@ const BKReportModal = ({
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 sm:gap-4">
               <div
-                className={`w-12 h-12 sm:w-14 sm:h-14 ${colors.bg} border-2 ${colors.border} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                <ReportIcon
-                  className={`w-6 h-6 sm:w-7 sm:h-7 ${colors.text}`}
-                />
+                className={`w-12 h-12 sm:w-14 sm:h-14 ${colors.bg} border-2 ${colors.border} rounded-xl flex items-center justify-center flex-shrink-0`}
+              >
+                <ReportIcon className={`w-6 h-6 sm:w-7 sm:h-7 ${colors.text}`} />
               </div>
               <div className="min-w-0">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white truncate">
@@ -438,7 +382,8 @@ const BKReportModal = ({
             <button
               onClick={onClose}
               className="text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 transition-colors flex-shrink-0 p-1 min-h-[44px] touch-manipulation"
-              aria-label="Close">
+              aria-label="Close"
+            >
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -451,7 +396,8 @@ const BKReportModal = ({
               {filteredSummary.map((stat, idx) => (
                 <div
                   key={idx}
-                  className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-600 p-2 sm:p-3">
+                  className="bg-white dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-600 p-2 sm:p-3"
+                >
                   <p className="text-xs text-slate-600 dark:text-gray-400 mb-1 truncate">
                     {stat.label}
                   </p>
@@ -485,15 +431,13 @@ const BKReportModal = ({
                 <select
                   value={filterPriority}
                   onChange={(e) => setFilterPriority(e.target.value)}
-                  className="px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white min-w-0 sm:min-w-[150px] transition-colors">
+                  className="px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white min-w-0 sm:min-w-[150px] transition-colors"
+                >
                   <option value="" className="bg-white dark:bg-gray-700">
                     Semua Prioritas
                   </option>
                   {uniquePriorities.map((priority) => (
-                    <option
-                      key={priority}
-                      value={priority}
-                      className="bg-white dark:bg-gray-700">
+                    <option key={priority} value={priority} className="bg-white dark:bg-gray-700">
                       {priority}
                     </option>
                   ))}
@@ -505,15 +449,13 @@ const BKReportModal = ({
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white min-w-0 sm:min-w-[150px] transition-colors">
+                  className="px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white min-w-0 sm:min-w-[150px] transition-colors"
+                >
                   <option value="" className="bg-white dark:bg-gray-700">
                     Semua Status
                   </option>
                   {uniqueStatuses.map((status) => (
-                    <option
-                      key={status}
-                      value={status}
-                      className="bg-white dark:bg-gray-700">
+                    <option key={status} value={status} className="bg-white dark:bg-gray-700">
                       {status}
                     </option>
                   ))}
@@ -525,15 +467,13 @@ const BKReportModal = ({
                 <select
                   value={filterClass}
                   onChange={(e) => setFilterClass(e.target.value)}
-                  className="px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white min-w-0 sm:min-w-[130px] transition-colors">
+                  className="px-3 py-2 text-sm border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-slate-800 dark:text-white min-w-0 sm:min-w-[130px] transition-colors"
+                >
                   <option value="" className="bg-white dark:bg-gray-700">
                     Semua Kelas
                   </option>
                   {uniqueClasses.map((kelas) => (
-                    <option
-                      key={kelas}
-                      value={kelas}
-                      className="bg-white dark:bg-gray-700">
+                    <option key={kelas} value={kelas} className="bg-white dark:bg-gray-700">
                       Kelas {kelas}
                     </option>
                   ))}
@@ -550,7 +490,8 @@ const BKReportModal = ({
                   setFilterStatus("");
                   setFilterClass("");
                 }}
-                className="px-3 sm:px-4 py-2 text-sm text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 font-medium whitespace-nowrap min-h-[44px] touch-manipulation w-full sm:w-auto">
+                className="px-3 sm:px-4 py-2 text-sm text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 font-medium whitespace-nowrap min-h-[44px] touch-manipulation w-full sm:w-auto"
+              >
                 Reset Filter
               </button>
             )}
@@ -560,9 +501,7 @@ const BKReportModal = ({
           {(filterPriority || filterStatus || filterClass) && (
             <div className="flex items-center gap-2 mt-3 flex-wrap">
               <Filter className="w-4 h-4 text-slate-500 dark:text-gray-500" />
-              <span className="text-sm text-slate-600 dark:text-gray-400">
-                Filter aktif:
-              </span>
+              <span className="text-sm text-slate-600 dark:text-gray-400">Filter aktif:</span>
               {filterPriority && (
                 <span className="text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-1 rounded-full font-medium">
                   Prioritas: {filterPriority}
@@ -595,7 +534,8 @@ const BKReportModal = ({
                     {headers.map((header, idx) => (
                       <th
                         key={idx}
-                        className="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider border-r border-slate-200 dark:border-gray-600 truncate">
+                        className="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider border-r border-slate-200 dark:border-gray-600 truncate"
+                      >
                         {header}
                       </th>
                     ))}
@@ -605,14 +545,16 @@ const BKReportModal = ({
                   {currentData.map((row, rowIdx) => (
                     <tr
                       key={rowIdx}
-                      className="hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors">
+                      className="hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                    >
                       <td className="px-3 py-2 sm:px-4 sm:py-3 text-sm text-slate-600 dark:text-gray-400 border-r border-slate-200 dark:border-gray-600 font-medium">
                         {startIndex + rowIdx + 1}
                       </td>
                       {headers.map((header, colIdx) => (
                         <td
                           key={colIdx}
-                          className="px-3 py-2 sm:px-4 sm:py-3 text-sm text-slate-700 dark:text-gray-300 border-r border-slate-200 dark:border-gray-600 truncate max-w-[200px]">
+                          className="px-3 py-2 sm:px-4 sm:py-3 text-sm text-slate-700 dark:text-gray-300 border-r border-slate-200 dark:border-gray-600 truncate max-w-[200px]"
+                        >
                           {renderCell(header, row[header])}
                         </td>
                       ))}
@@ -639,8 +581,7 @@ const BKReportModal = ({
           <div className="px-4 sm:px-6 py-3 bg-slate-50 dark:bg-gray-700 border-t border-slate-200 dark:border-gray-600">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
               <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 text-center sm:text-left">
-                Menampilkan {startIndex + 1} -{" "}
-                {Math.min(endIndex, filteredData.length)} dari{" "}
+                Menampilkan {startIndex + 1} - {Math.min(endIndex, filteredData.length)} dari{" "}
                 {filteredData.length} data
               </div>
               <div className="flex items-center justify-center gap-2">
@@ -648,7 +589,8 @@ const BKReportModal = ({
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                   className="px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors min-h-[44px] touch-manipulation"
-                  aria-label="Previous page">
+                  aria-label="Previous page"
+                >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
 
@@ -673,7 +615,8 @@ const BKReportModal = ({
                           currentPage === pageNum
                             ? `${colors.button} text-white`
                             : "border border-slate-300 dark:border-gray-600 hover:bg-slate-100 dark:hover:bg-gray-600"
-                        }`}>
+                        }`}
+                      >
                         {pageNum}
                       </button>
                     );
@@ -681,12 +624,11 @@ const BKReportModal = ({
                 </div>
 
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className="px-3 py-2 border border-slate-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors min-h-[44px] touch-manipulation"
-                  aria-label="Next page">
+                  aria-label="Next page"
+                >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -698,19 +640,21 @@ const BKReportModal = ({
         <div className="px-4 sm:px-6 py-3 bg-slate-50 dark:bg-gray-700 border-t-2 border-slate-200 dark:border-gray-600">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 text-center sm:text-left">
-              <span className="font-medium">💡 Tips:</span> Filter berdasarkan
-              prioritas untuk menangani kasus mendesak
+              <span className="font-medium">💡 Tips:</span> Filter berdasarkan prioritas untuk
+              menangani kasus mendesak
             </div>
             <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
               <button
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-4 py-2.5 border-2 border-slate-300 dark:border-gray-600 text-slate-700 dark:text-gray-300 rounded-lg font-medium hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base">
+                className="flex-1 sm:flex-none px-4 py-2.5 border-2 border-slate-300 dark:border-gray-600 text-slate-700 dark:text-gray-300 rounded-lg font-medium hover:bg-slate-100 dark:hover:bg-gray-600 transition-colors min-h-[44px] touch-manipulation text-sm sm:text-base"
+              >
                 Tutup
               </button>
               <button
                 onClick={() => onDownload(reportType, "xlsx")}
                 disabled={loading}
-                className={`flex-1 sm:flex-none ${colors.button} text-white px-4 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-[44px] touch-manipulation text-sm sm:text-base`}>
+                className={`flex-1 sm:flex-none ${colors.button} text-white px-4 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-[44px] touch-manipulation text-sm sm:text-base`}
+              >
                 <FileSpreadsheet className="w-4 h-4" />
                 {loading ? "Exporting..." : "Export Excel"}
               </button>

@@ -38,8 +38,7 @@ const generateNextTeacherId = async () => {
       })
       .filter((num) => !isNaN(num) && num > 0);
 
-    const maxNumber =
-      teacherNumbers.length > 0 ? Math.max(...teacherNumbers) : 0;
+    const maxNumber = teacherNumbers.length > 0 ? Math.max(...teacherNumbers) : 0;
 
     const nextNumber = maxNumber + 1;
     return `G-${nextNumber.toString().padStart(2, "0")}`;
@@ -50,12 +49,7 @@ const generateNextTeacherId = async () => {
   }
 };
 
-const UserManagementTab = ({
-  user: currentUser,
-  showToast,
-  loading,
-  setLoading,
-}) => {
+const UserManagementTab = ({ user: currentUser, showToast, loading, setLoading }) => {
   // State untuk user list
   const [userSearchResults, setUserSearchResults] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -122,8 +116,7 @@ const UserManagementTab = ({
 
   // Generate random password
   const generateRandomPassword = () => {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let password = "";
     for (let i = 0; i < 8; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -320,21 +313,14 @@ const UserManagementTab = ({
       }
 
       // Parse header
-      const headers = lines[0]
-        .split(",")
-        .map((h) => h.trim().replace(/"/g, ""));
+      const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
 
       // Validasi header minimal
       const requiredHeaders = ["Username", "Nama Lengkap", "Role"];
-      const missingHeaders = requiredHeaders.filter(
-        (h) => !headers.includes(h)
-      );
+      const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
 
       if (missingHeaders.length > 0) {
-        showToast(
-          `Header wajib tidak ditemukan: ${missingHeaders.join(", ")}`,
-          "error"
-        );
+        showToast(`Header wajib tidak ditemukan: ${missingHeaders.join(", ")}`, "error");
         setLoading(false);
         return;
       }
@@ -678,16 +664,11 @@ const UserManagementTab = ({
 
         console.log("📤 Inserting user data:", userData);
 
-        const { error: insertError } = await supabase
-          .from("users")
-          .insert([userData]);
+        const { error: insertError } = await supabase.from("users").insert([userData]);
 
         if (insertError) {
           console.error("❌ Insert error:", insertError);
-          showToast(
-            `Gagal menyimpan data user: ${insertError.message}`,
-            "error"
-          );
+          showToast(`Gagal menyimpan data user: ${insertError.message}`, "error");
           setSubmitting(false);
           return;
         }
@@ -700,9 +681,7 @@ const UserManagementTab = ({
 
         showToast(
           `User berhasil ditambahkan${
-            formData.role === "teacher"
-              ? ` dengan ID: ${formData.teacher_id}`
-              : ""
+            formData.role === "teacher" ? ` dengan ID: ${formData.teacher_id}` : ""
           }!`,
           "success"
         );
@@ -786,10 +765,7 @@ const UserManagementTab = ({
         reset_by_admin: true,
       });
 
-      showToast(
-        `Password berhasil direset untuk ${resetPasswordUser.full_name}!`,
-        "success"
-      );
+      showToast(`Password berhasil direset untuk ${resetPasswordUser.full_name}!`, "success");
       setResetting(false);
       setTimeout(() => setShowResetPasswordModal(false), 1500);
     } catch (err) {
@@ -839,10 +815,7 @@ const UserManagementTab = ({
     }
     setDeletingUser(true);
     try {
-      const { error } = await supabase
-        .from("users")
-        .delete()
-        .eq("id", deleteTarget.id);
+      const { error } = await supabase.from("users").delete().eq("id", deleteTarget.id);
       if (error) throw error;
 
       await logAuditActivity("DELETE_USER", deleteTarget, {
@@ -850,10 +823,7 @@ const UserManagementTab = ({
         deleted_user_teacher_id: deleteTarget.teacher_id,
       });
 
-      showToast(
-        `User "${deleteTarget.full_name}" berhasil dihapus!`,
-        "success"
-      );
+      showToast(`User "${deleteTarget.full_name}" berhasil dihapus!`, "success");
       handleCloseDeleteModal();
       searchUsers("");
     } catch (err) {
@@ -892,7 +862,8 @@ const UserManagementTab = ({
               <button
                 onClick={openAddModal}
                 disabled={loading}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm min-h-[44px]">
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm min-h-[44px]"
+              >
                 <Plus size={18} />
                 <span>Tambah User</span>
               </button>
@@ -901,7 +872,8 @@ const UserManagementTab = ({
               <button
                 onClick={exportUsersCSV}
                 disabled={loading || totalUsers === 0}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm min-h-[44px] disabled:opacity-50">
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm min-h-[44px] disabled:opacity-50"
+              >
                 <Download size={18} />
                 <span>Export CSV</span>
               </button>
@@ -910,7 +882,8 @@ const UserManagementTab = ({
               <button
                 onClick={downloadTemplateCSV}
                 disabled={loading}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm min-h-[44px] disabled:opacity-50">
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm min-h-[44px] disabled:opacity-50"
+              >
                 <Download size={18} />
                 <span>Template</span>
               </button>
@@ -934,10 +907,7 @@ const UserManagementTab = ({
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             {filteredUsers.length === 0 ? (
               <div className="text-center py-12">
-                <Users
-                  size={48}
-                  className="text-gray-300 dark:text-gray-600 mx-auto mb-4"
-                />
+                <Users size={48} className="text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-500 dark:text-gray-400">
                   {searching
                     ? "Mencari..."
@@ -974,9 +944,7 @@ const UserManagementTab = ({
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredUsers.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                         <td className="px-4 py-3">
                           <div className="font-semibold text-gray-900 dark:text-gray-100">
                             {user.full_name}
@@ -1010,7 +978,8 @@ const UserManagementTab = ({
                                 : user.role === "guru_bk"
                                 ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
                                 : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                            }`}>
+                            }`}
+                          >
                             <Shield size={12} />
                             {user.role === "admin"
                               ? "Admin"
@@ -1025,14 +994,10 @@ const UserManagementTab = ({
                           {user.role === "teacher" ? (
                             <select
                               value={user.homeroom_class_id || ""}
-                              onChange={(e) =>
-                                updateTeacherClass(
-                                  user.id,
-                                  e.target.value || null
-                                )
-                              }
+                              onChange={(e) => updateTeacherClass(user.id, e.target.value || null)}
                               disabled={loading || !user.is_active}
-                              className="text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white transition-colors min-w-[120px]">
+                              className="text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white transition-colors min-w-[120px]"
+                            >
                               <option value="">Pilih Kelas</option>
                               {availableClasses.map((cls) => (
                                 <option key={cls.id} value={cls.id}>
@@ -1041,9 +1006,7 @@ const UserManagementTab = ({
                               ))}
                             </select>
                           ) : (
-                            <span className="text-gray-400 dark:text-gray-500 text-sm">
-                              -
-                            </span>
+                            <span className="text-gray-400 dark:text-gray-500 text-sm">-</span>
                           )}
                         </td>
 
@@ -1053,13 +1016,15 @@ const UserManagementTab = ({
                               user.is_active
                                 ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
                                 : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                            }`}>
+                            }`}
+                          >
                             <span
                               className={`w-2 h-2 rounded-full ${
                                 user.is_active
                                   ? "bg-green-500 dark:bg-green-400"
                                   : "bg-gray-400 dark:bg-gray-500"
-                              }`}></span>
+                              }`}
+                            ></span>
                             {user.is_active ? "Aktif" : "Nonaktif"}
                           </span>
                         </td>
@@ -1069,19 +1034,22 @@ const UserManagementTab = ({
                             <button
                               onClick={() => openEditModal(user)}
                               className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                              title="Edit User">
+                              title="Edit User"
+                            >
                               <Edit2 size={16} />
                             </button>
                             <button
                               onClick={() => openResetPasswordModal(user)}
                               className="p-2 text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
-                              title="Reset Password">
+                              title="Reset Password"
+                            >
                               <Mail size={16} />
                             </button>
                             <button
                               onClick={() => handleOpenDeleteModal(user)}
                               className="p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                              title="Hapus User">
+                              title="Hapus User"
+                            >
                               <Trash2 size={16} />
                             </button>
                           </div>
@@ -1103,27 +1071,18 @@ const UserManagementTab = ({
                 <Users className="text-blue-600 dark:text-blue-400" size={20} />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Total Pengguna
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {totalUsers}
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Pengguna</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalUsers}</p>
               </div>
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-blue-200 dark:border-gray-700 shadow">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Shield
-                  className="text-green-600 dark:text-green-400"
-                  size={20}
-                />
+                <Shield className="text-green-600 dark:text-green-400" size={20} />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Aktif
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Aktif</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {filteredUsers.filter((u) => u.is_active).length}
                 </p>
@@ -1133,15 +1092,10 @@ const UserManagementTab = ({
           <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-blue-200 dark:border-gray-700 shadow">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Shield
-                  className="text-purple-600 dark:text-purple-400"
-                  size={20}
-                />
+                <Shield className="text-purple-600 dark:text-purple-400" size={20} />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Admin
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Admin</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {filteredUsers.filter((u) => u.role === "admin").length}
                 </p>
@@ -1151,15 +1105,10 @@ const UserManagementTab = ({
           <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-blue-200 dark:border-gray-700 shadow">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Shield
-                  className="text-orange-600 dark:text-orange-400"
-                  size={20}
-                />
+                <Shield className="text-orange-600 dark:text-orange-400" size={20} />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Guru BK
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Guru BK</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {filteredUsers.filter((u) => u.role === "guru_bk").length}
                 </p>
@@ -1187,7 +1136,8 @@ const UserManagementTab = ({
                 </h3>
                 <button
                   onClick={() => setShowUserModal(false)}
-                  className="p-2 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                  className="p-2 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
                   <X size={18} />
                 </button>
               </div>
@@ -1208,9 +1158,7 @@ const UserManagementTab = ({
                     }))
                   }
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm ${
-                    formErrors.username
-                      ? "border-red-500"
-                      : "border-blue-300 dark:border-gray-600"
+                    formErrors.username ? "border-red-500" : "border-blue-300 dark:border-gray-600"
                   }`}
                   placeholder="Masukkan username"
                   disabled={modalMode === "edit"}
@@ -1237,9 +1185,7 @@ const UserManagementTab = ({
                     }))
                   }
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm ${
-                    formErrors.full_name
-                      ? "border-red-500"
-                      : "border-blue-300 dark:border-gray-600"
+                    formErrors.full_name ? "border-red-500" : "border-blue-300 dark:border-gray-600"
                   }`}
                   placeholder="Masukkan nama lengkap"
                 />
@@ -1257,18 +1203,17 @@ const UserManagementTab = ({
                 </label>
                 <select
                   value={formData.role}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, role: e.target.value }))
-                  }
-                  className="w-full px-4 py-3 border border-blue-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm">
+                  onChange={(e) => setFormData((prev) => ({ ...prev, role: e.target.value }))}
+                  className="w-full px-4 py-3 border border-blue-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm"
+                >
                   <option value="teacher">Guru</option>
                   <option value="guru_bk">Guru BK</option>
                   <option value="admin">Administrator</option>
                 </select>
                 {formData.role === "admin" && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
-                    ⚠️ <span className="font-semibold">PERINGATAN:</span> Role
-                    admin memiliki akses penuh ke semua data dan fitur sistem.
+                    ⚠️ <span className="font-semibold">PERINGATAN:</span> Role admin memiliki akses
+                    penuh ke semua data dan fitur sistem.
                   </p>
                 )}
               </div>
@@ -1279,9 +1224,7 @@ const UserManagementTab = ({
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     ID Guru <span className="text-red-500">*</span>
                     <span className="text-green-600 text-xs font-normal ml-2">
-                      {modalMode === "add"
-                        ? "(Auto-generated)"
-                        : "(Dapat diedit)"}
+                      {modalMode === "add" ? "(Auto-generated)" : "(Dapat diedit)"}
                     </span>
                   </label>
                   <input
@@ -1317,10 +1260,7 @@ const UserManagementTab = ({
               {/* Password */}
               <div className="relative">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Password{" "}
-                  {modalMode === "add" && (
-                    <span className="text-red-500">*</span>
-                  )}
+                  Password {modalMode === "add" && <span className="text-red-500">*</span>}
                   {modalMode === "edit" && (
                     <span className="text-gray-500 dark:text-gray-400 text-xs font-normal ml-1">
                       (Kosongkan jika tidak diubah)
@@ -1343,15 +1283,14 @@ const UserManagementTab = ({
                         : "border-blue-300 dark:border-gray-600"
                     }`}
                     placeholder={
-                      modalMode === "add"
-                        ? "Masukkan password awal"
-                        : "Password baru (opsional)"
+                      modalMode === "add" ? "Masukkan password awal" : "Password baru (opsional)"
                     }
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
@@ -1370,9 +1309,7 @@ const UserManagementTab = ({
                 <input
                   type="text"
                   value={formData.no_hp}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, no_hp: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, no_hp: e.target.value }))}
                   className="w-full px-4 py-3 border border-blue-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                   placeholder="Masukkan nomor HP (opsional)"
                 />
@@ -1408,13 +1345,15 @@ const UserManagementTab = ({
                 <button
                   onClick={() => setShowUserModal(false)}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-gray-700 dark:to-gray-600 hover:from-blue-200 hover:to-blue-300 dark:hover:from-gray-600 dark:hover:to-gray-500 text-gray-800 dark:text-gray-300 rounded-lg font-semibold transition-all text-sm"
-                  disabled={submitting}>
+                  disabled={submitting}
+                >
                   Batal
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm">
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                >
                   {submitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -1444,14 +1383,13 @@ const UserManagementTab = ({
               </h3>
               <button
                 onClick={closeResetPasswordModal}
-                className="p-2 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                className="p-2 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
                 <X size={18} />
               </button>
             </div>
             <div className="text-center mb-6">
-              <p className="text-gray-700 dark:text-gray-300 mb-3">
-                Reset password untuk user:
-              </p>
+              <p className="text-gray-700 dark:text-gray-300 mb-3">Reset password untuk user:</p>
               <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                 {resetPasswordUser.full_name}
               </p>
@@ -1473,7 +1411,8 @@ const UserManagementTab = ({
                     passwordCopied
                       ? "bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 text-green-700 dark:text-green-300 border-2 border-green-500"
                       : "bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500 hover:from-blue-200 hover:to-blue-300 dark:hover:from-blue-800/40 dark:hover:to-blue-700/40"
-                  }`}>
+                  }`}
+                >
                   {passwordCopied ? "Tersalin!" : "Salin"}
                 </button>
               </div>
@@ -1482,13 +1421,15 @@ const UserManagementTab = ({
               <button
                 onClick={closeResetPasswordModal}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-gray-700 dark:to-gray-600 hover:from-blue-200 hover:to-blue-300 dark:hover:from-gray-600 dark:hover:to-gray-500 text-gray-800 dark:text-gray-300 rounded-lg font-semibold transition-all text-sm"
-                disabled={resetting}>
+                disabled={resetting}
+              >
                 Batal
               </button>
               <button
                 onClick={handleResetPassword}
                 disabled={resetting}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 dark:from-orange-700 dark:to-orange-800 dark:hover:from-orange-600 dark:hover:to-orange-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm">
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 dark:from-orange-700 dark:to-orange-800 dark:hover:from-orange-600 dark:hover:to-orange-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+              >
                 {resetting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -1516,12 +1457,8 @@ const UserManagementTab = ({
                   <AlertCircle className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">
-                    Konfirmasi Penghapusan User
-                  </h3>
-                  <p className="text-sm text-red-100 mt-1">
-                    Tindakan ini tidak dapat dibatalkan!
-                  </p>
+                  <h3 className="text-xl font-bold text-white">Konfirmasi Penghapusan User</h3>
+                  <p className="text-sm text-red-100 mt-1">Tindakan ini tidak dapat dibatalkan!</p>
                 </div>
               </div>
             </div>
@@ -1533,15 +1470,11 @@ const UserManagementTab = ({
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-red-700">Nama:</span>
-                    <span className="font-semibold text-red-900">
-                      {deleteTarget.full_name}
-                    </span>
+                    <span className="font-semibold text-red-900">{deleteTarget.full_name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-red-700">Username:</span>
-                    <span className="font-semibold text-red-900">
-                      @{deleteTarget.username}
-                    </span>
+                    <span className="font-semibold text-red-900">@{deleteTarget.username}</span>
                   </div>
                   {deleteTarget.teacher_id && (
                     <div className="flex justify-between">
@@ -1588,8 +1521,7 @@ const UserManagementTab = ({
                   autoFocus
                 />
                 <p className="text-xs text-gray-600 mt-2">
-                  * Untuk keamanan, Anda harus mengetik kata "HAPUS" dengan
-                  huruf besar
+                  * Untuk keamanan, Anda harus mengetik kata "HAPUS" dengan huruf besar
                 </p>
               </div>
             </div>
@@ -1597,15 +1529,15 @@ const UserManagementTab = ({
               <button
                 onClick={handleCloseDeleteModal}
                 disabled={deletingUser}
-                className="flex-1 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors disabled:opacity-50">
+                className="flex-1 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors disabled:opacity-50"
+              >
                 Batal
               </button>
               <button
                 onClick={handleConfirmDelete}
-                disabled={
-                  deletingUser || deleteConfirmText.toUpperCase() !== "HAPUS"
-                }
-                className="flex-1 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                disabled={deletingUser || deleteConfirmText.toUpperCase() !== "HAPUS"}
+                className="flex-1 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {deletingUser ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>

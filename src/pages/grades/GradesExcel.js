@@ -9,20 +9,18 @@ import {
   getActiveYearString,
   getActiveAcademicYearId,
   applyAcademicFilters,
+  formatSemesterDisplay,
 } from "../../services/academicYearService";
 
 // Calculate NA
-// Perubahan: uts -> psts, uas -> psas
 const calculateNA = (nh1, nh2, nh3, psts, psas) => {
-  const nhAvg =
-    (parseFloat(nh1 || 0) + parseFloat(nh2 || 0) + parseFloat(nh3 || 0)) / 3;
-  // Perubahan: uts -> psts, uas -> psas
-  const na =
-    nhAvg * 0.4 + parseFloat(psts || 0) * 0.3 + parseFloat(psas || 0) * 0.3;
+  const nhValues = [nh1, nh2, nh3].filter((n) => n > 0);
+  const nhAvg = nhValues.length > 0 ? nhValues.reduce((a, b) => a + b, 0) / nhValues.length : 0;
+  const na = nhAvg * 0.4 + parseFloat(psts || 0) * 0.3 + parseFloat(psas || 0) * 0.3;
   return na.toFixed(2);
 };
 
-// ✅ REVISI: Export to Excel dengan data akademik dinamis
+// ✅ REVISI: Export to Excel dengan data semester dari Grades.js
 export const exportToExcel = async (params) => {
   const {
     students,
@@ -30,34 +28,23 @@ export const exportToExcel = async (params) => {
     selectedSubject,
     selectedClass,
     className,
-    teacherId, // Terima teacherId
+    teacherId,
+    selectedSemesterInfo, // ✅ DITERIMA DARI GRADES.JS
     isSubjectTeacher = true,
   } = params;
 
   try {
-    // ✅ AMBIL DATA AKADEMIK DINAMIS
-    let academicInfo;
-    try {
-      academicInfo = await getActiveAcademicInfo();
-    } catch (error) {
-      console.error("❌ Error fetching academic info:", error);
-      // Fallback jika service gagal
-      academicInfo = {
-        year: "2025/2026",
-        semester: 1,
-        semesterText: "Semester 1 (Ganjil)",
-        displayText: "2025/2026 - Semester 1",
-        yearId: null,
-      };
+    // ✅ GUNAKAN DATA DARI selectedSemesterInfo
+    if (!selectedSemesterInfo) {
+      throw new Error("Informasi semester tidak ditemukan");
     }
 
-    // ✅ GUNAKAN DATA DINAMIS
-    const academicYear = academicInfo.year;
-    const semester = academicInfo.semester;
-    const semesterText = academicInfo.semesterText;
-    const displayText = academicInfo.displayText;
+    const academicYear = selectedSemesterInfo.year;
+    const semester = selectedSemesterInfo.semester;
+    const semesterText = formatSemesterDisplay(semester);
+    const displayText = `${academicYear} - ${semesterText}`;
 
-    // NEW LOGIC: Fetch teacher full name from 'users' table using teacherId
+    // Fetch teacher full name
     let teacherFullName = "";
     if (teacherId) {
       const { data: teacherUser, error: teacherError } = await supabase
@@ -84,7 +71,7 @@ export const exportToExcel = async (params) => {
     schoolCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(1).height = 25;
 
-    // ✅ REVISI: Judul Daftar Nilai
+    // Judul Daftar Nilai
     worksheet.mergeCells("A2:I2");
     const titleCell = worksheet.getCell("A2");
     titleCell.value = `DAFTAR NILAI MATA PELAJARAN ${selectedSubject.toUpperCase()} - ${className}`;
@@ -92,7 +79,7 @@ export const exportToExcel = async (params) => {
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(2).height = 20;
 
-    // ✅ REVISI: Tahun Ajaran & Semester DINAMIS
+    // Tahun Ajaran & Semester
     worksheet.mergeCells("A3:I3");
     const academicCell = worksheet.getCell("A3");
     academicCell.value = displayText;
@@ -100,7 +87,7 @@ export const exportToExcel = async (params) => {
     academicCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(3).height = 20;
 
-    // ✅ TAMBAH: Info semester lengkap
+    // Info semester lengkap
     worksheet.mergeCells("A4:I4");
     const detailCell = worksheet.getCell("A4");
     detailCell.value = `Tahun Ajaran: ${academicYear} | ${semesterText}`;
@@ -108,7 +95,7 @@ export const exportToExcel = async (params) => {
     detailCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(4).height = 15;
 
-    // ✅ TAMBAH: Tanggal ekspor
+    // Tanggal ekspor
     worksheet.mergeCells("A5:I5");
     const dateCell = worksheet.getCell("A5");
     const now = new Date();
@@ -124,22 +111,11 @@ export const exportToExcel = async (params) => {
     dateCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(5).height = 15;
 
-    // SPACING - KOSONG 1 BARIS
+    // SPACING
     worksheet.getRow(6).height = 20;
 
-    // Headers Tabel - dimulai di row 7
-    // Perubahan: UTS -> PSTS, UAS -> PSAS
-    const headers = [
-      "No",
-      "NIS",
-      "Nama Siswa",
-      "NH1",
-      "NH2",
-      "NH3",
-      "PSTS",
-      "PSAS",
-      "NA",
-    ];
+    // Headers Tabel
+    const headers = ["No", "NIS", "Nama Siswa", "NH1", "NH2", "NH3", "PSTS", "PSAS", "NA"];
     const headerRow = worksheet.getRow(7);
 
     // STYLING PER CELL
@@ -159,15 +135,15 @@ export const exportToExcel = async (params) => {
 
     // Column widths
     worksheet.columns = [
-      { width: 6 }, // A - No
-      { width: 15 }, // B - NIS
-      { width: 38 }, // C - Nama Siswa
-      { width: 8 }, // D - NH1
-      { width: 8 }, // E - NH2
-      { width: 8 }, // F - NH3
-      { width: 8 }, // G - PSTS
-      { width: 8 }, // H - PSAS
-      { width: 8 }, // I - NA
+      { width: 6 },
+      { width: 15 },
+      { width: 38 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
+      { width: 8 },
     ];
 
     // Add students data
@@ -231,23 +207,22 @@ export const exportToExcel = async (params) => {
       });
     });
 
-    // FOOTER SECTION - REVISI TINGGI BARIS DAN NAMA GURU
+    // FOOTER SECTION
     const lastTableRow = 7 + students.length;
 
-    // 2 BARIS KOSONG SETELAH TABEL
+    // 2 BARIS KOSONG
     worksheet.getRow(lastTableRow + 1).height = 20;
     worksheet.getRow(lastTableRow + 2).height = 20;
 
     // FOOTER - di kolom F
     const footerRow1 = worksheet.getRow(lastTableRow + 3);
-    const footerCell1 = footerRow1.getCell(6); // Kolom F
+    const footerCell1 = footerRow1.getCell(6);
     footerCell1.value = "Mengetahui,";
     footerCell1.font = { bold: true };
 
     const footerRow2 = worksheet.getRow(lastTableRow + 4);
-    const footerCell2 = footerRow2.getCell(6); // Kolom F
+    const footerCell2 = footerRow2.getCell(6);
 
-    // Pilih antara Guru Mapel atau Wali Kelas
     if (isSubjectTeacher) {
       footerCell2.value = "Guru Mata Pelajaran";
     } else {
@@ -258,13 +233,13 @@ export const exportToExcel = async (params) => {
     // BARIS KOSONG UNTUK TANDA TANGAN
     worksheet.getRow(lastTableRow + 5).height = 20;
 
-    // NAMA GURU/WALI KELAS - MENGGUNAKAN NAMA YANG SUDAH DI-FETCH
+    // NAMA GURU/WALI KELAS
     const footerRow3 = worksheet.getRow(lastTableRow + 6);
-    const footerCell3 = footerRow3.getCell(6); // Kolom F
-    footerCell3.value = `(${teacherFullName})`; // Menggunakan teacherFullName
+    const footerCell3 = footerRow3.getCell(6);
+    footerCell3.value = `(${teacherFullName})`;
     footerCell3.font = { bold: true };
 
-    // ✅ REVISI: Filename dengan format yang lebih baik
+    // ✅ REVISI: Filename dengan format semester
     const safeSubject = selectedSubject.replace(/[^a-zA-Z0-9]/g, "_");
     const safeClass = selectedClass.replace(/[^a-zA-Z0-9]/g, "_");
     const safeYear = academicYear.replace(/\//g, "-");
@@ -301,25 +276,25 @@ export const exportToExcel = async (params) => {
   }
 };
 
-// ✅ REVISI: Import from Excel dengan data akademik dinamis
+// ✅ REVISI: Import from Excel dengan data semester dari Grades.js
 export const importFromExcel = async (file, params) => {
-  const { students, teacherId, selectedSubject, selectedClass } = params;
+  const {
+    students,
+    teacherId,
+    selectedSubject,
+    selectedClass,
+    selectedSemesterInfo, // ✅ DITERIMA DARI GRADES.JS
+  } = params;
 
   try {
-    // ✅ AMBIL DATA AKADEMIK DINAMIS
-    let academicInfo;
-    try {
-      academicInfo = await getActiveAcademicInfo();
-    } catch (error) {
-      console.error("❌ Error fetching academic info:", error);
-      throw new Error(
-        "Gagal memuat informasi tahun akademik. Silakan coba lagi."
-      );
+    // ✅ GUNAKAN DATA DARI selectedSemesterInfo
+    if (!selectedSemesterInfo) {
+      throw new Error("Informasi semester tidak ditemukan");
     }
 
-    const academicYear = academicInfo.year;
-    const semester = academicInfo.semester;
-    const academicYearId = academicInfo.yearId;
+    const academicYear = selectedSemesterInfo.year;
+    const semester = selectedSemesterInfo.semester;
+    const academicYearId = selectedSemesterInfo.id; // ✅ ID semester
 
     const arrayBuffer = await file.arrayBuffer();
     const workbook = new ExcelJS.Workbook();
@@ -352,20 +327,10 @@ export const importFromExcel = async (file, params) => {
     const warnings = [];
 
     // Validasi header file Excel
-    const expectedHeaders = [
-      "No",
-      "NIS",
-      "Nama Siswa",
-      "NH1",
-      "NH2",
-      "NH3",
-      "PSTS",
-      "PSAS",
-      "NA",
-    ];
+    const expectedHeaders = ["No", "NIS", "Nama Siswa", "NH1", "NH2", "NH3", "PSTS", "PSAS", "NA"];
     const actualHeaders = [];
 
-    // Ambil header dari row 7 (sesuai dengan template export)
+    // Ambil header dari row 7
     const headerRow = worksheet.getRow(7);
     for (let i = 1; i <= 9; i++) {
       actualHeaders.push(headerRow.getCell(i).value?.toString() || "");
@@ -377,9 +342,7 @@ export const importFromExcel = async (file, params) => {
       if (actualHeaders[i] !== expectedHeaders[i]) {
         headersMatch = false;
         warnings.push(
-          `Kolom ${i + 1} diharapkan "${
-            expectedHeaders[i]
-          }" tetapi ditemukan "${actualHeaders[i]}"`
+          `Kolom ${i + 1} diharapkan "${expectedHeaders[i]}" tetapi ditemukan "${actualHeaders[i]}"`
         );
       }
     }
@@ -392,14 +355,14 @@ export const importFromExcel = async (file, params) => {
 
     // ✅ VALIDASI: Cek apakah file untuk semester yang benar
     const semesterInFile = worksheet.getCell("A3")?.value?.toString() || "";
-    if (
-      semesterInFile.includes(academicYear) &&
-      semesterInFile.includes(`Semester ${semester}`)
-    ) {
-      console.log("✅ File Excel sesuai dengan periode akademik aktif");
+    const semesterText = formatSemesterDisplay(semester);
+    const expectedDisplay = `${academicYear} - ${semesterText}`;
+
+    if (semesterInFile.includes(academicYear) && semesterInFile.includes(semesterText)) {
+      console.log("✅ File Excel sesuai dengan periode akademik");
     } else {
       warnings.push(
-        `Perhatian: File Excel mungkin untuk periode akademik lain. Sedang mengimport untuk ${academicInfo.displayText}`
+        `Perhatian: File Excel mungkin untuk periode akademik lain. Sedang mengimport untuk ${expectedDisplay}`
       );
     }
 
@@ -426,9 +389,7 @@ export const importFromExcel = async (file, params) => {
       const studentId = nisToIdMap[nis];
       if (!studentId) {
         skippedCount++;
-        errors.push(
-          `Baris ${i}: NIS ${nis} tidak ditemukan di kelas ${selectedClass}`
-        );
+        errors.push(`Baris ${i}: NIS ${nis} tidak ditemukan di kelas ${selectedClass}`);
         continue;
       }
 
@@ -461,7 +422,7 @@ export const importFromExcel = async (file, params) => {
             score: score,
             semester: semester,
             academic_year: academicYear,
-            academic_year_id: academicYearId,
+            academic_year_id: academicYearId, // ✅ PAKAI ID SEMESTER
           });
         }
       }
@@ -479,22 +440,15 @@ export const importFromExcel = async (file, params) => {
       );
     }
 
-    // ✅ APPLY ACADEMIC FILTERS untuk delete query
+    // ✅ DELETE DATA LAMA DENGAN FILTER YANG BENAR
     let deleteQuery = supabase
       .from("grades")
       .delete()
       .eq("teacher_id", teacherUser.id)
       .eq("subject", selectedSubject)
-      .eq("class_id", selectedClass);
-
-    // Tambahkan filter semester dan tahun ajaran
-    deleteQuery = deleteQuery.eq("semester", semester);
-    deleteQuery = deleteQuery.eq("academic_year", academicYear);
-
-    // Gunakan academic_year_id jika tersedia untuk akurasi maksimal
-    if (academicYearId) {
-      deleteQuery = deleteQuery.eq("academic_year_id", academicYearId);
-    }
+      .eq("class_id", selectedClass)
+      .eq("semester", semester)
+      .eq("academic_year_id", academicYearId); // ✅ FILTER BY SEMESTER ID
 
     await deleteQuery;
 
@@ -505,10 +459,7 @@ export const importFromExcel = async (file, params) => {
 
     for (let i = 0; i < gradesToInsert.length; i += BATCH_SIZE) {
       const batch = gradesToInsert.slice(i, i + BATCH_SIZE);
-      const { data, error } = await supabase
-        .from("grades")
-        .insert(batch)
-        .select();
+      const { data, error } = await supabase.from("grades").insert(batch).select();
 
       if (error) {
         throw new Error(`Gagal menyimpan batch: ${error.message}`);
@@ -543,13 +494,7 @@ export const importFromExcel = async (file, params) => {
 
     // Hitung NA untuk setiap siswa
     Object.values(studentScores).forEach((scores) => {
-      const na = calculateNA(
-        scores.NH1,
-        scores.NH2,
-        scores.NH3,
-        scores.PSTS,
-        scores.PSAS
-      );
+      const na = calculateNA(scores.NH1, scores.NH2, scores.NH3, scores.PSTS, scores.PSAS);
       const naValue = parseFloat(na);
       totalNA += naValue;
       countNA++;
@@ -559,12 +504,10 @@ export const importFromExcel = async (file, params) => {
 
     const avgNA = countNA > 0 ? (totalNA / countNA).toFixed(2) : 0;
 
-    let message = `✅ Berhasil mengimport ${successCount} nilai dari ${processedCount} siswa untuk ${academicInfo.displayText}!`;
+    let message = `✅ Berhasil mengimport ${successCount} nilai dari ${processedCount} siswa untuk ${academicYear} Semester ${semester}!`;
 
     if (countNA > 0) {
-      message += ` Rata-rata NA: ${avgNA} (Min: ${minNA.toFixed(
-        2
-      )}, Max: ${maxNA.toFixed(2)})`;
+      message += ` Rata-rata NA: ${avgNA} (Min: ${minNA.toFixed(2)}, Max: ${maxNA.toFixed(2)})`;
     }
 
     if (skippedCount > 0) {
@@ -587,7 +530,7 @@ export const importFromExcel = async (file, params) => {
         averageNA: avgNA,
         minNA: minNA.toFixed(2),
         maxNA: maxNA.toFixed(2),
-        academicPeriod: academicInfo.displayText,
+        academicPeriod: `${academicYear} Semester ${semester}`,
       },
     };
   } catch (error) {
@@ -599,8 +542,8 @@ export const importFromExcel = async (file, params) => {
   }
 };
 
-// ✅ TAMBAH: Fungsi untuk validate Excel template
-export const validateExcelTemplate = async (file) => {
+// ✅ Fungsi untuk validate Excel template
+export const validateExcelTemplate = async (file, semesterInfo = null) => {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const workbook = new ExcelJS.Workbook();
@@ -615,18 +558,8 @@ export const validateExcelTemplate = async (file) => {
     }
 
     // Cek header
-    const expectedHeaders = [
-      "No",
-      "NIS",
-      "Nama Siswa",
-      "NH1",
-      "NH2",
-      "NH3",
-      "PSTS",
-      "PSAS",
-      "NA",
-    ];
-    const headerRow = worksheet.getRow(7); // Header di row 7 sesuai template
+    const expectedHeaders = ["No", "NIS", "Nama Siswa", "NH1", "NH2", "NH3", "PSTS", "PSAS", "NA"];
+    const headerRow = worksheet.getRow(7);
     const actualHeaders = [];
 
     for (let i = 1; i <= 9; i++) {
@@ -640,26 +573,22 @@ export const validateExcelTemplate = async (file) => {
       if (actualHeaders[i] !== expectedHeaders[i]) {
         isValid = false;
         validationErrors.push(
-          `Kolom ${i + 1}: Diharapkan "${
-            expectedHeaders[i]
-          }" tetapi ditemukan "${actualHeaders[i]}"`
+          `Kolom ${i + 1}: Diharapkan "${expectedHeaders[i]}" tetapi ditemukan "${
+            actualHeaders[i]
+          }"`
         );
       }
     }
 
-    // Ambil info akademik untuk validasi tambahan
-    let academicInfo;
-    try {
-      academicInfo = await getActiveAcademicInfo();
-    } catch (error) {
-      academicInfo = null;
-    }
-
-    if (academicInfo) {
+    // Validasi periode akademik jika ada semesterInfo
+    if (semesterInfo) {
+      const semesterText = formatSemesterDisplay(semesterInfo.semester);
+      const expectedDisplay = `${semesterInfo.year} - ${semesterText}`;
       const fileAcademicInfo = worksheet.getCell("A3")?.value?.toString() || "";
-      if (fileAcademicInfo && !fileAcademicInfo.includes(academicInfo.year)) {
+
+      if (fileAcademicInfo && !fileAcademicInfo.includes(semesterInfo.year)) {
         validationErrors.push(
-          `File mungkin untuk tahun ajaran lain. Sistem aktif: ${academicInfo.displayText}`
+          `File mungkin untuk tahun ajaran lain. Sistem aktif: ${expectedDisplay}`
         );
       }
     }
@@ -668,7 +597,6 @@ export const validateExcelTemplate = async (file) => {
       isValid,
       message: isValid ? "Template Excel valid" : "Template Excel tidak valid",
       errors: validationErrors,
-      academicInfo: academicInfo,
     };
   } catch (error) {
     return {
@@ -678,23 +606,26 @@ export const validateExcelTemplate = async (file) => {
   }
 };
 
-// ✅ TAMBAH: Fungsi untuk generate template Excel
+// ✅ Fungsi untuk generate template Excel
 export const generateExcelTemplate = async (params) => {
-  const { students, selectedSubject, selectedClass, className } = params;
+  const {
+    students,
+    selectedSubject,
+    selectedClass,
+    className,
+    selectedSemesterInfo, // ✅ DITERIMA DARI GRADES.JS
+  } = params;
 
   try {
-    // Ambil data akademik dinamis
-    let academicInfo;
-    try {
-      academicInfo = await getActiveAcademicInfo();
-    } catch (error) {
-      academicInfo = {
-        year: "2025/2026",
-        semester: 1,
-        semesterText: "Semester 1 (Ganjil)",
-        displayText: "2025/2026 - Semester 1",
-      };
+    // ✅ GUNAKAN DATA DARI selectedSemesterInfo
+    if (!selectedSemesterInfo) {
+      throw new Error("Informasi semester tidak ditemukan");
     }
+
+    const academicYear = selectedSemesterInfo.year;
+    const semester = selectedSemesterInfo.semester;
+    const semesterText = formatSemesterDisplay(semester);
+    const displayText = `${academicYear} - ${semesterText}`;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Template Nilai");
@@ -723,7 +654,7 @@ export const generateExcelTemplate = async (params) => {
     // Info Periode Akademik
     worksheet.mergeCells("A3:I3");
     const periodCell = worksheet.getCell("A3");
-    periodCell.value = `Periode: ${academicInfo.displayText}`;
+    periodCell.value = `Periode: ${displayText}`;
     periodCell.font = { size: 10, italic: true };
     periodCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(3).height = 15;
@@ -751,17 +682,7 @@ export const generateExcelTemplate = async (params) => {
     worksheet.getRow(6).height = 20;
 
     // Headers
-    const headers = [
-      "No",
-      "NIS",
-      "Nama Siswa",
-      "NH1",
-      "NH2",
-      "NH3",
-      "PSTS",
-      "PSAS",
-      "NA",
-    ];
+    const headers = ["No", "NIS", "Nama Siswa", "NH1", "NH2", "NH3", "PSTS", "PSAS", "NA"];
     const headerRow = worksheet.getRow(7);
 
     headers.forEach((header, index) => {
@@ -851,16 +772,15 @@ export const generateExcelTemplate = async (params) => {
 
     worksheet.mergeCells(`A${lastRow + 2}:I${lastRow + 2}`);
     const footerCell = worksheet.getCell(`A${lastRow + 2}`);
-    footerCell.value =
-      "Simpan file ini, isi nilai, lalu upload kembali untuk import.";
+    footerCell.value = "Simpan file ini, isi nilai, lalu upload kembali untuk import.";
     footerCell.font = { size: 9, italic: true };
     footerCell.alignment = { horizontal: "center", vertical: "middle" };
 
     // Generate filename
     const safeSubject = selectedSubject.replace(/[^a-zA-Z0-9]/g, "_");
     const safeClass = selectedClass.replace(/[^a-zA-Z0-9]/g, "_");
-    const safeYear = academicInfo.year.replace(/\//g, "-");
-    const fileName = `Template_Nilai_${safeSubject}_${safeClass}_${safeYear}_S${academicInfo.semester}.xlsx`;
+    const safeYear = academicYear.replace(/\//g, "-");
+    const fileName = `Template_Nilai_${safeSubject}_${safeClass}_${safeYear}_S${semester}.xlsx`;
 
     // Generate & download
     const buffer = await workbook.xlsx.writeBuffer();
@@ -876,7 +796,7 @@ export const generateExcelTemplate = async (params) => {
 
     return {
       success: true,
-      message: `Template berhasil digenerate untuk ${academicInfo.displayText}`,
+      message: `Template berhasil digenerate untuk ${displayText}`,
       fileName: fileName,
     };
   } catch (error) {

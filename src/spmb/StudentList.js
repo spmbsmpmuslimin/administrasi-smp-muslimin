@@ -22,8 +22,7 @@ const StudentList = ({
   const [viewMode, setViewMode] = useState("table");
   const [isExporting, setIsExporting] = useState(false);
 
-  const effectiveTotalPages =
-    totalPages > 0 ? totalPages : Math.ceil(totalStudents / rowsPerPage);
+  const effectiveTotalPages = totalPages > 0 ? totalPages : Math.ceil(totalStudents / rowsPerPage);
   const shouldShowPagination = effectiveTotalPages > 1;
 
   // Helper function untuk format tanggal DD-MM-YYYY
@@ -219,8 +218,7 @@ const StudentList = ({
                 <td class="label">No. Pendaftaran</td>
                 <td class="colon">:</td>
                 <td class="value"><strong>${
-                  student.no_pendaftaran ||
-                  "....................................."
+                  student.no_pendaftaran || "....................................."
                 }</strong></td>
             </tr>
             <tr>
@@ -239,8 +237,7 @@ const StudentList = ({
                 <td class="label">Nama Lengkap</td>
                 <td class="colon">:</td>
                 <td class="value"><strong>${
-                  student.nama_lengkap ||
-                  "....................................."
+                  student.nama_lengkap || "....................................."
                 }</strong></td>
             </tr>
             <tr>
@@ -255,9 +252,7 @@ const StudentList = ({
             <tr>
                 <td class="label">Jenis Kelamin</td>
                 <td class="colon">:</td>
-                <td class="value">${
-                  student.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"
-                }</td>
+                <td class="value">${student.jenis_kelamin === "L" ? "Laki-laki" : "Perempuan"}</td>
             </tr>
             <tr>
                 <td class="label">Tempat, Tanggal Lahir</td>
@@ -270,8 +265,7 @@ const StudentList = ({
                 <td class="label">Asal Sekolah (SD)</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.asal_sekolah ||
-                  "....................................."
+                  student.asal_sekolah || "....................................."
                 }</td>
             </tr>
         </table>
@@ -290,16 +284,14 @@ const StudentList = ({
                 <td class="label">Pekerjaan</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.pekerjaan_ayah ||
-                  "....................................."
+                  student.pekerjaan_ayah || "....................................."
                 }</td>
             </tr>
             <tr>
                 <td class="label">Pendidikan Terakhir</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.pendidikan_ayah ||
-                  "....................................."
+                  student.pendidikan_ayah || "....................................."
                 }</td>
             </tr>
             
@@ -315,16 +307,14 @@ const StudentList = ({
                 <td class="label">Pekerjaan</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.pekerjaan_ibu ||
-                  "....................................."
+                  student.pekerjaan_ibu || "....................................."
                 }</td>
             </tr>
             <tr>
                 <td class="label">Pendidikan Terakhir</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.pendidikan_ibu ||
-                  "....................................."
+                  student.pendidikan_ibu || "....................................."
                 }</td>
             </tr>
         </table>
@@ -334,16 +324,12 @@ const StudentList = ({
             <tr>
                 <td class="label">No. HP / WhatsApp</td>
                 <td class="colon">:</td>
-                <td class="value">${
-                  student.no_hp || "....................................."
-                }</td>
+                <td class="value">${student.no_hp || "....................................."}</td>
             </tr>
             <tr>
                 <td class="label">Alamat Lengkap</td>
                 <td class="colon">:</td>
-                <td class="value">${
-                  student.alamat || "....................................."
-                }</td>
+                <td class="value">${student.alamat || "....................................."}</td>
             </tr>
         </table>
         
@@ -403,10 +389,7 @@ const StudentList = ({
         .save()
         .then(() => {
           if (showToast) {
-            showToast(
-              `PDF ${student.nama_lengkap} berhasil didownload!`,
-              "success"
-            );
+            showToast(`PDF ${student.nama_lengkap} berhasil didownload!`, "success");
           }
         })
         .catch((error) => {
@@ -456,9 +439,7 @@ const StudentList = ({
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return "fas fa-sort";
-    return sortConfig.direction === "asc"
-      ? "fas fa-sort-up"
-      : "fas fa-sort-down";
+    return sortConfig.direction === "asc" ? "fas fa-sort-up" : "fas fa-sort-down";
   };
 
   const handleEdit = (student) => {
@@ -491,8 +472,7 @@ const StudentList = ({
   };
 
   const renderPhoneNumber = (phoneNumber, parentName) => {
-    if (!phoneNumber)
-      return <div className="text-gray-400 dark:text-gray-500 text-sm">-</div>;
+    if (!phoneNumber) return <div className="text-gray-400 dark:text-gray-500 text-sm">-</div>;
 
     const cleanPhone = phoneNumber.toString().replace(/\D/g, "");
     let waPhone = cleanPhone;
@@ -504,23 +484,19 @@ const StudentList = ({
 
     const handleWhatsAppClick = () => {
       if (showToast) {
-        showToast(
-          `Membuka WhatsApp untuk menghubungi ${parentName}...`,
-          "info"
-        );
+        showToast(`Membuka WhatsApp untuk menghubungi ${parentName}...`, "info");
       }
     };
 
     return (
       <div className="flex flex-col gap-1">
-        <div className="text-sm text-gray-800 dark:text-gray-200">
-          {phoneNumber}
-        </div>
+        <div className="text-sm text-gray-800 dark:text-gray-200">{phoneNumber}</div>
         <div className="flex gap-1 flex-wrap">
           <a
             href={`tel:${phoneNumber}`}
             className="inline-flex items-center gap-1 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-semibold hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors min-h-[36px] min-w-[64px] justify-center"
-            title="Telepon">
+            title="Telepon"
+          >
             <i className="fas fa-phone text-xs"></i>
             <span className="hidden xs:inline">Call</span>
           </a>
@@ -530,7 +506,8 @@ const StudentList = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleWhatsAppClick}
-            title="WhatsApp">
+            title="WhatsApp"
+          >
             <i className="fab fa-whatsapp text-xs"></i>
             <span className="hidden xs:inline">WA</span>
           </a>
@@ -556,7 +533,8 @@ const StudentList = ({
                 student.jenis_kelamin === "L"
                   ? "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300"
                   : "bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300"
-              }`}>
+              }`}
+            >
               {student.jenis_kelamin}
             </span>
           </div>
@@ -565,21 +543,24 @@ const StudentList = ({
           <button
             onClick={() => handleDownloadFormulir(student)}
             className="bg-gradient-to-r from-green-600 to-green-400 dark:from-green-700 dark:to-green-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
-            title="Download Formulir PDF">
+            title="Download Formulir PDF"
+          >
             <i className="fas fa-file-pdf"></i>
             <span className="hidden sm:inline">PDF</span>
           </button>
           <button
             onClick={() => handleEdit(student)}
             className="bg-gradient-to-r from-yellow-600 to-yellow-400 dark:from-yellow-700 dark:to-yellow-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
-            title="Edit Data">
+            title="Edit Data"
+          >
             <i className="fas fa-edit"></i>
             <span className="hidden sm:inline">Edit</span>
           </button>
           <button
             onClick={() => handleDelete(student.id)}
             className="bg-gradient-to-r from-red-600 to-red-400 dark:from-red-700 dark:to-red-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
-            title="Hapus Data">
+            title="Hapus Data"
+          >
             <i className="fas fa-trash"></i>
             <span className="hidden sm:inline">Hapus</span>
           </button>
@@ -589,14 +570,10 @@ const StudentList = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-sm">
         {/* 🔥 NIS - BARU DITAMBAHKAN */}
         <div>
-          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">
-            🆔 NIS
-          </div>
+          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">🆔 NIS</div>
           <div className="font-medium text-blue-700 dark:text-blue-300 font-mono text-sm sm:text-base break-words">
             {student.nis || (
-              <span className="text-gray-400 dark:text-gray-500 italic">
-                Belum ada
-              </span>
+              <span className="text-gray-400 dark:text-gray-500 italic">Belum ada</span>
             )}
           </div>
         </div>
@@ -606,33 +583,26 @@ const StudentList = ({
             Tempat, Tanggal Lahir
           </div>
           <div className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base break-words">
-            {student.tempat_lahir || "-"},{" "}
-            {formatDateToDDMMYYYY(student.tanggal_lahir) || ""}
+            {student.tempat_lahir || "-"}, {formatDateToDDMMYYYY(student.tanggal_lahir) || ""}
           </div>
         </div>
 
         <div>
-          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">
-            NISN
-          </div>
+          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">NISN</div>
           <div className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base break-words">
             {student.nisn && student.nisn !== "-" ? student.nisn : "-"}
           </div>
         </div>
 
         <div className="md:col-span-2">
-          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">
-            Alamat
-          </div>
+          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">Alamat</div>
           <div className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base break-words">
             {student.alamat || "-"}
           </div>
         </div>
 
         <div>
-          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">
-            Orang Tua
-          </div>
+          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">Orang Tua</div>
           <div className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base break-words">
             Ayah: {student.nama_ayah || "-"}
           </div>
@@ -640,17 +610,12 @@ const StudentList = ({
             Ibu: {student.nama_ibu || "-"}
           </div>
           <div className="mt-2">
-            {renderPhoneNumber(
-              student.no_hp,
-              student.nama_ayah || student.nama_ibu
-            )}
+            {renderPhoneNumber(student.no_hp, student.nama_ayah || student.nama_ibu)}
           </div>
         </div>
 
         <div>
-          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">
-            Asal SD
-          </div>
+          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">Asal SD</div>
           <div className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base break-words">
             {student.asal_sekolah || "-"}
           </div>
@@ -663,9 +628,7 @@ const StudentList = ({
     <div className="px-3 sm:px-4 lg:px-6">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800 dark:text-gray-100 flex items-center gap-2 sm:gap-3">
         <i className="fas fa-list text-blue-600 dark:text-blue-400 text-lg sm:text-xl"></i>
-        <span className="text-base sm:text-2xl">
-          Data Calon Siswa SMP Muslimin Cililin
-        </span>
+        <span className="text-base sm:text-2xl">Data Calon Siswa SMP Muslimin Cililin</span>
       </h2>
 
       {/* Search and Controls */}
@@ -690,7 +653,8 @@ const StudentList = ({
                 viewMode === "table"
                   ? "bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white"
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}>
+              }`}
+            >
               <i className="fas fa-table text-xs sm:text-sm"></i>
               <span className="hidden sm:inline">Tabel</span>
             </button>
@@ -700,7 +664,8 @@ const StudentList = ({
                 viewMode === "cards"
                   ? "bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white"
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}>
+              }`}
+            >
               <i className="fas fa-th-large text-xs sm:text-sm"></i>
               <span className="hidden sm:inline">Kartu</span>
             </button>
@@ -710,21 +675,19 @@ const StudentList = ({
           <button
             onClick={handleExportData}
             disabled={isExporting || !allStudents || allStudents.length === 0}
-            className="bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none">
+            className="bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none"
+          >
             <i className="fas fa-file-export text-sm sm:text-base"></i>
-            <span className="hidden sm:inline">
-              {isExporting ? "Exporting..." : "Export Data"}
-            </span>
+            <span className="hidden sm:inline">{isExporting ? "Exporting..." : "Export Data"}</span>
           </button>
 
           <button
             onClick={onLoadStudents}
             disabled={isLoading}
-            className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-600 dark:to-blue-400 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none">
+            className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-600 dark:to-blue-400 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none"
+          >
             <i className="fas fa-sync-alt text-sm sm:text-base"></i>
-            <span className="hidden sm:inline">
-              {isLoading ? "Memuat..." : "Refresh"}
-            </span>
+            <span className="hidden sm:inline">{isLoading ? "Memuat..." : "Refresh"}</span>
           </button>
         </div>
       </div>
@@ -735,15 +698,11 @@ const StudentList = ({
           <div className="text-xl sm:text-2xl font-bold text-blue-800 dark:text-blue-300">
             {totalStudents}
           </div>
-          <div className="text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
-            Total Pendaftar
-          </div>
+          <div className="text-blue-600 dark:text-blue-400 text-xs sm:text-sm">Total Pendaftar</div>
         </div>
         <div className="bg-gradient-to-r from-green-100 to-green-50 dark:from-green-900/20 dark:to-green-800/10 border-2 border-green-200 dark:border-green-800/30 rounded-xl p-3 sm:p-4 text-center">
           <div className="text-xl sm:text-2xl font-bold text-green-800 dark:text-green-300">
-            {allStudents
-              ? allStudents.filter((s) => s.jenis_kelamin === "L").length
-              : 0}
+            {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "L").length : 0}
           </div>
           <div className="text-green-600 dark:text-green-400 text-xs sm:text-sm">
             Siswa Laki-laki
@@ -751,13 +710,9 @@ const StudentList = ({
         </div>
         <div className="bg-gradient-to-r from-pink-100 to-pink-50 dark:from-pink-900/20 dark:to-pink-800/10 border-2 border-pink-200 dark:border-pink-800/30 rounded-xl p-3 sm:p-4 text-center">
           <div className="text-xl sm:text-2xl font-bold text-pink-800 dark:text-pink-300">
-            {allStudents
-              ? allStudents.filter((s) => s.jenis_kelamin === "P").length
-              : 0}
+            {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "P").length : 0}
           </div>
-          <div className="text-pink-600 dark:text-pink-400 text-xs sm:text-sm">
-            Siswa Perempuan
-          </div>
+          <div className="text-pink-600 dark:text-pink-400 text-xs sm:text-sm">Siswa Perempuan</div>
         </div>
       </div>
 
@@ -798,7 +753,8 @@ const StudentList = ({
 
                   <th
                     className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-xs sm:text-sm min-w-[130px] sm:min-w-[150px]"
-                    onClick={() => handleSort("nama_lengkap")}>
+                    onClick={() => handleSort("nama_lengkap")}
+                  >
                     <div className="flex items-center gap-1 sm:gap-2">
                       Nama Siswa
                       <i className={getSortIcon("nama_lengkap")}></i>
@@ -806,7 +762,8 @@ const StudentList = ({
                   </th>
                   <th
                     className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-xs sm:text-sm min-w-[60px]"
-                    onClick={() => handleSort("jenis_kelamin")}>
+                    onClick={() => handleSort("jenis_kelamin")}
+                  >
                     <div className="flex items-center gap-1 sm:gap-2">
                       JK
                       <i className={getSortIcon("jenis_kelamin")}></i>
@@ -820,7 +777,8 @@ const StudentList = ({
                   </th>
                   <th
                     className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-xs sm:text-sm min-w-[130px] sm:min-w-[150px]"
-                    onClick={() => handleSort("asal_sekolah")}>
+                    onClick={() => handleSort("asal_sekolah")}
+                  >
                     <div className="flex items-center gap-1 sm:gap-2">
                       Asal SD
                       <i className={getSortIcon("asal_sekolah")}></i>
@@ -836,7 +794,8 @@ const StudentList = ({
                   <tr>
                     <td
                       colSpan="8"
-                      className="p-6 sm:p-8 text-center text-gray-500 dark:text-gray-400">
+                      className="p-6 sm:p-8 text-center text-gray-500 dark:text-gray-400"
+                    >
                       <i className="fas fa-inbox text-2xl sm:text-4xl mb-2 block"></i>
                       <p className="text-sm sm:text-base">
                         {searchTerm
@@ -849,7 +808,8 @@ const StudentList = ({
                   sortedStudents.map((student, index) => (
                     <tr
                       key={student.id}
-                      className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
                       <td className="p-3 text-gray-600 dark:text-gray-300 font-semibold text-sm">
                         {getDisplayNumber(index)}
                       </td>
@@ -883,7 +843,8 @@ const StudentList = ({
                             student.jenis_kelamin === "L"
                               ? "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300"
                               : "bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300"
-                          }`}>
+                          }`}
+                        >
                           {student.jenis_kelamin === "L" ? "L" : "P"}
                         </span>
                       </td>
@@ -905,10 +866,7 @@ const StudentList = ({
                           <div className="font-medium text-gray-800 dark:text-gray-200 mb-1 break-words">
                             Ibu: {student.nama_ibu || "-"}
                           </div>
-                          {renderPhoneNumber(
-                            student.no_hp,
-                            student.nama_ayah || student.nama_ibu
-                          )}
+                          {renderPhoneNumber(student.no_hp, student.nama_ayah || student.nama_ibu)}
                         </div>
                       </td>
                       <td className="p-3">
@@ -921,21 +879,24 @@ const StudentList = ({
                           <button
                             onClick={() => handleDownloadFormulir(student)}
                             className="bg-gradient-to-r from-green-600 to-green-400 dark:from-green-700 dark:to-green-500 text-white px-2 sm:px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 justify-center min-h-[36px] min-w-[60px] sm:min-w-[80px]"
-                            title="Download Formulir PDF">
+                            title="Download Formulir PDF"
+                          >
                             <i className="fas fa-file-pdf text-xs"></i>
                             <span className="hidden xs:inline">PDF</span>
                           </button>
                           <button
                             onClick={() => handleEdit(student)}
                             className="bg-gradient-to-r from-yellow-600 to-yellow-400 dark:from-yellow-700 dark:to-yellow-500 text-white px-2 sm:px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 justify-center min-h-[36px] min-w-[60px] sm:min-w-[80px]"
-                            title="Edit Data">
+                            title="Edit Data"
+                          >
                             <i className="fas fa-edit text-xs"></i>
                             <span className="hidden xs:inline">Edit</span>
                           </button>
                           <button
                             onClick={() => handleDelete(student.id)}
                             className="bg-gradient-to-r from-red-600 to-red-400 dark:from-red-700 dark:to-red-500 text-white px-2 sm:px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 justify-center min-h-[36px] min-w-[60px] sm:min-w-[80px]"
-                            title="Hapus Data">
+                            title="Hapus Data"
+                          >
                             <i className="fas fa-trash text-xs"></i>
                             <span className="hidden xs:inline">Hapus</span>
                           </button>
@@ -956,8 +917,7 @@ const StudentList = ({
           <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 text-center sm:text-left">
             Menampilkan{" "}
             <span className="font-semibold">
-              {getDisplayNumber(0)}-
-              {getDisplayNumber(sortedStudents.length - 1)}
+              {getDisplayNumber(0)}-{getDisplayNumber(sortedStudents.length - 1)}
             </span>{" "}
             dari <span className="font-semibold">{totalStudents}</span> data
           </div>
@@ -966,46 +926,46 @@ const StudentList = ({
               <button
                 onClick={() => onPageChange(currentPageNum - 1)}
                 disabled={currentPageNum === 1}
-                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-1 sm:gap-2 justify-center flex-1 sm:flex-none min-w-[100px] sm:min-w-[120px] min-h-[44px]">
+                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-1 sm:gap-2 justify-center flex-1 sm:flex-none min-w-[100px] sm:min-w-[120px] min-h-[44px]"
+              >
                 <i className="fas fa-chevron-left text-xs"></i>
                 <span>Sebelumnya</span>
               </button>
 
               <div className="flex gap-1 mx-1 sm:mx-2">
-                {Array.from(
-                  { length: Math.min(5, effectiveTotalPages) },
-                  (_, i) => {
-                    let pageNum;
-                    if (effectiveTotalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPageNum <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPageNum >= effectiveTotalPages - 2) {
-                      pageNum = effectiveTotalPages - 4 + i;
-                    } else {
-                      pageNum = currentPageNum - 2 + i;
-                    }
-
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => onPageChange(pageNum)}
-                        className={`min-w-[36px] sm:min-w-[44px] h-10 sm:h-12 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center justify-center ${
-                          currentPageNum === pageNum
-                            ? "bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white shadow-lg"
-                            : "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        }`}>
-                        {pageNum}
-                      </button>
-                    );
+                {Array.from({ length: Math.min(5, effectiveTotalPages) }, (_, i) => {
+                  let pageNum;
+                  if (effectiveTotalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPageNum <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPageNum >= effectiveTotalPages - 2) {
+                    pageNum = effectiveTotalPages - 4 + i;
+                  } else {
+                    pageNum = currentPageNum - 2 + i;
                   }
-                )}
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => onPageChange(pageNum)}
+                      className={`min-w-[36px] sm:min-w-[44px] h-10 sm:h-12 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center justify-center ${
+                        currentPageNum === pageNum
+                          ? "bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white shadow-lg"
+                          : "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
               </div>
 
               <button
                 onClick={() => onPageChange(currentPageNum + 1)}
                 disabled={currentPageNum === effectiveTotalPages}
-                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-1 sm:gap-2 justify-center flex-1 sm:flex-none min-w-[100px] sm:min-w-[120px] min-h-[44px]">
+                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-1 sm:gap-2 justify-center flex-1 sm:flex-none min-w-[100px] sm:min-w-[120px] min-h-[44px]"
+              >
                 <span>Berikutnya</span>
                 <i className="fas fa-chevron-right text-xs"></i>
               </button>

@@ -106,10 +106,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
         let queryBuilder = supabase
           .from("users")
-          .select(
-            "id, username, full_name, role, teacher_id, is_active, created_at, no_hp",
-            { count: "exact" }
-          )
+          .select("id, username, full_name, role, teacher_id, is_active, created_at, no_hp", {
+            count: "exact",
+          })
           .neq("role", "admin")
           .order("teacher_id", { ascending: true, nullsFirst: false })
           .order("full_name", { ascending: true })
@@ -272,10 +271,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               return true;
             });
 
-            console.log(
-              "✅ Filtered assignments (with history):",
-              filteredAssignments
-            );
+            console.log("✅ Filtered assignments (with history):", filteredAssignments);
 
             setProfileData((prev) => ({
               ...prev,
@@ -283,11 +279,10 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             }));
           }
         } else {
-          const { data: currentAssignments, error: assignError } =
-            await supabase
-              .from("teacher_assignments")
-              .select(
-                `
+          const { data: currentAssignments, error: assignError } = await supabase
+            .from("teacher_assignments")
+            .select(
+              `
             id, 
             subject, 
             class_id,
@@ -300,10 +295,10 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               is_active
             )
           `
-              )
-              .eq("teacher_id", teacherId)
-              .eq("academic_year", activeYear)
-              .order("semester", { ascending: false });
+            )
+            .eq("teacher_id", teacherId)
+            .eq("academic_year", activeYear)
+            .order("semester", { ascending: false });
 
           console.log("📊 Current assignments:", currentAssignments);
           console.log("❌ Error:", assignError);
@@ -314,14 +309,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           }
 
           if (currentAssignments) {
-            const filteredAssignments = currentAssignments.filter(
-              (a) => a.classes !== null
-            );
+            const filteredAssignments = currentAssignments.filter((a) => a.classes !== null);
 
-            console.log(
-              "✅ Filtered current assignments:",
-              filteredAssignments
-            );
+            console.log("✅ Filtered current assignments:", filteredAssignments);
 
             setProfileData((prev) => ({
               ...prev,
@@ -385,23 +375,10 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
   // LOGIC: Effects for loading assignments
   useEffect(() => {
-    if (
-      !isInitialLoad.current &&
-      profileData?.teacher_id &&
-      activeAcademicYear
-    ) {
-      loadTeachingAssignments(
-        profileData.teacher_id,
-        activeAcademicYear,
-        showHistory
-      );
+    if (!isInitialLoad.current && profileData?.teacher_id && activeAcademicYear) {
+      loadTeachingAssignments(profileData.teacher_id, activeAcademicYear, showHistory);
     }
-  }, [
-    showHistory,
-    profileData?.teacher_id,
-    activeAcademicYear,
-    loadTeachingAssignments,
-  ]);
+  }, [showHistory, profileData?.teacher_id, activeAcademicYear, loadTeachingAssignments]);
 
   // LOGIC: Debounced search
   useEffect(() => {
@@ -573,18 +550,14 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             password: formData.password,
             full_name: formData.full_name,
             role: formData.role,
-            teacher_id:
-              formData.role === "teacher" ? formData.teacher_id : null,
+            teacher_id: formData.role === "teacher" ? formData.teacher_id : null,
             no_hp: formData.no_hp || null,
             is_active: formData.is_active,
           },
         ]);
 
         if (insertError) {
-          showToast(
-            `Gagal menyimpan data user: ${insertError.message}`,
-            "error"
-          );
+          showToast(`Gagal menyimpan data user: ${insertError.message}`, "error");
           setSubmitting(false);
           return;
         }
@@ -671,10 +644,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     }
     setDeletingUser(true);
     try {
-      const { error } = await supabase
-        .from("users")
-        .delete()
-        .eq("id", deleteTarget.id);
+      const { error } = await supabase.from("users").delete().eq("id", deleteTarget.id);
       if (error) throw error;
 
       await logAuditActivity("DELETE_USER", deleteTarget, {
@@ -682,10 +652,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         deleted_user_teacher_id: deleteTarget.teacher_id,
       });
 
-      showToast(
-        `User "${deleteTarget.full_name}" berhasil dihapus!`,
-        "success"
-      );
+      showToast(`User "${deleteTarget.full_name}" berhasil dihapus!`, "success");
       handleCloseDeleteModal();
       searchUsers("");
       if (targetUserId === deleteTarget.id) setTargetUserId(userId);
@@ -698,8 +665,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
   // ========== FUNGSI BARU UNTUK RESET PASSWORD ==========
   const generateRandomPassword = () => {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let password = "";
     for (let i = 0; i < 8; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -739,10 +705,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         reset_by_admin: true,
       });
 
-      showToast(
-        `Password berhasil direset untuk ${resetPasswordUser.full_name}!`,
-        "success"
-      );
+      showToast(`Password berhasil direset untuk ${resetPasswordUser.full_name}!`, "success");
       setResetting(false);
       // Optional: close modal after successful reset
       setTimeout(() => setShowResetPasswordModal(false), 1500);
@@ -802,12 +765,12 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             Data Profil Hilang
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm sm:text-base">
-            Terjadi kesalahan saat memuat data profil. Silakan coba *logout*
-            lalu *login* kembali.
+            Terjadi kesalahan saat memuat data profil. Silakan coba *logout* lalu *login* kembali.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 sm:px-5 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors text-sm sm:text-base font-medium min-h-[44px] w-full sm:w-auto">
+            className="px-4 sm:px-5 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors text-sm sm:text-base font-medium min-h-[44px] w-full sm:w-auto"
+          >
             Refresh Halaman
           </button>
         </div>
@@ -818,16 +781,12 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
   const { teaching_assignments: assignments = [] } = profileData;
 
   // Filter current assignments
-  const currentAssignments = assignments.filter(
-    (a) => a.academic_year === activeAcademicYear
-  );
+  const currentAssignments = assignments.filter((a) => a.academic_year === activeAcademicYear);
 
   // Calculate stats for current year
   const totalSubjects = currentAssignments.length || 0;
-  const uniqueSubjects = [...new Set(currentAssignments?.map((a) => a.subject))]
-    .length;
-  const totalClasses = [...new Set(currentAssignments?.map((a) => a.class_id))]
-    .length;
+  const uniqueSubjects = [...new Set(currentAssignments?.map((a) => a.subject))].length;
+  const totalClasses = [...new Set(currentAssignments?.map((a) => a.class_id))].length;
 
   // Group history by year and semester
   const groupedAssignments = assignments.reduce((acc, assignment) => {
@@ -881,7 +840,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               </div>
               <button
                 onClick={openAddModal}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm sm:text-base min-h-[44px] w-full sm:w-auto">
+                className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex-shrink-0 text-sm sm:text-base min-h-[44px] w-full sm:w-auto"
+              >
                 <Plus size={18} />
                 <span className="hidden sm:inline">Tambah User</span>
                 <span className="sm:hidden">Tambah</span>
@@ -891,21 +851,17 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             {/* List Toggle */}
             <div
               onClick={() => setShowUserList(!showUserList)}
-              className="flex items-center justify-between p-3 sm:p-4 cursor-pointer bg-blue-50 dark:bg-gray-700/50 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-blue-200 dark:border-gray-700 mb-3 min-h-[60px]">
+              className="flex items-center justify-between p-3 sm:p-4 cursor-pointer bg-blue-50 dark:bg-gray-700/50 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-blue-200 dark:border-gray-700 mb-3 min-h-[60px]"
+            >
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    showUserList
-                      ? "bg-blue-600 dark:bg-blue-700"
-                      : "bg-blue-100 dark:bg-gray-600"
-                  }`}>
+                    showUserList ? "bg-blue-600 dark:bg-blue-700" : "bg-blue-100 dark:bg-gray-600"
+                  }`}
+                >
                   <List
                     size={18}
-                    className={
-                      showUserList
-                        ? "text-white"
-                        : "text-blue-600 dark:text-gray-300"
-                    }
+                    className={showUserList ? "text-white" : "text-blue-600 dark:text-gray-300"}
                   />
                 </div>
                 <div>
@@ -913,8 +869,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     Semua Pengguna
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                    {filteredUsers.length}{" "}
-                    {searchQuery ? "hasil" : "pengguna terdaftar"}
+                    {filteredUsers.length} {searchQuery ? "hasil" : "pengguna terdaftar"}
                   </p>
                 </div>
               </div>
@@ -923,12 +878,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   e.stopPropagation();
                   setShowUserList(!showUserList);
                 }}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-gray-600 hover:bg-blue-50 dark:hover:bg-gray-500 rounded-lg transition-colors text-xs sm:text-sm font-medium min-h-[44px] border border-blue-200 dark:border-gray-600">
-                {showUserList ? (
-                  <ChevronUp size={16} />
-                ) : (
-                  <ChevronDown size={16} />
-                )}
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-gray-600 hover:bg-blue-50 dark:hover:bg-gray-500 rounded-lg transition-colors text-xs sm:text-sm font-medium min-h-[44px] border border-blue-200 dark:border-gray-600"
+              >
+                {showUserList ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 {showUserList ? "Tutup" : "Lihat"}
               </button>
             </div>
@@ -938,14 +890,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 <div className="max-h-[500px] overflow-y-auto p-2 sm:p-3 md:p-4">
                   {filteredUsers.length === 0 ? (
                     <div className="text-center py-8 sm:py-12">
-                      <Users
-                        size={40}
-                        className="text-gray-300 dark:text-gray-600 mx-auto mb-3"
-                      />
+                      <Users size={40} className="text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                       <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">
-                        {searchQuery
-                          ? "Tidak ada pengguna yang ditemukan"
-                          : "Belum ada pengguna"}
+                        {searchQuery ? "Tidak ada pengguna yang ditemukan" : "Belum ada pengguna"}
                       </p>
                     </div>
                   ) : (
@@ -953,7 +900,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       {filteredUsers.map((listUser) => (
                         <div
                           key={listUser.id}
-                          className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700/50 transition-colors border border-blue-100 dark:border-gray-700 shadow-sm">
+                          className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700/50 transition-colors border border-blue-100 dark:border-gray-700 shadow-sm"
+                        >
                           <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
                             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-gray-600 flex items-center justify-center text-blue-700 dark:text-gray-300 font-bold flex-shrink-0">
                               {listUser.full_name[0]}
@@ -964,9 +912,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                               </p>
                               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                 {listUser.teacher_id && (
-                                  <span className="font-mono">
-                                    ID: {listUser.teacher_id}
-                                  </span>
+                                  <span className="font-mono">ID: {listUser.teacher_id}</span>
                                 )}
                                 <span>@{listUser.username}</span>
                               </div>
@@ -978,7 +924,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                                 listUser.role === "admin"
                                   ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
                                   : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                              }`}>
+                              }`}
+                            >
                               <Shield size={12} />
                               {listUser.role === "admin" ? "Admin" : "Guru"}
                             </span>
@@ -987,13 +934,15 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                                 listUser.is_active
                                   ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
                                   : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                              }`}>
+                              }`}
+                            >
                               <span
                                 className={`w-2 h-2 rounded-full ${
                                   listUser.is_active
                                     ? "bg-green-500 dark:bg-green-400"
                                     : "bg-gray-400 dark:bg-gray-500"
-                                }`}></span>
+                                }`}
+                              ></span>
                               {listUser.is_active ? "Aktif" : "Nonaktif"}
                             </span>
                             <div className="flex gap-1 sm:gap-2">
@@ -1003,7 +952,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                                   handleViewProfile(listUser);
                                 }}
                                 className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                title="Lihat Profil">
+                                title="Lihat Profil"
+                              >
                                 <Eye size={16} />
                               </button>
                               <button
@@ -1012,7 +962,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                                   openEditModal(listUser);
                                 }}
                                 className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                title="Edit User">
+                                title="Edit User"
+                              >
                                 <Edit2 size={16} />
                               </button>
                               <button
@@ -1021,7 +972,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                                   openResetPasswordModal(listUser);
                                 }}
                                 className="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                title="Reset Password">
+                                title="Reset Password"
+                              >
                                 <Shield size={16} />
                               </button>
                               <button
@@ -1030,7 +982,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                                   handleOpenDeleteModal(listUser);
                                 }}
                                 className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                title="Hapus User">
+                                title="Hapus User"
+                              >
                                 <Trash2 size={16} />
                               </button>
                             </div>
@@ -1046,31 +999,24 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   <div className="flex items-center justify-between p-4 border-t border-blue-200 dark:border-gray-700">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Menampilkan {(currentPage - 1) * usersPerPage + 1} -{" "}
-                      {Math.min(currentPage * usersPerPage, totalUsers)} dari{" "}
-                      {totalUsers} user
+                      {Math.min(currentPage * usersPerPage, totalUsers)} dari {totalUsers} user
                     </p>
                     <div className="flex gap-2">
                       <button
-                        onClick={() =>
-                          searchUsers(searchQuery, currentPage - 1)
-                        }
+                        onClick={() => searchUsers(searchQuery, currentPage - 1)}
                         disabled={currentPage === 1 || searching}
-                        className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-gray-700 hover:bg-blue-200 text-gray-800 dark:text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]">
+                        className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-gray-700 hover:bg-blue-200 text-gray-800 dark:text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                      >
                         ← Prev
                       </button>
                       <span className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 flex items-center">
-                        Hal {currentPage} /{" "}
-                        {Math.ceil(totalUsers / usersPerPage)}
+                        Hal {currentPage} / {Math.ceil(totalUsers / usersPerPage)}
                       </span>
                       <button
-                        onClick={() =>
-                          searchUsers(searchQuery, currentPage + 1)
-                        }
-                        disabled={
-                          currentPage >= Math.ceil(totalUsers / usersPerPage) ||
-                          searching
-                        }
-                        className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-gray-700 hover:bg-blue-200 text-gray-800 dark:text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]">
+                        onClick={() => searchUsers(searchQuery, currentPage + 1)}
+                        disabled={currentPage >= Math.ceil(totalUsers / usersPerPage) || searching}
+                        className="px-3 py-1.5 text-sm bg-blue-100 dark:bg-gray-700 hover:bg-blue-200 text-gray-800 dark:text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                      >
                         Next →
                       </button>
                     </div>
@@ -1105,7 +1051,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       profileData.role === "admin"
                         ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
                         : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                    }`}>
+                    }`}
+                  >
                     <Shield size={12} className="sm:w-3 sm:h-3" />
                     {profileData.role === "admin" ? "Administrator" : "Guru"}
                   </span>
@@ -1115,28 +1062,21 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                         profileData.is_active
                           ? "bg-green-500 dark:bg-green-400"
                           : "bg-gray-400 dark:bg-gray-500"
-                      }`}></span>
+                      }`}
+                    ></span>
                     {profileData.is_active ? "Aktif" : "Nonaktif"}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 justify-center sm:justify-start">
                   {profileData.teacher_id && (
                     <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
-                      <User
-                        size={12}
-                        className="text-blue-600 dark:text-blue-400"
-                      />
-                      <span className="font-mono font-medium">
-                        {profileData.teacher_id}
-                      </span>
+                      <User size={12} className="text-blue-600 dark:text-blue-400" />
+                      <span className="font-mono font-medium">{profileData.teacher_id}</span>
                     </div>
                   )}
                   {profileData.no_hp && (
                     <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
-                      <Phone
-                        size={12}
-                        className="text-blue-600 dark:text-blue-400"
-                      />
+                      <Phone size={12} className="text-blue-600 dark:text-blue-400" />
                       <span>{profileData.no_hp}</span>
                     </div>
                   )}
@@ -1148,10 +1088,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               {activeAcademicYear && (
                 <div className="bg-blue-50 dark:bg-gray-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 dark:border-gray-600">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                    <Calendar
-                      size={14}
-                      className="text-blue-600 dark:text-blue-400"
-                    />
+                    <Calendar size={14} className="text-blue-600 dark:text-blue-400" />
                     <span className="font-medium">Tahun Ajaran:</span>
                     <span className="font-bold text-blue-700 dark:text-blue-300">
                       {activeAcademicYear}
@@ -1162,10 +1099,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               {profileData.homeroom_class && (
                 <div className="bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-300 dark:border-blue-800">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-blue-800 dark:text-blue-300">
-                    <School
-                      size={14}
-                      className="text-blue-700 dark:text-blue-400"
-                    />
+                    <School size={14} className="text-blue-700 dark:text-blue-400" />
                     <span className="font-medium">Wali Kelas:</span>
                     <span className="font-bold text-blue-900 dark:text-blue-200">
                       {profileData.homeroom_class.id}
@@ -1180,17 +1114,15 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           {/* Role Description */}
           <div className="mt-6 border-t pt-6 border-blue-100 dark:border-gray-700">
             <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2">
-              <Shield
-                size={18}
-                className="text-purple-600 dark:text-purple-400"
-              />
+              <Shield size={18} className="text-purple-600 dark:text-purple-400" />
               Role:{" "}
               <span
                 className={`text-lg sm:text-xl md:text-2xl font-bold ${
                   profileData.role === "admin"
                     ? "text-purple-700 dark:text-purple-300"
                     : "text-blue-700 dark:text-blue-300"
-                }`}>
+                }`}
+              >
                 {profileData.role === "admin" ? "Administrator" : "Guru"}
               </span>
             </h3>
@@ -1268,22 +1200,21 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             {isAdmin && !isViewingOtherProfile && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-5 md:p-6 border border-blue-100 dark:border-gray-700">
                 <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
-                  <Users
-                    size={18}
-                    className="text-blue-600 dark:text-blue-400"
-                  />
+                  <Users size={18} className="text-blue-600 dark:text-blue-400" />
                   Aksi Admin
                 </h3>
                 <div className="space-y-3">
                   <button
                     onClick={openAddModal}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl text-sm sm:text-base min-h-[44px]">
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl text-sm sm:text-base min-h-[44px]"
+                  >
                     <Plus size={16} />
                     Tambah User Baru
                   </button>
                   <button
                     onClick={() => setShowUserList(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 dark:from-gray-700 dark:to-gray-600 dark:hover:from-gray-600 dark:hover:to-gray-500 text-gray-800 dark:text-gray-300 rounded-lg font-semibold transition-all shadow-sm hover:shadow text-sm sm:text-base min-h-[44px]">
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 dark:from-gray-700 dark:to-gray-600 dark:hover:from-gray-600 dark:hover:to-gray-500 text-gray-800 dark:text-gray-300 rounded-lg font-semibold transition-all shadow-sm hover:shadow text-sm sm:text-base min-h-[44px]"
+                  >
                     <List size={16} />
                     Lihat Semua User
                   </button>
@@ -1304,7 +1235,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   <button
                     onClick={() => setShowHistory(!showHistory)}
                     disabled={loadingHistory}
-                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors disabled:opacity-50 min-h-[44px] px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors disabled:opacity-50 min-h-[44px] px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                  >
                     {loadingHistory ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-blue-600"></div>
                     ) : showHistory ? (
@@ -1313,13 +1245,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       <ChevronDown size={14} />
                     )}
                     <span className="hidden sm:inline">
-                      {showHistory
-                        ? "Sembunyikan Riwayat"
-                        : "Tampilkan Riwayat"}
+                      {showHistory ? "Sembunyikan Riwayat" : "Tampilkan Riwayat"}
                     </span>
-                    <span className="sm:hidden">
-                      {showHistory ? "Tutup" : "Riwayat"}
-                    </span>
+                    <span className="sm:hidden">{showHistory ? "Tutup" : "Riwayat"}</span>
                   </button>
                 )}
               </h3>
@@ -1328,8 +1256,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               {!showHistory && (
                 <>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 border-b pb-3 border-blue-100 dark:border-gray-700">
-                    Statistik Penugasan Tahun Ajaran Aktif (
-                    {activeAcademicYear || "N/A"})
+                    Statistik Penugasan Tahun Ajaran Aktif ({activeAcademicYear || "N/A"})
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                     {/* Stat Card: Total Mengajar */}
@@ -1396,7 +1323,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       {currentAssignments.map((assignment) => (
                         <div
                           key={assignment.id}
-                          className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 dark:border-gray-600 hover:shadow-lg transition-all hover:-translate-y-0.5">
+                          className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 dark:border-gray-600 hover:shadow-lg transition-all hover:-translate-y-0.5"
+                        >
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
@@ -1423,17 +1351,14 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   ) : (
                     <div className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-xl p-6 sm:p-8 md:p-12 shadow-sm border border-blue-200 dark:border-gray-600 text-center">
                       <div className="bg-gradient-to-r from-blue-100 to-blue-200 dark:from-gray-600 dark:to-gray-700 rounded-full p-4 sm:p-6 w-fit mx-auto mb-4">
-                        <BookOpen
-                          size={32}
-                          className="text-blue-400 dark:text-gray-500"
-                        />
+                        <BookOpen size={32} className="text-blue-400 dark:text-gray-500" />
                       </div>
                       <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
                         Belum Ada Tugas Mengajar
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-400">
-                        {isViewingOtherProfile ? "User ini" : "Anda"} belum
-                        memiliki mata pelajaran untuk tahun ajaran ini.
+                        {isViewingOtherProfile ? "User ini" : "Anda"} belum memiliki mata pelajaran
+                        untuk tahun ajaran ini.
                       </p>
                     </div>
                   )}
@@ -1453,42 +1378,36 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                           Tahun Ajaran {yearGroup.year}
                         </h4>
                         <div className="space-y-3 sm:space-y-4 ml-2">
-                          {Object.entries(yearGroup.semesters).map(
-                            ([semester, assignments]) => (
-                              <div
-                                key={semester}
-                                className="space-y-1.5 sm:space-y-2">
-                                <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-400 flex items-center gap-1.5">
-                                  <Calendar
-                                    size={12}
-                                    className="text-blue-600 dark:text-blue-400"
-                                  />
-                                  Semester {semester}
-                                </p>
-                                <div className="space-y-2 sm:space-y-3 pl-3 sm:pl-4 border-l border-blue-200 dark:border-gray-600">
-                                  {assignments.map((assignment) => (
-                                    <div
-                                      key={assignment.id}
-                                      className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg p-2.5 sm:p-3 border border-blue-200 dark:border-gray-600 hover:bg-blue-100 dark:hover:bg-gray-700/50 transition-all">
-                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                                            {assignment.subject}
-                                          </p>
-                                          <p className="text-xs text-gray-700 dark:text-gray-400 mt-0.5">
-                                            {getClassName(assignment)}
-                                          </p>
-                                        </div>
-                                        <span className="bg-gradient-to-r from-blue-200 to-blue-300 dark:from-gray-600 dark:to-gray-700 text-gray-800 dark:text-gray-300 px-2 py-0.5 sm:py-1 rounded-lg font-medium text-xs">
-                                          {assignment.academic_year}
-                                        </span>
+                          {Object.entries(yearGroup.semesters).map(([semester, assignments]) => (
+                            <div key={semester} className="space-y-1.5 sm:space-y-2">
+                              <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-400 flex items-center gap-1.5">
+                                <Calendar size={12} className="text-blue-600 dark:text-blue-400" />
+                                Semester {semester}
+                              </p>
+                              <div className="space-y-2 sm:space-y-3 pl-3 sm:pl-4 border-l border-blue-200 dark:border-gray-600">
+                                {assignments.map((assignment) => (
+                                  <div
+                                    key={assignment.id}
+                                    className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg p-2.5 sm:p-3 border border-blue-200 dark:border-gray-600 hover:bg-blue-100 dark:hover:bg-gray-700/50 transition-all"
+                                  >
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                                          {assignment.subject}
+                                        </p>
+                                        <p className="text-xs text-gray-700 dark:text-gray-400 mt-0.5">
+                                          {getClassName(assignment)}
+                                        </p>
                                       </div>
+                                      <span className="bg-gradient-to-r from-blue-200 to-blue-300 dark:from-gray-600 dark:to-gray-700 text-gray-800 dark:text-gray-300 px-2 py-0.5 sm:py-1 rounded-lg font-medium text-xs">
+                                        {assignment.academic_year}
+                                      </span>
                                     </div>
-                                  ))}
-                                </div>
+                                  </div>
+                                ))}
                               </div>
-                            )
-                          )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))}
@@ -1518,7 +1437,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 </h3>
                 <button
                   onClick={() => setShowUserModal(false)}
-                  className="p-2 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+                  className="p-2 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
                   <X size={18} />
                 </button>
               </div>
@@ -1540,9 +1460,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     }))
                   }
                   className={`w-full px-3 sm:px-4 py-3 sm:py-3.5 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base min-h-[44px] ${
-                    formErrors.username
-                      ? "border-red-500"
-                      : "border-blue-300 dark:border-gray-600"
+                    formErrors.username ? "border-red-500" : "border-blue-300 dark:border-gray-600"
                   }`}
                   placeholder="Masukkan username"
                   disabled={modalMode === "edit"}
@@ -1568,9 +1486,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     }))
                   }
                   className={`w-full px-3 sm:px-4 py-3 sm:py-3.5 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base min-h-[44px] ${
-                    formErrors.full_name
-                      ? "border-red-500"
-                      : "border-blue-300 dark:border-gray-600"
+                    formErrors.full_name ? "border-red-500" : "border-blue-300 dark:border-gray-600"
                   }`}
                   placeholder="Masukkan nama lengkap"
                 />
@@ -1593,30 +1509,26 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       role: e.target.value,
                     }))
                   }
-                  className="w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-blue-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm sm:text-base min-h-[44px]">
+                  className="w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-blue-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 text-sm sm:text-base min-h-[44px]"
+                >
                   <option value="teacher">Guru</option>
                   <option value="guru_bk">Guru BK</option>
-                  <option
-                    value="admin"
-                    className="text-red-600 dark:text-red-400 font-semibold">
+                  <option value="admin" className="text-red-600 dark:text-red-400 font-semibold">
                     ⚠️ Administrator (Hati-hati!)
                   </option>
                 </select>
                 {formData.role === "admin" && (
                   <p className="mt-2 text-xs sm:text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 sm:p-3 rounded-lg border border-red-200 dark:border-red-800">
-                    ⚠️ <span className="font-semibold">PERINGATAN:</span> Role
-                    admin memiliki akses penuh ke semua data dan fitur sistem.
-                    Hanya berikan ke pengguna yang benar-benar dipercaya.
+                    ⚠️ <span className="font-semibold">PERINGATAN:</span> Role admin memiliki akses
+                    penuh ke semua data dan fitur sistem. Hanya berikan ke pengguna yang benar-benar
+                    dipercaya.
                   </p>
                 )}
               </div>
               {/* Password */}
               <div className="relative">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Password{" "}
-                  {modalMode === "add" && (
-                    <span className="text-red-500">*</span>
-                  )}
+                  Password {modalMode === "add" && <span className="text-red-500">*</span>}
                   {modalMode === "edit" && (
                     <span className="text-gray-500 dark:text-gray-400 text-xs font-normal ml-1">
                       (Kosongkan jika tidak diubah)
@@ -1633,20 +1545,17 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     }))
                   }
                   className={`w-full px-3 sm:px-4 py-3 sm:py-3.5 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base pr-10 min-h-[44px] ${
-                    formErrors.password
-                      ? "border-red-500"
-                      : "border-blue-300 dark:border-gray-600"
+                    formErrors.password ? "border-red-500" : "border-blue-300 dark:border-gray-600"
                   }`}
                   placeholder={
-                    modalMode === "add"
-                      ? "Masukkan password awal"
-                      : "Password baru (opsional)"
+                    modalMode === "add" ? "Masukkan password awal" : "Password baru (opsional)"
                   }
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-[50%] transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+                  className="absolute right-3 top-[50%] transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
                   <Eye size={18} />
                 </button>
                 {formErrors.password && (
@@ -1692,9 +1601,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 <input
                   type="text"
                   value={formData.no_hp}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, no_hp: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, no_hp: e.target.value }))}
                   className="w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-blue-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base min-h-[44px]"
                   placeholder="Masukkan nomor HP (opsional)"
                 />
@@ -1730,13 +1637,15 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 <button
                   onClick={() => setShowUserModal(false)}
                   className="flex-1 px-4 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-gray-700 dark:to-gray-600 hover:from-blue-200 hover:to-blue-300 dark:hover:from-gray-600 dark:hover:to-gray-500 text-gray-800 dark:text-gray-300 rounded-lg font-semibold transition-all text-sm sm:text-base min-h-[44px]"
-                  disabled={submitting}>
+                  disabled={submitting}
+                >
                   Batal
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex-1 px-4 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]">
+                  className="flex-1 px-4 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]"
+                >
                   {submitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
@@ -1768,7 +1677,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               </h3>
               <button
                 onClick={closeResetPasswordModal}
-                className="p-2 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+                className="p-2 hover:bg-blue-100 dark:hover:bg-gray-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -1797,7 +1707,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     passwordCopied
                       ? "bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 text-green-700 dark:text-green-300 border-2 border-green-500"
                       : "bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500 hover:from-blue-200 hover:to-blue-300 dark:hover:from-blue-800/40 dark:hover:to-blue-700/40"
-                  }`}>
+                  }`}
+                >
                   {passwordCopied ? (
                     <>
                       <svg
@@ -1809,7 +1720,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
-                        strokeLinejoin="round">
+                        strokeLinejoin="round"
+                      >
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                       Tersalin!
@@ -1825,14 +1737,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                         stroke="currentColor"
                         strokeWidth="2"
                         strokeLinecap="round"
-                        strokeLinejoin="round">
-                        <rect
-                          x="9"
-                          y="9"
-                          width="13"
-                          height="13"
-                          rx="2"
-                          ry="2"></rect>
+                        strokeLinejoin="round"
+                      >
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                       </svg>
                       Salin
@@ -1846,13 +1753,15 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               <button
                 onClick={closeResetPasswordModal}
                 className="flex-1 px-4 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-gray-700 dark:to-gray-600 hover:from-blue-200 hover:to-blue-300 dark:hover:from-gray-600 dark:hover:to-gray-500 text-gray-800 dark:text-gray-300 rounded-lg font-semibold transition-all text-sm sm:text-base min-h-[44px]"
-                disabled={resetting}>
+                disabled={resetting}
+              >
                 Batal
               </button>
               <button
                 onClick={handleResetPassword}
                 disabled={resetting}
-                className="flex-1 px-4 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 dark:from-orange-700 dark:to-orange-800 dark:hover:from-orange-600 dark:hover:to-orange-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]">
+                className="flex-1 px-4 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 dark:from-orange-700 dark:to-orange-800 dark:hover:from-orange-600 dark:hover:to-orange-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]"
+              >
                 {resetting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
@@ -1882,12 +1791,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   <AlertCircle className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">
-                    Konfirmasi Penghapusan User
-                  </h3>
-                  <p className="text-sm text-red-100 mt-1">
-                    Tindakan ini tidak dapat dibatalkan!
-                  </p>
+                  <h3 className="text-xl font-bold text-white">Konfirmasi Penghapusan User</h3>
+                  <p className="text-sm text-red-100 mt-1">Tindakan ini tidak dapat dibatalkan!</p>
                 </div>
               </div>
             </div>
@@ -1899,15 +1804,11 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-red-700">Nama:</span>
-                    <span className="font-semibold text-red-900">
-                      {deleteTarget.full_name}
-                    </span>
+                    <span className="font-semibold text-red-900">{deleteTarget.full_name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-red-700">Username:</span>
-                    <span className="font-semibold text-red-900">
-                      @{deleteTarget.username}
-                    </span>
+                    <span className="font-semibold text-red-900">@{deleteTarget.username}</span>
                   </div>
                   {deleteTarget.teacher_id && (
                     <div className="flex justify-between">
@@ -1946,9 +1847,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     <div className="text-sm text-red-900">
                       <p className="font-bold mb-1">⚠️ PERHATIAN KHUSUS!</p>
                       <p className="text-xs">
-                        Anda akan menghapus user dengan role{" "}
-                        <strong>ADMINISTRATOR</strong>. Pastikan masih ada admin
-                        lain!
+                        Anda akan menghapus user dengan role <strong>ADMINISTRATOR</strong>.
+                        Pastikan masih ada admin lain!
                       </p>
                     </div>
                   </div>
@@ -1971,8 +1871,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   autoFocus
                 />
                 <p className="text-xs text-gray-600 mt-2">
-                  * Untuk keamanan, Anda harus mengetik kata "HAPUS" dengan
-                  huruf besar
+                  * Untuk keamanan, Anda harus mengetik kata "HAPUS" dengan huruf besar
                 </p>
               </div>
             </div>
@@ -1980,15 +1879,15 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               <button
                 onClick={handleCloseDeleteModal}
                 disabled={deletingUser}
-                className="flex-1 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors disabled:opacity-50 min-h-[44px]">
+                className="flex-1 px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors disabled:opacity-50 min-h-[44px]"
+              >
                 Batal
               </button>
               <button
                 onClick={handleConfirmDelete}
-                disabled={
-                  deletingUser || deleteConfirmText.toUpperCase() !== "HAPUS"
-                }
-                className="flex-1 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]">
+                disabled={deletingUser || deleteConfirmText.toUpperCase() !== "HAPUS"}
+                className="flex-1 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              >
                 {deletingUser ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>

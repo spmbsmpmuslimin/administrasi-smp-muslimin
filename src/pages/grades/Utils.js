@@ -1,52 +1,25 @@
-// 📁 Utils.js - SMP VERSION (with ExcelJS styling like SD)
+// 📝 Utils.js - SMP VERSION (with ExcelJS styling + Dynamic Columns)
 import ExcelJS from "exceljs";
 
-/**
- * Helper: Bulatkan ke 2 desimal
- */
 const roundToTwo = (num) => {
   if (num === null || num === undefined || isNaN(num)) return null;
   return Math.round(parseFloat(num) * 100) / 100;
 };
 
-/**
- * Format nilai untuk display (pembulatan integer)
- */
 const formatNum = (num) => {
   if (num === null || num === undefined || isNaN(num)) return null;
   return Math.round(roundToTwo(num));
 };
 
-/**
- * Hitung nilai katrol per komponen menggunakan linear scaling
- */
-export const calculateKatrolValue = (
-  nilai,
-  minKelas,
-  maxKelas,
-  kkm,
-  targetMax
-) => {
-  // Validasi input
+export const calculateKatrolValue = (nilai, minKelas, maxKelas, kkm, targetMax) => {
   if (nilai === null || nilai === undefined) return null;
   if (minKelas === null || maxKelas === null) return roundToTwo(nilai);
-
-  // Edge case: semua nilai sama
   if (minKelas === maxKelas) return roundToTwo(kkm);
-
-  // ✅ RUMUS KATROL - DITERAPKAN KE SEMUA NILAI (tidak peduli >= KKM atau tidak)
-  const result =
-    kkm + ((nilai - minKelas) / (maxKelas - minKelas)) * (targetMax - kkm);
-
-  // Limit maksimal ke targetMax
+  const result = kkm + ((nilai - minKelas) / (maxKelas - minKelas)) * (targetMax - kkm);
   const limitedResult = Math.min(result, targetMax);
-
   return roundToTwo(limitedResult);
 };
 
-/**
- * Hitung nilai akhir berdasarkan rumus SMP
- */
 export const hitungNilaiAkhir = (rataNH, psts, psas) => {
   const nh = rataNH || 0;
   const uts = psts || 0;
@@ -55,15 +28,10 @@ export const hitungNilaiAkhir = (rataNH, psts, psas) => {
   return roundToTwo(nilaiAkhir);
 };
 
-/**
- * Organize data nilai dari format array ke object per student
- */
 export const organizeGradesByStudent = (gradesData) => {
   const organized = {};
-
   gradesData?.forEach((grade) => {
     const { student_id, assignment_type, score } = grade;
-
     if (!organized[student_id]) {
       organized[student_id] = {
         student_id,
@@ -74,9 +42,7 @@ export const organizeGradesByStudent = (gradesData) => {
         psas: null,
       };
     }
-
     const roundedScore = score !== null ? roundToTwo(score) : null;
-
     switch (assignment_type) {
       case "NH1":
         organized[student_id].nh1 = roundedScore;
@@ -95,13 +61,9 @@ export const organizeGradesByStudent = (gradesData) => {
         break;
     }
   });
-
   return organized;
 };
 
-/**
- * Cari nilai minimum dan maksimum di kelas untuk setiap komponen
- */
 export const calculateMinMaxKelas = (organizedData) => {
   const minMax = {
     nh1: { min: null, max: null },
@@ -110,42 +72,26 @@ export const calculateMinMaxKelas = (organizedData) => {
     psts: { min: null, max: null },
     psas: { min: null, max: null },
   };
-
   const students = Object.values(organizedData);
-
   ["nh1", "nh2", "nh3", "psts", "psas"].forEach((component) => {
     const values = students
       .map((student) => student[component])
       .filter((val) => val !== null && !isNaN(val));
-
     if (values.length > 0) {
       minMax[component].min = roundToTwo(Math.min(...values));
       minMax[component].max = roundToTwo(Math.max(...values));
     }
   });
-
   return minMax;
 };
 
-/**
- * Hitung rata-rata NH dengan pembulatan - SMART VERSION
- * Rata dari NH yang ada, bukan selalu bagi 3
- */
 export const hitungRataNH = (nh1, nh2, nh3) => {
-  // ✅ Filter NH yang ada nilainya (tidak null dan > 0)
   const nhValues = [nh1, nh2, nh3].filter((n) => n !== null && n > 0);
-
-  // Kalau ga ada satupun NH yang diisi, return null
   if (nhValues.length === 0) return null;
-
-  // Hitung rata dari yang ada
   const rata = nhValues.reduce((a, b) => a + b, 0) / nhValues.length;
   return roundToTwo(rata);
 };
 
-/**
- * Proses katrol untuk semua siswa dalam satu kelas
- */
 export const prosesKatrol = (
   studentsData,
   organizedGrades,
@@ -155,7 +101,6 @@ export const prosesKatrol = (
   additionalInfo = {}
 ) => {
   const hasil = [];
-
   studentsData?.forEach((student) => {
     const studentId = student.id;
     const grades = organizedGrades[studentId] || {
@@ -165,13 +110,11 @@ export const prosesKatrol = (
       psts: null,
       psas: null,
     };
-
     const rataNHMentah = hitungRataNH(grades.nh1, grades.nh2, grades.nh3);
     const nilaiAkhirMentah =
       rataNHMentah !== null && grades.psts !== null && grades.psas !== null
         ? hitungNilaiAkhir(rataNHMentah, grades.psts, grades.psas)
         : null;
-
     const nh1Katrol = calculateKatrolValue(
       grades.nh1,
       minMax.nh1.min,
@@ -207,13 +150,11 @@ export const prosesKatrol = (
       kkm,
       targetMax
     );
-
     const rataNHKatrol = hitungRataNH(nh1Katrol, nh2Katrol, nh3Katrol);
     const nilaiAkhirKatrol =
       rataNHKatrol !== null && pstsKatrol !== null && psasKatrol !== null
         ? hitungNilaiAkhir(rataNHKatrol, pstsKatrol, psasKatrol)
         : null;
-
     const nilaiAkhirMentahValues = Object.values(organizedGrades)
       .map((g) => {
         const rataNH = hitungRataNH(g.nh1, g.nh2, g.nh3);
@@ -222,16 +163,10 @@ export const prosesKatrol = (
           : null;
       })
       .filter((val) => val !== null);
-
     const nilaiMinKelas =
-      nilaiAkhirMentahValues.length > 0
-        ? roundToTwo(Math.min(...nilaiAkhirMentahValues))
-        : null;
+      nilaiAkhirMentahValues.length > 0 ? roundToTwo(Math.min(...nilaiAkhirMentahValues)) : null;
     const nilaiMaxKelas =
-      nilaiAkhirMentahValues.length > 0
-        ? roundToTwo(Math.max(...nilaiAkhirMentahValues))
-        : null;
-
+      nilaiAkhirMentahValues.length > 0 ? roundToTwo(Math.max(...nilaiAkhirMentahValues)) : null;
     hasil.push({
       student_id: studentId,
       student_name: student.full_name,
@@ -260,16 +195,11 @@ export const prosesKatrol = (
       formula_used: "linear_scaling",
     });
   });
-
   return hasil;
 };
 
-/**
- * Format data untuk disimpan ke database
- */
 export const formatDataForDatabase = (katrolData, userInfo) => {
   const timestamp = new Date().toISOString();
-
   return {
     student_id: katrolData.student_id,
     class_id: katrolData.class_id,
@@ -307,54 +237,41 @@ export const formatDataForDatabase = (katrolData, userInfo) => {
   };
 };
 
-/**
- * ✅ EXPORT EXCEL - SMP VERSION with ExcelJS (Styled like SD)
- */
-export const exportToExcel = async (
-  hasilKatrol,
-  metadata = {},
-  filename = "katrol_nilai"
-) => {
+export const exportToExcel = async (hasilKatrol, metadata = {}, filename = "katrol_nilai") => {
   if (!hasilKatrol || hasilKatrol.length === 0) {
     alert("Tidak ada data untuk diexport!");
     return;
   }
-
   const workbook = new ExcelJS.Workbook();
   const kkm = metadata.kkm || 75;
+  const hasNH1 = hasilKatrol.some((r) => r.nh1 !== null && r.nh1 !== undefined);
+  const hasNH2 = hasilKatrol.some((r) => r.nh2 !== null && r.nh2 !== undefined);
+  const hasNH3 = hasilKatrol.some((r) => r.nh3 !== null && r.nh3 !== undefined);
+  const hasPSTS = hasilKatrol.some((r) => r.psts !== null && r.psts !== undefined);
+  const hasPSAS = hasilKatrol.some((r) => r.psas !== null && r.psas !== undefined);
 
-  // Hitung statistik
-  const totalSiswa = hasilKatrol.length;
-  const lulusSebelum = hasilKatrol.filter(
-    (r) => r.nilai_akhir >= kkm // ❌ BUKAN nilai_akhir_mentah
-  ).length;
-  const lulusSesudah = hasilKatrol.filter(
-    (r) => r.nilai_akhir_k >= kkm // ❌ BUKAN nilai_akhir_katrol
-  ).length;
-  const naikStatus = hasilKatrol.filter(
-    (r) => r.nilai_akhir < kkm && r.nilai_akhir_k >= kkm // ❌ FIX field names
-  ).length;
-
-  // ==================== SHEET 1: DATA LENGKAP ====================
   const ws1 = workbook.addWorksheet("Data Lengkap");
-
   const headerData = [
     ["SMP MUSLIMIN CILILIN"],
     [`REKAPITULASI NILAI KATROL - ${(metadata.subject || "").toUpperCase()}`],
     [`KELAS ${metadata.class_name || ""}`],
-    [
-      `Tahun Ajaran: ${metadata.academic_year || ""} - Semester ${
-        metadata.semester || ""
-      }`,
-    ],
+    [`Tahun Ajaran: ${metadata.academic_year || ""} - Semester ${metadata.semester || ""}`],
     [""],
   ];
-
   let currentRow = 1;
+  let totalCols = 3;
+  if (hasNH1) totalCols += 2;
+  if (hasNH2) totalCols += 2;
+  if (hasNH3) totalCols += 2;
+  totalCols += 2;
+  if (hasPSTS) totalCols += 2;
+  if (hasPSAS) totalCols += 2;
+  totalCols += 2;
+  const lastColLetter = String.fromCharCode(64 + totalCols);
   headerData.forEach((row) => {
     const r = ws1.getRow(currentRow++);
     r.getCell(1).value = row[0];
-    ws1.mergeCells(`A${currentRow - 1}:Q${currentRow - 1}`);
+    ws1.mergeCells(`A${currentRow - 1}:${lastColLetter}${currentRow - 1}`);
     r.getCell(1).font = {
       bold: true,
       size: currentRow <= 3 ? 14 : 11,
@@ -362,32 +279,17 @@ export const exportToExcel = async (
     };
     r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
   });
-
-  // Table headers
-  const headers = [
-    "No",
-    "NIS",
-    "Nama Siswa",
-    "NH1",
-    "NH1-K",
-    "NH2",
-    "NH2-K",
-    "NH3",
-    "NH3-K",
-    "Rata NH",
-    "Rata NH-K",
-    "PSTS",
-    "PSTS-K",
-    "PSAS",
-    "PSAS-K",
-    "Nilai Akhir",
-    "Nilai Akhir-K",
-  ];
-
+  const headers = ["No", "NIS", "Nama Siswa"];
+  if (hasNH1) headers.push("NH1", "NH1-K");
+  if (hasNH2) headers.push("NH2", "NH2-K");
+  if (hasNH3) headers.push("NH3", "NH3-K");
+  headers.push("Rata NH", "Rata NH-K");
+  if (hasPSTS) headers.push("PSTS", "PSTS-K");
+  if (hasPSAS) headers.push("PSAS", "PSAS-K");
+  headers.push("Nilai Akhir", "Nilai Akhir-K");
   const headerRow = ws1.getRow(currentRow);
   headerRow.values = headers;
   headerRow.height = 30;
-
   headerRow.eachCell((cell) => {
     cell.fill = {
       type: "pattern",
@@ -407,54 +309,26 @@ export const exportToExcel = async (
       right: { style: "thin" },
     };
   });
-
-  // Column widths
-  ws1.columns = [
-    { width: 5 }, // No
-    { width: 14 }, // NIS
-    { width: 40 }, // Nama
-    { width: 7 },
-    { width: 7 }, // NH1
-    { width: 7 },
-    { width: 7 }, // NH2
-    { width: 7 },
-    { width: 7 }, // NH3
-    { width: 9 },
-    { width: 9 }, // Rata NH
-    { width: 7 },
-    { width: 7 }, // PSTS
-    { width: 7 },
-    { width: 7 }, // PSAS
-    { width: 10 },
-    { width: 14 }, // Nilai Akhir
-  ];
-
+  const columnWidths = [{ width: 5 }, { width: 14 }, { width: 40 }];
+  if (hasNH1) columnWidths.push({ width: 7 }, { width: 7 });
+  if (hasNH2) columnWidths.push({ width: 7 }, { width: 7 });
+  if (hasNH3) columnWidths.push({ width: 7 }, { width: 7 });
+  columnWidths.push({ width: 9 }, { width: 9 });
+  if (hasPSTS) columnWidths.push({ width: 7 }, { width: 7 });
+  if (hasPSAS) columnWidths.push({ width: 7 }, { width: 7 });
+  columnWidths.push({ width: 10 }, { width: 14 });
+  ws1.columns = columnWidths;
   currentRow++;
-
-  // Data rows
   hasilKatrol.forEach((siswa, index) => {
-    const rowData = [
-      index + 1,
-      siswa.nis,
-      siswa.nama_siswa,
-      formatNum(siswa.nh1), // ❌ BUKAN nh1_mentah
-      formatNum(siswa.nh1_k), // ❌ BUKAN nh1_katrol
-      formatNum(siswa.nh2), // ❌ BUKAN nh2_mentah
-      formatNum(siswa.nh2_k), // ❌ BUKAN nh2_katrol
-      formatNum(siswa.nh3), // ❌ BUKAN nh3_mentah
-      formatNum(siswa.nh3_k), // ❌ BUKAN nh3_katrol
-      formatNum(siswa.rata_nh), // ❌ BUKAN rata_nh_mentah
-      formatNum(siswa.rata_nh_k), // ❌ BUKAN rata_nh_katrol
-      formatNum(siswa.psts), // ❌ BUKAN psts_mentah
-      formatNum(siswa.psts_k), // ❌ BUKAN psts_katrol
-      formatNum(siswa.psas), // ❌ BUKAN psas_mentah
-      formatNum(siswa.psas_k), // ❌ BUKAN psas_katrol
-      formatNum(siswa.nilai_akhir), // ❌ BUKAN nilai_akhir_mentah
-      formatNum(siswa.nilai_akhir_k), // ❌ BUKAN nilai_akhir_katrol
-    ];
-
+    const rowData = [index + 1, siswa.nis, siswa.nama_siswa];
+    if (hasNH1) rowData.push(formatNum(siswa.nh1), formatNum(siswa.nh1_k));
+    if (hasNH2) rowData.push(formatNum(siswa.nh2), formatNum(siswa.nh2_k));
+    if (hasNH3) rowData.push(formatNum(siswa.nh3), formatNum(siswa.nh3_k));
+    rowData.push(formatNum(siswa.rata_nh), formatNum(siswa.rata_nh_k));
+    if (hasPSTS) rowData.push(formatNum(siswa.psts), formatNum(siswa.psts_k));
+    if (hasPSAS) rowData.push(formatNum(siswa.psas), formatNum(siswa.psas_k));
+    rowData.push(formatNum(siswa.nilai_akhir), formatNum(siswa.nilai_akhir_k));
     const r = ws1.addRow(rowData);
-
     r.eachCell((cell, colNumber) => {
       cell.border = {
         top: { style: "thin" },
@@ -462,55 +336,47 @@ export const exportToExcel = async (
         bottom: { style: "thin" },
         right: { style: "thin" },
       };
-
-      if (colNumber === 1) {
+      if (colNumber === 1 || colNumber === 2)
         cell.alignment = { vertical: "middle", horizontal: "center" };
-      } else if (colNumber === 2) {
-        cell.alignment = { vertical: "middle", horizontal: "center" };
-      } else if (colNumber === 3) {
-        cell.alignment = { vertical: "middle", horizontal: "left" };
-      } else {
+      else if (colNumber === 3) cell.alignment = { vertical: "middle", horizontal: "left" };
+      else {
         cell.alignment = { vertical: "middle", horizontal: "center" };
         if (cell.value !== null) {
           cell.numFmt = "0";
-          // Bold untuk nilai akhir
-          if (colNumber === 16 || colNumber === 17) {
-            cell.font = { bold: true };
-          }
+          if (colNumber >= headers.length - 1) cell.font = { bold: true };
         }
       }
-
-      // Zebra stripes
-      if (index % 2 !== 0) {
+      if (index % 2 !== 0)
         cell.fill = {
           type: "pattern",
           pattern: "solid",
           fgColor: { argb: "FFF2F2F2" },
         };
-      }
     });
   });
 
-  // ==================== SHEET 2: KATROL AKHIR ====================
   const ws2 = workbook.addWorksheet("Katrol Akhir");
-
   const headerData2 = [
     ["SMP MUSLIMIN CILILIN"],
     [`NILAI KATROL AKHIR - ${(metadata.subject || "").toUpperCase()}`],
     [`KELAS ${metadata.class_name || ""}`],
-    [
-      `Tahun Ajaran: ${metadata.academic_year || ""} - Semester ${
-        metadata.semester || ""
-      }`,
-    ],
+    [`Tahun Ajaran: ${metadata.academic_year || ""} - Semester ${metadata.semester || ""}`],
     [""],
   ];
-
   currentRow = 1;
+  let totalCols2 = 3;
+  if (hasNH1) totalCols2 += 1;
+  if (hasNH2) totalCols2 += 1;
+  if (hasNH3) totalCols2 += 1;
+  totalCols2 += 1;
+  if (hasPSTS) totalCols2 += 1;
+  if (hasPSAS) totalCols2 += 1;
+  totalCols2 += 1;
+  const lastColLetter2 = String.fromCharCode(64 + totalCols2);
   headerData2.forEach((row) => {
     const r = ws2.getRow(currentRow++);
     r.getCell(1).value = row[0];
-    ws2.mergeCells(`A${currentRow - 1}:J${currentRow - 1}`);
+    ws2.mergeCells(`A${currentRow - 1}:${lastColLetter2}${currentRow - 1}`);
     r.getCell(1).font = {
       bold: true,
       size: currentRow <= 3 ? 14 : 11,
@@ -518,24 +384,17 @@ export const exportToExcel = async (
     };
     r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
   });
-
-  const headers2 = [
-    "No",
-    "NIS",
-    "Nama Siswa",
-    "NH1-K",
-    "NH2-K",
-    "NH3-K",
-    "Rata NH-K",
-    "PSTS-K",
-    "PSAS-K",
-    "Nilai Akhir-K",
-  ];
-
+  const headers2 = ["No", "NIS", "Nama Siswa"];
+  if (hasNH1) headers2.push("NH1-K");
+  if (hasNH2) headers2.push("NH2-K");
+  if (hasNH3) headers2.push("NH3-K");
+  headers2.push("Rata NH-K");
+  if (hasPSTS) headers2.push("PSTS-K");
+  if (hasPSAS) headers2.push("PSAS-K");
+  headers2.push("Nilai Akhir-K");
   const headerRow2 = ws2.getRow(currentRow);
   headerRow2.values = headers2;
   headerRow2.height = 30;
-
   headerRow2.eachCell((cell) => {
     cell.fill = {
       type: "pattern",
@@ -555,38 +414,26 @@ export const exportToExcel = async (
       right: { style: "thin" },
     };
   });
-
-  ws2.columns = [
-    { width: 5 },
-    { width: 14 },
-    { width: 40 },
-    { width: 8 },
-    { width: 8 },
-    { width: 8 },
-    { width: 10 },
-    { width: 8 },
-    { width: 8 },
-    { width: 14 },
-  ];
-
+  const columnWidths2 = [{ width: 5 }, { width: 14 }, { width: 40 }];
+  if (hasNH1) columnWidths2.push({ width: 8 });
+  if (hasNH2) columnWidths2.push({ width: 8 });
+  if (hasNH3) columnWidths2.push({ width: 8 });
+  columnWidths2.push({ width: 10 });
+  if (hasPSTS) columnWidths2.push({ width: 8 });
+  if (hasPSAS) columnWidths2.push({ width: 8 });
+  columnWidths2.push({ width: 14 });
+  ws2.columns = columnWidths2;
   currentRow++;
-
   hasilKatrol.forEach((siswa, index) => {
-    const rowData2 = [
-      index + 1,
-      siswa.nis,
-      siswa.nama_siswa,
-      formatNum(siswa.nh1_k), // ❌ BUKAN nh1_katrol
-      formatNum(siswa.nh2_k), // ❌ BUKAN nh2_katrol
-      formatNum(siswa.nh3_k), // ❌ BUKAN nh3_katrol
-      formatNum(siswa.rata_nh_k), // ❌ BUKAN rata_nh_katrol
-      formatNum(siswa.psts_k), // ❌ BUKAN psts_katrol
-      formatNum(siswa.psas_k), // ❌ BUKAN psas_katrol
-      formatNum(siswa.nilai_akhir_k), // ❌ BUKAN nilai_akhir_katrol
-    ];
-
+    const rowData2 = [index + 1, siswa.nis, siswa.nama_siswa];
+    if (hasNH1) rowData2.push(formatNum(siswa.nh1_k));
+    if (hasNH2) rowData2.push(formatNum(siswa.nh2_k));
+    if (hasNH3) rowData2.push(formatNum(siswa.nh3_k));
+    rowData2.push(formatNum(siswa.rata_nh_k));
+    if (hasPSTS) rowData2.push(formatNum(siswa.psts_k));
+    if (hasPSAS) rowData2.push(formatNum(siswa.psas_k));
+    rowData2.push(formatNum(siswa.nilai_akhir_k));
     const r = ws2.addRow(rowData2);
-
     r.eachCell((cell, colNumber) => {
       cell.border = {
         top: { style: "thin" },
@@ -594,30 +441,25 @@ export const exportToExcel = async (
         bottom: { style: "thin" },
         right: { style: "thin" },
       };
-
-      if (colNumber === 1 || colNumber === 2) {
+      if (colNumber === 1 || colNumber === 2)
         cell.alignment = { vertical: "middle", horizontal: "center" };
-      } else if (colNumber === 3) {
-        cell.alignment = { vertical: "middle", horizontal: "left" };
-      } else {
+      else if (colNumber === 3) cell.alignment = { vertical: "middle", horizontal: "left" };
+      else {
         cell.alignment = { vertical: "middle", horizontal: "center" };
         if (cell.value !== null) {
           cell.numFmt = "0";
-          if (colNumber === 10) cell.font = { bold: true };
+          if (colNumber === headers2.length) cell.font = { bold: true };
         }
       }
-
-      if (index % 2 !== 0) {
+      if (index % 2 !== 0)
         cell.fill = {
           type: "pattern",
           pattern: "solid",
           fgColor: { argb: "FFF2F2F2" },
         };
-      }
     });
   });
 
-  // ==================== DOWNLOAD ====================
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -633,21 +475,12 @@ export const exportToExcel = async (
   window.URL.revokeObjectURL(url);
 };
 
-/**
- * Validasi sebelum proses katrol
- */
 export const validateBeforeKatrol = (studentsData, organizedGrades) => {
   const errors = [];
   const warnings = [];
-
-  if (!studentsData || studentsData.length === 0) {
-    errors.push("Tidak ada data siswa ditemukan!");
-  }
-
-  if (!organizedGrades || Object.keys(organizedGrades).length === 0) {
+  if (!studentsData || studentsData.length === 0) errors.push("Tidak ada data siswa ditemukan!");
+  if (!organizedGrades || Object.keys(organizedGrades).length === 0)
     errors.push("Tidak ada data nilai ditemukan!");
-  }
-
   const studentsWithMissingGrades = [];
   Object.entries(organizedGrades).forEach(([studentId, grades]) => {
     const missingComponents = [];
@@ -656,24 +489,17 @@ export const validateBeforeKatrol = (studentsData, organizedGrades) => {
     if (grades.nh3 === null) missingComponents.push("NH3");
     if (grades.psts === null) missingComponents.push("PSTS");
     if (grades.psas === null) missingComponents.push("PSAS");
-
     if (missingComponents.length > 0) {
       const student = studentsData.find((s) => s.id === studentId);
-      if (student) {
+      if (student)
         studentsWithMissingGrades.push({
           name: student.full_name,
           missing: missingComponents,
         });
-      }
     }
   });
-
-  if (studentsWithMissingGrades.length > 0) {
-    warnings.push(
-      `${studentsWithMissingGrades.length} siswa memiliki nilai yang tidak lengkap`
-    );
-  }
-
+  if (studentsWithMissingGrades.length > 0)
+    warnings.push(`${studentsWithMissingGrades.length} siswa memiliki nilai yang tidak lengkap`);
   return {
     isValid: errors.length === 0,
     errors,
@@ -682,9 +508,6 @@ export const validateBeforeKatrol = (studentsData, organizedGrades) => {
   };
 };
 
-/**
- * Format nilai untuk display
- */
 export const formatNilaiDisplay = (nilaiMentah, nilaiKatrol) => {
   if (nilaiMentah === null || nilaiKatrol === null) return "-";
   const mentah = roundToTwo(nilaiMentah);
@@ -692,22 +515,15 @@ export const formatNilaiDisplay = (nilaiMentah, nilaiKatrol) => {
   return mentah === katrol ? Math.round(mentah) : Math.round(katrol);
 };
 
-/**
- * Format nilai sederhana
- */
 export const formatNilaiSimple = (nilai) => {
   if (nilai === null || nilai === undefined || isNaN(nilai)) return "-";
   return Math.round(roundToTwo(nilai));
 };
 
-/**
- * Hitung statistik kelas
- */
 export const calculateClassStatistics = (hasilKatrol) => {
   const nilaiAkhirValues = hasilKatrol
     .map((row) => row.nilai_akhir_katrol)
     .filter((val) => val !== null && !isNaN(val));
-
   if (nilaiAkhirValues.length === 0) {
     return {
       rataRata: 0,
@@ -717,14 +533,11 @@ export const calculateClassStatistics = (hasilKatrol) => {
       persentaseTuntas: 0,
     };
   }
-
-  const rataRata =
-    nilaiAkhirValues.reduce((a, b) => a + b, 0) / nilaiAkhirValues.length;
+  const rataRata = nilaiAkhirValues.reduce((a, b) => a + b, 0) / nilaiAkhirValues.length;
   const nilaiTerendah = Math.min(...nilaiAkhirValues);
   const nilaiTertinggi = Math.max(...nilaiAkhirValues);
   const jumlahTuntas = nilaiAkhirValues.filter((val) => val >= 75).length;
   const persentaseTuntas = (jumlahTuntas / nilaiAkhirValues.length) * 100;
-
   return {
     rataRata: roundToTwo(rataRata),
     nilaiTerendah: roundToTwo(nilaiTerendah),

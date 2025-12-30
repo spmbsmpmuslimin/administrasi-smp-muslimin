@@ -79,12 +79,7 @@ export const exportITMReportToExcel = async (reportData) => {
       let total = 0;
       weekSchedule.forEach((jam) => {
         const dayData = jam.days[dayName];
-        if (
-          dayData &&
-          dayData.kelas &&
-          dayData.kelas !== "" &&
-          dayData.kelas !== "UPACARA"
-        ) {
+        if (dayData && dayData.kelas && dayData.kelas !== "" && dayData.kelas !== "UPACARA") {
           total++;
         }
       });
@@ -363,12 +358,9 @@ export const exportITMReportToExcel = async (reportData) => {
     const totalTerjadwal = calculateOverallTotal();
     const totalHadir = calculateTotalHadir();
     const totalTidakHadir = totalTerjadwal - totalHadir;
-    const persenHadir =
-      totalTerjadwal > 0 ? ((totalHadir / totalTerjadwal) * 100).toFixed(1) : 0;
+    const persenHadir = totalTerjadwal > 0 ? ((totalHadir / totalTerjadwal) * 100).toFixed(1) : 0;
     const persenTidakHadir =
-      totalTerjadwal > 0
-        ? ((totalTidakHadir / totalTerjadwal) * 100).toFixed(1)
-        : 0;
+      totalTerjadwal > 0 ? ((totalTidakHadir / totalTerjadwal) * 100).toFixed(1) : 0;
 
     // Header TOTAL
     worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
@@ -427,10 +419,9 @@ export const exportITMReportToExcel = async (reportData) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Laporan_ITM_${reportData.teacher.full_name.replace(
-      /\s+/g,
-      "_"
-    )}_${reportData.month}_${reportData.year}.xlsx`;
+    link.download = `Laporan_ITM_${reportData.teacher.full_name.replace(/\s+/g, "_")}_${
+      reportData.month
+    }_${reportData.year}.xlsx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

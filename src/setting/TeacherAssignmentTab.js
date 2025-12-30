@@ -145,12 +145,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const loadAllData = async () => {
     setLoading(true);
     try {
-      await Promise.all([
-        loadTeachers(),
-        loadClasses(),
-        loadAcademicYears(),
-        loadSubjects(),
-      ]);
+      await Promise.all([loadTeachers(), loadClasses(), loadAcademicYears(), loadSubjects()]);
       await loadAssignments();
     } catch (error) {
       console.error("Error loading data:", error);
@@ -211,17 +206,14 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
       return;
     }
 
-    const uniqueSubjects = [
-      ...new Set(data?.map((item) => item.subject).filter(Boolean)),
-    ];
+    const uniqueSubjects = [...new Set(data?.map((item) => item.subject).filter(Boolean))];
     setSubjects(uniqueSubjects.sort());
   };
 
   const loadAssignments = async () => {
     try {
       // ✅ UPDATED: Gunakan academic info untuk filter default
-      const { semester: activeSemester, yearId: activeYearId } =
-        await getActiveAcademicInfo();
+      const { semester: activeSemester, yearId: activeYearId } = await getActiveAcademicInfo();
 
       let query = supabase
         .from("teacher_assignments")
@@ -269,13 +261,9 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
 
       // Manual join - fetch related data
       if (assignmentsData && assignmentsData.length > 0) {
-        const teacherIds = [
-          ...new Set(assignmentsData.map((a) => a.teacher_id)),
-        ];
+        const teacherIds = [...new Set(assignmentsData.map((a) => a.teacher_id))];
         const classIds = [...new Set(assignmentsData.map((a) => a.class_id))];
-        const yearIds = [
-          ...new Set(assignmentsData.map((a) => a.academic_year_id)),
-        ];
+        const yearIds = [...new Set(assignmentsData.map((a) => a.academic_year_id))];
 
         // Fetch related users
         const { data: usersData } = await supabase
@@ -365,9 +353,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         if (searchQuery) {
           filteredData = filteredData.filter(
             (a) =>
-              a.users?.full_name
-                ?.toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
+              a.users?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
               a.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
               a.classes?.id?.toLowerCase().includes(searchQuery.toLowerCase())
           );
@@ -390,23 +376,15 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
       // ✅ UPDATED: Gunakan academic info dinamis
       const { yearId: activeYearId } = await getActiveAcademicInfo();
 
-      const activeAssignments = assignmentData.filter(
-        (a) => a.academic_year_id === activeYearId
-      );
+      const activeAssignments = assignmentData.filter((a) => a.academic_year_id === activeYearId);
 
-      const assignedTeacherIds = new Set(
-        activeAssignments.map((a) => a.teacher_id)
-      );
+      const assignedTeacherIds = new Set(activeAssignments.map((a) => a.teacher_id));
       const teachersWithoutAssignment = teachers.filter(
         (t) => !assignedTeacherIds.has(t.teacher_id)
       ).length;
 
-      const assignedClassIds = new Set(
-        activeAssignments.map((a) => a.class_id)
-      );
-      const classesWithoutTeacher = classes.filter(
-        (c) => !assignedClassIds.has(c.id)
-      ).length;
+      const assignedClassIds = new Set(activeAssignments.map((a) => a.class_id));
+      const classesWithoutTeacher = classes.filter((c) => !assignedClassIds.has(c.id)).length;
 
       // Hitung mata pelajaran tanpa guru di tahun aktif
       const allSubjects = [...new Set(activeAssignments.map((a) => a.subject))];
@@ -444,8 +422,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     } else {
       try {
         // ✅ UPDATED: Set default semester dari data dinamis
-        const { semester: activeSemester, yearId: activeYearId } =
-          await getActiveAcademicInfo();
+        const { semester: activeSemester, yearId: activeYearId } = await getActiveAcademicInfo();
 
         setFormData({
           teacher_id: "",
@@ -530,12 +507,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
           .single();
 
         if (existing) {
-          const teacherName = teachers.find(
-            (t) => t.teacher_id === formData.teacher_id
-          )?.full_name;
-          const className = classes.find(
-            (c) => c.id === formData.class_id
-          )?.name;
+          const teacherName = teachers.find((t) => t.teacher_id === formData.teacher_id)?.full_name;
+          const className = classes.find((c) => c.id === formData.class_id)?.name;
           showToast?.(
             `Penugasan sudah ada: ${teacherName} - ${className} - ${formData.subject}`,
             "error"
@@ -629,12 +602,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
       setSubmitting(true);
 
       // Get target academic year (next year)
-      const sourceYear = academicYears.find(
-        (y) => y.id === selectedAcademicYear
-      );
-      const targetYear = academicYears.find(
-        (y) => y.year > sourceYear.year && !y.is_active
-      );
+      const sourceYear = academicYears.find((y) => y.id === selectedAcademicYear);
+      const targetYear = academicYears.find((y) => y.year > sourceYear.year && !y.is_active);
 
       if (!targetYear) {
         showToast?.("Tidak ada tahun ajaran target", "error");
@@ -662,9 +631,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         created_at: new Date().toISOString(),
       }));
 
-      const { error } = await supabase
-        .from("teacher_assignments")
-        .insert(newAssignments);
+      const { error } = await supabase.from("teacher_assignments").insert(newAssignments);
 
       if (error) throw error;
 
@@ -685,8 +652,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const handleResetFilters = async () => {
     try {
       // ✅ UPDATED: Reset ke akademik aktif
-      const { semester: activeSemester, yearId: activeYearId } =
-        await getActiveAcademicInfo();
+      const { semester: activeSemester, yearId: activeYearId } = await getActiveAcademicInfo();
       const activeYear = academicYears.find((y) => y.is_active);
 
       setSelectedAcademicYear(activeYear?.id || "");
@@ -725,12 +691,10 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
       const { displayText, semesterText } = await getActiveAcademicInfo();
 
       const filters = {
-        academicYear: academicYears.find((y) => y.id === selectedAcademicYear)
-          ?.year,
+        academicYear: academicYears.find((y) => y.id === selectedAcademicYear)?.year,
         semester: selectedSemester ? `Semester ${selectedSemester}` : null,
         class: selectedClass,
-        teacher: teachers.find((t) => t.teacher_id === selectedTeacher)
-          ?.full_name,
+        teacher: teachers.find((t) => t.teacher_id === selectedTeacher)?.full_name,
         subject: selectedSubject,
         academicInfo: displayText, // ✅ Tambahkan info akademik
       };
@@ -738,12 +702,10 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     } catch (error) {
       console.error("Error getting academic info for export:", error);
       const filters = {
-        academicYear: academicYears.find((y) => y.id === selectedAcademicYear)
-          ?.year,
+        academicYear: academicYears.find((y) => y.id === selectedAcademicYear)?.year,
         semester: selectedSemester ? `Semester ${selectedSemester}` : null,
         class: selectedClass,
-        teacher: teachers.find((t) => t.teacher_id === selectedTeacher)
-          ?.full_name,
+        teacher: teachers.find((t) => t.teacher_id === selectedTeacher)?.full_name,
         subject: selectedSubject,
       };
       await exportAssignments(assignments, filters, showToast);
@@ -791,16 +753,10 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
 
       if (result.success) {
         setImportStep("preview");
-        showToast?.(
-          `Validasi berhasil: ${result.summary.valid} data valid`,
-          "success"
-        );
+        showToast?.(`Validasi berhasil: ${result.summary.valid} data valid`, "success");
       } else {
         setImportStep("preview");
-        showToast?.(
-          `Ditemukan ${result.summary.invalid} error. Periksa detail error.`,
-          "error"
-        );
+        showToast?.(`Ditemukan ${result.summary.invalid} error. Periksa detail error.`, "error");
       }
     } catch (error) {
       console.error("Error validating import:", error);
@@ -818,11 +774,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     setImportStep("importing");
 
     try {
-      const result = await importAssignments(
-        validationResult.validData,
-        importMode,
-        showToast
-      );
+      const result = await importAssignments(validationResult.validData, importMode, showToast);
 
       if (result.success) {
         setShowImportModal(false);
@@ -865,9 +817,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
       <div className="p-6 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-          <p className="text-gray-600 dark:text-gray-400">
-            Memuat info tahun ajaran...
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Memuat info tahun ajaran...</p>
         </div>
       </div>
     );
@@ -965,9 +915,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 p-4 rounded-xl border border-red-200 dark:border-red-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                Kelas Tanpa Guru
-              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium">Kelas Tanpa Guru</p>
               <p className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">
                 {stats.classesWithoutTeacher}
               </p>
@@ -996,33 +944,38 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={() => handleOpenModal("create")}
-            className="flex-1 min-w-[140px] px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+            className="flex-1 min-w-[140px] px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+          >
             <Plus size={20} />
             <span className="hidden sm:inline">Tambah Penugasan</span>
           </button>
           <button
             onClick={handleCopyToNewYear}
             disabled={submitting || !selectedAcademicYear}
-            className="flex-1 min-w-[140px] px-4 py-3 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            className="flex-1 min-w-[140px] px-4 py-3 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Copy size={20} />
             <span className="hidden sm:inline">Copy ke TA Baru</span>
           </button>
           <button
             onClick={handleDownloadTemplate}
-            className="flex-1 min-w-[140px] px-4 py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+            className="flex-1 min-w-[140px] px-4 py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+          >
             <FileText size={20} />
             <span className="hidden sm:inline">Template</span>
           </button>
           <button
             onClick={handleExportData}
             disabled={assignments.length === 0}
-            className="flex-1 min-w-[140px] px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            className="flex-1 min-w-[140px] px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Download size={20} />
             <span className="hidden sm:inline">Export</span>
           </button>
           <button
             onClick={handleImportClick}
-            className="flex-1 min-w-[140px] px-4 py-3 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+            className="flex-1 min-w-[140px] px-4 py-3 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+          >
             <Upload size={20} />
             <span className="hidden sm:inline">Import</span>
           </button>
@@ -1038,7 +991,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
           </h3>
           <button
             onClick={handleResetFilters}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
             Reset Filter
           </button>
         </div>
@@ -1066,7 +1020,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             <select
               value={selectedTeacher}
               onChange={(e) => setSelectedTeacher(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
               <option value="">Semua</option>
               {teachers.map((teacher) => (
                 <option key={teacher.teacher_id} value={teacher.teacher_id}>
@@ -1084,7 +1039,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
               <option value="">Semua</option>
               {subjects.map((subject, index) => (
                 <option key={index} value={subject}>
@@ -1102,7 +1058,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
               <option value="">Semua</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>
@@ -1120,7 +1077,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             <select
               value={selectedAcademicYear}
               onChange={(e) => setSelectedAcademicYear(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
               <option value="">Semua</option>
               {academicYears.map((year) => (
                 <option key={year.id} value={year.id}>
@@ -1138,7 +1096,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
             <select
               value={selectedSemester}
               onChange={(e) => setSelectedSemester(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
               <option value="">Semua</option>
               <option value="1">Semester 1</option>
               <option value="2">Semester 2</option>
@@ -1185,12 +1144,11 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   <td colSpan="8" className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <BookOpen className="w-12 h-12 text-gray-400" />
-                      <p className="text-gray-500 dark:text-gray-400">
-                        Belum ada data penugasan
-                      </p>
+                      <p className="text-gray-500 dark:text-gray-400">Belum ada data penugasan</p>
                       <button
                         onClick={() => handleOpenModal("create")}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center gap-2">
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                      >
                         <Plus size={18} />
                         Tambah Penugasan
                       </button>
@@ -1227,19 +1185,22 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                           <button
                             onClick={() => handleOpenModal("edit", assignment)}
                             className="p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                            title="Edit">
+                            title="Edit"
+                          >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleOpenDeleteModal(assignment)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                            title="Hapus">
+                            title="Hapus"
+                          >
                             <Trash2 size={16} />
                           </button>
                           <button
                             onClick={() => toggleRowExpand(assignment.id)}
                             className="p-2 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-all"
-                            title="Detail">
+                            title="Detail"
+                          >
                             {expandedRows[assignment.id] ? (
                               <ChevronUp size={16} />
                             ) : (
@@ -1254,44 +1215,31 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                         <td colSpan="8" className="px-4 py-3">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
-                              <p className="text-gray-600 dark:text-gray-400">
-                                ID Penugasan:
-                              </p>
-                              <p className="font-mono text-xs">
-                                {assignment.id}
-                              </p>
+                              <p className="text-gray-600 dark:text-gray-400">ID Penugasan:</p>
+                              <p className="font-mono text-xs">{assignment.id}</p>
                             </div>
                             <div>
-                              <p className="text-gray-600 dark:text-gray-400">
-                                Role Guru:
-                              </p>
+                              <p className="text-gray-600 dark:text-gray-400">Role Guru:</p>
                               <p>{assignment.users?.role || "-"}</p>
                             </div>
                             <div>
-                              <p className="text-gray-600 dark:text-gray-400">
-                                Dibuat:
-                              </p>
+                              <p className="text-gray-600 dark:text-gray-400">Dibuat:</p>
                               <p>
                                 {assignment.created_at
-                                  ? new Date(
-                                      assignment.created_at
-                                    ).toLocaleDateString("id-ID")
+                                  ? new Date(assignment.created_at).toLocaleDateString("id-ID")
                                   : "-"}
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600 dark:text-gray-400">
-                                Status TA:
-                              </p>
+                              <p className="text-gray-600 dark:text-gray-400">Status TA:</p>
                               <span
                                 className={`px-2 py-1 rounded-full text-xs ${
                                   assignment.academic_years?.is_active
                                     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                                     : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-                                }`}>
-                                {assignment.academic_years?.is_active
-                                  ? "Aktif"
-                                  : "Tidak Aktif"}
+                                }`}
+                              >
+                                {assignment.academic_years?.is_active ? "Aktif" : "Tidak Aktif"}
                               </span>
                             </div>
                           </div>
@@ -1321,9 +1269,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   )}
                   <div>
                     <h3 className="text-xl font-bold text-white">
-                      {modalMode === "edit"
-                        ? "Edit Penugasan"
-                        : "Tambah Penugasan Baru"}
+                      {modalMode === "edit" ? "Edit Penugasan" : "Tambah Penugasan Baru"}
                     </h3>
                     <p className="text-sm text-blue-100 mt-1">
                       {modalMode === "edit"
@@ -1335,7 +1281,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                 <button
                   onClick={handleCloseModal}
                   disabled={submitting}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50">
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+                >
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
@@ -1351,16 +1298,13 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   </label>
                   <select
                     value={formData.teacher_id}
-                    onChange={(e) =>
-                      setFormData({ ...formData, teacher_id: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, teacher_id: e.target.value })}
                     required
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
                     <option value="">-- Pilih Guru --</option>
                     {teachers.map((teacher) => (
-                      <option
-                        key={teacher.teacher_id}
-                        value={teacher.teacher_id}>
+                      <option key={teacher.teacher_id} value={teacher.teacher_id}>
                         {teacher.teacher_id} - {teacher.full_name}
                       </option>
                     ))}
@@ -1374,11 +1318,10 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   </label>
                   <select
                     value={formData.class_id}
-                    onChange={(e) =>
-                      setFormData({ ...formData, class_id: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, class_id: e.target.value })}
                     required
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
                     <option value="">-- Pilih Kelas --</option>
                     {classes.map((cls) => (
                       <option key={cls.id} value={cls.id}>
@@ -1396,9 +1339,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   <input
                     type="text"
                     value={formData.subject}
-                    onChange={(e) =>
-                      setFormData({ ...formData, subject: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     placeholder="Contoh: Matematika, Bahasa Indonesia"
                     required
                     className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1420,7 +1361,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                         })
                       }
                       required
-                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
                       <option value="">-- Pilih TA --</option>
                       {academicYears.map((year) => (
                         <option key={year.id} value={year.id}>
@@ -1436,11 +1378,10 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                     </label>
                     <select
                       value={formData.semester}
-                      onChange={(e) =>
-                        setFormData({ ...formData, semester: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
                       required
-                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
                       <option value="">-- Pilih --</option>
                       <option value="1">Semester 1</option>
                       <option value="2">Semester 2</option>
@@ -1455,13 +1396,15 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   type="button"
                   onClick={handleCloseModal}
                   disabled={submitting}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">
+                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50">
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50"
+                >
                   {submitting ? (
                     <>
                       <Loader className="w-4 h-4 animate-spin" />
@@ -1491,8 +1434,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   Import Data Penugasan
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {importStep === "upload" &&
-                    "Upload file Excel untuk import data"}
+                  {importStep === "upload" && "Upload file Excel untuk import data"}
                   {importStep === "validating" && "Memvalidasi data..."}
                   {importStep === "preview" && "Preview dan konfirmasi import"}
                   {importStep === "importing" && "Mengimport data..."}
@@ -1500,10 +1442,9 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
               </div>
               <button
                 onClick={handleCloseImportModal}
-                disabled={
-                  importStep === "validating" || importStep === "importing"
-                }
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50">
+                disabled={importStep === "validating" || importStep === "importing"}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -1519,8 +1460,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                       Upload File Excel
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      Pilih file Excel (.xlsx atau .xls) yang berisi data
-                      penugasan
+                      Pilih file Excel (.xlsx atau .xls) yang berisi data penugasan
                     </p>
                     <input
                       type="file"
@@ -1531,7 +1471,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                     />
                     <label
                       htmlFor="import-file"
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium cursor-pointer transition-all">
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium cursor-pointer transition-all"
+                    >
                       <FileText size={18} />
                       Pilih File
                     </label>
@@ -1600,9 +1541,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                       </p>
                     </div>
                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-800">
-                      <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                        Error
-                      </p>
+                      <p className="text-sm text-red-600 dark:text-red-400 font-medium">Error</p>
                       <p className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">
                         {validationResult.summary.invalid}
                       </p>
@@ -1627,32 +1566,31 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                         </h5>
                         <button
                           onClick={handleDownloadErrorReport}
-                          className="text-sm text-red-600 dark:text-red-400 hover:underline flex items-center gap-1">
+                          className="text-sm text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
+                        >
                           <Download size={14} />
                           Download Error Report
                         </button>
                       </div>
                       <div className="max-h-60 overflow-y-auto space-y-2">
-                        {validationResult.errors
-                          .slice(0, 10)
-                          .map((err, idx) => (
-                            <div
-                              key={idx}
-                              className="bg-white dark:bg-gray-800 p-3 rounded border border-red-200 dark:border-red-800">
-                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                Baris {err.row}:
-                              </p>
-                              <ul className="text-xs text-red-700 dark:text-red-400 mt-1 list-disc list-inside">
-                                {err.errors.map((e, i) => (
-                                  <li key={i}>{e}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
+                        {validationResult.errors.slice(0, 10).map((err, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-white dark:bg-gray-800 p-3 rounded border border-red-200 dark:border-red-800"
+                          >
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                              Baris {err.row}:
+                            </p>
+                            <ul className="text-xs text-red-700 dark:text-red-400 mt-1 list-disc list-inside">
+                              {err.errors.map((e, i) => (
+                                <li key={i}>{e}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
                         {validationResult.errors.length > 10 && (
                           <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-                            ... dan {validationResult.errors.length - 10} error
-                            lainnya
+                            ... dan {validationResult.errors.length - 10} error lainnya
                           </p>
                         )}
                       </div>
@@ -1668,11 +1606,9 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                       </h5>
                       <div className="max-h-40 overflow-y-auto">
                         <ul className="text-xs text-orange-700 dark:text-orange-400 space-y-1">
-                          {validationResult.warnings
-                            .slice(0, 10)
-                            .map((w, idx) => (
-                              <li key={idx}>• {w}</li>
-                            ))}
+                          {validationResult.warnings.slice(0, 10).map((w, idx) => (
+                            <li key={idx}>• {w}</li>
+                          ))}
                         </ul>
                       </div>
                     </div>
@@ -1680,9 +1616,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
 
                   {/* Import Mode Selection */}
                   {validationResult.success &&
-                    validationResult.warnings.some((w) =>
-                      w.includes("sudah ada")
-                    ) && (
+                    validationResult.warnings.some((w) => w.includes("sudah ada")) && (
                       <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                         <h5 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
                           Mode Import:
@@ -1720,8 +1654,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                                 Update Duplikat
                               </p>
                               <p className="text-xs text-gray-600 dark:text-gray-400">
-                                Data yang sudah ada akan di-update dengan data
-                                baru
+                                Data yang sudah ada akan di-update dengan data baru
                               </p>
                             </div>
                           </label>
@@ -1730,71 +1663,67 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                     )}
 
                   {/* Preview Data */}
-                  {validationResult.success &&
-                    validationResult.validData.length > 0 && (
-                      <div>
-                        <h5 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
-                          Preview Data ({validationResult.validData.length}{" "}
-                          rows):
-                        </h5>
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                          <div className="max-h-80 overflow-auto">
-                            <table className="w-full text-sm">
-                              <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
-                                <tr>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                    Guru
-                                  </th>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                    Kelas
-                                  </th>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                    Mapel
-                                  </th>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                    TA
-                                  </th>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                    Sem
-                                  </th>
+                  {validationResult.success && validationResult.validData.length > 0 && (
+                    <div>
+                      <h5 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                        Preview Data ({validationResult.validData.length} rows):
+                      </h5>
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div className="max-h-80 overflow-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                              <tr>
+                                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  Guru
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  Kelas
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  Mapel
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  TA
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  Sem
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                              {validationResult.validData.slice(0, 50).map((row, idx) => (
+                                <tr
+                                  key={idx}
+                                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                >
+                                  <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
+                                    {row.teacher_id}
+                                  </td>
+                                  <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
+                                    {row.class_id}
+                                  </td>
+                                  <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
+                                    {row.subject}
+                                  </td>
+                                  <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
+                                    {row.academic_year}
+                                  </td>
+                                  <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
+                                    {row.semester}
+                                  </td>
                                 </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {validationResult.validData
-                                  .slice(0, 50)
-                                  .map((row, idx) => (
-                                    <tr
-                                      key={idx}
-                                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                      <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
-                                        {row.teacher_id}
-                                      </td>
-                                      <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
-                                        {row.class_id}
-                                      </td>
-                                      <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
-                                        {row.subject}
-                                      </td>
-                                      <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
-                                        {row.academic_year}
-                                      </td>
-                                      <td className="px-3 py-2 text-xs text-gray-900 dark:text-gray-100">
-                                        {row.semester}
-                                      </td>
-                                    </tr>
-                                  ))}
-                              </tbody>
-                            </table>
-                            {validationResult.validData.length > 50 && (
-                              <div className="p-3 text-center text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700">
-                                ... dan {validationResult.validData.length - 50}{" "}
-                                data lainnya
-                              </div>
-                            )}
-                          </div>
+                              ))}
+                            </tbody>
+                          </table>
+                          {validationResult.validData.length > 50 && (
+                            <div className="p-3 text-center text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700">
+                              ... dan {validationResult.validData.length - 50} data lainnya
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1818,13 +1747,15 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                 <>
                   <button
                     onClick={handleCloseImportModal}
-                    className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
                     Batal
                   </button>
                   <button
                     onClick={handleValidateImport}
                     disabled={!importFile}
-                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50">
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
                     <CheckCircle size={18} />
                     Validasi Data
                   </button>
@@ -1839,13 +1770,15 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                       setImportFile(null);
                       setValidationResult(null);
                     }}
-                    className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
                     Kembali
                   </button>
                   {validationResult?.success && (
                     <button
                       onClick={handleConfirmImport}
-                      className="px-5 py-2.5 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg font-medium transition-all flex items-center gap-2">
+                      className="px-5 py-2.5 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg font-medium transition-all flex items-center gap-2"
+                    >
                       <Upload size={18} />
                       Import {validationResult.validData.length} Data
                     </button>
@@ -1868,12 +1801,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   <AlertCircle className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">
-                    Konfirmasi Penghapusan
-                  </h3>
-                  <p className="text-sm text-red-100 mt-1">
-                    Tindakan ini tidak dapat dibatalkan!
-                  </p>
+                  <h3 className="text-xl font-bold text-white">Konfirmasi Penghapusan</h3>
+                  <p className="text-sm text-red-100 mt-1">Tindakan ini tidak dapat dibatalkan!</p>
                 </div>
               </div>
             </div>
@@ -1887,36 +1816,27 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                 </p>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-red-700 dark:text-red-400">
-                      Guru:
-                    </span>
+                    <span className="text-red-700 dark:text-red-400">Guru:</span>
                     <span className="font-semibold text-red-900 dark:text-red-200">
                       {deleteTarget.users?.full_name || "-"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-red-700 dark:text-red-400">
-                      Kelas:
-                    </span>
+                    <span className="text-red-700 dark:text-red-400">Kelas:</span>
                     <span className="font-semibold text-red-900 dark:text-red-200">
                       {deleteTarget.classes?.name || deleteTarget.class_id}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-red-700 dark:text-red-400">
-                      Mata Pelajaran:
-                    </span>
+                    <span className="text-red-700 dark:text-red-400">Mata Pelajaran:</span>
                     <span className="font-semibold text-red-900 dark:text-red-200">
                       {deleteTarget.subject}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-red-700 dark:text-red-400">
-                      Tahun Ajaran:
-                    </span>
+                    <span className="text-red-700 dark:text-red-400">Tahun Ajaran:</span>
                     <span className="font-semibold text-red-900 dark:text-red-200">
-                      {deleteTarget.academic_years?.year || "-"} - Semester{" "}
-                      {deleteTarget.semester}
+                      {deleteTarget.academic_years?.year || "-"} - Semester {deleteTarget.semester}
                     </span>
                   </div>
                 </div>
@@ -1955,8 +1875,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                   autoFocus
                 />
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                  * Untuk keamanan, Anda harus mengetik kata "HAPUS" dengan
-                  huruf besar
+                  * Untuk keamanan, Anda harus mengetik kata "HAPUS" dengan huruf besar
                 </p>
               </div>
             </div>
@@ -1967,17 +1886,16 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
                 type="button"
                 onClick={handleCloseDeleteModal}
                 disabled={deletingAssignment}
-                className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-white dark:hover:bg-gray-600 transition-colors disabled:opacity-50">
+                className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-white dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+              >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                disabled={
-                  deletingAssignment ||
-                  deleteConfirmText.toUpperCase() !== "HAPUS"
-                }
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                disabled={deletingAssignment || deleteConfirmText.toUpperCase() !== "HAPUS"}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {deletingAssignment ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />

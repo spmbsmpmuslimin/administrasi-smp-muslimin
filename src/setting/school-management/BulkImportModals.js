@@ -1,13 +1,6 @@
 // BulkImportModals.js
 import React, { useState } from "react";
-import {
-  Upload,
-  Download,
-  FileText,
-  AlertCircle,
-  X,
-  CheckSquare,
-} from "lucide-react";
+import { Upload, Download, FileText, AlertCircle, X, CheckSquare } from "lucide-react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { supabase } from "../../supabaseClient"; // INI 100% BENAR
@@ -48,9 +41,7 @@ export const ImportModal = ({
                 <Upload size={24} />
                 <div>
                   <h2 className="text-xl font-bold">Import Siswa dari CSV</h2>
-                  <p className="text-purple-100 text-sm">
-                    Upload file CSV untuk import data siswa
-                  </p>
+                  <p className="text-purple-100 text-sm">Upload file CSV untuk import data siswa</p>
                 </div>
               </div>
             </div>
@@ -156,13 +147,7 @@ export const validateNISPattern = (nis, grade, activeYear) => {
 };
 
 // Validasi data import dari CSV
-export const validateImportData = async (
-  rows,
-  validClassIds,
-  activeYear,
-  scope,
-  supabase
-) => {
+export const validateImportData = async (rows, validClassIds, activeYear, scope, supabase) => {
   // ... (validation logic)
   return { validRows: [], invalidRows: [], errors: [] };
 };
@@ -190,21 +175,13 @@ export const exportStudentsToExcel = (students, scope, activeAcademicYear) => {
     let filteredData = [...students];
 
     if (scope.type === "class" && scope.value) {
-      filteredData = filteredData.filter(
-        (student) => student.class_id === scope.value
-      );
+      filteredData = filteredData.filter((student) => student.class_id === scope.value);
     } else if (scope.type === "grade7") {
-      filteredData = filteredData.filter(
-        (student) => student.classes?.grade === 7
-      );
+      filteredData = filteredData.filter((student) => student.classes?.grade === 7);
     } else if (scope.type === "grade8") {
-      filteredData = filteredData.filter(
-        (student) => student.classes?.grade === 8
-      );
+      filteredData = filteredData.filter((student) => student.classes?.grade === 8);
     } else if (scope.type === "grade9") {
-      filteredData = filteredData.filter(
-        (student) => student.classes?.grade === 9
-      );
+      filteredData = filteredData.filter((student) => student.classes?.grade === 9);
     }
 
     if (filteredData.length === 0) {
@@ -241,13 +218,7 @@ export const exportStudentsToExcel = (students, scope, activeAcademicYear) => {
     if (scope.type === "grade7") {
       colWidths.push({ wch: 30 }, { wch: 15 }, { wch: 10 });
     } else {
-      colWidths.push(
-        { wch: 15 },
-        { wch: 30 },
-        { wch: 15 },
-        { wch: 10 },
-        { wch: 15 }
-      );
+      colWidths.push({ wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 10 }, { wch: 15 });
     }
     worksheet["!cols"] = colWidths;
 

@@ -195,8 +195,7 @@ const checkGeolocationSupport = async () => {
   if (!navigator.geolocation) {
     return {
       supported: false,
-      message:
-        "Browser Anda tidak mendukung GPS. Gunakan Chrome atau Firefox terbaru.",
+      message: "Browser Anda tidak mendukung GPS. Gunakan Chrome atau Firefox terbaru.",
     };
   }
 
@@ -311,8 +310,7 @@ const validateLocation = async () => {
             errorCode = "GPS_UNAVAILABLE";
             break;
           case error.TIMEOUT:
-            errorMessage =
-              "Waktu habis saat mencari lokasi. Pastikan GPS aktif dan coba lagi";
+            errorMessage = "Waktu habis saat mencari lokasi. Pastikan GPS aktif dan coba lagi";
             errorCode = "GPS_TIMEOUT";
             break;
         }
@@ -373,37 +371,26 @@ const validateOperationalTime = () => {
   const minute = now.getMinutes();
 
   const currentMinutes = hour * 60 + minute;
-  const startMinutes =
-    OPERATIONAL_HOURS.startHour * 60 + OPERATIONAL_HOURS.startMinute;
-  const endMinutes =
-    OPERATIONAL_HOURS.endHour * 60 + OPERATIONAL_HOURS.endMinute;
+  const startMinutes = OPERATIONAL_HOURS.startHour * 60 + OPERATIONAL_HOURS.startMinute;
+  const endMinutes = OPERATIONAL_HOURS.endHour * 60 + OPERATIONAL_HOURS.endMinute;
 
-  const isWithinWindow =
-    currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  const isWithinWindow = currentMinutes >= startMinutes && currentMinutes <= endMinutes;
 
   if (!isWithinWindow) {
     return {
       allowed: false,
-      currentTime: `${String(hour).padStart(2, "0")}:${String(minute).padStart(
-        2,
-        "0"
-      )}`,
+      currentTime: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
       message: `Presensi hanya bisa dilakukan jam ${
         OPERATIONAL_HOURS.startHour
       }:${OPERATIONAL_HOURS.startMinute.toString().padStart(2, "0")} - ${
         OPERATIONAL_HOURS.endHour
-      }:${OPERATIONAL_HOURS.endMinute
-        .toString()
-        .padStart(2, "0")} (jam operational sekolah)`,
+      }:${OPERATIONAL_HOURS.endMinute.toString().padStart(2, "0")} (jam operational sekolah)`,
     };
   }
 
   return {
     allowed: true,
-    currentTime: `${String(hour).padStart(2, "0")}:${String(minute).padStart(
-      2,
-      "0"
-    )}`,
+    currentTime: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
     message: "Waktu presensi valid",
   };
 };
@@ -417,15 +404,7 @@ const validateOperationalTime = () => {
  */
 export const validateTeacherSchedule = async (userId) => {
   try {
-    const dayNames = [
-      "Minggu",
-      "Senin",
-      "Selasa",
-      "Rabu",
-      "Kamis",
-      "Jumat",
-      "Sabtu",
-    ];
+    const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const today = dayNames[new Date().getDay()];
 
     console.log("📅 Checking schedule for user:", userId, "Day:", today);
@@ -471,10 +450,9 @@ export const validateTeacherSchedule = async (userId) => {
         suspicious: true,
         reason: "LATE_CHECKIN",
         schedules: schedules,
-        message: `Kelas pertama Anda dimulai pukul ${firstClass.start_time.slice(
-          0,
-          5
-        )} (Kelas ${firstClass.class_id})`,
+        message: `Kelas pertama Anda dimulai pukul ${firstClass.start_time.slice(0, 5)} (Kelas ${
+          firstClass.class_id
+        })`,
       };
     }
 

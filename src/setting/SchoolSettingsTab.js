@@ -265,14 +265,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
         school_logo: base64String,
       }));
 
-      const sizeReduction = (
-        ((file.size - compressedBlob.size) / file.size) *
-        100
-      ).toFixed(1);
-      showToast(
-        `Logo berhasil diupload! (${sizeReduction}% lebih kecil)`,
-        "success"
-      );
+      const sizeReduction = (((file.size - compressedBlob.size) / file.size) * 100).toFixed(1);
+      showToast(`Logo berhasil diupload! (${sizeReduction}% lebih kecil)`, "success");
     } catch (error) {
       console.error("Error uploading logo:", error);
       showToast("Error uploading logo", "error");
@@ -315,18 +309,12 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (
-      tempSchoolSettings.school_email &&
-      !emailRegex.test(tempSchoolSettings.school_email)
-    ) {
+    if (tempSchoolSettings.school_email && !emailRegex.test(tempSchoolSettings.school_email)) {
       errors.push("Format email tidak valid");
     }
 
     const urlRegex = /^https?:\/\/.+\..+$/;
-    if (
-      tempSchoolSettings.school_website &&
-      !urlRegex.test(tempSchoolSettings.school_website)
-    ) {
+    if (tempSchoolSettings.school_website && !urlRegex.test(tempSchoolSettings.school_website)) {
       errors.push("Format website harus dimulai dengan http:// atau https://");
     }
 
@@ -348,14 +336,10 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     try {
       setLoading(true);
 
-      const updatePromises = Object.entries(tempSchoolSettings).map(
-        ([key, value]) =>
-          supabase
-            .from("school_settings")
-            .upsert(
-              { setting_key: key, setting_value: value },
-              { onConflict: "setting_key" }
-            )
+      const updatePromises = Object.entries(tempSchoolSettings).map(([key, value]) =>
+        supabase
+          .from("school_settings")
+          .upsert({ setting_key: key, setting_value: value }, { onConflict: "setting_key" })
       );
 
       const results = await Promise.all(updatePromises);
@@ -402,11 +386,10 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
               setEditingSchoolSettings(true);
               setTempSchoolSettings({ ...schoolSettings });
             }}
-            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-200 w-full sm:w-auto min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98]">
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-200 w-full sm:w-auto min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98]"
+          >
             <Edit3 size={18} className="sm:size-[16px]" />
-            <span className="text-sm sm:text-base font-medium">
-              Edit Pengaturan
-            </span>
+            <span className="text-sm sm:text-base font-medium">Edit Pengaturan</span>
           </button>
         )}
       </div>
@@ -450,11 +433,10 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                 <button
                   onClick={quickUpdateSemester}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-all duration-200 shadow-sm min-h-[44px] touch-manipulation active:scale-[0.98]">
+                  className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-all duration-200 shadow-sm min-h-[44px] touch-manipulation active:scale-[0.98]"
+                >
                   <Check size={16} />
-                  {loading
-                    ? "Updating..."
-                    : `Update ke "${getExpectedSemester()}" Sekarang`}
+                  {loading ? "Updating..." : `Update ke "${getExpectedSemester()}" Sekarang`}
                 </button>
                 <span className="text-xs text-yellow-700 dark:text-yellow-300 self-center text-center sm:text-left">
                   atau abaikan jika semester sudah benar
@@ -471,10 +453,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Building2
-                  size={20}
-                  className="text-blue-600 dark:text-blue-400"
-                />
+                <Building2 size={20} className="text-blue-600 dark:text-blue-400" />
               </div>
               Informasi Sekolah
             </h3>
@@ -594,10 +573,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Phone
-                  size={20}
-                  className="text-green-600 dark:text-green-400"
-                />
+                <Phone size={20} className="text-green-600 dark:text-green-400" />
               </div>
               Kontak Sekolah
             </h3>
@@ -683,10 +659,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Calendar
-                  size={20}
-                  className="text-purple-600 dark:text-purple-400"
-                />
+                <Calendar size={20} className="text-purple-600 dark:text-purple-400" />
               </div>
               Tahun Ajaran
             </h3>
@@ -735,13 +708,13 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                           semester: e.target.value,
                         }))
                       }
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white min-h-[44px] touch-manipulation transition-all duration-200">
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white min-h-[44px] touch-manipulation transition-all duration-200"
+                    >
                       <option value="Ganjil">Ganjil</option>
                       <option value="Genap">Genap</option>
                     </select>
                     <p className="text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800">
-                      📅 <strong>Info:</strong> Jul-Des = Ganjil | Jan-Jun =
-                      Genap
+                      📅 <strong>Info:</strong> Jul-Des = Ganjil | Jan-Jun = Genap
                     </p>
                   </div>
                 ) : (
@@ -762,10 +735,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
               <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Image
-                  size={20}
-                  className="text-orange-600 dark:text-orange-400"
-                />
+                <Image size={20} className="text-orange-600 dark:text-orange-400" />
               </div>
               Logo Sekolah
             </h3>
@@ -777,7 +747,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                       <div
                         className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 h-2.5 rounded-full transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}></div>
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
                     </div>
                     <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
                       Mengupload... {uploadProgress}%
@@ -793,22 +764,19 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                   </div>
                 )}
 
-                {(tempSchoolSettings.school_logo ||
-                  schoolSettings.school_logo) && (
+                {(tempSchoolSettings.school_logo || schoolSettings.school_logo) && (
                   <div className="relative p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-gray-700/50 dark:to-gray-700/30 rounded-xl border border-blue-200 dark:border-gray-600">
                     <button
                       onClick={removeLogo}
                       className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-full p-2 transition-all duration-200 shadow-md touch-manipulation active:scale-90"
                       title="Hapus logo"
-                      aria-label="Hapus logo">
+                      aria-label="Hapus logo"
+                    >
                       <X size={16} />
                     </button>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                       <img
-                        src={
-                          tempSchoolSettings.school_logo ||
-                          schoolSettings.school_logo
-                        }
+                        src={tempSchoolSettings.school_logo || schoolSettings.school_logo}
                         alt="Preview Logo"
                         className="h-20 w-20 object-contain border-2 border-white dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-2 mx-auto sm:mx-0 shadow-sm"
                       />
@@ -832,7 +800,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                     loading
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/30 dark:hover:bg-gray-700/70 border-gray-300 dark:border-gray-600"
-                  } bg-blue-50/20 dark:bg-gray-700/30 touch-manipulation active:scale-[0.98]`}>
+                  } bg-blue-50/20 dark:bg-gray-700/30 touch-manipulation active:scale-[0.98]`}
+                >
                   <Upload className="w-10 h-10 text-gray-400 dark:text-gray-500 mb-3" />
                   <span className="text-sm font-bold text-gray-700 dark:text-gray-300 text-center mb-1">
                     Klik untuk upload logo
@@ -854,9 +823,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
                 <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/10 dark:to-blue-900/5 rounded-xl border border-blue-200 dark:border-blue-800">
                   <p className="text-xs text-blue-700 dark:text-blue-300">
-                    <strong>Tips:</strong> Gunakan gambar dengan latar belakang
-                    transparan (PNG) untuk hasil terbaik. Logo akan otomatis
-                    dikompresi hingga 70% lebih kecil.
+                    <strong>Tips:</strong> Gunakan gambar dengan latar belakang transparan (PNG)
+                    untuk hasil terbaik. Logo akan otomatis dikompresi hingga 70% lebih kecil.
                   </p>
                 </div>
               </div>
@@ -898,7 +866,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
             <button
               onClick={updateSchoolSettings}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-2 sm:order-1">
+              className="flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-2 sm:order-1"
+            >
               <Save size={18} className="sm:size-[16px]" />
               <span className="text-sm sm:text-base font-medium">
                 {loading ? "Menyimpan..." : "Simpan Perubahan"}
@@ -908,7 +877,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
             <button
               onClick={resetForm}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-4 sm:py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-3 sm:order-2">
+              className="flex items-center justify-center gap-2 px-4 py-4 sm:py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-3 sm:order-2"
+            >
               <RotateCcw size={18} className="sm:size-[16px]" />
               <span className="text-sm sm:text-base font-medium">Reset</span>
             </button>
@@ -920,7 +890,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                 setImageValidation({ isValid: true, message: "" });
               }}
               disabled={loading}
-              className="px-6 py-4 sm:py-3 bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 dark:from-gray-600 dark:to-gray-700 dark:hover:from-gray-700 dark:hover:to-gray-800 text-gray-700 dark:text-gray-300 rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-1 sm:order-3 font-medium">
+              className="px-6 py-4 sm:py-3 bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 dark:from-gray-600 dark:to-gray-700 dark:hover:from-gray-700 dark:hover:to-gray-800 text-gray-700 dark:text-gray-300 rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-1 sm:order-3 font-medium"
+            >
               Batal
             </button>
           </div>

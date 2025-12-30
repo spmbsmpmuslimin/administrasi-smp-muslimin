@@ -57,10 +57,7 @@ const AdminReportModal = ({
         console.log("📊 First Row Data:", firstRow);
         console.log("🔍 Mencari kolom Alpa/Absen:");
         Object.keys(firstRow).forEach((key) => {
-          if (
-            key.toLowerCase().includes("alp") ||
-            key.toLowerCase().includes("abs")
-          ) {
+          if (key.toLowerCase().includes("alp") || key.toLowerCase().includes("abs")) {
             console.log(`📍 Key "${key}":`, firstRow[key]);
           }
         });
@@ -85,27 +82,11 @@ const AdminReportModal = ({
     "Kode Guru": ["teacher_id", "kode_guru", "teacher_code", "code"],
     Username: ["username"],
     "Nama Lengkap": ["full_name", "nama_lengkap", "name"],
-    "Nama Siswa": [
-      "full_name",
-      "student_name",
-      "nama_siswa",
-      "nama_lengkap",
-      "name",
-    ],
+    "Nama Siswa": ["full_name", "student_name", "nama_siswa", "nama_lengkap", "name"],
     Role: ["role", "user_role"],
-    "Wali Kelas": [
-      "homeroom_class_id",
-      "wali_kelas",
-      "class_teacher",
-      "class_id",
-    ],
+    "Wali Kelas": ["homeroom_class_id", "wali_kelas", "class_teacher", "class_id"],
     Status: ["is_active", "status", "active"],
-    "Tanggal Bergabung": [
-      "created_at",
-      "tanggal_bergabung",
-      "join_date",
-      "registration_date",
-    ],
+    "Tanggal Bergabung": ["created_at", "tanggal_bergabung", "join_date", "registration_date"],
 
     // ===== STUDENTS DATA =====
     No: ["no", "index", "number"],
@@ -117,13 +98,7 @@ const AdminReportModal = ({
     "Tahun Ajaran": ["academic_year", "tahun_ajaran", "year"],
     Semester: ["semester"],
     "Mata Pelajaran": ["subject", "mata_pelajaran", "pelajaran"],
-    "Nilai Akhir": [
-      "nilai_akhir",
-      "final_score",
-      "score",
-      "nilai",
-      "grade_score",
-    ],
+    "Nilai Akhir": ["nilai_akhir", "final_score", "score", "nilai", "grade_score"],
     Guru: ["teacher_name", "guru", "full_name", "nama_guru", "username"],
 
     // ===== SYSTEM =====
@@ -142,12 +117,7 @@ const AdminReportModal = ({
       const alpaKeys = ["alpa", "alpha", "absen", "absent", "missing", "bolos"];
 
       for (const key of alpaKeys) {
-        if (
-          row[key] !== undefined &&
-          row[key] !== null &&
-          row[key] !== "" &&
-          row[key] !== "-"
-        ) {
+        if (row[key] !== undefined && row[key] !== null && row[key] !== "" && row[key] !== "-") {
           console.log(`✅ Found Alpa data in key "${key}":`, row[key]);
           return row[key];
         }
@@ -174,21 +144,11 @@ const AdminReportModal = ({
     }
 
     // Handle other attendance columns
-    if (
-      header === "Hadir" ||
-      header === "Sakit" ||
-      header === "Izin" ||
-      header === "Total"
-    ) {
+    if (header === "Hadir" || header === "Sakit" || header === "Izin" || header === "Total") {
       const possibleKeys = headerKeyMap[header];
       if (possibleKeys) {
         for (const key of possibleKeys) {
-          if (
-            row[key] !== undefined &&
-            row[key] !== null &&
-            row[key] !== "" &&
-            row[key] !== "-"
-          ) {
+          if (row[key] !== undefined && row[key] !== null && row[key] !== "" && row[key] !== "-") {
             return row[key];
           }
         }
@@ -197,11 +157,7 @@ const AdminReportModal = ({
 
     // SPECIAL HANDLING FOR OTHER FIELDS
     if (header === "Kode Guru") {
-      if (
-        row.teacher_id !== undefined &&
-        row.teacher_id !== null &&
-        row.teacher_id !== ""
-      ) {
+      if (row.teacher_id !== undefined && row.teacher_id !== null && row.teacher_id !== "") {
         return row.teacher_id;
       }
       return "-";
@@ -222,22 +178,14 @@ const AdminReportModal = ({
       if (row.is_active !== undefined && row.is_active !== null) {
         return row.is_active ? "Aktif" : "Tidak Aktif";
       }
-      if (
-        row.status !== undefined &&
-        row.status !== null &&
-        row.status !== ""
-      ) {
+      if (row.status !== undefined && row.status !== null && row.status !== "") {
         return row.status;
       }
       return "-";
     }
 
     if (header === "Tanggal Bergabung") {
-      if (
-        row.created_at !== undefined &&
-        row.created_at !== null &&
-        row.created_at !== ""
-      ) {
+      if (row.created_at !== undefined && row.created_at !== null && row.created_at !== "") {
         return row.created_at;
       }
       return "-";
@@ -247,12 +195,7 @@ const AdminReportModal = ({
     const possibleKeys = headerKeyMap[header];
     if (possibleKeys) {
       for (const key of possibleKeys) {
-        if (
-          row[key] !== undefined &&
-          row[key] !== null &&
-          row[key] !== "" &&
-          row[key] !== "-"
-        ) {
+        if (row[key] !== undefined && row[key] !== null && row[key] !== "" && row[key] !== "-") {
           return row[key];
         }
       }
@@ -329,36 +272,31 @@ const AdminReportModal = ({
       bg: "bg-blue-50 dark:bg-blue-900/20",
       border: "border-blue-200 dark:border-blue-800",
       text: "text-blue-600 dark:text-blue-400",
-      button:
-        "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600",
+      button: "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600",
     },
     indigo: {
       bg: "bg-indigo-50 dark:bg-indigo-900/20",
       border: "border-indigo-200 dark:border-indigo-800",
       text: "text-indigo-600 dark:text-indigo-400",
-      button:
-        "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600",
+      button: "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600",
     },
     purple: {
       bg: "bg-purple-50 dark:bg-purple-900/20",
       border: "border-purple-200 dark:border-purple-800",
       text: "text-purple-600 dark:text-purple-400",
-      button:
-        "bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600",
+      button: "bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600",
     },
     green: {
       bg: "bg-green-50 dark:bg-green-900/20",
       border: "border-green-200 dark:border-green-800",
       text: "text-green-600 dark:text-green-400",
-      button:
-        "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600",
+      button: "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600",
     },
     slate: {
       bg: "bg-slate-50 dark:bg-slate-900/20",
       border: "border-slate-200 dark:border-slate-800",
       text: "text-slate-600 dark:text-slate-400",
-      button:
-        "bg-slate-600 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600",
+      button: "bg-slate-600 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600",
     },
   };
 
@@ -391,9 +329,7 @@ const AdminReportModal = ({
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((row) =>
-        Object.values(row).some((value) =>
-          String(value).toLowerCase().includes(query)
-        )
+        Object.values(row).some((value) => String(value).toLowerCase().includes(query))
       );
     }
 
@@ -442,21 +378,14 @@ const AdminReportModal = ({
     }
 
     // Attendance numbers styling
-    if (
-      (header === "Hadir" || header === "Sakit" || header === "Izin") &&
-      cellValue !== "-"
-    ) {
+    if ((header === "Hadir" || header === "Sakit" || header === "Izin") && cellValue !== "-") {
       const bgColor =
         header === "Hadir"
           ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
           : header === "Sakit"
           ? "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
           : "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400";
-      return (
-        <span className={`font-medium ${bgColor} px-2 py-1 rounded`}>
-          {cellValue}
-        </span>
-      );
+      return <span className={`font-medium ${bgColor} px-2 py-1 rounded`}>{cellValue}</span>;
     }
 
     // Status colors
@@ -473,7 +402,8 @@ const AdminReportModal = ({
             isActive
               ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
               : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
-          }`}>
+          }`}
+        >
           {isActive ? "Aktif" : "Tidak Aktif"}
         </span>
       );
@@ -482,36 +412,27 @@ const AdminReportModal = ({
     // Role colors
     if (header === "Role") {
       const roleColors = {
-        admin:
-          "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300",
-        teacher:
-          "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
+        admin: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300",
+        teacher: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
         bk: "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300",
-        homeroom:
-          "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
+        homeroom: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
         siswa: "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300",
-        student:
-          "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300",
-        "guru bk":
-          "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300",
+        student: "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300",
+        "guru bk": "bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300",
         guru: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300",
       };
       const colorClass =
         roleColors[String(cellValue).toLowerCase()] ||
         "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
           {cellValue}
         </span>
       );
     }
 
     // Date formatting
-    if (
-      (header.includes("Tanggal") || header === "Tanggal Bergabung") &&
-      cellValue !== "-"
-    ) {
+    if ((header.includes("Tanggal") || header === "Tanggal Bergabung") && cellValue !== "-") {
       try {
         const date = new Date(cellValue);
         if (!isNaN(date.getTime())) {
@@ -523,17 +444,11 @@ const AdminReportModal = ({
     }
 
     // Percentage with color coding
-    if (
-      header === "Persentase" &&
-      typeof cellValue === "string" &&
-      cellValue.includes("%")
-    ) {
+    if (header === "Persentase" && typeof cellValue === "string" && cellValue.includes("%")) {
       const pct = parseFloat(cellValue);
       let colorClass = "text-gray-600 dark:text-gray-400";
-      if (pct >= 90)
-        colorClass = "text-green-600 dark:text-green-400 font-bold";
-      else if (pct >= 75)
-        colorClass = "text-yellow-600 dark:text-yellow-400 font-bold";
+      if (pct >= 90) colorClass = "text-green-600 dark:text-green-400 font-bold";
+      else if (pct >= 75) colorClass = "text-yellow-600 dark:text-yellow-400 font-bold";
       else colorClass = "text-red-600 dark:text-red-400 font-bold";
 
       return <span className={colorClass}>{cellValue}</span>;
@@ -549,12 +464,7 @@ const AdminReportModal = ({
     }
 
     // Handle empty values
-    if (
-      cellValue === "-" ||
-      cellValue === "" ||
-      cellValue === null ||
-      cellValue === undefined
-    ) {
+    if (cellValue === "-" || cellValue === "" || cellValue === null || cellValue === undefined) {
       // Untuk Alpa, tampilkan 0 jika kosong
       if (header === "Alpa") {
         return <span className="text-slate-400 dark:text-slate-500">0</span>;
@@ -575,10 +485,9 @@ const AdminReportModal = ({
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3 sm:gap-4">
               <div
-                className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 ${colors.bg} border-2 ${colors.border} rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0`}>
-                <ReportIcon
-                  className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 ${colors.text}`}
-                />
+                className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 ${colors.bg} border-2 ${colors.border} rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0`}
+              >
+                <ReportIcon className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 ${colors.text}`} />
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-200 leading-tight">
@@ -587,15 +496,15 @@ const AdminReportModal = ({
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                   Preview Data Administrator • {filteredData.length} dari{" "}
                   {total || dataToUse.length} record
-                  {dataToUse.length === 0 &&
-                    " ⚠️ Data kosong - cek struktur data"}
+                  {dataToUse.length === 0 && " ⚠️ Data kosong - cek struktur data"}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
               className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1 -m-1"
-              aria-label="Tutup modal">
+              aria-label="Tutup modal"
+            >
               <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
@@ -608,7 +517,8 @@ const AdminReportModal = ({
               {summary.map((stat, idx) => (
                 <div
                   key={idx}
-                  className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-2 sm:p-3 min-w-[110px] sm:min-w-[120px] flex-shrink-0">
+                  className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-2 sm:p-3 min-w-[110px] sm:min-w-[120px] flex-shrink-0"
+                >
                   <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 truncate">
                     {stat.label}
                   </p>
@@ -641,13 +551,12 @@ const AdminReportModal = ({
                 value={filterClass}
                 onChange={(e) => setFilterClass(e.target.value)}
                 className="px-3 py-2.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 text-sm sm:text-base min-w-[140px] sm:min-w-[150px]"
-                aria-label="Filter kelas">
+                aria-label="Filter kelas"
+              >
                 <option value="">Semua Kelas</option>
                 {uniqueClasses.map((kelas) => (
                   <option key={kelas} value={kelas}>
-                    {String(kelas).startsWith("Kelas")
-                      ? kelas
-                      : `Kelas ${kelas}`}
+                    {String(kelas).startsWith("Kelas") ? kelas : `Kelas ${kelas}`}
                   </option>
                 ))}
               </select>
@@ -659,7 +568,8 @@ const AdminReportModal = ({
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="px-3 py-2.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 text-sm sm:text-base min-w-[140px] sm:min-w-[150px]"
-                aria-label="Filter status">
+                aria-label="Filter status"
+              >
                 <option value="">Semua Status</option>
                 {uniqueStatuses.map((status) => (
                   <option key={status} value={status}>
@@ -676,7 +586,8 @@ const AdminReportModal = ({
                   setFilterClass("");
                   setFilterStatus("");
                 }}
-                className="px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300 font-medium whitespace-nowrap">
+                className="px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300 font-medium whitespace-nowrap"
+              >
                 Reset Filter
               </button>
             )}
@@ -716,7 +627,8 @@ const AdminReportModal = ({
                     {headers.map((header, idx) => (
                       <th
                         key={idx}
-                        className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider border-r border-slate-200 dark:border-slate-700 whitespace-nowrap min-w-[80px]">
+                        className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider border-r border-slate-200 dark:border-slate-700 whitespace-nowrap min-w-[80px]"
+                      >
                         {/* ✅ FIX: Replace "Absen" with "Alpa" in header display */}
                         {header === "Absen" ? "Alpa" : header}
                       </th>
@@ -727,14 +639,16 @@ const AdminReportModal = ({
                   {currentData.map((row, rowIdx) => (
                     <tr
                       key={rowIdx}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
                       <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700 font-medium whitespace-nowrap">
                         {startIndex + rowIdx + 1}
                       </td>
                       {headers.map((header, colIdx) => (
                         <td
                           key={colIdx}
-                          className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                          className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700 whitespace-nowrap"
+                        >
                           {renderCell(header, row[header], row)}
                         </td>
                       ))}
@@ -747,9 +661,7 @@ const AdminReportModal = ({
             <div className="flex flex-col items-center justify-center py-8 sm:py-12">
               <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 dark:text-slate-600 mb-3 sm:mb-4" />
               <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg font-medium text-center">
-                {dataToUse.length === 0
-                  ? "Data laporan kosong"
-                  : "Tidak ada data yang sesuai"}
+                {dataToUse.length === 0 ? "Data laporan kosong" : "Tidak ada data yang sesuai"}
               </p>
               <p className="text-slate-400 dark:text-slate-500 text-xs sm:text-sm mt-1 sm:mt-2 text-center">
                 {dataToUse.length === 0
@@ -765,7 +677,8 @@ const AdminReportModal = ({
                       dataToUse,
                     })
                   }
-                  className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-xs sm:text-sm">
+                  className="mt-3 sm:mt-4 px-3 sm:px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-xs sm:text-sm"
+                >
                   📋 Debug Data di Console
                 </button>
               )}
@@ -778,8 +691,7 @@ const AdminReportModal = ({
           <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
               <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                Menampilkan {startIndex + 1} -{" "}
-                {Math.min(endIndex, filteredData.length)} dari{" "}
+                Menampilkan {startIndex + 1} - {Math.min(endIndex, filteredData.length)} dari{" "}
                 {filteredData.length} data
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
@@ -787,7 +699,8 @@ const AdminReportModal = ({
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                   className="px-2 sm:px-3 py-1.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors min-h-[36px] sm:min-h-[40px]"
-                  aria-label="Halaman sebelumnya">
+                  aria-label="Halaman sebelumnya"
+                >
                   <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
 
@@ -813,7 +726,8 @@ const AdminReportModal = ({
                             ? `${colors.button} text-white`
                             : "border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                         }`}
-                        aria-label={`Halaman ${pageNum}`}>
+                        aria-label={`Halaman ${pageNum}`}
+                      >
                         {pageNum}
                       </button>
                     );
@@ -821,12 +735,11 @@ const AdminReportModal = ({
                 </div>
 
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className="px-2 sm:px-3 py-1.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors min-h-[36px] sm:min-h-[40px]"
-                  aria-label="Halaman berikutnya">
+                  aria-label="Halaman berikutnya"
+                >
                   <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
               </div>
@@ -838,8 +751,8 @@ const AdminReportModal = ({
         <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 dark:bg-slate-800/50 border-t-2 border-slate-200 dark:border-slate-700">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              <span className="font-medium">💡 Tips:</span> Gunakan filter untuk
-              analisis data yang lebih spesifik
+              <span className="font-medium">💡 Tips:</span> Gunakan filter untuk analisis data yang
+              lebih spesifik
               {dataToUse.length === 0 && (
                 <span className="text-red-500 dark:text-red-400 ml-1 sm:ml-2">
                   ⚠️ Data kosong - periksa console untuk debug
@@ -849,13 +762,15 @@ const AdminReportModal = ({
             <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
               <button
                 onClick={onClose}
-                className="flex-1 sm:flex-none px-3 sm:px-4 md:px-5 py-2.5 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm sm:text-base min-h-[44px]">
+                className="flex-1 sm:flex-none px-3 sm:px-4 md:px-5 py-2.5 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm sm:text-base min-h-[44px]"
+              >
                 Tutup
               </button>
               <button
                 onClick={() => onDownload(reportType, "xlsx")}
                 disabled={loading || dataToUse.length === 0}
-                className={`flex-1 sm:flex-none ${colors.button} text-white px-3 sm:px-4 md:px-5 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base min-h-[44px]`}>
+                className={`flex-1 sm:flex-none ${colors.button} text-white px-3 sm:px-4 md:px-5 py-2.5 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base min-h-[44px]`}
+              >
                 <FileSpreadsheet className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                 {loading ? "Exporting..." : "Export ke Excel"}
               </button>

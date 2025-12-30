@@ -65,15 +65,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
   // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
   const getDayName = (dayIndex) => {
-    const days = [
-      "Minggu",
-      "Senin",
-      "Selasa",
-      "Rabu",
-      "Kamis",
-      "Jumat",
-      "Sabtu",
-    ];
+    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     return days[dayIndex];
   };
 
@@ -174,9 +166,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
       // Merge data
       const enrichedSchedules = schedules.map((schedule) => {
-        const assignment = assignments?.find(
-          (a) => a.class_id === schedule.class_id
-        );
+        const assignment = assignments?.find((a) => a.class_id === schedule.class_id);
         return {
           ...schedule,
           subject: assignment?.subject || "N/A",
@@ -221,10 +211,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
       }
 
       if (classError || !classInfo) {
-        throw new Error(
-          "Kelas homeroom tidak ditemukan: " +
-            (classError?.message || "No data")
-        );
+        throw new Error("Kelas homeroom tidak ditemukan: " + (classError?.message || "No data"));
       }
 
       // Get current academic year
@@ -241,42 +228,38 @@ const HomeroomTeacherDashboard = ({ user }) => {
       const activeSemester = activeAcademicInfo?.semester || 1;
       console.log("📅 Active Semester (from service):", activeSemester);
 
-      const [
-        studentsResult,
-        attendanceResult,
-        announcementsResult,
-        teachingResult,
-      ] = await Promise.all([
-        // Students in homeroom class
-        supabase
-          .from("students")
-          .select("id, full_name, gender")
-          .eq("class_id", homeroomClassId)
-          .eq("academic_year", classInfo.academic_year)
-          .eq("is_active", true),
+      const [studentsResult, attendanceResult, announcementsResult, teachingResult] =
+        await Promise.all([
+          // Students in homeroom class
+          supabase
+            .from("students")
+            .select("id, full_name, gender")
+            .eq("class_id", homeroomClassId)
+            .eq("academic_year", classInfo.academic_year)
+            .eq("is_active", true),
 
-        // Today's attendance for this class
-        supabase
-          .from("attendances")
-          .select("id, student_id, date, status, type, class_id")
-          .eq("date", today)
-          .eq("class_id", homeroomClassId),
+          // Today's attendance for this class
+          supabase
+            .from("attendances")
+            .select("id, student_id, date, status, type, class_id")
+            .eq("date", today)
+            .eq("class_id", homeroomClassId),
 
-        // Recent Announcements
-        supabase
-          .from("announcement")
-          .select("id, title, content, created_at")
-          .order("created_at", { ascending: false })
-          .limit(5),
+          // Recent Announcements
+          supabase
+            .from("announcement")
+            .select("id, title, content, created_at")
+            .order("created_at", { ascending: false })
+            .limit(5),
 
-        // Teacher assignments - DYNAMIC SEMESTER
-        supabase
-          .from("teacher_assignments")
-          .select("id, class_id, subject, academic_year, semester")
-          .eq("teacher_id", teacherId)
-          .eq("academic_year", currentYear)
-          .eq("semester", activeSemester), // ✅ GUNAKAN DARI SERVICE!
-      ]);
+          // Teacher assignments - DYNAMIC SEMESTER
+          supabase
+            .from("teacher_assignments")
+            .select("id, class_id, subject, academic_year, semester")
+            .eq("teacher_id", teacherId)
+            .eq("academic_year", currentYear)
+            .eq("semester", activeSemester), // ✅ GUNAKAN DARI SERVICE!
+        ]);
 
       if (process.env.NODE_ENV === "development") {
         console.log("📊 Query results:", {
@@ -351,9 +334,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         console.log("📋 Izin:", izinCount.size);
         console.log("✖ Alpa:", alpaCount.size);
         console.log("📊 Total attendance records:", attendances.length);
-        console.log("📊 Unique status values:", [
-          ...new Set(attendances.map((a) => a.status)),
-        ]);
+        console.log("📊 Unique status values:", [...new Set(attendances.map((a) => a.status))]);
       }
 
       // ✅ Process teaching data - DIPERBAIKI
@@ -497,8 +478,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
   const primarySubject = useMemo(() => {
     if (Object.keys(subjectBreakdown).length === 0) return "";
     return Object.keys(subjectBreakdown).reduce(
-      (a, b) =>
-        subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b,
+      (a, b) => (subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b),
       teachingData.subjects[0] || ""
     );
   }, [subjectBreakdown, teachingData.subjects]);
@@ -520,7 +500,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
       <div className="grid grid-cols-3 gap-2 mb-3">
         <button
           onClick={handleTeacherAttendance}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]"
+        >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg sm:text-xl">👨‍🏫</span>
           </div>
@@ -531,7 +512,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleStudentAttendance}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-300 dark:hover:border-green-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-300 dark:hover:border-green-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]"
+        >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg sm:text-xl">👨‍🎓</span>
           </div>
@@ -542,7 +524,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleGrades}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]"
+        >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg sm:text-xl">📊</span>
           </div>
@@ -556,7 +539,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
       <div className="grid grid-cols-3 gap-2 mb-3">
         <button
           onClick={handleDataGuru}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]"
+        >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg sm:text-xl">👥</span>
           </div>
@@ -567,7 +551,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleDataKelas}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-900/30 hover:border-cyan-300 dark:hover:border-cyan-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-900/30 hover:border-cyan-300 dark:hover:border-cyan-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]"
+        >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg sm:text-xl">🏫</span>
           </div>
@@ -578,7 +563,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
         <button
           onClick={handleDataSiswa}
-          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:border-pink-300 dark:hover:border-pink-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]">
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:border-pink-300 dark:hover:border-pink-600 transition-all duration-200 shadow-sm active:scale-95 touch-manipulation min-h-[90px]"
+        >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg sm:text-xl">👤</span>
           </div>
@@ -610,15 +596,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-amber-200 dark:border-amber-700 p-6 sm:p-8 text-center">
-            <div className="text-amber-500 dark:text-amber-400 text-4xl sm:text-5xl mb-4">
-              ⚠️
-            </div>
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
-              Info
-            </h3>
-            <p className="text-amber-600 dark:text-amber-400 mb-4 text-sm sm:text-base">
-              {error}
-            </p>
+            <div className="text-amber-500 dark:text-amber-400 text-4xl sm:text-5xl mb-4">⚠️</div>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">Info</h3>
+            <p className="text-amber-600 dark:text-amber-400 mb-4 text-sm sm:text-base">{error}</p>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">
               Username: {username}
               <br />
@@ -635,7 +615,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
             </p>
             <button
               onClick={handleRetry}
-              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            >
               Coba Lagi
             </button>
           </div>
@@ -694,9 +675,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 </p>
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-base sm:text-lg md:text-2xl">
-                  👨‍🎓
-                </span>
+                <span className="text-white text-base sm:text-lg md:text-2xl">👨‍🎓</span>
               </div>
             </div>
           </div>
@@ -712,18 +691,14 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   <p className="text-base sm:text-lg md:text-xl font-bold text-blue-700 dark:text-blue-400">
                     {stats.maleStudents}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    L
-                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">L</p>
                 </div>
                 <div className="text-slate-400 dark:text-slate-600">/</div>
                 <div className="text-center">
                   <p className="text-base sm:text-lg md:text-xl font-bold text-pink-600 dark:text-pink-400">
                     {stats.femaleStudents}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    P
-                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">P</p>
                 </div>
               </div>
             </div>
@@ -741,9 +716,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 </p>
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-base sm:text-lg md:text-2xl">
-                  ✅
-                </span>
+                <span className="text-white text-base sm:text-lg md:text-2xl">✅</span>
               </div>
             </div>
           </div>
@@ -762,25 +735,19 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   <div className="space-y-0.5 text-xs text-slate-600 dark:text-slate-400">
                     {stats.sakitToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-orange-500 dark:text-orange-400">
-                          🏥
-                        </span>
+                        <span className="text-orange-500 dark:text-orange-400">🏥</span>
                         <span>Sakit: {stats.sakitToday}</span>
                       </div>
                     )}
                     {stats.izinToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-blue-500 dark:text-blue-400">
-                          📋
-                        </span>
+                        <span className="text-blue-500 dark:text-blue-400">📋</span>
                         <span>Izin: {stats.izinToday}</span>
                       </div>
                     )}
                     {stats.alpaToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-red-500 dark:text-red-400">
-                          ✖
-                        </span>
+                        <span className="text-red-500 dark:text-red-400">✖</span>
                         <span>Alpa: {stats.alpaToday}</span>
                       </div>
                     )}
@@ -788,9 +755,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 )}
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-base sm:text-lg md:text-2xl">
-                  📊
-                </span>
+                <span className="text-white text-base sm:text-lg md:text-2xl">📊</span>
               </div>
             </div>
           </div>
@@ -806,7 +771,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {/* Presensi Guru */}
               <button
                 onClick={handleTeacherAttendance}
-                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
+                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                     <span className="text-white text-lg sm:text-xl">👨‍🏫</span>
@@ -825,7 +791,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {/* Presensi Siswa */}
               <button
                 onClick={handleStudentAttendance}
-                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
+                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                     <span className="text-white text-lg sm:text-xl">📋</span>
@@ -845,7 +812,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {primarySubject && (
                 <button
                   onClick={handleGrades}
-                  className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
+                  className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation"
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                       <span className="text-white text-lg sm:text-xl">📝</span>
@@ -865,7 +833,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {/* Data Siswa */}
               <button
                 onClick={handleStudents}
-                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation">
+                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-orange-50 dark:hover:bg-orange-900/30 hover:border-orange-300 dark:hover:border-orange-600 transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1 active:scale-95 touch-manipulation"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                     <span className="text-white text-lg sm:text-xl">👥</span>
@@ -909,7 +878,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   return (
                     <div
                       key={subject}
-                      className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4">
+                      className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4"
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
                           {subject}
@@ -931,7 +901,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
                                     className === stats.className
                                       ? "bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
                                       : "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                                  }`}>
+                                  }`}
+                                >
                                   {className}
                                   {className === stats.className && (
                                     <span className="ml-1 text-green-600 dark:text-green-400">
@@ -962,20 +933,18 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 {todaySchedule.map((schedule) => (
                   <div
                     key={schedule.id}
-                    className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1">
                         <div className="text-center min-w-[70px]">
                           <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                            {schedule.sessionCount}JP (
-                            {schedule.sessionNumbers.join("-")})
+                            {schedule.sessionCount}JP ({schedule.sessionNumbers.join("-")})
                           </div>
                           <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
                             {formatTime(schedule.start_time)}
                           </div>
-                          <div className="text-xs text-slate-400 dark:text-slate-600">
-                            -
-                          </div>
+                          <div className="text-xs text-slate-400 dark:text-slate-600">-</div>
                           <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
                             {formatTime(schedule.end_time)}
                           </div>
@@ -988,16 +957,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
                           <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                             <span className="flex items-center gap-1">
                               <span>🏫</span>
-                              <span>
-                                Kelas{" "}
-                                {schedule.classes?.id || schedule.class_id}
-                              </span>
+                              <span>Kelas {schedule.classes?.id || schedule.class_id}</span>
                             </span>
                             {schedule.room_number && (
                               <>
-                                <span className="text-slate-400 dark:text-slate-600">
-                                  •
-                                </span>
+                                <span className="text-slate-400 dark:text-slate-600">•</span>
                                 <span className="flex items-center gap-1">
                                   <span>📍</span>
                                   <span>R.{schedule.room_number}</span>
@@ -1045,7 +1009,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
               {announcements.map((announcement) => (
                 <div
                   key={announcement.id}
-                  className="border-l-4 border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 pl-4 py-3 rounded-r-lg">
+                  className="border-l-4 border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 pl-4 py-3 rounded-r-lg"
+                >
                   <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
                     {announcement.title}
                   </h4>
@@ -1053,14 +1018,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
                     {announcement.content}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
-                    {new Date(announcement.created_at).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      }
-                    )}
+                    {new Date(announcement.created_at).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
                   </p>
                 </div>
               ))}

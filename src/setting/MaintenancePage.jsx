@@ -55,7 +55,8 @@ const MaintenancePage = ({ message }) => {
         darkMode
           ? "bg-gradient-to-br from-gray-900 via-gray-800 to-slate-900"
           : "bg-gradient-to-br from-red-50 via-orange-50 to-red-100"
-      }`}>
+      }`}
+    >
       {/* Dark Mode Toggle */}
       <button
         onClick={toggleDarkMode}
@@ -64,7 +65,8 @@ const MaintenancePage = ({ message }) => {
             ? "bg-gray-700 text-yellow-400 hover:bg-gray-600 focus:ring-yellow-400"
             : "bg-white text-red-600 hover:bg-gray-50 focus:ring-red-500"
         }`}
-        aria-label="Toggle Dark Mode">
+        aria-label="Toggle Dark Mode"
+      >
         {darkMode ? (
           <Sun className="w-5 h-5 sm:w-6 sm:h-6" />
         ) : (
@@ -78,7 +80,8 @@ const MaintenancePage = ({ message }) => {
           darkMode
             ? "bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700"
             : "bg-white border border-red-100"
-        }`}>
+        }`}
+      >
         {/* Icon Header - FIXED: Always horizontal */}
         <div className="flex flex-row items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <Settings
@@ -90,7 +93,8 @@ const MaintenancePage = ({ message }) => {
           <h1
             className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold whitespace-nowrap ${
               darkMode ? "text-red-500" : "text-red-600"
-            }`}>
+            }`}
+          >
             Whoops !!!
           </h1>
           <Settings
@@ -105,7 +109,8 @@ const MaintenancePage = ({ message }) => {
         <h2
           className={`text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6 ${
             darkMode ? "text-red-500" : "text-red-600"
-          }`}>
+          }`}
+        >
           Aplikasi Tidak Dapat Di Akses
         </h2>
 
@@ -113,22 +118,24 @@ const MaintenancePage = ({ message }) => {
         <div
           className={`w-16 sm:w-20 md:w-24 h-1 mx-auto mb-4 sm:mb-6 rounded-full ${
             darkMode ? "bg-red-500" : "bg-red-600"
-          }`}></div>
+          }`}
+        ></div>
 
         {/* Messages */}
         <p
           className={`text-sm sm:text-base md:text-lg mb-3 sm:mb-4 leading-relaxed px-2 ${
             darkMode ? "text-gray-300" : "text-gray-700"
-          }`}>
+          }`}
+        >
           Mohon maaf atas ketidaknyamanannya 🙏
         </p>
 
         <p
           className={`text-sm sm:text-base md:text-lg mb-6 sm:mb-8 md:mb-10 leading-relaxed px-2 ${
             darkMode ? "text-gray-400" : "text-gray-600"
-          }`}>
-          {message ||
-            "Silahkan Login Ulang Aplikasi Anda atau Klik Tombol Refresh"}
+          }`}
+        >
+          {message || "Silahkan Login Ulang Aplikasi Anda atau Klik Tombol Refresh"}
         </p>
 
         {/* Refresh Button */}
@@ -138,7 +145,8 @@ const MaintenancePage = ({ message }) => {
             darkMode
               ? "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 focus:ring-offset-gray-800"
               : "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 focus:ring-offset-white"
-          }`}>
+          }`}
+        >
           <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
           <span>Refresh</span>
         </button>

@@ -84,20 +84,12 @@ const customStyles = `
 const InfoRow = ({ label, value }) => (
   <div className="flex justify-between items-center">
     <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
-    <span className="text-sm font-semibold text-gray-900 dark:text-white">
-      {value}
-    </span>
+    <span className="text-sm font-semibold text-gray-900 dark:text-white">{value}</span>
   </div>
 );
 
 // 🎨 CUSTOM CONFIRMATION MODAL COMPONENT
-const ConfirmationModal = ({
-  isOpen,
-  onConfirm,
-  onCancel,
-  type = "save",
-  data = {},
-}) => {
+const ConfirmationModal = ({ isOpen, onConfirm, onCancel, type = "save", data = {} }) => {
   if (!isOpen) return null;
 
   const isSaveConfirm = type === "save";
@@ -112,19 +104,14 @@ const ConfirmationModal = ({
             isSaveConfirm
               ? "bg-gradient-to-r from-purple-600 to-indigo-600"
               : "bg-gradient-to-r from-orange-500 to-red-500"
-          }`}>
+          }`}
+        >
           <div className="flex items-center gap-3 text-white">
             <div className="bg-white/20 p-2 rounded-lg">
-              {isSaveConfirm ? (
-                <Save className="w-6 h-6" />
-              ) : (
-                <AlertCircle className="w-6 h-6" />
-              )}
+              {isSaveConfirm ? <Save className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
             </div>
             <h3 className="text-xl font-semibold">
-              {isSaveConfirm
-                ? "Konfirmasi Penyimpanan"
-                : "Peringatan Data Sudah Ada!"}
+              {isSaveConfirm ? "Konfirmasi Penyimpanan" : "Peringatan Data Sudah Ada!"}
             </h3>
           </div>
         </div>
@@ -142,9 +129,7 @@ const ConfirmationModal = ({
                 <InfoRow label="Kelas" value={data.classId} />
                 <InfoRow label="Mata Pelajaran" value={data.subject} />
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Total Siswa
-                  </span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Siswa</span>
                   <span className="text-base font-bold text-purple-600 dark:text-purple-400">
                     {data.totalStudents}
                   </span>
@@ -158,9 +143,8 @@ const ConfirmationModal = ({
             <>
               <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 p-4 mb-4">
                 <p className="text-sm text-orange-800 dark:text-orange-300 font-medium">
-                  Ditemukan{" "}
-                  <span className="font-bold">{data.existingCount}</span> data
-                  katrol yang sudah tersimpan
+                  Ditemukan <span className="font-bold">{data.existingCount}</span> data katrol yang
+                  sudah tersimpan
                 </p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 space-y-2.5 mb-4">
@@ -185,7 +169,8 @@ const ConfirmationModal = ({
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+            className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+          >
             Batal
           </button>
           <button
@@ -194,7 +179,8 @@ const ConfirmationModal = ({
               isSaveConfirm
                 ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
                 : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-            }`}>
+            }`}
+          >
             {isSaveConfirm ? "Ya, Simpan" : "Ya, Timpa Data"}
           </button>
         </div>
@@ -254,15 +240,48 @@ const GradesKatrol = ({
   // State untuk filter - ✅ DIUBAH: Gunakan nilai dari academicInfo
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
-  const [selectedSubjectState, setSelectedSubjectState] = useState(
-    selectedSubject || ""
-  );
+  const [selectedSubjectState, setSelectedSubjectState] = useState(selectedSubject || "");
   const [selectedClassId, setSelectedClassId] = useState(selectedClass || "");
 
   const [academicYears, setAcademicYears] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [classes, setClasses] = useState([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // ✅ FUNGSI HELPER UNTUK MENDAPATKAN ACADEMIC_YEAR_ID DENGAN FALLBACK
+  const getValidAcademicYearId = () => {
+    // Jika ada academicInfo dan yearId, gunakan itu
+    if (academicInfo?.yearId) {
+      return academicInfo.yearId;
+    }
+
+    // Jika tidak ada, coba dapatkan dari service langsung
+    // atau return null untuk menggunakan fallback query
+    return null;
+  };
+
+  // ✅ FUNGSI UNTUK MENDAPATKAN FALLBACK QUERY JIKA TIDAK ADA academic_year_id
+  const getFallbackQuery = (baseQuery, tableName) => {
+    const academicYearId = getValidAcademicYearId();
+
+    // Jika tidak ada academic_year_id, gunakan kombinasi academic_year + semester
+    if (!academicYearId && selectedAcademicYear && selectedSemester) {
+      console.log(
+        `⚠️ Using fallback query for ${tableName}: academic_year=${selectedAcademicYear}, semester=${selectedSemester}`
+      );
+      return baseQuery
+        .eq("academic_year", selectedAcademicYear)
+        .eq("semester", parseInt(selectedSemester)); // ✅ Parse ke integer!
+    }
+
+    // Jika ada academic_year_id, filter by academic_year_id saja
+    if (academicYearId) {
+      console.log(`✅ Using academic_year_id for ${tableName}: ${academicYearId}`);
+      return baseQuery.eq("academic_year_id", academicYearId);
+    }
+
+    return baseQuery;
+  };
 
   // ✅ LOAD ACADEMIC INFO SAAT COMPONENT MOUNT
   useEffect(() => {
@@ -380,9 +399,7 @@ const GradesKatrol = ({
           return;
         }
 
-        const uniqueYears = [
-          ...new Set(assignmentData.map((item) => item.academic_year)),
-        ];
+        const uniqueYears = [...new Set(assignmentData.map((item) => item.academic_year))];
         const sortedYears = uniqueYears.sort((a, b) => {
           const yearA = parseInt(a.split("/")[0]);
           const yearB = parseInt(b.split("/")[0]);
@@ -574,9 +591,10 @@ const GradesKatrol = ({
         .eq("mata_pelajaran_id", selectedSubjectState)
         .eq("kelas_id", selectedClassId);
 
-      if (academicInfo?.yearId) {
+      const academicYearId = getValidAcademicYearId();
+      if (academicYearId) {
         // Jika ada yearId, filter juga berdasarkan itu untuk akurasi
-        query = query.eq("academic_year_id", academicInfo.yearId);
+        query = query.eq("academic_year_id", academicYearId);
       }
 
       const { data, error } = await query.single();
@@ -598,10 +616,7 @@ const GradesKatrol = ({
       } else {
         // ✅ BELUM ADA - GUNAKAN DEFAULT
         setKkmSettings(null);
-        showMessage(
-          "ℹ️ Belum ada setting KKM. Silakan atur dan simpan.",
-          "info"
-        );
+        showMessage("ℹ️ Belum ada setting KKM. Silakan atur dan simpan.", "info");
       }
     } catch (error) {
       console.error("Error in loadKkmSettings:", error);
@@ -652,7 +667,10 @@ const GradesKatrol = ({
       if (academicInfo) {
         settingsData.academic_year = academicInfo.year;
         settingsData.semester = academicInfo.semester;
-        settingsData.academic_year_id = academicInfo.yearId;
+        const academicYearId = getValidAcademicYearId();
+        if (academicYearId) {
+          settingsData.academic_year_id = academicYearId;
+        }
       }
 
       let result;
@@ -689,21 +707,27 @@ const GradesKatrol = ({
       // Handle duplicate constraint dengan upsert
       if (error.code === "23505") {
         try {
+          const upsertData = {
+            mata_pelajaran_id: selectedSubjectState,
+            kelas_id: selectedClassId,
+            kkm: kkm,
+            nilai_maksimal: nilaiMaksimal,
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id || teacherId,
+          };
+
+          if (academicInfo) {
+            upsertData.academic_year = academicInfo.year;
+            upsertData.semester = academicInfo.semester;
+            const academicYearId = getValidAcademicYearId();
+            if (academicYearId) {
+              upsertData.academic_year_id = academicYearId;
+            }
+          }
+
           const { data, error: upsertError } = await supabase
             .from("grades_katrol_settings")
-            .upsert({
-              mata_pelajaran_id: selectedSubjectState,
-              kelas_id: selectedClassId,
-              kkm: kkm,
-              nilai_maksimal: nilaiMaksimal,
-              updated_at: new Date().toISOString(),
-              updated_by: user?.id || teacherId,
-              ...(academicInfo && {
-                academic_year: academicInfo.year,
-                semester: academicInfo.semester,
-                academic_year_id: academicInfo.yearId,
-              }),
-            })
+            .upsert(upsertData)
             .select()
             .single();
 
@@ -713,10 +737,7 @@ const GradesKatrol = ({
           showMessage("✅ Pengaturan KKM berhasil diperbarui!", "success");
         } catch (upsertError) {
           console.error("Upsert error:", upsertError);
-          showMessage(
-            "Gagal menyimpan setting KKM: " + upsertError.message,
-            "error"
-          );
+          showMessage("Gagal menyimpan setting KKM: " + upsertError.message, "error");
         }
       } else {
         showMessage("Gagal menyimpan setting KKM: " + error.message, "error");
@@ -764,29 +785,31 @@ const GradesKatrol = ({
   // ✅ FETCH DATA NILAI (dengan Utils.js) - REVISI 2: FIX MAPPING KOLOM
   const fetchDataNilai = async () => {
     if (!selectedClassId || !selectedSubjectState || !selectedAcademicYear) {
-      showMessage(
-        "Pilih kelas, mata pelajaran, dan tahun ajaran terlebih dahulu",
-        "error"
-      );
+      showMessage("Pilih kelas, mata pelajaran, dan tahun ajaran terlebih dahulu", "error");
       return;
     }
 
     setLoading(true);
     try {
-      // ✅ TIDAK PERLU CARI academic_year_id LAGI, SUDAH ADA DI academicInfo
-      const yearId = academicInfo?.yearId || null;
-
       // 1️⃣ CEK DULU: Ada data di grades_katrol?
-      // ✅ GUNAKAN applyAcademicFilters
+      // ✅ FIX 1: Query grades_katrol dengan fallback jika academic_year_id tidak tersedia
+      const academicYearId = getValidAcademicYearId();
+
       let katrolQuery = supabase
         .from("grades_katrol")
         .select(`*`)
         .eq("class_id", selectedClassId)
         .ilike("subject", selectedSubjectState)
-        .eq("academic_year", selectedAcademicYear);
+        .eq("semester", parseInt(selectedSemester)); // ✅ TAMBAH INI!
 
-      if (selectedSemester) {
-        katrolQuery = katrolQuery.eq("semester", selectedSemester);
+      // Gunakan academic_year_id jika tersedia, jika tidak gunakan fallback
+      if (academicYearId) {
+        katrolQuery = katrolQuery.eq("academic_year_id", academicYearId);
+        console.log("✅ Using academic_year_id for katrol query:", academicYearId);
+      } else {
+        // Fallback ke academic_year + semester
+        katrolQuery = getFallbackQuery(katrolQuery, "grades_katrol");
+        console.log("⚠️ Using fallback query for grades_katrol");
       }
 
       const { data: katrolData, error: katrolError } = await katrolQuery;
@@ -795,9 +818,7 @@ const GradesKatrol = ({
 
       // 2️⃣ KALAU ADA DATA KATROL, LOAD ITU!
       if (katrolData && katrolData.length > 0) {
-        console.log(
-          `✅ Ditemukan ${katrolData.length} data KATROL (sudah diproses)`
-        );
+        console.log(`✅ Ditemukan ${katrolData.length} data KATROL (sudah diproses)`);
 
         // ✅ REVISI 2: Ambil data siswa untuk mapping nama & NIS secara terpisah
         const { data: studentsData } = await supabase
@@ -808,9 +829,7 @@ const GradesKatrol = ({
             katrolData.map((k) => k.student_id)
           );
 
-        const studentMap = Object.fromEntries(
-          studentsData?.map((s) => [s.id, s]) || []
-        );
+        const studentMap = Object.fromEntries(studentsData?.map((s) => [s.id, s]) || []);
 
         // ✅ REVISI 2: Format data dari database dengan kolom yang BENAR
         const formattedKatrol = katrolData.map((item) => ({
@@ -837,9 +856,7 @@ const GradesKatrol = ({
         }));
 
         // ✅ SORT BY NAMA
-        formattedKatrol.sort((a, b) =>
-          a.nama_siswa.localeCompare(b.nama_siswa)
-        );
+        formattedKatrol.sort((a, b) => a.nama_siswa.localeCompare(b.nama_siswa));
 
         // ✅ SET KE HASIL KATROL
         setHasilKatrol(formattedKatrol);
@@ -856,12 +873,11 @@ const GradesKatrol = ({
       // 3️⃣ KALAU BELUM ADA DATA KATROL, LOAD GRADES untuk preview
       console.log(`ℹ️ Tidak ada data katrol, memuat nilai ASLI...`);
 
-      // ✅ GUNAKAN applyAcademicFilters untuk query students
+      // ✅ FIX 2: Query students - hapus filter academic_year karena kolom itu tidak ada di tabel students
       let studentsQuery = supabase
         .from("students")
         .select("id, full_name, nis")
         .eq("class_id", selectedClassId)
-        .eq("academic_year", selectedAcademicYear)
         .eq("is_active", true)
         .order("full_name");
 
@@ -874,50 +890,45 @@ const GradesKatrol = ({
         return;
       }
 
-      // ✅ GUNAKAN applyAcademicFilters untuk query grades
       let gradesQuery = supabase
         .from("grades")
         .select("*")
         .eq("class_id", selectedClassId)
         .ilike("subject", selectedSubjectState)
-        .eq("academic_year", selectedAcademicYear)
-        .eq("semester", selectedSemester)
+        .eq("semester", parseInt(selectedSemester)) // ✅ TAMBAH INI!
         .in("assignment_type", ["NH1", "NH2", "NH3", "PSTS", "PSAS"]);
+
+      // Gunakan academic_year_id jika tersedia, jika tidak gunakan fallback
+      if (academicYearId) {
+        gradesQuery = gradesQuery.eq("academic_year_id", academicYearId);
+        console.log("✅ Using academic_year_id for grades query:", academicYearId);
+      } else {
+        // Fallback ke academic_year + semester
+        gradesQuery = getFallbackQuery(gradesQuery, "grades");
+        console.log("⚠️ Using fallback query for grades");
+      }
 
       const { data: gradesData, error: gradesError } = await gradesQuery;
 
       if (gradesError) throw gradesError;
 
       const previewData = studentsData.map((student) => {
-        const studentGrades =
-          gradesData?.filter((g) => g.student_id === student.id) || [];
+        const studentGrades = gradesData?.filter((g) => g.student_id === student.id) || [];
 
         const nh1 =
-          parseFloat(
-            studentGrades.find((g) => g.assignment_type === "NH1")?.score
-          ) || null;
+          parseFloat(studentGrades.find((g) => g.assignment_type === "NH1")?.score) || null;
         const nh2 =
-          parseFloat(
-            studentGrades.find((g) => g.assignment_type === "NH2")?.score
-          ) || null;
+          parseFloat(studentGrades.find((g) => g.assignment_type === "NH2")?.score) || null;
         const nh3 =
-          parseFloat(
-            studentGrades.find((g) => g.assignment_type === "NH3")?.score
-          ) || null;
+          parseFloat(studentGrades.find((g) => g.assignment_type === "NH3")?.score) || null;
         const psts =
-          parseFloat(
-            studentGrades.find((g) => g.assignment_type === "PSTS")?.score
-          ) || null;
+          parseFloat(studentGrades.find((g) => g.assignment_type === "PSTS")?.score) || null;
         const psas =
-          parseFloat(
-            studentGrades.find((g) => g.assignment_type === "PSAS")?.score
-          ) || null;
+          parseFloat(studentGrades.find((g) => g.assignment_type === "PSAS")?.score) || null;
 
         const rata_nh = nh1 && nh2 && nh3 ? (nh1 + nh2 + nh3) / 3 : null;
         const nilai_akhir =
-          rata_nh && psts && psas
-            ? rata_nh * 0.4 + psts * 0.3 + psas * 0.3
-            : null;
+          rata_nh && psts && psas ? rata_nh * 0.4 + psts * 0.3 + psas * 0.3 : null;
 
         return {
           student_id: student.id,
@@ -955,18 +966,12 @@ const GradesKatrol = ({
   const prosesKatrol = async () => {
     // ✅ VALIDASI SEDERHANA: Cek KKM sudah di-set
     if (!kkm || !nilaiMaksimal) {
-      showMessage(
-        "⚠️ Silakan atur KKM dan Nilai Maksimal terlebih dahulu!",
-        "error"
-      );
+      showMessage("⚠️ Silakan atur KKM dan Nilai Maksimal terlebih dahulu!", "error");
       return;
     }
 
     if (!selectedClassId || !selectedSubjectState || !selectedAcademicYear) {
-      showMessage(
-        "Pilih kelas, mata pelajaran, dan tahun ajaran terlebih dahulu",
-        "error"
-      );
+      showMessage("Pilih kelas, mata pelajaran, dan tahun ajaran terlebih dahulu", "error");
       return;
     }
 
@@ -977,12 +982,11 @@ const GradesKatrol = ({
 
     setProcessing(true);
     try {
-      // ✅ AMBIL DATA SISWA DENGAN SORTING
+      // ✅ FIX 4: Query students - hapus filter academic_year karena kolom itu tidak ada di tabel students
       let studentsQuery = supabase
         .from("students")
         .select("id, full_name, nis")
         .eq("class_id", selectedClassId)
-        .eq("academic_year", selectedAcademicYear)
         .eq("is_active", true)
         .order("full_name");
 
@@ -990,15 +994,24 @@ const GradesKatrol = ({
 
       if (studentsError) throw studentsError;
 
-      // Ambil data grades dengan applyAcademicFilters
+      // ✅ FIX 5: Query grades dengan fallback jika academic_year_id tidak tersedia
+      const academicYearId = getValidAcademicYearId();
       let gradesQuery = supabase
         .from("grades")
         .select("*")
         .eq("class_id", selectedClassId)
         .ilike("subject", selectedSubjectState)
-        .eq("academic_year", selectedAcademicYear)
-        .eq("semester", selectedSemester)
+        .eq("semester", parseInt(selectedSemester)) // ✅ TAMBAH INI!
         .in("assignment_type", ["NH1", "NH2", "NH3", "PSTS", "PSAS"]);
+
+      // Gunakan academic_year_id jika tersedia, jika tidak gunakan fallback
+      if (academicYearId) {
+        gradesQuery = gradesQuery.eq("academic_year_id", academicYearId);
+      } else {
+        // Fallback ke academic_year + semester
+        gradesQuery = getFallbackQuery(gradesQuery, "grades");
+        console.log("⚠️ Using fallback query for grades in prosesKatrol");
+      }
 
       const { data: gradesData, error: gradesError } = await gradesQuery;
 
@@ -1017,7 +1030,7 @@ const GradesKatrol = ({
         teacher_id: teacherId,
         subject: selectedSubjectState,
         academic_year: selectedAcademicYear,
-        academic_year_id: academicInfo?.yearId || null,
+        academic_year_id: academicYearId,
         semester: selectedSemester,
       };
 
@@ -1043,9 +1056,7 @@ const GradesKatrol = ({
       );
 
       // ✅ SORT HASIL BERDASARKAN NAMA SISWA
-      const sortedHasil = [...hasil].sort((a, b) =>
-        a.student_name.localeCompare(b.student_name)
-      );
+      const sortedHasil = [...hasil].sort((a, b) => a.student_name.localeCompare(b.student_name));
 
       // Format untuk display
       const formattedHasil = sortedHasil.map((item) => ({
@@ -1071,10 +1082,7 @@ const GradesKatrol = ({
 
       setHasilKatrol(formattedHasil);
       setShowPreview(false);
-      showMessage(
-        `✅ Berhasil memproses katrol untuk ${formattedHasil.length} siswa`,
-        "success"
-      );
+      showMessage(`✅ Berhasil memproses katrol untuk ${formattedHasil.length} siswa`, "success");
     } catch (error) {
       console.error("❌ Error processing katrol:", error);
       showMessage("Gagal memproses katrol: " + error.message, "error");
@@ -1091,8 +1099,7 @@ const GradesKatrol = ({
     }
 
     // ✅ GUNAKAN DATA DARI ACADEMIC INFO UNTUK DISPLAY
-    const semesterDisplay =
-      academicInfo?.semesterText || `Semester ${selectedSemester}`;
+    const semesterDisplay = academicInfo?.semesterText || `Semester ${selectedSemester}`;
     const yearDisplay = academicInfo?.year || selectedAcademicYear;
 
     // Simpan data untuk modal
@@ -1114,22 +1121,28 @@ const GradesKatrol = ({
     setMessage({ text: "", type: "" });
 
     try {
-      // Cek data lama
+      // ✅ FIX 7: Query check existing data dengan fallback jika academic_year_id tidak tersedia
+      const academicYearId = getValidAcademicYearId();
+
       let checkQuery = supabase
         .from("grades_katrol")
         .select("id")
         .eq("class_id", selectedClassId)
         .ilike("subject", selectedSubjectState)
-        .eq("academic_year", selectedAcademicYear);
+        .eq("semester", parseInt(selectedSemester)); // ✅ TAMBAH INI!
 
-      if (selectedSemester) {
-        checkQuery = checkQuery.eq("semester", selectedSemester);
+      // Gunakan academic_year_id jika tersedia, jika tidak gunakan fallback
+      if (academicYearId) {
+        checkQuery = checkQuery.eq("academic_year_id", academicYearId);
+      } else {
+        // Fallback ke academic_year + semester
+        checkQuery = getFallbackQuery(checkQuery, "grades_katrol");
+        console.log("⚠️ Using fallback query for check");
       }
 
       const { data: existingData, error: checkError } = await checkQuery;
 
-      if (checkError)
-        throw new Error(`Gagal mengecek data: ${checkError.message}`);
+      if (checkError) throw new Error(`Gagal mengecek data: ${checkError.message}`);
 
       setSaving(false);
 
@@ -1162,22 +1175,28 @@ const GradesKatrol = ({
     setSaving(true);
 
     try {
-      // Hapus data lama jika ada
+      // ✅ FIX 6: Query delete grades_katrol dengan fallback jika academic_year_id tidak tersedia
+      const academicYearId = getValidAcademicYearId();
+
       let deleteQuery = supabase
         .from("grades_katrol")
         .delete()
         .eq("class_id", selectedClassId)
         .ilike("subject", selectedSubjectState)
-        .eq("academic_year", selectedAcademicYear);
+        .eq("semester", parseInt(selectedSemester)); // ✅ TAMBAH INI!
 
-      if (selectedSemester) {
-        deleteQuery = deleteQuery.eq("semester", selectedSemester);
+      // Gunakan academic_year_id jika tersedia, jika tidak gunakan fallback
+      if (academicYearId) {
+        deleteQuery = deleteQuery.eq("academic_year_id", academicYearId);
+      } else {
+        // Fallback ke academic_year + semester
+        deleteQuery = getFallbackQuery(deleteQuery, "grades_katrol");
+        console.log("⚠️ Using fallback query for delete");
       }
 
       const { error: deleteError } = await deleteQuery;
 
-      if (deleteError)
-        throw new Error(`Gagal menghapus data lama: ${deleteError.message}`);
+      if (deleteError) throw new Error(`Gagal menghapus data lama: ${deleteError.message}`);
 
       // Format data untuk database
       const recordsToSave = hasilKatrol.map((item) => {
@@ -1195,7 +1214,7 @@ const GradesKatrol = ({
           teacher_id: teacherId,
           subject: selectedSubjectState,
           academic_year: selectedAcademicYear,
-          academic_year_id: academicInfo?.yearId || null,
+          academic_year_id: academicYearId,
           semester: selectedSemester,
           // ✅ FIX: hasilKatrol sudah dalam format display (nh1, nh1_k)
           // Tapi kita perlu pass ke formatDataForDatabase dengan format yang diharapkan
@@ -1226,9 +1245,7 @@ const GradesKatrol = ({
       });
 
       // Insert data baru
-      const { error } = await supabase
-        .from("grades_katrol")
-        .insert(recordsToSave);
+      const { error } = await supabase.from("grades_katrol").insert(recordsToSave);
 
       if (error) throw error;
 
@@ -1243,10 +1260,7 @@ const GradesKatrol = ({
       await fetchDataNilai();
     } catch (error) {
       console.error("❌ Error saving katrol:", error);
-      showMessage(
-        `Gagal menyimpan nilai katrol: ${error.message || "Unknown error"}`,
-        "error"
-      );
+      showMessage(`Gagal menyimpan nilai katrol: ${error.message || "Unknown error"}`, "error");
     } finally {
       setSaving(false);
     }
@@ -1268,15 +1282,13 @@ const GradesKatrol = ({
         class_name: selectedClassId,
         academic_year: selectedAcademicYear,
         semester: selectedSemester,
-        semester_display:
-          academicInfo?.semesterText || `Semester ${selectedSemester}`,
+        semester_display: academicInfo?.semesterText || `Semester ${selectedSemester}`,
         kkm: kkm,
         target_max: nilaiMaksimal,
         processed_by: user?.full_name || user?.username || "Unknown",
         processed_date: new Date().toLocaleDateString("id-ID"),
         academic_info:
-          academicInfo?.displayText ||
-          `${selectedAcademicYear} - Semester ${selectedSemester}`,
+          academicInfo?.displayText || `${selectedAcademicYear} - Semester ${selectedSemester}`,
       };
 
       exportToExcel(
@@ -1303,9 +1315,7 @@ const GradesKatrol = ({
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">
-            Memuat informasi tahun akademik...
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Memuat informasi tahun akademik...</p>
         </div>
       </div>
     );
@@ -1324,15 +1334,15 @@ const GradesKatrol = ({
                   Informasi Tahun Akademik Tidak Tersedia
                 </h3>
                 <p className="text-red-700 dark:text-red-300 mt-1">
-                  Tidak dapat memuat informasi tahun akademik. Silakan hubungi
-                  administrator.
+                  Tidak dapat memuat informasi tahun akademik. Silakan hubungi administrator.
                 </p>
               </div>
             </div>
             {onClose && (
               <button
                 onClick={onClose}
-                className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
                 Tutup
               </button>
             )}
@@ -1406,15 +1416,11 @@ const GradesKatrol = ({
           <div className="flex items-center gap-3">
             <Zap className="w-6 h-6 sm:w-8 sm:h-8" />
             <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
-                Katrol Nilai SMP
-              </h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Proses Katrol Nilai</h1>
               {/* ✅ TAMPILKAN INFO ACADEMIC DI HEADER */}
               <p className="text-sm text-white/80 mt-1">
                 {academicInfo ? (
-                  <span>
-                    Linear Scaling Method untuk {academicInfo.displayText}
-                  </span>
+                  <span>Linear Scaling Method untuk {academicInfo.displayText}</span>
                 ) : (
                   "Linear Scaling Method untuk menaikkan nilai siswa"
                 )}
@@ -1424,7 +1430,8 @@ const GradesKatrol = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/20 transition-colors">
+              className="p-2 rounded-lg hover:bg-white/20 transition-colors"
+            >
               <X className="w-5 h-5" />
             </button>
           )}
@@ -1474,7 +1481,8 @@ const GradesKatrol = ({
                   zIndex: 9999,
                   pointerEvents: "auto",
                   cursor: isInitialLoad || loading ? "not-allowed" : "pointer",
-                }}>
+                }}
+              >
                 <option value="">Pilih Tahun Akademik</option>
                 {academicYears.map((year) => (
                   <option
@@ -1484,7 +1492,8 @@ const GradesKatrol = ({
                       year === academicInfo?.year
                         ? "font-bold bg-purple-50 dark:bg-purple-900/20"
                         : ""
-                    }>
+                    }
+                  >
                     {year} {year === academicInfo?.year ? "(Aktif)" : ""}
                   </option>
                 ))}
@@ -1518,11 +1527,9 @@ const GradesKatrol = ({
                   position: "relative",
                   zIndex: 9999,
                   pointerEvents: "auto",
-                  cursor:
-                    isInitialLoad || !selectedAcademicYear
-                      ? "not-allowed"
-                      : "pointer",
-                }}>
+                  cursor: isInitialLoad || !selectedAcademicYear ? "not-allowed" : "pointer",
+                }}
+              >
                 <option value="1">Semester 1 (Ganjil)</option>
                 <option value="2">Semester 2 (Genap)</option>
               </select>
@@ -1560,10 +1567,9 @@ const GradesKatrol = ({
                   zIndex: 9999,
                   pointerEvents: "auto",
                   cursor:
-                    isInitialLoad || loading || !selectedAcademicYear
-                      ? "not-allowed"
-                      : "pointer",
-                }}>
+                    isInitialLoad || loading || !selectedAcademicYear ? "not-allowed" : "pointer",
+                }}
+              >
                 <option value="">Pilih Mata Pelajaran</option>
                 {subjects.map((subject, index) => (
                   <option key={index} value={subject}>
@@ -1597,10 +1603,9 @@ const GradesKatrol = ({
                   zIndex: 9999,
                   pointerEvents: "auto",
                   cursor:
-                    isInitialLoad || !selectedSubjectState || loading
-                      ? "not-allowed"
-                      : "pointer",
-                }}>
+                    isInitialLoad || !selectedSubjectState || loading ? "not-allowed" : "pointer",
+                }}
+              >
                 <option value="">Pilih Kelas</option>
                 {classes.map((cls) => (
                   <option key={cls.id} value={cls.id}>
@@ -1633,7 +1638,8 @@ const GradesKatrol = ({
                   </div>
                   <button
                     onClick={resetKkmSettings}
-                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center gap-1">
+                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center gap-1"
+                  >
                     <RefreshCw className="w-3 h-3" />
                     Reset
                   </button>
@@ -1669,9 +1675,7 @@ const GradesKatrol = ({
                   min="0"
                   max="100"
                   value={nilaiMaksimal}
-                  onChange={(e) =>
-                    setNilaiMaksimal(parseInt(e.target.value) || 100)
-                  }
+                  onChange={(e) => setNilaiMaksimal(parseInt(e.target.value) || 100)}
                   className="w-full px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
                   placeholder="100"
                 />
@@ -1683,7 +1687,8 @@ const GradesKatrol = ({
                   <button
                     onClick={saveKkmSettings}
                     disabled={isSavingKkm}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors text-sm">
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors text-sm"
+                  >
                     {isSavingKkm ? (
                       <>
                         <Loader className="w-3 h-3 animate-spin" />
@@ -1692,9 +1697,7 @@ const GradesKatrol = ({
                     ) : (
                       <>
                         <Save className="w-3 h-3" />
-                        {kkmSettings
-                          ? "Update Pengaturan KKM"
-                          : "Simpan Pengaturan KKM"}
+                        {kkmSettings ? "Update Pengaturan KKM" : "Simpan Pengaturan KKM"}
                       </>
                     )}
                   </button>
@@ -1708,12 +1711,10 @@ const GradesKatrol = ({
             <button
               onClick={fetchDataNilai}
               disabled={
-                !selectedClassId ||
-                !selectedSubjectState ||
-                !selectedAcademicYear ||
-                loading
+                !selectedClassId || !selectedSubjectState || !selectedAcademicYear || loading
               }
-              className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors">
+              className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
+            >
               {loading ? (
                 <>
                   <Loader className="w-4 h-4 animate-spin" />
@@ -1731,7 +1732,8 @@ const GradesKatrol = ({
             <button
               onClick={prosesKatrol}
               disabled={!selectedClassId || !selectedSubjectState || processing}
-              className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors">
+              className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
+            >
               {processing ? (
                 <>
                   <Loader className="w-4 h-4 animate-spin" />
@@ -1740,9 +1742,7 @@ const GradesKatrol = ({
               ) : (
                 <>
                   <Calculator className="w-4 h-4" />
-                  {hasilKatrol.length > 0
-                    ? "Proses Katrol Ulang"
-                    : "Proses Katrol"}
+                  {hasilKatrol.length > 0 ? "Proses Katrol Ulang" : "Proses Katrol"}
                 </>
               )}
             </button>
@@ -1751,7 +1751,8 @@ const GradesKatrol = ({
               <button
                 onClick={saveKatrolToDatabase}
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors">
+                className="flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
+              >
                 {saving ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
@@ -1770,7 +1771,8 @@ const GradesKatrol = ({
               <button
                 onClick={handleExport}
                 disabled={exporting}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors">
+                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
+              >
                 <Download className="w-4 h-4" />
                 Export Excel
               </button>
@@ -1787,7 +1789,8 @@ const GradesKatrol = ({
               message.type === "success"
                 ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-400 border-green-200 dark:border-green-800"
                 : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800"
-            }`}>
+            }`}
+          >
             {message.type === "success" ? (
               <CheckCircle className="w-5 h-5" />
             ) : (
@@ -1851,9 +1854,7 @@ const GradesKatrol = ({
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {dataNilai.slice(0, 5).map((item, index) => (
-                    <tr
-                      key={item.student_id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <tr key={item.student_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200">
                         {index + 1}
                       </td>
@@ -1892,8 +1893,8 @@ const GradesKatrol = ({
 
             {dataNilai.length > 5 && (
               <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                Menampilkan 5 dari {dataNilai.length} siswa. Klik "Proses
-                Katrol" untuk melihat hasil lengkap.
+                Menampilkan 5 dari {dataNilai.length} siswa. Klik "Proses Katrol" untuk melihat
+                hasil lengkap.
               </div>
             )}
           </div>
@@ -1952,31 +1953,24 @@ const GradesKatrol = ({
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {hasilKatrol.filter((h) => h.nilai_akhir_k >= kkm).length}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Tuntas
-                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Tuntas</div>
                 </div>
 
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                     {hasilKatrol.filter((h) => h.nilai_akhir_k < kkm).length}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Tidak Tuntas
-                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Tidak Tuntas</div>
                 </div>
 
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {
-                      hasilKatrol.filter(
-                        (h) => h.nilai_akhir < kkm && h.nilai_akhir_k >= kkm
-                      ).length
+                      hasilKatrol.filter((h) => h.nilai_akhir < kkm && h.nilai_akhir_k >= kkm)
+                        .length
                     }
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Naik Status
-                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Naik Status</div>
                 </div>
               </div>
 
@@ -1984,9 +1978,7 @@ const GradesKatrol = ({
               <div className="text-center mt-4 text-sm text-gray-500 dark:text-gray-400">
                 * Nilai yang dikatrol ditandai dengan warna hijau
                 {academicInfo && (
-                  <span className="block mt-1">
-                    Data untuk {academicInfo.displayText}
-                  </span>
+                  <span className="block mt-1">Data untuk {academicInfo.displayText}</span>
                 )}
               </div>
             </div>

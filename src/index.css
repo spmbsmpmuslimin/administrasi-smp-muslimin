@@ -100,8 +100,8 @@
 
   /* ========== 🎨 SMOOTH TRANSITIONS ========== */
   * {
-    transition: background-color var(--transition-base),
-      color var(--transition-base), border-color var(--transition-base);
+    transition: background-color var(--transition-base), color var(--transition-base),
+      border-color var(--transition-base);
   }
 
   /* Faster transitions for interactive elements */
@@ -110,9 +110,8 @@
   input,
   textarea,
   select {
-    transition: background-color var(--transition-fast),
-      color var(--transition-fast), border-color var(--transition-fast),
-      transform var(--transition-fast);
+    transition: background-color var(--transition-fast), color var(--transition-fast),
+      border-color var(--transition-fast), transform var(--transition-fast);
   }
 }
 

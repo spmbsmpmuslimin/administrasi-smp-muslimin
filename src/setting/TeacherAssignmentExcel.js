@@ -1,9 +1,6 @@
 import * as XLSX from "xlsx";
 import { supabase } from "../supabaseClient";
-import {
-  getActiveAcademicInfo,
-  applyAcademicFilters,
-} from "../services/academicYearService";
+import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academicYearService";
 
 /**
  * 📥 DOWNLOAD TEMPLATE KOSONG
@@ -31,15 +28,8 @@ export const downloadTemplate = async (showToast) => {
         .not("teacher_id", "is", null)
         .eq("is_active", true)
         .order("teacher_id"),
-      supabase
-        .from("classes")
-        .select("id, grade")
-        .eq("is_active", true)
-        .order("grade"),
-      supabase
-        .from("academic_years")
-        .select("year, is_active")
-        .order("year", { ascending: false }),
+      supabase.from("classes").select("id, grade").eq("is_active", true).order("grade"),
+      supabase.from("academic_years").select("year, is_active").order("year", { ascending: false }),
       supabase.from("teacher_assignments").select("subject").order("subject"),
     ]);
 
@@ -54,20 +44,8 @@ export const downloadTemplate = async (showToast) => {
     // ===== SHEET 1: TEMPLATE PENUGASAN =====
     const templateData = [
       ["teacher_id", "class_id", "subject", "academic_year", "semester"],
-      [
-        "G-01",
-        "7A",
-        "MATEMATIKA",
-        activeAcademicInfo.year,
-        activeAcademicInfo.semester,
-      ],
-      [
-        "G-02",
-        "7B",
-        "BAHASA INDONESIA",
-        activeAcademicInfo.year,
-        activeAcademicInfo.semester,
-      ],
+      ["G-01", "7A", "MATEMATIKA", activeAcademicInfo.year, activeAcademicInfo.semester],
+      ["G-02", "7B", "BAHASA INDONESIA", activeAcademicInfo.year, activeAcademicInfo.semester],
       ["CONTOH", "CONTOH", "CONTOH - HAPUS BARIS INI", "CONTOH", "CONTOH"],
     ];
     const ws1 = XLSX.utils.aoa_to_sheet(templateData);
@@ -86,11 +64,7 @@ export const downloadTemplate = async (showToast) => {
     // ===== SHEET 2: DAFTAR GURU =====
     const teachersData = [
       ["teacher_id", "full_name", "role"],
-      ...(teachersRes.data || []).map((t) => [
-        t.teacher_id,
-        t.full_name,
-        t.role,
-      ]),
+      ...(teachersRes.data || []).map((t) => [t.teacher_id, t.full_name, t.role]),
     ];
     const ws2 = XLSX.utils.aoa_to_sheet(teachersData);
     ws2["!cols"] = [{ wch: 12 }, { wch: 30 }, { wch: 15 }];
@@ -108,10 +82,7 @@ export const downloadTemplate = async (showToast) => {
     // ===== SHEET 4: TAHUN AJARAN =====
     const yearsData = [
       ["academic_year", "is_active"],
-      ...(yearsRes.data || []).map((y) => [
-        y.year,
-        y.is_active ? "Aktif" : "Tidak Aktif",
-      ]),
+      ...(yearsRes.data || []).map((y) => [y.year, y.is_active ? "Aktif" : "Tidak Aktif"]),
     ];
     const ws4 = XLSX.utils.aoa_to_sheet(yearsData);
     ws4["!cols"] = [{ wch: 15 }, { wch: 12 }];
@@ -128,28 +99,14 @@ export const downloadTemplate = async (showToast) => {
       ["PANDUAN PENGISIAN TEMPLATE PENUGASAN GURU"],
       [""],
       ["KOLOM WAJIB DIISI:"],
-      [
-        "1. teacher_id",
-        "Kode guru (contoh: G-01, G-02) - Lihat di sheet DAFTAR GURU",
-      ],
-      [
-        "2. class_id",
-        "ID kelas (contoh: 7A, 8B) - Lihat di sheet DAFTAR KELAS",
-      ],
-      [
-        "3. subject",
-        "Mata pelajaran (HURUF KAPITAL) - Lihat di sheet MATA PELAJARAN",
-      ],
+      ["1. teacher_id", "Kode guru (contoh: G-01, G-02) - Lihat di sheet DAFTAR GURU"],
+      ["2. class_id", "ID kelas (contoh: 7A, 8B) - Lihat di sheet DAFTAR KELAS"],
+      ["3. subject", "Mata pelajaran (HURUF KAPITAL) - Lihat di sheet MATA PELAJARAN"],
       [
         "4. academic_year",
         `Tahun ajaran (contoh: ${activeAcademicInfo.year}) - Lihat di sheet TAHUN AJARAN`,
       ],
-      [
-        "5. semester",
-        "1 atau 2 (Saat ini semester aktif: " +
-          activeAcademicInfo.semester +
-          ")",
-      ],
+      ["5. semester", "1 atau 2 (Saat ini semester aktif: " + activeAcademicInfo.semester + ")"],
       [""],
       ["TIPS:"],
       ["• Gunakan Copy-Paste dari sheet helper untuk menghindari typo"],
@@ -181,10 +138,7 @@ export const downloadTemplate = async (showToast) => {
     const filename = `Template_Penugasan_Guru_${timestamp}.xlsx`;
     XLSX.writeFile(wb, filename);
 
-    showToast?.(
-      "Template berhasil didownload! Cek folder Downloads.",
-      "success"
-    );
+    showToast?.("Template berhasil didownload! Cek folder Downloads.", "success");
     return true;
   } catch (error) {
     console.error("Error downloading template:", error);
@@ -280,10 +234,7 @@ export const exportAssignments = async (assignments, filters, showToast) => {
     const filename = `Export_Penugasan_Guru_${timestamp}.xlsx`;
     XLSX.writeFile(wb, filename);
 
-    showToast?.(
-      `Berhasil export ${assignments.length} data penugasan`,
-      "success"
-    );
+    showToast?.(`Berhasil export ${assignments.length} data penugasan`, "success");
     return true;
   } catch (error) {
     console.error("Error exporting data:", error);
@@ -306,9 +257,7 @@ export const validateImportData = async (jsonData, showToast) => {
     let activeAcademicInfo;
     try {
       activeAcademicInfo = await getActiveAcademicInfo();
-      warnings.push(
-        `Semester aktif saat ini: ${activeAcademicInfo.semesterText}`
-      );
+      warnings.push(`Semester aktif saat ini: ${activeAcademicInfo.semesterText}`);
     } catch (error) {
       console.error("Error fetching academic info for validation:", error);
       warnings.push("Informasi akademik aktif tidak tersedia");
@@ -321,9 +270,7 @@ export const validateImportData = async (jsonData, showToast) => {
       supabase.from("academic_years").select("id, year"),
     ]);
 
-    const validTeacherIds = new Set(
-      teachersRes.data?.map((t) => t.teacher_id) || []
-    );
+    const validTeacherIds = new Set(teachersRes.data?.map((t) => t.teacher_id) || []);
     const validClassIds = new Set(classesRes.data?.map((c) => c.id) || []);
     const yearMap = {};
     yearsRes.data?.forEach((y) => {
@@ -337,20 +284,12 @@ export const validateImportData = async (jsonData, showToast) => {
       const rowErrors = [];
 
       // Skip empty rows
-      if (
-        !row.teacher_id &&
-        !row.class_id &&
-        !row.subject &&
-        !row.academic_year
-      ) {
+      if (!row.teacher_id && !row.class_id && !row.subject && !row.academic_year) {
         continue;
       }
 
       // Skip contoh rows
-      if (
-        row.teacher_id?.includes("CONTOH") ||
-        row.subject?.includes("CONTOH")
-      ) {
+      if (row.teacher_id?.includes("CONTOH") || row.subject?.includes("CONTOH")) {
         continue;
       }
 
@@ -358,18 +297,14 @@ export const validateImportData = async (jsonData, showToast) => {
       if (!row.teacher_id) {
         rowErrors.push("teacher_id kosong");
       } else if (!validTeacherIds.has(row.teacher_id)) {
-        rowErrors.push(
-          `teacher_id "${row.teacher_id}" tidak ditemukan di database`
-        );
+        rowErrors.push(`teacher_id "${row.teacher_id}" tidak ditemukan di database`);
       }
 
       // Validasi class_id
       if (!row.class_id) {
         rowErrors.push("class_id kosong");
       } else if (!validClassIds.has(row.class_id)) {
-        rowErrors.push(
-          `class_id "${row.class_id}" tidak ditemukan di database`
-        );
+        rowErrors.push(`class_id "${row.class_id}" tidak ditemukan di database`);
       }
 
       // Validasi subject
@@ -384,9 +319,7 @@ export const validateImportData = async (jsonData, showToast) => {
       if (!row.academic_year) {
         rowErrors.push("academic_year kosong");
       } else if (!yearMap[row.academic_year]) {
-        rowErrors.push(
-          `academic_year "${row.academic_year}" tidak ditemukan di database`
-        );
+        rowErrors.push(`academic_year "${row.academic_year}" tidak ditemukan di database`);
       }
 
       // Validasi semester
@@ -394,10 +327,7 @@ export const validateImportData = async (jsonData, showToast) => {
         rowErrors.push("semester kosong");
       } else if (!["1", "2", 1, 2].includes(row.semester)) {
         rowErrors.push("semester harus 1 atau 2");
-      } else if (
-        activeAcademicInfo &&
-        row.semester != activeAcademicInfo.semester
-      ) {
+      } else if (activeAcademicInfo && row.semester != activeAcademicInfo.semester) {
         warnings.push(
           `Baris ${rowNum}: Semester ${row.semester} berbeda dengan semester aktif (${activeAcademicInfo.semester})`
         );
@@ -471,16 +401,11 @@ export const validateImportData = async (jsonData, showToast) => {
         validData.forEach((item, idx) => {
           const key = `${item.teacher_id}-${item.class_id}-${item.subject}-${item.academic_year_id}-${item.semester}`;
           if (existingSet.has(key)) {
-            warnings.push(
-              `Baris ${idx + 2}: Data sudah ada di database (akan di-skip)`
-            );
+            warnings.push(`Baris ${idx + 2}: Data sudah ada di database (akan di-skip)`);
           }
         });
       } catch (error) {
-        console.error(
-          "Error checking duplicates with academic filters:",
-          error
-        );
+        console.error("Error checking duplicates with academic filters:", error);
         // Fallback: check without filters
         const { data: existingData } = await supabase
           .from("teacher_assignments")
@@ -496,9 +421,7 @@ export const validateImportData = async (jsonData, showToast) => {
         validData.forEach((item, idx) => {
           const key = `${item.teacher_id}-${item.class_id}-${item.subject}-${item.academic_year_id}-${item.semester}`;
           if (existingSet.has(key)) {
-            warnings.push(
-              `Baris ${idx + 2}: Data sudah ada di database (akan di-skip)`
-            );
+            warnings.push(`Baris ${idx + 2}: Data sudah ada di database (akan di-skip)`);
           }
         });
       }
@@ -534,11 +457,7 @@ export const validateImportData = async (jsonData, showToast) => {
  * 📤 IMPORT DATA KE DATABASE
  * Import validated data ke Supabase
  */
-export const importAssignments = async (
-  validData,
-  mode = "skip",
-  showToast
-) => {
+export const importAssignments = async (validData, mode = "skip", showToast) => {
   try {
     if (!validData || validData.length === 0) {
       showToast?.("Tidak ada data valid untuk diimport", "error");
@@ -549,9 +468,7 @@ export const importAssignments = async (
     let activeAcademicInfo;
     try {
       activeAcademicInfo = await getActiveAcademicInfo();
-      console.log(
-        `Importing data for active academic year: ${activeAcademicInfo.displayText}`
-      );
+      console.log(`Importing data for active academic year: ${activeAcademicInfo.displayText}`);
     } catch (error) {
       console.error("Error fetching academic info for import:", error);
     }
@@ -628,9 +545,7 @@ export const importAssignments = async (
     }
 
     const message = `Import selesai: ${inserted} baru, ${updated} diupdate, ${skipped} di-skip ${
-      activeAcademicInfo
-        ? `(Semester aktif: ${activeAcademicInfo.semesterText})`
-        : ""
+      activeAcademicInfo ? `(Semester aktif: ${activeAcademicInfo.semesterText})` : ""
     }`;
     showToast?.(message, "success");
 
@@ -721,13 +636,7 @@ export const generateErrorReport = async (validationResult) => {
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(errorData);
-    ws["!cols"] = [
-      { wch: 8 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 25 },
-      { wch: 50 },
-    ];
+    ws["!cols"] = [{ wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 25 }, { wch: 50 }];
     XLSX.utils.book_append_sheet(wb, ws, "Errors");
 
     // Add summary sheet

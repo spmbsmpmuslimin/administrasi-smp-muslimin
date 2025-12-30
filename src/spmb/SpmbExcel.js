@@ -42,11 +42,7 @@ const getCurrentAcademicYear = () => {
  * 📊 Export ALL Students (Single Sheet)
  * Export semua data siswa baru ke Excel dengan format lengkap
  */
-export const exportAllStudents = async (
-  allStudents,
-  totalStudents,
-  showToast
-) => {
+export const exportAllStudents = async (allStudents, totalStudents, showToast) => {
   if (!allStudents || allStudents.length === 0) {
     if (showToast) {
       showToast("Tidak ada data untuk di-export", "error");
@@ -79,9 +75,7 @@ export const exportAllStudents = async (
 
     // Get statistics
     const totalLaki = allStudents.filter((s) => s.jenis_kelamin === "L").length;
-    const totalPerempuan = allStudents.filter(
-      (s) => s.jenis_kelamin === "P"
-    ).length;
+    const totalPerempuan = allStudents.filter((s) => s.jenis_kelamin === "P").length;
     const academicYear = getCurrentAcademicYear();
     const currentDate = new Date().toLocaleDateString("id-ID", {
       year: "numeric",
@@ -214,10 +208,9 @@ export const exportAllStudents = async (
     });
 
     // Download file
-    const fileName = `Data_Siswa_SMP_Muslimin_Cililin_${academicYear.replace(
-      "/",
-      "-"
-    )}_${new Date().toISOString().split("T")[0]}.xlsx`;
+    const fileName = `Data_Siswa_SMP_Muslimin_Cililin_${academicYear.replace("/", "-")}_${
+      new Date().toISOString().split("T")[0]
+    }.xlsx`;
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -282,9 +275,7 @@ export const exportClassDivision = async (classDistribution, showToast) => {
 
       // Calculate statistics
       const totalLaki = students.filter((s) => s.jenis_kelamin === "L").length;
-      const totalPerempuan = students.filter(
-        (s) => s.jenis_kelamin === "P"
-      ).length;
+      const totalPerempuan = students.filter((s) => s.jenis_kelamin === "P").length;
 
       // Header Sekolah
       worksheet.mergeCells("A1:E1");
@@ -387,12 +378,7 @@ export const exportClassDivision = async (classDistribution, showToast) => {
           }
 
           // Center alignment untuk kolom tertentu
-          if (
-            colNumber === 1 ||
-            colNumber === 2 ||
-            colNumber === 4 ||
-            colNumber === 5
-          ) {
+          if (colNumber === 1 || colNumber === 2 || colNumber === 4 || colNumber === 5) {
             cell.alignment = { horizontal: "center", vertical: "middle" };
           }
         });

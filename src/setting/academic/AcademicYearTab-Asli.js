@@ -18,13 +18,7 @@ import {
 } from "lucide-react";
 import Simulator from "./Simulator";
 
-const AcademicYearTab = ({
-  user,
-  loading,
-  setLoading,
-  showToast,
-  schoolConfig,
-}) => {
+const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig }) => {
   const [schoolStats, setSchoolStats] = useState({
     academic_year: "2025/2026",
     total_students: 0,
@@ -64,14 +58,7 @@ const AcademicYearTab = ({
     schoolName: schoolConfig?.schoolName || "SMP Muslimin Cililin",
     schoolLevel: schoolConfig?.schoolLevel || "SMP",
     grades: ["7", "8", "9"],
-    classesPerGrade: schoolConfig?.classesPerGrade || [
-      "A",
-      "B",
-      "C",
-      "D",
-      "E",
-      "F",
-    ],
+    classesPerGrade: schoolConfig?.classesPerGrade || ["A", "B", "C", "D", "E", "F"],
   };
 
   const graduatingGrade = config.grades[config.grades.length - 1];
@@ -214,9 +201,7 @@ const AcademicYearTab = ({
 
     if (!confirm1) return;
 
-    const confirm2 = prompt(
-      `Ketik "PINDAH SEMESTER" (huruf besar) untuk konfirmasi:`
-    );
+    const confirm2 = prompt(`Ketik "PINDAH SEMESTER" (huruf besar) untuk konfirmasi:`);
 
     if (confirm2 !== "PINDAH SEMESTER") {
       showToast("Perpindahan semester dibatalkan", "info");
@@ -324,10 +309,7 @@ const AcademicYearTab = ({
 
         if (insertError) throw insertError;
 
-        showToast(
-          `✅ ${assignments.length} assignments berhasil di-copy!`,
-          "success"
-        );
+        showToast(`✅ ${assignments.length} assignments berhasil di-copy!`, "success");
       } else {
         showToast("ℹ️ Tidak ada assignments untuk di-copy", "info");
       }
@@ -353,13 +335,9 @@ const AcademicYearTab = ({
 
       // STEP 6: Success
       showToast(
-        `✅ Berhasil pindah ke Semester ${
-          targetSemester === 1 ? "Ganjil" : "Genap"
-        }!\n\n` +
+        `✅ Berhasil pindah ke Semester ${targetSemester === 1 ? "Ganjil" : "Genap"}!\n\n` +
           `📅 Tahun Ajaran: ${activeSemester.year}\n` +
-          `📚 Semester: ${
-            targetSemester === 1 ? "Ganjil" : "Genap"
-          } (${targetSemester})\n` +
+          `📚 Semester: ${targetSemester === 1 ? "Ganjil" : "Genap"} (${targetSemester})\n` +
           `📋 ${assignments?.length || 0} teacher assignments di-copy\n\n` +
           `Sistem sekarang menggunakan semester baru.`,
         "success"
@@ -547,9 +525,7 @@ const AcademicYearTab = ({
 
     if (!confirm1) return;
 
-    const confirm2 = prompt(
-      `Untuk konfirmasi, ketik "DELETE" (huruf besar semua):`
-    );
+    const confirm2 = prompt(`Untuk konfirmasi, ketik "DELETE" (huruf besar semua):`);
 
     if (confirm2 !== "DELETE") {
       showToast("Penghapusan semester dibatalkan", "info");
@@ -559,10 +535,7 @@ const AcademicYearTab = ({
     try {
       setLoading(true);
 
-      const { error } = await supabase
-        .from("academic_years")
-        .delete()
-        .eq("id", semesterId);
+      const { error } = await supabase.from("academic_years").delete().eq("id", semesterId);
 
       if (error) throw error;
 
@@ -574,8 +547,7 @@ const AcademicYearTab = ({
       let errorMessage = "❌ Gagal menghapus semester: ";
 
       if (error.message.includes("foreign key")) {
-        errorMessage +=
-          "Semester terkait dengan data lain (teacher assignments, dll)";
+        errorMessage += "Semester terkait dengan data lain (teacher assignments, dll)";
       } else {
         errorMessage += error.message;
       }
@@ -611,8 +583,7 @@ const AcademicYearTab = ({
   };
 
   const handleCopyAssignments = async () => {
-    const { sourceYear, sourceSemester, targetYear, targetSemester } =
-      copyConfig;
+    const { sourceYear, sourceSemester, targetYear, targetSemester } = copyConfig;
 
     if (!sourceYear || !targetYear) {
       showToast("Pilih tahun ajaran source dan target!", "error");
@@ -655,10 +626,7 @@ const AcademicYearTab = ({
         return;
       }
 
-      showToast(
-        `📊 Ditemukan ${sourceData.length} assignment untuk di-copy`,
-        "info"
-      );
+      showToast(`📊 Ditemukan ${sourceData.length} assignment untuk di-copy`, "info");
 
       // 2. Hapus data lama di target (jika ada)
       showToast("🗑️ Menghapus data lama di target semester...", "info");
@@ -687,17 +655,12 @@ const AcademicYearTab = ({
       for (let i = 0; i < newAssignments.length; i += BATCH_SIZE) {
         const batch = newAssignments.slice(i, i + BATCH_SIZE);
 
-        const { error: insertError } = await supabase
-          .from("teacher_assignments")
-          .insert(batch);
+        const { error: insertError } = await supabase.from("teacher_assignments").insert(batch);
 
         if (insertError) throw insertError;
 
         totalInserted += batch.length;
-        showToast(
-          `✅ Progress: ${totalInserted}/${newAssignments.length} assignment`,
-          "info"
-        );
+        showToast(`✅ Progress: ${totalInserted}/${newAssignments.length} assignment`, "info");
       }
 
       showToast(
@@ -819,14 +782,7 @@ const AcademicYearTab = ({
 
       const newStudentDistribution = {};
       const firstGrade = config.grades[0];
-      const classLetters = config.classesPerGrade || [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-      ];
+      const classLetters = config.classesPerGrade || ["A", "B", "C", "D", "E", "F"];
 
       classLetters.forEach((letter) => {
         newStudentDistribution[`${firstGrade}${letter}`] = [];
@@ -872,14 +828,7 @@ const AcademicYearTab = ({
 
   const createNewClasses = async (newYear) => {
     const classesToCreate = [];
-    const classLetters = config.classesPerGrade || [
-      "A",
-      "B",
-      "C",
-      "D",
-      "E",
-      "F",
-    ];
+    const classLetters = config.classesPerGrade || ["A", "B", "C", "D", "E", "F"];
 
     for (const grade of config.grades) {
       for (const letter of classLetters) {
@@ -891,10 +840,7 @@ const AcademicYearTab = ({
       }
     }
 
-    const { data, error } = await supabase
-      .from("classes")
-      .insert(classesToCreate)
-      .select();
+    const { data, error } = await supabase.from("classes").insert(classesToCreate).select();
 
     if (error) throw error;
     return data;
@@ -910,9 +856,7 @@ const AcademicYearTab = ({
         `${preview.currentYear} → ${preview.newYear}\n\n` +
         `Proses yang akan dilakukan:\n` +
         `• Membuat 18 kelas baru\n` +
-        `• Menaikkan ${
-          Object.values(preview.promotions).flat().length
-        } siswa\n` +
+        `• Menaikkan ${Object.values(preview.promotions).flat().length} siswa\n` +
         `• Memasukkan ${preview.newStudents.length} siswa baru\n` +
         `• Meluluskan ${preview.graduating.length} siswa\n` +
         `• Mereset assignment guru\n\n` +
@@ -922,9 +866,7 @@ const AcademicYearTab = ({
 
     if (!confirm1) return;
 
-    const confirm2 = prompt(
-      `Untuk konfirmasi, ketik "EXECUTE" (huruf besar semua):`
-    );
+    const confirm2 = prompt(`Untuk konfirmasi, ketik "EXECUTE" (huruf besar semua):`);
 
     if (confirm2 !== "EXECUTE") {
       showToast("Transisi tahun ajaran dibatalkan", "info");
@@ -1025,10 +967,7 @@ const AcademicYearTab = ({
       }
 
       for (const [newClassId, students] of Object.entries(preview.promotions)) {
-        showToast(
-          `Menaikkan ${students.length} siswa ke kelas ${newClassId}...`,
-          "info"
-        );
+        showToast(`Menaikkan ${students.length} siswa ke kelas ${newClassId}...`, "info");
 
         const studentIds = students.map((s) => s.id);
 
@@ -1062,17 +1001,11 @@ const AcademicYearTab = ({
           console.warn(
             `⚠️ Data siswa baru berubah: Preview ${totalPreview} → Sekarang ${totalLatest}`
           );
-          showToast(
-            `ℹ️ Data siswa baru diupdate: ${totalLatest} siswa akan dimasukkan`,
-            "info"
-          );
+          showToast(`ℹ️ Data siswa baru diupdate: ${totalLatest} siswa akan dimasukkan`, "info");
         }
 
         if (latestSiswaBaruData && latestSiswaBaruData.length > 0) {
-          showToast(
-            `Memasukkan ${latestSiswaBaruData.length} siswa baru...`,
-            "info"
-          );
+          showToast(`Memasukkan ${latestSiswaBaruData.length} siswa baru...`, "info");
 
           const distributionByClass = {};
 
@@ -1084,9 +1017,7 @@ const AcademicYearTab = ({
             distributionByClass[kelas].push(siswa);
           });
 
-          for (const [classId, siswaList] of Object.entries(
-            distributionByClass
-          )) {
+          for (const [classId, siswaList] of Object.entries(distributionByClass)) {
             if (siswaList.length === 0) continue;
 
             // ========== REVISI FIX #2C: UPDATE INSERT NEW STUDENTS ==========
@@ -1100,9 +1031,7 @@ const AcademicYearTab = ({
               is_active: true,
             }));
 
-            const { error: insertError } = await supabase
-              .from("students")
-              .insert(newStudentsData);
+            const { error: insertError } = await supabase.from("students").insert(newStudentsData);
 
             if (insertError) throw insertError;
           }
@@ -1146,9 +1075,7 @@ const AcademicYearTab = ({
       showToast(
         `✅ Tahun ajaran ${yearTransition.newYear} berhasil dimulai!\n\n` +
           `📊 ${preview.newStudents.length} siswa baru masuk grade 7\n` +
-          `⬆️ ${
-            Object.values(preview.promotions).flat().length
-          } siswa naik kelas\n` +
+          `⬆️ ${Object.values(preview.promotions).flat().length} siswa naik kelas\n` +
           `🎓 ${preview.graduating.length} siswa lulus\n` +
           `👨‍🏫 Silakan assign guru ke kelas baru`,
         "success"
@@ -1202,10 +1129,7 @@ const AcademicYearTab = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar
-                className="text-blue-600 dark:text-blue-400"
-                size={18}
-              />
+              <Calendar className="text-blue-600 dark:text-blue-400" size={18} />
               <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
                 Tahun Ajaran Aktif
               </h3>
@@ -1214,14 +1138,8 @@ const AcademicYearTab = ({
               {schoolStats.academic_year}
             </p>
             <p className="text-blue-700 dark:text-blue-400 text-sm">
-              <span className="font-semibold">
-                {schoolStats.total_students}
-              </span>{" "}
-              siswa aktif dalam{" "}
-              <span className="font-semibold">
-                {Object.keys(studentsByClass).length}
-              </span>{" "}
-              kelas
+              <span className="font-semibold">{schoolStats.total_students}</span> siswa aktif dalam{" "}
+              <span className="font-semibold">{Object.keys(studentsByClass).length}</span> kelas
             </p>
           </div>
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-blue-200 dark:border-blue-600 w-full sm:w-auto">
@@ -1243,16 +1161,14 @@ const AcademicYearTab = ({
           <div className="flex flex-col lg:flex-row gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-4">
-                <RefreshCw
-                  className="text-blue-600 dark:text-blue-400"
-                  size={20}
-                />
+                <RefreshCw className="text-blue-600 dark:text-blue-400" size={20} />
                 <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
                   Perpindahan Semester
                 </h3>
                 <div
                   className="cursor-help"
-                  title="Fitur ini akan otomatis membuat semester baru, copy assignments, dan mengaktifkannya. Proses ini aman dan tidak mengubah data semester lama.">
+                  title="Fitur ini akan otomatis membuat semester baru, copy assignments, dan mengaktifkannya. Proses ini aman dan tidak mengubah data semester lama."
+                >
                   <Info className="text-blue-500" size={16} />
                 </div>
               </div>
@@ -1261,66 +1177,46 @@ const AcademicYearTab = ({
                 {/* Current Semester */}
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-600">
                   <div className="flex items-center gap-3 mb-3">
-                    <PlayCircle
-                      className="text-blue-600 dark:text-blue-400"
-                      size={20}
-                    />
+                    <PlayCircle className="text-blue-600 dark:text-blue-400" size={20} />
                     <div>
                       <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
                         Semester Aktif
                       </p>
                       <p className="text-lg font-bold text-blue-900 dark:text-blue-200">
-                        {activeSemester.semester === 1
-                          ? "Ganjil (1)"
-                          : "Genap (2)"}
+                        {activeSemester.semester === 1 ? "Ganjil (1)" : "Genap (2)"}
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {activeSemester.year}
-                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{activeSemester.year}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    {new Date(activeSemester.start_date).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      }
-                    )}{" "}
+                    {new Date(activeSemester.start_date).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}{" "}
                     s/d{" "}
-                    {new Date(activeSemester.end_date).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      }
-                    )}
+                    {new Date(activeSemester.end_date).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </p>
                 </div>
 
                 {/* Target Semester */}
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-2 border-green-300 dark:border-green-600">
                   <div className="flex items-center gap-3 mb-3">
-                    <CheckCircle
-                      className="text-green-600 dark:text-green-500"
-                      size={20}
-                    />
+                    <CheckCircle className="text-green-600 dark:text-green-500" size={20} />
                     <div>
                       <p className="text-sm font-semibold text-green-800 dark:text-green-300">
                         Semester Tujuan
                       </p>
                       <p className="text-lg font-bold text-green-900 dark:text-green-200">
-                        {activeSemester.semester === 1
-                          ? "Genap (2)"
-                          : "Ganjil (1)"}
+                        {activeSemester.semester === 1 ? "Genap (2)" : "Ganjil (1)"}
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {activeSemester.year}
-                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{activeSemester.year}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     Tanggal akan dihitung otomatis
                   </p>
@@ -1357,7 +1253,8 @@ const AcademicYearTab = ({
               <button
                 onClick={executeSmartSemesterSwitch}
                 disabled={loading || isSwitching}
-                className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg disabled:opacity-50 font-bold text-lg transition-all duration-300 transform hover:scale-[1.02] min-h-[60px] flex items-center justify-center gap-3">
+                className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-lg disabled:opacity-50 font-bold text-lg transition-all duration-300 transform hover:scale-[1.02] min-h-[60px] flex items-center justify-center gap-3"
+              >
                 {isSwitching ? (
                   <>
                     <RefreshCw className="animate-spin" size={20} />
@@ -1367,8 +1264,7 @@ const AcademicYearTab = ({
                   <>
                     <RefreshCw size={20} />
                     <span>
-                      🚀 Pindah ke Semester{" "}
-                      {activeSemester.semester === 1 ? "Genap" : "Ganjil"}
+                      🚀 Pindah ke Semester {activeSemester.semester === 1 ? "Genap" : "Ganjil"}
                     </span>
                   </>
                 )}
@@ -1386,28 +1282,26 @@ const AcademicYearTab = ({
 
         <div className="mt-4 space-y-4 text-sm text-blue-700 dark:text-blue-400">
           <div>
-            <h4 className="font-semibold mb-2">
-              🔄 Perpindahan Semester (Rekomendasi)
-            </h4>
+            <h4 className="font-semibold mb-2">🔄 Perpindahan Semester (Rekomendasi)</h4>
             <p>
-              Gunakan fitur "Pindah ke Semester X" untuk perpindahan semester
-              dalam tahun ajaran yang sama. Fitur ini otomatis dan aman.
+              Gunakan fitur "Pindah ke Semester X" untuk perpindahan semester dalam tahun ajaran
+              yang sama. Fitur ini otomatis dan aman.
             </p>
           </div>
 
           <div>
             <h4 className="font-semibold mb-2">📋 Copy Assignments (Manual)</h4>
             <p>
-              Gunakan jika ingin copy assignments antar tahun ajaran atau dalam
-              kondisi khusus. Pilih source dan target dengan hati-hati.
+              Gunakan jika ingin copy assignments antar tahun ajaran atau dalam kondisi khusus.
+              Pilih source dan target dengan hati-hati.
             </p>
           </div>
 
           <div>
             <h4 className="font-semibold mb-2">📅 Transisi Tahun Ajaran</h4>
             <p>
-              Gunakan di akhir tahun ajaran untuk naik kelas otomatis. Pastikan
-              data siswa baru sudah di-input di SPMB.
+              Gunakan di akhir tahun ajaran untuk naik kelas otomatis. Pastikan data siswa baru
+              sudah di-input di SPMB.
             </p>
           </div>
         </div>
@@ -1432,7 +1326,8 @@ const AcademicYearTab = ({
             {/* Tombol Copy Assignments - BARU */}
             <button
               onClick={handleOpenCopyModal}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium">
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium"
+            >
               <Copy size={16} />
               <span>Copy Assignments</span>
             </button>
@@ -1440,7 +1335,8 @@ const AcademicYearTab = ({
             {/* Tombol Tambah Semester - EXISTING */}
             <button
               onClick={() => setShowAddSemester(!showAddSemester)}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium">
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium"
+            >
               <Plus size={16} />
               <span>Tambah Semester</span>
             </button>
@@ -1451,37 +1347,27 @@ const AcademicYearTab = ({
         {activeSemester && (
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg mb-5 border border-blue-200 dark:border-blue-600">
             <div className="flex items-center gap-3">
-              <PlayCircle
-                className="text-blue-600 dark:text-blue-400"
-                size={20}
-              />
+              <PlayCircle className="text-blue-600 dark:text-blue-400" size={20} />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
                   Semester Aktif Sekarang
                 </p>
                 <p className="text-lg font-bold text-blue-900 dark:text-blue-200">
                   {activeSemester.year} - Semester{" "}
-                  {activeSemester.semester === 1 ? "Ganjil" : "Genap"} (
-                  {activeSemester.semester})
+                  {activeSemester.semester === 1 ? "Ganjil" : "Genap"} ({activeSemester.semester})
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  {new Date(activeSemester.start_date).toLocaleDateString(
-                    "id-ID",
-                    {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    }
-                  )}{" "}
+                  {new Date(activeSemester.start_date).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}{" "}
                   s/d{" "}
-                  {new Date(activeSemester.end_date).toLocaleDateString(
-                    "id-ID",
-                    {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    }
-                  )}
+                  {new Date(activeSemester.end_date).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
                 </p>
               </div>
             </div>
@@ -1503,9 +1389,7 @@ const AcademicYearTab = ({
                   type="text"
                   placeholder="2025/2026"
                   value={newSemester.year}
-                  onChange={(e) =>
-                    setNewSemester({ ...newSemester, year: e.target.value })
-                  }
+                  onChange={(e) => setNewSemester({ ...newSemester, year: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
@@ -1522,7 +1406,8 @@ const AcademicYearTab = ({
                       semester: parseInt(e.target.value),
                     })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                >
                   <option value={1}>Semester 1 (Ganjil)</option>
                   <option value={2}>Semester 2 (Genap)</option>
                 </select>
@@ -1552,9 +1437,7 @@ const AcademicYearTab = ({
                 <input
                   type="date"
                   value={newSemester.end_date}
-                  onChange={(e) =>
-                    setNewSemester({ ...newSemester, end_date: e.target.value })
-                  }
+                  onChange={(e) => setNewSemester({ ...newSemester, end_date: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
@@ -1564,7 +1447,8 @@ const AcademicYearTab = ({
               <button
                 onClick={handleAddSemester}
                 disabled={loading}
-                className="px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]">
+                className="px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]"
+              >
                 Simpan Semester
               </button>
               <button
@@ -1577,7 +1461,8 @@ const AcademicYearTab = ({
                     end_date: "",
                   });
                 }}
-                className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px]">
+                className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px]"
+              >
                 Batal
               </button>
             </div>
@@ -1593,13 +1478,13 @@ const AcademicYearTab = ({
                 Belum Ada Semester
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                Untuk memulai, tambahkan semester pertama dengan klik tombol
-                "Tambah Semester" di atas.
+                Untuk memulai, tambahkan semester pertama dengan klik tombol "Tambah Semester" di
+                atas.
               </p>
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg max-w-md mx-auto">
                 <p className="text-sm text-blue-700 dark:text-blue-400">
-                  💡 <strong>Tip:</strong> Biasanya semester 1 (Ganjil) dimulai
-                  Juli-Desember, semester 2 (Genap) Januari-Juni.
+                  💡 <strong>Tip:</strong> Biasanya semester 1 (Ganjil) dimulai Juli-Desember,
+                  semester 2 (Genap) Januari-Juni.
                 </p>
               </div>
             </div>
@@ -1611,26 +1496,20 @@ const AcademicYearTab = ({
                   semester.is_active
                     ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600"
                     : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                }`}>
+                }`}
+              >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1">
                     {semester.is_active ? (
-                      <PlayCircle
-                        className="text-blue-600 dark:text-blue-400"
-                        size={20}
-                      />
+                      <PlayCircle className="text-blue-600 dark:text-blue-400" size={20} />
                     ) : (
-                      <PauseCircle
-                        className="text-gray-400 dark:text-gray-500"
-                        size={20}
-                      />
+                      <PauseCircle className="text-gray-400 dark:text-gray-500" size={20} />
                     )}
                     <div className="flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <span className="font-semibold text-gray-800 dark:text-gray-100">
-                          {semester.year} - Semester{" "}
-                          {semester.semester === 1 ? "Ganjil" : "Genap"} (
-                          {semester.semester})
+                          {semester.year} - Semester {semester.semester === 1 ? "Ganjil" : "Genap"}{" "}
+                          ({semester.semester})
                         </span>
                         {semester.is_active && (
                           <span className="px-3 py-1 bg-blue-600 dark:bg-blue-700 text-white text-xs rounded-full font-medium">
@@ -1639,23 +1518,17 @@ const AcademicYearTab = ({
                         )}
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {new Date(semester.start_date).toLocaleDateString(
-                          "id-ID",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )}{" "}
+                        {new Date(semester.start_date).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}{" "}
                         -{" "}
-                        {new Date(semester.end_date).toLocaleDateString(
-                          "id-ID",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )}
+                        {new Date(semester.end_date).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </p>
                     </div>
                   </div>
@@ -1665,17 +1538,17 @@ const AcademicYearTab = ({
                       <button
                         onClick={() => handleActivateSemester(semester.id)}
                         disabled={loading}
-                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none">
+                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none"
+                      >
                         Aktifkan
                       </button>
                     )}
                     {!semester.is_active && (
                       <button
-                        onClick={() =>
-                          handleDeleteSemester(semester.id, semester.is_active)
-                        }
+                        onClick={() => handleDeleteSemester(semester.id, semester.is_active)}
                         disabled={loading}
-                        className="px-4 py-2.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none">
+                        className="px-4 py-2.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none"
+                      >
                         Hapus
                       </button>
                     )}
@@ -1695,19 +1568,16 @@ const AcademicYearTab = ({
           return (
             <div
               key={grade}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+            >
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-bold text-gray-800 dark:text-gray-100">
-                  Kelas {grade}
-                </h4>
+                <h4 className="font-bold text-gray-800 dark:text-gray-100">Kelas {grade}</h4>
                 <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {totalStudents}
                 </span>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {totalStudents === 0
-                  ? "Belum ada siswa"
-                  : `${totalStudents} siswa aktif`}
+                {totalStudents === 0 ? "Belum ada siswa" : `${totalStudents} siswa aktif`}
               </p>
             </div>
           );
@@ -1724,13 +1594,13 @@ const AcademicYearTab = ({
               </h3>
               <div
                 className="cursor-help"
-                title="Proses ini akan membuat tahun ajaran baru, menaikkan semua siswa ke kelas berikutnya, meluluskan siswa kelas 9, dan memasukkan siswa baru dari SPMB.">
+                title="Proses ini akan membuat tahun ajaran baru, menaikkan semua siswa ke kelas berikutnya, meluluskan siswa kelas 9, dan memasukkan siswa baru dari SPMB."
+              >
                 <Info className="text-orange-500" size={16} />
               </div>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru
-              Dari SPMB)
+              Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru Dari SPMB)
             </p>
           </div>
 
@@ -1739,7 +1609,8 @@ const AcademicYearTab = ({
               <button
                 onClick={generateYearTransitionPreview}
                 disabled={loading}
-                className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition w-full sm:w-auto min-h-[44px] font-medium">
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition w-full sm:w-auto min-h-[44px] font-medium"
+              >
                 <Eye size={16} />
                 <span>Preview Naik Kelas</span>
               </button>
@@ -1751,17 +1622,13 @@ const AcademicYearTab = ({
         {yearTransition.preview && (
           <div className="bg-gray-50 dark:bg-gray-700/30 p-4 sm:p-5 md:p-6 rounded-xl border border-gray-200 dark:border-gray-600">
             <div className="flex items-center gap-3 mb-6">
-              <CheckCircle
-                className="text-green-600 dark:text-green-500"
-                size={24}
-              />
+              <CheckCircle className="text-green-600 dark:text-green-500" size={24} />
               <div>
                 <h4 className="font-bold text-gray-800 dark:text-gray-100">
                   Preview Transisi Tahun Ajaran
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {yearTransition.preview.currentYear} →{" "}
-                  {yearTransition.preview.newYear}
+                  {yearTransition.preview.currentYear} → {yearTransition.preview.newYear}
                 </p>
               </div>
             </div>
@@ -1779,8 +1646,8 @@ const AcademicYearTab = ({
                       ⚠️ Konflik NIS Terdeteksi!
                     </p>
                     <p className="text-red-700 dark:text-red-400 text-sm mb-3">
-                      {yearTransition.preview.conflictedNIS.length} siswa baru
-                      memiliki NIS yang sudah terdaftar:
+                      {yearTransition.preview.conflictedNIS.length} siswa baru memiliki NIS yang
+                      sudah terdaftar:
                     </p>
                     <ul className="text-red-700 dark:text-red-400 text-sm space-y-1 list-disc list-inside max-h-32 overflow-y-auto">
                       {yearTransition.preview.conflictedNIS.map((item, idx) => (
@@ -1790,8 +1657,8 @@ const AcademicYearTab = ({
                       ))}
                     </ul>
                     <p className="text-red-600 dark:text-red-500 text-xs mt-3 font-medium">
-                      Siswa ini TIDAK akan dimasukkan ke sistem. Perbaiki NIS di
-                      SPMB terlebih dahulu!
+                      Siswa ini TIDAK akan dimasukkan ke sistem. Perbaiki NIS di SPMB terlebih
+                      dahulu!
                     </p>
                   </div>
                 </div>
@@ -1823,21 +1690,20 @@ const AcademicYearTab = ({
                     <li>18 kelas baru akan dibuat (7A-7F, 8A-8F, 9A-9F)</li>
                     <li>Semua siswa akan naik kelas (7→8, 8→9)</li>
                     <li>
-                      {yearTransition.preview.newStudents?.length || 0} siswa
-                      baru masuk kelas 7 (sesuai pembagian di SPMB)
+                      {yearTransition.preview.newStudents?.length || 0} siswa baru masuk kelas 7
+                      (sesuai pembagian di SPMB)
                     </li>
                     <li>Siswa kelas {graduatingGrade} akan diluluskan</li>
                     <li>Assignment guru akan direset</li>
-                    <li>
-                      Tahun ajaran berubah ke {yearTransition.preview.newYear}
-                    </li>
+                    <li>Tahun ajaran berubah ke {yearTransition.preview.newYear}</li>
                   </ul>
 
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={executeYearTransition}
                       disabled={loading || yearTransition.inProgress}
-                      className="flex items-center justify-center gap-2 px-6 py-3.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-50 font-bold transition min-h-[44px]">
+                      className="flex items-center justify-center gap-2 px-6 py-3.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-50 font-bold transition min-h-[44px]"
+                    >
                       {yearTransition.inProgress ? (
                         <>
                           <RefreshCw className="animate-spin" size={16} />
@@ -1860,7 +1726,8 @@ const AcademicYearTab = ({
                         });
                       }}
                       disabled={yearTransition.inProgress}
-                      className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]">
+                      className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]"
+                    >
                       Batal
                     </button>
                   </div>
@@ -1878,10 +1745,7 @@ const AcademicYearTab = ({
             {/* Header */}
             <div className="p-5 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
-                <Copy
-                  className="text-green-600 dark:text-green-400"
-                  size={24}
-                />
+                <Copy className="text-green-600 dark:text-green-400" size={24} />
                 <div>
                   <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
                     Copy Teacher Assignments
@@ -1913,15 +1777,14 @@ const AcademicYearTab = ({
                           sourceYear: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
                       <option value="">Pilih Tahun</option>
-                      {[...new Set(semesters.map((s) => s.year))]
-                        .sort()
-                        .map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
+                      {[...new Set(semesters.map((s) => s.year))].sort().map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -1936,7 +1799,8 @@ const AcademicYearTab = ({
                           sourceSemester: parseInt(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
                       <option value={1}>Semester 1 (Ganjil)</option>
                       <option value={2}>Semester 2 (Genap)</option>
                     </select>
@@ -1947,10 +1811,7 @@ const AcademicYearTab = ({
                 {assignmentPreview && (
                   <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded border border-blue-100 dark:border-blue-800">
                     <p className="text-xs text-blue-600 dark:text-blue-400">
-                      📊 Preview:{" "}
-                      <span className="font-bold">
-                        {assignmentPreview.count}
-                      </span>{" "}
+                      📊 Preview: <span className="font-bold">{assignmentPreview.count}</span>{" "}
                       assignments akan di-copy
                     </p>
                   </div>
@@ -1982,15 +1843,14 @@ const AcademicYearTab = ({
                           targetYear: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
                       <option value="">Pilih Tahun</option>
-                      {[...new Set(semesters.map((s) => s.year))]
-                        .sort()
-                        .map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
+                      {[...new Set(semesters.map((s) => s.year))].sort().map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -2005,7 +1865,8 @@ const AcademicYearTab = ({
                           targetSemester: parseInt(e.target.value),
                         })
                       }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
                       <option value={1}>Semester 1 (Ganjil)</option>
                       <option value={2}>Semester 2 (Genap)</option>
                     </select>
@@ -2022,7 +1883,8 @@ const AcademicYearTab = ({
                       {errors.map((error, idx) => (
                         <p
                           key={idx}
-                          className="text-xs text-red-600 dark:text-red-400 mb-1 last:mb-0">
+                          className="text-xs text-red-600 dark:text-red-400 mb-1 last:mb-0"
+                        >
                           {error}
                         </p>
                       ))}
@@ -2037,8 +1899,8 @@ const AcademicYearTab = ({
                 <p className="text-xs text-yellow-800 dark:text-yellow-300 flex items-start gap-2">
                   <span className="text-base">⚠️</span>
                   <span>
-                    Data assignment yang sudah ada di target akan{" "}
-                    <strong>DITIMPA</strong> dan tidak dapat dikembalikan!
+                    Data assignment yang sudah ada di target akan <strong>DITIMPA</strong> dan tidak
+                    dapat dikembalikan!
                   </span>
                 </p>
               </div>
@@ -2048,13 +1910,15 @@ const AcademicYearTab = ({
             <div className="p-5 border-t border-gray-200 dark:border-gray-700 flex gap-3">
               <button
                 onClick={() => setShowCopyModal(false)}
-                className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px]">
+                className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px]"
+              >
                 Batal
               </button>
               <button
                 onClick={handleCopyAssignments}
                 disabled={loading || validateCopyConfig().length > 0}
-                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-medium disabled:opacity-50 transition min-h-[44px]">
+                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg font-medium disabled:opacity-50 transition min-h-[44px]"
+              >
                 {loading ? "Menyalin..." : "Copy Sekarang"}
               </button>
             </div>

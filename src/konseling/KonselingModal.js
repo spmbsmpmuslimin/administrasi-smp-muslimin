@@ -122,22 +122,22 @@ const KonselingModal = ({
                   ? "Edit Data Konseling"
                   : "Detail Konseling"}
               </h2>
-              <p className="text-blue-100 text-xs sm:text-sm">
-                SMP Muslimin Cililin
-              </p>
+              <p className="text-blue-100 text-xs sm:text-sm">SMP Muslimin Cililin</p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 sm:p-2 hover:bg-blue-600 dark:hover:bg-blue-800 rounded-lg transition min-h-[44px] min-w-[44px] flex items-center justify-center touch-target"
-            aria-label="Tutup modal">
+            aria-label="Tutup modal"
+          >
             <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 md:space-y-6">
+          className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 md:space-y-6"
+        >
           {/* ✅ STUDENT SELECTION - Responsif */}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 sm:p-4 rounded-lg">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">
@@ -167,7 +167,8 @@ const KonselingModal = ({
                          text-sm min-h-[44px] touch-target
                          bg-white dark:bg-gray-800
                          text-gray-900 dark:text-gray-100"
-                required>
+                required
+              >
                 <option value="">-- Pilih Jenjang --</option>
                 <option value="Kelas 7">Kelas 7</option>
                 <option value="Kelas 8">Kelas 8</option>
@@ -197,7 +198,8 @@ const KonselingModal = ({
                          text-sm min-h-[44px] touch-target
                          bg-white dark:bg-gray-800
                          text-gray-900 dark:text-gray-100"
-                required>
+                required
+              >
                 <option value="">-- Pilih Kelas --</option>
                 {availableKelas.map((kelas) => (
                   <option key={kelas} value={kelas}>
@@ -218,7 +220,8 @@ const KonselingModal = ({
                          text-sm min-h-[44px] touch-target
                          bg-white dark:bg-gray-800
                          text-gray-900 dark:text-gray-100"
-                required>
+                required
+              >
                 <option value="">-- Pilih Nama Siswa --</option>
                 {filteredStudents.map((student) => (
                   <option key={student.id} value={student.id}>
@@ -238,33 +241,25 @@ const KonselingModal = ({
           {formData.student_id && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-xs sm:text-sm">
               <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
-                  NIS:
-                </span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs">NIS:</span>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {formData.nis}
                 </p>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
-                  Nama:
-                </span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs">Nama:</span>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {formData.full_name}
                 </p>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
-                  Kelas:
-                </span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs">Kelas:</span>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {formData.class_id}
                 </p>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">
-                  Kelamin:
-                </span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs">Kelamin:</span>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {formData.gender === "L"
                     ? "Laki-laki"
@@ -304,9 +299,7 @@ const KonselingModal = ({
               </label>
               <select
                 value={formData.jenis_layanan}
-                onChange={(e) =>
-                  handleInputChange("jenis_layanan", e.target.value)
-                }
+                onChange={(e) => handleInputChange("jenis_layanan", e.target.value)}
                 disabled={mode === "view"}
                 className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
                          rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
@@ -315,7 +308,8 @@ const KonselingModal = ({
                          text-sm min-h-[44px] touch-target
                          bg-white dark:bg-gray-800
                          text-gray-900 dark:text-gray-100"
-                required>
+                required
+              >
                 <option value="">Pilih Jenis Layanan</option>
                 <option value="Pribadi">Pribadi</option>
                 <option value="Sosial">Sosial</option>
@@ -332,9 +326,7 @@ const KonselingModal = ({
               </label>
               <select
                 value={formData.bidang_bimbingan}
-                onChange={(e) =>
-                  handleInputChange("bidang_bimbingan", e.target.value)
-                }
+                onChange={(e) => handleInputChange("bidang_bimbingan", e.target.value)}
                 disabled={mode === "view"}
                 className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
                          rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
@@ -343,13 +335,12 @@ const KonselingModal = ({
                          text-sm min-h-[44px] touch-target
                          bg-white dark:bg-gray-800
                          text-gray-900 dark:text-gray-100"
-                required>
+                required
+              >
                 <option value="">Pilih Bidang Bimbingan</option>
                 <option value="Pribadi dan Sosial">Pribadi dan Sosial</option>
                 <option value="Akademik">Akademik</option>
-                <option value="Karier dan Pekerjaan">
-                  Karier dan Pekerjaan
-                </option>
+                <option value="Karier dan Pekerjaan">Karier dan Pekerjaan</option>
                 <option value="Keluarga">Keluarga</option>
                 <option value="Lainnya">Lainnya</option>
               </select>
@@ -372,9 +363,7 @@ const KonselingModal = ({
                 </label>
                 <select
                   value={formData.tingkat_urgensi}
-                  onChange={(e) =>
-                    handleInputChange("tingkat_urgensi", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("tingkat_urgensi", e.target.value)}
                   disabled={mode === "view"}
                   className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
                            rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 
@@ -383,7 +372,8 @@ const KonselingModal = ({
                            text-sm min-h-[44px] touch-target
                            bg-white dark:bg-gray-800
                            text-gray-900 dark:text-gray-100"
-                  required>
+                  required
+                >
                   <option value="">Pilih Tingkat Urgensi</option>
                   <option value="Rendah">🟢 Rendah - Konsultasi ringan</option>
                   <option value="Sedang">🟡 Sedang - Perlu perhatian</option>
@@ -398,9 +388,7 @@ const KonselingModal = ({
                 </label>
                 <select
                   value={formData.kategori_masalah}
-                  onChange={(e) =>
-                    handleInputChange("kategori_masalah", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("kategori_masalah", e.target.value)}
                   disabled={mode === "view"}
                   className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
                            rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 
@@ -409,7 +397,8 @@ const KonselingModal = ({
                            text-sm min-h-[44px] touch-target
                            bg-white dark:bg-gray-800
                            text-gray-900 dark:text-gray-100"
-                  required>
+                  required
+                >
                   <option value="">Pilih Kategori Masalah</option>
                   <option value="Akademik">📚 Akademik</option>
                   <option value="Perilaku">⚠️ Perilaku</option>
@@ -434,9 +423,7 @@ const KonselingModal = ({
               </label>
               <textarea
                 value={formData.permasalahan}
-                onChange={(e) =>
-                  handleInputChange("permasalahan", e.target.value)
-                }
+                onChange={(e) => handleInputChange("permasalahan", e.target.value)}
                 disabled={mode === "view"}
                 rows="3"
                 className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[120px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
@@ -467,9 +454,7 @@ const KonselingModal = ({
                 </label>
                 <textarea
                   value={formData.tindakan_layanan}
-                  onChange={(e) =>
-                    handleInputChange("tindakan_layanan", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("tindakan_layanan", e.target.value)}
                   disabled={mode === "view"}
                   rows="3"
                   className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[120px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
@@ -483,9 +468,7 @@ const KonselingModal = ({
                 </label>
                 <textarea
                   value={formData.hasil_layanan}
-                  onChange={(e) =>
-                    handleInputChange("hasil_layanan", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("hasil_layanan", e.target.value)}
                   disabled={mode === "view"}
                   rows="3"
                   className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[120px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
@@ -500,9 +483,7 @@ const KonselingModal = ({
               </label>
               <textarea
                 value={formData.rencana_tindak_lanjut}
-                onChange={(e) =>
-                  handleInputChange("rencana_tindak_lanjut", e.target.value)
-                }
+                onChange={(e) => handleInputChange("rencana_tindak_lanjut", e.target.value)}
                 disabled={mode === "view"}
                 rows="2"
                 className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[90px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
@@ -537,7 +518,8 @@ const KonselingModal = ({
                 />
                 <label
                   htmlFor="perlu_followup"
-                  className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+                >
                   Perlu Follow-up / Konseling Lanjutan
                 </label>
               </div>
@@ -550,9 +532,7 @@ const KonselingModal = ({
                   <input
                     type="date"
                     value={formData.tanggal_followup}
-                    onChange={(e) =>
-                      handleInputChange("tanggal_followup", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("tanggal_followup", e.target.value)}
                     disabled={mode === "view"}
                     min={new Date().toISOString().split("T")[0]}
                     className="dark-select w-full sm:w-64 px-3 sm:px-4 py-2.5 border border-purple-300 dark:border-purple-600 
@@ -577,9 +557,7 @@ const KonselingModal = ({
               </label>
               <select
                 value={formData.status_layanan}
-                onChange={(e) =>
-                  handleInputChange("status_layanan", e.target.value)
-                }
+                onChange={(e) => handleInputChange("status_layanan", e.target.value)}
                 disabled={mode === "view"}
                 className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
                          rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
@@ -587,7 +565,8 @@ const KonselingModal = ({
                          disabled:text-gray-500 dark:disabled:text-gray-400 
                          text-sm min-h-[44px] touch-target
                          bg-white dark:bg-gray-800
-                         text-gray-900 dark:text-gray-100">
+                         text-gray-900 dark:text-gray-100"
+              >
                 <option value="Dalam Proses">⏳ Dalam Proses</option>
                 <option value="Selesai">✅ Selesai</option>
                 <option value="Dibatalkan">❌ Dibatalkan</option>
@@ -600,15 +579,15 @@ const KonselingModal = ({
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="submit"
-                className="flex-1 px-4 sm:px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200 shadow-lg hover:shadow-xl">
-                {mode === "add"
-                  ? "✅ Tambah Data Konseling"
-                  : "💾 Update Data Konseling"}
+                className="flex-1 px-4 sm:px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200 shadow-lg hover:shadow-xl"
+              >
+                {mode === "add" ? "✅ Tambah Data Konseling" : "💾 Update Data Konseling"}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 sm:px-6 py-3 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-gray-700 rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200">
+                className="px-4 sm:px-6 py-3 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-gray-700 rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200"
+              >
                 Batal
               </button>
             </div>
@@ -619,7 +598,8 @@ const KonselingModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full px-4 sm:px-6 py-3 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200">
+                className="w-full px-4 sm:px-6 py-3 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200"
+              >
                 Tutup
               </button>
             </div>

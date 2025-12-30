@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import {
-  Plus,
-  Search,
-  Edit3,
-  Trash2,
-  Eye,
-  Users,
-  Clock,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
+import { Plus, Search, Edit3, Trash2, Eye, Users, Clock, CheckCircle, XCircle } from "lucide-react";
 import StatsCards from "./StatsCards";
 import FilterBar from "./FilterBar";
 import KonselingTable from "./KonselingTable";
@@ -137,18 +127,10 @@ const Konseling = ({ user, onShowToast }) => {
   // ✅ UPDATED: Calculate stats dengan urgensi & follow-up
   const calculateStats = (data) => {
     const total = data.length;
-    const dalam_proses = data.filter(
-      (item) => item.status_layanan === "Dalam Proses"
-    ).length;
-    const selesai = data.filter(
-      (item) => item.status_layanan === "Selesai"
-    ).length;
-    const darurat = data.filter(
-      (item) => item.tingkat_urgensi === "Darurat"
-    ).length;
-    const perlu_followup = data.filter(
-      (item) => item.perlu_followup === true
-    ).length;
+    const dalam_proses = data.filter((item) => item.status_layanan === "Dalam Proses").length;
+    const selesai = data.filter((item) => item.status_layanan === "Selesai").length;
+    const darurat = data.filter((item) => item.tingkat_urgensi === "Darurat").length;
+    const perlu_followup = data.filter((item) => item.perlu_followup === true).length;
 
     setStats({ total, dalam_proses, selesai, darurat, perlu_followup });
   };
@@ -159,24 +141,19 @@ const Konseling = ({ user, onShowToast }) => {
       !filters.search ||
       item.full_name?.toLowerCase().includes(filters.search.toLowerCase()) ||
       item.nis?.includes(filters.search);
-    const matchesStatus =
-      !filters.status || item.status_layanan === filters.status;
+    const matchesStatus = !filters.status || item.status_layanan === filters.status;
     const matchesUrgensi =
-      !filters.tingkat_urgensi ||
-      item.tingkat_urgensi === filters.tingkat_urgensi;
+      !filters.tingkat_urgensi || item.tingkat_urgensi === filters.tingkat_urgensi;
     const matchesKategori =
-      !filters.kategori_masalah ||
-      item.kategori_masalah === filters.kategori_masalah;
+      !filters.kategori_masalah || item.kategori_masalah === filters.kategori_masalah;
     const matchesFollowup =
       !filters.perlu_followup ||
       (filters.perlu_followup === "true" && item.perlu_followup === true) ||
       (filters.perlu_followup === "false" && item.perlu_followup === false);
 
     const itemDate = new Date(item.tanggal);
-    const matchesTanggalAwal =
-      !filters.tanggalAwal || itemDate >= new Date(filters.tanggalAwal);
-    const matchesTanggalAkhir =
-      !filters.tanggalAkhir || itemDate <= new Date(filters.tanggalAkhir);
+    const matchesTanggalAwal = !filters.tanggalAwal || itemDate >= new Date(filters.tanggalAwal);
+    const matchesTanggalAkhir = !filters.tanggalAkhir || itemDate <= new Date(filters.tanggalAkhir);
 
     return (
       matchesSearch &&
@@ -306,10 +283,7 @@ const Konseling = ({ user, onShowToast }) => {
       }
       // Validasi: Jika perlu follow-up, tanggal follow-up wajib diisi
       if (formData.perlu_followup && !formData.tanggal_followup) {
-        onShowToast(
-          "Tanggal follow-up wajib diisi jika perlu follow-up",
-          "error"
-        );
+        onShowToast("Tanggal follow-up wajib diisi jika perlu follow-up", "error");
         return;
       }
 
@@ -342,10 +316,7 @@ const Konseling = ({ user, onShowToast }) => {
       };
 
       if (modalMode === "add") {
-        const { data, error } = await supabase
-          .from("konseling")
-          .insert([konselingData])
-          .select();
+        const { data, error } = await supabase.from("konseling").insert([konselingData]).select();
 
         if (error) {
           console.error("Supabase error:", error);
@@ -387,10 +358,7 @@ const Konseling = ({ user, onShowToast }) => {
     if (!deleteConfirm.id) return;
     try {
       setLoading(true);
-      const { error } = await supabase
-        .from("konseling")
-        .delete()
-        .eq("id", deleteConfirm.id);
+      const { error } = await supabase.from("konseling").delete().eq("id", deleteConfirm.id);
       if (error) throw error;
       onShowToast("Data konseling berhasil dihapus", "success");
       await loadKonselingData();
@@ -483,10 +451,7 @@ const Konseling = ({ user, onShowToast }) => {
             <div className="p-5 sm:p-6">
               <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm sm:text-base">
                 Apakah Anda yakin ingin menghapus data konseling untuk siswa{" "}
-                <strong className="font-semibold">
-                  {deleteConfirm.studentName}
-                </strong>
-                ?
+                <strong className="font-semibold">{deleteConfirm.studentName}</strong>?
               </p>
               <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mb-5 sm:mb-6">
                 Tindakan ini tidak dapat dibatalkan!
@@ -495,15 +460,15 @@ const Konseling = ({ user, onShowToast }) => {
                 <button
                   onClick={confirmDelete}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg disabled:opacity-50 font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200">
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg disabled:opacity-50 font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200"
+                >
                   {loading ? "Menghapus..." : "Ya, Hapus"}
                 </button>
                 <button
-                  onClick={() =>
-                    setDeleteConfirm({ show: false, id: null, studentName: "" })
-                  }
+                  onClick={() => setDeleteConfirm({ show: false, id: null, studentName: "" })}
                   disabled={loading}
-                  className="px-4 sm:px-6 py-3 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-gray-700 rounded-lg disabled:opacity-50 text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200">
+                  className="px-4 sm:px-6 py-3 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-gray-700 rounded-lg disabled:opacity-50 text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200"
+                >
                   Batal
                 </button>
               </div>

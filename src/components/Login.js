@@ -26,39 +26,26 @@ export const Login = ({ onLogin, onShowToast }) => {
     try {
       setStatsLoading(true);
 
-      const [teachersResult, studentsResult, gradesResult, classesResult] =
-        await Promise.all([
-          supabase
-            .from("users")
-            .select("*", { count: "exact", head: true })
-            .eq("is_active", true)
-            .in("role", ["teacher", "guru_bk"])
-            .neq("username", "adenurmughni"),
+      const [teachersResult, studentsResult, gradesResult, classesResult] = await Promise.all([
+        supabase
+          .from("users")
+          .select("*", { count: "exact", head: true })
+          .eq("is_active", true)
+          .in("role", ["teacher", "guru_bk"])
+          .neq("username", "adenurmughni"),
 
-          supabase
-            .from("students")
-            .select("*", { count: "exact", head: true })
-            .eq("is_active", true),
+        supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true),
 
-          supabase
-            .from("classes")
-            .select("grade")
-            .eq("is_active", true)
-            .in("grade", [7, 8, 9]),
+        supabase.from("classes").select("grade").eq("is_active", true).in("grade", [7, 8, 9]),
 
-          supabase
-            .from("classes")
-            .select("*", { count: "exact", head: true })
-            .eq("is_active", true),
-        ]);
+        supabase.from("classes").select("*", { count: "exact", head: true }).eq("is_active", true),
+      ]);
 
       const teacherCount = teachersResult.count || 0;
       const studentCount = studentsResult.count || 0;
       const classesCount = classesResult.count || 0;
 
-      const uniqueGrades = new Set(
-        (gradesResult.data || []).map((item) => item.grade)
-      );
+      const uniqueGrades = new Set((gradesResult.data || []).map((item) => item.grade));
       const gradesCount = uniqueGrades.size;
 
       setStats({
@@ -218,7 +205,8 @@ export const Login = ({ onLogin, onShowToast }) => {
             backgroundSize: "cover",
             backgroundPosition: "center 40%",
             backgroundRepeat: "no-repeat",
-          }}>
+          }}
+        >
           {/* Loading State */}
           {!imageLoaded && (
             <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 flex items-center justify-center">
@@ -226,7 +214,8 @@ export const Login = ({ onLogin, onShowToast }) => {
                 <div className="w-16 h-16 border-4 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
                 <div
                   className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-purple-400/50 rounded-full animate-spin"
-                  style={{ animationDuration: "1.5s" }}></div>
+                  style={{ animationDuration: "1.5s" }}
+                ></div>
               </div>
             </div>
           )}
@@ -243,13 +232,16 @@ export const Login = ({ onLogin, onShowToast }) => {
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div
               className="absolute top-1/4 left-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping"
-              style={{ animationDuration: "3s" }}></div>
+              style={{ animationDuration: "3s" }}
+            ></div>
             <div
               className="absolute top-3/4 right-1/3 w-2 h-2 bg-blue-300/30 rounded-full animate-ping"
-              style={{ animationDuration: "4s", animationDelay: "1s" }}></div>
+              style={{ animationDuration: "4s", animationDelay: "1s" }}
+            ></div>
             <div
               className="absolute top-1/2 right-1/4 w-2 h-2 bg-purple-300/30 rounded-full animate-ping"
-              style={{ animationDuration: "5s", animationDelay: "2s" }}></div>
+              style={{ animationDuration: "5s", animationDelay: "2s" }}
+            ></div>
           </div>
         </div>
 
@@ -259,15 +251,15 @@ export const Login = ({ onLogin, onShowToast }) => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
           <div
             className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"
-            style={{ animationDelay: "1s" }}></div>
+            style={{ animationDelay: "1s" }}
+          ></div>
 
           <form
             className={`relative w-full max-w-md lg:max-w-sm transition-all duration-700 delay-500 ${
-              imageLoaded
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 translate-x-12"
+              imageLoaded ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"
             }`}
-            onSubmit={handleSubmit}>
+            onSubmit={handleSubmit}
+          >
             {/* Glass card with enhanced effects */}
             <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/20 shadow-2xl relative overflow-hidden group hover:bg-white/[0.12] transition-all duration-500 hover:scale-[1.02] hover:shadow-blue-500/20">
               {/* Gradient border effect on hover */}
@@ -287,9 +279,7 @@ export const Login = ({ onLogin, onShowToast }) => {
                 <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-lg">
                   Selamat Datang
                 </h2>
-                <p className="text-blue-200/80 text-sm sm:text-base">
-                  Silakan Masuk Ke Akun Anda
-                </p>
+                <p className="text-blue-200/80 text-sm sm:text-base">Silakan Masuk Ke Akun Anda</p>
                 <div className="mt-3 w-16 h-1 mx-auto bg-gradient-to-r from-transparent via-blue-400/50 to-transparent rounded-full"></div>
               </div>
 
@@ -344,7 +334,8 @@ export const Login = ({ onLogin, onShowToast }) => {
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-all duration-300 p-2 hover:bg-white/10 rounded-lg"
-                    onClick={togglePasswordVisibility}>
+                    onClick={togglePasswordVisibility}
+                  >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-pink-500/0 group-hover/input:from-purple-500/5 group-hover/input:to-pink-500/5 transition-all duration-300 pointer-events-none"></div>
@@ -380,7 +371,8 @@ export const Login = ({ onLogin, onShowToast }) => {
                 </label>
                 <a
                   href="#"
-                  className="text-sm text-blue-300 hover:text-blue-200 transition-colors font-medium hover:underline">
+                  className="text-sm text-blue-300 hover:text-blue-200 transition-colors font-medium hover:underline"
+                >
                   Lupa password?
                 </a>
               </div>
@@ -389,7 +381,8 @@ export const Login = ({ onLogin, onShowToast }) => {
               <button
                 type="submit"
                 className="relative w-full py-4 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 hover:from-blue-800 hover:via-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl text-white font-bold transition-all duration-500 flex items-center justify-center shadow-xl shadow-blue-900/40 hover:shadow-2xl hover:shadow-blue-800/60 hover:scale-[1.02] active:scale-[0.98] group/btn overflow-hidden"
-                disabled={isLoading}>
+                disabled={isLoading}
+              >
                 {/* Animated gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
 
@@ -405,12 +398,8 @@ export const Login = ({ onLogin, onShowToast }) => {
 
               {/* Footer */}
               <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                <p className="text-xs text-white/60 mb-1">
-                  © 2025 SMP MUSLIMIN CILILIN
-                </p>
-                <p className="text-xs text-white/40">
-                  Sistem Administrasi Sekolah • v1.0.0
-                </p>
+                <p className="text-xs text-white/60 mb-1">© 2025 SMP MUSLIMIN CILILIN</p>
+                <p className="text-xs text-white/40">Sistem Administrasi Sekolah • v1.0.0</p>
               </div>
             </div>
           </form>

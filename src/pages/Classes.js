@@ -14,12 +14,9 @@ export const Classes = ({ user, onShowToast }) => {
     const checkDarkMode = () => {
       const htmlHasDark = document.documentElement.classList.contains("dark");
       const savedTheme = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-      const shouldBeDark =
-        htmlHasDark || savedTheme === "dark" || (!savedTheme && prefersDark);
+      const shouldBeDark = htmlHasDark || savedTheme === "dark" || (!savedTheme && prefersDark);
 
       setIsDarkMode(shouldBeDark);
       if (shouldBeDark) {
@@ -90,9 +87,7 @@ export const Classes = ({ user, onShowToast }) => {
 
       // Gabungkan semua data
       const dataGabungan = kelasDataFromDB.map((kelas) => {
-        const waliKelas = waliKelasData.find(
-          (w) => w.homeroom_class_id === kelas.id
-        );
+        const waliKelas = waliKelasData.find((w) => w.homeroom_class_id === kelas.id);
         const stats = statsPerKelas[kelas.id] || {
           total: 0,
           laki: 0,
@@ -119,23 +114,15 @@ export const Classes = ({ user, onShowToast }) => {
   };
 
   // Hitung total
-  const totalSiswa = kelasData.reduce(
-    (sum, kelas) => sum + kelas.jumlah_siswa,
-    0
-  );
+  const totalSiswa = kelasData.reduce((sum, kelas) => sum + kelas.jumlah_siswa, 0);
   const totalLaki = kelasData.reduce((sum, kelas) => sum + kelas.laki_laki, 0);
-  const totalPerempuan = kelasData.reduce(
-    (sum, kelas) => sum + kelas.perempuan,
-    0
-  );
+  const totalPerempuan = kelasData.reduce((sum, kelas) => sum + kelas.perempuan, 0);
 
   // Data untuk export Excel
   const excelData = kelasData.map((kelas) => ({
     Kelas: kelas.id,
     "Tahun Ajaran": kelas.academic_year,
-    "Wali Kelas": kelas.wali_kelas
-      ? kelas.wali_kelas.full_name
-      : "Belum ditentukan",
+    "Wali Kelas": kelas.wali_kelas ? kelas.wali_kelas.full_name : "Belum ditentukan",
     "Jumlah Siswa": kelas.jumlah_siswa,
     "Laki-laki": kelas.laki_laki,
     Perempuan: kelas.perempuan,
@@ -191,12 +178,14 @@ export const Classes = ({ user, onShowToast }) => {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg">
+                  xmlns="http://www.w3.org/2000/svg"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
                 </svg>
               </div>
               <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-white mb-1">
@@ -207,7 +196,8 @@ export const Classes = ({ user, onShowToast }) => {
               </p>
               <button
                 onClick={fetchDataKelas}
-                className="px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 text-xs sm:text-sm touch-manipulation min-h-[44px]">
+                className="px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 text-xs sm:text-sm touch-manipulation min-h-[44px]"
+              >
                 Coba Lagi
               </button>
             </div>
@@ -236,12 +226,14 @@ export const Classes = ({ user, onShowToast }) => {
             {kelasData.length > 0 && (
               <button
                 onClick={handleExportExcel}
-                className="bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 transition-all duration-200 text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg touch-manipulation min-h-[44px]">
+                className="bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 transition-all duration-200 text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg touch-manipulation min-h-[44px]"
+              >
                 <svg
                   className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -263,7 +255,8 @@ export const Classes = ({ user, onShowToast }) => {
             kelasData.map((kelas, index) => (
               <div
                 key={kelas.id}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-3 sm:p-4 border border-gray-100 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900 transition-all duration-300 touch-manipulation">
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-3 sm:p-4 border border-gray-100 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900 transition-all duration-300 touch-manipulation"
+              >
                 {/* Header Card: Kelas & Tahun Ajaran */}
                 <div className="flex justify-between items-start border-b border-gray-100 dark:border-gray-700 pb-2 sm:pb-3 mb-2 sm:mb-3">
                   <div>
@@ -297,25 +290,19 @@ export const Classes = ({ user, onShowToast }) => {
                 {/* Body Card: Statistik Siswa */}
                 <div className="flex justify-between items-center text-center">
                   <div className="flex-1 border-r border-gray-100 dark:border-gray-700 pr-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Total Siswa
-                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Siswa</p>
                     <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
                       {kelas.jumlah_siswa}
                     </p>
                   </div>
                   <div className="flex-1 border-r border-gray-100 dark:border-gray-700 px-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Laki-laki
-                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Laki-laki</p>
                     <p className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
                       {kelas.laki_laki}
                     </p>
                   </div>
                   <div className="flex-1 pl-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Perempuan
-                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Perempuan</p>
                     <p className="text-base sm:text-lg font-bold text-pink-500 dark:text-pink-400">
                       {kelas.perempuan}
                     </p>
@@ -331,7 +318,8 @@ export const Classes = ({ user, onShowToast }) => {
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  aria-hidden="true">
+                  aria-hidden="true"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -358,21 +346,15 @@ export const Classes = ({ user, onShowToast }) => {
               <div className="flex justify-between items-center text-center">
                 <div className="flex-1 border-r border-blue-400 dark:border-blue-500 pr-2">
                   <p className="text-xs font-medium">Siswa Total</p>
-                  <p className="text-xl sm:text-2xl md:text-3xl font-extrabold">
-                    {totalSiswa}
-                  </p>
+                  <p className="text-xl sm:text-2xl md:text-3xl font-extrabold">{totalSiswa}</p>
                 </div>
                 <div className="flex-1 border-r border-blue-400 dark:border-blue-500 px-2">
                   <p className="text-xs font-medium">Laki-laki</p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold">
-                    {totalLaki}
-                  </p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold">{totalLaki}</p>
                 </div>
                 <div className="flex-1 pl-2">
                   <p className="text-xs font-medium">Perempuan</p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold">
-                    {totalPerempuan}
-                  </p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold">{totalPerempuan}</p>
                 </div>
               </div>
             </div>
@@ -414,7 +396,8 @@ export const Classes = ({ user, onShowToast }) => {
                   {kelasData.map((kelas, index) => (
                     <tr
                       key={kelas.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
                       <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-xs md:text-sm text-gray-700 dark:text-gray-300 text-left">
                         {index + 1}
                       </td>
@@ -453,7 +436,8 @@ export const Classes = ({ user, onShowToast }) => {
                   <tr className="bg-blue-50 dark:bg-blue-900/30 font-semibold border-t-2 border-blue-200 dark:border-blue-700">
                     <td
                       className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm dark:text-white"
-                      colSpan="3">
+                      colSpan="3"
+                    >
                       TOTAL
                     </td>
                     <td className="px-3 sm:px-4 md:px-6 py-3 text-left text-blue-700 dark:text-blue-300 text-xs md:text-sm">
@@ -476,7 +460,8 @@ export const Classes = ({ user, onShowToast }) => {
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  aria-hidden="true">
+                  aria-hidden="true"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

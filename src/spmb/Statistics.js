@@ -50,15 +50,11 @@ const Statistics = ({
     return Object.values(schoolData).sort((a, b) => b.total - a.total);
   }, [students]);
 
-  const malePercentage =
-    totalStudents > 0 ? (maleStudents / totalStudents) * 100 : 0;
-  const femalePercentage =
-    totalStudents > 0 ? (femaleStudents / totalStudents) * 100 : 0;
+  const malePercentage = totalStudents > 0 ? (maleStudents / totalStudents) * 100 : 0;
+  const femalePercentage = totalStudents > 0 ? (femaleStudents / totalStudents) * 100 : 0;
 
   const maxSchoolCount =
-    getSchoolStats.length > 0
-      ? Math.max(...getSchoolStats.map((s) => s.count))
-      : 0;
+    getSchoolStats.length > 0 ? Math.max(...getSchoolStats.map((s) => s.count)) : 0;
 
   return (
     <div className="bg-gray-50 dark:bg-slate-900 min-h-screen p-3 sm:p-4 md:p-6 lg:p-8">
@@ -119,7 +115,8 @@ const Statistics = ({
                 width="200"
                 height="200"
                 viewBox="0 0 280 280"
-                className="transform -rotate-90 w-full max-w-[180px] sm:max-w-[200px] md:max-w-[240px]">
+                className="transform -rotate-90 w-full max-w-[180px] sm:max-w-[200px] md:max-w-[240px]"
+              >
                 {/* Background circle */}
                 <circle
                   cx="140"
@@ -164,7 +161,8 @@ const Statistics = ({
                   textAnchor="middle"
                   dy="0.3em"
                   className="text-2xl sm:text-3xl md:text-4xl font-bold fill-gray-900 dark:fill-slate-100 transform rotate-90"
-                  style={{ transformOrigin: "140px 140px" }}>
+                  style={{ transformOrigin: "140px 140px" }}
+                >
                   {totalStudents}
                 </text>
               </svg>
@@ -209,16 +207,14 @@ const Statistics = ({
                 </div>
               ) : (
                 getSchoolStats.map((stat, index) => {
-                  const barWidth =
-                    maxSchoolCount > 0
-                      ? (stat.count / maxSchoolCount) * 100
-                      : 0;
+                  const barWidth = maxSchoolCount > 0 ? (stat.count / maxSchoolCount) * 100 : 0;
                   return (
                     <div key={index}>
                       <div className="flex items-center justify-between mb-1 sm:mb-2">
                         <div
                           className="text-xs sm:text-sm text-gray-700 dark:text-slate-300 truncate flex-1 mr-3"
-                          title={stat.school}>
+                          title={stat.school}
+                        >
                           {stat.school}
                         </div>
                         <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100 tabular-nums">
@@ -228,7 +224,8 @@ const Statistics = ({
                       <div className="h-5 sm:h-6 md:h-7 lg:h-8 bg-gray-100 dark:bg-slate-700 rounded-lg overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-lg transition-all duration-1000 flex items-center px-2 sm:px-3"
-                          style={{ width: `${barWidth}%` }}>
+                          style={{ width: `${barWidth}%` }}
+                        >
                           {barWidth > 15 && (
                             <span className="text-xs font-medium text-white">
                               {((stat.count / totalStudents) * 100).toFixed(1)}%
@@ -279,7 +276,8 @@ const Statistics = ({
                     <tr>
                       <td
                         colSpan="5"
-                        className="text-center py-8 sm:py-12 text-gray-400 dark:text-slate-500">
+                        className="text-center py-8 sm:py-12 text-gray-400 dark:text-slate-500"
+                      >
                         Belum ada pendaftar
                       </td>
                     </tr>
@@ -287,14 +285,13 @@ const Statistics = ({
                     getSchoolRankings.map((school, index) => (
                       <tr
                         key={index}
-                        className="border-b border-gray-100 dark:border-slate-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors">
+                        className="border-b border-gray-100 dark:border-slate-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors"
+                      >
                         <td className="py-2 sm:py-3 md:py-4 px-2 sm:px-3 md:px-4 text-xs sm:text-sm text-gray-600 dark:text-slate-400 font-medium">
                           {index + 1}
                         </td>
                         <td className="py-2 sm:py-3 md:py-4 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-200">
-                          <div
-                            className="max-w-[120px] sm:max-w-xs truncate"
-                            title={school.school}>
+                          <div className="max-w-[120px] sm:max-w-xs truncate" title={school.school}>
                             {school.school}
                           </div>
                         </td>

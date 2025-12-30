@@ -17,9 +17,7 @@ const CustomDatePicker = ({
   // Fungsi untuk mendapatkan tanggal Indonesia (WIB - UTC+7)
   const getIndonesiaDate = () => {
     const now = new Date();
-    const indonesiaTime = new Date(
-      now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
-    );
+    const indonesiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
     return indonesiaTime;
   };
 
@@ -40,15 +38,7 @@ const CustomDatePicker = ({
     if (!dateString) return "";
     const [year, month, day] = dateString.split("-").map(Number);
 
-    const days = [
-      "Minggu",
-      "Senin",
-      "Selasa",
-      "Rabu",
-      "Kamis",
-      "Jumat",
-      "Sabtu",
-    ];
+    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const months = [
       "Januari",
       "Februari",
@@ -71,23 +61,20 @@ const CustomDatePicker = ({
   };
 
   const handlePrevMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-    );
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-    );
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
   const handleDayClick = (day) => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const formatted = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-      day
-    ).padStart(2, "0")}`;
+    const formatted = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
+      2,
+      "0"
+    )}`;
 
     // Validasi maxDate jika ada
     if (maxDate) {
@@ -119,10 +106,9 @@ const CustomDatePicker = ({
 
   const handleToday = () => {
     const now = getIndonesiaDate();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${String(now.getDate()).padStart(2, "0")}`;
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+      now.getDate()
+    ).padStart(2, "0")}`;
     setTempDate(today);
     onChange(today);
     setShowDatePicker(false);
@@ -140,13 +126,15 @@ const CustomDatePicker = ({
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const dayString = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-        day
-      ).padStart(2, "0")}`;
+      const dayString = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
+        2,
+        "0"
+      )}`;
       const today = getIndonesiaDate();
-      const todayString = `${today.getFullYear()}-${String(
-        today.getMonth() + 1
-      ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}-${String(today.getDate()).padStart(2, "0")}`;
       const isToday = dayString === todayString;
       const isSelected = tempDate === dayString;
 
@@ -177,10 +165,10 @@ const CustomDatePicker = ({
                 : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
             }
           `}
-          aria-label={`Pilih tanggal ${day} ${currentMonth.toLocaleDateString(
-            "id-ID",
-            { month: "long" }
-          )} ${year}`}>
+          aria-label={`Pilih tanggal ${day} ${currentMonth.toLocaleDateString("id-ID", {
+            month: "long",
+          })} ${year}`}
+        >
           {day}
         </button>
       );
@@ -220,10 +208,9 @@ const CustomDatePicker = ({
             if (e.key === "Enter" && !disabled) {
               setShowDatePicker(true);
             }
-          }}>
-          <span className="flex-1">
-            {value ? formatDate(value) : "Pilih tanggal..."}
-          </span>
+          }}
+        >
+          <span className="flex-1">{value ? formatDate(value) : "Pilih tanggal..."}</span>
           <Calendar
             className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
             size={20}
@@ -252,7 +239,8 @@ const CustomDatePicker = ({
                   type="button"
                   onClick={handleCancel}
                   className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
-                  aria-label="Tutup">
+                  aria-label="Tutup"
+                >
                   ✕
                 </button>
               </div>
@@ -263,7 +251,8 @@ const CustomDatePicker = ({
                   type="button"
                   onClick={handlePrevMonth}
                   className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                  aria-label="Bulan sebelumnya">
+                  aria-label="Bulan sebelumnya"
+                >
                   ←
                 </button>
                 <div className="text-center">
@@ -283,7 +272,8 @@ const CustomDatePicker = ({
                   type="button"
                   onClick={handleNextMonth}
                   className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                  aria-label="Bulan selanjutnya">
+                  aria-label="Bulan selanjutnya"
+                >
                   →
                 </button>
               </div>
@@ -292,15 +282,14 @@ const CustomDatePicker = ({
             {/* Calendar Grid */}
             <div className="p-4">
               <div className="grid grid-cols-7 gap-1 mb-4">
-                {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(
-                  (day, idx) => (
-                    <div
-                      key={idx}
-                      className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1">
-                      {day}
-                    </div>
-                  )
-                )}
+                {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day, idx) => (
+                  <div
+                    key={idx}
+                    className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1"
+                  >
+                    {day}
+                  </div>
+                ))}
                 {renderCalendar()}
               </div>
             </div>
@@ -310,7 +299,8 @@ const CustomDatePicker = ({
               <button
                 type="button"
                 onClick={handleToday}
-                className="w-full mb-3 px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg font-medium hover:bg-blue-200 dark:hover:bg-blue-800/50 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2">
+                className="w-full mb-3 px-4 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg font-medium hover:bg-blue-200 dark:hover:bg-blue-800/50 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+              >
                 <span className="text-base">📅</span>
                 <span>Hari Ini</span>
               </button>
@@ -319,7 +309,8 @@ const CustomDatePicker = ({
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1">
+                  className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1"
+                >
                   <span className="text-sm">🗑️</span>
                   <span className="text-xs sm:text-sm">Hapus</span>
                 </button>
@@ -327,7 +318,8 @@ const CustomDatePicker = ({
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1">
+                  className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1"
+                >
                   <span className="text-sm">↩️</span>
                   <span className="text-xs sm:text-sm">Batal</span>
                 </button>
@@ -335,7 +327,8 @@ const CustomDatePicker = ({
                 <button
                   type="button"
                   onClick={handleSetDate}
-                  className="flex-1 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all duration-200 flex items-center justify-center gap-1">
+                  className="flex-1 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all duration-200 flex items-center justify-center gap-1"
+                >
                   <span className="text-sm">✓</span>
                   <span className="text-xs sm:text-sm">Pilih</span>
                 </button>

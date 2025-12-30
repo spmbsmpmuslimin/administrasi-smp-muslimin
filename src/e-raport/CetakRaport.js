@@ -295,8 +295,6 @@ function CetakRaport() {
       });
 
       setNilaiDetailList(sortedEnrichedData);
-
-      setNilaiDetailList(enrichedData);
     } catch (error) {
       console.error("Error:", error);
       alert("Gagal memuat: " + error.message);
@@ -375,14 +373,25 @@ function CetakRaport() {
 
       if (nilaiError) throw nilaiError;
 
+      console.log(
+        "📊 NILAI DATA SEBELUM SORT:",
+        (nilaiData || []).map((n) => n.mata_pelajaran)
+      );
+
       // ✅ SORT berdasarkan urutan mapel standar
-      const sortedNilaiData = (nilaiData || []).sort((a, b) => {
-        return (
-          getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran)
+      const sortedNilaiData = [...(nilaiData || [])].sort((a, b) => {
+        const orderA = getMapelOrder(a.mata_pelajaran);
+        const orderB = getMapelOrder(b.mata_pelajaran);
+        console.log(
+          `🔢 Comparing: ${a.mata_pelajaran} (${orderA}) vs ${b.mata_pelajaran} (${orderB})`
         );
+        return orderA - orderB;
       });
 
-      if (nilaiError) throw nilaiError;
+      console.log(
+        "✅ NILAI DATA SETELAH SORT:",
+        sortedNilaiData.map((n) => n.mata_pelajaran)
+      );
 
       const { data: kelasData } = await supabase
         .from("classes")
@@ -547,7 +556,7 @@ function CetakRaport() {
       renderHeader(1);
 
       // ========== TABEL MATA PELAJARAN ==========
-      const tableData = (nilaiData || []).map((nilai, idx) => {
+      const tableData = sortedNilaiData.map((nilai, idx) => {
         let capaian =
           nilai.deskripsi_capaian || generateCapaianKompetensi([nilai]) || "-";
 
@@ -616,6 +625,7 @@ function CetakRaport() {
       const neededSpace = 105;
 
       if (remainingSpace < neededSpace) {
+        // Footer halaman 1
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
         doc.text(
@@ -797,15 +807,28 @@ function CetakRaport() {
       doc.setFont("helvetica", "normal");
       doc.text(`NIP. ${nipKepalaSekolah}`, 105, yPos, { align: "center" });
 
-      // ========== FOOTER ==========
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "italic");
-      doc.text(
-        `Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
-        20,
-        287
-      );
-      doc.text(`Halaman : ${currentPage}`, 175, 287);
+      // Footer halaman terakhir
+      if (currentPage === 1) {
+        // Cuma 1 halaman
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.text(
+          `Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
+          20,
+          287
+        );
+        doc.text(`Halaman : 1`, 175, 287);
+      } else if (currentPage === 2) {
+        // Halaman 2
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.text(
+          `Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
+          20,
+          287
+        );
+        doc.text(`Halaman : 2`, 175, 287);
+      }
 
       console.log("✅ PDF SELESAI:", siswa.full_name);
       return doc;

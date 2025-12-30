@@ -3,14 +3,7 @@ import React, { useState } from "react";
 import { X, Download, FileSpreadsheet } from "lucide-react";
 import ExcelJS from "exceljs";
 
-const ExportExcel = ({
-  attendances,
-  teachers,
-  month,
-  year,
-  monthName,
-  onClose,
-}) => {
+const ExportExcel = ({ attendances, teachers, month, year, monthName, onClose }) => {
   const [exporting, setExporting] = useState(false);
 
   // ========================================
@@ -109,9 +102,7 @@ const ExportExcel = ({
   };
 
   const calculateTeacherStats = (teacherId) => {
-    const teacherAttendances = attendances.filter(
-      (att) => att.teacher_id === teacherId
-    );
+    const teacherAttendances = attendances.filter((att) => att.teacher_id === teacherId);
     const hadir = teacherAttendances.filter((a) => a.status === "Hadir").length;
     const total = teacherAttendances.length;
     const percentage = total > 0 ? ((hadir / total) * 100).toFixed(1) : 0;
@@ -153,8 +144,7 @@ const ExportExcel = ({
 
       // Header Info - Nama Sekolah
       worksheet.mergeCells(`A1:${lastColumnLetter}1`);
-      worksheet.getCell("A1").value =
-        "SEKOLAH MENENGAH PERTAMA MUSLIMIN CILILIN";
+      worksheet.getCell("A1").value = "SEKOLAH MENENGAH PERTAMA MUSLIMIN CILILIN";
       worksheet.getCell("A1").font = { bold: true, size: 16 };
       worksheet.getCell("A1").alignment = {
         horizontal: "center",
@@ -172,9 +162,7 @@ const ExportExcel = ({
 
       // Header Info - Bulan
       worksheet.mergeCells(`A3:${lastColumnLetter}3`);
-      worksheet.getCell(
-        "A3"
-      ).value = `BULAN : ${monthName.toUpperCase()} ${year}`;
+      worksheet.getCell("A3").value = `BULAN : ${monthName.toUpperCase()} ${year}`;
       worksheet.getCell("A3").font = { bold: true, size: 12 };
       worksheet.getCell("A3").alignment = {
         horizontal: "center",
@@ -223,10 +211,7 @@ const ExportExcel = ({
           index + 1,
           teacher.full_name,
           ...days.map((day) => {
-            const attendance = getAttendanceForDay(
-              teacher.teacher_id || teacher.id,
-              day
-            );
+            const attendance = getAttendanceForDay(teacher.teacher_id || teacher.id, day);
             return attendance ? getStatusLabel(attendance.status) : "-";
           }),
           stats.hadir,
@@ -404,9 +389,7 @@ const ExportExcel = ({
             <FileSpreadsheet className="text-green-600" size={24} />
             <h3 className="text-xl font-bold text-gray-800">Export ke Excel</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-all">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-all">
             <X size={20} />
           </button>
         </div>
@@ -428,13 +411,15 @@ const ExportExcel = ({
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all">
+            className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all"
+          >
             Batal
           </button>
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2">
+            className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+          >
             {exporting ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>

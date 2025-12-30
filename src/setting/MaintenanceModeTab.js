@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  AlertCircle,
-  Power,
-  Check,
-  Trash2,
-  Users,
-  UserPlus,
-} from "lucide-react";
+import { AlertCircle, Power, Check, Trash2, Users, UserPlus } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 const MaintenanceModeTab = ({ showToast }) => {
@@ -40,11 +33,7 @@ const MaintenanceModeTab = ({ showToast }) => {
       const { data, error } = await supabase
         .from("school_settings")
         .select("setting_key, setting_value")
-        .in("setting_key", [
-          "maintenance_mode",
-          "maintenance_message",
-          "maintenance_whitelist",
-        ]);
+        .in("setting_key", ["maintenance_mode", "maintenance_message", "maintenance_whitelist"]);
 
       if (error) throw error;
 
@@ -54,8 +43,7 @@ const MaintenanceModeTab = ({ showToast }) => {
       });
 
       setMaintenanceMode(
-        settings.maintenance_mode === "true" ||
-          settings.maintenance_mode === true
+        settings.maintenance_mode === "true" || settings.maintenance_mode === true
       );
       setCustomMessage(
         settings.maintenance_message ||
@@ -120,10 +108,7 @@ const MaintenanceModeTab = ({ showToast }) => {
       if (error) throw error;
 
       setMaintenanceMode(newState);
-      showToast?.(
-        newState ? "🔴 Maintenance Mode AKTIF" : "🟢 Aplikasi AKTIF",
-        "success"
-      );
+      showToast?.(newState ? "🔴 Maintenance Mode AKTIF" : "🟢 Aplikasi AKTIF", "success");
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -224,9 +209,7 @@ const MaintenanceModeTab = ({ showToast }) => {
   };
 
   // ✅ Filter users yang belum ada di whitelist untuk dropdown
-  const availableUsers = allUsers.filter(
-    (user) => !whitelistUsers.some((u) => u.id === user.id)
-  );
+  const availableUsers = allUsers.filter((user) => !whitelistUsers.some((u) => u.id === user.id));
 
   if (loading) {
     return (
@@ -253,28 +236,26 @@ const MaintenanceModeTab = ({ showToast }) => {
 
       {/* Status Badge */}
       <div className="p-3 sm:p-4 rounded-lg bg-blue-50 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
-        <p className="text-xs sm:text-sm text-blue-700 dark:text-gray-400 mb-2">
-          Status Aplikasi:
-        </p>
+        <p className="text-xs sm:text-sm text-blue-700 dark:text-gray-400 mb-2">Status Aplikasi:</p>
         <div className="flex items-center gap-2">
           <div
             className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0 ${
               maintenanceMode
                 ? "bg-blue-600 dark:bg-red-600 animate-pulse"
                 : "bg-green-500 dark:bg-green-600"
-            }`}></div>
+            }`}
+          ></div>
           <span
             className={`font-bold text-base sm:text-lg ${
               maintenanceMode
                 ? "text-blue-700 dark:text-red-400"
                 : "text-green-600 dark:text-green-400"
-            }`}>
+            }`}
+          >
             {maintenanceMode ? "🔴 MAINTENANCE" : "🟢 AKTIF"}
           </span>
           <span className="text-xs text-blue-600 dark:text-gray-400 ml-2">
-            {maintenanceMode
-              ? `${whitelistUsers.length} user bisa akses`
-              : "Semua user bisa akses"}
+            {maintenanceMode ? `${whitelistUsers.length} user bisa akses` : "Semua user bisa akses"}
           </span>
         </div>
       </div>
@@ -294,19 +275,15 @@ const MaintenanceModeTab = ({ showToast }) => {
             onClick={handleToggle}
             disabled={isSaving}
             className={`relative w-14 h-8 sm:w-16 sm:h-9 rounded-full transition-all flex-shrink-0 ${
-              maintenanceMode
-                ? "bg-blue-600 dark:bg-red-600"
-                : "bg-gray-300 dark:bg-gray-700"
-            } ${
-              isSaving
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer hover:shadow-lg"
-            }`}
-            aria-label={maintenanceMode ? "Nonaktifkan" : "Aktifkan"}>
+              maintenanceMode ? "bg-blue-600 dark:bg-red-600" : "bg-gray-300 dark:bg-gray-700"
+            } ${isSaving ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:shadow-lg"}`}
+            aria-label={maintenanceMode ? "Nonaktifkan" : "Aktifkan"}
+          >
             <div
               className={`absolute top-1 left-1 sm:top-1.5 sm:left-1.5 w-5 h-5 sm:w-6 sm:h-6 bg-white dark:bg-gray-200 rounded-full transition-all flex items-center justify-center shadow-md ${
                 maintenanceMode ? "translate-x-5 sm:translate-x-7" : ""
-              }`}>
+              }`}
+            >
               <Power className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             </div>
           </button>
@@ -354,10 +331,9 @@ const MaintenanceModeTab = ({ showToast }) => {
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 disabled={loadingUsers}
-                className="flex-1 px-3 py-2 border border-blue-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-purple-600 text-sm min-h-[44px] disabled:bg-blue-50 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">
-                <option value="">
-                  {loadingUsers ? "Loading..." : "-- Pilih User --"}
-                </option>
+                className="flex-1 px-3 py-2 border border-blue-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-purple-600 text-sm min-h-[44px] disabled:bg-blue-50 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+              >
+                <option value="">{loadingUsers ? "Loading..." : "-- Pilih User --"}</option>
                 {availableUsers.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.full_name}
@@ -367,7 +343,8 @@ const MaintenanceModeTab = ({ showToast }) => {
               <button
                 onClick={handleAddUserFromDropdown}
                 disabled={!selectedUserId || loadingUsers}
-                className="px-4 py-2 bg-blue-600 dark:bg-purple-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-purple-600 transition disabled:bg-blue-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm font-medium min-h-[44px]">
+                className="px-4 py-2 bg-blue-600 dark:bg-purple-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-purple-600 transition disabled:bg-blue-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm font-medium min-h-[44px]"
+              >
                 <UserPlus className="w-4 h-4" />
                 <span>Tambah</span>
               </button>
@@ -385,7 +362,8 @@ const MaintenanceModeTab = ({ showToast }) => {
             <div className="p-3 sm:p-4 bg-blue-50/70 dark:bg-green-900/10 rounded-lg border border-blue-200 dark:border-green-800">
               <button
                 onClick={() => setShowWhitelistDetails(!showWhitelistDetails)}
-                className="w-full flex items-center justify-between hover:bg-blue-100 dark:hover:bg-green-900/20 p-2 rounded-lg transition min-h-[44px]">
+                className="w-full flex items-center justify-between hover:bg-blue-100 dark:hover:bg-green-900/20 p-2 rounded-lg transition min-h-[44px]"
+              >
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-blue-800 dark:text-gray-100 text-sm sm:text-base">
                     ✅ User yang Diwhitelist
@@ -405,7 +383,8 @@ const MaintenanceModeTab = ({ showToast }) => {
                   {whitelistUsers.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-green-700">
+                      className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-green-700"
+                    >
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-blue-800 dark:text-gray-100 truncate text-sm sm:text-base">
                           {user.full_name}
@@ -417,7 +396,8 @@ const MaintenanceModeTab = ({ showToast }) => {
                       <button
                         onClick={() => handleRemoveUser(user.id)}
                         className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition text-red-600 dark:text-red-400 ml-2 flex-shrink-0"
-                        aria-label={`Hapus ${user.full_name}`}>
+                        aria-label={`Hapus ${user.full_name}`}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

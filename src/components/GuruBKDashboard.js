@@ -70,14 +70,10 @@ const GuruBKDashboard = ({ user }) => {
       // Calculate statistics
       const total = konselingData?.length || 0;
       const dalamProses =
-        konselingData?.filter((k) => k.status_layanan === "Dalam Proses")
-          .length || 0;
-      const selesai =
-        konselingData?.filter((k) => k.status_layanan === "Selesai").length ||
-        0;
+        konselingData?.filter((k) => k.status_layanan === "Dalam Proses").length || 0;
+      const selesai = konselingData?.filter((k) => k.status_layanan === "Selesai").length || 0;
       const perluTindakLanjut =
-        konselingData?.filter((k) => k.status_layanan === "Perlu Tindak Lanjut")
-          .length || 0;
+        konselingData?.filter((k) => k.status_layanan === "Perlu Tindak Lanjut").length || 0;
 
       // Group by grade (extract from class_id format like "7A", "8B", etc)
       const gradeStats = {};
@@ -152,7 +148,8 @@ const GuruBKDashboard = ({ user }) => {
         <button
           onClick={handleNavigateToPresensi}
           className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 shadow-sm active:scale-95"
-          aria-label="Presensi Guru">
+          aria-label="Presensi Guru"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg">👨‍🏫</span>
           </div>
@@ -164,7 +161,8 @@ const GuruBKDashboard = ({ user }) => {
         <button
           onClick={handleNavigateToKonseling}
           className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-300 dark:hover:border-green-600 transition-all duration-200 shadow-sm active:scale-95"
-          aria-label="Konseling">
+          aria-label="Konseling"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg">📋</span>
           </div>
@@ -176,7 +174,8 @@ const GuruBKDashboard = ({ user }) => {
         <button
           onClick={handleNavigateToStudents}
           className="hidden sm:flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-200 shadow-sm active:scale-95"
-          aria-label="Data Siswa">
+          aria-label="Data Siswa"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg">👤</span>
           </div>
@@ -191,7 +190,8 @@ const GuruBKDashboard = ({ user }) => {
         <button
           onClick={handleNavigateToNotes}
           className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30 hover:border-yellow-300 dark:hover:border-yellow-600 transition-all duration-200 shadow-sm active:scale-95"
-          aria-label="Catatan Siswa">
+          aria-label="Catatan Siswa"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg">📝</span>
           </div>
@@ -203,7 +203,8 @@ const GuruBKDashboard = ({ user }) => {
         <button
           onClick={handleNavigateToSchedule}
           className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200 shadow-sm active:scale-95"
-          aria-label="Jadwal">
+          aria-label="Jadwal"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg">📅</span>
           </div>
@@ -215,7 +216,8 @@ const GuruBKDashboard = ({ user }) => {
         <button
           onClick={handleNavigateToReports}
           className="hidden sm:flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-300 dark:hover:border-red-600 transition-all duration-200 shadow-sm active:scale-95"
-          aria-label="Laporan">
+          aria-label="Laporan"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg">📊</span>
           </div>
@@ -230,7 +232,8 @@ const GuruBKDashboard = ({ user }) => {
         <button
           onClick={handleNavigateToStudents}
           className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-200 shadow-sm active:scale-95"
-          aria-label="Data Siswa">
+          aria-label="Data Siswa"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg">👤</span>
           </div>
@@ -242,7 +245,8 @@ const GuruBKDashboard = ({ user }) => {
         <button
           onClick={handleNavigateToReports}
           className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-300 dark:hover:border-red-600 transition-all duration-200 shadow-sm active:scale-95"
-          aria-label="Laporan">
+          aria-label="Laporan"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center mb-2 shadow-md">
             <span className="text-white text-lg">📊</span>
           </div>
@@ -259,9 +263,7 @@ const GuruBKDashboard = ({ user }) => {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-gray-400">
-            Memuat dashboard BK/BP...
-          </p>
+          <p className="text-slate-600 dark:text-gray-400">Memuat dashboard BK/BP...</p>
         </div>
       </div>
     );
@@ -282,7 +284,8 @@ const GuruBKDashboard = ({ user }) => {
           <button
             onClick={() => setError(null)}
             className="text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-400 font-bold text-xl self-end sm:self-auto"
-            aria-label="Tutup pesan error">
+            aria-label="Tutup pesan error"
+          >
             ×
           </button>
         </div>
@@ -324,9 +327,7 @@ const GuruBKDashboard = ({ user }) => {
               </p>
             </div>
             <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-xl">
-                📋
-              </span>
+              <span className="text-white text-sm sm:text-lg lg:text-xl">📋</span>
             </div>
           </div>
         </div>
@@ -343,9 +344,7 @@ const GuruBKDashboard = ({ user }) => {
               </p>
             </div>
             <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-xl">
-                ⏳
-              </span>
+              <span className="text-white text-sm sm:text-lg lg:text-xl">⏳</span>
             </div>
           </div>
         </div>
@@ -354,17 +353,13 @@ const GuruBKDashboard = ({ user }) => {
         <div className="group bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-green-900/20 dark:via-gray-800 dark:to-emerald-900/20 rounded-xl shadow-lg hover:shadow-xl border border-green-100 dark:border-green-800/50 p-3 sm:p-4 lg:p-5 transform hover:-translate-y-1 transition-all duration-300 active:scale-95">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-green-600 dark:text-green-400 mb-1 font-medium">
-                Selesai
-              </p>
+              <p className="text-xs text-green-600 dark:text-green-400 mb-1 font-medium">Selesai</p>
               <p className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-slate-800 dark:text-white group-hover:text-green-700 dark:group-hover:text-green-400 transition-colors">
                 {stats.selesai}
               </p>
             </div>
             <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-xl">
-                ✅
-              </span>
+              <span className="text-white text-sm sm:text-lg lg:text-xl">✅</span>
             </div>
           </div>
         </div>
@@ -381,9 +376,7 @@ const GuruBKDashboard = ({ user }) => {
               </p>
             </div>
             <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-sm sm:text-lg lg:text-xl">
-                🔔
-              </span>
+              <span className="text-white text-sm sm:text-lg lg:text-xl">🔔</span>
             </div>
           </div>
         </div>
@@ -401,7 +394,8 @@ const GuruBKDashboard = ({ user }) => {
             <button
               onClick={handleNavigateToPresensi}
               className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 dark:from-purple-900/20 dark:via-gray-800 dark:to-violet-900/20 hover:from-purple-100 dark:hover:from-purple-900/40 hover:to-violet-100 dark:hover:to-violet-900/40 text-slate-800 dark:text-gray-200 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-purple-100 dark:border-purple-800/50 hover:border-purple-200 dark:hover:border-purple-600 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105 active:scale-95"
-              aria-label="Presensi Guru">
+              aria-label="Presensi Guru"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
                 <span className="text-white text-sm sm:text-lg">📝</span>
               </div>
@@ -417,7 +411,8 @@ const GuruBKDashboard = ({ user }) => {
             <button
               onClick={handleNavigateToKonseling}
               className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-900/20 dark:via-gray-800 dark:to-indigo-900/20 hover:from-blue-100 dark:hover:from-blue-900/40 hover:to-indigo-100 dark:hover:to-indigo-900/40 text-slate-800 dark:text-gray-200 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-blue-100 dark:border-blue-800/50 hover:border-blue-200 dark:hover:border-blue-600 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105 active:scale-95"
-              aria-label="Tambah Konseling">
+              aria-label="Tambah Konseling"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
                 <span className="text-white text-sm sm:text-lg">📝</span>
               </div>
@@ -433,7 +428,8 @@ const GuruBKDashboard = ({ user }) => {
             <button
               onClick={handleNavigateToKonseling}
               className="group bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-green-900/20 dark:via-gray-800 dark:to-emerald-900/20 hover:from-green-100 dark:hover:from-green-900/40 hover:to-emerald-100 dark:hover:to-emerald-900/40 text-slate-800 dark:text-gray-200 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-green-100 dark:border-green-800/50 hover:border-green-200 dark:hover:border-green-600 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105 active:scale-95"
-              aria-label="Lihat Data Konseling">
+              aria-label="Lihat Data Konseling"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
                 <span className="text-white text-sm sm:text-lg">📊</span>
               </div>
@@ -449,7 +445,8 @@ const GuruBKDashboard = ({ user }) => {
             <button
               onClick={handleRetry}
               className="group bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-orange-900/20 dark:via-gray-800 dark:to-amber-900/20 hover:from-orange-100 dark:hover:from-orange-900/40 hover:to-amber-100 dark:hover:to-amber-900/40 text-slate-800 dark:text-gray-200 p-3 sm:p-4 rounded-xl text-left h-auto transition-all duration-300 border border-orange-100 dark:border-orange-800/50 hover:border-orange-200 dark:hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:-translate-y-2 hover:scale-105 active:scale-95"
-              aria-label="Refresh Data">
+              aria-label="Refresh Data"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 group-hover:rotate-180 transition-all duration-500 shadow-lg">
                 <span className="text-white text-sm sm:text-lg">🔄</span>
               </div>
@@ -474,7 +471,8 @@ const GuruBKDashboard = ({ user }) => {
           <button
             onClick={handleNavigateToKonseling}
             className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-105 active:scale-95"
-            aria-label="Lihat Semua Konseling">
+            aria-label="Lihat Semua Konseling"
+          >
             <span className="mr-1">👁️</span> Lihat Semua
           </button>
         </div>
@@ -486,7 +484,8 @@ const GuruBKDashboard = ({ user }) => {
               {stats.recentKonseling.map((konseling) => (
                 <div
                   key={konseling.id}
-                  className="group border-l-4 border-blue-500 dark:border-blue-600 pl-4 py-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-r-xl hover:from-blue-100/80 hover:to-indigo-100/50 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/40 transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
+                  className="group border-l-4 border-blue-500 dark:border-blue-600 pl-4 py-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-r-xl hover:from-blue-100/80 hover:to-indigo-100/50 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/40 transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-semibold text-slate-800 dark:text-white text-sm group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
@@ -499,14 +498,11 @@ const GuruBKDashboard = ({ user }) => {
                       <p className="text-xs text-slate-500 dark:text-gray-500 mt-1">
                         🕒{" "}
                         {konseling.tanggal
-                          ? new Date(konseling.tanggal).toLocaleDateString(
-                              "id-ID",
-                              {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )
+                          ? new Date(konseling.tanggal).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })
                           : "-"}
                       </p>
                     </div>
@@ -517,7 +513,8 @@ const GuruBKDashboard = ({ user }) => {
                           : konseling.status_layanan === "Dalam Proses"
                           ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
                           : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                      }`}>
+                      }`}
+                    >
                       {konseling.status_layanan || "Tidak ada status"}
                     </span>
                   </div>

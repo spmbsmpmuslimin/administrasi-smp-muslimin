@@ -11,15 +11,7 @@ const TodaySchedule = ({ currentUser }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Get day name in Indonesian
-  const dayNames = [
-    "Minggu",
-    "Senin",
-    "Selasa",
-    "Rabu",
-    "Kamis",
-    "Jumat",
-    "Sabtu",
-  ];
+  const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
   const today = dayNames[new Date().getDay()];
 
   useEffect(() => {
@@ -158,13 +150,11 @@ const TodaySchedule = ({ currentUser }) => {
                 />
                 <div>
                   <p className="text-orange-900 dark:text-orange-300 font-bold text-sm sm:text-base mb-1">
-                    🔔 Kelas Berikutnya:{" "}
-                    {getTimeUntilNext(nextClass.start_time)}
+                    🔔 Kelas Berikutnya: {getTimeUntilNext(nextClass.start_time)}
                   </p>
                   <p className="text-orange-800 dark:text-orange-200 text-sm sm:text-base">
-                    <strong>Kelas {nextClass.class_id}</strong> •{" "}
-                    {formatTime(nextClass.start_time)} -{" "}
-                    {formatTime(nextClass.end_time)}
+                    <strong>Kelas {nextClass.class_id}</strong> • {formatTime(nextClass.start_time)}{" "}
+                    - {formatTime(nextClass.end_time)}
                   </p>
                 </div>
               </div>
@@ -177,35 +167,25 @@ const TodaySchedule = ({ currentUser }) => {
               <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {schedules.length}
               </p>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                Total Kelas
-              </p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Kelas</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 text-center">
               <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
                 {
-                  schedules.filter(
-                    (s) =>
-                      getClassStatus(s.start_time, s.end_time) === "finished"
-                  ).length
+                  schedules.filter((s) => getClassStatus(s.start_time, s.end_time) === "finished")
+                    .length
                 }
               </p>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                Selesai
-              </p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Selesai</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 text-center">
               <p className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">
                 {
-                  schedules.filter(
-                    (s) =>
-                      getClassStatus(s.start_time, s.end_time) !== "finished"
-                  ).length
+                  schedules.filter((s) => getClassStatus(s.start_time, s.end_time) !== "finished")
+                    .length
                 }
               </p>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                Tersisa
-              </p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Tersisa</p>
             </div>
           </div>
 
@@ -227,34 +207,26 @@ const TodaySchedule = ({ currentUser }) => {
                 return acc;
               }, {});
 
-              return Object.entries(groupedSchedules).map(
-                ([classId, classSchedules]) => {
-                  // Get overall status for this class group
-                  const allFinished = classSchedules.every(
-                    (s) =>
-                      getClassStatus(s.start_time, s.end_time) === "finished"
-                  );
-                  const anyOngoing = classSchedules.some(
-                    (s) =>
-                      getClassStatus(s.start_time, s.end_time) === "ongoing"
-                  );
+              return Object.entries(groupedSchedules).map(([classId, classSchedules]) => {
+                // Get overall status for this class group
+                const allFinished = classSchedules.every(
+                  (s) => getClassStatus(s.start_time, s.end_time) === "finished"
+                );
+                const anyOngoing = classSchedules.some(
+                  (s) => getClassStatus(s.start_time, s.end_time) === "ongoing"
+                );
 
-                  const groupStatus = anyOngoing
-                    ? "ongoing"
-                    : allFinished
-                    ? "finished"
-                    : "upcoming";
+                const groupStatus = anyOngoing ? "ongoing" : allFinished ? "finished" : "upcoming";
 
-                  // Get time range
-                  const firstTime = classSchedules[0].start_time;
-                  const lastTime =
-                    classSchedules[classSchedules.length - 1].end_time;
-                  const jpCount = classSchedules.length;
+                // Get time range
+                const firstTime = classSchedules[0].start_time;
+                const lastTime = classSchedules[classSchedules.length - 1].end_time;
+                const jpCount = classSchedules.length;
 
-                  return (
-                    <div
-                      key={classId}
-                      className={`
+                return (
+                  <div
+                    key={classId}
+                    className={`
                       p-3 sm:p-4 rounded-lg border-l-4 transition-all
                       min-h-[70px] sm:min-h-[80px] flex items-center
                       ${
@@ -264,11 +236,12 @@ const TodaySchedule = ({ currentUser }) => {
                           ? "bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-400"
                           : "bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 opacity-80"
                       }
-                    `}>
-                      <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                          <div
-                            className={`
+                    `}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                        <div
+                          className={`
                           w-10 h-10 sm:w-12 sm:h-12 rounded flex items-center justify-center flex-shrink-0 text-white font-bold text-sm sm:text-base
                           ${
                             groupStatus === "ongoing"
@@ -277,69 +250,70 @@ const TodaySchedule = ({ currentUser }) => {
                               ? "bg-blue-500 dark:bg-blue-600"
                               : "bg-gray-400 dark:bg-gray-600"
                           }
-                        `}>
-                            {jpCount}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={`font-bold text-base sm:text-lg truncate ${
-                                groupStatus === "ongoing"
-                                  ? "text-green-900 dark:text-green-300"
-                                  : groupStatus === "upcoming"
-                                  ? "text-blue-900 dark:text-blue-300"
-                                  : "text-gray-600 dark:text-gray-400"
-                              }`}>
-                              Kelas {classId}
-                            </p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Clock
-                                size={12}
-                                className={
-                                  groupStatus === "ongoing"
-                                    ? "text-green-600 dark:text-green-400"
-                                    : groupStatus === "upcoming"
-                                    ? "text-blue-600 dark:text-blue-400"
-                                    : "text-gray-500 dark:text-gray-500"
-                                }
-                              />
-                              <p
-                                className={`text-xs sm:text-sm ${
-                                  groupStatus === "ongoing"
-                                    ? "text-green-700 dark:text-green-400"
-                                    : groupStatus === "upcoming"
-                                    ? "text-blue-700 dark:text-blue-400"
-                                    : "text-gray-500 dark:text-gray-500"
-                                }`}>
-                                {formatTime(firstTime)} - {formatTime(lastTime)}{" "}
-                                • {jpCount} JP
-                              </p>
-                            </div>
-                          </div>
+                        `}
+                        >
+                          {jpCount}
                         </div>
 
-                        <div className="flex-shrink-0 ml-2">
-                          {groupStatus === "ongoing" && (
-                            <span className="bg-green-500 dark:bg-green-600 text-white text-xs font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded whitespace-nowrap">
-                              BERLANGSUNG
-                            </span>
-                          )}
-                          {groupStatus === "upcoming" && (
-                            <span className="bg-blue-500 dark:bg-blue-600 text-white text-xs font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded whitespace-nowrap">
-                              AKAN DATANG
-                            </span>
-                          )}
-                          {groupStatus === "finished" && (
-                            <span className="bg-gray-400 dark:bg-gray-600 text-white text-xs font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded whitespace-nowrap">
-                              SELESAI
-                            </span>
-                          )}
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`font-bold text-base sm:text-lg truncate ${
+                              groupStatus === "ongoing"
+                                ? "text-green-900 dark:text-green-300"
+                                : groupStatus === "upcoming"
+                                ? "text-blue-900 dark:text-blue-300"
+                                : "text-gray-600 dark:text-gray-400"
+                            }`}
+                          >
+                            Kelas {classId}
+                          </p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Clock
+                              size={12}
+                              className={
+                                groupStatus === "ongoing"
+                                  ? "text-green-600 dark:text-green-400"
+                                  : groupStatus === "upcoming"
+                                  ? "text-blue-600 dark:text-blue-400"
+                                  : "text-gray-500 dark:text-gray-500"
+                              }
+                            />
+                            <p
+                              className={`text-xs sm:text-sm ${
+                                groupStatus === "ongoing"
+                                  ? "text-green-700 dark:text-green-400"
+                                  : groupStatus === "upcoming"
+                                  ? "text-blue-700 dark:text-blue-400"
+                                  : "text-gray-500 dark:text-gray-500"
+                              }`}
+                            >
+                              {formatTime(firstTime)} - {formatTime(lastTime)} • {jpCount} JP
+                            </p>
+                          </div>
                         </div>
                       </div>
+
+                      <div className="flex-shrink-0 ml-2">
+                        {groupStatus === "ongoing" && (
+                          <span className="bg-green-500 dark:bg-green-600 text-white text-xs font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded whitespace-nowrap">
+                            BERLANGSUNG
+                          </span>
+                        )}
+                        {groupStatus === "upcoming" && (
+                          <span className="bg-blue-500 dark:bg-blue-600 text-white text-xs font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded whitespace-nowrap">
+                            AKAN DATANG
+                          </span>
+                        )}
+                        {groupStatus === "finished" && (
+                          <span className="bg-gray-400 dark:bg-gray-600 text-white text-xs font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded whitespace-nowrap">
+                            SELESAI
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  );
-                }
-              );
+                  </div>
+                );
+              });
             })()}
           </div>
         </>

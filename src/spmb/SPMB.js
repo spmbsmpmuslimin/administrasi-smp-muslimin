@@ -220,10 +220,7 @@ const useStudentsData = (userData, showToast, targetYear) => {
             .update(combinedData)
             .eq("id", editingStudent.id);
         } else {
-          result = await supabase
-            .from("siswa_baru")
-            .insert([combinedData])
-            .select();
+          result = await supabase.from("siswa_baru").insert([combinedData]).select();
         }
 
         if (result.error) throw result.error;
@@ -242,10 +239,7 @@ const useStudentsData = (userData, showToast, targetYear) => {
         return true;
       } catch (error) {
         console.error("Error saving student:", error);
-        showToast(
-          `Gagal ${isEdit ? "mengupdate" : "menyimpan"} data: ${error.message}`,
-          "error"
-        );
+        showToast(`Gagal ${isEdit ? "mengupdate" : "menyimpan"} data: ${error.message}`, "error");
         return false;
       } finally {
         setIsLoading(false);
@@ -263,10 +257,7 @@ const useStudentsData = (userData, showToast, targetYear) => {
 
       setIsLoading(true);
       try {
-        const { error } = await supabase
-          .from("siswa_baru")
-          .delete()
-          .eq("id", id);
+        const { error } = await supabase.from("siswa_baru").delete().eq("id", id);
 
         if (error) throw error;
 
@@ -346,46 +337,38 @@ const SPMB = ({ user, onShowToast }) => {
   }, [searchInput]);
 
   // Filter students berdasarkan searchTerm - CLIENT SIDE (SMOOTH!)
-  const { filteredStudents, filteredTotal, filteredTotalPages } =
-    useMemo(() => {
-      const rowsPerPage = 20;
+  const { filteredStudents, filteredTotal, filteredTotalPages } = useMemo(() => {
+    const rowsPerPage = 20;
 
-      if (!searchTerm.trim()) {
-        // Kalau kosong, pake data dari database
-        return {
-          filteredStudents: students,
-          filteredTotal: totalStudents,
-          filteredTotalPages: totalPages,
-        };
-      }
-
-      // Kalau ada search, filter client-side
-      const search = searchTerm.toLowerCase();
-      const filtered = allStudents.filter(
-        (s) =>
-          s.nama_lengkap?.toLowerCase().includes(search) ||
-          s.asal_sekolah?.toLowerCase().includes(search) ||
-          s.nama_ayah?.toLowerCase().includes(search) ||
-          s.nama_ibu?.toLowerCase().includes(search) ||
-          s.no_pendaftaran?.toLowerCase().includes(search)
-      );
-
-      const from = (currentPage - 1) * rowsPerPage;
-      const to = from + rowsPerPage;
-
+    if (!searchTerm.trim()) {
+      // Kalau kosong, pake data dari database
       return {
-        filteredStudents: filtered.slice(from, to),
-        filteredTotal: filtered.length,
-        filteredTotalPages: Math.ceil(filtered.length / rowsPerPage),
+        filteredStudents: students,
+        filteredTotal: totalStudents,
+        filteredTotalPages: totalPages,
       };
-    }, [
-      searchTerm,
-      students,
-      allStudents,
-      totalStudents,
-      totalPages,
-      currentPage,
-    ]);
+    }
+
+    // Kalau ada search, filter client-side
+    const search = searchTerm.toLowerCase();
+    const filtered = allStudents.filter(
+      (s) =>
+        s.nama_lengkap?.toLowerCase().includes(search) ||
+        s.asal_sekolah?.toLowerCase().includes(search) ||
+        s.nama_ayah?.toLowerCase().includes(search) ||
+        s.nama_ibu?.toLowerCase().includes(search) ||
+        s.no_pendaftaran?.toLowerCase().includes(search)
+    );
+
+    const from = (currentPage - 1) * rowsPerPage;
+    const to = from + rowsPerPage;
+
+    return {
+      filteredStudents: filtered.slice(from, to),
+      filteredTotal: filtered.length,
+      filteredTotalPages: Math.ceil(filtered.length / rowsPerPage),
+    };
+  }, [searchTerm, students, allStudents, totalStudents, totalPages, currentPage]);
 
   // Reset page saat search berubah
   useEffect(() => {
@@ -463,12 +446,8 @@ const SPMB = ({ user, onShowToast }) => {
   }, [loadStudents]);
 
   // Calculate statistics
-  const maleStudents = allStudents.filter(
-    (s) => s.jenis_kelamin === "L"
-  ).length;
-  const femaleStudents = allStudents.filter(
-    (s) => s.jenis_kelamin === "P"
-  ).length;
+  const maleStudents = allStudents.filter((s) => s.jenis_kelamin === "L").length;
+  const femaleStudents = allStudents.filter((s) => s.jenis_kelamin === "P").length;
 
   const navItems = [
     {
@@ -499,14 +478,11 @@ const SPMB = ({ user, onShowToast }) => {
                 : toast.type === "error"
                 ? "bg-red-50 dark:bg-red-900/30 border-red-500 dark:border-red-600 text-red-800 dark:text-red-200"
                 : "bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 text-blue-800 dark:text-blue-200"
-            }`}>
+            }`}
+          >
             <div className="flex items-center gap-2">
               <span className="text-lg">
-                {toast.type === "success"
-                  ? "✓"
-                  : toast.type === "error"
-                  ? "✕"
-                  : "ℹ"}
+                {toast.type === "success" ? "✓" : toast.type === "error" ? "✕" : "ℹ"}
               </span>
               <span className="text-sm font-medium">{toast.message}</span>
             </div>
@@ -553,7 +529,8 @@ const SPMB = ({ user, onShowToast }) => {
                   activeTab === item.key
                     ? "bg-blue-600 dark:bg-blue-700 text-white shadow-sm"
                     : "text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700"
-                }`}>
+                }`}
+              >
                 <span className="text-sm sm:text-base">{item.fullLabel}</span>
               </button>
             ))}
@@ -563,18 +540,16 @@ const SPMB = ({ user, onShowToast }) => {
         {/* Tab Content */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6">
           {/* Loading State untuk form tab */}
-          {(isLoading || isLoadingTargetYear) &&
-            activeTab !== "form" &&
-            activeTab !== "list" && (
-              <div className="space-y-3 sm:space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="animate-pulse bg-gray-200 dark:bg-gray-700 h-16 sm:h-20 rounded-lg"
-                  />
-                ))}
-              </div>
-            )}
+          {(isLoading || isLoadingTargetYear) && activeTab !== "form" && activeTab !== "list" && (
+            <div className="space-y-3 sm:space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse bg-gray-200 dark:bg-gray-700 h-16 sm:h-20 rounded-lg"
+                />
+              ))}
+            </div>
+          )}
 
           {/* Content */}
           {!isLoadingTargetYear && (
@@ -593,9 +568,7 @@ const SPMB = ({ user, onShowToast }) => {
                 <>
                   {filteredStudents.length === 0 && !searchInput ? (
                     <div className="text-center py-12 sm:py-16">
-                      <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">
-                        🔭
-                      </div>
+                      <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">🔭</div>
                       <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg font-medium">
                         Belum ada data siswa
                       </p>
@@ -605,9 +578,7 @@ const SPMB = ({ user, onShowToast }) => {
                     </div>
                   ) : filteredStudents.length === 0 && searchInput ? (
                     <div className="text-center py-12 sm:py-16">
-                      <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">
-                        🔍
-                      </div>
+                      <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">🔍</div>
                       <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg font-medium">
                         Tidak ada hasil
                       </p>
@@ -642,9 +613,7 @@ const SPMB = ({ user, onShowToast }) => {
                   totalStudents={totalStudents}
                   maleStudents={maleStudents}
                   femaleStudents={femaleStudents}
-                  getCurrentAcademicYear={() =>
-                    targetYear || getCurrentAcademicYear()
-                  }
+                  getCurrentAcademicYear={() => targetYear || getCurrentAcademicYear()}
                 />
               )}
 
@@ -655,9 +624,7 @@ const SPMB = ({ user, onShowToast }) => {
                   isLoading={isLoading}
                   onRefreshData={handleRefreshData}
                   supabase={supabase}
-                  getCurrentAcademicYear={() =>
-                    targetYear || getCurrentAcademicYear()
-                  }
+                  getCurrentAcademicYear={() => targetYear || getCurrentAcademicYear()}
                 />
               )}
             </>
@@ -676,7 +643,8 @@ const SPMB = ({ user, onShowToast }) => {
                 activeTab === item.key
                   ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-700/50"
                   : "text-gray-600 dark:text-gray-400"
-              }`}>
+              }`}
+            >
               <span className="text-xl">
                 {item.key === "form"
                   ? "📝"

@@ -102,9 +102,7 @@ export const generateClassDistribution = (
       // ULTRA STRICT Round-Robin
       const result = [];
       const schools = Object.keys(bySchool).sort();
-      const maxLength = Math.max(
-        ...Object.values(bySchool).map((arr) => arr.length)
-      );
+      const maxLength = Math.max(...Object.values(bySchool).map((arr) => arr.length));
 
       for (let i = 0; i < maxLength; i++) {
         schools.forEach((school) => {
@@ -139,14 +137,9 @@ export const generateClassDistribution = (
     let maleIndex = 0;
     classNames.forEach((className, classIdx) => {
       const targetMales =
-        Math.floor(males.length / numClasses) +
-        (classIdx < males.length % numClasses ? 1 : 0);
+        Math.floor(males.length / numClasses) + (classIdx < males.length % numClasses ? 1 : 0);
 
-      for (
-        let i = 0;
-        i < targetMales && maleIndex < distributedMales.length;
-        i++
-      ) {
+      for (let i = 0; i < targetMales && maleIndex < distributedMales.length; i++) {
         distribution[className].push(distributedMales[maleIndex]);
         maleIndex++;
       }
@@ -156,14 +149,9 @@ export const generateClassDistribution = (
     let femaleIndex = 0;
     classNames.forEach((className, classIdx) => {
       const targetFemales =
-        Math.floor(females.length / numClasses) +
-        (classIdx < females.length % numClasses ? 1 : 0);
+        Math.floor(females.length / numClasses) + (classIdx < females.length % numClasses ? 1 : 0);
 
-      for (
-        let i = 0;
-        i < targetFemales && femaleIndex < distributedFemales.length;
-        i++
-      ) {
+      for (let i = 0; i < targetFemales && femaleIndex < distributedFemales.length; i++) {
         distribution[className].push(distributedFemales[femaleIndex]);
         femaleIndex++;
       }
@@ -187,9 +175,7 @@ export const generateClassDistribution = (
       (s) => s.asal_sekolah && s.asal_sekolah !== "Unknown"
     );
     const uniqueSchools = [
-      ...new Set(
-        studentsWithSchool.map((s) => sanitizeSchoolName(s.asal_sekolah))
-      ),
+      ...new Set(studentsWithSchool.map((s) => sanitizeSchoolName(s.asal_sekolah))),
     ];
 
     console.log("🔍 Rebalancing Stats:");
@@ -197,18 +183,13 @@ export const generateClassDistribution = (
     console.log(`Total Students with School: ${studentsWithSchool.length}`);
 
     // ⭐ OPTIMIZED THRESHOLDS - Lebih ketat!
-    const avgSchoolsFromSameSchool =
-      studentsWithSchool.length / uniqueSchools.length / numClasses;
+    const avgSchoolsFromSameSchool = studentsWithSchool.length / uniqueSchools.length / numClasses;
 
     // Threshold lebih ketat: maksimal hanya boleh 1 siswa lebih dari rata-rata
     const maxSchoolPerClass = Math.ceil(avgSchoolsFromSameSchool);
     const minSchoolPerClass = Math.floor(avgSchoolsFromSameSchool);
 
-    console.log(
-      `Target students per school per class: ${avgSchoolsFromSameSchool.toFixed(
-        2
-      )}`
-    );
+    console.log(`Target students per school per class: ${avgSchoolsFromSameSchool.toFixed(2)}`);
     console.log(`Max allowed: ${maxSchoolPerClass}`);
     console.log(`Min target: ${minSchoolPerClass}`);
 
@@ -233,8 +214,7 @@ export const generateClassDistribution = (
                 );
 
                 if (sourceStudentIdx !== -1) {
-                  const sourceStudent =
-                    distribution[className][sourceStudentIdx];
+                  const sourceStudent = distribution[className][sourceStudentIdx];
 
                   const targetStudentIdx = distribution[targetClass].findIndex(
                     (s) =>
@@ -243,11 +223,8 @@ export const generateClassDistribution = (
                   );
 
                   if (targetStudentIdx !== -1) {
-                    const targetStudent =
-                      distribution[targetClass][targetStudentIdx];
-                    const targetSchool = sanitizeSchoolName(
-                      targetStudent.asal_sekolah
-                    );
+                    const targetStudent = distribution[targetClass][targetStudentIdx];
+                    const targetSchool = sanitizeSchoolName(targetStudent.asal_sekolah);
 
                     // Perform swap
                     distribution[className][sourceStudentIdx] = targetStudent;
@@ -293,9 +270,7 @@ export const generateClassDistribution = (
       let minDiversity = Infinity;
 
       for (const className of classNames) {
-        const schoolsInClass = Object.keys(
-          schoolCountPerClass[className]
-        ).filter(
+        const schoolsInClass = Object.keys(schoolCountPerClass[className]).filter(
           (s) => s !== "Unknown" && schoolCountPerClass[className][s] > 0
         );
         if (schoolsInClass.length < minDiversity) {
@@ -311,21 +286,16 @@ export const generateClassDistribution = (
         break;
       }
 
-      const schoolsInMinClass = Object.keys(
-        schoolCountPerClass[minDiversityClass]
-      ).filter(
+      const schoolsInMinClass = Object.keys(schoolCountPerClass[minDiversityClass]).filter(
         (s) => s !== "Unknown" && schoolCountPerClass[minDiversityClass][s] > 0
       );
-      const missingSchools = uniqueSchools.filter(
-        (s) => !schoolsInMinClass.includes(s)
-      );
+      const missingSchools = uniqueSchools.filter((s) => !schoolsInMinClass.includes(s));
 
       for (const missingSchool of missingSchools) {
         for (const sourceClass of classNames) {
           if (sourceClass === minDiversityClass) continue;
 
-          const sourceCount =
-            schoolCountPerClass[sourceClass][missingSchool] || 0;
+          const sourceCount = schoolCountPerClass[sourceClass][missingSchool] || 0;
           if (sourceCount > minSchoolPerClass) {
             const sourceStudentIdx = distribution[sourceClass].findIndex(
               (s) => sanitizeSchoolName(s.asal_sekolah) === missingSchool
@@ -334,23 +304,17 @@ export const generateClassDistribution = (
             if (sourceStudentIdx !== -1) {
               const sourceStudent = distribution[sourceClass][sourceStudentIdx];
 
-              const targetStudentIdx = distribution[
-                minDiversityClass
-              ].findIndex(
+              const targetStudentIdx = distribution[minDiversityClass].findIndex(
                 (s) => s.jenis_kelamin === sourceStudent.jenis_kelamin
               );
 
               if (targetStudentIdx !== -1) {
-                const targetStudent =
-                  distribution[minDiversityClass][targetStudentIdx];
-                const targetSchool = sanitizeSchoolName(
-                  targetStudent.asal_sekolah
-                );
+                const targetStudent = distribution[minDiversityClass][targetStudentIdx];
+                const targetSchool = sanitizeSchoolName(targetStudent.asal_sekolah);
 
                 // Swap
                 distribution[sourceClass][sourceStudentIdx] = targetStudent;
-                distribution[minDiversityClass][targetStudentIdx] =
-                  sourceStudent;
+                distribution[minDiversityClass][targetStudentIdx] = sourceStudent;
 
                 // Update tracking
                 schoolCountPerClass[sourceClass][missingSchool]--;
@@ -391,34 +355,25 @@ export const generateClassDistribution = (
         ).length;
       });
 
-      const avgSchoolCount =
-        schoolCounts.reduce((a, b) => a + b, 0) / schoolCounts.length;
+      const avgSchoolCount = schoolCounts.reduce((a, b) => a + b, 0) / schoolCounts.length;
       const variance =
-        schoolCounts.reduce(
-          (sum, count) => sum + Math.pow(count - avgSchoolCount, 2),
-          0
-        ) / schoolCounts.length;
+        schoolCounts.reduce((sum, count) => sum + Math.pow(count - avgSchoolCount, 2), 0) /
+        schoolCounts.length;
 
       // Kalau variance sudah cukup kecil, stop
       if (variance < 0.5) break;
 
       // Cari kelas dengan diversity tertinggi dan terendah
-      const maxDiversityClass =
-        classNames[schoolCounts.indexOf(Math.max(...schoolCounts))];
-      const minDiversityClass =
-        classNames[schoolCounts.indexOf(Math.min(...schoolCounts))];
+      const maxDiversityClass = classNames[schoolCounts.indexOf(Math.max(...schoolCounts))];
+      const minDiversityClass = classNames[schoolCounts.indexOf(Math.min(...schoolCounts))];
 
       if (maxDiversityClass === minDiversityClass) break;
 
       // Cari school yang ada di maxClass tapi tidak di minClass
-      const schoolsInMax = Object.keys(
-        schoolCountPerClass[maxDiversityClass]
-      ).filter(
+      const schoolsInMax = Object.keys(schoolCountPerClass[maxDiversityClass]).filter(
         (s) => s !== "Unknown" && schoolCountPerClass[maxDiversityClass][s] > 0
       );
-      const schoolsInMin = Object.keys(
-        schoolCountPerClass[minDiversityClass]
-      ).filter(
+      const schoolsInMin = Object.keys(schoolCountPerClass[minDiversityClass]).filter(
         (s) => s !== "Unknown" && schoolCountPerClass[minDiversityClass][s] > 0
       );
       const uniqueToMax = schoolsInMax.filter((s) => !schoolsInMin.includes(s));
@@ -429,16 +384,14 @@ export const generateClassDistribution = (
         );
 
         if (sourceStudentIdx !== -1) {
-          const sourceStudent =
-            distribution[maxDiversityClass][sourceStudentIdx];
+          const sourceStudent = distribution[maxDiversityClass][sourceStudentIdx];
 
           const targetStudentIdx = distribution[minDiversityClass].findIndex(
             (s) => s.jenis_kelamin === sourceStudent.jenis_kelamin
           );
 
           if (targetStudentIdx !== -1) {
-            const targetStudent =
-              distribution[minDiversityClass][targetStudentIdx];
+            const targetStudent = distribution[minDiversityClass][targetStudentIdx];
             const targetSchool = sanitizeSchoolName(targetStudent.asal_sekolah);
 
             // Swap
@@ -517,17 +470,12 @@ export const generateClassDistribution = (
             );
 
             if (targetStudentIdx !== -1) {
-              const targetStudent =
-                distribution[minClassName][targetStudentIdx];
-              const targetSchool = sanitizeSchoolName(
-                targetStudent.asal_sekolah
-              );
+              const targetStudent = distribution[minClassName][targetStudentIdx];
+              const targetSchool = sanitizeSchoolName(targetStudent.asal_sekolah);
 
               // Check if swap won't create new imbalance
-              const targetSchoolInMax =
-                schoolCountPerClass[maxClassName][targetSchool] || 0;
-              const targetSchoolInMin =
-                schoolCountPerClass[minClassName][targetSchool] || 0;
+              const targetSchoolInMax = schoolCountPerClass[maxClassName][targetSchool] || 0;
+              const targetSchoolInMin = schoolCountPerClass[minClassName][targetSchool] || 0;
 
               // Only swap if it improves balance
               if (targetSchoolInMax - targetSchoolInMin < 3) {
@@ -627,10 +575,8 @@ export const generateClassDistribution = (
 export const checkClassBalance = (classDistribution) => {
   const unbalanced = [];
   const avgStudentsPerClass =
-    Object.values(classDistribution).reduce(
-      (sum, students) => sum + students.length,
-      0
-    ) / Object.keys(classDistribution).length;
+    Object.values(classDistribution).reduce((sum, students) => sum + students.length, 0) /
+    Object.keys(classDistribution).length;
 
   Object.entries(classDistribution).forEach(([className, students]) => {
     const males = students.filter((s) => s.jenis_kelamin === "L").length;
@@ -660,9 +606,7 @@ export const getClassStats = (students) => {
   const males = students.filter((s) => s.jenis_kelamin === "L").length;
   const females = students.filter((s) => s.jenis_kelamin === "P").length;
   const schools = [
-    ...new Set(
-      students.map((s) => s.asal_sekolah).filter((s) => s && s !== "Unknown")
-    ),
+    ...new Set(students.map((s) => s.asal_sekolah).filter((s) => s && s !== "Unknown")),
   ];
 
   return {

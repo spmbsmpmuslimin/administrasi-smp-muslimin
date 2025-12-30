@@ -19,10 +19,7 @@ import {
 } from "lucide-react";
 
 // ✅ AFTER
-import {
-  getActiveAcademicInfo,
-  formatSemesterDisplay,
-} from "../services/academicYearService";
+import { getActiveAcademicInfo, formatSemesterDisplay } from "../services/academicYearService";
 
 const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
   const [profileData, setProfileData] = useState(null);
@@ -135,12 +132,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
         console.log("=== DEBUG loadTeachingAssignments ===");
         console.log("teacherId:", teacherId, "| type:", typeof teacherId);
         console.log("activeYear:", activeYear, "| type:", typeof activeYear);
-        console.log(
-          "activeSemester:",
-          activeSemester,
-          "| type:",
-          typeof activeSemester
-        );
+        console.log("activeSemester:", activeSemester, "| type:", typeof activeSemester);
         console.log("activeYear length:", activeYear?.length);
         console.log("includeHistory:", includeHistory);
         console.log("=====================================");
@@ -191,10 +183,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               return true;
             });
 
-            console.log(
-              "✅ Filtered assignments (with history):",
-              filteredAssignments
-            );
+            console.log("✅ Filtered assignments (with history):", filteredAssignments);
 
             setProfileData((prev) => ({
               ...prev,
@@ -202,11 +191,10 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             }));
           }
         } else {
-          const { data: currentAssignments, error: assignError } =
-            await supabase
-              .from("teacher_assignments")
-              .select(
-                `
+          const { data: currentAssignments, error: assignError } = await supabase
+            .from("teacher_assignments")
+            .select(
+              `
                 id, 
                 subject, 
                 class_id,
@@ -219,11 +207,11 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   is_active
                 )
               `
-              )
-              .eq("teacher_id", teacherId)
-              .eq("academic_year", activeYear)
-              .eq("semester", activeSemester) // ✅ TAMBAH BARIS INI! (FIX DUPLICATE!)
-              .order("semester", { ascending: false });
+            )
+            .eq("teacher_id", teacherId)
+            .eq("academic_year", activeYear)
+            .eq("semester", activeSemester) // ✅ TAMBAH BARIS INI! (FIX DUPLICATE!)
+            .order("semester", { ascending: false });
 
           // ✅ DEBUG LOG
           console.log("=== QUERY RESULT ===");
@@ -231,26 +219,11 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           console.log("currentAssignments length:", currentAssignments?.length);
           console.log("assignError:", assignError);
           if (currentAssignments && currentAssignments.length > 0) {
-            console.log(
-              "First assignment full:",
-              JSON.stringify(currentAssignments[0], null, 2)
-            );
-            console.log(
-              "First assignment.classes:",
-              currentAssignments[0].classes
-            );
-            console.log(
-              "First assignment.class_id:",
-              currentAssignments[0].class_id
-            );
-            console.log(
-              "First assignment.academic_year:",
-              currentAssignments[0].academic_year
-            );
-            console.log(
-              "First assignment.semester:",
-              currentAssignments[0].semester
-            );
+            console.log("First assignment full:", JSON.stringify(currentAssignments[0], null, 2));
+            console.log("First assignment.classes:", currentAssignments[0].classes);
+            console.log("First assignment.class_id:", currentAssignments[0].class_id);
+            console.log("First assignment.academic_year:", currentAssignments[0].academic_year);
+            console.log("First assignment.semester:", currentAssignments[0].semester);
           }
           console.log("====================");
 
@@ -263,14 +236,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           }
 
           if (currentAssignments) {
-            const filteredAssignments = currentAssignments.filter(
-              (a) => a.classes !== null
-            );
+            const filteredAssignments = currentAssignments.filter((a) => a.classes !== null);
 
-            console.log(
-              "✅ Filtered current assignments:",
-              filteredAssignments
-            );
+            console.log("✅ Filtered current assignments:", filteredAssignments);
 
             setProfileData((prev) => ({
               ...prev,
@@ -351,12 +319,12 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             Data Profil Hilang
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm sm:text-base">
-            Terjadi kesalahan saat memuat data profil. Silakan coba *logout*
-            lalu *login* kembali.
+            Terjadi kesalahan saat memuat data profil. Silakan coba *logout* lalu *login* kembali.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 sm:px-5 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors text-sm sm:text-base font-medium min-h-[44px] w-full sm:w-auto">
+            className="px-4 sm:px-5 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors text-sm sm:text-base font-medium min-h-[44px] w-full sm:w-auto"
+          >
             Refresh Halaman
           </button>
         </div>
@@ -369,16 +337,13 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
   // ✅ GANTI: Filter current assignments dengan semester
   const currentAssignments = assignments.filter(
     (a) =>
-      a.academic_year === activeAcademicInfo?.year &&
-      a.semester === activeAcademicInfo?.semester // ✅ CRITICAL FIX!
+      a.academic_year === activeAcademicInfo?.year && a.semester === activeAcademicInfo?.semester // ✅ CRITICAL FIX!
   );
 
   // Calculate stats for current year
   const totalSubjects = currentAssignments.length || 0;
-  const uniqueSubjects = [...new Set(currentAssignments?.map((a) => a.subject))]
-    .length;
-  const totalClasses = [...new Set(currentAssignments?.map((a) => a.class_id))]
-    .length;
+  const uniqueSubjects = [...new Set(currentAssignments?.map((a) => a.subject))].length;
+  const totalClasses = [...new Set(currentAssignments?.map((a) => a.class_id))].length;
 
   // Group history by year and semester
   const groupedAssignments = assignments.reduce((acc, assignment) => {
@@ -434,7 +399,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                         : profileData.role === "guru_bk"
                         ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
                         : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                    }`}>
+                    }`}
+                  >
                     <Shield size={12} className="sm:w-3 sm:h-3" />
                     {profileData.role === "admin"
                       ? "Administrator"
@@ -448,28 +414,21 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                         profileData.is_active
                           ? "bg-green-500 dark:bg-green-400"
                           : "bg-gray-400 dark:bg-gray-500"
-                      }`}></span>
+                      }`}
+                    ></span>
                     {profileData.is_active ? "Aktif" : "Nonaktif"}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 justify-center sm:justify-start">
                   {profileData.teacher_id && (
                     <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
-                      <User
-                        size={12}
-                        className="text-blue-600 dark:text-blue-400"
-                      />
-                      <span className="font-mono font-medium">
-                        {profileData.teacher_id}
-                      </span>
+                      <User size={12} className="text-blue-600 dark:text-blue-400" />
+                      <span className="font-mono font-medium">{profileData.teacher_id}</span>
                     </div>
                   )}
                   {profileData.no_hp && (
                     <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
-                      <Phone
-                        size={12}
-                        className="text-blue-600 dark:text-blue-400"
-                      />
+                      <Phone size={12} className="text-blue-600 dark:text-blue-400" />
                       <span>{profileData.no_hp}</span>
                     </div>
                   )}
@@ -482,10 +441,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               {activeAcademicInfo?.displayText && (
                 <div className="bg-blue-50 dark:bg-gray-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 dark:border-gray-600">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                    <Calendar
-                      size={14}
-                      className="text-blue-600 dark:text-blue-400"
-                    />
+                    <Calendar size={14} className="text-blue-600 dark:text-blue-400" />
                     <span className="font-medium">Tahun Ajaran:</span>
                     <span className="font-bold text-blue-700 dark:text-blue-300">
                       {activeAcademicInfo.displayText}
@@ -496,10 +452,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
               {profileData.homeroom_class && (
                 <div className="bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-300 dark:border-blue-800">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-blue-800 dark:text-blue-300">
-                    <School
-                      size={14}
-                      className="text-blue-700 dark:text-blue-400"
-                    />
+                    <School size={14} className="text-blue-700 dark:text-blue-400" />
                     <span className="font-medium">Wali Kelas:</span>
                     <span className="font-bold text-blue-900 dark:text-blue-200">
                       {profileData.homeroom_class.id}
@@ -514,10 +467,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
           {/* Role Description */}
           <div className="mt-6 border-t pt-6 border-blue-100 dark:border-gray-700">
             <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2">
-              <Shield
-                size={18}
-                className="text-purple-600 dark:text-purple-400"
-              />
+              <Shield size={18} className="text-purple-600 dark:text-purple-400" />
               Role:{" "}
               <span
                 className={`text-lg sm:text-xl md:text-2xl font-bold ${
@@ -526,7 +476,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                     : profileData.role === "guru_bk"
                     ? "text-orange-700 dark:text-orange-300"
                     : "text-blue-700 dark:text-blue-300"
-                }`}>
+                }`}
+              >
                 {profileData.role === "admin"
                   ? "Administrator"
                   : profileData.role === "guru_bk"
@@ -620,7 +571,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   <button
                     onClick={() => setShowHistory(!showHistory)}
                     disabled={loadingHistory}
-                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors disabled:opacity-50 min-h-[44px] px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors disabled:opacity-50 min-h-[44px] px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                  >
                     {loadingHistory ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-t-blue-600"></div>
                     ) : showHistory ? (
@@ -629,13 +581,9 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       <ChevronDown size={14} />
                     )}
                     <span className="hidden sm:inline">
-                      {showHistory
-                        ? "Sembunyikan Riwayat"
-                        : "Tampilkan Riwayat"}
+                      {showHistory ? "Sembunyikan Riwayat" : "Tampilkan Riwayat"}
                     </span>
-                    <span className="sm:hidden">
-                      {showHistory ? "Tutup" : "Riwayat"}
-                    </span>
+                    <span className="sm:hidden">{showHistory ? "Tutup" : "Riwayat"}</span>
                   </button>
                 )}
               </h3>
@@ -713,7 +661,8 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                       {currentAssignments.map((assignment) => (
                         <div
                           key={assignment.id}
-                          className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 dark:border-gray-600 hover:shadow-lg transition-all hover:-translate-y-0.5">
+                          className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 dark:border-gray-600 hover:shadow-lg transition-all hover:-translate-y-0.5"
+                        >
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100">
@@ -740,17 +689,13 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                   ) : (
                     <div className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-xl p-6 sm:p-8 md:p-12 shadow-sm border border-blue-200 dark:border-gray-600 text-center">
                       <div className="bg-gradient-to-r from-blue-100 to-blue-200 dark:from-gray-600 dark:to-gray-700 rounded-full p-4 sm:p-6 w-fit mx-auto mb-4">
-                        <BookOpen
-                          size={32}
-                          className="text-blue-400 dark:text-gray-500"
-                        />
+                        <BookOpen size={32} className="text-blue-400 dark:text-gray-500" />
                       </div>
                       <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
                         Belum Ada Tugas Mengajar
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-400">
-                        Anda belum memiliki mata pelajaran untuk tahun ajaran
-                        ini.
+                        Anda belum memiliki mata pelajaran untuk tahun ajaran ini.
                       </p>
                     </div>
                   )}
@@ -770,42 +715,36 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
                           Tahun Ajaran {yearGroup.year}
                         </h4>
                         <div className="space-y-3 sm:space-y-4 ml-2">
-                          {Object.entries(yearGroup.semesters).map(
-                            ([semester, assignments]) => (
-                              <div
-                                key={semester}
-                                className="space-y-1.5 sm:space-y-2">
-                                <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-400 flex items-center gap-1.5">
-                                  <Calendar
-                                    size={12}
-                                    className="text-blue-600 dark:text-blue-400"
-                                  />
-                                  Semester {semester}
-                                </p>
-                                <div className="space-y-2 sm:space-y-3 pl-3 sm:pl-4 border-l border-blue-200 dark:border-gray-600">
-                                  {assignments.map((assignment) => (
-                                    <div
-                                      key={assignment.id}
-                                      className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg p-2.5 sm:p-3 border border-blue-200 dark:border-gray-600 hover:bg-blue-100 dark:hover:bg-gray-700/50 transition-all">
-                                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
-                                            {assignment.subject}
-                                          </p>
-                                          <p className="text-xs text-gray-700 dark:text-gray-400 mt-0.5">
-                                            {getClassName(assignment)}
-                                          </p>
-                                        </div>
-                                        <span className="bg-gradient-to-r from-blue-200 to-blue-300 dark:from-gray-600 dark:to-gray-700 text-gray-800 dark:text-gray-300 px-2 py-0.5 sm:py-1 rounded-lg font-medium text-xs">
-                                          {assignment.academic_year}
-                                        </span>
+                          {Object.entries(yearGroup.semesters).map(([semester, assignments]) => (
+                            <div key={semester} className="space-y-1.5 sm:space-y-2">
+                              <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-400 flex items-center gap-1.5">
+                                <Calendar size={12} className="text-blue-600 dark:text-blue-400" />
+                                Semester {semester}
+                              </p>
+                              <div className="space-y-2 sm:space-y-3 pl-3 sm:pl-4 border-l border-blue-200 dark:border-gray-600">
+                                {assignments.map((assignment) => (
+                                  <div
+                                    key={assignment.id}
+                                    className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg p-2.5 sm:p-3 border border-blue-200 dark:border-gray-600 hover:bg-blue-100 dark:hover:bg-gray-700/50 transition-all"
+                                  >
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                                          {assignment.subject}
+                                        </p>
+                                        <p className="text-xs text-gray-700 dark:text-gray-400 mt-0.5">
+                                          {getClassName(assignment)}
+                                        </p>
                                       </div>
+                                      <span className="bg-gradient-to-r from-blue-200 to-blue-300 dark:from-gray-600 dark:to-gray-700 text-gray-800 dark:text-gray-300 px-2 py-0.5 sm:py-1 rounded-lg font-medium text-xs">
+                                        {assignment.academic_year}
+                                      </span>
                                     </div>
-                                  ))}
-                                </div>
+                                  </div>
+                                ))}
                               </div>
-                            )
-                          )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))}

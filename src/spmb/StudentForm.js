@@ -1,20 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 
-const StudentForm = ({
-  editingStudent,
-  setEditingStudent,
-  students,
-  onSaveStudent,
-  isLoading,
-}) => {
+const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStudent, isLoading }) => {
   const [formSuccess, setFormSuccess] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState(null);
-  const [pendingDuplicateCallback, setPendingDuplicateCallback] =
-    useState(null);
+  const [pendingDuplicateCallback, setPendingDuplicateCallback] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [showPekerjaanAyahLainnya, setShowPekerjaanAyahLainnya] =
-    useState(false);
+  const [showPekerjaanAyahLainnya, setShowPekerjaanAyahLainnya] = useState(false);
   const [showPekerjaanIbuLainnya, setShowPekerjaanIbuLainnya] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -165,18 +157,13 @@ const StudentForm = ({
       .trim()
       .split(" ")
       .filter((word) => word.length > 0);
-    if (nameWords.length < 2)
-      errors.push("Nama harus terdiri dari minimal 2 kata");
+    if (nameWords.length < 2) errors.push("Nama harus terdiri dari minimal 2 kata");
     if (!/^[a-zA-Z\s]+$/.test(student.nama_lengkap))
       errors.push("Nama hanya boleh mengandung huruf dan spasi");
     if (!/^(\+62|62|0)[0-9]{9,13}$/.test(student.no_hp.replace(/\s+/g, ""))) {
       errors.push("Format nomor HP tidak valid");
     }
-    if (
-      student.nisn &&
-      student.nisn !== "-" &&
-      !/^\d{10}$/.test(student.nisn)
-    ) {
+    if (student.nisn && student.nisn !== "-" && !/^\d{10}$/.test(student.nisn)) {
       errors.push("NISN harus berisi tepat 10 digit angka");
     }
     return errors;
@@ -187,43 +174,35 @@ const StudentForm = ({
     if (value.length > 2 && value.length <= 4) {
       value = value.substring(0, 2) + "-" + value.substring(2);
     } else if (value.length > 4) {
-      value =
-        value.substring(0, 2) +
-        "-" +
-        value.substring(2, 4) +
-        "-" +
-        value.substring(4, 8);
+      value = value.substring(0, 2) + "-" + value.substring(2, 4) + "-" + value.substring(4, 8);
     }
     input.value = value;
     setFormData((prev) => ({ ...prev, tanggal_lahir: value }));
   }, []);
 
-  const checkForDuplicates = useCallback(
-    (newName, existingStudents, excludeId = null) => {
-      const calculateSimilarity = (str1, str2) => {
-        const s1 = str1.toLowerCase().trim();
-        const s2 = str2.toLowerCase().trim();
-        if (s1 === s2) return 1.0;
-        const longer = s1.length > s2.length ? s1 : s2;
-        const shorter = s1.length > s2.length ? s2 : s1;
-        if (longer.length === 0) return 1.0;
-        let matches = 0;
-        for (let i = 0; i < Math.min(longer.length, shorter.length); i++) {
-          if (longer[i] === shorter[i]) matches++;
-        }
-        return matches / longer.length;
-      };
-      return existingStudents
-        .filter((student) => student.id !== excludeId)
-        .map((student) => ({
-          student,
-          similarity: calculateSimilarity(newName, student.nama_lengkap || ""),
-        }))
-        .filter((item) => item.similarity >= 0.8)
-        .sort((a, b) => b.similarity - a.similarity);
-    },
-    []
-  );
+  const checkForDuplicates = useCallback((newName, existingStudents, excludeId = null) => {
+    const calculateSimilarity = (str1, str2) => {
+      const s1 = str1.toLowerCase().trim();
+      const s2 = str2.toLowerCase().trim();
+      if (s1 === s2) return 1.0;
+      const longer = s1.length > s2.length ? s1 : s2;
+      const shorter = s1.length > s2.length ? s2 : s1;
+      if (longer.length === 0) return 1.0;
+      let matches = 0;
+      for (let i = 0; i < Math.min(longer.length, shorter.length); i++) {
+        if (longer[i] === shorter[i]) matches++;
+      }
+      return matches / longer.length;
+    };
+    return existingStudents
+      .filter((student) => student.id !== excludeId)
+      .map((student) => ({
+        student,
+        similarity: calculateSimilarity(newName, student.nama_lengkap || ""),
+      }))
+      .filter((item) => item.similarity >= 0.8)
+      .sort((a, b) => b.similarity - a.similarity);
+  }, []);
 
   const downloadWordTemplate = useCallback(() => {
     const htmlContent = `
@@ -532,9 +511,7 @@ const StudentForm = ({
     if (duplicates.length > 0 && !pendingDuplicateCallback) {
       setDuplicateInfo(duplicates[0]);
       setShowDuplicateWarning(true);
-      setPendingDuplicateCallback(
-        () => () => proceedWithSave({ studentData, parentData })
-      );
+      setPendingDuplicateCallback(() => () => proceedWithSave({ studentData, parentData }));
       return;
     }
 
@@ -610,10 +587,8 @@ const StudentForm = ({
 
   const viewDuplicate = useCallback(() => {
     if (duplicateInfo) {
-      const studentName =
-        duplicateInfo.student.nama_lengkap || "Tidak diketahui";
-      const studentSchool =
-        duplicateInfo.student.asal_sekolah || "Tidak diketahui";
+      const studentName = duplicateInfo.student.nama_lengkap || "Tidak diketahui";
+      const studentSchool = duplicateInfo.student.asal_sekolah || "Tidak diketahui";
       alert(`Data ditemukan: ${studentName} dari ${studentSchool}`);
       setShowDuplicateWarning(false);
     }
@@ -680,18 +655,20 @@ const StudentForm = ({
         <div className="bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 border-2 border-yellow-300 dark:border-yellow-700 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 animate-slide-down">
           <i className="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-lg flex-shrink-0"></i>
           <span className="text-yellow-800 dark:text-yellow-300 text-sm flex-1">
-            Nama serupa "{duplicateInfo.student.nama_lengkap}" sudah terdaftar!
-            ({Math.round(duplicateInfo.similarity * 100)}% kemiripan)
+            Nama serupa "{duplicateInfo.student.nama_lengkap}" sudah terdaftar! (
+            {Math.round(duplicateInfo.similarity * 100)}% kemiripan)
           </span>
           <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
             <button
               className="bg-blue-600 dark:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex-1 sm:flex-none min-h-[40px]"
-              onClick={viewDuplicate}>
+              onClick={viewDuplicate}
+            >
               Lihat Data
             </button>
             <button
               className="bg-green-600 dark:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 dark:hover:bg-green-600 transition-colors flex-1 sm:flex-none min-h-[40px]"
-              onClick={continueAnyway}>
+              onClick={continueAnyway}
+            >
               Tetap Simpan
             </button>
           </div>
@@ -703,12 +680,10 @@ const StudentForm = ({
           editingStudent
             ? "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300"
             : "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
-        }`}>
+        }`}
+      >
         <i className={`fas ${editingStudent ? "fa-edit" : "fa-plus"} mr-2`}></i>
-        Mode:{" "}
-        {editingStudent
-          ? `Edit Data - ${editingStudent.nama_lengkap}`
-          : "Tambah Data Baru"}
+        Mode: {editingStudent ? `Edit Data - ${editingStudent.nama_lengkap}` : "Tambah Data Baru"}
       </div>
 
       <div className="sm:hidden bg-white dark:bg-gray-800 rounded-lg p-3 mb-4 border border-gray-200 dark:border-gray-700">
@@ -720,23 +695,19 @@ const StudentForm = ({
                   currentStep >= step.number
                     ? "bg-blue-500 dark:bg-blue-600 text-white"
                     : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                }`}>
-                {currentStep > step.number ? (
-                  <i className="fas fa-check text-xs"></i>
-                ) : (
-                  step.number
-                )}
+                }`}
+              >
+                {currentStep > step.number ? <i className="fas fa-check text-xs"></i> : step.number}
               </div>
-              <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">
-                {step.title}
-              </span>
+              <span className="text-xs mt-1 text-gray-600 dark:text-gray-400">{step.title}</span>
             </div>
           ))}
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
           <div
             className="bg-blue-500 dark:bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / steps.length) * 100}%` }}></div>
+            style={{ width: `${(currentStep / steps.length) * 100}%` }}
+          ></div>
         </div>
       </div>
 
@@ -756,9 +727,7 @@ const StudentForm = ({
                 <input
                   type="text"
                   value={formData.nama_lengkap}
-                  onChange={(e) =>
-                    updateFormData("nama_lengkap", e.target.value)
-                  }
+                  onChange={(e) => updateFormData("nama_lengkap", e.target.value)}
                   className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                   placeholder="Masukkan nama lengkap sesuai akta kelahiran"
                   required
@@ -775,11 +744,10 @@ const StudentForm = ({
                   </label>
                   <select
                     value={formData.jenis_kelamin}
-                    onChange={(e) =>
-                      updateFormData("jenis_kelamin", e.target.value)
-                    }
+                    onChange={(e) => updateFormData("jenis_kelamin", e.target.value)}
                     className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none"
-                    required>
+                    required
+                  >
                     <option value="" className="text-gray-400">
                       Pilih Jenis Kelamin
                     </option>
@@ -814,9 +782,7 @@ const StudentForm = ({
                   <input
                     type="text"
                     value={formData.tempat_lahir}
-                    onChange={(e) =>
-                      updateFormData("tempat_lahir", e.target.value)
-                    }
+                    onChange={(e) => updateFormData("tempat_lahir", e.target.value)}
                     className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                     placeholder="Kota kelahiran"
                     required
@@ -830,9 +796,7 @@ const StudentForm = ({
                   <input
                     type="text"
                     value={formData.tanggal_lahir}
-                    onChange={(e) =>
-                      updateFormData("tanggal_lahir", e.target.value)
-                    }
+                    onChange={(e) => updateFormData("tanggal_lahir", e.target.value)}
                     onInput={(e) => formatDateInput(e.target)}
                     className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                     placeholder="DD-MM-YYYY"
@@ -852,9 +816,7 @@ const StudentForm = ({
                 <input
                   type="text"
                   value={formData.asal_sekolah}
-                  onChange={(e) =>
-                    updateFormData("asal_sekolah", e.target.value)
-                  }
+                  onChange={(e) => updateFormData("asal_sekolah", e.target.value)}
                   className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                   placeholder="Nama SD asal"
                 />
@@ -879,9 +841,7 @@ const StudentForm = ({
                   <input
                     type="text"
                     value={formData.nama_ayah}
-                    onChange={(e) =>
-                      updateFormData("nama_ayah", e.target.value)
-                    }
+                    onChange={(e) => updateFormData("nama_ayah", e.target.value)}
                     className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                     placeholder="Nama lengkap ayah"
                   />
@@ -908,10 +868,9 @@ const StudentForm = ({
                   </label>
                   <select
                     value={formData.pekerjaan_ayah}
-                    onChange={(e) =>
-                      updateFormData("pekerjaan_ayah", e.target.value)
-                    }
-                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none">
+                    onChange={(e) => updateFormData("pekerjaan_ayah", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none"
+                  >
                     <option value="" className="text-gray-400">
                       Pilih Pekerjaan
                     </option>
@@ -926,9 +885,7 @@ const StudentForm = ({
                     <input
                       type="text"
                       value={formData.pekerjaan_ayah_lainnya}
-                      onChange={(e) =>
-                        updateFormData("pekerjaan_ayah_lainnya", e.target.value)
-                      }
+                      onChange={(e) => updateFormData("pekerjaan_ayah_lainnya", e.target.value)}
                       className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none mt-2"
                       placeholder="Sebutkan pekerjaan lainnya"
                       required
@@ -942,10 +899,9 @@ const StudentForm = ({
                   </label>
                   <select
                     value={formData.pekerjaan_ibu}
-                    onChange={(e) =>
-                      updateFormData("pekerjaan_ibu", e.target.value)
-                    }
-                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none">
+                    onChange={(e) => updateFormData("pekerjaan_ibu", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none"
+                  >
                     <option value="" className="text-gray-400">
                       Pilih Pekerjaan
                     </option>
@@ -960,9 +916,7 @@ const StudentForm = ({
                     <input
                       type="text"
                       value={formData.pekerjaan_ibu_lainnya}
-                      onChange={(e) =>
-                        updateFormData("pekerjaan_ibu_lainnya", e.target.value)
-                      }
+                      onChange={(e) => updateFormData("pekerjaan_ibu_lainnya", e.target.value)}
                       className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none mt-2"
                       placeholder="Sebutkan pekerjaan lainnya"
                       required
@@ -978,10 +932,9 @@ const StudentForm = ({
                   </label>
                   <select
                     value={formData.pendidikan_ayah}
-                    onChange={(e) =>
-                      updateFormData("pendidikan_ayah", e.target.value)
-                    }
-                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none">
+                    onChange={(e) => updateFormData("pendidikan_ayah", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none"
+                  >
                     <option value="" className="text-gray-400">
                       Pilih Pendidikan
                     </option>
@@ -1000,10 +953,9 @@ const StudentForm = ({
                   </label>
                   <select
                     value={formData.pendidikan_ibu}
-                    onChange={(e) =>
-                      updateFormData("pendidikan_ibu", e.target.value)
-                    }
-                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none">
+                    onChange={(e) => updateFormData("pendidikan_ibu", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none"
+                  >
                     <option value="" className="text-gray-400">
                       Pilih Pendidikan
                     </option>
@@ -1053,7 +1005,8 @@ const StudentForm = ({
             <button
               type="button"
               onClick={prevStep}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]"
+            >
               <i className="fas fa-arrow-left"></i>
               Kembali
             </button>
@@ -1063,7 +1016,8 @@ const StudentForm = ({
             <button
               type="button"
               onClick={nextStep}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]"
+            >
               Lanjut
               <i className="fas fa-arrow-right"></i>
             </button>
@@ -1074,7 +1028,8 @@ const StudentForm = ({
               <button
                 type="button"
                 onClick={downloadWordTemplate}
-                className="flex-1 bg-gradient-to-r from-green-600 to-green-400 dark:from-green-700 dark:to-green-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
+                className="flex-1 bg-gradient-to-r from-green-600 to-green-400 dark:from-green-700 dark:to-green-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]"
+              >
                 <i className="fas fa-file-download text-sm sm:text-base"></i>
                 <span className="hidden sm:inline">Download Form</span>
                 <span className="sm:hidden">Download</span>
@@ -1083,7 +1038,8 @@ const StudentForm = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-700 dark:to-blue-500 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]"
+              >
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -1101,7 +1057,8 @@ const StudentForm = ({
               <button
                 type="button"
                 onClick={resetForm}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-300 dark:from-blue-600 dark:to-blue-400 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]">
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-300 dark:from-blue-600 dark:to-blue-400 text-white p-3 sm:p-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg flex items-center justify-center gap-2 sm:gap-3 min-h-[48px]"
+              >
                 <i className="fas fa-undo text-sm sm:text-base"></i>
                 <span className="hidden sm:inline">Reset Form</span>
                 <span className="sm:hidden">Reset</span>

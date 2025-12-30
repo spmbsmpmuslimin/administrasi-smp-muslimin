@@ -53,7 +53,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             : "bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400"
         }`}
         aria-label="Toggle Dark Mode"
-        title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+        title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+      >
         {darkMode && (
           <>
             <span className="absolute top-1 left-2 w-1 h-1 bg-white rounded-full animate-pulse"></span>
@@ -88,7 +89,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             currentSize.circle
           } bg-white rounded-full shadow-md flex items-center justify-center transition-all duration-500 ease-in-out transform ${
             darkMode ? `translate-x-[calc(100%-0.125rem)]` : "translate-x-0"
-          }`}>
+          }`}
+        >
           {darkMode ? (
             <Moon
               size={currentSize.icon}
@@ -96,10 +98,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
               fill="currentColor"
             />
           ) : (
-            <Sun
-              size={currentSize.icon}
-              className="text-orange-500 animate-pulse"
-            />
+            <Sun size={currentSize.icon} className="text-orange-500 animate-pulse" />
           )}
         </div>
       </button>
@@ -154,10 +153,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        profileDropdownRef.current &&
-        !profileDropdownRef.current.contains(event.target)
-      ) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
         setProfileDropdownOpen(false);
       }
     };
@@ -210,34 +206,14 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
   const getSidebarToggleIcon = () => {
     if (isLaptop) {
       if (!isSidebarOpen) {
-        return (
-          <Menu
-            size={20}
-            className={darkMode ? "text-blue-400" : "text-blue-600"}
-          />
-        );
+        return <Menu size={20} className={darkMode ? "text-blue-400" : "text-blue-600"} />;
       } else if (isSidebarOpen && !isSidebarCollapsed) {
-        return (
-          <ChevronLeft
-            size={20}
-            className={darkMode ? "text-blue-400" : "text-blue-600"}
-          />
-        );
+        return <ChevronLeft size={20} className={darkMode ? "text-blue-400" : "text-blue-600"} />;
       } else if (isSidebarOpen && isSidebarCollapsed) {
-        return (
-          <ChevronRight
-            size={20}
-            className={darkMode ? "text-blue-400" : "text-blue-600"}
-          />
-        );
+        return <ChevronRight size={20} className={darkMode ? "text-blue-400" : "text-blue-600"} />;
       }
     }
-    return (
-      <Menu
-        size={20}
-        className={darkMode ? "text-blue-400" : "text-blue-600"}
-      />
-    );
+    return <Menu size={20} className={darkMode ? "text-blue-400" : "text-blue-600"} />;
   };
 
   // 🔥 FIX: Get tooltip text
@@ -377,8 +353,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         // 🔥 UPDATE: Tambah subtitle E-RAPORT untuk admin
         "Dashboard Admin - E-Raport": "Monitor Semua Data E-Raport Sekolah",
         "Dashboard E-Raport": "Monitor Semua Data E-Raport Sekolah",
-        "Input Tujuan Pembelajaran - E-Raport":
-          "Kelola Tujuan Pembelajaran Semua Kelas",
+        "Input Tujuan Pembelajaran - E-Raport": "Kelola Tujuan Pembelajaran Semua Kelas",
         "Input Nilai - E-Raport": "Input Nilai Akademik Siswa",
         "Input Kehadiran - E-Raport": "Kelola Kehadiran Siswa untuk Raport",
         "Input Catatan - E-Raport": "Kelola Catatan Guru untuk Raport",
@@ -542,21 +517,20 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       return (
         <div
           className={`flex flex-col items-center justify-center h-64 rounded-xl shadow-sm border p-6 transition-colors ${
-            darkMode
-              ? "bg-gray-800 border-gray-700"
-              : "bg-white border-blue-100"
-          }`}>
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-blue-100"
+          }`}
+        >
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
               darkMode ? "bg-red-900/30" : "bg-red-100"
-            }`}>
+            }`}
+          >
             <svg
-              className={`w-8 h-8 ${
-                darkMode ? "text-red-400" : "text-red-600"
-              }`}
+              className={`w-8 h-8 ${darkMode ? "text-red-400" : "text-red-600"}`}
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -568,18 +542,21 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
           <h2
             className={`text-xl font-bold mb-2 transition-colors ${
               darkMode ? "text-white" : "text-gray-900"
-            }`}>
+            }`}
+          >
             Akses Ditolak
           </h2>
           <p
             className={`text-center mb-4 transition-colors ${
               darkMode ? "text-gray-400" : "text-gray-600"
-            }`}>
+            }`}
+          >
             Anda tidak memiliki izin untuk mengakses halaman ini.
           </p>
           <button
             onClick={() => navigate("/dashboard")}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
             Kembali ke Dashboard
           </button>
         </div>
@@ -604,7 +581,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         darkMode
           ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
           : "bg-gradient-to-br from-blue-50 to-white"
-      }`}>
+      }`}
+    >
       {/* Custom animations */}
       <style>{`
         @keyframes spin-slow {
@@ -633,7 +611,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       <div
         className={`fixed inset-y-0 left-0 z-50 hidden lg:block transition-all duration-300 ease-in-out ${
           isSidebarOpen ? (isSidebarCollapsed ? "w-20" : "w-64") : "w-0"
-        }`}>
+        }`}
+      >
         {isSidebarOpen && (
           <Sidebar
             currentPage={getCurrentPage()}
@@ -656,7 +635,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 transform ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 ease-in-out lg:hidden`}>
+        } transition-transform duration-300 ease-in-out lg:hidden`}
+      >
         <Sidebar
           currentPage={getCurrentPage()}
           onNavigate={handleNavigate}
@@ -675,13 +655,15 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
 
       {/* 🔥 FIX: Main content dengan dynamic margin */}
       <main
-        className={`flex-1 min-h-screen transition-all duration-300 ease-in-out ${getSidebarWidthClass()}`}>
+        className={`flex-1 min-h-screen transition-all duration-300 ease-in-out ${getSidebarWidthClass()}`}
+      >
         <header
           className={`shadow-md border-b sticky top-0 z-30 transition-colors duration-300 ${
             darkMode
               ? "bg-gray-800 border-gray-700 shadow-gray-900/50"
               : "bg-white border-blue-100 shadow-blue-100/50"
-          }`}>
+          }`}
+        >
           <div className="px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -693,7 +675,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                   }`}
                   style={{ minWidth: "44px", minHeight: "44px" }}
                   title={getSidebarToggleTooltip()}
-                  aria-label={getSidebarToggleTooltip()}>
+                  aria-label={getSidebarToggleTooltip()}
+                >
                   {getSidebarToggleIcon()}
                 </button>
 
@@ -702,7 +685,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                     <h1
                       className={`text-base sm:text-lg lg:text-xl font-bold truncate transition-colors ${
                         darkMode ? "text-white" : "text-gray-900"
-                      }`}>
+                      }`}
+                    >
                       {getCurrentPageName()}
                     </h1>
                     {isNavigating && (
@@ -712,7 +696,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                   <p
                     className={`text-xs sm:text-sm font-medium truncate transition-colors ${
                       darkMode ? "text-blue-400" : "text-blue-600"
-                    }`}>
+                    }`}
+                  >
                     {getPageSubtitle()}
                   </p>
                 </div>
@@ -728,25 +713,26 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                 <div
                   className={`lg:hidden flex flex-col items-center min-w-[60px] rounded-lg px-2 py-1 transition-colors ${
                     darkMode ? "bg-gray-700" : "bg-blue-50"
-                  }`}>
+                  }`}
+                >
                   <div className="flex items-center gap-1">
                     <Clock
                       size={12}
-                      className={`flex-shrink-0 ${
-                        darkMode ? "text-blue-400" : "text-blue-500"
-                      }`}
+                      className={`flex-shrink-0 ${darkMode ? "text-blue-400" : "text-blue-500"}`}
                     />
                     <span
                       className={`font-mono text-xs font-semibold ${
                         darkMode ? "text-white" : "text-gray-900"
-                      }`}>
+                      }`}
+                    >
                       {formatTime(currentTime)}
                     </span>
                   </div>
                   <span
                     className={`text-xs font-medium ${
                       darkMode ? "text-blue-400" : "text-blue-500"
-                    }`}>
+                    }`}
+                  >
                     {formatDate(currentTime)}
                   </span>
                 </div>
@@ -762,17 +748,17 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                     darkMode
                       ? "bg-gradient-to-br from-gray-800 to-gray-700 border-gray-600"
                       : "bg-gradient-to-br from-blue-50 to-white border-blue-200"
-                  }`}>
+                  }`}
+                >
                   <div className="flex flex-col">
                     <div
                       className={`flex items-center gap-2 text-sm font-medium mb-1 transition-colors ${
                         darkMode ? "text-blue-400" : "text-blue-600"
-                      }`}>
+                      }`}
+                    >
                       <Calendar
                         size={16}
-                        className={`flex-shrink-0 ${
-                          darkMode ? "text-blue-400" : "text-blue-500"
-                        }`}
+                        className={`flex-shrink-0 ${darkMode ? "text-blue-400" : "text-blue-500"}`}
                       />
                       <span>
                         {currentTime.toLocaleDateString("id-ID", {
@@ -786,14 +772,13 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                     <div className="flex items-center gap-2">
                       <Clock
                         size={16}
-                        className={`flex-shrink-0 ${
-                          darkMode ? "text-blue-400" : "text-blue-500"
-                        }`}
+                        className={`flex-shrink-0 ${darkMode ? "text-blue-400" : "text-blue-500"}`}
                       />
                       <span
                         className={`font-mono font-semibold text-base tracking-wide transition-colors ${
                           darkMode ? "text-white" : "text-gray-900"
-                        }`}>
+                        }`}
+                      >
                         {currentTime.toLocaleTimeString("id-ID")}
                       </span>
                       <span className="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded ml-1">
@@ -808,42 +793,42 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                   <button
                     onClick={toggleProfileDropdown}
                     className="px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 bg-blue-600 flex items-center gap-1 sm:gap-2 touch-manipulation"
-                    style={{ minWidth: "44px", minHeight: "44px" }}>
+                    style={{ minWidth: "44px", minHeight: "44px" }}
+                  >
                     <User size={16} className="text-white flex-shrink-0" />
-                    <span className="hidden sm:block text-sm font-medium text-white">
-                      Profile
-                    </span>
+                    <span className="hidden sm:block text-sm font-medium text-white">Profile</span>
                   </button>
 
                   {profileDropdownOpen && (
                     <div
                       className={`absolute right-0 top-full mt-2 w-64 sm:w-72 rounded-xl shadow-xl z-50 border transition-colors ${
-                        darkMode
-                          ? "bg-gray-800 border-gray-700"
-                          : "bg-white border-blue-100"
-                      }`}>
+                        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-blue-100"
+                      }`}
+                    >
                       <div
                         className={`px-4 py-3 border-b rounded-t-xl transition-colors ${
                           darkMode
                             ? "border-gray-700 bg-gradient-to-r from-gray-700 to-gray-800"
                             : "border-blue-50 bg-gradient-to-r from-blue-50 to-white"
-                        }`}>
+                        }`}
+                      >
                         <p
                           className={`font-semibold text-sm truncate transition-colors ${
                             darkMode ? "text-white" : "text-gray-900"
-                          }`}>
+                          }`}
+                        >
                           {user?.full_name || user?.username || "User"}
                         </p>
                         <p
                           className={`text-xs capitalize font-medium transition-colors ${
                             darkMode ? "text-blue-400" : "text-blue-600"
-                          }`}>
+                          }`}
+                        >
                           {user?.role === "admin"
                             ? "Administrator"
                             : user?.role === "guru_bk"
                             ? "Guru BK/BP"
-                            : user?.role === "teacher" &&
-                              user?.homeroom_class_id
+                            : user?.role === "teacher" && user?.homeroom_class_id
                             ? `Wali Kelas ${user.homeroom_class_id}`
                             : user?.role === "teacher"
                             ? "Guru Mata Pelajaran"
@@ -853,7 +838,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                           <p
                             className={`text-xs font-medium transition-colors ${
                               darkMode ? "text-gray-400" : "text-gray-500"
-                            }`}>
+                            }`}
+                          >
                             ID: {user.teacher_id}
                           </p>
                         )}
@@ -869,7 +855,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                             darkMode
                               ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
                               : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                          }`}>
+                          }`}
+                        >
                           <User size={16} className="flex-shrink-0" />
                           <span className="font-medium">Profile</span>
                         </button>
@@ -884,7 +871,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                               darkMode
                                 ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
                                 : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                            }`}>
+                            }`}
+                          >
                             <Settings size={16} className="flex-shrink-0" />
                             <span className="font-medium">Pengaturan</span>
                           </button>
@@ -896,7 +884,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                             darkMode
                               ? "text-red-400 hover:bg-red-900/20"
                               : "text-gray-700 hover:bg-red-50 hover:text-red-700"
-                          }`}>
+                          }`}
+                        >
                           <LogOut size={16} className="flex-shrink-0" />
                           <span className="font-medium">Logout</span>
                         </button>
@@ -914,7 +903,8 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             darkMode
               ? "bg-gradient-to-br from-gray-900 to-gray-800"
               : "bg-gradient-to-br from-blue-50 to-white"
-          }`}>
+          }`}
+        >
           {renderContent()}
         </div>
       </main>
@@ -925,29 +915,29 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
           <div
             className={`rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 transition-colors ${
               darkMode ? "bg-gray-800" : "bg-white"
-            }`}>
+            }`}
+          >
             <div className="flex flex-col items-center text-center">
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
                   darkMode ? "bg-blue-900/30" : "bg-blue-100"
-                }`}>
-                <LogOut
-                  className={`w-8 h-8 ${
-                    darkMode ? "text-blue-400" : "text-blue-600"
-                  }`}
-                />
+                }`}
+              >
+                <LogOut className={`w-8 h-8 ${darkMode ? "text-blue-400" : "text-blue-600"}`} />
               </div>
 
               <h3
                 className={`text-xl font-bold mb-2 transition-colors ${
                   darkMode ? "text-white" : "text-gray-900"
-                }`}>
+                }`}
+              >
                 Keluar dari Sistem?
               </h3>
               <p
                 className={`text-sm mb-6 transition-colors ${
                   darkMode ? "text-gray-400" : "text-gray-600"
-                }`}>
+                }`}
+              >
                 Anda harus login kembali untuk mengakses sistem
               </p>
 
@@ -958,12 +948,14 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                     darkMode
                       ? "border-gray-600 text-gray-300 hover:bg-gray-700 active:bg-gray-600"
                       : "border-gray-200 text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-                  }`}>
+                  }`}
+                >
                   Batal
                 </button>
                 <button
                   onClick={handleConfirmLogout}
-                  className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg shadow-blue-600/30">
+                  className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg shadow-blue-600/30"
+                >
                   Keluar
                 </button>
               </div>

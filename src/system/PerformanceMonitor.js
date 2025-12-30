@@ -112,29 +112,20 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
 
       // Calculate summary
       const durations = results.map((r) => parseFloat(r.duration));
-      const avgQueryTime = (
-        durations.reduce((a, b) => a + b, 0) / durations.length
-      ).toFixed(2);
+      const avgQueryTime = (durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(2);
 
       const sortedByDuration = [...results].sort(
         (a, b) => parseFloat(b.duration) - parseFloat(a.duration)
       );
 
       // Calculate performance score (0-100) with better formula
-      const excellentCount = results.filter(
-        (r) => r.status === "excellent"
-      ).length;
+      const excellentCount = results.filter((r) => r.status === "excellent").length;
       const goodCount = results.filter((r) => r.status === "good").length;
       const warningCount = results.filter((r) => r.status === "warning").length;
-      const criticalCount = results.filter(
-        (r) => r.status === "critical"
-      ).length;
+      const criticalCount = results.filter((r) => r.status === "critical").length;
 
       const performanceScore = Math.round(
-        (excellentCount * 100 +
-          goodCount * 80 +
-          warningCount * 50 +
-          criticalCount * 20) /
+        (excellentCount * 100 + goodCount * 80 + warningCount * 50 + criticalCount * 20) /
           results.length
       );
 
@@ -177,20 +168,11 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
       // Show toast notification
       if (onShowToast) {
         if (criticalCount > 0) {
-          onShowToast(
-            `⚠️ Test selesai! ${criticalCount} table critical perlu optimasi`,
-            "warning"
-          );
+          onShowToast(`⚠️ Test selesai! ${criticalCount} table critical perlu optimasi`, "warning");
         } else if (warningCount > 0) {
-          onShowToast(
-            `✓ Test selesai! ${warningCount} table perlu perhatian`,
-            "info"
-          );
+          onShowToast(`✓ Test selesai! ${warningCount} table perlu perhatian`, "info");
         } else {
-          onShowToast(
-            `✓ Test selesai! Semua table perform dengan baik`,
-            "success"
-          );
+          onShowToast(`✓ Test selesai! Semua table perform dengan baik`, "success");
         }
       }
     } catch (error) {
@@ -226,25 +208,15 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
   const getStatusIcon = (status) => {
     switch (status) {
       case "excellent":
-        return (
-          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-        );
+        return <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />;
       case "good":
-        return (
-          <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-        );
+        return <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
       case "warning":
-        return (
-          <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-        );
+        return <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />;
       case "critical":
-        return (
-          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-        );
+        return <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />;
       default:
-        return (
-          <Activity className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        );
+        return <Activity className="w-5 h-5 text-gray-600 dark:text-gray-400" />;
     }
   };
 
@@ -295,9 +267,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
 
     if (diff < 0) {
       return {
-        icon: (
-          <TrendingDown className="w-5 h-5 text-green-600 dark:text-green-400" />
-        ),
+        icon: <TrendingDown className="w-5 h-5 text-green-600 dark:text-green-400" />,
         text: "Membaik",
         color: "text-green-600 dark:text-green-400",
         change: Math.abs(diff).toFixed(1),
@@ -371,14 +341,16 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
           <button
             onClick={exportReport}
             disabled={isRunning || metrics.queries.length === 0}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm sm:text-base">
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
+          >
             <Download className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="hidden sm:inline">Export</span>
           </button>
           <button
             onClick={testQueryPerformance}
             disabled={isRunning}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm sm:text-base">
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:bg-gray-400 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
+          >
             {isRunning ? (
               <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
             ) : (
@@ -392,9 +364,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
       {/* Empty State - Jika belum ada test */}
       {metrics.queries.length === 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <div className="text-4xl mb-4 text-gray-400 dark:text-gray-500">
-            📊
-          </div>
+          <div className="text-4xl mb-4 text-gray-400 dark:text-gray-500">📊</div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
             Performance Data Kosong
           </h3>
@@ -404,7 +374,8 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
           <button
             onClick={testQueryPerformance}
             disabled={isRunning}
-            className="flex items-center justify-center gap-2 px-6 py-3 mx-auto bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+            className="flex items-center justify-center gap-2 px-6 py-3 mx-auto bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          >
             {isRunning ? (
               <RefreshCw className="w-5 h-5 animate-spin" />
             ) : (
@@ -430,16 +401,14 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                 <p
                   className={`text-3xl sm:text-5xl font-bold ${getScoreColor(
                     metrics.summary.performanceScore
-                  )}`}>
+                  )}`}
+                >
                   {metrics.summary.performanceScore}
-                  <span className="text-xl sm:text-2xl text-gray-500 dark:text-gray-400">
-                    /100
-                  </span>
+                  <span className="text-xl sm:text-2xl text-gray-500 dark:text-gray-400">/100</span>
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {metrics.summary.excellentCount || 0} excellent ·{" "}
-                  {metrics.summary.goodCount || 0} good ·{" "}
-                  {metrics.summary.warningCount || 0} warning ·{" "}
+                  {metrics.summary.excellentCount || 0} excellent · {metrics.summary.goodCount || 0}{" "}
+                  good · {metrics.summary.warningCount || 0} warning ·{" "}
                   {metrics.summary.criticalCount || 0} critical
                 </p>
               </div>
@@ -449,9 +418,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
               <div className="text-right">
                 <div className="flex items-center gap-2 justify-end mb-1">
                   {trend.icon}
-                  <span className={`font-semibold ${trend.color}`}>
-                    {trend.text}
-                  </span>
+                  <span className={`font-semibold ${trend.color}`}>{trend.text}</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {trend.change}% dari test sebelumnya
@@ -474,9 +441,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                   </p>
                   <p className="text-xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-1">
                     {metrics.summary.avgQueryTime}
-                    <span className="text-sm sm:text-lg text-gray-500 dark:text-gray-400">
-                      ms
-                    </span>
+                    <span className="text-sm sm:text-lg text-gray-500 dark:text-gray-400">ms</span>
                   </p>
                   {trend && (
                     <p className={`text-xs mt-1 ${trend.color} font-medium`}>
@@ -513,9 +478,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                   </p>
                   <p className="text-xl sm:text-3xl font-bold text-red-600 mt-1">
                     {metrics.summary.slowestQuery?.duration || 0}
-                    <span className="text-sm sm:text-lg text-gray-500 dark:text-gray-400">
-                      ms
-                    </span>
+                    <span className="text-sm sm:text-lg text-gray-500 dark:text-gray-400">ms</span>
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                     {metrics.summary.slowestQuery?.table || "-"}
@@ -533,9 +496,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                   </p>
                   <p className="text-xl sm:text-3xl font-bold text-green-600 mt-1">
                     {metrics.summary.fastestQuery?.duration || 0}
-                    <span className="text-sm sm:text-lg text-gray-500 dark:text-gray-400">
-                      ms
-                    </span>
+                    <span className="text-sm sm:text-lg text-gray-500 dark:text-gray-400">ms</span>
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                     {metrics.summary.fastestQuery?.table || "-"}
@@ -562,10 +523,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                       tick={{ fontSize: 10, fill: "#9CA3AF" }}
                       stroke="#6B7280"
                     />
-                    <YAxis
-                      tick={{ fontSize: 10, fill: "#9CA3AF" }}
-                      stroke="#6B7280"
-                    />
+                    <YAxis tick={{ fontSize: 10, fill: "#9CA3AF" }} stroke="#6B7280" />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "#1F2937",
@@ -605,10 +563,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                     height={60}
                     stroke="#6B7280"
                   />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: "#9CA3AF" }}
-                    stroke="#6B7280"
-                  />
+                  <YAxis tick={{ fontSize: 10, fill: "#9CA3AF" }} stroke="#6B7280" />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "#1F2937",
@@ -638,7 +593,8 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                     key={idx}
                     className={`p-4 rounded-lg border-2 ${getStatusColor(
                       query.status
-                    )} transition-all hover:shadow-md`}>
+                    )} transition-all hover:shadow-md`}
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-3">
                       <div className="flex items-center gap-3">
                         {getStatusIcon(query.status)}
@@ -659,9 +615,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                       <div className="text-right">
                         <p className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200">
                           {query.duration}
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            ms
-                          </span>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">ms</span>
                         </p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {query.recordCount.toLocaleString()} records
@@ -685,11 +639,9 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                             : "bg-red-500 dark:bg-red-600"
                         }`}
                         style={{
-                          width: `${Math.min(
-                            (parseFloat(query.duration) / 200) * 100,
-                            100
-                          )}%`,
-                        }}></div>
+                          width: `${Math.min((parseFloat(query.duration) / 200) * 100, 100)}%`,
+                        }}
+                      ></div>
                     </div>
 
                     {/* Recommendation */}
@@ -751,20 +703,15 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                     🚨 CRITICAL: Immediate Action Required!
                   </h4>
                   <p className="text-sm text-red-700 dark:text-red-300 mb-3">
-                    Ditemukan{" "}
-                    <strong>{metrics.summary.criticalCount} table</strong>{" "}
-                    dengan performance kritis yang dapat mempengaruhi user
-                    experience!
+                    Ditemukan <strong>{metrics.summary.criticalCount} table</strong> dengan
+                    performance kritis yang dapat mempengaruhi user experience!
                   </p>
                   <div className="space-y-1">
                     {metrics.queries
                       .filter((q) => q.status === "critical")
                       .map((q, idx) => (
-                        <p
-                          key={idx}
-                          className="text-sm text-red-700 dark:text-red-300">
-                          • <strong>{q.table}</strong>: {q.duration}ms (
-                          {q.recordCount} records)
+                        <p key={idx} className="text-sm text-red-700 dark:text-red-300">
+                          • <strong>{q.table}</strong>: {q.duration}ms ({q.recordCount} records)
                         </p>
                       ))}
                   </div>
@@ -773,24 +720,22 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
             </div>
           )}
 
-          {metrics.summary.warningCount > 0 &&
-            metrics.summary.criticalCount === 0 && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 dark:border-yellow-600 p-4 rounded">
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
-                      ⚠️ Performance Warning
-                    </h4>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      Ada <strong>{metrics.summary.warningCount} table</strong>{" "}
-                      yang perlu dioptimasi untuk mencegah degradasi
-                      performance.
-                    </p>
-                  </div>
+          {metrics.summary.warningCount > 0 && metrics.summary.criticalCount === 0 && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 dark:border-yellow-600 p-4 rounded">
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
+                    ⚠️ Performance Warning
+                  </h4>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    Ada <strong>{metrics.summary.warningCount} table</strong> yang perlu dioptimasi
+                    untuk mencegah degradasi performance.
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
           {metrics.summary.criticalCount === 0 &&
             metrics.summary.warningCount === 0 &&
@@ -803,8 +748,8 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                       ✅ All Systems Optimal
                     </h4>
                     <p className="text-sm text-green-700 dark:text-green-300">
-                      Semua table menunjukkan performance yang baik! Keep
-                      monitoring untuk maintain performance.
+                      Semua table menunjukkan performance yang baik! Keep monitoring untuk maintain
+                      performance.
                     </p>
                   </div>
                 </div>
@@ -827,22 +772,20 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Tambahkan <strong>composite index</strong> untuk queries
-                      dengan multiple conditions
+                      Tambahkan <strong>composite index</strong> untuk queries dengan multiple
+                      conditions
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Gunakan <strong>EXPLAIN ANALYZE</strong> untuk identify
-                      bottlenecks
+                      Gunakan <strong>EXPLAIN ANALYZE</strong> untuk identify bottlenecks
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Setup <strong>vacuuming schedule</strong> untuk maintain
-                      performance
+                      Setup <strong>vacuuming schedule</strong> untuk maintain performance
                     </span>
                   </li>
                 </ul>
@@ -857,22 +800,19 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Implement <strong>pagination</strong> dengan limit 50-100
-                      records per page
+                      Implement <strong>pagination</strong> dengan limit 50-100 records per page
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Gunakan <strong>select()</strong> hanya untuk columns yang
-                      diperlukan
+                      Gunakan <strong>select()</strong> hanya untuk columns yang diperlukan
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Tambahkan <strong>date filters</strong> untuk batasi data
-                      fetch
+                      Tambahkan <strong>date filters</strong> untuk batasi data fetch
                     </span>
                   </li>
                 </ul>
@@ -887,22 +827,19 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Implement <strong>React Query</strong> atau SWR untuk
-                      caching & auto-refresh
+                      Implement <strong>React Query</strong> atau SWR untuk caching & auto-refresh
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Gunakan <strong>debouncing</strong> untuk search/filter
-                      operations
+                      Gunakan <strong>debouncing</strong> untuk search/filter operations
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Add <strong>loading states</strong> untuk improve
-                      perceived performance
+                      Add <strong>loading states</strong> untuk improve perceived performance
                     </span>
                   </li>
                 </ul>
@@ -917,15 +854,13 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Archive data lama via <strong>Database Cleanup</strong>{" "}
-                      tab
+                      Archive data lama via <strong>Database Cleanup</strong> tab
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span>•</span>
                     <span>
-                      Setup <strong>retention policies</strong> untuk
-                      auto-cleanup
+                      Setup <strong>retention policies</strong> untuk auto-cleanup
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -941,8 +876,7 @@ const PerformanceMonitor = ({ user, onShowToast }) => {
           {metrics.summary.totalTestTime && (
             <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Test completed in{" "}
-                <strong>{metrics.summary.totalTestTime}ms</strong> • Last run:{" "}
+                Test completed in <strong>{metrics.summary.totalTestTime}ms</strong> • Last run:{" "}
                 <strong>{new Date().toLocaleString("id-ID")}</strong>
                 {user?.full_name && (
                   <span>

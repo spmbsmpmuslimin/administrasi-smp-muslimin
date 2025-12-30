@@ -59,9 +59,7 @@ const AdminDashboard = ({ user }) => {
   useEffect(() => {
     // Check localStorage first
     const savedTheme = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
     if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
       setIsDarkMode(true);
@@ -138,8 +136,7 @@ const AdminDashboard = ({ user }) => {
       const totalTeachers = teachersData?.length || 0;
       const hadirCount = attendanceData?.length || 0;
       const belumAbsen = totalTeachers - hadirCount;
-      const percentage =
-        totalTeachers > 0 ? Math.round((hadirCount / totalTeachers) * 100) : 0;
+      const percentage = totalTeachers > 0 ? Math.round((hadirCount / totalTeachers) * 100) : 0;
 
       console.log("📈 Hasil:", {
         totalGuruAktif: totalTeachers,
@@ -241,45 +238,36 @@ const AdminDashboard = ({ user }) => {
       }
 
       // Prioritize activeAcademicInfo, fallback to query result
-      const currentYear =
-        academicYear || activeYear?.academic_year || "2025/2026";
+      const currentYear = academicYear || activeYear?.academic_year || "2025/2026";
 
-      const [
-        teachersResult,
-        classesResult,
-        studentsResult,
-        gradesResult,
-        announcementsResult,
-      ] = await Promise.all([
-        supabase
-          .from("users")
-          .select("id", { count: "exact", head: true })
-          .in("role", ["teacher", "guru_bk"])
-          .eq("is_active", true)
-          .neq("username", "adenurmughni"),
-        supabase
-          .from("classes")
-          .select("id", { count: "exact", head: true })
-          .eq("academic_year", currentYear),
-        // ✅ Tambah filter semester untuk students jika ada
-        supabase
-          .from("students")
-          .select("id, class_id", { count: "exact" })
-          .eq("academic_year", currentYear)
-          .eq("is_active", true)
-          // ✅ Filter semester jika ada di students table
-          .eq("semester", semester || 1), // Fallback ke semester 1 jika undefined
-        // ✅ Tambah filter semester untuk classes jika ada
-        supabase
-          .from("classes")
-          .select("id, grade")
-          .eq("academic_year", currentYear),
-        supabase
-          .from("announcement")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(10),
-      ]);
+      const [teachersResult, classesResult, studentsResult, gradesResult, announcementsResult] =
+        await Promise.all([
+          supabase
+            .from("users")
+            .select("id", { count: "exact", head: true })
+            .in("role", ["teacher", "guru_bk"])
+            .eq("is_active", true)
+            .neq("username", "adenurmughni"),
+          supabase
+            .from("classes")
+            .select("id", { count: "exact", head: true })
+            .eq("academic_year", currentYear),
+          // ✅ Tambah filter semester untuk students jika ada
+          supabase
+            .from("students")
+            .select("id, class_id", { count: "exact" })
+            .eq("academic_year", currentYear)
+            .eq("is_active", true)
+            // ✅ Filter semester jika ada di students table
+            .eq("semester", semester || 1), // Fallback ke semester 1 jika undefined
+          // ✅ Tambah filter semester untuk classes jika ada
+          supabase.from("classes").select("id, grade").eq("academic_year", currentYear),
+          supabase
+            .from("announcement")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(10),
+        ]);
 
       const hasErrors = [
         teachersResult,
@@ -303,9 +291,7 @@ const AdminDashboard = ({ user }) => {
       if (studentsResult.data && gradesResult.data) {
         studentsResult.data.forEach((student) => {
           if (student?.class_id) {
-            const classData = gradesResult.data.find(
-              (c) => c?.id === student.class_id
-            );
+            const classData = gradesResult.data.find((c) => c?.id === student.class_id);
             if (classData?.grade) {
               const grade = classData.grade;
               gradeStats[grade] = (gradeStats[grade] || 0) + 1;
@@ -418,9 +404,7 @@ const AdminDashboard = ({ user }) => {
       }
 
       const updatedRecord = data[0];
-      setAnnouncements((prev) =>
-        prev.map((item) => (item.id === id ? updatedRecord : item))
-      );
+      setAnnouncements((prev) => prev.map((item) => (item.id === id ? updatedRecord : item)));
 
       console.log("Update successful:", updatedRecord);
       return { data: updatedRecord, error: null };
@@ -436,16 +420,11 @@ const AdminDashboard = ({ user }) => {
         throw new Error("ID pengumuman tidak valid");
       }
 
-      if (
-        !window.confirm("Apakah Anda yakin ingin menghapus pengumuman ini?")
-      ) {
+      if (!window.confirm("Apakah Anda yakin ingin menghapus pengumuman ini?")) {
         return { error: null };
       }
 
-      const { error } = await supabase
-        .from("announcement")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("announcement").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -467,9 +446,7 @@ const AdminDashboard = ({ user }) => {
       if (error) throw error;
 
       setAnnouncements((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, is_active: !currentStatus } : item
-        )
+        prev.map((item) => (item.id === id ? { ...item, is_active: !currentStatus } : item))
       );
     } catch (error) {
       console.error("Error toggling active status:", error);
@@ -616,9 +593,7 @@ const AdminDashboard = ({ user }) => {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">
-            Memuat dashboard admin...
-          </p>
+          <p className="text-slate-600 dark:text-slate-400">Memuat dashboard admin...</p>
         </div>
         {/* 🆕 DARK MODE TOGGLE DIHAPUS DARI LOADING STATE JUGA */}
       </div>
@@ -639,7 +614,8 @@ const AdminDashboard = ({ user }) => {
             </div>
             <button
               onClick={() => setError(null)}
-              className="text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 font-bold text-xl self-end sm:self-auto">
+              className="text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 font-bold text-xl self-end sm:self-auto"
+            >
               ×
             </button>
           </div>
@@ -681,11 +657,10 @@ const AdminDashboard = ({ user }) => {
             {/* 1. Presensi Guru */}
             <button
               onClick={() => navigate("/attendance-teacher")}
-              className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-900/20 dark:via-slate-800 dark:to-indigo-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-blue-100 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-900/20 dark:via-slate-800 dark:to-indigo-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-blue-100 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  👨‍🏫
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">👨‍🏫</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors mb-0.5">
                 Presensi Guru
@@ -698,11 +673,10 @@ const AdminDashboard = ({ user }) => {
             {/* 2. Presensi Siswa */}
             <button
               onClick={() => navigate("/attendance")}
-              className="group bg-gradient-to-br from-sky-50 via-white to-blue-50 dark:from-sky-900/20 dark:via-slate-800 dark:to-blue-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-sky-100 dark:border-sky-800 hover:border-sky-300 dark:hover:border-sky-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-sky-50 via-white to-blue-50 dark:from-sky-900/20 dark:via-slate-800 dark:to-blue-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-sky-100 dark:border-sky-800 hover:border-sky-300 dark:hover:border-sky-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-sky-400 to-sky-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  👨‍🎓
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">👨‍🎓</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-sky-700 dark:group-hover:text-sky-400 transition-colors mb-0.5">
                 Presensi Siswa
@@ -715,11 +689,10 @@ const AdminDashboard = ({ user }) => {
             {/* 3. Data Kelas */}
             <button
               onClick={() => navigate("/classes")}
-              className="group bg-gradient-to-br from-emerald-50 via-white to-green-50 dark:from-emerald-900/20 dark:via-slate-800 dark:to-green-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-emerald-100 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-emerald-50 via-white to-green-50 dark:from-emerald-900/20 dark:via-slate-800 dark:to-green-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-emerald-100 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  🏫
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">🏫</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors mb-0.5">
                 Data Kelas
@@ -732,11 +705,10 @@ const AdminDashboard = ({ user }) => {
             {/* 4. Data Guru */}
             <button
               onClick={() => navigate("/teachers")}
-              className="group bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-orange-900/20 dark:via-slate-800 dark:to-amber-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-orange-100 dark:border-orange-800 hover:border-orange-300 dark:hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-orange-900/20 dark:via-slate-800 dark:to-amber-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-orange-100 dark:border-orange-800 hover:border-orange-300 dark:hover:border-orange-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  👩‍🏫
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">👩‍🏫</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors mb-0.5">
                 Data Guru
@@ -749,11 +721,10 @@ const AdminDashboard = ({ user }) => {
             {/* 5. Data Siswa */}
             <button
               onClick={() => navigate("/students")}
-              className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 dark:from-purple-900/20 dark:via-slate-800 dark:to-violet-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-purple-100 dark:border-purple-800 hover:border-purple-300 dark:hover:border-purple-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-purple-50 via-white to-violet-50 dark:from-purple-900/20 dark:via-slate-800 dark:to-violet-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-purple-100 dark:border-purple-800 hover:border-purple-300 dark:hover:border-purple-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  📚
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">📚</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors mb-0.5">
                 Data Siswa
@@ -766,11 +737,10 @@ const AdminDashboard = ({ user }) => {
             {/* 6. Laporan */}
             <button
               onClick={() => navigate("/reports")}
-              className="group bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-pink-900/20 dark:via-slate-800 dark:to-rose-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-pink-100 dark:border-pink-800 hover:border-pink-300 dark:hover:border-pink-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-pink-900/20 dark:via-slate-800 dark:to-rose-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-pink-100 dark:border-pink-800 hover:border-pink-300 dark:hover:border-pink-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  📊
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">📊</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-pink-700 dark:group-hover:text-pink-400 transition-colors mb-0.5">
                 Laporan
@@ -783,11 +753,10 @@ const AdminDashboard = ({ user }) => {
             {/* 7. Pengaturan */}
             <button
               onClick={() => navigate("/settings")}
-              className="group bg-gradient-to-br from-slate-50 via-white to-gray-50 dark:from-slate-800 dark:via-slate-800 dark:to-gray-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-slate-50 via-white to-gray-50 dark:from-slate-800 dark:via-slate-800 dark:to-gray-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-slate-500 to-slate-700 dark:from-slate-600 dark:to-slate-800 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  ⚙️
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">⚙️</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors mb-0.5">
                 Pengaturan
@@ -800,11 +769,10 @@ const AdminDashboard = ({ user }) => {
             {/* 8. Monitor Sistem */}
             <button
               onClick={() => navigate("/monitor-sistem")}
-              className="group bg-gradient-to-br from-cyan-50 via-white to-teal-50 dark:from-cyan-900/20 dark:via-slate-800 dark:to-teal-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-cyan-100 dark:border-cyan-800 hover:border-cyan-300 dark:hover:border-cyan-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-cyan-50 via-white to-teal-50 dark:from-cyan-900/20 dark:via-slate-800 dark:to-teal-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-cyan-100 dark:border-cyan-800 hover:border-cyan-300 dark:hover:border-cyan-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  🖥️
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">🖥️</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-cyan-700 dark:group-hover:text-cyan-400 transition-colors mb-0.5">
                 Monitor Sistem
@@ -817,11 +785,10 @@ const AdminDashboard = ({ user }) => {
             {/* 9. SPMB */}
             <button
               onClick={() => navigate("/spmb")}
-              className="group bg-gradient-to-br from-yellow-50 via-white to-amber-50 dark:from-yellow-900/20 dark:via-slate-800 dark:to-amber-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-yellow-100 dark:border-yellow-800 hover:border-yellow-300 dark:hover:border-yellow-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]">
+              className="group bg-gradient-to-br from-yellow-50 via-white to-amber-50 dark:from-yellow-900/20 dark:via-slate-800 dark:to-amber-900/20 text-slate-800 dark:text-slate-200 p-2 sm:p-3 md:p-4 rounded-xl text-center h-auto transition-all duration-300 border border-yellow-100 dark:border-yellow-800 hover:border-yellow-300 dark:hover:border-yellow-600 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 active:scale-95 touch-manipulation min-h-[100px] sm:min-h-[120px]"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center mb-1 sm:mb-2 mx-auto group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
-                <span className="text-base sm:text-lg md:text-xl text-white">
-                  🎓
-                </span>
+                <span className="text-base sm:text-lg md:text-xl text-white">🎓</span>
               </div>
               <div className="font-semibold text-xs sm:text-sm md:text-sm group-hover:text-yellow-700 dark:group-hover:text-yellow-400 transition-colors mb-0.5">
                 SPMB
@@ -837,7 +804,8 @@ const AdminDashboard = ({ user }) => {
         <div className="mb-4 sm:mb-6 md:mb-8">
           <div
             className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-900/20 dark:via-slate-800 dark:to-indigo-900/20 rounded-xl shadow-lg border border-blue-200 dark:border-blue-800 p-4 sm:p-5 md:p-6 cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 active:scale-95 touch-manipulation"
-            onClick={() => navigate("/attendance-teacher")}>
+            onClick={() => navigate("/attendance-teacher")}
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div>
                 <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -858,7 +826,8 @@ const AdminDashboard = ({ user }) => {
                   e.stopPropagation();
                   navigate("/attendance-teacher");
                 }}
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all">
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all"
+              >
                 Lihat Detail →
               </button>
             </div>
@@ -906,30 +875,25 @@ const AdminDashboard = ({ user }) => {
                 <div className="mb-3">
                   <div className="flex justify-between text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-1">
                     <span>Persentase Kehadiran</span>
-                    <span className="font-semibold">
-                      {teacherAttendance.percentage}%
-                    </span>
+                    <span className="font-semibold">{teacherAttendance.percentage}%</span>
                   </div>
                   <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-1000 ease-out"
                       style={{
                         width: `${teacherAttendance.percentage}%`,
-                      }}></div>
+                      }}
+                    ></div>
                   </div>
                 </div>
 
                 {/* 🆕 DAFTAR GURU YANG SUDAH PRESENSI */}
-                {teacherAttendance.presensiList &&
-                teacherAttendance.presensiList.length > 0 ? (
+                {teacherAttendance.presensiList && teacherAttendance.presensiList.length > 0 ? (
                   <div className="mt-4 pt-4 border-t border-blue-100 dark:border-blue-800">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                         <span>📋</span>
-                        Sudah Presensi ({
-                          teacherAttendance.presensiList.length
-                        }{" "}
-                        guru)
+                        Sudah Presensi ({teacherAttendance.presensiList.length} guru)
                       </p>
                       <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
                         <span>🔄</span>
@@ -941,7 +905,8 @@ const AdminDashboard = ({ user }) => {
                         {teacherAttendance.presensiList.map((item) => (
                           <div
                             key={item.teacher_id}
-                            className="flex items-center justify-between py-1.5 px-2 bg-white/60 dark:bg-slate-700/60 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                            className="flex items-center justify-between py-1.5 px-2 bg-white/60 dark:bg-slate-700/60 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          >
                             <div className="flex items-center flex-1 min-w-0">
                               <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-6 flex-shrink-0">
                                 {item.id}.}
@@ -954,9 +919,7 @@ const AdminDashboard = ({ user }) => {
                               <span className="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/40 px-2 py-0.5 rounded">
                                 {item.clock_in}
                               </span>
-                              <span className="text-xs text-blue-600 dark:text-blue-400">
-                                ✅
-                              </span>
+                              <span className="text-xs text-blue-600 dark:text-blue-400">✅</span>
                             </div>
                           </div>
                         ))}
@@ -986,8 +949,7 @@ const AdminDashboard = ({ user }) => {
         <div className="mb-4 sm:mb-6 md:mb-8">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">
             Statistik Sekolah{" "}
-            {activeAcademicInfo?.displayText &&
-              `(${activeAcademicInfo.displayText})`}
+            {activeAcademicInfo?.displayText && `(${activeAcademicInfo.displayText})`}
           </h2>
 
           {/* Responsive grid dengan 4 breakpoints */}
@@ -1004,9 +966,7 @@ const AdminDashboard = ({ user }) => {
                   </p>
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <span className="text-sm sm:text-lg md:text-xl text-white">
-                    👩‍🏫
-                  </span>
+                  <span className="text-sm sm:text-lg md:text-xl text-white">👩‍🏫</span>
                 </div>
               </div>
             </div>
@@ -1029,9 +989,7 @@ const AdminDashboard = ({ user }) => {
                   )}
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <span className="text-sm sm:text-lg md:text-xl text-white">
-                    🏫
-                  </span>
+                  <span className="text-sm sm:text-lg md:text-xl text-white">🏫</span>
                 </div>
               </div>
             </div>
@@ -1054,9 +1012,7 @@ const AdminDashboard = ({ user }) => {
                   )}
                 </div>
                 <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <span className="text-sm sm:text-lg md:text-xl text-white">
-                    👨‍🎓
-                  </span>
+                  <span className="text-sm sm:text-lg md:text-xl text-white">👨‍🎓</span>
                 </div>
               </div>
             </div>
@@ -1072,7 +1028,8 @@ const AdminDashboard = ({ user }) => {
                     stats.studentsByGrade.map(({ grade, count }) => (
                       <div
                         key={grade}
-                        className="flex justify-between items-center group/item hover:bg-orange-50 dark:hover:bg-orange-900/30 px-2 py-1 rounded-lg transition-colors">
+                        className="flex justify-between items-center group/item hover:bg-orange-50 dark:hover:bg-orange-900/30 px-2 py-1 rounded-lg transition-colors"
+                      >
                         <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 group-hover/item:text-orange-700 dark:group-hover/item:text-orange-400 transition-colors">
                           Kelas {grade}
                         </span>
@@ -1102,7 +1059,8 @@ const AdminDashboard = ({ user }) => {
             <button
               onClick={() => setShowAddForm(true)}
               className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 dark:from-green-600 dark:to-emerald-700 dark:hover:from-green-700 dark:hover:to-emerald-800 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-105 active:scale-95 touch-manipulation"
-              disabled={submitting}>
+              disabled={submitting}
+            >
               <span className="mr-1">✨</span> Tambah Pengumuman
             </button>
           </div>
@@ -1123,9 +1081,7 @@ const AdminDashboard = ({ user }) => {
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm sm:text-base"
                     required
                     disabled={submitting}
@@ -1140,9 +1096,7 @@ const AdminDashboard = ({ user }) => {
                   </label>
                   <textarea
                     value={formData.content}
-                    onChange={(e) =>
-                      setFormData({ ...formData, content: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={4}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm sm:text-base"
                     required
@@ -1206,7 +1160,8 @@ const AdminDashboard = ({ user }) => {
                         })
                       }
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm sm:text-base"
-                      disabled={submitting}>
+                      disabled={submitting}
+                    >
                       <option value="semua">Semua Guru</option>
                       <option value="teacher">Guru Mapel</option>
                       <option value="walikelas">Wali Kelas</option>
@@ -1246,21 +1201,17 @@ const AdminDashboard = ({ user }) => {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800 disabled:from-blue-300 disabled:to-blue-400 dark:disabled:from-blue-800 dark:disabled:to-blue-900 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none active:scale-95 touch-manipulation">
-                    <span className="mr-1">
-                      {submitting ? "⏳" : editData ? "💾" : "✨"}
-                    </span>
-                    {submitting
-                      ? "Menyimpan..."
-                      : editData
-                      ? "Update"
-                      : "Simpan"}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800 disabled:from-blue-300 disabled:to-blue-400 dark:disabled:from-blue-800 dark:disabled:to-blue-900 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none active:scale-95 touch-manipulation"
+                  >
+                    <span className="mr-1">{submitting ? "⏳" : editData ? "💾" : "✨"}</span>
+                    {submitting ? "Menyimpan..." : editData ? "Update" : "Simpan"}
                   </button>
                   <button
                     type="button"
                     onClick={handleCancel}
                     disabled={submitting}
-                    className="bg-gradient-to-r from-slate-400 to-slate-500 hover:from-slate-500 hover:to-slate-600 dark:from-slate-600 dark:to-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-800 dark:disabled:to-slate-900 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none active:scale-95 touch-manipulation">
+                    className="bg-gradient-to-r from-slate-400 to-slate-500 hover:from-slate-500 hover:to-slate-600 dark:from-slate-600 dark:to-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-800 dark:disabled:to-slate-900 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none active:scale-95 touch-manipulation"
+                  >
                     <span className="mr-1">✕</span>
                     Batal
                   </button>
@@ -1284,7 +1235,8 @@ const AdminDashboard = ({ user }) => {
                   return (
                     <div
                       key={announcement.id}
-                      className="group border-l-4 border-blue-500 dark:border-blue-600 pl-4 py-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-r-xl hover:from-blue-100/80 hover:to-indigo-100/50 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/40 transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
+                      className="group border-l-4 border-blue-500 dark:border-blue-600 pl-4 py-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-r-xl hover:from-blue-100/80 hover:to-indigo-100/50 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/40 transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg"
+                    >
                       <div className="flex flex-col gap-3">
                         {/* Header: Title + Status Badge */}
                         <div className="flex justify-between items-start gap-2">
@@ -1294,7 +1246,8 @@ const AdminDashboard = ({ user }) => {
                           </h4>
                           <div className="flex items-center gap-2">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}
+                            >
                               {announcement.is_active
                                 ? isActive
                                   ? "🟢 Tayang"
@@ -1303,17 +1256,11 @@ const AdminDashboard = ({ user }) => {
                             </span>
                             <button
                               onClick={() =>
-                                toggleActiveStatus(
-                                  announcement.id,
-                                  announcement.is_active
-                                )
+                                toggleActiveStatus(announcement.id, announcement.is_active)
                               }
                               className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              title={
-                                announcement.is_active
-                                  ? "Nonaktifkan"
-                                  : "Aktifkan"
-                              }>
+                              title={announcement.is_active ? "Nonaktifkan" : "Aktifkan"}
+                            >
                               {announcement.is_active ? "👁️" : "🚫"}
                             </button>
                           </div>
@@ -1344,28 +1291,25 @@ const AdminDashboard = ({ user }) => {
                             <span className="flex items-center gap-1">
                               <span>📅</span>
                               <span>
-                                {new Date(
-                                  announcement.effective_from
-                                ).toLocaleDateString("id-ID", {
+                                {new Date(announcement.effective_from).toLocaleDateString("id-ID", {
                                   day: "numeric",
                                   month: "short",
                                 })}{" "}
                                 -{" "}
-                                {new Date(
-                                  announcement.effective_until
-                                ).toLocaleDateString("id-ID", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
+                                {new Date(announcement.effective_until).toLocaleDateString(
+                                  "id-ID",
+                                  {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  }
+                                )}
                               </span>
                             </span>
                             <span className="flex items-center gap-1">
                               <span>🕐</span>
                               <span>
-                                {new Date(
-                                  announcement.created_at
-                                ).toLocaleDateString("id-ID", {
+                                {new Date(announcement.created_at).toLocaleDateString("id-ID", {
                                   day: "numeric",
                                   month: "short",
                                   hour: "2-digit",
@@ -1381,13 +1325,15 @@ const AdminDashboard = ({ user }) => {
                           <button
                             onClick={() => handleEdit(announcement)}
                             disabled={submitting}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:text-blue-400 dark:disabled:text-blue-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200 transform hover:scale-105 active:scale-95 touch-manipulation shadow-sm">
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:text-blue-400 dark:disabled:text-blue-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200 transform hover:scale-105 active:scale-95 touch-manipulation shadow-sm"
+                          >
                             <span className="mr-1">✏️</span>Edit
                           </button>
                           <button
                             onClick={() => handleDeleteClick(announcement.id)}
                             disabled={submitting}
-                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:text-red-400 dark:disabled:text-red-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200 transform hover:scale-105 active:scale-95 touch-manipulation shadow-sm">
+                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:text-red-400 dark:disabled:text-red-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200 transform hover:scale-105 active:scale-95 touch-manipulation shadow-sm"
+                          >
                             <span className="mr-1">🗑️</span>Hapus
                           </button>
                         </div>
@@ -1398,15 +1344,12 @@ const AdminDashboard = ({ user }) => {
               </div>
             ) : (
               <div className="text-center py-8 sm:py-10 md:py-12 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800 dark:to-blue-900/10 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800 transition-colors duration-200">
-                <div className="text-2xl sm:text-3xl md:text-4xl mb-4 animate-bounce">
-                  📢
-                </div>
+                <div className="text-2xl sm:text-3xl md:text-4xl mb-4 animate-bounce">📢</div>
                 <h4 className="font-medium text-slate-800 dark:text-slate-200 mb-2 text-sm sm:text-base">
                   Belum Ada Pengumuman
                 </h4>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                  Klik tombol "✨ Tambah Pengumuman" untuk membuat pengumuman
-                  pertama
+                  Klik tombol "✨ Tambah Pengumuman" untuk membuat pengumuman pertama
                 </p>
                 <div className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
                   <span className="mr-1">💡</span>

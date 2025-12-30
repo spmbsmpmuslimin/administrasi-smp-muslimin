@@ -92,15 +92,9 @@ const MyMonthlyHistory = ({ currentUser }) => {
   const fetchMyMonthlyData = async () => {
     setLoading(true);
     try {
-      const startDate = `${selectedYear}-${String(selectedMonth + 1).padStart(
-        2,
-        "0"
-      )}-01`;
+      const startDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-01`;
       const lastDay = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-      const endDate = `${selectedYear}-${String(selectedMonth + 1).padStart(
-        2,
-        "0"
-      )}-${lastDay}`;
+      const endDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${lastDay}`;
 
       const { data, error } = await supabase
         .from("teacher_attendance")
@@ -129,10 +123,9 @@ const MyMonthlyHistory = ({ currentUser }) => {
   };
 
   const getAttendanceForDate = (day) => {
-    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(
-      2,
-      "0"
-    )}-${String(day).padStart(2, "0")}`;
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${String(
+      day
+    ).padStart(2, "0")}`;
     return attendances.find((att) => att.attendance_date === dateStr);
   };
 
@@ -153,10 +146,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
       Sakit: "bg-yellow-500 dark:bg-yellow-600 text-white",
       Alpa: "bg-red-500 dark:bg-red-600 text-white",
     };
-    return (
-      colors[status] ||
-      "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-    );
+    return colors[status] || "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300";
   };
 
   const getStatusIcon = (status) => {
@@ -176,10 +166,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
 
   const formatTime = (timeString) => {
     if (!timeString) return "-";
-    if (
-      typeof timeString === "string" &&
-      timeString.match(/^\d{2}:\d{2}:\d{2}$/)
-    ) {
+    if (typeof timeString === "string" && timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
       return timeString.substring(0, 5);
     }
     return timeString;
@@ -216,8 +203,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
   const stats = calculateStats();
   const daysInMonth = getDaysInMonth();
   const firstDay = getFirstDayOfMonth();
-  const attendanceRate =
-    daysInMonth > 0 ? ((stats.hadir / daysInMonth) * 100).toFixed(1) : 0;
+  const attendanceRate = daysInMonth > 0 ? ((stats.hadir / daysInMonth) * 100).toFixed(1) : 0;
 
   return (
     <div className="space-y-4">
@@ -225,83 +211,49 @@ const MyMonthlyHistory = ({ currentUser }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="text-blue-600 dark:text-blue-400" size={24} />
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-            Riwayat Saya
-          </h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Riwayat Saya</h2>
         </div>
 
         {/* Stats Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle
-                className="text-green-600 dark:text-green-400"
-                size={16}
-              />
-              <p className="text-xs text-green-700 dark:text-green-300 font-medium">
-                Hadir
-              </p>
+              <CheckCircle className="text-green-600 dark:text-green-400" size={16} />
+              <p className="text-xs text-green-700 dark:text-green-300 font-medium">Hadir</p>
             </div>
-            <p className="text-xl font-bold text-green-600 dark:text-green-400">
-              {stats.hadir}
-            </p>
+            <p className="text-xl font-bold text-green-600 dark:text-green-400">{stats.hadir}</p>
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle
-                className="text-blue-600 dark:text-blue-400"
-                size={16}
-              />
-              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                Izin
-              </p>
+              <AlertCircle className="text-blue-600 dark:text-blue-400" size={16} />
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Izin</p>
             </div>
-            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              {stats.izin}
-            </p>
+            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{stats.izin}</p>
           </div>
 
           <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle
-                className="text-yellow-600 dark:text-yellow-400"
-                size={16}
-              />
-              <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">
-                Sakit
-              </p>
+              <AlertCircle className="text-yellow-600 dark:text-yellow-400" size={16} />
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 font-medium">Sakit</p>
             </div>
-            <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
-              {stats.sakit}
-            </p>
+            <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{stats.sakit}</p>
           </div>
 
           <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 border border-red-200 dark:border-red-800">
             <div className="flex items-center gap-2 mb-1">
               <XCircle className="text-red-600 dark:text-red-400" size={16} />
-              <p className="text-xs text-red-700 dark:text-red-300 font-medium">
-                Alpa
-              </p>
+              <p className="text-xs text-red-700 dark:text-red-300 font-medium">Alpa</p>
             </div>
-            <p className="text-xl font-bold text-red-600 dark:text-red-400">
-              {stats.alpa}
-            </p>
+            <p className="text-xl font-bold text-red-600 dark:text-red-400">{stats.alpa}</p>
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800 col-span-2 sm:col-span-1">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp
-                className="text-blue-600 dark:text-blue-400"
-                size={16}
-              />
-              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
-                Rate
-              </p>
+              <TrendingUp className="text-blue-600 dark:text-blue-400" size={16} />
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Rate</p>
             </div>
-            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              {attendanceRate}%
-            </p>
+            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{attendanceRate}%</p>
           </div>
         </div>
       </div>
@@ -314,7 +266,8 @@ const MyMonthlyHistory = ({ currentUser }) => {
             viewMode === "list"
               ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
               : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-          }`}>
+          }`}
+        >
           <List size={18} />
           <span className="hidden sm:inline">List</span>
         </button>
@@ -324,7 +277,8 @@ const MyMonthlyHistory = ({ currentUser }) => {
             viewMode === "calendar"
               ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
               : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-          }`}>
+          }`}
+        >
           <Grid3x3 size={18} />
           <span className="hidden sm:inline">Calendar</span>
         </button>
@@ -335,9 +289,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
-            <p className="text-gray-600 dark:text-gray-400 mt-4">
-              Memuat data...
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">Memuat data...</p>
           </div>
         ) : viewMode === "list" ? (
           /* List View */
@@ -350,22 +302,18 @@ const MyMonthlyHistory = ({ currentUser }) => {
               attendances.map((att) => (
                 <div
                   key={att.id}
-                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg hover:shadow-md transition-all border border-gray-100 dark:border-gray-700">
+                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg hover:shadow-md transition-all border border-gray-100 dark:border-gray-700"
+                >
                   <div className="flex-1">
                     <p className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">
                       {formatDate(att.attendance_date)}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Clock
-                        size={14}
-                        className="text-gray-500 dark:text-gray-400"
-                      />
+                      <Clock size={14} className="text-gray-500 dark:text-gray-400" />
                       <p className="text-xs text-gray-600 dark:text-gray-300">
                         {formatTime(att.clock_in)}
                       </p>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        •
-                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
                       <p className="text-xs text-gray-600 dark:text-gray-300">
                         {formatCheckInMethod(att.check_in_method)}
                       </p>
@@ -379,7 +327,8 @@ const MyMonthlyHistory = ({ currentUser }) => {
                   <div
                     className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 shadow-sm ${getStatusColor(
                       att.status
-                    )}`}>
+                    )}`}
+                  >
                     {getStatusIcon(att.status)}
                     <span className="text-sm">{att.status}</span>
                   </div>
@@ -395,36 +344,31 @@ const MyMonthlyHistory = ({ currentUser }) => {
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 <button
                   onClick={handlePrevMonth}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center">
-                  <ChevronLeft
-                    size={20}
-                    className="text-gray-700 dark:text-gray-300"
-                  />
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
+                  <ChevronLeft size={20} className="text-gray-700 dark:text-gray-300" />
                 </button>
                 <span className="px-4 py-2 font-bold text-gray-800 dark:text-white text-lg">
                   {months[selectedMonth]} {selectedYear}
                 </span>
                 <button
                   onClick={handleNextMonth}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center">
-                  <ChevronRight
-                    size={20}
-                    className="text-gray-700 dark:text-gray-300"
-                  />
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
+                  <ChevronRight size={20} className="text-gray-700 dark:text-gray-300" />
                 </button>
               </div>
 
               <div className="grid grid-cols-7 gap-2">
                 {/* Day Headers */}
-                {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(
-                  (day, idx) => (
-                    <div
-                      key={idx}
-                      className="text-center font-bold text-gray-700 dark:text-gray-300 text-xs py-2 bg-gradient-to-b from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-900 rounded-lg border border-blue-200 dark:border-gray-600">
-                      {day}
-                    </div>
-                  )
-                )}
+                {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((day, idx) => (
+                  <div
+                    key={idx}
+                    className="text-center font-bold text-gray-700 dark:text-gray-300 text-xs py-2 bg-gradient-to-b from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-900 rounded-lg border border-blue-200 dark:border-gray-600"
+                  >
+                    {day}
+                  </div>
+                ))}
 
                 {/* Empty cells */}
                 {Array.from({ length: firstDay }).map((_, index) => (
@@ -435,9 +379,10 @@ const MyMonthlyHistory = ({ currentUser }) => {
                 {Array.from({ length: daysInMonth }).map((_, index) => {
                   const day = index + 1;
                   const attendance = getAttendanceForDate(day);
-                  const dateStr = `${selectedYear}-${String(
-                    selectedMonth + 1
-                  ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                  const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(
+                    2,
+                    "0"
+                  )}-${String(day).padStart(2, "0")}`;
 
                   const now = new Date();
                   const isToday =
@@ -468,9 +413,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
                       `}
                       title={
                         attendance
-                          ? `${attendance.status} - ${formatTime(
-                              attendance.clock_in
-                            )}`
+                          ? `${attendance.status} - ${formatTime(attendance.clock_in)}`
                           : holiday
                           ? `🎉 ${holiday}`
                           : weekend
@@ -478,7 +421,8 @@ const MyMonthlyHistory = ({ currentUser }) => {
                           : isToday
                           ? "Hari ini"
                           : ""
-                      }>
+                      }
+                    >
                       <span
                         className={`text-sm font-bold ${
                           attendance || isToday
@@ -488,7 +432,8 @@ const MyMonthlyHistory = ({ currentUser }) => {
                             : weekend
                             ? "text-gray-600 dark:text-gray-400"
                             : "text-gray-700 dark:text-gray-300"
-                        }`}>
+                        }`}
+                      >
                         {day}
                       </span>
 
@@ -501,15 +446,11 @@ const MyMonthlyHistory = ({ currentUser }) => {
                       )}
 
                       {holiday && !attendance && (
-                        <div className="absolute -top-1 -right-1 text-xs">
-                          🎉
-                        </div>
+                        <div className="absolute -top-1 -right-1 text-xs">🎉</div>
                       )}
 
                       {weekend && !holiday && !attendance && (
-                        <div className="absolute -top-1 -right-1 text-xs">
-                          🏠
-                        </div>
+                        <div className="absolute -top-1 -right-1 text-xs">🏠</div>
                       )}
                     </div>
                   );

@@ -13,12 +13,9 @@ export const Teachers = () => {
     const checkDarkMode = () => {
       const htmlHasDark = document.documentElement.classList.contains("dark");
       const savedTheme = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-      const shouldBeDark =
-        htmlHasDark || savedTheme === "dark" || (!savedTheme && prefersDark);
+      const shouldBeDark = htmlHasDark || savedTheme === "dark" || (!savedTheme && prefersDark);
 
       setIsDarkMode(shouldBeDark);
       if (shouldBeDark) {
@@ -104,7 +101,7 @@ export const Teachers = () => {
       const kepalaSekolah = {
         id: "kepala-sekolah-001",
         teacher_id: "G-01",
-        full_name: "ADE NURMUGHNI",
+        full_name: "ADE NURMUGHNI, S.Pd.",
         is_active: true,
         homeroom_class_id: null,
         role: "teacher",
@@ -182,7 +179,8 @@ export const Teachers = () => {
                 exportLoading || guruData.length === 0
                   ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   : "bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 shadow-md hover:shadow-lg"
-              }`}>
+              }`}
+            >
               {exportLoading ? (
                 <>
                   <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -209,7 +207,8 @@ export const Teachers = () => {
           guruData.map((guru, index) => (
             <div
               key={guru.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-blue-100/50 dark:shadow-gray-900/50 p-4 border border-blue-100 dark:border-gray-700 hover:shadow-xl dark:hover:shadow-gray-900 transition-all duration-300 touch-manipulation">
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-blue-100/50 dark:shadow-gray-900/50 p-4 border border-blue-100 dark:border-gray-700 hover:shadow-xl dark:hover:shadow-gray-900 transition-all duration-300 touch-manipulation"
+            >
               {/* Header Card */}
               <div className="flex justify-between items-start border-b border-blue-100/70 dark:border-gray-700 pb-3 mb-3">
                 <div className="flex-1 min-w-0">
@@ -261,9 +260,7 @@ export const Teachers = () => {
                     {guru.walikelas !== "-" ? (
                       `KELAS ${guru.walikelas}`
                     ) : (
-                      <span className="text-slate-400 dark:text-gray-500 italic">
-                        -
-                      </span>
+                      <span className="text-slate-400 dark:text-gray-500 italic">-</span>
                     )}
                   </div>
                 </div>
@@ -320,7 +317,8 @@ export const Teachers = () => {
                 {guruData.map((guru, index) => (
                   <tr
                     key={guru.id}
-                    className="hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                    className="hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors duration-150"
+                  >
                     {/* Nomor */}
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-500 dark:text-gray-400 text-center font-medium">
                       {index + 1}
@@ -403,9 +401,7 @@ export const Teachers = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs sm:text-sm text-slate-600 dark:text-gray-300 space-y-2 sm:space-y-0">
             <span className="font-medium">
               Total:{" "}
-              <span className="font-bold text-blue-600 dark:text-blue-400">
-                {guruData.length}
-              </span>{" "}
+              <span className="font-bold text-blue-600 dark:text-blue-400">{guruData.length}</span>{" "}
               guru
             </span>
             <span className="font-medium">

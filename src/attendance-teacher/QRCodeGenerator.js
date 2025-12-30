@@ -132,7 +132,8 @@ const QRCodeGenerator = () => {
       {/* Generate Button */}
       <button
         onClick={generateQR}
-        className="w-full py-3 sm:py-4 min-h-[52px] sm:min-h-[56px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 mb-6">
+        className="w-full py-3 sm:py-4 min-h-[52px] sm:min-h-[56px] bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 mb-6"
+      >
         <RefreshCw size={20} />
         <span className="text-sm sm:text-base">Generate QR Code</span>
       </button>
@@ -144,11 +145,7 @@ const QRCodeGenerator = () => {
       {finalQrUrl && (
         <div className="space-y-4 sm:space-y-6">
           <div className="border-4 border-blue-500 dark:border-blue-400 rounded-lg p-3 sm:p-4 bg-gray-50 dark:bg-gray-900/50">
-            <img
-              src={finalQrUrl}
-              alt="QR Code"
-              className="w-full max-w-md mx-auto"
-            />
+            <img src={finalQrUrl} alt="QR Code" className="w-full max-w-md mx-auto" />
             <p className="text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
               QR CODE SMP MUSLIMIN CILILIN
             </p>
@@ -167,7 +164,8 @@ const QRCodeGenerator = () => {
           {/* Download Button */}
           <button
             onClick={downloadQR}
-            className="w-full py-3 sm:py-4 min-h-[52px] sm:min-h-[56px] bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2">
+            className="w-full py-3 sm:py-4 min-h-[52px] sm:min-h-[56px] bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+          >
             <Download size={20} />
             <span className="text-sm sm:text-base">Download QR Code</span>
           </button>
@@ -177,9 +175,8 @@ const QRCodeGenerator = () => {
       {/* Warning */}
       <div className="mt-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4">
         <p className="text-xs sm:text-sm text-red-800 dark:text-red-300">
-          <strong>⚠️ Penting:</strong> QR Code Ini Statis Untuk Testing. Untuk
-          Leamanan Lebih Baik, Menggunakan QR Code Dinamis Yang Berubah Setiap
-          Hari !
+          <strong>⚠️ Penting:</strong> QR Code Ini Statis Untuk Testing. Untuk Leamanan Lebih Baik,
+          Menggunakan QR Code Dinamis Yang Berubah Setiap Hari !
         </p>
       </div>
     </div>

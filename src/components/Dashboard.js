@@ -36,13 +36,7 @@ const Dashboard = ({ user }) => {
       email: user.email,
       is_active: user.is_active,
     };
-  }, [
-    user?.id,
-    user?.username,
-    user?.role,
-    user?.teacher_id,
-    user?.homeroom_class_id,
-  ]);
+  }, [user?.id, user?.username, user?.role, user?.teacher_id, user?.homeroom_class_id]);
 
   // Optimized loading
   useEffect(() => {
@@ -79,9 +73,7 @@ const Dashboard = ({ user }) => {
 
     // 3. GURU WALI KELAS - Teacher dengan homeroom_class_id
     if (userRole === "teacher" && memoizedUser.homeroom_class_id) {
-      return (
-        <HomeroomTeacherDashboard user={memoizedUser} darkMode={darkMode} />
-      );
+      return <HomeroomTeacherDashboard user={memoizedUser} darkMode={darkMode} />;
     }
 
     // 4. GURU BIASA - Teacher tanpa homeroom_class_id
@@ -90,13 +82,7 @@ const Dashboard = ({ user }) => {
     }
 
     // Unknown role
-    return (
-      <UnknownRoleView
-        user={memoizedUser}
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-      />
-    );
+    return <UnknownRoleView user={memoizedUser} darkMode={darkMode} setDarkMode={setDarkMode} />;
   }, [memoizedUser, darkMode]);
 
   // Loading state
@@ -118,10 +104,7 @@ const Dashboard = ({ user }) => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <div className="text-center">
-          <AlertTriangle
-            className="text-red-500 dark:text-red-400 mx-auto mb-4"
-            size={40}
-          />
+          <AlertTriangle className="text-red-500 dark:text-red-400 mx-auto mb-4" size={40} />
           <h2 className="text-lg sm:text-xl font-bold text-red-700 dark:text-red-400 mb-2">
             Akses Ditolak
           </h2>
@@ -145,7 +128,8 @@ const UnknownRoleView = ({ user, darkMode, setDarkMode }) => (
         <button
           onClick={() => setDarkMode(!darkMode)}
           className="bg-white dark:bg-gray-800 p-2.5 sm:p-3 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:scale-110 transition-all duration-200"
-          aria-label="Toggle dark mode">
+          aria-label="Toggle dark mode"
+        >
           {darkMode ? (
             <Sun size={20} className="text-yellow-500" />
           ) : (
@@ -175,18 +159,14 @@ const UnknownRoleView = ({ user, darkMode, setDarkMode }) => (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 sm:p-4 border border-blue-100 dark:border-blue-800/30">
               <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                <User
-                  size={18}
-                  className="text-blue-600 dark:text-blue-400 sm:w-5 sm:h-5"
-                />
+                <User size={18} className="text-blue-600 dark:text-blue-400 sm:w-5 sm:h-5" />
                 <span className="text-sm sm:text-base font-medium text-blue-800 dark:text-blue-300">
                   User Info
                 </span>
               </div>
               <div className="space-y-1 text-xs sm:text-sm text-blue-700 dark:text-blue-300">
                 <p className="break-words">
-                  <span className="font-medium">Username:</span>{" "}
-                  {user?.username}
+                  <span className="font-medium">Username:</span> {user?.username}
                 </p>
                 <p className="break-words">
                   <span className="font-medium">Nama:</span> {user?.full_name}
@@ -199,10 +179,7 @@ const UnknownRoleView = ({ user, darkMode, setDarkMode }) => (
 
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4 border border-gray-100 dark:border-gray-600">
               <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                <School
-                  size={18}
-                  className="text-gray-600 dark:text-gray-400 sm:w-5 sm:h-5"
-                />
+                <School size={18} className="text-gray-600 dark:text-gray-400 sm:w-5 sm:h-5" />
                 <span className="text-sm sm:text-base font-medium text-gray-800 dark:text-gray-200">
                   Role Info
                 </span>
@@ -212,8 +189,7 @@ const UnknownRoleView = ({ user, darkMode, setDarkMode }) => (
                   <span className="font-medium">Role:</span> {user?.role}
                 </p>
                 <p className="break-words">
-                  <span className="font-medium">Teacher ID:</span>{" "}
-                  {user?.teacher_id || "-"}
+                  <span className="font-medium">Teacher ID:</span> {user?.teacher_id || "-"}
                 </p>
                 <p className="break-words">
                   <span className="font-medium">Status:</span>{" "}
@@ -227,17 +203,13 @@ const UnknownRoleView = ({ user, darkMode, setDarkMode }) => (
           {user?.homeroom_class_id && (
             <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 sm:p-4 border border-emerald-100 dark:border-emerald-800/30 mb-4 sm:mb-6">
               <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                <Home
-                  size={18}
-                  className="text-emerald-600 dark:text-emerald-400 sm:w-5 sm:h-5"
-                />
+                <Home size={18} className="text-emerald-600 dark:text-emerald-400 sm:w-5 sm:h-5" />
                 <span className="text-sm sm:text-base font-medium text-emerald-800 dark:text-emerald-300">
                   Class Assignment
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-300 break-words">
-                <span className="font-medium">Homeroom Class ID:</span>{" "}
-                {user.homeroom_class_id}
+                <span className="font-medium">Homeroom Class ID:</span> {user.homeroom_class_id}
               </p>
             </div>
           )}
@@ -246,7 +218,8 @@ const UnknownRoleView = ({ user, darkMode, setDarkMode }) => (
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={() => window.location.reload()}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors text-sm sm:text-base touch-manipulation active:scale-95">
+              className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors text-sm sm:text-base touch-manipulation active:scale-95"
+            >
               Refresh Dashboard
             </button>
 
@@ -255,7 +228,8 @@ const UnknownRoleView = ({ user, darkMode, setDarkMode }) => (
                 localStorage.removeItem("user");
                 window.location.href = "/login";
               }}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium py-3 px-4 rounded-lg transition-colors text-sm sm:text-base touch-manipulation active:scale-95">
+              className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium py-3 px-4 rounded-lg transition-colors text-sm sm:text-base touch-manipulation active:scale-95"
+            >
               Logout
             </button>
           </div>

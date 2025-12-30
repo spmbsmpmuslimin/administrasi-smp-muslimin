@@ -68,8 +68,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   useEffect(() => {
     // 🏠 Skip GPS check di localhost
     const isLocalhost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
+      window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
     if (isLocalhost) {
       console.log("🏠 Localhost detected - Skipping GPS pre-check");
@@ -155,14 +154,10 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           setLocationStatus(validation);
 
           if (!validation.isValid) {
-            const errorMessages = validation.errors
-              .map((err) => `• ${err.message}`)
-              .join("\n");
+            const errorMessages = validation.errors.map((err) => `• ${err.message}`).join("\n");
 
             const gpsError = validation.errors.find((err) => err.help);
-            const helpText = gpsError?.help
-              ? `\n\n📱 Panduan:\n${gpsError.help}`
-              : "";
+            const helpText = gpsError?.help ? `\n\n📱 Panduan:\n${gpsError.help}` : "";
 
             setMessage({
               type: "error",
@@ -192,9 +187,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             userId: currentUser.id,
           });
 
-          const timeError = validation.errors.find(
-            (err) => err.code === "TIME_NOT_ALLOWED"
-          );
+          const timeError = validation.errors.find((err) => err.code === "TIME_NOT_ALLOWED");
           if (timeError) {
             const currentTime = new Date().toLocaleTimeString("id-ID", {
               hour: "2-digit",
@@ -222,9 +215,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
 
       if (isAdmin && formData.teacherId) {
         targetTeacherId = formData.teacherId;
-        const teacher = teachersList.find(
-          (t) => t.teacher_id === formData.teacherId
-        );
+        const teacher = teachersList.find((t) => t.teacher_id === formData.teacherId);
         targetTeacherName = teacher?.full_name || "Unknown";
       } else {
         const { data: userData, error: userError } = await supabase
@@ -276,11 +267,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             timestamp: new Date().toISOString(),
           });
         }
-      } else if (
-        !isAdmin &&
-        formData.status === "Hadir" &&
-        !locationStatus?.isValid
-      ) {
+      } else if (!isAdmin && formData.status === "Hadir" && !locationStatus?.isValid) {
         const locationError = locationStatus?.errors?.find(
           (err) => err.code.includes("GPS") || err.code.includes("LOCATION")
         );
@@ -418,9 +405,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
     <div className="space-y-4 sm:space-y-6">
       <div className="text-center">
         <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white mb-2 flex items-center justify-center gap-2">
-          {isAdmin && (
-            <Shield className="text-blue-600 dark:text-blue-400" size={20} />
-          )}
+          {isAdmin && <Shield className="text-blue-600 dark:text-blue-400" size={20} />}
           Input Presensi Manual
           {isAdmin && (
             <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
@@ -441,24 +426,20 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             message.type === "success"
               ? "bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 animate-fade-in"
               : "bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 animate-fade-in"
-          }`}>
+          }`}
+        >
           {message.type === "success" ? (
-            <CheckCircle
-              className="text-green-600 dark:text-green-400 flex-shrink-0"
-              size={24}
-            />
+            <CheckCircle className="text-green-600 dark:text-green-400 flex-shrink-0" size={24} />
           ) : (
-            <XCircle
-              className="text-red-600 dark:text-red-400 flex-shrink-0"
-              size={24}
-            />
+            <XCircle className="text-red-600 dark:text-red-400 flex-shrink-0" size={24} />
           )}
           <p
             className={`text-sm font-medium whitespace-pre-line ${
               message.type === "success"
                 ? "text-green-800 dark:text-green-300"
                 : "text-red-800 dark:text-red-300"
-            }`}>
+            }`}
+          >
             {message.text}
           </p>
         </div>
@@ -473,10 +454,9 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             </label>
             <select
               value={formData.teacherId || ""}
-              onChange={(e) =>
-                handleChange("teacherId", e.target.value || null)
-              }
-              className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+              onChange={(e) => handleChange("teacherId", e.target.value || null)}
+              className="w-full px-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            >
               <option value="">-- Pilih Guru --</option>
               {teachersList.map((teacher) => (
                 <option key={teacher.teacher_id} value={teacher.teacher_id}>
@@ -524,17 +504,15 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
                   formData.status === option.value
                     ? `${option.color} text-white shadow-lg scale-105`
                     : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                }`}>
+                }`}
+              >
                 {option.label}
               </button>
             ))}
           </div>
           {formData.status !== "Hadir" && (
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-center gap-1">
-              <AlertTriangle
-                size={14}
-                className="text-yellow-600 dark:text-yellow-400"
-              />
+              <AlertTriangle size={14} className="text-yellow-600 dark:text-yellow-400" />
               Status selain "Hadir" hanya memerlukan validasi waktu operational
             </p>
           )}
@@ -574,7 +552,8 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
             isAdmin
               ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
               : "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
-          } disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}>
+          } disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg`}
+        >
           {loading ? (
             <>
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -596,7 +575,8 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           isAdmin
             ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
             : "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
-        } border rounded-lg p-4 sm:p-5`}>
+        } border rounded-lg p-4 sm:p-5`}
+      >
         <p className="text-sm sm:text-base text-gray-800 dark:text-gray-300">
           <strong></strong>{" "}
           {isAdmin

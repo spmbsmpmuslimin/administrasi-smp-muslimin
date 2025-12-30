@@ -1,26 +1,55 @@
+//[file name]: Attendance.js
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../supabaseClient";
 import AttendanceFilters from "./AttendanceFilters";
 import AttendanceStats from "./AttendanceStats";
 import AttendanceTable from "./AttendanceTable";
 import AttendanceModals from "./AttendanceModals";
+import { showMonthlyExportModal, showSemesterExportModal } from "./AttendanceExcel";
+
+// ✅ IMPORT ACADEMIC YEAR SERVICE YANG LENGKAP
 import {
-  showMonthlyExportModal,
-  showSemesterExportModal,
-} from "./AttendanceExcel";
+  getActiveAcademicInfo,
+  getActiveSemesterId,
+  filterBySemester,
+  applyAcademicFilters,
+} from "../../services/academicYearService";
 
-// ✅ TAMBAH IMPORT SERVICE
-import { getActiveAcademicInfo } from "../../services/academicYearService";
-
-// Utility function outside component
+// ✅ UTILITY FUNCTIONS - PERBAIKAN DATE HANDLING
 const getDefaultDate = () => {
-  const options = {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  };
-  return new Intl.DateTimeFormat("en-CA", options).format(new Date());
+  // Ambil waktu sekarang di WIB (UTC+7)
+  const now = new Date();
+  const wibOffset = 7 * 60; // WIB = UTC+7 dalam menit
+  const localOffset = now.getTimezoneOffset(); // offset lokal dalam menit
+
+  // Adjust ke WIB
+  const wibTime = new Date(now.getTime() + (wibOffset + localOffset) * 60000);
+
+  // Format ke YYYY-MM-DD
+  const year = wibTime.getFullYear();
+  const month = String(wibTime.getMonth() + 1).padStart(2, "0");
+  const day = String(wibTime.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+// ✅ Function untuk mendapatkan tanggal hari ini (midnight) di WIB
+const getTodayWIB = () => {
+  const now = new Date();
+  const wibOffset = 7 * 60;
+  const localOffset = now.getTimezoneOffset();
+  const wibTime = new Date(now.getTime() + (wibOffset + localOffset) * 60000);
+
+  // Set ke midnight (00:00:00)
+  wibTime.setHours(0, 0, 0, 0);
+
+  return wibTime;
+};
+
+// ✅ Function untuk convert string date ke Date object (midnight)
+const parseDate = (dateString) => {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
 };
 
 const Attendance = ({ user, onShowToast }) => {
@@ -46,8 +75,13 @@ const Attendance = ({ user, onShowToast }) => {
   const [pendingAttendanceData, setPendingAttendanceData] = useState(null);
   const [studentsLoaded, setStudentsLoaded] = useState(false);
 
-  // ✅ TAMBAH STATE UNTUK ACTIVE ACADEMIC INFO
+  // ✅ TAMBAH STATE UNTUK SELECTED SEMESTER
   const [activeAcademicInfo, setActiveAcademicInfo] = useState(null);
+  const [selectedSemesterId, setSelectedSemesterId] = useState(null);
+  const [availableSemesters, setAvailableSemesters] = useState([]);
+
+  // ✅ TAMBAH STATE BARU INI
+  const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
 
   // ========== UTILITY FUNCTIONS ==========
   const isHomeroomDaily = useCallback(() => {
@@ -76,10 +110,7 @@ const Attendance = ({ user, onShowToast }) => {
     setAttendanceStatus(newStatus);
 
     if (onShowToast) {
-      onShowToast(
-        `Berhasil mengubah status ${students.length} siswa menjadi HADIR`,
-        "success"
-      );
+      onShowToast(`Berhasil mengubah status ${students.length} siswa menjadi HADIR`, "success");
     }
   };
 
@@ -98,7 +129,18 @@ const Attendance = ({ user, onShowToast }) => {
       return;
     }
 
+    // ✅ VALIDASI SEMESTER
+    if (!selectedSemesterId) {
+      if (onShowToast) {
+        onShowToast("Pilih semester terlebih dahulu!", "error");
+      }
+      return;
+    }
+
     try {
+      // ✅ DAPATKAN INFO SEMESTER YANG DIPILIH
+      const currentSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
+
       await showMonthlyExportModal({
         students: students,
         selectedClass: selectedClass,
@@ -109,6 +151,10 @@ const Attendance = ({ user, onShowToast }) => {
         onShowToast: onShowToast,
         teacherName: user?.full_name || user?.username,
         homeroomClass: homeroomClass,
+        // ✅ PASS SEMESTER DATA YANG LENGKAP
+        semesterId: selectedSemesterId,
+        academicYear: currentSemester?.year || activeAcademicInfo?.year,
+        semester: currentSemester?.semester || activeAcademicInfo?.activeSemester,
       });
     } catch (error) {
       if (onShowToast) {
@@ -128,9 +174,17 @@ const Attendance = ({ user, onShowToast }) => {
       return;
     }
 
+    // ✅ VALIDASI SEMESTER
+    if (!selectedSemesterId) {
+      if (onShowToast) {
+        onShowToast("Pilih semester terlebih dahulu!", "error");
+      }
+      return;
+    }
+
     try {
-      // ✅ GUNAKAN SERVICE UNTUK DAPATKAN ACTIVE ACADEMIC INFO
-      const academicInfo = await getActiveAcademicInfo();
+      // ✅ DAPATKAN INFO SEMESTER YANG DIPILIH
+      const currentSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
 
       await showSemesterExportModal({
         classId: selectedClass,
@@ -140,8 +194,10 @@ const Attendance = ({ user, onShowToast }) => {
         currentUser: user,
         homeroomClass: homeroomClass,
         onShowToast: onShowToast,
-        semester: academicInfo?.semester, // ✅ TAMBAH INFO SEMESTER
-        academicYear: academicInfo?.year, // ✅ TAMBAH INFO TAHUN AJARAN
+        // ✅ PASS SEMESTER DATA YANG LENGKAP
+        semesterId: selectedSemesterId,
+        semester: currentSemester?.semester || activeAcademicInfo?.activeSemester,
+        academicYear: currentSemester?.year || activeAcademicInfo?.year,
       });
     } catch (error) {
       if (onShowToast) {
@@ -153,10 +209,7 @@ const Attendance = ({ user, onShowToast }) => {
   const handleShowRekap = () => {
     if (!selectedClass || !selectedSubject || students.length === 0) {
       if (onShowToast) {
-        onShowToast(
-          "Pilih mata pelajaran dan kelas terlebih dahulu untuk melihat rekap",
-          "error"
-        );
+        onShowToast("Pilih mata pelajaran dan kelas terlebih dahulu untuk melihat rekap", "error");
       }
       return;
     }
@@ -195,14 +248,114 @@ const Attendance = ({ user, onShowToast }) => {
       try {
         const info = await getActiveAcademicInfo();
         setActiveAcademicInfo(info);
+
+        // ✅ SET DEFAULT SELECTED SEMESTER ID - PERBAIKI INI
+        if (info && info.activeSemesterId) {
+          setSelectedSemesterId(info.activeSemesterId);
+          setAvailableSemesters(info.availableSemesters || []);
+
+          // ✅ SET READ-ONLY MODE AWAL (FALSE KARENA DEFAULT SEMESTER AKTIF)
+          setIsReadOnlyMode(false);
+
+          // ✅ LOG UNTUK DEBUG
+          console.log("📅 Default semester set:", {
+            activeSemesterId: info.activeSemesterId,
+            activeSemester: info.activeSemester,
+            year: info.year,
+            availableSemesters: info.availableSemesters,
+          });
+        }
+
         console.log("✅ Active Academic Info loaded for Attendance:", info);
       } catch (error) {
         console.error("❌ Error loading active academic info:", error);
+        setMessage("Error loading academic year info");
       }
     };
 
     loadActiveAcademicInfo();
   }, []);
+
+  // ✅ HANDLE SEMESTER CHANGE
+  const handleSemesterChange = (semesterId) => {
+    setSelectedSemesterId(semesterId);
+
+    // ✅ CEK APAKAH SEMESTER YANG DIPILIH AKTIF
+    const selectedSemester = availableSemesters.find((s) => s.id === semesterId);
+    const isActive = selectedSemester?.is_active || false;
+
+    setIsReadOnlyMode(!isActive); // Read-only jika bukan semester aktif
+
+    // Reset data ketika ganti semester
+    setClasses([]);
+    setSelectedClass("");
+    setStudents([]);
+    setStudentsLoaded(false);
+
+    if (onShowToast) {
+      if (selectedSemester) {
+        const mode = isActive ? "Input Mode" : "View Only Mode";
+        onShowToast(
+          `Switched to ${selectedSemester.year} - Semester ${selectedSemester.semester} (${mode})`,
+          isActive ? "info" : "warning"
+        );
+      }
+    }
+  };
+
+  // ✅ FUNCTION VALIDASI TANGGAL - DIPERBAIKI
+  const validateDate = () => {
+    if (!selectedSemesterId || !date) return { valid: true };
+
+    const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
+
+    if (!selectedSemester) {
+      return { valid: false, message: "Semester tidak valid" };
+    }
+
+    // ✅ Parse input date dan today dengan benar
+    const inputDate = parseDate(date);
+    const today = getTodayWIB();
+
+    console.log("🔍 Date Validation Debug:", {
+      inputDateString: date,
+      inputDate: inputDate.toISOString(),
+      today: today.toISOString(),
+      comparison: inputDate > today ? "FUTURE" : "PAST/TODAY",
+    });
+
+    // Parse semester dates
+    const startDate = parseDate(selectedSemester.start_date);
+    const endDate = parseDate(selectedSemester.end_date);
+
+    // ✅ VALIDASI 1: Tanggal tidak boleh masa depan
+    if (inputDate > today) {
+      return {
+        valid: false,
+        message: "❌ Tidak bisa input presensi untuk tanggal masa depan!",
+      };
+    }
+
+    // ✅ VALIDASI 2: Tanggal harus dalam range semester
+    if (inputDate < startDate || inputDate > endDate) {
+      const semesterName =
+        selectedSemester.semester === 1 ? "Ganjil (Juli-Desember)" : "Genap (Januari-Juni)";
+      return {
+        valid: false,
+        message: `❌ Tanggal harus dalam periode ${selectedSemester.year} Semester ${semesterName}`,
+      };
+    }
+
+    // ✅ VALIDASI 3: Hanya semester aktif yang bisa input
+    if (!selectedSemester.is_active) {
+      return {
+        valid: false,
+        message: "❌ Hanya semester aktif yang bisa input presensi baru!",
+      };
+    }
+
+    return { valid: true };
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -254,10 +407,18 @@ const Attendance = ({ user, onShowToast }) => {
       if (!teacherId) return;
 
       try {
-        const { data, error } = await supabase
+        // ✅ GUNAKAN FILTER DENGAN SEMESTER YANG DIPILIH
+        let query = supabase
           .from("teacher_assignments")
           .select("subject")
           .eq("teacher_id", teacherId);
+
+        // Filter berdasarkan academic_year_id jika ada semester yang dipilih
+        if (selectedSemesterId) {
+          query = filterBySemester(query, selectedSemesterId);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
           console.error("Error fetching subjects:", error);
@@ -279,7 +440,7 @@ const Attendance = ({ user, onShowToast }) => {
     };
 
     fetchSubjects();
-  }, [teacherId, isHomeroomTeacher, homeroomClass, user]);
+  }, [teacherId, isHomeroomTeacher, homeroomClass, user, selectedSemesterId]);
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -321,9 +482,7 @@ const Attendance = ({ user, onShowToast }) => {
             .order("full_name");
 
           if (studentsError) {
-            setMessage(
-              "Error: Gagal mengambil data siswa - " + studentsError.message
-            );
+            setMessage("Error: Gagal mengambil data siswa - " + studentsError.message);
           } else {
             setStudents(studentsData || []);
             setStudentsLoaded(true);
@@ -338,26 +497,28 @@ const Attendance = ({ user, onShowToast }) => {
           return;
         }
 
-        // ✅ GUNAKAN ACTIVE ACADEMIC INFO DARI STATE/SERVICE
-        if (!activeAcademicInfo?.year || !activeAcademicInfo?.semester) {
-          console.log("⚠️ Waiting for active academic info...");
+        // ✅ GUNAKAN SEMESTER YANG DIPILIH (DEFAULT KE ACTIVE)
+        if (!selectedSemesterId) {
+          console.log("⚠️ Waiting for semester selection...");
           return;
         }
 
         console.log("🔍 Fetching classes with:", {
           teacherId,
           selectedSubject,
-          year: activeAcademicInfo.year,
-          semester: activeAcademicInfo.semester,
+          semesterId: selectedSemesterId,
         });
 
-        const { data: assignmentData, error: assignmentError } = await supabase
+        // ✅ FILTER DENGAN ACADEMIC_YEAR_ID
+        let query = supabase
           .from("teacher_assignments")
           .select("class_id")
           .eq("teacher_id", teacherId)
-          .eq("subject", selectedSubject)
-          .eq("academic_year", activeAcademicInfo.year)
-          .eq("semester", activeAcademicInfo.semester); // ✅ TAMBAH FILTER SEMESTER!
+          .eq("subject", selectedSubject);
+
+        query = filterBySemester(query, selectedSemesterId);
+
+        const { data: assignmentData, error: assignmentError } = await query;
 
         console.log("📊 Assignment data:", assignmentData);
 
@@ -369,9 +530,14 @@ const Attendance = ({ user, onShowToast }) => {
         if (!assignmentData?.length) {
           console.log("ℹ️ No assignments found for this subject and semester");
           setClasses([]);
+          // Tampilkan info semester yang dipilih
+          const currentSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
           setMessage(
-            "Tidak ada kelas untuk mata pelajaran ini di semester " +
-              activeAcademicInfo.semester
+            `Tidak ada kelas untuk "${selectedSubject}" di ${
+              currentSemester
+                ? `${currentSemester.year} - Semester ${currentSemester.semester}`
+                : "semester ini"
+            }`
           );
           return;
         }
@@ -409,7 +575,8 @@ const Attendance = ({ user, onShowToast }) => {
     isHomeroomTeacher,
     homeroomClass,
     user,
-    activeAcademicInfo,
+    selectedSemesterId,
+    availableSemesters,
   ]);
 
   useEffect(() => {
@@ -462,7 +629,7 @@ const Attendance = ({ user, onShowToast }) => {
 
   const checkExistingAttendance = async (teacherUUID, typeValue) => {
     try {
-      const { data: existingData, error } = await supabase
+      let query = supabase
         .from("attendances")
         .select("id, student_id, status, notes")
         .eq("teacher_id", teacherUUID)
@@ -473,6 +640,13 @@ const Attendance = ({ user, onShowToast }) => {
           "student_id",
           students.map((s) => s.id)
         );
+
+      // ✅ TAMBAH FILTER SEMESTER UNTUK ATTENDANCE CHECK
+      if (selectedSemesterId) {
+        query = filterBySemester(query, selectedSemesterId);
+      }
+
+      const { data: existingData, error } = await query;
 
       if (error) {
         console.error("Error checking existing attendance:", error);
@@ -490,6 +664,9 @@ const Attendance = ({ user, onShowToast }) => {
     const subjectValue = isHomeroomDaily() ? "Harian" : selectedSubject;
     const typeValue = isHomeroomDaily() ? "harian" : "mapel";
 
+    // ✅ TAMBAH: Ambil semester number dari selected semester
+    const currentSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
+
     return students.map((student) => ({
       student_id: student.id,
       teacher_id: teacherUUID,
@@ -499,18 +676,27 @@ const Attendance = ({ user, onShowToast }) => {
       type: typeValue,
       status: attendanceStatus[student.id] || "Hadir",
       notes: attendanceNotes[student.id] || null,
+      academic_year_id: selectedSemesterId,
+      semester: currentSemester?.semester || 1, // ✅ TAMBAH BARIS INI
     }));
   };
 
   const deleteExistingAttendance = async (teacherUUID, typeValue) => {
     try {
-      const { error } = await supabase
+      let query = supabase
         .from("attendances")
         .delete()
         .eq("teacher_id", teacherUUID)
         .eq("date", date)
         .eq("type", typeValue)
         .eq("class_id", selectedClass);
+
+      // ✅ TAMBAH FILTER SEMESTER UNTUK DELETE
+      if (selectedSemesterId) {
+        query = filterBySemester(query, selectedSemesterId);
+      }
+
+      const { error } = await query;
 
       if (error) throw error;
       return true;
@@ -530,10 +716,7 @@ const Attendance = ({ user, onShowToast }) => {
       const { error } = await supabase.from("attendances").insert(batch);
 
       if (error) {
-        console.error(
-          `Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`,
-          error
-        );
+        console.error(`Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
         errorCount += batch.length;
       } else {
         successCount += batch.length;
@@ -544,9 +727,37 @@ const Attendance = ({ user, onShowToast }) => {
   };
 
   const processAttendanceSubmission = async () => {
+    // ✅ TAMBAH VALIDASI TANGGAL - LETAKKAN DI PALING AWAL
+    const dateValidation = validateDate();
+    if (!dateValidation.valid) {
+      if (onShowToast) {
+        onShowToast(dateValidation.message, "error");
+      }
+      return;
+    }
+
+    // ✅ TAMBAH VALIDASI READ-ONLY MODE
+    if (isReadOnlyMode) {
+      if (onShowToast) {
+        onShowToast(
+          "🔒 Semester ini dalam mode View Only. Ganti ke semester aktif untuk input data baru!",
+          "error"
+        );
+      }
+      return;
+    }
+
     if (!teacherId || !selectedSubject || !selectedClass) {
       if (onShowToast) {
         onShowToast("Pilih mata pelajaran dan kelas terlebih dahulu!", "error");
+      }
+      return;
+    }
+
+    // ✅ VALIDASI: HARUS ADA SEMESTER YANG DIPILIH
+    if (!selectedSemesterId) {
+      if (onShowToast) {
+        onShowToast("Tidak ada semester yang dipilih!", "error");
       }
       return;
     }
@@ -567,17 +778,13 @@ const Attendance = ({ user, onShowToast }) => {
         .eq("teacher_id", teacherId)
         .single();
 
-      if (teacherError)
-        throw new Error("Gagal mengambil data guru: " + teacherError.message);
+      if (teacherError) throw new Error("Gagal mengambil data guru: " + teacherError.message);
       if (!teacherUser) throw new Error("Data guru tidak ditemukan di sistem");
 
       const teacherUUID = teacherUser.id;
       const typeValue = isHomeroomDaily() ? "harian" : "mapel";
 
-      const existingData = await checkExistingAttendance(
-        teacherUUID,
-        typeValue
-      );
+      const existingData = await checkExistingAttendance(teacherUUID, typeValue);
 
       if (existingData && existingData.length > 0) {
         const attendanceData = prepareAttendanceData(teacherUUID);
@@ -589,14 +796,10 @@ const Attendance = ({ user, onShowToast }) => {
       }
 
       const attendanceData = prepareAttendanceData(teacherUUID);
-      const { successCount, errorCount } = await saveAttendanceData(
-        attendanceData
-      );
+      const { successCount, errorCount } = await saveAttendanceData(attendanceData);
 
       if (errorCount > 0) {
-        throw new Error(
-          `Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.`
-        );
+        throw new Error(`Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.`);
       }
 
       handleSaveSuccess(successCount);
@@ -621,22 +824,17 @@ const Attendance = ({ user, onShowToast }) => {
         .eq("teacher_id", teacherId)
         .single();
 
-      if (teacherError)
-        throw new Error("Gagal mengambil data guru: " + teacherError.message);
+      if (teacherError) throw new Error("Gagal mengambil data guru: " + teacherError.message);
       if (!teacherUser) throw new Error("Data guru tidak ditemukan di sistem");
 
       const teacherUUID = teacherUser.id;
       const typeValue = isHomeroomDaily() ? "harian" : "mapel";
 
       await deleteExistingAttendance(teacherUUID, typeValue);
-      const { successCount, errorCount } = await saveAttendanceData(
-        pendingAttendanceData
-      );
+      const { successCount, errorCount } = await saveAttendanceData(pendingAttendanceData);
 
       if (errorCount > 0) {
-        throw new Error(
-          `Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.`
-        );
+        throw new Error(`Berhasil menyimpan ${successCount} data, gagal ${errorCount} data.`);
       }
 
       handleSaveSuccess(successCount);
@@ -663,11 +861,16 @@ const Attendance = ({ user, onShowToast }) => {
   };
 
   const handleSaveSuccess = (successCount) => {
+    // ✅ DAPATKAN INFO SEMESTER YANG DIPILIH
+    const currentSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
+
     if (onShowToast) {
       onShowToast(
         `Presensi berhasil disimpan untuk ${successCount} siswa pada ${
           isHomeroomDaily() ? "presensi harian" : selectedSubject
-        } tanggal ${date}`,
+        } tanggal ${date}${
+          currentSemester ? ` (${currentSemester.year} - Semester ${currentSemester.semester})` : ""
+        }`,
         "success"
       );
     }
@@ -718,11 +921,20 @@ const Attendance = ({ user, onShowToast }) => {
               </p>
               {/* ✅ TAMBAH INFO TAHUN AJARAN & SEMESTER */}
               {activeAcademicInfo && (
-                <div className="mt-2 text-xs sm:text-sm text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                  <span className="bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded border border-blue-200 dark:border-blue-800">
-                    Tahun Ajaran: {activeAcademicInfo.year} - Semester{" "}
-                    {activeAcademicInfo.semester}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded border border-blue-200 dark:border-blue-800 text-xs sm:text-sm text-blue-600 dark:text-blue-400">
+                    Tahun Ajaran: {activeAcademicInfo.year}
                   </span>
+                  <span className="bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded border border-green-200 dark:border-green-800 text-xs sm:text-sm text-green-600 dark:text-green-400">
+                    Semester Aktif: {activeAcademicInfo.activeSemester}
+                  </span>
+                  {selectedSemesterId &&
+                    selectedSemesterId !== activeAcademicInfo.activeSemesterId && (
+                      <span className="bg-yellow-50 dark:bg-yellow-900/30 px-2 py-1 rounded border border-yellow-200 dark:border-yellow-800 text-xs sm:text-sm text-yellow-600 dark:text-yellow-400">
+                        View Mode: Semester{" "}
+                        {availableSemesters.find((s) => s.id === selectedSemesterId)?.semester}
+                      </span>
+                    )}
                 </div>
               )}
             </div>
@@ -742,7 +954,25 @@ const Attendance = ({ user, onShowToast }) => {
         </div>
       </div>
 
-      {/* Filters Component */}
+      {/* ✅ READ-ONLY MODE WARNING - TAMBAH INI */}
+      {isReadOnlyMode && (
+        <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-600 rounded-xl p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl sm:text-3xl">🔒</span>
+            <div className="flex-1">
+              <h3 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-1 text-sm sm:text-base">
+                Mode View Only (Read-Only)
+              </h3>
+              <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-400 leading-relaxed">
+                Semester ini tidak aktif. Anda hanya bisa melihat data, tidak bisa input atau edit
+                presensi. Untuk input data baru, pilih semester yang aktif.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters Component - PASS SEMESTER INFO */}
       <AttendanceFilters
         subjects={subjects}
         selectedSubject={selectedSubject}
@@ -757,17 +987,18 @@ const Attendance = ({ user, onShowToast }) => {
         isHomeroomDaily={isHomeroomDaily}
         setStudents={setStudents}
         setStudentsLoaded={setStudentsLoaded}
-        activeAcademicInfo={activeAcademicInfo} // ✅ PASS ACTIVE ACADEMIC INFO
+        activeAcademicInfo={activeAcademicInfo}
+        selectedSemesterId={selectedSemesterId}
+        availableSemesters={availableSemesters}
+        onSemesterChange={handleSemesterChange}
+        isReadOnlyMode={isReadOnlyMode}
       />
 
       {/* Conditional Rendering */}
       {students.length > 0 && (
         <>
           {/* Stats Component */}
-          <AttendanceStats
-            attendanceStatus={attendanceStatus}
-            students={students}
-          />
+          <AttendanceStats attendanceStatus={attendanceStatus} students={students} />
 
           {/* Action Buttons & Table */}
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
@@ -788,7 +1019,8 @@ const Attendance = ({ user, onShowToast }) => {
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               onClick={setAllHadir}
               disabled={loading}
-              style={{ minHeight: "44px" }}>
+              style={{ minHeight: "44px" }}
+            >
               ✅ Hadir Semua
             </button>
 
@@ -799,19 +1031,22 @@ const Attendance = ({ user, onShowToast }) => {
                 loading ||
                 !selectedSubject ||
                 !selectedClass ||
-                students.length === 0
+                !selectedSemesterId ||
+                students.length === 0 ||
+                isReadOnlyMode // ✅ TAMBAH INI
               }
-              style={{ minHeight: "44px" }}>
-              {loading ? "Menyimpan..." : "💾 Simpan Presensi"}
+              style={{ minHeight: "44px" }}
+            >
+              {loading ? "Menyimpan..." : isReadOnlyMode ? "🔒 View Only" : "💾 Simpan Presensi"}{" "}
+              {/* ✅ UBAH TEXT JIKA READ-ONLY */}
             </button>
 
             <button
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               onClick={handleShowRekap}
-              disabled={
-                !selectedClass || !selectedSubject || students.length === 0
-              }
-              style={{ minHeight: "44px" }}>
+              disabled={!selectedClass || !selectedSubject || students.length === 0}
+              style={{ minHeight: "44px" }}
+            >
               📊 Lihat Rekap
             </button>
 
@@ -819,17 +1054,17 @@ const Attendance = ({ user, onShowToast }) => {
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               onClick={handleExportMonthly}
               disabled={students.length === 0}
-              style={{ minHeight: "44px" }}>
+              style={{ minHeight: "44px" }}
+            >
               📅 Export Bulanan
             </button>
 
             <button
               className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               onClick={handleExportSemester}
-              disabled={
-                !selectedClass || !selectedSubject || students.length === 0
-              }
-              style={{ minHeight: "44px" }}>
+              disabled={!selectedClass || !selectedSubject || students.length === 0}
+              style={{ minHeight: "44px" }}
+            >
               📚 Export Semester
             </button>
           </div>
@@ -856,17 +1091,15 @@ const Attendance = ({ user, onShowToast }) => {
         </div>
       )}
 
-      {!selectedClass &&
-        selectedSubject &&
-        classes.length === 0 &&
-        !isHomeroomDaily() && (
-          <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm text-center text-slate-500 dark:text-slate-400">
-            <p>
-              Tidak ada kelas untuk mata pelajaran ini di semester{" "}
-              {activeAcademicInfo?.semester}
-            </p>
-          </div>
-        )}
+      {!selectedClass && selectedSubject && classes.length === 0 && !isHomeroomDaily() && (
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm text-center text-slate-500 dark:text-slate-400">
+          <p>
+            {selectedSemesterId
+              ? `Tidak ada kelas untuk "${selectedSubject}" di semester yang dipilih`
+              : "Pilih semester terlebih dahulu"}
+          </p>
+        </div>
+      )}
 
       {!selectedSubject && (
         <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm text-center text-slate-500 dark:text-slate-400">
@@ -874,7 +1107,7 @@ const Attendance = ({ user, onShowToast }) => {
         </div>
       )}
 
-      {/* MODALS COMPONENT */}
+      {/* MODALS COMPONENT - PASS SEMESTER INFO */}
       <AttendanceModals
         showRekapModal={showRekapModal}
         setShowRekapModal={setShowRekapModal}
@@ -892,7 +1125,10 @@ const Attendance = ({ user, onShowToast }) => {
         date={date}
         handleOverwriteConfirmation={handleOverwriteConfirmation}
         handleCancelOverwrite={handleCancelOverwrite}
-        activeAcademicInfo={activeAcademicInfo} // ✅ PASS ACTIVE ACADEMIC INFO
+        activeAcademicInfo={activeAcademicInfo}
+        // ✅ PASS SEMESTER DATA
+        selectedSemesterId={selectedSemesterId}
+        availableSemesters={availableSemesters}
       />
     </div>
   );

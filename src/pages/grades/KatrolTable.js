@@ -1,12 +1,7 @@
 // 📊 KatrolTable.js - Component tabel hasil katrol (FIXED DARK MODE + FIREFOX)
 import React from "react";
 
-const KatrolTable = ({
-  hasilKatrol,
-  kkm,
-  showComparison = true,
-  isDarkMode = false,
-}) => {
+const KatrolTable = ({ hasilKatrol, kkm, showComparison = true, isDarkMode = false }) => {
   // Format nilai untuk display (pembulatan ke integer)
   const formatNilai = (nilai) => {
     if (nilai === null || nilai === undefined) return "-";
@@ -39,19 +34,14 @@ const KatrolTable = ({
             {formatNilai(nilaiAsli)}
           </span>
 
-          {naik && (
-            <span className="text-blue-500 dark:text-blue-400 text-xs font-bold">
-              →
-            </span>
-          )}
+          {naik && <span className="text-blue-500 dark:text-blue-400 text-xs font-bold">→</span>}
 
           {/* NILAI KATROL */}
           <span
             className={`text-xs sm:text-sm font-bold min-w-[1.5rem] ${
-              naik
-                ? "text-blue-700 dark:text-blue-400"
-                : "text-black dark:text-white"
-            }`}>
+              naik ? "text-blue-700 dark:text-blue-400" : "text-black dark:text-white"
+            }`}
+          >
             {formatNilai(nilaiKatrol)}
           </span>
         </div>
@@ -76,7 +66,8 @@ const KatrolTable = ({
             lulus
               ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
               : "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700"
-          }`}>
+          }`}
+        >
           {lulus ? "✓ Tuntas" : "✗ Belum"}
         </span>
       </div>
@@ -138,9 +129,7 @@ const KatrolTable = ({
             {/* BODY - REVISI: HAPUS HOVER */}
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-blue-200 dark:divide-gray-700">
               {hasilKatrol.map((item, index) => (
-                <tr
-                  key={item.student_id}
-                  className="border-b border-gray-200 dark:border-gray-700">
+                <tr key={item.student_id} className="border-b border-gray-200 dark:border-gray-700">
                   {/* No - Sticky */}
                   <td className="sticky left-0 z-10 px-3 sm:px-4 py-3.5 sm:py-4 text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 border-r border-blue-200 dark:border-gray-700 w-[50px] sm:w-[60px]">
                     {index + 1}
@@ -173,34 +162,22 @@ const KatrolTable = ({
 
                   {/* Rata NH - REVISI: HAPUS BG */}
                   <td className="px-2 sm:px-3 py-3.5 sm:py-4">
-                    <NilaiCell
-                      nilaiAsli={item.rata_nh}
-                      nilaiKatrol={item.rata_nh_k}
-                    />
+                    <NilaiCell nilaiAsli={item.rata_nh} nilaiKatrol={item.rata_nh_k} />
                   </td>
 
                   {/* PSTS */}
                   <td className="px-2 sm:px-3 py-3.5 sm:py-4">
-                    <NilaiCell
-                      nilaiAsli={item.psts}
-                      nilaiKatrol={item.psts_k}
-                    />
+                    <NilaiCell nilaiAsli={item.psts} nilaiKatrol={item.psts_k} />
                   </td>
 
                   {/* PSAS */}
                   <td className="px-2 sm:px-3 py-3.5 sm:py-4">
-                    <NilaiCell
-                      nilaiAsli={item.psas}
-                      nilaiKatrol={item.psas_k}
-                    />
+                    <NilaiCell nilaiAsli={item.psas} nilaiKatrol={item.psas_k} />
                   </td>
 
                   {/* Nilai Akhir - REVISI: HAPUS BG */}
                   <td className="px-2 sm:px-3 py-3.5 sm:py-4">
-                    <NilaiCell
-                      nilaiAsli={item.nilai_akhir}
-                      nilaiKatrol={item.nilai_akhir_k}
-                    />
+                    <NilaiCell nilaiAsli={item.nilai_akhir} nilaiKatrol={item.nilai_akhir_k} />
                   </td>
 
                   {/* Status */}

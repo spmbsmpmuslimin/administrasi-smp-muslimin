@@ -71,10 +71,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       }
 
       const [teachersRes, studentsRes] = await Promise.all([
-        supabase
-          .from("users")
-          .select("id")
-          .in("role", ["admin", "guru_mapel", "guru_walikelas"]),
+        supabase.from("users").select("id").in("role", ["admin", "guru_mapel", "guru_walikelas"]),
         supabase.from("students").select("id").eq("is_active", true),
       ]);
 
@@ -98,9 +95,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       return "";
     }
 
-    const validData = data.filter(
-      (item) => item !== null && typeof item === "object"
-    );
+    const validData = data.filter((item) => item !== null && typeof item === "object");
     if (validData.length === 0) return "";
 
     const headers = Object.keys(validData[0]);
@@ -114,11 +109,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             value = "";
           }
           value = String(value);
-          if (
-            value.includes(",") ||
-            value.includes('"') ||
-            value.includes("\n")
-          ) {
+          if (value.includes(",") || value.includes('"') || value.includes("\n")) {
             value = `"${value.replace(/"/g, '""')}"`;
           }
           return value;
@@ -156,12 +147,14 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
 
-      const schoolName = (
-        schoolSettings.school_name || "SMP_Muslimin_Cililin"
-      ).replace(/\s+/g, "_");
-      const academicYear = (
-        schoolSettings.academic_year || getCurrentAcademicYear()
-      ).replace("/", "_");
+      const schoolName = (schoolSettings.school_name || "SMP_Muslimin_Cililin").replace(
+        /\s+/g,
+        "_"
+      );
+      const academicYear = (schoolSettings.academic_year || getCurrentAcademicYear()).replace(
+        "/",
+        "_"
+      );
       const date = new Date().toISOString().split("T")[0];
 
       a.href = url;
@@ -171,10 +164,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast(
-        `${displayName} berhasil di-export! (${data.length} records)`,
-        "success"
-      );
+      showToast(`${displayName} berhasil di-export! (${data.length} records)`, "success");
     } catch (error) {
       console.error(`Error exporting ${tableName}:`, error);
       showToast(`Error exporting ${displayName}: ${error.message}`, "error");
@@ -217,21 +207,21 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       ];
 
       let exportedCount = 0;
-      const schoolName = (
-        schoolSettings.school_name || "SMP_Muslimin_Cililin"
-      ).replace(/\s+/g, "_");
-      const academicYear = (
-        schoolSettings.academic_year || getCurrentAcademicYear()
-      ).replace("/", "_");
+      const schoolName = (schoolSettings.school_name || "SMP_Muslimin_Cililin").replace(
+        /\s+/g,
+        "_"
+      );
+      const academicYear = (schoolSettings.academic_year || getCurrentAcademicYear()).replace(
+        "/",
+        "_"
+      );
       const date = new Date().toISOString().split("T")[0];
 
       for (let i = 0; i < tables.length; i++) {
         const table = tables[i];
 
         try {
-          setExportProgress(
-            `Exporting ${table.display} (${i + 1}/${tables.length})...`
-          );
+          setExportProgress(`Exporting ${table.display} (${i + 1}/${tables.length})...`);
 
           const { data, error } = await supabase.from(table.name).select("*");
 
@@ -265,10 +255,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       }
 
       if (exportedCount > 0) {
-        showToast(
-          `✅ ${exportedCount} tabel berhasil di-export ke CSV!`,
-          "success"
-        );
+        showToast(`✅ ${exportedCount} tabel berhasil di-export ke CSV!`, "success");
       } else {
         showToast("Tidak ada data untuk di-export", "warning");
       }
@@ -360,11 +347,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       ].filter(Boolean);
 
       if (errors.length > 0) {
-        throw new Error(
-          `Failed to fetch some tables: ${errors
-            .map((e) => e.message)
-            .join(", ")}`
-        );
+        throw new Error(`Failed to fetch some tables: ${errors.map((e) => e.message).join(", ")}`);
       }
 
       setExportProgress("Membuat file backup...");
@@ -428,12 +411,14 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
 
-      const schoolName = (
-        schoolSettings.school_name || "SMP_Muslimin_Cililin"
-      ).replace(/\s+/g, "_");
-      const academicYear = (
-        schoolSettings.academic_year || getCurrentAcademicYear()
-      ).replace("/", "_");
+      const schoolName = (schoolSettings.school_name || "SMP_Muslimin_Cililin").replace(
+        /\s+/g,
+        "_"
+      );
+      const academicYear = (schoolSettings.academic_year || getCurrentAcademicYear()).replace(
+        "/",
+        "_"
+      );
       const date = new Date().toISOString().split("T")[0];
 
       a.href = url;
@@ -474,10 +459,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             stats: backupData.stats,
           });
         } catch (error) {
-          showToast(
-            "Format file backup tidak valid: " + error.message,
-            "error"
-          );
+          showToast("Format file backup tidak valid: " + error.message, "error");
           setRestoreFile(null);
         }
       };
@@ -490,50 +472,28 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
     const confirmed = window.confirm(
       `PERINGATAN: Restore akan menimpa semua data yang ada!\n\n` +
-        `Backup dari: ${new Date(restorePreview.timestamp).toLocaleString(
-          "id-ID"
-        )}\n` +
+        `Backup dari: ${new Date(restorePreview.timestamp).toLocaleString("id-ID")}\n` +
         `Tahun Ajaran: ${restorePreview.academic_year}\n` +
         `Sekolah: ${restorePreview.school_info?.school_name}\n\n` +
         `Data yang akan di-restore:\n` +
         `- ${restorePreview.stats?.total_academic_years || 0} tahun ajaran\n` +
         `- ${restorePreview.stats?.total_users || 0} pengguna\n` +
-        `- ${
-          restorePreview.stats?.total_teacher_assignments || 0
-        } penugasan guru\n` +
+        `- ${restorePreview.stats?.total_teacher_assignments || 0} penugasan guru\n` +
         `- ${restorePreview.stats?.total_classes || 0} kelas\n` +
         `- ${restorePreview.stats?.total_students || 0} siswa\n` +
         `- ${restorePreview.stats?.total_attendance_records || 0} kehadiran\n` +
         `- ${restorePreview.stats?.total_grades_records || 0} nilai\n` +
         `- ${restorePreview.stats?.total_konseling_records || 0} konseling\n` +
-        `- ${
-          restorePreview.stats?.total_teacher_schedules || 0
-        } jadwal guru\n` +
-        `- ${
-          restorePreview.stats?.total_development_notes || 0
-        } catatan perkembangan\n` +
-        `- ${
-          restorePreview.stats?.total_system_health_logs || 0
-        } system health logs\n` +
-        `- ${
-          restorePreview.stats?.total_cleanup_history || 0
-        } riwayat cleanup\n` +
-        `- ${
-          restorePreview.stats?.total_spmb_settings || 0
-        } pengaturan SPMB\n` +
-        `- ${
-          restorePreview.stats?.total_eraport_settings || 0
-        } pengaturan E-Raport\n` +
-        `- ${
-          restorePreview.stats?.total_eraport_tp || 0
-        } tujuan pembelajaran\n` +
+        `- ${restorePreview.stats?.total_teacher_schedules || 0} jadwal guru\n` +
+        `- ${restorePreview.stats?.total_development_notes || 0} catatan perkembangan\n` +
+        `- ${restorePreview.stats?.total_system_health_logs || 0} system health logs\n` +
+        `- ${restorePreview.stats?.total_cleanup_history || 0} riwayat cleanup\n` +
+        `- ${restorePreview.stats?.total_spmb_settings || 0} pengaturan SPMB\n` +
+        `- ${restorePreview.stats?.total_eraport_settings || 0} pengaturan E-Raport\n` +
+        `- ${restorePreview.stats?.total_eraport_tp || 0} tujuan pembelajaran\n` +
         `- ${restorePreview.stats?.total_eraport_nilai || 0} nilai E-Raport\n` +
-        `- ${
-          restorePreview.stats?.total_eraport_kehadiran || 0
-        } kehadiran E-Raport\n` +
-        `- ${
-          restorePreview.stats?.total_eraport_catatan || 0
-        } catatan E-Raport\n\n` +
+        `- ${restorePreview.stats?.total_eraport_kehadiran || 0} kehadiran E-Raport\n` +
+        `- ${restorePreview.stats?.total_eraport_catatan || 0} catatan E-Raport\n\n` +
         `Tindakan ini TIDAK DAPAT DIBATALKAN. Apakah Anda yakin?`
     );
 
@@ -554,10 +514,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             .from("attendances")
             .delete()
             .neq("id", "00000000-0000-0000-0000-000000000000");
-          await supabase
-            .from("grades")
-            .delete()
-            .neq("id", "00000000-0000-0000-0000-000000000000");
+          await supabase.from("grades").delete().neq("id", "00000000-0000-0000-0000-000000000000");
           await supabase
             .from("konseling")
             .delete()
@@ -618,14 +575,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
           setExportProgress("Menghapus data lama (3/3)...");
 
-          await supabase
-            .from("users")
-            .delete()
-            .neq("id", "00000000-0000-0000-0000-000000000000");
-          await supabase
-            .from("classes")
-            .delete()
-            .neq("id", "00000000-0000-0000-0000-000000000000");
+          await supabase.from("users").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+          await supabase.from("classes").delete().neq("id", "00000000-0000-0000-0000-000000000000");
           await supabase
             .from("announcement")
             .delete()
@@ -647,9 +598,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           const totalTables = 21; // ✅ GANTI dari 16 jadi 21
 
           if (backupData.data.academic_years?.length > 0) {
-            setExportProgress(
-              `Restore academic years (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore academic years (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("academic_years")
               .insert(backupData.data.academic_years);
@@ -657,9 +606,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           }
 
           if (backupData.data.school_settings?.length > 0) {
-            setExportProgress(
-              `Restore settings (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore settings (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("school_settings")
               .insert(backupData.data.school_settings);
@@ -667,49 +614,31 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           }
 
           if (backupData.data.classes?.length > 0) {
-            setExportProgress(
-              `Restore classes (${++insertedTables}/${totalTables})...`
-            );
-            const { error } = await supabase
-              .from("classes")
-              .insert(backupData.data.classes);
+            setExportProgress(`Restore classes (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from("classes").insert(backupData.data.classes);
             if (error) console.error("Error inserting classes:", error);
           }
 
           if (backupData.data.users?.length > 0) {
-            setExportProgress(
-              `Restore users (${++insertedTables}/${totalTables})...`
-            );
-            const { error } = await supabase
-              .from("users")
-              .insert(backupData.data.users);
+            setExportProgress(`Restore users (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from("users").insert(backupData.data.users);
             if (error) console.error("Error inserting users:", error);
           }
 
           if (backupData.data.students?.length > 0) {
-            setExportProgress(
-              `Restore students (${++insertedTables}/${totalTables})...`
-            );
-            const { error } = await supabase
-              .from("students")
-              .insert(backupData.data.students);
+            setExportProgress(`Restore students (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from("students").insert(backupData.data.students);
             if (error) console.error("Error inserting students:", error);
           }
 
           if (backupData.data.siswa_baru?.length > 0) {
-            setExportProgress(
-              `Restore siswa baru (${++insertedTables}/${totalTables})...`
-            );
-            const { error } = await supabase
-              .from("siswa_baru")
-              .insert(backupData.data.siswa_baru);
+            setExportProgress(`Restore siswa baru (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from("siswa_baru").insert(backupData.data.siswa_baru);
             if (error) console.error("Error inserting siswa_baru:", error);
           }
 
           if (backupData.data.attendances?.length > 0) {
-            setExportProgress(
-              `Restore attendances (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore attendances (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("attendances")
               .insert(backupData.data.attendances);
@@ -717,22 +646,14 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           }
 
           if (backupData.data.grades?.length > 0) {
-            setExportProgress(
-              `Restore grades (${++insertedTables}/${totalTables})...`
-            );
-            const { error } = await supabase
-              .from("grades")
-              .insert(backupData.data.grades);
+            setExportProgress(`Restore grades (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from("grades").insert(backupData.data.grades);
             if (error) console.error("Error inserting grades:", error);
           }
 
           if (backupData.data.konseling?.length > 0) {
-            setExportProgress(
-              `Restore konseling (${++insertedTables}/${totalTables})...`
-            );
-            const { error } = await supabase
-              .from("konseling")
-              .insert(backupData.data.konseling);
+            setExportProgress(`Restore konseling (${++insertedTables}/${totalTables})...`);
+            const { error } = await supabase.from("konseling").insert(backupData.data.konseling);
             if (error) console.error("Error inserting konseling:", error);
           }
 
@@ -743,14 +664,11 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             const { error } = await supabase
               .from("teacher_assignments")
               .insert(backupData.data.teacher_assignments);
-            if (error)
-              console.error("Error inserting teacher_assignments:", error);
+            if (error) console.error("Error inserting teacher_assignments:", error);
           }
 
           if (backupData.data.announcement?.length > 0) {
-            setExportProgress(
-              `Restore announcements (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore announcements (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("announcement")
               .insert(backupData.data.announcement);
@@ -758,45 +676,31 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           }
 
           if (backupData.data.teacher_schedules?.length > 0) {
-            setExportProgress(
-              `Restore teacher schedules (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore teacher schedules (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("teacher_schedules")
               .insert(backupData.data.teacher_schedules);
-            if (error)
-              console.error("Error inserting teacher_schedules:", error);
+            if (error) console.error("Error inserting teacher_schedules:", error);
           }
 
           if (backupData.data.student_development_notes?.length > 0) {
-            setExportProgress(
-              `Restore development notes (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore development notes (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("student_development_notes")
               .insert(backupData.data.student_development_notes);
-            if (error)
-              console.error(
-                "Error inserting student_development_notes:",
-                error
-              );
+            if (error) console.error("Error inserting student_development_notes:", error);
           }
 
           if (backupData.data.system_health_logs?.length > 0) {
-            setExportProgress(
-              `Restore system health logs (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore system health logs (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("system_health_logs")
               .insert(backupData.data.system_health_logs);
-            if (error)
-              console.error("Error inserting system_health_logs:", error);
+            if (error) console.error("Error inserting system_health_logs:", error);
           }
 
           if (backupData.data.cleanup_history?.length > 0) {
-            setExportProgress(
-              `Restore cleanup history (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore cleanup history (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("cleanup_history")
               .insert(backupData.data.cleanup_history);
@@ -804,9 +708,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           }
 
           if (backupData.data.spmb_settings?.length > 0) {
-            setExportProgress(
-              `Restore SPMB settings (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore SPMB settings (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("spmb_settings")
               .insert(backupData.data.spmb_settings);
@@ -815,30 +717,23 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
           // ✅ TAMBAH INSERT E-RAPORT TABLES
           if (backupData.data.eraport_settings?.length > 0) {
-            setExportProgress(
-              `Restore E-Raport settings (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore E-Raport settings (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("eraport_settings")
               .insert(backupData.data.eraport_settings);
-            if (error)
-              console.error("Error inserting eraport_settings:", error);
+            if (error) console.error("Error inserting eraport_settings:", error);
           }
 
           if (backupData.data.eraport_tp?.length > 0) {
             setExportProgress(
               `Restore Tujuan Pembelajaran (${++insertedTables}/${totalTables})...`
             );
-            const { error } = await supabase
-              .from("eraport_tp")
-              .insert(backupData.data.eraport_tp);
+            const { error } = await supabase.from("eraport_tp").insert(backupData.data.eraport_tp);
             if (error) console.error("Error inserting eraport_tp:", error);
           }
 
           if (backupData.data.eraport_nilai?.length > 0) {
-            setExportProgress(
-              `Restore Nilai E-Raport (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore Nilai E-Raport (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("eraport_nilai")
               .insert(backupData.data.eraport_nilai);
@@ -846,20 +741,15 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           }
 
           if (backupData.data.eraport_kehadiran?.length > 0) {
-            setExportProgress(
-              `Restore Kehadiran E-Raport (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore Kehadiran E-Raport (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("eraport_kehadiran")
               .insert(backupData.data.eraport_kehadiran);
-            if (error)
-              console.error("Error inserting eraport_kehadiran:", error);
+            if (error) console.error("Error inserting eraport_kehadiran:", error);
           }
 
           if (backupData.data.eraport_catatan?.length > 0) {
-            setExportProgress(
-              `Restore Catatan E-Raport (${++insertedTables}/${totalTables})...`
-            );
+            setExportProgress(`Restore Catatan E-Raport (${++insertedTables}/${totalTables})...`);
             const { error } = await supabase
               .from("eraport_catatan")
               .insert(backupData.data.eraport_catatan);
@@ -908,10 +798,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         {exportProgress && (
           <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
             <div className="flex items-center gap-3">
-              <RefreshCw
-                className="animate-spin text-blue-600 dark:text-blue-400"
-                size={20}
-              />
+              <RefreshCw className="animate-spin text-blue-600 dark:text-blue-400" size={20} />
               <span className="text-sm sm:text-base text-blue-800 dark:text-blue-300 font-medium">
                 {exportProgress}
               </span>
@@ -926,21 +813,17 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <Monitor size={24} className="text-blue-200" />
-              <h3 className="text-lg sm:text-xl font-bold">
-                System Health Monitor
-              </h3>
+              <h3 className="text-lg sm:text-xl font-bold">System Health Monitor</h3>
             </div>
             <p className="text-blue-100 mb-5 text-sm sm:text-base">
-              Pantau kesehatan sistem, cek performa database, dan validasi
-              integritas data
+              Pantau kesehatan sistem, cek performa database, dan validasi integritas data
             </p>
             <button
               onClick={navigateToSystemMonitor}
-              className="flex items-center justify-center gap-3 px-5 sm:px-6 py-3.5 bg-white text-blue-600 dark:text-blue-700 rounded-lg hover:bg-blue-50 font-semibold transition-colors min-h-[44px] w-full md:w-auto">
+              className="flex items-center justify-center gap-3 px-5 sm:px-6 py-3.5 bg-white text-blue-600 dark:text-blue-700 rounded-lg hover:bg-blue-50 font-semibold transition-colors min-h-[44px] w-full md:w-auto"
+            >
               <Monitor size={18} />
-              <span className="text-sm sm:text-base">
-                Buka System Health Monitor
-              </span>
+              <span className="text-sm sm:text-base">Buka System Health Monitor</span>
             </button>
           </div>
           <div className="hidden md:block">
@@ -958,8 +841,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           </h3>
         </div>
         <p className="text-gray-600 dark:text-gray-400 mb-5 text-sm sm:text-base">
-          Export data per tabel ke format CSV untuk analisis atau backup
-          selektif.
+          Export data per tabel ke format CSV untuk analisis atau backup selektif.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
@@ -967,7 +849,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("academic_years", "Tahun Ajaran")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Tahun Ajaran</span>
           </button>
@@ -975,7 +858,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("classes", "Data Kelas")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Kelas</span>
           </button>
@@ -983,7 +867,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("students", "Data Siswa")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Students</span>
           </button>
@@ -992,17 +877,17 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("users", "Data Pengguna")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Users</span>
           </button>
 
           <button
-            onClick={() =>
-              exportTableToCSV("teacher_assignments", "Penugasan Guru")
-            }
+            onClick={() => exportTableToCSV("teacher_assignments", "Penugasan Guru")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Penugasan Guru</span>
           </button>
@@ -1010,7 +895,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("teacher_schedules", "Jadwal Guru")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Jadwal Guru</span>
           </button>
@@ -1019,7 +905,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("attendances", "Data Kehadiran")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Attendance</span>
           </button>
@@ -1027,7 +914,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("grades", "Data Nilai")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Nilai</span>
           </button>
@@ -1035,7 +923,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("konseling", "Data Konseling")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Konseling</span>
           </button>
@@ -1044,20 +933,17 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("siswa_baru", "Data Siswa Baru")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Siswa Baru</span>
           </button>
 
           <button
-            onClick={() =>
-              exportTableToCSV(
-                "student_development_notes",
-                "Catatan Perkembangan"
-              )
-            }
+            onClick={() => exportTableToCSV("student_development_notes", "Catatan Perkembangan")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Catatan Perkembangan</span>
           </button>
@@ -1065,18 +951,18 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("announcement", "Pengumuman")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Pengumuman</span>
           </button>
 
           {/* Group 5: System Data */}
           <button
-            onClick={() =>
-              exportTableToCSV("school_settings", "Pengaturan Sekolah")
-            }
+            onClick={() => exportTableToCSV("school_settings", "Pengaturan Sekolah")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Settings</span>
           </button>
@@ -1084,49 +970,46 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("spmb_settings", "Pengaturan SPMB")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Pengaturan SPMB</span>
           </button>
 
           <button
-            onClick={() =>
-              exportTableToCSV("system_health_logs", "System Health Logs")
-            }
+            onClick={() => exportTableToCSV("system_health_logs", "System Health Logs")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export System Logs</span>
           </button>
 
           {/* Group 6: History */}
           <button
-            onClick={() =>
-              exportTableToCSV("cleanup_history", "Riwayat Cleanup")
-            }
+            onClick={() => exportTableToCSV("cleanup_history", "Riwayat Cleanup")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Riwayat Cleanup</span>
           </button>
 
           {/* Group 7: E-Raport Data */}
           <button
-            onClick={() =>
-              exportTableToCSV("eraport_settings", "Pengaturan E-Raport")
-            }
+            onClick={() => exportTableToCSV("eraport_settings", "Pengaturan E-Raport")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Pengaturan E-Raport</span>
           </button>
 
           <button
-            onClick={() =>
-              exportTableToCSV("eraport_tp", "Tujuan Pembelajaran")
-            }
+            onClick={() => exportTableToCSV("eraport_tp", "Tujuan Pembelajaran")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Tujuan Pembelajaran</span>
           </button>
@@ -1134,27 +1017,26 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           <button
             onClick={() => exportTableToCSV("eraport_nilai", "Nilai E-Raport")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Nilai E-Raport</span>
           </button>
 
           <button
-            onClick={() =>
-              exportTableToCSV("eraport_kehadiran", "Kehadiran E-Raport")
-            }
+            onClick={() => exportTableToCSV("eraport_kehadiran", "Kehadiran E-Raport")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Kehadiran E-Raport</span>
           </button>
 
           <button
-            onClick={() =>
-              exportTableToCSV("eraport_catatan", "Catatan E-Raport")
-            }
+            onClick={() => exportTableToCSV("eraport_catatan", "Catatan E-Raport")}
             disabled={loading}
-            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+            className="flex items-center gap-3 px-4 py-3.5 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/50 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+          >
             <Table size={16} />
             <span className="truncate">Export Catatan E-Raport</span>
           </button>
@@ -1164,7 +1046,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             <button
               onClick={exportAllTablesToCSV}
               disabled={loading}
-              className="flex items-center justify-center gap-3 px-5 py-4 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-bold transition-colors w-full min-h-[44px]">
+              className="flex items-center justify-center gap-3 px-5 py-4 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-bold transition-colors w-full min-h-[44px]"
+            >
               <FileText size={20} />
               <span className="text-base">
                 {loading ? "Exporting..." : "Export Semua Tabel (21 Tabel)"}
@@ -1175,8 +1058,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
-            ℹ️ Total 21 tabel yang didukung untuk export (termasuk 5 tabel
-            E-Raport)
+            ℹ️ Total 21 tabel yang didukung untuk export (termasuk 5 tabel E-Raport)
           </p>
         </div>
       </div>
@@ -1190,14 +1072,14 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           </h3>
         </div>
         <p className="text-gray-600 dark:text-gray-400 mb-5 text-sm sm:text-base">
-          Download backup lengkap database untuk keperluan keamanan dan migrasi
-          data.
+          Download backup lengkap database untuk keperluan keamanan dan migrasi data.
         </p>
 
         <button
           onClick={exportDatabaseBackup}
           disabled={loading}
-          className="flex items-center justify-center gap-3 px-5 sm:px-6 py-3.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-bold transition-colors w-full sm:w-auto min-h-[44px] mb-5">
+          className="flex items-center justify-center gap-3 px-5 sm:px-6 py-3.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 font-bold transition-colors w-full sm:w-auto min-h-[44px] mb-5"
+        >
           <Download size={20} />
           <span className="text-base">
             {loading ? "Membuat Backup..." : "Download Backup Database (JSON)"}
@@ -1309,12 +1191,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                   <div className="text-sm text-yellow-700 dark:text-yellow-400 space-y-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <p>
-                        <strong className="block text-xs">
-                          Tanggal Backup:
-                        </strong>
-                        {new Date(restorePreview.timestamp).toLocaleString(
-                          "id-ID"
-                        )}
+                        <strong className="block text-xs">Tanggal Backup:</strong>
+                        {new Date(restorePreview.timestamp).toLocaleString("id-ID")}
                       </p>
                       <p>
                         <strong className="block text-xs">Tahun Ajaran:</strong>
@@ -1325,13 +1203,10 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                         {restorePreview.school_info?.school_name}
                       </p>
                       <p>
-                        <strong className="block text-xs">
-                          Total Records:
-                        </strong>
+                        <strong className="block text-xs">Total Records:</strong>
                         {(restorePreview.stats?.total_academic_years || 0) +
                           (restorePreview.stats?.total_users || 0) +
-                          (restorePreview.stats?.total_teacher_assignments ||
-                            0) +
+                          (restorePreview.stats?.total_teacher_assignments || 0) +
                           (restorePreview.stats?.total_classes || 0) +
                           (restorePreview.stats?.total_students || 0)}{" "}
                         records
@@ -1343,7 +1218,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                     <button
                       onClick={executeRestore}
                       disabled={loading}
-                      className="flex items-center justify-center gap-3 px-5 py-3.5 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 font-bold transition-colors min-h-[44px]">
+                      className="flex items-center justify-center gap-3 px-5 py-3.5 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 font-bold transition-colors min-h-[44px]"
+                    >
                       {loading ? (
                         <>
                           <RefreshCw className="animate-spin" size={18} />
@@ -1360,7 +1236,8 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                         setRestorePreview(null);
                       }}
                       disabled={loading}
-                      className="px-5 py-3.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 font-medium transition-colors min-h-[44px]">
+                      className="px-5 py-3.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 font-medium transition-colors min-h-[44px]"
+                    >
                       Cancel
                     </button>
                   </div>

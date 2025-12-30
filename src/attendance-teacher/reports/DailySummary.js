@@ -1,13 +1,6 @@
 // src/attendance-teacher/reports/DailySummary.js
 import React, { useState, useEffect } from "react";
-import {
-  Users,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  TrendingUp,
-  Clock,
-} from "lucide-react";
+import { Users, CheckCircle, XCircle, AlertCircle, TrendingUp, Clock } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 
 const DailySummary = ({ refreshTrigger }) => {
@@ -60,8 +53,7 @@ const DailySummary = ({ refreshTrigger }) => {
       const sakit = attendances.filter((a) => a.status === "Sakit").length;
       const alpa = attendances.filter((a) => a.status === "Alpa").length;
       const belumAbsen = (totalTeachers || 0) - attendances.length;
-      const attendanceRate =
-        totalTeachers > 0 ? ((hadir / totalTeachers) * 100).toFixed(1) : 0;
+      const attendanceRate = totalTeachers > 0 ? ((hadir / totalTeachers) * 100).toFixed(1) : 0;
 
       setStats({
         totalTeachers: totalTeachers || 0,
@@ -112,10 +104,7 @@ const DailySummary = ({ refreshTrigger }) => {
 
     try {
       // If format is HH:MM:SS (time only), convert to HH:MM
-      if (
-        typeof timeString === "string" &&
-        timeString.match(/^\d{2}:\d{2}:\d{2}$/)
-      ) {
+      if (typeof timeString === "string" && timeString.match(/^\d{2}:\d{2}:\d{2}$/)) {
         return timeString.substring(0, 5); // Return HH:MM
       }
 
@@ -159,7 +148,8 @@ const DailySummary = ({ refreshTrigger }) => {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 animate-pulse">
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 animate-pulse"
+            >
               <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-3 sm:mb-4"></div>
               <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
             </div>
@@ -174,8 +164,7 @@ const DailySummary = ({ refreshTrigger }) => {
       title: "Total Guru",
       value: stats.totalTeachers,
       icon: Users,
-      gradient:
-        "from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20",
+      gradient: "from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20",
       iconBg: "bg-gradient-to-br from-blue-400 to-blue-600",
       textColor: "text-blue-700 dark:text-blue-300",
       borderColor: "border-blue-200 dark:border-blue-800",
@@ -184,8 +173,7 @@ const DailySummary = ({ refreshTrigger }) => {
       title: "Hadir",
       value: stats.hadir,
       icon: CheckCircle,
-      gradient:
-        "from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20",
+      gradient: "from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20",
       iconBg: "bg-gradient-to-br from-green-400 to-emerald-600",
       textColor: "text-green-700 dark:text-green-300",
       borderColor: "border-green-200 dark:border-green-800",
@@ -195,8 +183,7 @@ const DailySummary = ({ refreshTrigger }) => {
       title: "Izin / Sakit",
       value: `${stats.izin} / ${stats.sakit}`,
       icon: AlertCircle,
-      gradient:
-        "from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20",
+      gradient: "from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20",
       iconBg: "bg-gradient-to-br from-yellow-400 to-amber-500",
       textColor: "text-yellow-700 dark:text-yellow-300",
       borderColor: "border-yellow-200 dark:border-yellow-800",
@@ -205,8 +192,7 @@ const DailySummary = ({ refreshTrigger }) => {
       title: "Alpha / Belum Absen",
       value: `${stats.alpa} / ${stats.belumAbsen}`,
       icon: XCircle,
-      gradient:
-        "from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20",
+      gradient: "from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20",
       iconBg: "bg-gradient-to-br from-red-400 to-rose-600",
       textColor: "text-red-700 dark:text-red-300",
       borderColor: "border-red-200 dark:border-red-800",
@@ -222,7 +208,8 @@ const DailySummary = ({ refreshTrigger }) => {
           return (
             <div
               key={index}
-              className={`bg-gradient-to-br ${card.gradient} rounded-xl shadow-lg border ${card.borderColor} p-4 sm:p-6 hover:shadow-xl active:scale-[0.98] transition-all duration-300 min-h-[120px] sm:min-h-[140px] flex flex-col justify-between touch-manipulation`}>
+              className={`bg-gradient-to-br ${card.gradient} rounded-xl shadow-lg border ${card.borderColor} p-4 sm:p-6 hover:shadow-xl active:scale-[0.98] transition-all duration-300 min-h-[120px] sm:min-h-[140px] flex flex-col justify-between touch-manipulation`}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   {/* 🔥 Responsive typography dengan dark mode */}
@@ -230,22 +217,21 @@ const DailySummary = ({ refreshTrigger }) => {
                     {card.title}
                   </p>
                   <h3
-                    className={`text-xl sm:text-2xl lg:text-3xl font-bold ${card.textColor} mb-1 sm:mb-2 leading-tight`}>
+                    className={`text-xl sm:text-2xl lg:text-3xl font-bold ${card.textColor} mb-1 sm:mb-2 leading-tight`}
+                  >
                     {card.value}
                   </h3>
                   {card.subtitle && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                      <TrendingUp
-                        size={10}
-                        className="sm:w-3 sm:h-3 flex-shrink-0"
-                      />
+                      <TrendingUp size={10} className="sm:w-3 sm:h-3 flex-shrink-0" />
                       <span className="truncate">{card.subtitle}</span>
                     </p>
                   )}
                 </div>
                 {/* 🔥 Icon dengan gradient background - touch target lebih besar */}
                 <div
-                  className={`${card.iconBg} p-2 sm:p-3 rounded-lg flex-shrink-0 shadow-md min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center`}>
+                  className={`${card.iconBg} p-2 sm:p-3 rounded-lg flex-shrink-0 shadow-md min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center`}
+                >
                   <Icon className="text-white w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
@@ -259,9 +245,7 @@ const DailySummary = ({ refreshTrigger }) => {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 sm:px-6 py-3 sm:py-4">
           <h3 className="text-sm sm:text-base lg:text-lg font-bold text-white flex items-center gap-2">
             <Users size={18} className="sm:w-5 sm:h-5 flex-shrink-0" />
-            <span className="truncate">
-              Daftar Guru yang Sudah Presensi Hari Ini
-            </span>
+            <span className="truncate">Daftar Guru yang Sudah Presensi Hari Ini</span>
           </h3>
           <p className="text-blue-100 text-xs sm:text-sm mt-1">
             Total: {attendanceList.length} Guru
@@ -295,7 +279,8 @@ const DailySummary = ({ refreshTrigger }) => {
                 {attendanceList.map((item) => (
                   <tr
                     key={item.no}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                  >
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                       {item.no}
                     </td>
@@ -317,7 +302,8 @@ const DailySummary = ({ refreshTrigger }) => {
                         <span
                           className={`inline-flex px-3 py-2 text-xs font-semibold rounded-full border ${getStatusBadge(
                             item.status
-                          )} select-none`}>
+                          )} select-none`}
+                        >
                           {item.status}
                         </span>
                       </div>

@@ -87,15 +87,7 @@ const TeacherScheduleExcel = {
       worksheet.addRow([]);
 
       // Header tabel
-      const headers = [
-        "JAM KE",
-        "WAKTU",
-        "SENIN",
-        "SELASA",
-        "RABU",
-        "KAMIS",
-        "JUMAT",
-      ];
+      const headers = ["JAM KE", "WAKTU", "SENIN", "SELASA", "RABU", "KAMIS", "JUMAT"];
       const headerRow = worksheet.addRow(headers);
 
       headerRow.eachCell((cell) => {
@@ -115,10 +107,7 @@ const TeacherScheduleExcel = {
       });
 
       // Generate schedule grid
-      const scheduleGrid = TeacherScheduleExcel._generateScheduleGrid(
-        schedules,
-        days
-      );
+      const scheduleGrid = TeacherScheduleExcel._generateScheduleGrid(schedules, days);
 
       // Data rows - PAKAI WAKTU SELASA UNTUK SEMUA
       const maxPeriods = 9;
@@ -223,9 +212,7 @@ const TeacherScheduleExcel = {
 
       worksheet.mergeCells("A2:G2");
       const titleCell2 = worksheet.getCell("A2");
-      titleCell2.value = `TEMPLATE JADWAL MENGAJAR${
-        user?.full_name ? ` (${user.full_name})` : ""
-      }`;
+      titleCell2.value = `TEMPLATE JADWAL MENGAJAR${user?.full_name ? ` (${user.full_name})` : ""}`;
       titleCell2.font = { bold: true, size: 14 };
       titleCell2.alignment = { horizontal: "center", vertical: "middle" };
 
@@ -251,15 +238,7 @@ const TeacherScheduleExcel = {
       worksheet.addRow([]);
 
       // Header tabel
-      const headers = [
-        "JAM KE",
-        "WAKTU",
-        "SENIN",
-        "SELASA",
-        "RABU",
-        "KAMIS",
-        "JUMAT",
-      ];
+      const headers = ["JAM KE", "WAKTU", "SENIN", "SELASA", "RABU", "KAMIS", "JUMAT"];
       const headerRow = worksheet.addRow(headers);
 
       headerRow.eachCell((cell) => {
@@ -385,8 +364,7 @@ const TeacherScheduleExcel = {
 
       return {
         success: true,
-        message:
-          "Template berhasil didownload! Silakan isi dan upload kembali.",
+        message: "Template berhasil didownload! Silakan isi dan upload kembali.",
       };
     } catch (error) {
       return {
@@ -430,9 +408,7 @@ const TeacherScheduleExcel = {
       });
 
       if (!headerRowIndex) {
-        throw new Error(
-          "Header tidak ditemukan. Pastikan file menggunakan template yang benar."
-        );
+        throw new Error("Header tidak ditemukan. Pastikan file menggunakan template yang benar.");
       }
 
       console.log("Header found at row:", headerRowIndex);
@@ -561,10 +537,7 @@ const TeacherScheduleExcel = {
       const periodEnd = TeacherScheduleExcel._timeToMinutes(timeRange.end);
 
       // ✅ FLEXIBLE MATCHING dengan tolerance
-      if (
-        Math.abs(periodStart - targetStart) <= 5 &&
-        Math.abs(periodEnd - targetEnd) <= 5
-      ) {
+      if (Math.abs(periodStart - targetStart) <= 5 && Math.abs(periodEnd - targetEnd) <= 5) {
         periods.push(period);
       }
     }

@@ -47,19 +47,20 @@ function MonitorResults({ results, isChecking }) {
         <p className="text-gray-600 dark:text-gray-300 font-medium">
           Memeriksa kesehatan sistem...
         </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          Mohon tunggu sebentar
-        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Mohon tunggu sebentar</p>
         <div className="mt-4 flex justify-center gap-2">
           <div
             className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce"
-            style={{ animationDelay: "0ms" }}></div>
+            style={{ animationDelay: "0ms" }}
+          ></div>
           <div
             className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce"
-            style={{ animationDelay: "150ms" }}></div>
+            style={{ animationDelay: "150ms" }}
+          ></div>
           <div
             className="w-2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full animate-bounce"
-            style={{ animationDelay: "300ms" }}></div>
+            style={{ animationDelay: "300ms" }}
+          ></div>
         </div>
       </div>
     );
@@ -73,8 +74,7 @@ function MonitorResults({ results, isChecking }) {
           Belum ada pemeriksaan
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Klik tombol "Run System Check" untuk memulai pemeriksaan kesehatan
-          sistem
+          Klik tombol "Run System Check" untuk memulai pemeriksaan kesehatan sistem
         </p>
       </div>
     );
@@ -126,11 +126,10 @@ function MonitorResults({ results, isChecking }) {
     return (
       <div
         key={index}
-        className="py-4 first:pt-3 border-b last:border-b-0 border-gray-100 dark:border-gray-700">
+        className="py-4 first:pt-3 border-b last:border-b-0 border-gray-100 dark:border-gray-700"
+      >
         <div className="flex items-start gap-3">
-          <span className="text-xl mt-0.5 flex-shrink-0">
-            {getStatusIcon(check.severity)}
-          </span>
+          <span className="text-xl mt-0.5 flex-shrink-0">{getStatusIcon(check.severity)}</span>
 
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
@@ -138,9 +137,7 @@ function MonitorResults({ results, isChecking }) {
             </h4>
 
             {check.message && check.title && check.title !== check.message && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                {check.message}
-              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{check.message}</p>
             )}
 
             {check.details && (
@@ -166,8 +163,7 @@ function MonitorResults({ results, isChecking }) {
                     <div className="flex items-center gap-1.5">
                       <span>📊</span>
                       <span className="font-medium text-blue-600 dark:text-blue-400">
-                        {check.details.affectedRecords || check.details.count}{" "}
-                        record(s)
+                        {check.details.affectedRecords || check.details.count} record(s)
                       </span>
                     </div>
                   )}
@@ -192,7 +188,8 @@ function MonitorResults({ results, isChecking }) {
           <span
             className={`px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${getBadgeClass(
               check.severity
-            )}`}>
+            )}`}
+          >
             {check.severity.toUpperCase()}
           </span>
         </div>
@@ -211,7 +208,8 @@ function MonitorResults({ results, isChecking }) {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-none border border-gray-200 dark:border-gray-700 overflow-hidden">
         <button
           onClick={() => toggleSection(categoryKey)}
-          className="w-full px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors min-h-[60px] sm:min-h-[auto]">
+          className="w-full px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors min-h-[60px] sm:min-h-[auto]"
+        >
           <div className="flex items-center gap-3">
             <span className="text-2xl">{icon}</span>
             <div className="text-left">
@@ -228,13 +226,15 @@ function MonitorResults({ results, isChecking }) {
             <span
               className={`px-3 py-1 rounded-full text-xs font-semibold border ${getBadgeClass(
                 categoryData.status
-              )}`}>
+              )}`}
+            >
               {categoryData.status.toUpperCase()}
             </span>
             <span
               className={`transform transition-transform text-gray-400 dark:text-gray-500 ${
                 isExpanded ? "rotate-180" : ""
-              }`}>
+              }`}
+            >
               ▼
             </span>
           </div>
@@ -244,9 +244,7 @@ function MonitorResults({ results, isChecking }) {
           <div className="px-4 sm:px-5 pb-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
             {hasIssues ? (
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {categoryData.checks.map((check, idx) =>
-                  renderCheckItem(check, idx)
-                )}
+                {categoryData.checks.map((check, idx) => renderCheckItem(check, idx))}
               </div>
             ) : (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
@@ -270,7 +268,8 @@ function MonitorResults({ results, isChecking }) {
             : summary.status === "warning"
             ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700"
             : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
-        }`}>
+        }`}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex-1">
             <h3 className="font-semibold text-lg mb-1 text-gray-800 dark:text-gray-100">
@@ -283,7 +282,8 @@ function MonitorResults({ results, isChecking }) {
                   : summary.status === "warning"
                   ? "text-yellow-700 dark:text-yellow-400"
                   : "text-red-700 dark:text-red-400"
-              }`}>
+              }`}
+            >
               {summary.status === "healthy"
                 ? "Sistem Sehat"
                 : summary.status === "warning"
@@ -295,9 +295,7 @@ function MonitorResults({ results, isChecking }) {
             <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">
               {summary.totalIssues || 0}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Total Issues
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Issues</p>
           </div>
         </div>
 
@@ -345,7 +343,8 @@ function MonitorResults({ results, isChecking }) {
               : checkResults.database?.status === "warning"
               ? "border-yellow-500"
               : "border-red-500"
-          }`}>
+          }`}
+        >
           <h4 className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
             Database Integrity
           </h4>
@@ -361,7 +360,8 @@ function MonitorResults({ results, isChecking }) {
                     : checkResults.database?.status === "warning"
                     ? "text-yellow-600 dark:text-yellow-400"
                     : "text-red-600 dark:text-red-400"
-                }`}>
+                }`}
+              >
                 {checkResults.database?.checks?.length || 0}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">checks</p>
@@ -382,7 +382,8 @@ function MonitorResults({ results, isChecking }) {
               : checkResults.validation?.status === "warning"
               ? "border-yellow-500"
               : "border-red-500"
-          }`}>
+          }`}
+        >
           <h4 className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
             Data Validation
           </h4>
@@ -398,7 +399,8 @@ function MonitorResults({ results, isChecking }) {
                     : checkResults.validation?.status === "warning"
                     ? "text-yellow-600 dark:text-yellow-400"
                     : "text-red-600 dark:text-red-400"
-                }`}>
+                }`}
+              >
                 {checkResults.validation?.checks?.length || 0}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">checks</p>
@@ -419,7 +421,8 @@ function MonitorResults({ results, isChecking }) {
               : checkResults.businessLogic?.status === "warning"
               ? "border-yellow-500"
               : "border-red-500"
-          }`}>
+          }`}
+        >
           <h4 className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
             Business Logic
           </h4>
@@ -435,7 +438,8 @@ function MonitorResults({ results, isChecking }) {
                     : checkResults.businessLogic?.status === "warning"
                     ? "text-yellow-600 dark:text-yellow-400"
                     : "text-red-600 dark:text-red-400"
-                }`}>
+                }`}
+              >
                 {checkResults.businessLogic?.checks?.length || 0}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">checks</p>
@@ -456,7 +460,8 @@ function MonitorResults({ results, isChecking }) {
               : checkResults.appHealth?.status === "warning"
               ? "border-yellow-500"
               : "border-red-500"
-          }`}>
+          }`}
+        >
           <h4 className="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
             App Health
           </h4>
@@ -472,12 +477,11 @@ function MonitorResults({ results, isChecking }) {
                     : checkResults.appHealth?.status === "warning"
                     ? "text-yellow-600 dark:text-yellow-400"
                     : "text-red-600 dark:text-red-400"
-                }`}>
+                }`}
+              >
                 {checkResults.appHealth?.checks?.length || 0}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                metrics
-              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">metrics</p>
             </div>
           </div>
           {checkResults.appHealth?.error && (
@@ -515,30 +519,10 @@ function MonitorResults({ results, isChecking }) {
           Detail Hasil Pemeriksaan
         </h3>
 
-        {renderCategorySection(
-          "validation",
-          checkResults.validation,
-          "✅",
-          "Data Validation"
-        )}
-        {renderCategorySection(
-          "database",
-          checkResults.database,
-          "🗄️",
-          "Database Integrity"
-        )}
-        {renderCategorySection(
-          "businessLogic",
-          checkResults.businessLogic,
-          "💼",
-          "Business Logic"
-        )}
-        {renderCategorySection(
-          "appHealth",
-          checkResults.appHealth,
-          "💊",
-          "App Health"
-        )}
+        {renderCategorySection("validation", checkResults.validation, "✅", "Data Validation")}
+        {renderCategorySection("database", checkResults.database, "🗄️", "Database Integrity")}
+        {renderCategorySection("businessLogic", checkResults.businessLogic, "💼", "Business Logic")}
+        {renderCategorySection("appHealth", checkResults.appHealth, "💊", "App Health")}
       </div>
     </div>
   );

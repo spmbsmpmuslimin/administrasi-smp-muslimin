@@ -22,10 +22,7 @@ const TeacherAttendance = ({ user }) => {
   useEffect(() => {
     // Use user from props (from App.js) or fallback to localStorage
     const userData =
-      user ||
-      JSON.parse(
-        localStorage.getItem("user") || sessionStorage.getItem("user")
-      );
+      user || JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user"));
     setCurrentUser(userData);
     setLoading(false);
   }, [user]);
@@ -53,12 +50,7 @@ const TeacherAttendance = ({ user }) => {
       const day = String(indonesiaDate.getDate()).padStart(2, "0");
       const todayLocal = `${year}-${month}-${day}`;
 
-      console.log(
-        `🕐 Indonesia Time: ${currentHour}:${String(currentMinute).padStart(
-          2,
-          "0"
-        )}`
-      );
+      console.log(`🕐 Indonesia Time: ${currentHour}:${String(currentMinute).padStart(2, "0")}`);
       console.log(`📅 Today: ${todayLocal}`);
 
       // ⏰ Reminder only shows between 07:00 - 14:00
@@ -66,10 +58,7 @@ const TeacherAttendance = ({ user }) => {
       const reminderStartTime = 7 * 60; // 07:00
       const reminderEndTime = 14 * 60; // 14:00
 
-      if (
-        currentTimeInMinutes < reminderStartTime ||
-        currentTimeInMinutes >= reminderEndTime
-      ) {
+      if (currentTimeInMinutes < reminderStartTime || currentTimeInMinutes >= reminderEndTime) {
         console.log(`⏰ Outside reminder window`);
         setShowReminder(false);
         return;
@@ -171,12 +160,8 @@ const TeacherAttendance = ({ user }) => {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <div className="text-center">
-          <p className="text-red-600 dark:text-red-400 text-lg">
-            Sesi Login Tidak Ditemukan
-          </p>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Silakan Login Kembali
-          </p>
+          <p className="text-red-600 dark:text-red-400 text-lg">Sesi Login Tidak Ditemukan</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Silakan Login Kembali</p>
         </div>
       </div>
     );
@@ -201,7 +186,8 @@ const TeacherAttendance = ({ user }) => {
             <div className="bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-600 rounded-t-2xl p-6 relative">
               <button
                 onClick={handleDismissReminder}
-                className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-all">
+                className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-all"
+              >
                 <X size={20} />
               </button>
               <div className="flex items-center gap-3">
@@ -209,12 +195,8 @@ const TeacherAttendance = ({ user }) => {
                   <Bell className="text-white" size={32} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">
-                    ⚠️ Reminder Presensi
-                  </h3>
-                  <p className="text-white text-sm opacity-90">
-                    Jangan Lupa Presensi Hari Ini!
-                  </p>
+                  <h3 className="text-xl font-bold text-white">⚠️ Reminder Presensi</h3>
+                  <p className="text-white text-sm opacity-90">Jangan Lupa Presensi Hari Ini!</p>
                 </div>
               </div>
             </div>
@@ -222,15 +204,14 @@ const TeacherAttendance = ({ user }) => {
             {/* Content */}
             <div className="p-6">
               <p className="text-gray-700 dark:text-gray-200 text-center text-lg font-medium mb-6">
-                Anda Memiliki Jadwal Mengajar Hari Ini. Silakan Lakukan Presensi
-                Untuk Mencatat Kehadiran Anda.
+                Anda Memiliki Jadwal Mengajar Hari Ini. Silakan Lakukan Presensi Untuk Mencatat
+                Kehadiran Anda.
               </p>
 
               <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-400 p-4 rounded-lg mb-6">
                 <p className="text-amber-800 dark:text-amber-200 text-sm">
-                  <strong>⏰ Batas Waktu:</strong> Input Presensi Tersedia
-                  Sampai Jam 14:00 WIB. Pastikan Anda Presensi Sebelum Batas
-                  Waktu!
+                  <strong>⏰ Batas Waktu:</strong> Input Presensi Tersedia Sampai Jam 14:00 WIB.
+                  Pastikan Anda Presensi Sebelum Batas Waktu!
                 </p>
               </div>
 
@@ -238,12 +219,14 @@ const TeacherAttendance = ({ user }) => {
               <div className="flex gap-3">
                 <button
                   onClick={handleDismissReminder}
-                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition-all border border-gray-300 dark:border-gray-600">
+                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition-all border border-gray-300 dark:border-gray-600"
+                >
                   Nanti
                 </button>
                 <button
                   onClick={handleGoToAttendance}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition-all shadow-lg">
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition-all shadow-lg"
+                >
                   Presensi Sekarang
                 </button>
               </div>
@@ -294,7 +277,8 @@ const TeacherAttendance = ({ user }) => {
         <div className="fixed top-20 right-4 z-40 animate-pulse">
           <button
             onClick={() => setShowReminder(true)}
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
+            className="bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 hover:scale-105 transition-transform"
+          >
             <Bell size={16} />
             <span className="text-sm font-semibold">Belum Presensi!</span>
           </button>
@@ -315,7 +299,8 @@ const TeacherAttendance = ({ user }) => {
                   ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
                   : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600"
               }
-            `}>
+            `}
+          >
             Presensi
           </button>
           <button
@@ -328,7 +313,8 @@ const TeacherAttendance = ({ user }) => {
                   ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
                   : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600"
               }
-            `}>
+            `}
+          >
             Riwayat Saya
           </button>
         </div>
@@ -337,24 +323,15 @@ const TeacherAttendance = ({ user }) => {
         {activeView === "presensi" ? (
           <div className="space-y-4 sm:space-y-6">
             {/* 1️⃣ Status Presensi Anda - TETAP DI ATAS! */}
-            <MyAttendanceStatus
-              currentUser={currentUser}
-              refreshTrigger={refreshTrigger}
-            />
+            <MyAttendanceStatus currentUser={currentUser} refreshTrigger={refreshTrigger} />
 
             {/* 2️⃣ Attendance Tabs (QR Scanner / Manual Input) - NAIK KE ATAS! */}
             <div id="attendance-tabs">
-              <AttendanceTabs
-                currentUser={currentUser}
-                onSuccess={handleAttendanceSuccess}
-              />
+              <AttendanceTabs currentUser={currentUser} onSuccess={handleAttendanceSuccess} />
             </div>
 
             {/* 3️⃣ Jadwal Mengajar Hari Ini - TURUN KE BAWAH! */}
-            <TodaySchedule
-              currentUser={currentUser}
-              refreshTrigger={refreshTrigger}
-            />
+            <TodaySchedule currentUser={currentUser} refreshTrigger={refreshTrigger} />
           </div>
         ) : (
           /* Monthly History */

@@ -11,8 +11,7 @@ const MaintenancePage = ({ message }) => {
           Sedang Maintenance
         </h1>
         <p className="text-gray-600 dark:text-gray-300 text-lg mb-6 leading-relaxed">
-          {message ||
-            "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"}
+          {message || "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"}
         </p>
         <p className="text-gray-500 dark:text-gray-400 text-sm mt-6">
           Mohon maaf atas ketidaknyamanannya 🙏
@@ -39,11 +38,7 @@ const ProtectedRoute = ({ children, user, isLoading }) => {
         const { data, error } = await supabase
           .from("school_settings")
           .select("setting_key, setting_value")
-          .in("setting_key", [
-            "maintenance_mode",
-            "maintenance_message",
-            "maintenance_whitelist",
-          ]);
+          .in("setting_key", ["maintenance_mode", "maintenance_message", "maintenance_whitelist"]);
 
         if (error) throw error;
 
@@ -53,8 +48,7 @@ const ProtectedRoute = ({ children, user, isLoading }) => {
         });
 
         const isMaintenance =
-          settings.maintenance_mode === "true" ||
-          settings.maintenance_mode === true;
+          settings.maintenance_mode === "true" || settings.maintenance_mode === true;
 
         // 🔥 Cuma update kalau berubah
         setMaintenanceMode((prev) => {
@@ -107,8 +101,7 @@ const ProtectedRoute = ({ children, user, isLoading }) => {
           event: "*",
           schema: "public",
           table: "school_settings",
-          filter:
-            "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
+          filter: "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
         },
         (payload) => {
           console.log("📡 Maintenance setting changed");

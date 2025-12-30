@@ -179,10 +179,7 @@ export const useStudentManagement = ({
 
       // Cek apakah NIS sudah dipakai oleh siswa lain (bukan diri sendiri)
       if (existingStudent && existingStudent.id !== studentModal.data.id) {
-        showToast(
-          `❌ NIS ${studentForm.nis.trim()} sudah digunakan oleh siswa lain!`,
-          "error"
-        );
+        showToast(`❌ NIS ${studentForm.nis.trim()} sudah digunakan oleh siswa lain!`, "error");
         return;
       }
 
@@ -215,10 +212,7 @@ export const useStudentManagement = ({
 
       // ✅ Handle specific duplicate key error
       if (error.code === "23505") {
-        showToast(
-          `❌ NIS ${studentForm.nis.trim()} sudah digunakan oleh siswa lain!`,
-          "error"
-        );
+        showToast(`❌ NIS ${studentForm.nis.trim()} sudah digunakan oleh siswa lain!`, "error");
       } else {
         showToast("Error mengupdate siswa: " + error.message, "error");
       }

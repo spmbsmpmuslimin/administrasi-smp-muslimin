@@ -21,26 +21,16 @@ class HealthChecker {
     this.errors = [];
 
     try {
-      const [database, validation, businessLogic, appHealth] =
-        await Promise.allSettled([
-          this.runDatabaseCheck(),
-          this.runDataValidationCheck(),
-          this.runBusinessLogicCheck(),
-          this.runAppHealthCheck(),
-        ]);
+      const [database, validation, businessLogic, appHealth] = await Promise.allSettled([
+        this.runDatabaseCheck(),
+        this.runDataValidationCheck(),
+        this.runBusinessLogicCheck(),
+        this.runAppHealthCheck(),
+      ]);
 
-      this.results.database = this.processCheckResult(
-        database,
-        "Database Check"
-      );
-      this.results.validation = this.processCheckResult(
-        validation,
-        "Data Validation"
-      );
-      this.results.businessLogic = this.processCheckResult(
-        businessLogic,
-        "Business Logic"
-      );
+      this.results.database = this.processCheckResult(database, "Database Check");
+      this.results.validation = this.processCheckResult(validation, "Data Validation");
+      this.results.businessLogic = this.processCheckResult(businessLogic, "Business Logic");
       this.results.appHealth = this.processCheckResult(appHealth, "App Health");
 
       const executionTime = Date.now() - this.startTime;
@@ -48,9 +38,7 @@ class HealthChecker {
 
       // ❌ DISABLED: Save is now handled by MonitorDashboard to prevent duplicates
       // await this.saveResults(userId, summary, executionTime);
-      console.log(
-        "ℹ️ Note: Save to database is handled by MonitorDashboard component"
-      );
+      console.log("ℹ️ Note: Save to database is handled by MonitorDashboard component");
 
       return {
         success: true,
@@ -265,9 +253,7 @@ class HealthChecker {
   // ⚠️ This method is kept for backward compatibility but not used anymore
   // Save is now handled by MonitorDashboard component to prevent duplicate inserts
   async saveResults(userId, summary, executionTime) {
-    console.warn(
-      "⚠️ saveResults() is deprecated. Save is handled by MonitorDashboard."
-    );
+    console.warn("⚠️ saveResults() is deprecated. Save is handled by MonitorDashboard.");
     try {
       const { data, error } = await supabase
         .from("system_health_logs")

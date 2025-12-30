@@ -38,11 +38,7 @@ export default function ChangePasswordSection({ user }) {
 
   const validateForm = () => {
     // Cek semua field terisi
-    if (
-      !formData.currentPassword ||
-      !formData.newPassword ||
-      !formData.confirmPassword
-    ) {
+    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
       setMessage({ type: "error", text: "Semua field harus diisi!" });
       return false;
     }
@@ -176,12 +172,12 @@ export default function ChangePasswordSection({ user }) {
             ⚠️ User Tidak Ditemukan
           </h3>
           <p className="text-red-700 dark:text-red-400 text-sm md:text-base mb-4">
-            Terjadi kesalahan dalam memuat data user. Silakan logout dan login
-            kembali.
+            Terjadi kesalahan dalam memuat data user. Silakan logout dan login kembali.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-md transition-colors text-sm md:text-base w-full md:w-auto min-h-[44px]">
+            className="px-4 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-md transition-colors text-sm md:text-base w-full md:w-auto min-h-[44px]"
+          >
             Refresh Halaman
           </button>
         </div>
@@ -225,11 +221,8 @@ export default function ChangePasswordSection({ user }) {
               type="button"
               onClick={() => toggleShowPassword("current")}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-300 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg"
-              aria-label={
-                showPasswords.current
-                  ? "Sembunyikan password"
-                  : "Tampilkan password"
-              }>
+              aria-label={showPasswords.current ? "Sembunyikan password" : "Tampilkan password"}
+            >
               {showPasswords.current ? "🙈" : "👁️"}
             </button>
           </div>
@@ -254,11 +247,8 @@ export default function ChangePasswordSection({ user }) {
               type="button"
               onClick={() => toggleShowPassword("new")}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-300 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg"
-              aria-label={
-                showPasswords.new
-                  ? "Sembunyikan password"
-                  : "Tampilkan password"
-              }>
+              aria-label={showPasswords.new ? "Sembunyikan password" : "Tampilkan password"}
+            >
               {showPasswords.new ? "🙈" : "👁️"}
             </button>
           </div>
@@ -286,11 +276,8 @@ export default function ChangePasswordSection({ user }) {
               type="button"
               onClick={() => toggleShowPassword("confirm")}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-300 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg"
-              aria-label={
-                showPasswords.confirm
-                  ? "Sembunyikan password"
-                  : "Tampilkan password"
-              }>
+              aria-label={showPasswords.confirm ? "Sembunyikan password" : "Tampilkan password"}
+            >
               {showPasswords.confirm ? "🙈" : "👁️"}
             </button>
           </div>
@@ -303,11 +290,10 @@ export default function ChangePasswordSection({ user }) {
               message.type === "success"
                 ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-2 border-green-200 dark:border-green-800"
                 : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-2 border-red-200 dark:border-red-800"
-            }`}>
+            }`}
+          >
             <div className="flex items-start">
-              <span className="mr-3 text-lg">
-                {message.type === "success" ? "✅" : "❌"}
-              </span>
+              <span className="mr-3 text-lg">{message.type === "success" ? "✅" : "❌"}</span>
               <span>{message.text}</span>
             </div>
           </div>
@@ -317,25 +303,29 @@ export default function ChangePasswordSection({ user }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white py-4 md:py-5 px-6 rounded-xl disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-all text-base md:text-lg font-bold shadow-md hover:shadow-lg active:scale-[0.98] min-h-[52px] md:min-h-[56px]">
+          className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white py-4 md:py-5 px-6 rounded-xl disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-all text-base md:text-lg font-bold shadow-md hover:shadow-lg active:scale-[0.98] min-h-[52px] md:min-h-[56px]"
+        >
           {loading ? (
             <span className="flex items-center justify-center">
               <svg
                 className="animate-spin h-5 w-5 mr-3 text-white"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
-                viewBox="0 0 24 24">
+                viewBox="0 0 24 24"
+              >
                 <circle
                   className="opacity-25"
                   cx="12"
                   cy="12"
                   r="10"
                   stroke="currentColor"
-                  strokeWidth="4"></circle>
+                  strokeWidth="4"
+                ></circle>
                 <path
                   className="opacity-75"
                   fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               Mengubah Password...
             </span>

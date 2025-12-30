@@ -83,11 +83,7 @@ const Setting = ({ user, onShowToast }) => {
 
       if (schoolLevel === "SMP" || schoolLevel === "MTs") {
         grades = ["7", "8", "9"];
-      } else if (
-        schoolLevel === "SMA" ||
-        schoolLevel === "SMK" ||
-        schoolLevel === "MA"
-      ) {
+      } else if (schoolLevel === "SMA" || schoolLevel === "SMK" || schoolLevel === "MA") {
         grades = ["10", "11", "12"];
       } else if (schoolLevel === "SD" || schoolLevel === "MI") {
         grades = ["1", "2", "3", "4", "5", "6"];
@@ -237,9 +233,7 @@ const Setting = ({ user, onShowToast }) => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300 font-medium">
-            Memuat pengaturan...
-          </p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300 font-medium">Memuat pengaturan...</p>
         </div>
       </div>
     );
@@ -257,7 +251,8 @@ const Setting = ({ user, onShowToast }) => {
           <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-5 overflow-x-auto">
             <button
               onClick={() => navigate("/dashboard")}
-              className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap flex-shrink-0 p-2 sm:p-2.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95">
+              className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap flex-shrink-0 p-2 sm:p-2.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95"
+            >
               <Home size={16} className="sm:w-4 sm:h-4" />
               <span className="hidden xs:inline font-medium">Dashboard</span>
             </button>
@@ -267,7 +262,8 @@ const Setting = ({ user, onShowToast }) => {
             />
             <button
               onClick={() => changeTab("dashboard")}
-              className="hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap font-medium">
+              className="hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap font-medium"
+            >
               Pengaturan
             </button>
             <ChevronRight
@@ -298,7 +294,8 @@ const Setting = ({ user, onShowToast }) => {
             {/* Back Button - Di sebelah kanan */}
             <button
               onClick={() => changeTab("dashboard")}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all active:scale-95 text-gray-700 dark:text-gray-300 font-medium">
+              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all active:scale-95 text-gray-700 dark:text-gray-300 font-medium"
+            >
               <ChevronRight size={18} className="rotate-180" />
               <span className="hidden sm:inline">Kembali</span>
             </button>
@@ -307,7 +304,8 @@ const Setting = ({ user, onShowToast }) => {
           {/* Tab Content */}
           <div
             id={`${activeTab}-tab-content`}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/30 transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700">
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/30 transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700"
+          >
             {renderActiveTab()}
           </div>
         </div>
@@ -323,7 +321,8 @@ const Setting = ({ user, onShowToast }) => {
         <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-5 overflow-x-auto">
           <button
             onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap flex-shrink-0 p-2 sm:p-2.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95">
+            className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap flex-shrink-0 p-2 sm:p-2.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95"
+          >
             <Home size={16} className="sm:w-4 sm:h-4" />
             <span className="hidden xs:inline font-medium">Dashboard</span>
           </button>
@@ -364,7 +363,8 @@ const Setting = ({ user, onShowToast }) => {
               <button
                 key={card.id}
                 onClick={() => changeTab(card.id)}
-                className="group relative bg-white dark:bg-gray-800 rounded-xl p-5 sm:p-6 shadow-sm hover:shadow-lg dark:shadow-gray-900/30 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 text-left hover:-translate-y-1 active:scale-95">
+                className="group relative bg-white dark:bg-gray-800 rounded-xl p-5 sm:p-6 shadow-sm hover:shadow-lg dark:shadow-gray-900/30 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 text-left hover:-translate-y-1 active:scale-95"
+              >
                 {/* Icon Container */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">

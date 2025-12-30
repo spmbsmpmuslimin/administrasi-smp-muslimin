@@ -23,9 +23,7 @@ const AttendanceStats = ({ attendanceStatus, students }) => {
             <div className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white">
               {stats.Hadir}
             </div>
-            <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">
-              Hadir
-            </div>
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">Hadir</div>
           </div>
         </div>
       </div>
@@ -40,9 +38,7 @@ const AttendanceStats = ({ attendanceStatus, students }) => {
             <div className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white">
               {stats.Sakit}
             </div>
-            <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">
-              Sakit
-            </div>
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">Sakit</div>
           </div>
         </div>
       </div>
@@ -50,16 +46,12 @@ const AttendanceStats = ({ attendanceStatus, students }) => {
       {/* Izin Card */}
       <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm dark:shadow-gray-900/50 border-l-4 border-blue-500">
         <div className="flex items-center">
-          <div className="text-blue-600 dark:text-blue-400 text-lg sm:text-xl mr-2 sm:mr-3">
-            📋
-          </div>
+          <div className="text-blue-600 dark:text-blue-400 text-lg sm:text-xl mr-2 sm:mr-3">📋</div>
           <div>
             <div className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white">
               {stats.Izin}
             </div>
-            <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">
-              Izin
-            </div>
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">Izin</div>
           </div>
         </div>
       </div>
@@ -67,16 +59,12 @@ const AttendanceStats = ({ attendanceStatus, students }) => {
       {/* Alpa Card */}
       <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm dark:shadow-gray-900/50 border-l-4 border-red-500">
         <div className="flex items-center">
-          <div className="text-red-600 dark:text-red-400 text-lg sm:text-xl mr-2 sm:mr-3">
-            ✖
-          </div>
+          <div className="text-red-600 dark:text-red-400 text-lg sm:text-xl mr-2 sm:mr-3">✖</div>
           <div>
             <div className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white">
               {stats.Alpa}
             </div>
-            <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">
-              Alpa
-            </div>
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">Alpa</div>
           </div>
         </div>
       </div>

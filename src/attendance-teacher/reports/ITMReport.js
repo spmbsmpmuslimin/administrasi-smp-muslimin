@@ -207,13 +207,9 @@ const ITMReport = () => {
 
     let currentDate = new Date(startDate);
 
-    while (
-      currentDate <= lastDay ||
-      (currentWeek.length > 0 && currentWeek.length < 5)
-    ) {
+    while (currentDate <= lastDay || (currentWeek.length > 0 && currentWeek.length < 5)) {
       const dayIndex = currentDate.getDay();
-      const dayName =
-        dayIndex >= 1 && dayIndex <= 5 ? DAYS[dayIndex - 1] : null;
+      const dayName = dayIndex >= 1 && dayIndex <= 5 ? DAYS[dayIndex - 1] : null;
 
       if (dayName && currentDate.getMonth() === month) {
         currentWeek.push({
@@ -337,10 +333,7 @@ const ITMReport = () => {
             const attendanceRecord = formattedAttendance[dateStr];
 
             if (date.getDate() === 29 || date.getDate() === 30) {
-              console.log(
-                `DATE ${dateStr}: attendanceRecord =`,
-                attendanceRecord
-              );
+              console.log(`DATE ${dateStr}: attendanceRecord =`, attendanceRecord);
             }
 
             let hadir = attendanceRecord?.status === "Hadir";
@@ -397,8 +390,7 @@ const ITMReport = () => {
         year: selectedYear,
         weeks: processedWeeks,
         totalScheduledHours: totalScheduledHours,
-        totalAttendedHours:
-          attendance?.filter((a) => a.status === "Hadir").length || 0,
+        totalAttendedHours: attendance?.filter((a) => a.status === "Hadir").length || 0,
       });
     } catch (error) {
       console.error("Error generating report:", error);
@@ -413,12 +405,7 @@ const ITMReport = () => {
     let total = 0;
     weekSchedule.forEach((jam) => {
       const dayData = jam.days[dayName];
-      if (
-        dayData &&
-        dayData.kelas &&
-        dayData.kelas !== "" &&
-        dayData.kelas !== "UPACARA"
-      ) {
+      if (dayData && dayData.kelas && dayData.kelas !== "" && dayData.kelas !== "UPACARA") {
         total++;
       }
     });
@@ -502,9 +489,7 @@ const ITMReport = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            Memuat data guru...
-          </p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Memuat data guru...</p>
         </div>
       </div>
     );
@@ -521,12 +506,11 @@ const ITMReport = () => {
               <h3 className="text-red-800 dark:text-red-300 font-semibold mb-2">
                 Terjadi Kesalahan
               </h3>
-              <p className="text-red-600 dark:text-red-400 mb-4 text-sm">
-                {teachersError}
-              </p>
+              <p className="text-red-600 dark:text-red-400 mb-4 text-sm">{teachersError}</p>
               <button
                 onClick={() => window.location.reload()}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium">
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+              >
                 Muat Ulang Halaman
               </button>
             </div>
@@ -575,7 +559,8 @@ const ITMReport = () => {
               value={selectedTeacher}
               onChange={(e) => setSelectedTeacher(e.target.value)}
               className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
-              disabled={loading}>
+              disabled={loading}
+            >
               <option value="">-- Pilih Guru --</option>
               {teachers.map((teacher) => (
                 <option key={teacher.id} value={teacher.teacher_id}>
@@ -593,7 +578,8 @@ const ITMReport = () => {
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
               className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
-              disabled={loading}>
+              disabled={loading}
+            >
               {MONTHS.map((month, idx) => (
                 <option key={idx} value={idx}>
                   {month}
@@ -610,7 +596,8 @@ const ITMReport = () => {
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
-              disabled={loading}>
+              disabled={loading}
+            >
               {[2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
                 <option key={year} value={year}>
                   {year}
@@ -623,7 +610,8 @@ const ITMReport = () => {
             <button
               onClick={generateReport}
               disabled={loading || !selectedTeacher}
-              className="w-full px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base">
+              className="w-full px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base"
+            >
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
@@ -643,13 +631,15 @@ const ITMReport = () => {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={handlePrint}
-              className="px-4 py-2.5 sm:py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base">
+              className="px-4 py-2.5 sm:py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base"
+            >
               <Printer className="w-4 h-4 sm:w-4 sm:h-4" />
               Print
             </button>
             <button
               onClick={exportToExcel}
-              className="px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base">
+              className="px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base"
+            >
               <FileSpreadsheet className="w-4 h-4 sm:w-4 sm:h-4" />
               Export Excel
             </button>
@@ -663,7 +653,8 @@ const ITMReport = () => {
           {reportData.weeks.map((week, weekIdx) => (
             <div
               key={weekIdx}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 p-4 sm:p-6 mb-4 sm:mb-6 print:shadow-none print:mb-8 print:break-after-page">
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 p-4 sm:p-6 mb-4 sm:mb-6 print:shadow-none print:mb-8 print:break-after-page"
+            >
               {/* Header */}
               <div className="text-center mb-4 sm:mb-6 border-b-2 border-gray-800 dark:border-gray-600 pb-3 sm:pb-4">
                 <h2 className="text-sm sm:text-base md:text-lg font-bold uppercase tracking-wide text-gray-800 dark:text-gray-100">
@@ -677,10 +668,7 @@ const ITMReport = () => {
                     <span className="font-semibold text-gray-700 dark:text-gray-300">
                       MINGGU KE
                     </span>{" "}
-                    :{" "}
-                    <span className="text-gray-800 dark:text-gray-200">
-                      {week.weekNumber}
-                    </span>
+                    : <span className="text-gray-800 dark:text-gray-200">{week.weekNumber}</span>
                   </p>
                   <p className="text-xs sm:text-sm">
                     <span className="font-semibold text-gray-700 dark:text-gray-300">
@@ -692,10 +680,7 @@ const ITMReport = () => {
                     </span>
                   </p>
                   <p className="text-xs sm:text-sm">
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">
-                      BULAN
-                    </span>{" "}
-                    :{" "}
+                    <span className="font-semibold text-gray-700 dark:text-gray-300">BULAN</span> :{" "}
                     <span className="text-gray-800 dark:text-gray-200">
                       {reportData.month} {reportData.year}
                     </span>
@@ -712,17 +697,10 @@ const ITMReport = () => {
                         JAM
                       </th>
                       {DAYS.map((day, idx) => {
-                        const dateInfo = week.dates.find(
-                          (d) => d.dayName === day
-                        );
+                        const dateInfo = week.dates.find((d) => d.dayName === day);
                         const tanggal = dateInfo ? dateInfo.day : "";
-                        const bulanAktual = dateInfo
-                          ? dateInfo.date.getMonth()
-                          : selectedMonth;
-                        const bulanSingkat = MONTHS[bulanAktual].substring(
-                          0,
-                          3
-                        );
+                        const bulanAktual = dateInfo ? dateInfo.date.getMonth() : selectedMonth;
+                        const bulanSingkat = MONTHS[bulanAktual].substring(0, 3);
 
                         return (
                           <React.Fragment key={day}>
@@ -731,9 +709,7 @@ const ITMReport = () => {
                             </th>
                             <th className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 w-16 sm:w-20 text-gray-800 dark:text-gray-200">
                               <div className="text-center">
-                                <div className="font-bold">
-                                  {FULL_DAY_NAMES[idx]}
-                                </div>
+                                <div className="font-bold">{FULL_DAY_NAMES[idx]}</div>
                                 {tanggal && (
                                   <div className="text-xs font-normal mt-0.5 text-gray-600 dark:text-gray-400">
                                     {tanggal} {bulanSingkat}
@@ -768,17 +744,14 @@ const ITMReport = () => {
                                   <span className="text-green-600 dark:text-green-400 font-bold text-base sm:text-lg">
                                     ✓
                                   </span>
-                                ) : dayData?.status &&
-                                  dayData.status !== "Hadir" ? (
+                                ) : dayData?.status && dayData.status !== "Hadir" ? (
                                   <span className="text-xs font-semibold text-red-600 dark:text-red-400">
                                     {dayData.status}
                                   </span>
                                 ) : dayData?.kelas && dayData.kelas !== "" ? (
                                   <div className="w-4 h-4 sm:w-6 sm:h-6 border-2 border-gray-800 dark:border-gray-400 mx-auto"></div>
                                 ) : (
-                                  <span className="text-gray-400 dark:text-gray-500">
-                                    -
-                                  </span>
+                                  <span className="text-gray-400 dark:text-gray-500">-</span>
                                 )}
                               </td>
                             </React.Fragment>
@@ -791,23 +764,19 @@ const ITMReport = () => {
                       <td className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 text-center text-gray-800 dark:text-gray-200">
                         JUMLAH :{" "}
                         {DAYS.reduce(
-                          (total, day) =>
-                            total +
-                            calculateJamHadirPerHari(week.schedule, day),
+                          (total, day) => total + calculateJamHadirPerHari(week.schedule, day),
                           0
                         )}
                       </td>
                       {DAYS.map((day) => {
-                        const jamHadir = calculateJamHadirPerHari(
-                          week.schedule,
-                          day
-                        );
+                        const jamHadir = calculateJamHadirPerHari(week.schedule, day);
 
                         return (
                           <React.Fragment key={day}>
                             <td
                               className="border border-gray-800 dark:border-gray-600 px-1 sm:px-2 py-1 sm:py-2 text-center text-gray-800 dark:text-gray-200"
-                              colSpan="2">
+                              colSpan="2"
+                            >
                               {jamHadir > 0 ? jamHadir : ""}
                             </td>
                           </React.Fragment>
@@ -827,25 +796,19 @@ const ITMReport = () => {
             </h3>
             <div className="space-y-2 sm:space-y-3">
               <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-blue-200 dark:border-blue-800">
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Bulan:
-                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Bulan:</p>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                   {reportData.month} {reportData.year}
                 </p>
               </div>
               <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-blue-200 dark:border-blue-800">
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Guru:
-                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Guru:</p>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                   {reportData.teacher.full_name}
                 </p>
               </div>
               <div className="flex justify-between items-center pb-2 sm:pb-3 border-b border-blue-200 dark:border-blue-800">
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Total Minggu:
-                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Total Minggu:</p>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                   {reportData.weeks.length} minggu
                 </p>
@@ -869,10 +832,7 @@ const ITMReport = () => {
                     <span className="text-xs sm:text-sm ml-1 sm:ml-2 text-gray-600 dark:text-gray-400">
                       (
                       {calculateOverallTotal() > 0
-                        ? (
-                            (calculateTotalHadir() / calculateOverallTotal()) *
-                            100
-                          ).toFixed(1)
+                        ? ((calculateTotalHadir() / calculateOverallTotal()) * 100).toFixed(1)
                         : 0}
                       %)
                     </span>

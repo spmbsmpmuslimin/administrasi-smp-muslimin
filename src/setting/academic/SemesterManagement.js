@@ -71,10 +71,7 @@ const SemesterManagement = ({
       }
     } catch (error) {
       console.error("Error loading academic info:", error);
-      showToast(
-        "Gagal memuat informasi semester aktif: " + error.message,
-        "error"
-      );
+      showToast("Gagal memuat informasi semester aktif: " + error.message, "error");
     }
   };
 
@@ -213,9 +210,7 @@ const SemesterManagement = ({
 
     if (!confirm1) return;
 
-    const confirm2 = prompt(
-      `Untuk konfirmasi, ketik "DELETE" (huruf besar semua):`
-    );
+    const confirm2 = prompt(`Untuk konfirmasi, ketik "DELETE" (huruf besar semua):`);
 
     if (confirm2 !== "DELETE") {
       showToast("Penghapusan semester dibatalkan", "info");
@@ -225,10 +220,7 @@ const SemesterManagement = ({
     try {
       setLoading(true);
 
-      const { error } = await supabase
-        .from("academic_years")
-        .delete()
-        .eq("id", semesterId);
+      const { error } = await supabase.from("academic_years").delete().eq("id", semesterId);
 
       if (error) throw error;
 
@@ -243,8 +235,7 @@ const SemesterManagement = ({
       let errorMessage = "❌ Gagal menghapus semester: ";
 
       if (error.message.includes("foreign key")) {
-        errorMessage +=
-          "Semester terkait dengan data lain (teacher assignments, dll)";
+        errorMessage += "Semester terkait dengan data lain (teacher assignments, dll)";
       } else {
         errorMessage += error.message;
       }
@@ -258,10 +249,7 @@ const SemesterManagement = ({
   // ========== SMART SEMESTER SWITCH ==========
   const executeSmartSemesterSwitch = async () => {
     if (!localAcademicInfo) {
-      showToast(
-        "❌ Tidak ada informasi semester aktif yang ditemukan!",
-        "error"
-      );
+      showToast("❌ Tidak ada informasi semester aktif yang ditemukan!", "error");
       return;
     }
 
@@ -284,9 +272,7 @@ const SemesterManagement = ({
 
     if (!confirm1) return;
 
-    const confirm2 = prompt(
-      `Ketik "PINDAH SEMESTER" (huruf besar) untuk konfirmasi:`
-    );
+    const confirm2 = prompt(`Ketik "PINDAH SEMESTER" (huruf besar) untuk konfirmasi:`);
 
     if (confirm2 !== "PINDAH SEMESTER") {
       showToast("Perpindahan semester dibatalkan", "info");
@@ -399,10 +385,7 @@ const SemesterManagement = ({
 
         if (insertError) throw insertError;
 
-        showToast(
-          `✅ ${assignments.length} assignments berhasil di-copy!`,
-          "success"
-        );
+        showToast(`✅ ${assignments.length} assignments berhasil di-copy!`, "success");
       } else {
         showToast("ℹ️ Tidak ada assignments untuk di-copy", "info");
       }
@@ -428,13 +411,9 @@ const SemesterManagement = ({
 
       // STEP 6: Success
       showToast(
-        `✅ Berhasil pindah ke Semester ${
-          targetSemester === 1 ? "Ganjil" : "Genap"
-        }!\n\n` +
+        `✅ Berhasil pindah ke Semester ${targetSemester === 1 ? "Ganjil" : "Genap"}!\n\n` +
           `📅 Tahun Ajaran: ${localAcademicInfo.year}\n` +
-          `📚 Semester: ${
-            targetSemester === 1 ? "Ganjil" : "Genap"
-          } (${targetSemester})\n` +
+          `📚 Semester: ${targetSemester === 1 ? "Ganjil" : "Genap"} (${targetSemester})\n` +
           `📋 ${assignments?.length || 0} teacher assignments di-copy\n\n` +
           `Sistem sekarang menggunakan semester baru.`,
         "success"
@@ -473,15 +452,11 @@ const SemesterManagement = ({
           {/* Process Info Header */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-800 shadow-lg mb-6">
             <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-3 flex items-center gap-2">
-              <RefreshCw
-                className="text-blue-600 dark:text-blue-400"
-                size={24}
-              />
+              <RefreshCw className="text-blue-600 dark:text-blue-400" size={24} />
               🎯 Smart Semester Switch
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Pindah semester dengan otomatis! Sistem akan handle semua proses
-              untuk kamu.
+              Pindah semester dengan otomatis! Sistem akan handle semua proses untuk kamu.
             </p>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
@@ -517,7 +492,8 @@ const SemesterManagement = ({
                 localAcademicInfo.semester === 1
                   ? "bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg"
                   : "bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-              }`}>
+              }`}
+            >
               <div className="text-center">
                 <div className="text-4xl mb-2">📚</div>
                 <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">
@@ -544,7 +520,8 @@ const SemesterManagement = ({
               <button
                 onClick={executeSmartSemesterSwitch}
                 disabled={loading || isSwitching}
-                className="relative px-8 py-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-xl disabled:opacity-50 font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl flex flex-col items-center justify-center gap-3 min-w-[200px]">
+                className="relative px-8 py-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white rounded-xl disabled:opacity-50 font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl flex flex-col items-center justify-center gap-3 min-w-[200px]"
+              >
                 {isSwitching ? (
                   <>
                     <RefreshCw className="animate-spin" size={28} />
@@ -565,8 +542,7 @@ const SemesterManagement = ({
                     </div>
                     <span className="text-base">🚀 PINDAH</span>
                     <span className="text-sm font-normal">
-                      ke Semester{" "}
-                      {localAcademicInfo.semester === 1 ? "Genap" : "Ganjil"}
+                      ke Semester {localAcademicInfo.semester === 1 ? "Genap" : "Ganjil"}
                     </span>
                   </>
                 )}
@@ -579,7 +555,8 @@ const SemesterManagement = ({
                 localAcademicInfo.semester === 2
                   ? "bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg"
                   : "bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-              }`}>
+              }`}
+            >
               <div className="text-center">
                 <div className="text-4xl mb-2">📖</div>
                 <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">
@@ -612,28 +589,26 @@ const SemesterManagement = ({
 
         <div className="mt-4 space-y-4 text-sm text-blue-700 dark:text-blue-400">
           <div>
-            <h4 className="font-semibold mb-2">
-              🔄 Perpindahan Semester (Rekomendasi)
-            </h4>
+            <h4 className="font-semibold mb-2">🔄 Perpindahan Semester (Rekomendasi)</h4>
             <p>
-              Gunakan fitur "Pindah ke Semester X" untuk perpindahan semester
-              dalam tahun ajaran yang sama. Fitur ini otomatis dan aman.
+              Gunakan fitur "Pindah ke Semester X" untuk perpindahan semester dalam tahun ajaran
+              yang sama. Fitur ini otomatis dan aman.
             </p>
           </div>
 
           <div>
             <h4 className="font-semibold mb-2">📋 Copy Assignments (Manual)</h4>
             <p>
-              Gunakan jika ingin copy assignments antar tahun ajaran atau dalam
-              kondisi khusus. Pilih source dan target dengan hati-hati.
+              Gunakan jika ingin copy assignments antar tahun ajaran atau dalam kondisi khusus.
+              Pilih source dan target dengan hati-hati.
             </p>
           </div>
 
           <div>
             <h4 className="font-semibold mb-2">📅 Transisi Tahun Ajaran</h4>
             <p>
-              Gunakan di akhir tahun ajaran untuk naik kelas otomatis. Pastikan
-              data siswa baru sudah di-input di SPMB.
+              Gunakan di akhir tahun ajaran untuk naik kelas otomatis. Pastikan data siswa baru
+              sudah di-input di SPMB.
             </p>
           </div>
         </div>
@@ -658,7 +633,8 @@ const SemesterManagement = ({
             {/* Tombol Copy Assignments */}
             <button
               onClick={onOpenCopyModal}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium">
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium"
+            >
               <RefreshCw size={16} />
               <span>Copy Assignments</span>
             </button>
@@ -666,7 +642,8 @@ const SemesterManagement = ({
             {/* Tombol Tambah Semester */}
             <button
               onClick={() => setShowAddSemester(!showAddSemester)}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium">
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition duration-200 w-full sm:w-auto min-h-[44px] font-medium"
+            >
               <Plus size={16} />
               <span>Tambah Semester</span>
             </button>
@@ -677,10 +654,7 @@ const SemesterManagement = ({
         {localAcademicInfo && (
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-lg mb-5 border border-blue-200 dark:border-blue-600">
             <div className="flex items-center gap-3">
-              <PlayCircle
-                className="text-blue-600 dark:text-blue-400"
-                size={20}
-              />
+              <PlayCircle className="text-blue-600 dark:text-blue-400" size={20} />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
                   Semester Aktif Sekarang
@@ -692,23 +666,17 @@ const SemesterManagement = ({
                 </p>
                 {localAcademicInfo.start_date && localAcademicInfo.end_date && (
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    {new Date(localAcademicInfo.start_date).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      }
-                    )}{" "}
+                    {new Date(localAcademicInfo.start_date).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}{" "}
                     s/d{" "}
-                    {new Date(localAcademicInfo.end_date).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      }
-                    )}
+                    {new Date(localAcademicInfo.end_date).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </p>
                 )}
               </div>
@@ -731,9 +699,7 @@ const SemesterManagement = ({
                   type="text"
                   placeholder="2025/2026"
                   value={newSemester.year}
-                  onChange={(e) =>
-                    setNewSemester({ ...newSemester, year: e.target.value })
-                  }
+                  onChange={(e) => setNewSemester({ ...newSemester, year: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
@@ -750,7 +716,8 @@ const SemesterManagement = ({
                       semester: parseInt(e.target.value),
                     })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                >
                   <option value={1}>Semester 1 (Ganjil)</option>
                   <option value={2}>Semester 2 (Genap)</option>
                 </select>
@@ -780,9 +747,7 @@ const SemesterManagement = ({
                 <input
                   type="date"
                   value={newSemester.end_date}
-                  onChange={(e) =>
-                    setNewSemester({ ...newSemester, end_date: e.target.value })
-                  }
+                  onChange={(e) => setNewSemester({ ...newSemester, end_date: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
@@ -792,7 +757,8 @@ const SemesterManagement = ({
               <button
                 onClick={handleAddSemester}
                 disabled={loading}
-                className="px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]">
+                className="px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]"
+              >
                 Simpan Semester
               </button>
               <button
@@ -805,7 +771,8 @@ const SemesterManagement = ({
                     end_date: "",
                   });
                 }}
-                className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px]">
+                className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px]"
+              >
                 Batal
               </button>
             </div>
@@ -821,13 +788,13 @@ const SemesterManagement = ({
                 Belum Ada Semester
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                Untuk memulai, tambahkan semester pertama dengan klik tombol
-                "Tambah Semester" di atas.
+                Untuk memulai, tambahkan semester pertama dengan klik tombol "Tambah Semester" di
+                atas.
               </p>
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg max-w-md mx-auto">
                 <p className="text-sm text-blue-700 dark:text-blue-400">
-                  💡 <strong>Tip:</strong> Biasanya semester 1 (Ganjil) dimulai
-                  Juli-Desember, semester 2 (Genap) Januari-Juni.
+                  💡 <strong>Tip:</strong> Biasanya semester 1 (Ganjil) dimulai Juli-Desember,
+                  semester 2 (Genap) Januari-Juni.
                 </p>
               </div>
             </div>
@@ -839,26 +806,20 @@ const SemesterManagement = ({
                   semester.is_active
                     ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600"
                     : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                }`}>
+                }`}
+              >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1">
                     {semester.is_active ? (
-                      <PlayCircle
-                        className="text-blue-600 dark:text-blue-400"
-                        size={20}
-                      />
+                      <PlayCircle className="text-blue-600 dark:text-blue-400" size={20} />
                     ) : (
-                      <PauseCircle
-                        className="text-gray-400 dark:text-gray-500"
-                        size={20}
-                      />
+                      <PauseCircle className="text-gray-400 dark:text-gray-500" size={20} />
                     )}
                     <div className="flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <span className="font-semibold text-gray-800 dark:text-gray-100">
-                          {semester.year} - Semester{" "}
-                          {semester.semester === 1 ? "Ganjil" : "Genap"} (
-                          {semester.semester})
+                          {semester.year} - Semester {semester.semester === 1 ? "Ganjil" : "Genap"}{" "}
+                          ({semester.semester})
                         </span>
                         {semester.is_active && (
                           <span className="px-3 py-1 bg-blue-600 dark:bg-blue-700 text-white text-xs rounded-full font-medium">
@@ -867,23 +828,17 @@ const SemesterManagement = ({
                         )}
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {new Date(semester.start_date).toLocaleDateString(
-                          "id-ID",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )}{" "}
+                        {new Date(semester.start_date).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}{" "}
                         -{" "}
-                        {new Date(semester.end_date).toLocaleDateString(
-                          "id-ID",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )}
+                        {new Date(semester.end_date).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </p>
                     </div>
                   </div>
@@ -893,17 +848,17 @@ const SemesterManagement = ({
                       <button
                         onClick={() => handleActivateSemester(semester.id)}
                         disabled={loading}
-                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none">
+                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none"
+                      >
                         Aktifkan
                       </button>
                     )}
                     {!semester.is_active && (
                       <button
-                        onClick={() =>
-                          handleDeleteSemester(semester.id, semester.is_active)
-                        }
+                        onClick={() => handleDeleteSemester(semester.id, semester.is_active)}
                         disabled={loading}
-                        className="px-4 py-2.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none">
+                        className="px-4 py-2.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 text-sm rounded-lg disabled:opacity-50 transition min-h-[44px] font-medium flex-1 sm:flex-none"
+                      >
                         Hapus
                       </button>
                     )}

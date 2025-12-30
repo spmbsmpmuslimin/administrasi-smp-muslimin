@@ -74,13 +74,7 @@ const COLOR_CLASSES = {
 // ==================== COMPONENTS ====================
 
 // ✅ FIXED: StatCard with proper color classes and dark mode
-const StatCard = ({
-  icon: Icon,
-  label,
-  value,
-  color = "indigo",
-  alert = false,
-}) => {
+const StatCard = ({ icon: Icon, label, value, color = "indigo", alert = false }) => {
   const colors = COLOR_CLASSES[color] || COLOR_CLASSES.indigo;
 
   return (
@@ -89,22 +83,20 @@ const StatCard = ({
         bg-white dark:bg-slate-800 
         rounded-lg shadow-sm dark:shadow-none
         border ${
-          alert
-            ? "border-red-300 dark:border-red-700"
-            : "border-slate-200 dark:border-slate-700"
+          alert ? "border-red-300 dark:border-red-700" : "border-slate-200 dark:border-slate-700"
         } 
         p-4 hover:shadow-md dark:hover:shadow-slate-900/50 transition-shadow
         min-h-[110px] flex flex-col justify-center
-      `}>
+      `}
+    >
       <div className="flex items-center gap-3">
         <div
-          className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+          className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center flex-shrink-0`}
+        >
           <Icon className={`w-6 h-6 ${colors.text}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-            {label}
-          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{label}</p>
           <p className="text-2xl md:text-xl lg:text-2xl font-bold text-slate-800 dark:text-white truncate">
             {value}
           </p>
@@ -129,16 +121,11 @@ const FilterPanel = ({
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    [
-      "academic_year",
-      "semester",
-      "subject",
-      "class_id",
-      "start_date",
-      "end_date",
-    ].forEach((key) => {
-      if (filters[key] && filters[key] !== "") count++;
-    });
+    ["academic_year", "semester", "subject", "class_id", "start_date", "end_date"].forEach(
+      (key) => {
+        if (filters[key] && filters[key] !== "") count++;
+      }
+    );
     return count;
   }, [filters]);
 
@@ -148,13 +135,12 @@ const FilterPanel = ({
       bg-white dark:bg-slate-800 
       rounded-lg shadow-sm dark:shadow-none
       border border-slate-200 dark:border-slate-700 p-4 mb-6
-    ">
+    "
+    >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Filter className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-          <h3 className="font-semibold text-slate-800 dark:text-white">
-            Filter Laporan
-          </h3>
+          <h3 className="font-semibold text-slate-800 dark:text-white">Filter Laporan</h3>
           {activeFilterCount > 0 && (
             <span
               className="
@@ -162,7 +148,8 @@ const FilterPanel = ({
               text-indigo-600 dark:text-indigo-300 
               text-xs font-bold px-2 py-1 rounded-full
               min-h-[24px] min-w-[24px] flex items-center justify-center
-            ">
+            "
+            >
               {activeFilterCount}
             </span>
           )}
@@ -175,12 +162,9 @@ const FilterPanel = ({
             p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700
             transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center
           "
-          aria-label={isOpen ? "Tutup filter" : "Buka filter"}>
-          <ChevronDown
-            className={`w-5 h-5 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-          />
+          aria-label={isOpen ? "Tutup filter" : "Buka filter"}
+        >
+          <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
         </button>
       </div>
 
@@ -189,7 +173,8 @@ const FilterPanel = ({
           className="
           pt-3 border-t border-slate-200 dark:border-slate-700
           grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4
-        ">
+        "
+        >
           {subjectOptions.length > 0 && (
             <div className="sm:col-span-2 lg:col-span-1">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -207,7 +192,8 @@ const FilterPanel = ({
                   focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
                   focus:border-indigo-500 dark:focus:border-indigo-400
                   text-sm
-                ">
+                "
+              >
                 <option value="">Semua Mapel</option>
                 {subjectOptions.map((subj) => (
                   <option key={subj} value={subj}>
@@ -235,7 +221,8 @@ const FilterPanel = ({
                   focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
                   focus:border-indigo-500 dark:focus:border-indigo-400
                   text-sm
-                ">
+                "
+              >
                 <option value="">Semua Kelas</option>
                 {classOptions.map((cls) => (
                   <option key={cls} value={cls}>
@@ -262,7 +249,8 @@ const FilterPanel = ({
                 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
                 focus:border-indigo-500 dark:focus:border-indigo-400
                 text-sm
-              ">
+              "
+            >
               <option value="">Semua Tahun</option>
               {academicYears.map((year) => (
                 <option key={year} value={year}>
@@ -288,7 +276,8 @@ const FilterPanel = ({
                 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
                 focus:border-indigo-500 dark:focus:border-indigo-400
                 text-sm
-              ">
+              "
+            >
               <option value="">Semua Semester</option>
               <option value="1">Semester 1</option>
               <option value="2">Semester 2</option>
@@ -350,7 +339,8 @@ const FilterPanel = ({
                 transition-colors
                 text-sm
                 min-h-[44px]
-              ">
+              "
+            >
               <X className="w-4 h-4" />
               Reset Filter
             </button>
@@ -403,11 +393,7 @@ const TeacherReports = ({ user }) => {
 
       try {
         setLoading(true);
-        await Promise.all([
-          fetchSubjects(),
-          fetchAcademicYears(),
-          fetchStats(),
-        ]);
+        await Promise.all([fetchSubjects(), fetchAcademicYears(), fetchStats()]);
       } catch (err) {
         console.error("Error loading initial data:", err);
         setError("Gagal memuat data awal. Silakan refresh halaman.");
@@ -461,9 +447,9 @@ const TeacherReports = ({ user }) => {
       let uniqueYears = [];
 
       if (assignmentData && assignmentData.length > 0) {
-        uniqueYears = [
-          ...new Set(assignmentData.map((item) => item.academic_year)),
-        ].filter(Boolean);
+        uniqueYears = [...new Set(assignmentData.map((item) => item.academic_year))].filter(
+          Boolean
+        );
       } else {
         const { data: gradesData, error: gradesError } = await supabase
           .from("grades")
@@ -474,9 +460,7 @@ const TeacherReports = ({ user }) => {
         if (gradesError) throw gradesError;
 
         if (gradesData && gradesData.length > 0) {
-          uniqueYears = [
-            ...new Set(gradesData.map((item) => item.academic_year)),
-          ].filter(Boolean);
+          uniqueYears = [...new Set(gradesData.map((item) => item.academic_year))].filter(Boolean);
         }
       }
 
@@ -487,9 +471,7 @@ const TeacherReports = ({ user }) => {
           .order("academic_year", { ascending: false });
 
         if (!classesError && classesData) {
-          uniqueYears = [
-            ...new Set(classesData.map((item) => item.academic_year)),
-          ].filter(Boolean);
+          uniqueYears = [...new Set(classesData.map((item) => item.academic_year))].filter(Boolean);
         }
       }
 
@@ -505,21 +487,19 @@ const TeacherReports = ({ user }) => {
     if (!teacherId || !userUUID) return;
 
     try {
-      const { data: teacherAssignments, error: assignmentError } =
-        await supabase
-          .from("teacher_assignments")
-          .select("class_id, subject, academic_year")
-          .eq("teacher_id", teacherId);
+      const { data: teacherAssignments, error: assignmentError } = await supabase
+        .from("teacher_assignments")
+        .select("class_id, subject, academic_year")
+        .eq("teacher_id", teacherId);
 
       if (assignmentError) throw assignmentError;
 
-      const classIds =
-        teacherAssignments?.map((ta) => ta.class_id).filter(Boolean) || [];
+      const classIds = teacherAssignments?.map((ta) => ta.class_id).filter(Boolean) || [];
       const firstAssignment = teacherAssignments?.[0];
       const subject = firstAssignment?.subject || "Mata Pelajaran";
-      const teacherSubjects = [
-        ...new Set(teacherAssignments.map((ta) => ta.subject)),
-      ].filter(Boolean);
+      const teacherSubjects = [...new Set(teacherAssignments.map((ta) => ta.subject))].filter(
+        Boolean
+      );
 
       let totalStudents = 0;
       if (classIds.length > 0) {
@@ -552,19 +532,13 @@ const TeacherReports = ({ user }) => {
 
         if (validScores.length > 0) {
           avgGrade = Math.round(
-            validScores.reduce((sum, score) => sum + score, 0) /
-              validScores.length
+            validScores.reduce((sum, score) => sum + score, 0) / validScores.length
           );
         }
 
         // ✅ FIXED: Simplified alert students logic
         const alerts = finalGrades
-          .filter(
-            (g) =>
-              g.final_score != null &&
-              !isNaN(g.final_score) &&
-              g.final_score < 75
-          )
+          .filter((g) => g.final_score != null && !isNaN(g.final_score) && g.final_score < 75)
           .map((g) => ({
             name: g.full_name,
             nis: g.nis,
@@ -595,9 +569,7 @@ const TeacherReports = ({ user }) => {
           const presentCount = attendanceData.filter(
             (a) => a.status?.toLowerCase() === "hadir"
           ).length;
-          attendanceRate = Math.round(
-            (presentCount / attendanceData.length) * 100
-          );
+          attendanceRate = Math.round((presentCount / attendanceData.length) * 100);
         }
       }
 
@@ -640,14 +612,10 @@ const TeacherReports = ({ user }) => {
 
     // ✅ FIX: Validate assignments
     if (!teacherAssignments || teacherAssignments.length === 0) {
-      throw new Error(
-        "Tidak ada penugasan kelas. Hubungi admin untuk setup penugasan."
-      );
+      throw new Error("Tidak ada penugasan kelas. Hubungi admin untuk setup penugasan.");
     }
 
-    const classIds = teacherAssignments
-      .map((ta) => ta.class_id)
-      .filter(Boolean);
+    const classIds = teacherAssignments.map((ta) => ta.class_id).filter(Boolean);
 
     if (classIds.length === 0) {
       throw new Error("Tidak ada kelas yang diajar");
@@ -659,9 +627,7 @@ const TeacherReports = ({ user }) => {
     try {
       switch (reportType) {
         case "grades": {
-          reportTitle = `DATA NILAI AKHIR ${
-            filters.subject || stats.subject || "MATA PELAJARAN"
-          }`;
+          reportTitle = `DATA NILAI AKHIR ${filters.subject || stats.subject || "MATA PELAJARAN"}`;
 
           // ✅ FIX: Add class_ids to filters
           const gradeFilters = { ...filters, class_ids: classIds };
@@ -680,15 +646,10 @@ const TeacherReports = ({ user }) => {
             subject: filters.subject || stats.subject, // ✅ Tambahin ini
           };
 
-          result = await fetchAttendanceDailyData(
-            attendanceFilters,
-            "Mata Pelajaran"
-          );
+          result = await fetchAttendanceDailyData(attendanceFilters, "Mata Pelajaran");
 
           if (!result.fullData || result.fullData.length === 0) {
-            throw new Error(
-              "Tidak ada data presensi mata pelajaran untuk kelas yang Anda ajar"
-            );
+            throw new Error("Tidak ada data presensi mata pelajaran untuk kelas yang Anda ajar");
           }
 
           break;
@@ -702,23 +663,16 @@ const TeacherReports = ({ user }) => {
           result = await fetchAttendanceRecapData(recapFilters);
 
           if (!result.fullData || result.fullData.length === 0) {
-            throw new Error(
-              "Tidak ada data rekapitulasi untuk kelas yang Anda ajar"
-            );
+            throw new Error("Tidak ada data rekapitulasi untuk kelas yang Anda ajar");
           }
 
-          const totalHadir = result.fullData.reduce(
-            (sum, r) => sum + (r.hadir || r.Hadir || 0),
-            0
-          );
+          const totalHadir = result.fullData.reduce((sum, r) => sum + (r.hadir || r.Hadir || 0), 0);
           const totalPresensi = result.fullData.reduce(
             (sum, r) => sum + (r.total || r.Total || 0),
             0
           );
           const avgAttendance =
-            totalPresensi > 0
-              ? Math.round((totalHadir / totalPresensi) * 100)
-              : 0;
+            totalPresensi > 0 ? Math.round((totalHadir / totalPresensi) * 100) : 0;
 
           result.summary = [
             { label: "Siswa Terekap", value: result.fullData.length },
@@ -729,9 +683,7 @@ const TeacherReports = ({ user }) => {
         }
 
         case "class-performance": {
-          reportTitle = `PERFORMA PER KELAS - ${
-            filters.subject || stats.subject
-          }`;
+          reportTitle = `PERFORMA PER KELAS - ${filters.subject || stats.subject}`;
 
           const performanceFilters = {
             ...filters,
@@ -740,18 +692,10 @@ const TeacherReports = ({ user }) => {
           };
 
           // ✅ Use isHomeroom=true to get final grades
-          const gradesResult = await fetchGradesData(
-            performanceFilters,
-            userUUID,
-            true
-          );
-          const finalGradesData =
-            gradesResult.rawFinalGrades || gradesResult.fullData || [];
+          const gradesResult = await fetchGradesData(performanceFilters, userUUID, true);
+          const finalGradesData = gradesResult.rawFinalGrades || gradesResult.fullData || [];
 
-          console.log(
-            "✅ Final grades for performance:",
-            finalGradesData.length
-          );
+          console.log("✅ Final grades for performance:", finalGradesData.length);
 
           if (finalGradesData.length === 0) {
             throw new Error(
@@ -784,9 +728,7 @@ const TeacherReports = ({ user }) => {
             const validScores = cls.scores;
             const avg =
               validScores.length > 0
-                ? Math.round(
-                    validScores.reduce((a, b) => a + b, 0) / validScores.length
-                  )
+                ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length)
                 : 0;
 
             return {
@@ -794,14 +736,8 @@ const TeacherReports = ({ user }) => {
               total_students: cls.students.size,
               total_grades: cls.scores.length,
               average: avg,
-              highest:
-                validScores.length > 0
-                  ? Math.round(Math.max(...validScores))
-                  : 0,
-              lowest:
-                validScores.length > 0
-                  ? Math.round(Math.min(...validScores))
-                  : 0,
+              highest: validScores.length > 0 ? Math.round(Math.max(...validScores)) : 0,
+              lowest: validScores.length > 0 ? Math.round(Math.min(...validScores)) : 0,
               below_kkm: validScores.filter((s) => s < 75).length,
             };
           });
@@ -819,8 +755,7 @@ const TeacherReports = ({ user }) => {
           const overallAvg =
             classAnalysis.length > 0
               ? Math.round(
-                  classAnalysis.reduce((sum, cls) => sum + cls.average, 0) /
-                    classAnalysis.length
+                  classAnalysis.reduce((sum, cls) => sum + cls.average, 0) / classAnalysis.length
                 )
               : 0;
 
@@ -831,9 +766,8 @@ const TeacherReports = ({ user }) => {
               label: "Kelas Terbaik",
               value:
                 classAnalysis.length > 0
-                  ? classAnalysis.reduce((best, cls) =>
-                      cls.average > best.average ? cls : best
-                    ).class_id
+                  ? classAnalysis.reduce((best, cls) => (cls.average > best.average ? cls : best))
+                      .class_id
                   : "-",
             },
           ];
@@ -892,11 +826,7 @@ const TeacherReports = ({ user }) => {
     try {
       let data;
 
-      if (
-        previewModal.isOpen &&
-        previewModal.type === reportType &&
-        previewModal.data?.fullData
-      ) {
+      if (previewModal.isOpen && previewModal.type === reportType && previewModal.data?.fullData) {
         data = previewModal.data;
       } else {
         data = await fetchReportData(reportType);
@@ -909,8 +839,7 @@ const TeacherReports = ({ user }) => {
       const filterDescription = buildFilterDescription(filters);
 
       const metadata = {
-        title:
-          data.reportTitle || `LAPORAN ${stats.subject || "MATA PELAJARAN"}`,
+        title: data.reportTitle || `LAPORAN ${stats.subject || "MATA PELAJARAN"}`,
         academicYear: filters.academic_year,
         semester: filters.semester ? `Semester ${filters.semester}` : null,
         filters: filterDescription,
@@ -976,9 +905,7 @@ const TeacherReports = ({ user }) => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
-              <p className="text-slate-600 dark:text-slate-400">
-                Memuat data...
-              </p>
+              <p className="text-slate-600 dark:text-slate-400">Memuat data...</p>
             </div>
           </div>
         </div>
@@ -998,7 +925,8 @@ const TeacherReports = ({ user }) => {
                 w-10 h-10 md:w-12 md:h-12 
                 bg-indigo-100 dark:bg-indigo-900/50 
                 rounded-lg flex items-center justify-center flex-shrink-0
-              ">
+              "
+              >
                 <FileText className="w-5 h-5 md:w-6 md:h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="min-w-0">
@@ -1007,7 +935,8 @@ const TeacherReports = ({ user }) => {
                   text-xl md:text-2xl lg:text-3xl 
                   font-bold text-slate-800 dark:text-white 
                   leading-tight
-                ">
+                "
+                >
                   Laporan - Guru Mata Pelajaran
                 </h1>
                 <p
@@ -1015,7 +944,8 @@ const TeacherReports = ({ user }) => {
                   text-xs md:text-sm 
                   text-slate-500 dark:text-slate-400 mt-1
                   truncate
-                ">
+                "
+                >
                   {user.full_name} - {stats.subject || "Mata Pelajaran"}
                 </p>
               </div>
@@ -1027,9 +957,9 @@ const TeacherReports = ({ user }) => {
             text-sm md:text-base 
             text-slate-600 dark:text-slate-400
             leading-relaxed
-          ">
-            Kelola laporan nilai akhir dan kehadiran siswa di kelas yang Anda
-            ajar
+          "
+          >
+            Kelola laporan nilai akhir dan kehadiran siswa di kelas yang Anda ajar
           </p>
         </div>
 
@@ -1042,7 +972,8 @@ const TeacherReports = ({ user }) => {
             text-green-700 dark:text-green-400 
             px-4 py-3 rounded-lg mb-6 
             flex items-center justify-between
-          ">
+          "
+          >
             <span className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
               <span className="text-sm">{success}</span>
@@ -1054,7 +985,8 @@ const TeacherReports = ({ user }) => {
                 hover:text-green-900 dark:hover:text-green-200 
                 font-bold text-lg
                 min-h-[32px] min-w-[32px] flex items-center justify-center
-              ">
+              "
+            >
               ×
             </button>
           </div>
@@ -1068,7 +1000,8 @@ const TeacherReports = ({ user }) => {
             border border-red-400 dark:border-red-700 
             text-red-700 dark:text-red-400 
             px-4 py-3 rounded-lg mb-6
-          ">
+          "
+          >
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 flex-shrink-0" />
@@ -1082,7 +1015,8 @@ const TeacherReports = ({ user }) => {
                   font-bold text-lg
                   ml-2 flex-shrink-0
                   min-h-[32px] min-w-[32px] flex items-center justify-center
-                ">
+                "
+              >
                 ×
               </button>
             </div>
@@ -1096,7 +1030,8 @@ const TeacherReports = ({ user }) => {
             bg-yellow-50 dark:bg-yellow-900/20 
             border-2 border-yellow-200 dark:border-yellow-700 
             rounded-lg p-4 md:p-6 mb-6 md:mb-8
-          ">
+          "
+          >
             <div className="flex items-start gap-3">
               <AlertTriangle
                 className="
@@ -1111,16 +1046,18 @@ const TeacherReports = ({ user }) => {
                   font-semibold 
                   text-yellow-900 dark:text-yellow-300 
                   mb-2 text-sm md:text-base
-                ">
+                "
+                >
                   Belum Ada Penugasan Kelas
                 </h3>
                 <p
                   className="
                   text-xs md:text-sm 
                   text-yellow-800 dark:text-yellow-400
-                ">
-                  Anda belum memiliki penugasan mata pelajaran. Silakan hubungi
-                  admin untuk setup penugasan kelas dan mata pelajaran.
+                "
+                >
+                  Anda belum memiliki penugasan mata pelajaran. Silakan hubungi admin untuk setup
+                  penugasan kelas dan mata pelajaran.
                 </p>
               </div>
             </div>
@@ -1133,7 +1070,8 @@ const TeacherReports = ({ user }) => {
           grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 
           gap-3 md:gap-4 lg:gap-6 
           mb-6 md:mb-8
-        ">
+        "
+        >
           <StatCard
             icon={BookOpen}
             label="Mata Pelajaran"
@@ -1195,7 +1133,8 @@ const TeacherReports = ({ user }) => {
             bg-orange-50 dark:bg-orange-900/20 
             border-2 border-orange-200 dark:border-orange-700 
             rounded-lg p-4 md:p-6 mb-6 md:mb-8
-          ">
+          "
+          >
             <div className="flex items-start gap-3">
               <AlertTriangle
                 className="
@@ -1210,16 +1149,17 @@ const TeacherReports = ({ user }) => {
                   font-semibold 
                   text-orange-900 dark:text-orange-300 
                   mb-2 text-sm md:text-base
-                ">
+                "
+                >
                   🎯 Siswa Perlu Perhatian Khusus
                 </h3>
                 <p
                   className="
                   text-xs md:text-sm 
                   text-orange-800 dark:text-orange-400 mb-3
-                ">
-                  Siswa dengan nilai akhir di bawah KKM (75) - perlu bimbingan
-                  tambahan
+                "
+                >
+                  Siswa dengan nilai akhir di bawah KKM (75) - perlu bimbingan tambahan
                 </p>
                 <div className="space-y-2">
                   {alertStudents.map((student, idx) => (
@@ -1229,7 +1169,8 @@ const TeacherReports = ({ user }) => {
                         bg-white dark:bg-slate-800 
                         p-3 rounded-lg 
                         border border-orange-200 dark:border-orange-700
-                      ">
+                      "
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p
@@ -1237,7 +1178,8 @@ const TeacherReports = ({ user }) => {
                             text-sm font-medium 
                             text-slate-800 dark:text-white 
                             truncate
-                          ">
+                          "
+                          >
                             {student.name} ({student.nis}) - {student.class_id}
                           </p>
                           <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -1253,7 +1195,8 @@ const TeacherReports = ({ user }) => {
                                   ? "text-red-600 dark:text-red-400"
                                   : "text-orange-600 dark:text-orange-400"
                               }
-                            `}>
+                            `}
+                          >
                             {student.avgScore}
                           </span>
                         </div>
@@ -1272,7 +1215,8 @@ const TeacherReports = ({ user }) => {
           grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 
           gap-3 md:gap-4 
           mb-6 md:mb-8
-        ">
+        "
+        >
           {reports.map((report) => {
             const Icon = report.icon;
             const isDownloading = downloadingReportId === report.id;
@@ -1289,14 +1233,16 @@ const TeacherReports = ({ user }) => {
                   transition-all duration-200
                   flex flex-col
                   min-h-[200px]
-                `}>
+                `}
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div
                     className={`
                       w-10 h-10 md:w-11 md:h-11 
                       rounded-xl ${colors.bg} 
                       flex items-center justify-center flex-shrink-0
-                    `}>
+                    `}
+                  >
                     <Icon className={`w-5 h-5 md:w-5 md:h-5 ${colors.text}`} />
                   </div>
                 </div>
@@ -1307,7 +1253,8 @@ const TeacherReports = ({ user }) => {
                   font-semibold text-slate-800 dark:text-white 
                   mb-1.5 leading-tight
                   line-clamp-2
-                ">
+                "
+                >
                   {report.title}
                 </h3>
 
@@ -1316,7 +1263,8 @@ const TeacherReports = ({ user }) => {
                   text-xs text-slate-600 dark:text-slate-400 
                   mb-2 leading-tight line-clamp-2
                   flex-grow
-                ">
+                "
+                >
                   {report.description}
                 </p>
 
@@ -1324,7 +1272,8 @@ const TeacherReports = ({ user }) => {
                   className="
                   text-xs text-slate-500 dark:text-slate-500 
                   mb-3 font-medium
-                ">
+                "
+                >
                   {report.stats}
                 </p>
 
@@ -1345,18 +1294,15 @@ const TeacherReports = ({ user }) => {
                       flex items-center justify-center gap-1.5 
                       transition-colors
                       min-h-[44px]
-                    ">
+                    "
+                  >
                     <Eye className="w-3.5 h-3.5" />
                     {loading ? "Memuat..." : "Preview"}
                   </button>
 
                   <button
                     onClick={() => downloadReport(report.id, "xlsx")}
-                    disabled={
-                      loading ||
-                      isDownloading ||
-                      (downloadingReportId && !isDownloading)
-                    }
+                    disabled={loading || isDownloading || (downloadingReportId && !isDownloading)}
                     className="
                       w-full 
                       bg-green-600 hover:bg-green-700 
@@ -1368,7 +1314,8 @@ const TeacherReports = ({ user }) => {
                       flex items-center justify-center gap-1.5 
                       transition-colors
                       min-h-[44px]
-                    ">
+                    "
+                  >
                     {isDownloading ? (
                       <>
                         <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white mr-1.5"></div>
@@ -1394,13 +1341,15 @@ const TeacherReports = ({ user }) => {
           rounded-lg shadow-sm dark:shadow-none
           border border-slate-200 dark:border-slate-700 
           p-4 md:p-6 mb-6
-        ">
+        "
+        >
           <h3
             className="
             text-lg font-semibold 
             text-slate-800 dark:text-white 
             mb-4 flex items-center gap-2
-          ">
+          "
+          >
             📊 Informasi Laporan
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
@@ -1409,13 +1358,14 @@ const TeacherReports = ({ user }) => {
                 className="
                 font-medium text-slate-700 dark:text-slate-300 
                 mb-2 flex items-center gap-2 text-sm md:text-base
-              ">
+              "
+              >
                 <FileSpreadsheet className="w-4 h-4" />
                 Format File
               </h4>
               <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
-                Laporan tersedia dalam format Excel dengan styling profesional
-                dan summary statistik.
+                Laporan tersedia dalam format Excel dengan styling profesional dan summary
+                statistik.
               </p>
             </div>
             <div>
@@ -1423,16 +1373,15 @@ const TeacherReports = ({ user }) => {
                 className="
                 font-medium text-slate-700 dark:text-slate-300 
                 mb-2 flex items-center gap-2 text-sm md:text-base
-              ">
+              "
+              >
                 <BookOpen className="w-4 h-4" />
                 Cakupan Data
               </h4>
               <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
                 Laporan mencakup data{" "}
-                <strong className="text-slate-800 dark:text-white">
-                  nilai akhir
-                </strong>{" "}
-                dan kehadiran siswa di kelas yang Anda ajar.
+                <strong className="text-slate-800 dark:text-white">nilai akhir</strong> dan
+                kehadiran siswa di kelas yang Anda ajar.
               </p>
             </div>
             <div>
@@ -1440,13 +1389,14 @@ const TeacherReports = ({ user }) => {
                 className="
                 font-medium text-slate-700 dark:text-slate-300 
                 mb-2 flex items-center gap-2 text-sm md:text-base
-              ">
+              "
+              >
                 <Eye className="w-4 h-4" />
                 Preview & Filter
               </h4>
               <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
-                Gunakan filter untuk menyaring data. Klik "Preview" untuk
-                melihat data sebelum export.
+                Gunakan filter untuk menyaring data. Klik "Preview" untuk melihat data sebelum
+                export.
               </p>
             </div>
           </div>
@@ -1458,13 +1408,15 @@ const TeacherReports = ({ user }) => {
           bg-indigo-50 dark:bg-indigo-900/30 
           border border-indigo-200 dark:border-indigo-700 
           rounded-lg p-4 md:p-5 mb-6
-        ">
+        "
+        >
           <div className="flex gap-3">
             <div
               className="
               text-indigo-600 dark:text-indigo-400 
               text-xl flex-shrink-0 mt-0.5
-            ">
+            "
+            >
               💡
             </div>
             <div>
@@ -1472,7 +1424,8 @@ const TeacherReports = ({ user }) => {
                 className="
                 font-medium text-indigo-900 dark:text-indigo-300 
                 mb-2 text-sm md:text-base
-              ">
+              "
+              >
                 Tips Penggunaan:
               </h4>
               <ul
@@ -1480,30 +1433,25 @@ const TeacherReports = ({ user }) => {
                 text-xs md:text-sm 
                 text-indigo-700 dark:text-indigo-400 
                 space-y-1.5
-              ">
+              "
+              >
                 <li>
-                  • <strong>Laporan Nilai Akhir</strong> untuk export data nilai
-                  akhir mata pelajaran Anda
+                  • <strong>Laporan Nilai Akhir</strong> untuk export data nilai akhir mata
+                  pelajaran Anda
                 </li>
                 <li>
-                  • <strong>Presensi Harian</strong> untuk monitoring kehadiran
-                  siswa per hari
+                  • <strong>Presensi Harian</strong> untuk monitoring kehadiran siswa per hari
                 </li>
                 <li>
-                  • <strong>Rekapitulasi Kehadiran</strong> untuk melihat total
-                  kehadiran per siswa
+                  • <strong>Rekapitulasi Kehadiran</strong> untuk melihat total kehadiran per siswa
                 </li>
                 <li>
-                  • <strong>Performa Per Kelas</strong> untuk membandingkan
-                  performa nilai akhir antar kelas
+                  • <strong>Performa Per Kelas</strong> untuk membandingkan performa nilai akhir
+                  antar kelas
                 </li>
+                <li>• Gunakan filter tanggal untuk laporan presensi periode tertentu</li>
                 <li>
-                  • Gunakan filter tanggal untuk laporan presensi periode
-                  tertentu
-                </li>
-                <li>
-                  • Perhatikan siswa dalam daftar "Perlu Perhatian Khusus" untuk
-                  intervensi dini!
+                  • Perhatikan siswa dalam daftar "Perlu Perhatian Khusus" untuk intervensi dini!
                 </li>
               </ul>
             </div>
@@ -1513,9 +1461,7 @@ const TeacherReports = ({ user }) => {
 
       <ReportModal
         isOpen={previewModal.isOpen}
-        onClose={() =>
-          setPreviewModal({ isOpen: false, data: null, type: null })
-        }
+        onClose={() => setPreviewModal({ isOpen: false, data: null, type: null })}
         reportData={previewModal.data || {}}
         reportType={previewModal.type}
         role="teacher"

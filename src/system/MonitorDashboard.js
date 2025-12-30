@@ -60,12 +60,11 @@ const CheckerProgressBar = ({ checker, isActive, isDone }) => {
           : isDone
           ? "border-green-400 bg-green-50 dark:bg-green-900/30 dark:border-green-600"
           : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
-      }`}>
+      }`}
+    >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">
-            {isActive ? "🔄" : isDone ? "✅" : "⏳"}
-          </span>
+          <span className="text-2xl">{isActive ? "🔄" : isDone ? "✅" : "⏳"}</span>
           <span
             className={`font-semibold text-sm ${
               isActive
@@ -73,7 +72,8 @@ const CheckerProgressBar = ({ checker, isActive, isDone }) => {
                 : isDone
                 ? "text-green-700 dark:text-green-300"
                 : "text-gray-500 dark:text-gray-400"
-            }`}>
+            }`}
+          >
             {checker.name}
           </span>
         </div>
@@ -128,23 +128,20 @@ const OverallProgressBar = ({ progress, elapsedTime, currentPhase }) => {
           <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
             {(elapsedTime / 1000).toFixed(1)}s
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            Elapsed Time
-          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Elapsed Time</div>
         </div>
       </div>
 
       <div className="relative">
         <div className="flex justify-between text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           <span>Overall Progress</span>
-          <span className="text-blue-600 dark:text-blue-400">
-            {Math.round(progress)}%
-          </span>
+          <span className="text-blue-600 dark:text-blue-400">{Math.round(progress)}%</span>
         </div>
         <div className="relative h-4 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
           <div
             className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 dark:from-blue-400 dark:via-blue-500 dark:to-blue-600 transition-all duration-500 ease-out relative overflow-hidden"
-            style={{ width: `${progress}%` }}>
+            style={{ width: `${progress}%` }}
+          >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white dark:via-gray-300 to-transparent opacity-30 animate-shimmer" />
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -164,8 +161,7 @@ const OverallProgressBar = ({ progress, elapsedTime, currentPhase }) => {
         ].map((item) => {
           const stageProgress = ((progress - (item.stage - 1) * 25) / 25) * 100;
           const isComplete = progress >= item.stage * 25;
-          const isActive =
-            progress >= (item.stage - 1) * 25 && progress < item.stage * 25;
+          const isActive = progress >= (item.stage - 1) * 25 && progress < item.stage * 25;
 
           return (
             <div
@@ -176,7 +172,8 @@ const OverallProgressBar = ({ progress, elapsedTime, currentPhase }) => {
                   : isActive
                   ? "bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700"
                   : "bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
-              }`}>
+              }`}
+            >
               <div
                 className={`text-xs font-semibold ${
                   isComplete
@@ -184,7 +181,8 @@ const OverallProgressBar = ({ progress, elapsedTime, currentPhase }) => {
                     : isActive
                     ? "text-blue-700 dark:text-blue-300"
                     : "text-gray-500 dark:text-gray-400"
-                }`}>
+                }`}
+              >
                 {item.label}
               </div>
               <div className="text-base sm:text-lg">
@@ -198,14 +196,7 @@ const OverallProgressBar = ({ progress, elapsedTime, currentPhase }) => {
   );
 };
 
-const StatsCard = ({
-  icon,
-  title,
-  value,
-  subtitle,
-  color = "blue",
-  isAnimating,
-}) => {
+const StatsCard = ({ icon, title, value, subtitle, color = "blue", isAnimating }) => {
   const colorClasses = {
     blue: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-700",
     green:
@@ -220,28 +211,21 @@ const StatsCard = ({
     <div
       className={`rounded-lg shadow-md p-4 sm:p-6 border-2 transition-all duration-300 ${
         isAnimating ? "scale-105" : ""
-      } ${colorClasses[color]}`}>
+      } ${colorClasses[color]}`}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 truncate">
             {title}
           </p>
           <p className="text-2xl sm:text-3xl font-bold truncate">
-            {typeof value === "number" && isAnimating ? (
-              <AnimatedCounter value={value} />
-            ) : (
-              value
-            )}
+            {typeof value === "number" && isAnimating ? <AnimatedCounter value={value} /> : value}
           </p>
           {subtitle && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-              {subtitle}
-            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">{subtitle}</p>
           )}
         </div>
-        <div className="text-3xl sm:text-4xl opacity-80 flex-shrink-0">
-          {icon}
-        </div>
+        <div className="text-3xl sm:text-4xl opacity-80 flex-shrink-0">{icon}</div>
       </div>
     </div>
   );
@@ -321,17 +305,13 @@ const MonitorDashboard = ({ user }) => {
       console.log("🔒 Locking save operation at:", new Date().toISOString());
 
       // Map status to valid database values (healthy, warning, critical ONLY)
-      let dbStatus = String(
-        finalResults.summary?.status || "healthy"
-      ).toLowerCase();
+      let dbStatus = String(finalResults.summary?.status || "healthy").toLowerCase();
 
       // Database constraint: CHECK (status = ANY (ARRAY['healthy', 'warning', 'critical']))
       const validStatuses = ["healthy", "warning", "critical"];
 
       if (!validStatuses.includes(dbStatus)) {
-        console.log(
-          `ℹ️ Mapping invalid status "${dbStatus}" to "healthy" for database constraint`
-        );
+        console.log(`ℹ️ Mapping invalid status "${dbStatus}" to "healthy" for database constraint`);
         dbStatus = "healthy"; // Default to 'healthy' for 'info', 'unknown', etc.
       }
 
@@ -352,37 +332,23 @@ const MonitorDashboard = ({ user }) => {
         execution_time: parseInt(finalResults.executionTime) || null,
       };
 
-      console.log(
-        "📤 Saving to database at:",
-        new Date().toISOString(),
-        logEntry
-      );
+      console.log("📤 Saving to database at:", new Date().toISOString(), logEntry);
 
-      const { data, error } = await supabase
-        .from("system_health_logs")
-        .insert([logEntry])
-        .select();
+      const { data, error } = await supabase.from("system_health_logs").insert([logEntry]).select();
 
       if (error) {
         console.error("❌ Database error:", error);
         throw error;
       }
 
-      console.log(
-        "✅ Saved to database successfully at:",
-        new Date().toISOString(),
-        data
-      );
+      console.log("✅ Saved to database successfully at:", new Date().toISOString(), data);
     } catch (error) {
       console.error("💥 Error saving to database:", error);
     } finally {
       // Reset flag after a delay to prevent immediate re-saves
       setTimeout(() => {
         isSavingRef.current = false;
-        console.log(
-          "🔓 Unlocking save operation at:",
-          new Date().toISOString()
-        );
+        console.log("🔓 Unlocking save operation at:", new Date().toISOString());
       }, 2000);
     }
   };
@@ -616,17 +582,17 @@ const MonitorDashboard = ({ user }) => {
             {history.length > 0 && (
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 font-medium shadow-lg transition-all hover:scale-105 min-h-[44px] touch-manipulation order-2 sm:order-1">
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 font-medium shadow-lg transition-all hover:scale-105 min-h-[44px] touch-manipulation order-2 sm:order-1"
+              >
                 <span>📊</span>
-                <span className="text-sm sm:text-base">
-                  History ({history.length})
-                </span>
+                <span className="text-sm sm:text-base">History ({history.length})</span>
               </button>
             )}
             <button
               onClick={runHealthCheck}
               disabled={isChecking}
-              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium shadow-lg transition-all hover:scale-105 min-h-[44px] touch-manipulation order-1 sm:order-2">
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium shadow-lg transition-all hover:scale-105 min-h-[44px] touch-manipulation order-1 sm:order-2"
+            >
               {isChecking ? (
                 <>
                   <span className="animate-spin">🔄</span>
@@ -648,12 +614,8 @@ const MonitorDashboard = ({ user }) => {
             <div className="flex items-start gap-3">
               <span className="text-2xl flex-shrink-0">❌</span>
               <div>
-                <h3 className="font-semibold text-red-800 dark:text-red-300">
-                  Check Failed
-                </h3>
-                <p className="text-red-600 dark:text-red-400 text-sm">
-                  {error}
-                </p>
+                <h3 className="font-semibold text-red-800 dark:text-red-300">Check Failed</h3>
+                <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
               </div>
             </div>
           </div>
@@ -666,25 +628,20 @@ const MonitorDashboard = ({ user }) => {
               <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
                 Check History
                 {isLoadingHistory && (
-                  <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                    Loading...
-                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">Loading...</span>
                 )}
               </h2>
               <div className="flex gap-2">
                 <button
                   onClick={loadHistoryFromDatabase}
                   disabled={isLoadingHistory}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium disabled:text-gray-400 dark:disabled:text-gray-600 px-3 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium disabled:text-gray-400 dark:disabled:text-gray-600 px-3 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                >
                   🔄 Refresh
                 </button>
                 <button
                   onClick={async () => {
-                    if (
-                      window.confirm(
-                        "Clear all history from database? This cannot be undone."
-                      )
-                    ) {
+                    if (window.confirm("Clear all history from database? This cannot be undone.")) {
                       try {
                         const { error } = await supabase
                           .from("system_health_logs")
@@ -700,7 +657,8 @@ const MonitorDashboard = ({ user }) => {
                       }
                     }
                   }}
-                  className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                  className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                >
                   Clear All
                 </button>
               </div>
@@ -725,7 +683,8 @@ const MonitorDashboard = ({ user }) => {
                     onClick={() => {
                       setResults(item);
                       setShowHistory(false);
-                    }}>
+                    }}
+                  >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-2xl sm:text-3xl flex-shrink-0">
                         {getStatusIcon(item.summary.status)}
@@ -735,8 +694,7 @@ const MonitorDashboard = ({ user }) => {
                           {formatTimestamp(item.timestamp)}
                         </div>
                         <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                          {item.summary.totalIssues} issues •{" "}
-                          {formatTime(item.executionTime)}
+                          {item.summary.totalIssues} issues • {formatTime(item.executionTime)}
                         </div>
                       </div>
                     </div>
@@ -749,7 +707,8 @@ const MonitorDashboard = ({ user }) => {
                           : item.summary.status === "critical"
                           ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
                           : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                      }`}>
+                      }`}
+                    >
                       {item.summary.status}
                     </span>
                   </div>
@@ -803,9 +762,7 @@ const MonitorDashboard = ({ user }) => {
                 icon="📊"
                 title="Total Issues"
                 value={Number(results.summary?.totalIssues) || 0}
-                subtitle={`${
-                  Number(results.summary?.criticalCount) || 0
-                } critical, ${
+                subtitle={`${Number(results.summary?.criticalCount) || 0} critical, ${
                   Number(results.summary?.warningCount) || 0
                 } warning, ${Number(results.summary?.infoCount) || 0} info`}
                 color={
@@ -856,25 +813,22 @@ const MonitorDashboard = ({ user }) => {
                         issueCount = value.checks.length;
                       }
 
-                      const status =
-                        value?.status ||
-                        (issueCount === 0 ? "healthy" : "info");
+                      const status = value?.status || (issueCount === 0 ? "healthy" : "info");
 
                       return (
                         <div
                           key={checker.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
                           <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-2xl flex-shrink-0">
-                              {getStatusIcon(status)}
-                            </span>
+                            <span className="text-2xl flex-shrink-0">{getStatusIcon(status)}</span>
                             <div className="min-w-0">
                               <div className="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base truncate">
                                 {checker.name}
                               </div>
                               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
-                                {issueCount} issue{issueCount !== 1 ? "s" : ""}{" "}
-                                found • {checker.time || 0}ms
+                                {issueCount} issue{issueCount !== 1 ? "s" : ""} found •{" "}
+                                {checker.time || 0}ms
                               </div>
                             </div>
                           </div>
@@ -887,7 +841,8 @@ const MonitorDashboard = ({ user }) => {
                                 : status === "critical"
                                 ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
                                 : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                            }`}>
+                            }`}
+                          >
                             {String(status)}
                           </span>
                         </div>
@@ -918,10 +873,7 @@ const MonitorDashboard = ({ user }) => {
                           <div
                             className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 transition-all duration-1000"
                             style={{
-                              width: `${Math.min(
-                                (checker.time / 5000) * 100,
-                                100
-                              )}%`,
+                              width: `${Math.min((checker.time / 5000) * 100, 100)}%`,
                             }}
                           />
                         </div>
@@ -951,33 +903,20 @@ const MonitorDashboard = ({ user }) => {
                 </h3>
                 <div className="space-y-3">
                   {(() => {
-                    console.log(
-                      "🔍 DEBUG - Results structure:",
-                      results.results
-                    );
+                    console.log("🔍 DEBUG - Results structure:", results.results);
 
                     const allIssues = [];
 
                     Object.entries(results.results || {}).forEach(
                       ([checkerName, checkerResult]) => {
-                        const issues =
-                          checkerResult?.issues || checkerResult?.checks || [];
+                        const issues = checkerResult?.issues || checkerResult?.checks || [];
 
-                        if (!Array.isArray(issues) || issues.length === 0)
-                          return;
+                        if (!Array.isArray(issues) || issues.length === 0) return;
 
-                        console.log(
-                          `🔍 DEBUG - ${checkerName} issues:`,
-                          issues
-                        );
+                        console.log(`🔍 DEBUG - ${checkerName} issues:`, issues);
 
                         issues.forEach((issue, idx) => {
-                          console.log(
-                            `🔍 DEBUG - Issue ${idx}:`,
-                            issue,
-                            "Type:",
-                            typeof issue
-                          );
+                          console.log(`🔍 DEBUG - Issue ${idx}:`, issue, "Type:", typeof issue);
 
                           // Handle different issue formats - ensure everything is a string or null
                           let issueMessage = "Unknown issue";
@@ -989,10 +928,7 @@ const MonitorDashboard = ({ user }) => {
 
                           if (typeof issue === "string") {
                             issueMessage = issue;
-                          } else if (
-                            typeof issue === "object" &&
-                            issue !== null
-                          ) {
+                          } else if (typeof issue === "object" && issue !== null) {
                             // Safely extract message
                             if (issue.message) {
                               issueMessage = String(issue.message);
@@ -1001,20 +937,13 @@ const MonitorDashboard = ({ user }) => {
                             }
 
                             // Safely extract other fields
-                            if (
-                              issue.details &&
-                              typeof issue.details === "string"
-                            ) {
+                            if (issue.details && typeof issue.details === "string") {
                               issueDetails = issue.details;
-                            } else if (
-                              issue.details &&
-                              typeof issue.details === "object"
-                            ) {
+                            } else if (issue.details && typeof issue.details === "object") {
                               issueDetails = JSON.stringify(issue.details);
                             }
 
-                            if (issue.severity)
-                              issueSeverity = String(issue.severity);
+                            if (issue.severity) issueSeverity = String(issue.severity);
                             if (issue.table) issueTable = String(issue.table);
                             if (issue.count) issueCount = Number(issue.count);
 
@@ -1062,7 +991,8 @@ const MonitorDashboard = ({ user }) => {
                             : issue.severity === "warning"
                             ? "border-yellow-500 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/30"
                             : "border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30"
-                        }`}>
+                        }`}
+                      >
                         <div className="flex items-start gap-3">
                           <span className="text-xl flex-shrink-0">
                             {issue.severity === "critical"
@@ -1082,12 +1012,9 @@ const MonitorDashboard = ({ user }) => {
                             )}
                             {issue.table && (
                               <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                <span className="font-semibold">Table:</span>{" "}
-                                {issue.table}
+                                <span className="font-semibold">Table:</span> {issue.table}
                                 {issue.count && (
-                                  <span className="ml-2">
-                                    • {issue.count} affected
-                                  </span>
+                                  <span className="ml-2">• {issue.count} affected</span>
                                 )}
                               </div>
                             )}
@@ -1109,7 +1036,8 @@ const MonitorDashboard = ({ user }) => {
                                 : issue.severity === "warning"
                                 ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
                                 : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                            }`}>
+                            }`}
+                          >
                             {issue.severity}
                           </span>
                         </div>

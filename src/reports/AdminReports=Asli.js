@@ -90,9 +90,7 @@ const calculateAtRiskStudents = async (classId = null) => {
 
 const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
   try {
-    let gradesQuery = supabase
-      .from("grades")
-      .select("*, students!inner(nis, full_name, class_id)");
+    let gradesQuery = supabase.from("grades").select("*, students!inner(nis, full_name, class_id)");
 
     if (classId) {
       gradesQuery = gradesQuery.eq("students.class_id", classId);
@@ -128,9 +126,7 @@ const calculateLowGradeStudents = async (classId = null, threshold = 70) => {
         ...s,
         averageGrade:
           Math.round(
-            (s.subjects.reduce((sum, subj) => sum + subj.score, 0) /
-              s.subjects.length) *
-              100
+            (s.subjects.reduce((sum, subj) => sum + subj.score, 0) / s.subjects.length) * 100
           ) / 100,
         lowSubjects: s.subjects.filter((subj) => subj.score < threshold).length,
       }))
@@ -158,9 +154,7 @@ const calculateHighRiskStudents = (atRiskAttendance, atRiskGrades) => {
         attendanceRate: attStudent.attendanceRate,
         averageGrade: gradeStudent.averageGrade,
         riskScore: Math.round(
-          ((75 - attStudent.attendanceRate) / 25 +
-            (70 - gradeStudent.averageGrade) / 70) *
-            50
+          ((75 - attStudent.attendanceRate) / 25 + (70 - gradeStudent.averageGrade) / 70) * 50
         ), // 0-100
       });
     }
@@ -174,13 +168,10 @@ const calculateHighRiskStudents = (atRiskAttendance, atRiskGrades) => {
 const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
   if (!data || data.length === 0) {
     return (
-      <div
-        className={`bg-white dark:bg-slate-800 rounded-lg border-2 ${color} p-4 h-full`}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg border-2 ${color} p-4 h-full`}>
         <div className="flex items-center gap-2 mb-3">
           <Icon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-          <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-            {title}
-          </h3>
+          <h3 className="font-semibold text-slate-800 dark:text-slate-200">{title}</h3>
         </div>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           Tidak ada data yang perlu perhatian
@@ -192,13 +183,10 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
   const displayData = data.slice(0, 5);
 
   return (
-    <div
-      className={`bg-white dark:bg-slate-800 rounded-lg border-2 ${color} p-4 h-full`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-lg border-2 ${color} p-4 h-full`}>
       <div className="flex items-center gap-2 mb-3">
         <Icon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-        <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex-1">
-          {title}
-        </h3>
+        <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex-1">{title}</h3>
         <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded-full text-xs font-bold min-w-[3rem] text-center">
           {data.length} siswa
         </span>
@@ -206,9 +194,7 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
 
       <div className="space-y-2">
         {displayData.map((student, idx) => (
-          <div
-            key={idx}
-            className="bg-slate-50 dark:bg-slate-700/50 p-2 rounded text-xs">
+          <div key={idx} className="bg-slate-50 dark:bg-slate-700/50 p-2 rounded text-xs">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
@@ -224,7 +210,8 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
                     student.attendanceRate >= 75
                       ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
                       : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-                  }`}>
+                  }`}
+                >
                   {student.attendanceRate}%
                 </span>
               )}
@@ -234,7 +221,8 @@ const MonitoringCard = ({ title, data, icon: Icon, color, type }) => {
                     student.averageGrade >= 70
                       ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300"
                       : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-                  }`}>
+                  }`}
+                >
                   {student.averageGrade}
                 </span>
               )}
@@ -263,18 +251,15 @@ const StatCard = ({ icon: Icon, label, value, subtitle, colorClass }) => (
   <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow h-full">
     <div className="flex items-center gap-3">
       <div
-        className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass} flex-shrink-0`}>
+        className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass} flex-shrink-0`}
+      >
         <Icon className="w-6 h-6" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-slate-600 dark:text-slate-400">{label}</p>
-        <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-          {value}
-        </p>
+        <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">{value}</p>
         {subtitle && (
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
-            {subtitle}
-          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">{subtitle}</p>
         )}
       </div>
     </div>
@@ -310,10 +295,8 @@ const AdminReports = ({ user, onShowToast }) => {
       title: "Data Guru",
       description: "Master data lengkap semua guru",
       stats: `${stats.totalTeachers || 0} guru`,
-      colorCard:
-        "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
-      colorIcon:
-        "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300",
+      colorCard: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
+      colorIcon: "bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300",
     },
     {
       id: "students",
@@ -321,10 +304,8 @@ const AdminReports = ({ user, onShowToast }) => {
       title: "Data Siswa",
       description: "Master data semua siswa aktif",
       stats: `${stats.totalStudents || 0} siswa`,
-      colorCard:
-        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
-      colorIcon:
-        "bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300",
+      colorCard: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
+      colorIcon: "bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300",
     },
     {
       id: "attendance-recap",
@@ -332,10 +313,8 @@ const AdminReports = ({ user, onShowToast }) => {
       title: "Rekapitulasi Kehadiran",
       description: "Statistik kehadiran per siswa",
       stats: `Rata-rata: ${stats.attendanceToday || 0}%`,
-      colorCard:
-        "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
-      colorIcon:
-        "bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-300",
+      colorCard: "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
+      colorIcon: "bg-orange-100 dark:bg-orange-800 text-orange-600 dark:text-orange-300",
     },
     {
       id: "grades",
@@ -343,10 +322,8 @@ const AdminReports = ({ user, onShowToast }) => {
       title: "Data Nilai",
       description: "Nilai akademik semua mata pelajaran",
       stats: `Rata-rata Akhir: ${stats.averageGrade || 0}`,
-      colorCard:
-        "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800",
-      colorIcon:
-        "bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300",
+      colorCard: "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800",
+      colorIcon: "bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300",
     },
   ];
 
@@ -383,53 +360,37 @@ const AdminReports = ({ user, onShowToast }) => {
           ? `${currentYear}/${currentYear + 1}`
           : `${currentYear - 1}/${currentYear}`;
 
-      const [
-        teachersResult,
-        studentsResult,
-        classesResult,
-        attendanceResult,
-        gradesResult,
-      ] = await Promise.all([
-        supabase
-          .from("users")
-          .select("id", { count: "exact" })
-          .in("role", TEACHER_ROLES)
-          .neq("username", "adenurmughni")
-          .eq("is_active", true),
+      const [teachersResult, studentsResult, classesResult, attendanceResult, gradesResult] =
+        await Promise.all([
+          supabase
+            .from("users")
+            .select("id", { count: "exact" })
+            .in("role", TEACHER_ROLES)
+            .neq("username", "adenurmughni")
+            .eq("is_active", true),
 
-        supabase
-          .from("students")
-          .select("id", { count: "exact" })
-          .eq("is_active", true),
+          supabase.from("students").select("id", { count: "exact" }).eq("is_active", true),
 
-        supabase.from("classes").select("id", { count: "exact" }),
+          supabase.from("classes").select("id", { count: "exact" }),
 
-        supabase.from("attendances").select("status").eq("date", today),
+          supabase.from("attendances").select("status").eq("date", today),
 
-        supabase
-          .from("grades")
-          .select("*, students(nis, full_name, class_id)")
-          .eq("academic_year", currentAcademicYear),
-      ]);
+          supabase
+            .from("grades")
+            .select("*, students(nis, full_name, class_id)")
+            .eq("academic_year", currentAcademicYear),
+        ]);
 
       const attendanceData = attendanceResult.data || [];
-      const presentCount = attendanceData.filter(
-        (a) => a.status?.toLowerCase() === "hadir"
-      ).length;
+      const presentCount = attendanceData.filter((a) => a.status?.toLowerCase() === "hadir").length;
       const attendanceRate =
-        attendanceData.length > 0
-          ? Math.round((presentCount / attendanceData.length) * 100)
-          : 0;
+        attendanceData.length > 0 ? Math.round((presentCount / attendanceData.length) * 100) : 0;
 
       const finalGrades = calculateFinalGrades(gradesResult.data || []);
-      const finalScores = finalGrades
-        .map((g) => g.final_score)
-        .filter((s) => !isNaN(s));
+      const finalScores = finalGrades.map((g) => g.final_score).filter((s) => !isNaN(s));
       const avgGrade =
         finalScores.length > 0
-          ? (
-              finalScores.reduce((a, b) => a + b, 0) / finalScores.length
-            ).toFixed(1)
+          ? (finalScores.reduce((a, b) => a + b, 0) / finalScores.length).toFixed(1)
           : 0;
 
       setStats({
@@ -467,10 +428,7 @@ const AdminReports = ({ user, onShowToast }) => {
 
   const fetchClassOptions = async () => {
     try {
-      const { data, error } = await supabase
-        .from("classes")
-        .select("id")
-        .order("id");
+      const { data, error } = await supabase.from("classes").select("id").order("id");
 
       if (error) throw error;
       setClassOptions(data?.map((c) => c.id) || []);
@@ -488,9 +446,7 @@ const AdminReports = ({ user, onShowToast }) => {
 
       if (error) throw error;
 
-      const uniqueYears = [
-        ...new Set(data?.map((s) => s.academic_year).filter(Boolean)),
-      ];
+      const uniqueYears = [...new Set(data?.map((s) => s.academic_year).filter(Boolean))];
       setAcademicYears(uniqueYears);
     } catch (err) {
       console.error("Error fetching academic years:", err);
@@ -693,7 +649,8 @@ const AdminReports = ({ user, onShowToast }) => {
             </div>
             <button
               onClick={() => setSuccess(null)}
-              className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 ml-2 flex-shrink-0">
+              className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 ml-2 flex-shrink-0"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -707,7 +664,8 @@ const AdminReports = ({ user, onShowToast }) => {
             </div>
             <button
               onClick={() => setError(null)}
-              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-2 flex-shrink-0">
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-2 flex-shrink-0"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -761,10 +719,9 @@ const AdminReports = ({ user, onShowToast }) => {
                 </label>
                 <select
                   value={filters.class_id || ""}
-                  onChange={(e) =>
-                    handleFilterChange("class_id", e.target.value)
-                  }
-                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm sm:text-base min-h-[44px]">
+                  onChange={(e) => handleFilterChange("class_id", e.target.value)}
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm sm:text-base min-h-[44px]"
+                >
                   <option value="">Semua Kelas</option>
                   {classOptions.map((cls) => (
                     <option key={cls} value={cls}>
@@ -777,12 +734,14 @@ const AdminReports = ({ user, onShowToast }) => {
                 <button
                   onClick={handleApplyFilter}
                   disabled={monitoringLoading}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 text-white px-3 py-2.5 sm:py-2 rounded-lg font-medium text-sm sm:text-base min-h-[44px]">
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 text-white px-3 py-2.5 sm:py-2 rounded-lg font-medium text-sm sm:text-base min-h-[44px]"
+                >
                   {monitoringLoading ? "Memuat..." : "Refresh Data"}
                 </button>
                 <button
                   onClick={handleResetFilters}
-                  className="flex-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-3 py-2.5 sm:py-2 rounded-lg font-medium text-sm sm:text-base min-h-[44px]">
+                  className="flex-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-3 py-2.5 sm:py-2 rounded-lg font-medium text-sm sm:text-base min-h-[44px]"
+                >
                   Reset
                 </button>
               </div>
@@ -792,9 +751,7 @@ const AdminReports = ({ user, onShowToast }) => {
           {/* Monitoring Cards */}
           {monitoringLoading ? (
             <div className="text-center py-6 sm:py-8">
-              <p className="text-slate-600 dark:text-slate-400">
-                Memproses data monitoring...
-              </p>
+              <p className="text-slate-600 dark:text-slate-400">Memproses data monitoring...</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
@@ -837,10 +794,12 @@ const AdminReports = ({ user, onShowToast }) => {
             return (
               <div
                 key={card.id}
-                className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border-2 ${card.colorCard} p-3 sm:p-4 hover:shadow-md transition-shadow h-full`}>
+                className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border-2 ${card.colorCard} p-3 sm:p-4 hover:shadow-md transition-shadow h-full`}
+              >
                 <div className="flex items-center justify-between mb-3">
                   <div
-                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl ${card.colorIcon} flex items-center justify-center flex-shrink-0`}>
+                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl ${card.colorIcon} flex items-center justify-center flex-shrink-0`}
+                  >
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
@@ -851,22 +810,22 @@ const AdminReports = ({ user, onShowToast }) => {
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-2 line-clamp-2">
                   {card.description}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-500 mb-3">
-                  {card.stats}
-                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-500 mb-3">{card.stats}</p>
 
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => previewReport(card.id)}
                     disabled={loading}
-                    className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:bg-slate-50 dark:disabled:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 min-h-[44px]">
+                    className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:bg-slate-50 dark:disabled:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 min-h-[44px]"
+                  >
                     <Eye className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>Preview</span>
                   </button>
                   <button
                     onClick={() => downloadReport(card.id, "xlsx")}
                     disabled={loading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 text-white px-2.5 py-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 min-h-[44px]">
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 text-white px-2.5 py-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 min-h-[44px]"
+                  >
                     <FileSpreadsheet className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>Export</span>
                   </button>
@@ -892,9 +851,7 @@ const AdminReports = ({ user, onShowToast }) => {
       {/* Report Modal */}
       <ReportModal
         isOpen={previewModal.isOpen}
-        onClose={() =>
-          setPreviewModal({ isOpen: false, data: null, type: null })
-        }
+        onClose={() => setPreviewModal({ isOpen: false, data: null, type: null })}
         reportData={previewModal.data || {}}
         reportType={previewModal.type}
         role="admin"

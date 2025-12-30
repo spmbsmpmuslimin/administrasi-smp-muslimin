@@ -26,8 +26,7 @@ const Logo = ({
   const getVariantStyle = () => {
     if (variant === "white") {
       return {
-        filter:
-          "brightness(0) invert(1) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))",
+        filter: "brightness(0) invert(1) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))",
       };
     }
     return {};
@@ -81,7 +80,8 @@ const Logo = ({
   if (loading) {
     return (
       <div
-        className={`${sizeClasses[size]} ${className} bg-gray-200 rounded-lg animate-pulse flex items-center justify-center`}>
+        className={`${sizeClasses[size]} ${className} bg-gray-200 rounded-lg animate-pulse flex items-center justify-center`}
+      >
         <div className="text-gray-400 text-xs">Loading...</div>
       </div>
     );
@@ -126,7 +126,8 @@ const Logo = ({
   if (showFallback) {
     return (
       <div
-        className={`${sizeClasses[size]} ${className} bg-gradient-to-br from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center text-white shadow-lg border-2 border-white/30`}>
+        className={`${sizeClasses[size]} ${className} bg-gradient-to-br from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center text-white shadow-lg border-2 border-white/30`}
+      >
         <span className="text-4xl">🏫</span>
       </div>
     );

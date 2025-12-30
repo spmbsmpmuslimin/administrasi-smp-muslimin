@@ -244,9 +244,7 @@ const checkRecentActivity = async () => {
   const issues = [];
 
   try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
@@ -268,8 +266,7 @@ const checkRecentActivity = async () => {
           category: "app_health",
           severity: "info",
           message: "No attendance data in system",
-          details:
-            "System has no attendance records yet - normal for new installations",
+          details: "System has no attendance records yet - normal for new installations",
           table: "attendances",
         });
       } else {
@@ -299,8 +296,7 @@ const checkRecentActivity = async () => {
         category: "app_health",
         severity: "info",
         message: "No recent grade entries",
-        details:
-          "No new grades recorded in the past 30 days - normal between assessment periods",
+        details: "No new grades recorded in the past 30 days - normal between assessment periods",
         table: "grades",
       });
     }
@@ -383,8 +379,7 @@ const checkSystemSettings = async () => {
         category: "app_health",
         severity: "warning",
         message: "No system settings configured",
-        details:
-          "School settings table is empty - system may not be properly configured",
+        details: "School settings table is empty - system may not be properly configured",
         table: "school_settings",
       });
       return issues;
@@ -394,9 +389,7 @@ const checkSystemSettings = async () => {
     const criticalSettings = ["school_name", "school_address"];
 
     const settingKeys = new Set(settings.map((s) => s.setting_key));
-    const missingSettings = criticalSettings.filter(
-      (key) => !settingKeys.has(key)
-    );
+    const missingSettings = criticalSettings.filter((key) => !settingKeys.has(key));
 
     if (missingSettings.length > 0) {
       issues.push({
@@ -420,9 +413,7 @@ const checkSystemSettings = async () => {
         category: "app_health",
         severity: "warning",
         message: "Critical system settings empty",
-        details: `Settings with no value: ${emptySettings
-          .map((s) => s.setting_key)
-          .join(", ")}`,
+        details: `Settings with no value: ${emptySettings.map((s) => s.setting_key).join(", ")}`,
         table: "school_settings",
       });
     }
@@ -480,8 +471,7 @@ const checkUserAccounts = async () => {
         category: "app_health",
         severity: "critical",
         message: "No active admin users",
-        details:
-          "System has no active admin accounts - system management may be impossible",
+        details: "System has no active admin accounts - system management may be impossible",
         table: "users",
       });
     } else if (adminCount > 5) {
@@ -581,9 +571,7 @@ const checkDataVolume = async () => {
           category: "app_health",
           severity: "info",
           message: `Growing data volume in ${table.name}`,
-          details: `Table ${
-            table.name
-          } has ${count.toLocaleString()} records - monitor growth`,
+          details: `Table ${table.name} has ${count.toLocaleString()} records - monitor growth`,
           table: table.name,
         });
       } else if (count >= table.info) {
@@ -690,12 +678,8 @@ const checkDataFreshness = async () => {
   const issues = [];
 
   try {
-    const sixtyDaysAgo = new Date(
-      Date.now() - 60 * 24 * 60 * 60 * 1000
-    ).toISOString();
-    const ninetyDaysAgo = new Date(
-      Date.now() - 90 * 24 * 60 * 60 * 1000
-    ).toISOString();
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
     // 1. Check when was the last student record updated
     const { data: latestStudent } = await supabase
@@ -707,8 +691,7 @@ const checkDataFreshness = async () => {
 
     if (latestStudent && latestStudent.updated_at) {
       const daysSinceUpdate = Math.floor(
-        (Date.now() - new Date(latestStudent.updated_at).getTime()) /
-          (1000 * 60 * 60 * 24)
+        (Date.now() - new Date(latestStudent.updated_at).getTime()) / (1000 * 60 * 60 * 24)
       );
 
       if (daysSinceUpdate > 180) {
@@ -757,8 +740,7 @@ const checkDataFreshness = async () => {
 
     if (latestAnnouncement && latestAnnouncement.created_at) {
       const daysSinceAnnouncement = Math.floor(
-        (Date.now() - new Date(latestAnnouncement.created_at).getTime()) /
-          (1000 * 60 * 60 * 24)
+        (Date.now() - new Date(latestAnnouncement.created_at).getTime()) / (1000 * 60 * 60 * 24)
       );
 
       if (daysSinceAnnouncement > 60) {

@@ -166,18 +166,16 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
       } else {
         // INSERT new
         console.log("➕ Inserting new attendance");
-        const { error: insertError } = await supabase
-          .from("teacher_attendance")
-          .insert({
-            teacher_id: targetTeacherId,
-            attendance_date: today,
-            status: submitData.status || "Hadir",
-            clock_in: submitData.clock_in,
-            check_in_method: submitData.check_in_method,
-            notes: submitData.notes || null,
-            gps_location: submitData.gps_location || null,
-            admin_info: submitData.admin_info || null,
-          });
+        const { error: insertError } = await supabase.from("teacher_attendance").insert({
+          teacher_id: targetTeacherId,
+          attendance_date: today,
+          status: submitData.status || "Hadir",
+          clock_in: submitData.clock_in,
+          check_in_method: submitData.check_in_method,
+          notes: submitData.notes || null,
+          gps_location: submitData.gps_location || null,
+          admin_info: submitData.admin_info || null,
+        });
 
         if (insertError) throw insertError;
         console.log("✅ Insert successful!");
@@ -224,7 +222,8 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
             <div className="bg-gradient-to-r from-amber-400 to-orange-500 dark:from-amber-500 dark:to-orange-600 rounded-t-2xl p-6 relative">
               <button
                 onClick={handleCancelOverwrite}
-                className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-all">
+                className="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-all"
+              >
                 <X size={20} />
               </button>
               <div className="flex items-center gap-3">
@@ -232,12 +231,8 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
                   <AlertTriangle className="text-white" size={32} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">
-                    ⚠️ Peringatan Duplikat
-                  </h3>
-                  <p className="text-white text-sm opacity-90">
-                    Presensi Sudah Ada
-                  </p>
+                  <h3 className="text-xl font-bold text-white">⚠️ Peringatan Duplikat</h3>
+                  <p className="text-white text-sm opacity-90">Presensi Sudah Ada</p>
                 </div>
               </div>
             </div>
@@ -253,9 +248,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
                 <div className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
                   <p>
                     <strong>📅 Hari/Tanggal:</strong>{" "}
-                    {new Date(
-                      todayAttendance.attendance_date
-                    ).toLocaleDateString("id-ID", {
+                    {new Date(todayAttendance.attendance_date).toLocaleDateString("id-ID", {
                       weekday: "long",
                       year: "numeric",
                       month: "long",
@@ -263,8 +256,8 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
                     })}
                   </p>
                   <p>
-                    <strong>🕐 Waktu Check-in:</strong>{" "}
-                    {todayAttendance.clock_in?.substring(0, 5)} WIB
+                    <strong>🕐 Waktu Check-in:</strong> {todayAttendance.clock_in?.substring(0, 5)}{" "}
+                    WIB
                   </p>
                   <p>
                     <strong>📊 Status:</strong>{" "}
@@ -277,7 +270,8 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
                           : todayAttendance.status === "Sakit"
                           ? "text-yellow-600 dark:text-yellow-400"
                           : "text-red-600 dark:text-red-400"
-                      }`}>
+                      }`}
+                    >
                       {todayAttendance.status}
                     </span>
                   </p>
@@ -292,34 +286,29 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
               {/* Warning */}
               <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 dark:border-amber-400 p-4 rounded-lg mb-6">
                 <p className="text-amber-800 dark:text-amber-200 text-sm">
-                  <strong>⚠️ Perhatian:</strong> Jika Anda melanjutkan, data
-                  presensi sebelumnya akan diganti dengan data baru. Pastikan
-                  keputusan Anda sudah tepat.
+                  <strong>⚠️ Perhatian:</strong> Jika Anda melanjutkan, data presensi sebelumnya
+                  akan diganti dengan data baru. Pastikan keputusan Anda sudah tepat.
                 </p>
               </div>
 
               <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
                 Apakah Anda ingin{" "}
-                <strong className="text-orange-600 dark:text-orange-400">
-                  menyimpan ulang
-                </strong>{" "}
-                atau{" "}
-                <strong className="text-gray-800 dark:text-gray-200">
-                  membatalkan
-                </strong>
-                ?
+                <strong className="text-orange-600 dark:text-orange-400">menyimpan ulang</strong>{" "}
+                atau <strong className="text-gray-800 dark:text-gray-200">membatalkan</strong>?
               </p>
 
               {/* Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={handleCancelOverwrite}
-                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition-all border border-gray-300 dark:border-gray-600">
+                  className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition-all border border-gray-300 dark:border-gray-600"
+                >
                   ❌ Batal
                 </button>
                 <button
                   onClick={handleConfirmOverwrite}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold rounded-lg transition-all shadow-lg">
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold rounded-lg transition-all shadow-lg"
+                >
                   ✅ Simpan Ulang
                 </button>
               </div>
@@ -343,7 +332,8 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
             }
-          `}>
+          `}
+        >
           <QrCode size={16} className="sm:w-5 sm:h-5" />
           Scan QR
         </button>
@@ -361,7 +351,8 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
             }
-          `}>
+          `}
+        >
           <Edit3 size={16} className="sm:w-5 sm:h-5" />
           Input Manual
         </button>
@@ -380,7 +371,8 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
                   ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
               }
-            `}>
+            `}
+          >
             <Sparkles size={16} className="sm:w-5 sm:h-5" />
             Generate QR
           </button>

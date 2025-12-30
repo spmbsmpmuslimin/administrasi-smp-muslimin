@@ -98,7 +98,8 @@ const AnnouncementPopup = ({ userId, userRole }) => {
           <button
             onClick={handleClose}
             className="hover:bg-blue-700 dark:hover:bg-blue-900 rounded-full p-1.5 sm:p-1 transition-colors touch-target min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Tutup pengumuman">
+            aria-label="Tutup pengumuman"
+          >
             <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
@@ -138,7 +139,8 @@ const AnnouncementPopup = ({ userId, userRole }) => {
           <button
             onClick={handleClose}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 hover:from-blue-700 hover:to-indigo-700 dark:hover:from-blue-800 dark:hover:to-indigo-800 text-white px-5 sm:px-6 py-2.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base touch-target min-h-[44px] w-full sm:w-auto"
-            aria-label="Tutup pengumuman">
+            aria-label="Tutup pengumuman"
+          >
             Tutup
           </button>
         </div>

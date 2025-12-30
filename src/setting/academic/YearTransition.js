@@ -5,10 +5,7 @@ import { Eye, CheckCircle, AlertTriangle, RefreshCw, Info } from "lucide-react";
 import Simulator from "./Simulator";
 
 // Import academic year service
-import {
-  getActiveAcademicInfo,
-  getActiveYearString,
-} from "../../services/academicYearService";
+import { getActiveAcademicInfo, getActiveYearString } from "../../services/academicYearService";
 
 const YearTransition = ({
   schoolStats,
@@ -34,14 +31,7 @@ const YearTransition = ({
     schoolName: schoolConfig?.schoolName || "SMP Muslimin Cililin",
     schoolLevel: schoolConfig?.schoolLevel || "SMP",
     grades: ["7", "8", "9"],
-    classesPerGrade: schoolConfig?.classesPerGrade || [
-      "A",
-      "B",
-      "C",
-      "D",
-      "E",
-      "F",
-    ],
+    classesPerGrade: schoolConfig?.classesPerGrade || ["A", "B", "C", "D", "E", "F"],
   };
 
   const graduatingGrade = config.grades[config.grades.length - 1];
@@ -57,10 +47,7 @@ const YearTransition = ({
           setLocalAcademicInfo(info);
         } catch (error) {
           console.error("Error loading academic info:", error);
-          showToast(
-            "Gagal memuat informasi tahun ajaran: " + error.message,
-            "error"
-          );
+          showToast("Gagal memuat informasi tahun ajaran: " + error.message, "error");
         }
       }
     };
@@ -222,10 +209,7 @@ const YearTransition = ({
       }
     }
 
-    const { data, error } = await supabase
-      .from("classes")
-      .insert(classesToCreate)
-      .select();
+    const { data, error } = await supabase.from("classes").insert(classesToCreate).select();
 
     if (error) throw error;
     return data;
@@ -249,9 +233,7 @@ const YearTransition = ({
         }) → ${preview.newYear} (Semester 1)\n\n` +
         `Proses yang akan dilakukan:\n` +
         `• Membuat 18 kelas baru\n` +
-        `• Menaikkan ${
-          Object.values(preview.promotions).flat().length
-        } siswa\n` +
+        `• Menaikkan ${Object.values(preview.promotions).flat().length} siswa\n` +
         `• Memasukkan ${preview.newStudents.length} siswa baru\n` +
         `• Meluluskan ${preview.graduating.length} siswa\n` +
         `• Mereset assignment guru\n` +
@@ -262,9 +244,7 @@ const YearTransition = ({
 
     if (!confirm1) return;
 
-    const confirm2 = prompt(
-      `Untuk konfirmasi, ketik "EXECUTE" (huruf besar semua):`
-    );
+    const confirm2 = prompt(`Untuk konfirmasi, ketik "EXECUTE" (huruf besar semua):`);
 
     if (confirm2 !== "EXECUTE") {
       showToast("Transisi tahun ajaran dibatalkan", "info");
@@ -365,10 +345,7 @@ const YearTransition = ({
       for (const [newClassId, students] of Object.entries(preview.promotions)) {
         if (students.length === 0) continue;
 
-        showToast(
-          `Menaikkan ${students.length} siswa ke kelas ${newClassId}...`,
-          "info"
-        );
+        showToast(`Menaikkan ${students.length} siswa ke kelas ${newClassId}...`, "info");
 
         const studentIds = students.map((s) => s.id);
 
@@ -403,17 +380,11 @@ const YearTransition = ({
           console.warn(
             `⚠️ Data siswa baru berubah: Preview ${totalPreview} → Sekarang ${totalLatest}`
           );
-          showToast(
-            `ℹ️ Data siswa baru diupdate: ${totalLatest} siswa akan dimasukkan`,
-            "info"
-          );
+          showToast(`ℹ️ Data siswa baru diupdate: ${totalLatest} siswa akan dimasukkan`, "info");
         }
 
         if (latestSiswaBaruData && latestSiswaBaruData.length > 0) {
-          showToast(
-            `Memasukkan ${latestSiswaBaruData.length} siswa baru...`,
-            "info"
-          );
+          showToast(`Memasukkan ${latestSiswaBaruData.length} siswa baru...`, "info");
 
           // Group siswa baru berdasarkan kelas
           const distributionByClass = {};
@@ -426,9 +397,7 @@ const YearTransition = ({
           });
 
           // Insert siswa baru ke database dengan academic_year_id yang benar
-          for (const [classId, siswaList] of Object.entries(
-            distributionByClass
-          )) {
+          for (const [classId, siswaList] of Object.entries(distributionByClass)) {
             if (siswaList.length === 0) continue;
 
             const newStudentsData = siswaList.map((siswa) => ({
@@ -441,9 +410,7 @@ const YearTransition = ({
               is_active: true,
             }));
 
-            const { error: insertError } = await supabase
-              .from("students")
-              .insert(newStudentsData);
+            const { error: insertError } = await supabase.from("students").insert(newStudentsData);
 
             if (insertError) throw insertError;
           }
@@ -486,9 +453,7 @@ const YearTransition = ({
         `✅ Tahun ajaran ${yearTransition.newYear} berhasil dimulai!\n\n` +
           `📅 Tahun Ajaran Baru: ${yearTransition.newYear} - Semester 1\n` +
           `📊 ${preview.newStudents.length} siswa baru masuk grade 7\n` +
-          `⬆️ ${
-            Object.values(preview.promotions).flat().length
-          } siswa naik kelas\n` +
+          `⬆️ ${Object.values(preview.promotions).flat().length} siswa naik kelas\n` +
           `🎓 ${preview.graduating.length} siswa lulus\n` +
           `👨‍🏫 Silakan assign guru ke kelas baru`,
         "success"
@@ -542,18 +507,17 @@ const YearTransition = ({
             </h3>
             <div
               className="cursor-help"
-              title="Proses ini akan membuat tahun ajaran baru, menaikkan semua siswa ke kelas berikutnya, meluluskan siswa kelas 9, dan memasukkan siswa baru dari SPMB.">
+              title="Proses ini akan membuat tahun ajaran baru, menaikkan semua siswa ke kelas berikutnya, meluluskan siswa kelas 9, dan memasukkan siswa baru dari SPMB."
+            >
               <Info className="text-orange-500" size={16} />
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru
-            Dari SPMB)
+            Kelola Perpindahan Ke Tahun Ajaran Berikutnya (Termasuk Siswa Baru Dari SPMB)
           </p>
           {localAcademicInfo && (
             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-              Tahun Ajaran Aktif: {localAcademicInfo.year} - Semester{" "}
-              {localAcademicInfo.semester}
+              Tahun Ajaran Aktif: {localAcademicInfo.year} - Semester {localAcademicInfo.semester}
             </p>
           )}
         </div>
@@ -563,7 +527,8 @@ const YearTransition = ({
             <button
               onClick={generateYearTransitionPreview}
               disabled={loading || !localAcademicInfo}
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition w-full sm:w-auto min-h-[44px] font-medium">
+              className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition w-full sm:w-auto min-h-[44px] font-medium"
+            >
               <Eye size={16} />
               <span>Preview Naik Kelas</span>
             </button>
@@ -575,20 +540,15 @@ const YearTransition = ({
       {yearTransition.preview && (
         <div className="bg-gray-50 dark:bg-gray-700/30 p-4 sm:p-5 md:p-6 rounded-xl border border-gray-200 dark:border-gray-600">
           <div className="flex items-center gap-3 mb-6">
-            <CheckCircle
-              className="text-green-600 dark:text-green-500"
-              size={24}
-            />
+            <CheckCircle className="text-green-600 dark:text-green-500" size={24} />
             <div>
               <h4 className="font-bold text-gray-800 dark:text-gray-100">
                 Preview Transisi Tahun Ajaran
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {yearTransition.preview.currentYear} (Semester{" "}
-                {yearTransition.preview.currentSemester ||
-                  localAcademicInfo?.semester ||
-                  "?"}
-                ) → {yearTransition.preview.newYear} (Semester 1)
+                {yearTransition.preview.currentSemester || localAcademicInfo?.semester || "?"}) →{" "}
+                {yearTransition.preview.newYear} (Semester 1)
               </p>
             </div>
           </div>
@@ -606,8 +566,8 @@ const YearTransition = ({
                     ⚠️ Konflik NIS Terdeteksi!
                   </p>
                   <p className="text-red-700 dark:text-red-400 text-sm mb-3">
-                    {yearTransition.preview.conflictedNIS.length} siswa baru
-                    memiliki NIS yang sudah terdaftar:
+                    {yearTransition.preview.conflictedNIS.length} siswa baru memiliki NIS yang sudah
+                    terdaftar:
                   </p>
                   <ul className="text-red-700 dark:text-red-400 text-sm space-y-1 list-disc list-inside max-h-32 overflow-y-auto">
                     {yearTransition.preview.conflictedNIS.map((item, idx) => (
@@ -617,8 +577,7 @@ const YearTransition = ({
                     ))}
                   </ul>
                   <p className="text-red-600 dark:text-red-500 text-xs mt-3 font-medium">
-                    Siswa ini TIDAK akan dimasukkan ke sistem. Perbaiki NIS di
-                    SPMB terlebih dahulu!
+                    Siswa ini TIDAK akan dimasukkan ke sistem. Perbaiki NIS di SPMB terlebih dahulu!
                   </p>
                 </div>
               </div>
@@ -651,15 +610,12 @@ const YearTransition = ({
                   <li>18 kelas baru akan dibuat (7A-7F, 8A-8F, 9A-9F)</li>
                   <li>Semua siswa akan naik kelas (7→8, 8→9)</li>
                   <li>
-                    {yearTransition.preview.newStudents?.length || 0} siswa baru
-                    masuk kelas 7 (sesuai pembagian di SPMB)
+                    {yearTransition.preview.newStudents?.length || 0} siswa baru masuk kelas 7
+                    (sesuai pembagian di SPMB)
                   </li>
                   <li>Siswa kelas {graduatingGrade} akan diluluskan</li>
                   <li>Assignment guru akan direset</li>
-                  <li>
-                    Tahun ajaran berubah ke {yearTransition.preview.newYear} -
-                    Semester 1
-                  </li>
+                  <li>Tahun ajaran berubah ke {yearTransition.preview.newYear} - Semester 1</li>
                   <li>
                     Semester yang aktif akan diubah ke Semester 1 Tahun{" "}
                     {yearTransition.preview.newYear}
@@ -670,7 +626,8 @@ const YearTransition = ({
                   <button
                     onClick={executeYearTransition}
                     disabled={loading || yearTransition.inProgress}
-                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-50 font-bold transition min-h-[44px]">
+                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-50 font-bold transition min-h-[44px]"
+                  >
                     {yearTransition.inProgress ? (
                       <>
                         <RefreshCw className="animate-spin" size={16} />
@@ -693,7 +650,8 @@ const YearTransition = ({
                       });
                     }}
                     disabled={yearTransition.inProgress}
-                    className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]">
+                    className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]"
+                  >
                     Batal
                   </button>
                 </div>

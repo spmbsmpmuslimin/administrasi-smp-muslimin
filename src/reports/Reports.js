@@ -21,7 +21,8 @@ const Reports = ({ user, onShowToast }) => {
           </p>
           <button
             onClick={() => window.history.back()}
-            className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full md:w-auto min-h-[44px] touch-manipulation">
+            className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full md:w-auto min-h-[44px] touch-manipulation"
+          >
             Kembali
           </button>
         </div>
@@ -47,8 +48,7 @@ const Reports = ({ user, onShowToast }) => {
   // Render untuk Teacher
   if (user.role === "teacher") {
     // Cek apakah teacher ini juga wali kelas
-    const isHomeroomTeacher =
-      user.homeroom_class_id && user.homeroom_class_id.trim() !== "";
+    const isHomeroomTeacher = user.homeroom_class_id && user.homeroom_class_id.trim() !== "";
 
     if (isHomeroomTeacher) {
       return <HomeroomTeacherReports user={user} onShowToast={onShowToast} />;
@@ -73,13 +73,13 @@ const Reports = ({ user, onShowToast }) => {
           </p>
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4 md:mb-6">
             <p className="text-sm md:text-base text-yellow-700 dark:text-yellow-300">
-              Fitur ini akan segera hadir. Anda dapat melihat nilai dan laporan
-              melalui menu rapor.
+              Fitur ini akan segera hadir. Anda dapat melihat nilai dan laporan melalui menu rapor.
             </p>
           </div>
           <button
             onClick={() => window.history.back()}
-            className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full md:w-auto min-h-[44px] touch-manipulation">
+            className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full md:w-auto min-h-[44px] touch-manipulation"
+          >
             Kembali
           </button>
         </div>
@@ -103,13 +103,13 @@ const Reports = ({ user, onShowToast }) => {
           </p>
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4 md:mb-6">
             <p className="text-sm md:text-base text-blue-700 dark:text-blue-300">
-              Anda akan dapat memantau perkembangan akademik dan perilaku anak
-              Anda di sini.
+              Anda akan dapat memantau perkembangan akademik dan perilaku anak Anda di sini.
             </p>
           </div>
           <button
             onClick={() => window.history.back()}
-            className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full md:w-auto min-h-[44px] touch-manipulation">
+            className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full md:w-auto min-h-[44px] touch-manipulation"
+          >
             Kembali
           </button>
         </div>
@@ -128,13 +128,11 @@ const Reports = ({ user, onShowToast }) => {
           Role Tidak Dikenali
         </h2>
         <p className="text-slate-600 dark:text-gray-300 mb-2 md:mb-3">
-          Role "<span className="font-semibold">{user.role}</span>" tidak valid
-          atau belum didukung.
+          Role "<span className="font-semibold">{user.role}</span>" tidak valid atau belum didukung.
         </p>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
           <p className="text-sm md:text-base text-red-700 dark:text-red-300">
-            Role yang didukung: admin, teacher, counselor/bk/bp/guru_bk,
-            student, parent
+            Role yang didukung: admin, teacher, counselor/bk/bp/guru_bk, student, parent
           </p>
         </div>
         <p className="text-sm md:text-base text-slate-500 dark:text-gray-400 mb-4 md:mb-6">
@@ -142,7 +140,8 @@ const Reports = ({ user, onShowToast }) => {
         </p>
         <button
           onClick={() => window.history.back()}
-          className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full md:w-auto min-h-[44px] touch-manipulation">
+          className="bg-blue-500 dark:bg-blue-600 text-white px-6 py-3 md:px-8 md:py-3 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors w-full md:w-auto min-h-[44px] touch-manipulation"
+        >
           Kembali
         </button>
       </div>

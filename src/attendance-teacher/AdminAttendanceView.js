@@ -1,13 +1,6 @@
 // src/attendance-teacher/AdminAttendanceView.js
 import React, { useState } from "react";
-import {
-  Users,
-  FileText,
-  RefreshCw,
-  Settings,
-  Calendar,
-  Clock,
-} from "lucide-react";
+import { Users, FileText, RefreshCw, Settings, Calendar, Clock } from "lucide-react";
 import DailySummary from "./reports/DailySummary";
 import MonthlyView from "./reports/MonthlyView";
 import ITMReport from "./reports/ITMReport";
@@ -68,7 +61,8 @@ const AdminAttendanceView = ({ currentUser }) => {
               activeView === "today"
                 ? "bg-blue-600 dark:bg-blue-700 text-white shadow-lg"
                 : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-            }`}>
+            }`}
+          >
             <Users size={18} />
             <span>Hari Ini</span>
           </button>
@@ -79,7 +73,8 @@ const AdminAttendanceView = ({ currentUser }) => {
               activeView === "manage"
                 ? "bg-blue-600 dark:bg-blue-700 text-white shadow-lg"
                 : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-            }`}>
+            }`}
+          >
             <Settings size={18} />
             <span>Kelola</span>
           </button>
@@ -90,7 +85,8 @@ const AdminAttendanceView = ({ currentUser }) => {
               activeView === "monthly"
                 ? "bg-blue-600 dark:bg-blue-700 text-white shadow-lg"
                 : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-            }`}>
+            }`}
+          >
             <FileText size={18} />
             <span>Laporan</span>
           </button>
@@ -107,18 +103,15 @@ const AdminAttendanceView = ({ currentUser }) => {
               <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Users
-                      className="text-blue-600 dark:text-blue-400"
-                      size={20}
-                    />
+                    <Users className="text-blue-600 dark:text-blue-400" size={20} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800 dark:text-white mb-1">
                       Statistik Presensi Hari Ini
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Data Presensi Seluruh Guru Pada Hari Ini. Untuk Melihat
-                      Detail per Guru, Silakan Pilih Tab "Laporan".
+                      Data Presensi Seluruh Guru Pada Hari Ini. Untuk Melihat Detail per Guru,
+                      Silakan Pilih Tab "Laporan".
                     </p>
                   </div>
                 </div>
@@ -141,7 +134,8 @@ const AdminAttendanceView = ({ currentUser }) => {
                   <div className="flex gap-2">
                     <button
                       onClick={handleRefresh}
-                      className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center gap-2 min-h-[40px]">
+                      className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center gap-2 min-h-[40px]"
+                    >
                       <RefreshCw size={16} />
                       <span className="text-sm sm:text-base">Refresh Data</span>
                     </button>
@@ -156,13 +150,15 @@ const AdminAttendanceView = ({ currentUser }) => {
                       reportType === "monthly"
                         ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 shadow-sm"
                         : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}>
+                    }`}
+                  >
                     <div
                       className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         reportType === "monthly"
                           ? "bg-blue-100 dark:bg-blue-800"
                           : "bg-gray-100 dark:bg-gray-700"
-                      }`}>
+                      }`}
+                    >
                       <Calendar
                         className={
                           reportType === "monthly"
@@ -177,8 +173,7 @@ const AdminAttendanceView = ({ currentUser }) => {
                         Laporan Bulanan
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Rekap Presensi Semua Guru Per Bulan Dengan Persentase
-                        Kehadiran
+                        Rekap Presensi Semua Guru Per Bulan Dengan Persentase Kehadiran
                       </p>
                     </div>
                     {reportType === "monthly" && (
@@ -192,13 +187,15 @@ const AdminAttendanceView = ({ currentUser }) => {
                       reportType === "itm"
                         ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 shadow-sm"
                         : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}>
+                    }`}
+                  >
                     <div
                       className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         reportType === "itm"
                           ? "bg-blue-100 dark:bg-blue-800"
                           : "bg-gray-100 dark:bg-gray-700"
-                      }`}>
+                      }`}
+                    >
                       <Clock
                         className={
                           reportType === "itm"
@@ -213,8 +210,7 @@ const AdminAttendanceView = ({ currentUser }) => {
                         Laporan Tatap Muka
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Rekap Jam Tatap Muka Per Guru, Detail Kehadiran Per
-                        Minggu
+                        Rekap Jam Tatap Muka Per Guru, Detail Kehadiran Per Minggu
                       </p>
                     </div>
                     {reportType === "itm" && (
@@ -249,28 +245,22 @@ const AdminAttendanceView = ({ currentUser }) => {
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Settings
-                      className="text-blue-600 dark:text-blue-400"
-                      size={20}
-                    />
+                    <Settings className="text-blue-600 dark:text-blue-400" size={20} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800 dark:text-white mb-1 text-sm sm:text-base">
                       Kelola Presensi Guru
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Generate QR Code Untuk Presensi Hari Ini, Atau Input
-                      Presensi Guru Secara Manual.
+                      Generate QR Code Untuk Presensi Hari Ini, Atau Input Presensi Guru Secara
+                      Manual.
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Attendance Tabs (Scan QR / Manual / Generate QR) */}
-              <AttendanceTabs
-                currentUser={currentUser}
-                onSuccess={handleAttendanceSuccess}
-              />
+              <AttendanceTabs currentUser={currentUser} onSuccess={handleAttendanceSuccess} />
             </div>
           )}
         </div>

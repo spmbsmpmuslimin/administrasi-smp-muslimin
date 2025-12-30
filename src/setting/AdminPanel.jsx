@@ -11,11 +11,7 @@ const AdminPanel = () => {
   }, []);
 
   const loadConfig = async () => {
-    const { data } = await supabase
-      .from("app_config")
-      .select("*")
-      .eq("id", 1)
-      .single();
+    const { data } = await supabase.from("app_config").select("*").eq("id", 1).single();
 
     if (data) {
       setIsMaintenanceMode(data.is_maintenance);
@@ -79,13 +75,15 @@ const AdminPanel = () => {
             <div
               className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${
                 isMaintenanceMode ? "bg-red-500 animate-pulse" : "bg-green-500"
-              }`}></div>
+              }`}
+            ></div>
             <p
               className={`text-lg sm:text-xl md:text-2xl font-bold ${
                 isMaintenanceMode
                   ? "text-red-600 dark:text-red-400"
                   : "text-green-600 dark:text-green-400"
-              }`}>
+              }`}
+            >
               {isMaintenanceMode ? "🔴 MAINTENANCE MODE" : "🟢 ONLINE"}
             </p>
           </div>
@@ -103,10 +101,9 @@ const AdminPanel = () => {
             isMaintenanceMode
               ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 dark:from-green-600 dark:to-green-700 dark:hover:from-green-700 dark:hover:to-green-800 text-white"
               : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 dark:from-red-600 dark:to-red-700 dark:hover:from-red-700 dark:hover:to-red-800 text-white"
-          }`}>
-          {isMaintenanceMode
-            ? "✅ AKTIFKAN APLIKASI"
-            : "🔧 MATIKAN APLIKASI (MAINTENANCE)"}
+          }`}
+        >
+          {isMaintenanceMode ? "✅ AKTIFKAN APLIKASI" : "🔧 MATIKAN APLIKASI (MAINTENANCE)"}
         </button>
 
         {/* EDIT MESSAGE */}
@@ -128,7 +125,8 @@ const AdminPanel = () => {
             onClick={updateMessage}
             className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 
                      text-white py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold text-base sm:text-lg
-                     transition-all duration-300 active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg">
+                     transition-all duration-300 active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg"
+          >
             💾 Update Pesan
           </button>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
@@ -139,18 +137,17 @@ const AdminPanel = () => {
         {/* INFO */}
         <div
           className="mt-4 sm:mt-6 md:mt-8 p-3 sm:p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 
-                      border-l-4 border-yellow-400 dark:border-yellow-500 rounded-r-lg sm:rounded-r-xl">
+                      border-l-4 border-yellow-400 dark:border-yellow-500 rounded-r-lg sm:rounded-r-xl"
+        >
           <div className="flex items-start gap-2">
-            <span className="text-yellow-600 dark:text-yellow-400 text-base sm:text-lg">
-              ⚠️
-            </span>
+            <span className="text-yellow-600 dark:text-yellow-400 text-base sm:text-lg">⚠️</span>
             <div>
               <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-semibold mb-1">
                 Perhatian:
               </p>
               <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300">
-                Perubahan akan langsung terlihat oleh semua user secara
-                real-time! Gunakan dengan hati-hati.
+                Perubahan akan langsung terlihat oleh semua user secara real-time! Gunakan dengan
+                hati-hati.
               </p>
             </div>
           </div>
@@ -166,14 +163,13 @@ const AdminPanel = () => {
                   isMaintenanceMode
                     ? "text-red-600 dark:text-red-400"
                     : "text-green-600 dark:text-green-400"
-                }`}>
+                }`}
+              >
                 {isMaintenanceMode ? "MAINTENANCE" : "ONLINE"}
               </p>
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-white dark:from-gray-700/30 dark:to-gray-800/30 rounded-lg p-2 sm:p-3 text-center border border-blue-200 dark:border-gray-600">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Karakter
-              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Karakter</p>
               <p className="text-sm sm:text-base font-bold text-blue-600 dark:text-blue-400">
                 {message.length} / 500
               </p>

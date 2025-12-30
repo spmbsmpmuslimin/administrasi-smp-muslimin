@@ -1,12 +1,6 @@
 // src/attendance-teacher/reports/MonthlyView.js
 import React, { useState, useEffect } from "react";
-import {
-  Calendar,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-} from "lucide-react";
+import { Calendar, Download, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import ExportExcel from "./ExportExcel";
 
@@ -196,9 +190,7 @@ const MonthlyView = ({ currentUser }) => {
   };
 
   const calculateTeacherStats = (teacherId) => {
-    const teacherAttendances = attendances.filter(
-      (att) => att.teacher_id === teacherId
-    );
+    const teacherAttendances = attendances.filter((att) => att.teacher_id === teacherId);
     return {
       hadir: teacherAttendances.filter((a) => a.status === "Hadir").length,
       izin: teacherAttendances.filter((a) => a.status === "Izin").length,
@@ -254,29 +246,26 @@ const MonthlyView = ({ currentUser }) => {
           <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 min-h-[44px]">
             <button
               onClick={handlePrevMonth}
-              className="p-2 hover:bg-white dark:hover:bg-gray-600 rounded transition-all">
-              <ChevronLeft
-                size={20}
-                className="text-gray-700 dark:text-gray-300"
-              />
+              className="p-2 hover:bg-white dark:hover:bg-gray-600 rounded transition-all"
+            >
+              <ChevronLeft size={20} className="text-gray-700 dark:text-gray-300" />
             </button>
             <span className="px-2 sm:px-4 font-semibold text-gray-800 dark:text-white min-w-[150px] sm:min-w-[180px] text-center text-sm sm:text-base">
               {months[selectedMonth]} {selectedYear}
             </span>
             <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-white dark:hover:bg-gray-600 rounded transition-all">
-              <ChevronRight
-                size={20}
-                className="text-gray-700 dark:text-gray-300"
-              />
+              className="p-2 hover:bg-white dark:hover:bg-gray-600 rounded transition-all"
+            >
+              <ChevronRight size={20} className="text-gray-700 dark:text-gray-300" />
             </button>
           </div>
 
           {/* Export Button */}
           <button
             onClick={() => setShowExport(true)}
-            className="px-4 py-2.5 sm:py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 min-h-[44px]">
+            className="px-4 py-2.5 sm:py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 min-h-[44px]"
+          >
             <Download size={18} />
             <span className="text-sm sm:text-base">Export Excel</span>
           </button>
@@ -304,9 +293,7 @@ const MonthlyView = ({ currentUser }) => {
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
-          <p className="text-gray-600 dark:text-gray-300 mt-4">
-            Memuat data...
-          </p>
+          <p className="text-gray-600 dark:text-gray-300 mt-4">Memuat data...</p>
         </div>
       ) : (
         /* Table */
@@ -320,7 +307,8 @@ const MonthlyView = ({ currentUser }) => {
                 {days.map((day) => (
                   <th
                     key={day}
-                    className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 min-w-[36px] sm:min-w-[40px] text-xs sm:text-sm">
+                    className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 min-w-[36px] sm:min-w-[40px] text-xs sm:text-sm"
+                  >
                     {day}
                   </th>
                 ))}
@@ -337,7 +325,8 @@ const MonthlyView = ({ currentUser }) => {
                 <tr>
                   <td
                     colSpan={daysInMonth + 3}
-                    className="border border-gray-300 dark:border-gray-600 px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                    className="border border-gray-300 dark:border-gray-600 px-4 py-8 text-center text-gray-500 dark:text-gray-400"
+                  >
                     Tidak ada data guru
                   </td>
                 </tr>
@@ -345,33 +334,21 @@ const MonthlyView = ({ currentUser }) => {
                 filteredTeachers.map((teacher) => {
                   const stats = calculateTeacherStats(teacher.teacher_id);
                   return (
-                    <tr
-                      key={teacher.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <tr key={teacher.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 font-medium text-gray-800 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800 z-10 min-w-[200px] text-sm sm:text-base">
                         {teacher.full_name}
                       </td>
                       {days.map((day) => {
-                        const attendance = getAttendanceForDay(
-                          teacher.teacher_id,
-                          day
-                        );
+                        const attendance = getAttendanceForDay(teacher.teacher_id, day);
 
                         // Format date string untuk check holiday
                         const year = selectedYear;
-                        const month = String(selectedMonth + 1).padStart(
-                          2,
-                          "0"
-                        );
+                        const month = String(selectedMonth + 1).padStart(2, "0");
                         const dayStr = String(day).padStart(2, "0");
                         const dateStr = `${year}-${month}-${dayStr}`;
 
                         // Check if weekend or holiday
-                        const weekend = isWeekend(
-                          selectedYear,
-                          selectedMonth,
-                          day
-                        );
+                        const weekend = isWeekend(selectedYear, selectedMonth, day);
                         const holiday = isNationalHoliday(dateStr);
 
                         const badge = attendance
@@ -393,40 +370,27 @@ const MonthlyView = ({ currentUser }) => {
                           <td
                             key={day}
                             className={`border border-gray-300 dark:border-gray-600 px-1 sm:px-2 py-2 sm:py-3 text-center ${
-                              weekend || holiday
-                                ? "bg-red-100 dark:bg-red-900/30"
-                                : ""
-                            }`}>
+                              weekend || holiday ? "bg-red-100 dark:bg-red-900/30" : ""
+                            }`}
+                          >
                             <span
                               className={`${badge.bg} text-white font-bold text-xs px-1 sm:px-2 py-1 rounded inline-block min-w-[24px]`}
-                              title={badge.title}>
+                              title={badge.title}
+                            >
                               {badge.text}
                             </span>
                           </td>
                         );
                       })}
                       <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-center font-semibold text-xs sm:text-sm">
-                        <span className="text-green-600 dark:text-green-400">
-                          {stats.hadir}
-                        </span>
-                        /
-                        <span className="text-blue-600 dark:text-blue-400">
-                          {stats.izin}
-                        </span>
-                        /
-                        <span className="text-yellow-600 dark:text-yellow-400">
-                          {stats.sakit}
-                        </span>
-                        /
-                        <span className="text-red-600 dark:text-red-400">
-                          {stats.alpa}
-                        </span>
+                        <span className="text-green-600 dark:text-green-400">{stats.hadir}</span>/
+                        <span className="text-blue-600 dark:text-blue-400">{stats.izin}</span>/
+                        <span className="text-yellow-600 dark:text-yellow-400">{stats.sakit}</span>/
+                        <span className="text-red-600 dark:text-red-400">{stats.alpa}</span>
                       </td>
                       <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-center font-semibold">
                         {(() => {
-                          const totalRecorded = calculateTotalRecordedDays(
-                            teacher.teacher_id
-                          );
+                          const totalRecorded = calculateTotalRecordedDays(teacher.teacher_id);
                           const percentage =
                             totalRecorded > 0
                               ? ((stats.hadir / totalRecorded) * 100).toFixed(1)
@@ -438,9 +402,7 @@ const MonthlyView = ({ currentUser }) => {
                               ? "text-yellow-600 dark:text-yellow-400"
                               : "text-red-600 dark:text-red-400";
                           return (
-                            <span className={`${color} text-sm sm:text-base`}>
-                              {percentage}%
-                            </span>
+                            <span className={`${color} text-sm sm:text-base`}>{percentage}%</span>
                           );
                         })()}
                       </td>
@@ -489,9 +451,7 @@ const MonthlyView = ({ currentUser }) => {
           <span className="bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 font-bold text-xs px-2 py-1 rounded">
             🏠
           </span>
-          <span className="text-gray-600 dark:text-gray-400">
-            Weekend / Libur Nasional
-          </span>
+          <span className="text-gray-600 dark:text-gray-400">Weekend / Libur Nasional</span>
         </div>
       </div>
 

@@ -103,21 +103,9 @@ const TeacherReportModal = ({
         console.log("📄 First row data:", dataToUse[0]);
       }
       console.log("🎯 reportType:", reportType);
-      console.log(
-        "📱 Device:",
-        isMobile ? "Mobile" : isTablet ? "Tablet" : "Desktop"
-      );
+      console.log("📱 Device:", isMobile ? "Mobile" : isTablet ? "Tablet" : "Desktop");
     }
-  }, [
-    isOpen,
-    reportData,
-    dataToUse,
-    headers,
-    effectiveHeaders,
-    reportType,
-    isMobile,
-    isTablet,
-  ]);
+  }, [isOpen, reportData, dataToUse, headers, effectiveHeaders, reportType, isMobile, isTablet]);
 
   // ✅ Get report icon based on type
   const getReportIcon = () => {
@@ -163,32 +151,28 @@ const TeacherReportModal = ({
       bg: "bg-blue-50 dark:bg-blue-900/20",
       border: "border-blue-200 dark:border-blue-700",
       text: "text-blue-600 dark:text-blue-400",
-      button:
-        "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600",
+      button: "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600",
       light: "bg-blue-100 dark:bg-blue-900/30",
     },
     indigo: {
       bg: "bg-indigo-50 dark:bg-indigo-900/20",
       border: "border-indigo-200 dark:border-indigo-700",
       text: "text-indigo-600 dark:text-indigo-400",
-      button:
-        "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600",
+      button: "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600",
       light: "bg-indigo-100 dark:bg-indigo-900/30",
     },
     teal: {
       bg: "bg-teal-50 dark:bg-teal-900/20",
       border: "border-teal-200 dark:border-teal-700",
       text: "text-teal-600 dark:text-teal-400",
-      button:
-        "bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600",
+      button: "bg-teal-600 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600",
       light: "bg-teal-100 dark:bg-teal-900/30",
     },
     purple: {
       bg: "bg-purple-50 dark:bg-purple-900/20",
       border: "border-purple-200 dark:border-purple-700",
       text: "text-purple-600 dark:text-purple-400",
-      button:
-        "bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600",
+      button: "bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600",
       light: "bg-purple-100 dark:bg-purple-900/30",
     },
   };
@@ -222,18 +206,14 @@ const TeacherReportModal = ({
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((row) =>
-        Object.values(row).some((value) =>
-          String(value).toLowerCase().includes(query)
-        )
+        Object.values(row).some((value) => String(value).toLowerCase().includes(query))
       );
     }
 
     // Subject filter
     if (filterSubject) {
       filtered = filtered.filter(
-        (row) =>
-          row["Mata Pelajaran"] === filterSubject ||
-          row.subject === filterSubject
+        (row) => row["Mata Pelajaran"] === filterSubject || row.subject === filterSubject
       );
     }
 
@@ -261,29 +241,18 @@ const TeacherReportModal = ({
   // ✅ Render cell with conditional formatting
   const renderCell = (header, value) => {
     // Attendance status colors with dark mode
-    if (
-      header === "Status" ||
-      header === "Status Kehadiran" ||
-      header === "status"
-    ) {
+    if (header === "Status" || header === "Status Kehadiran" || header === "status") {
       const statusColors = {
-        Hadir:
-          "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
-        Sakit:
-          "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
+        Hadir: "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300",
+        Sakit: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300",
         Izin: "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300",
         Alpa: "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
-        "Tidak Hadir":
-          "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
+        "Tidak Hadir": "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300",
       };
       const colorClass =
-        statusColors[value] ||
-        "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
+        statusColors[value] || "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
       return (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
-          {value}
-        </span>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>{value}</span>
       );
     }
 
@@ -295,10 +264,8 @@ const TeacherReportModal = ({
     ) {
       const pct = parseFloat(value);
       let colorClass = "text-gray-600 dark:text-gray-400";
-      if (pct >= 90)
-        colorClass = "text-green-600 dark:text-green-400 font-bold";
-      else if (pct >= 75)
-        colorClass = "text-yellow-600 dark:text-yellow-400 font-bold";
+      if (pct >= 90) colorClass = "text-green-600 dark:text-green-400 font-bold";
+      else if (pct >= 75) colorClass = "text-yellow-600 dark:text-yellow-400 font-bold";
       else colorClass = "text-red-600 dark:text-red-400 font-bold";
 
       return <span className={colorClass}>{value}</span>;
@@ -315,10 +282,8 @@ const TeacherReportModal = ({
       typeof value === "number"
     ) {
       let colorClass = "text-gray-600 dark:text-gray-400";
-      if (value >= 85)
-        colorClass = "text-green-600 dark:text-green-400 font-bold";
-      else if (value >= 70)
-        colorClass = "text-yellow-600 dark:text-yellow-400 font-bold";
+      if (value >= 85) colorClass = "text-green-600 dark:text-green-400 font-bold";
+      else if (value >= 70) colorClass = "text-yellow-600 dark:text-yellow-400 font-bold";
       else colorClass = "text-red-600 dark:text-red-400 font-bold";
 
       return <span className={colorClass}>{value}</span>;
@@ -346,18 +311,13 @@ const TeacherReportModal = ({
 
   // ✅ Calculate filtered summary dengan warna pastel
   const filteredSummary = useMemo(() => {
-    if (
-      (reportType === "teacher-grades" || reportType === "grades") &&
-      filteredData.length > 0
-    ) {
+    if ((reportType === "teacher-grades" || reportType === "grades") && filteredData.length > 0) {
       const grades = filteredData
         .map((row) => row["Nilai Akhir"] || row.final_score || row.score)
         .filter((g) => typeof g === "number");
 
       if (grades.length > 0) {
-        const avg = (
-          grades.reduce((sum, g) => sum + g, 0) / grades.length
-        ).toFixed(2);
+        const avg = (grades.reduce((sum, g) => sum + g, 0) / grades.length).toFixed(2);
         const max = Math.max(...grades);
         const min = Math.min(...grades);
 
@@ -404,7 +364,8 @@ const TeacherReportModal = ({
         max-h-[95vh] sm:max-h-[90vh]
         flex flex-col
         border border-slate-200 dark:border-slate-700
-      ">
+      "
+      >
         {/* ===== HEADER ===== */}
         <div className={`${colors.bg} border-b-2 ${colors.border} p-4 sm:p-6`}>
           <div className="flex items-start justify-between">
@@ -415,10 +376,9 @@ const TeacherReportModal = ({
                   ${colors.bg} border-2 ${colors.border} 
                   rounded-lg sm:rounded-xl 
                   flex items-center justify-center flex-shrink-0
-                `}>
-                <ReportIcon
-                  className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 ${colors.text}`}
-                />
+                `}
+              >
+                <ReportIcon className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 ${colors.text}`} />
               </div>
               <div className="min-w-0">
                 <h2
@@ -426,7 +386,8 @@ const TeacherReportModal = ({
                   text-lg sm:text-xl md:text-2xl 
                   font-bold text-slate-800 dark:text-white
                   leading-tight line-clamp-2
-                ">
+                "
+                >
                   {reportTitle}
                 </h2>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
@@ -439,7 +400,8 @@ const TeacherReportModal = ({
                     px-2 py-1 rounded-full 
                     bg-slate-200 dark:bg-slate-700 
                     text-xs text-slate-600 dark:text-slate-400
-                  ">
+                  "
+                  >
                     {isMobile ? (
                       <>
                         <Smartphone className="w-3 h-3" /> Mobile
@@ -467,7 +429,8 @@ const TeacherReportModal = ({
                 hover:bg-slate-100 dark:hover:bg-slate-800
                 min-h-[44px] min-w-[44px] flex items-center justify-center
               "
-              aria-label="Tutup modal">
+              aria-label="Tutup modal"
+            >
               <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
@@ -480,7 +443,8 @@ const TeacherReportModal = ({
             px-4 sm:px-6 py-3 
             bg-slate-50 dark:bg-slate-800/50 
             border-b border-slate-200 dark:border-slate-700
-          ">
+          "
+          >
             <div className="grid grid-cols-2 sm:flex sm:gap-2">
               {filteredSummary.map((stat, idx) => {
                 // Soft pastel colors with dark mode
@@ -497,7 +461,8 @@ const TeacherReportModal = ({
                 return (
                   <div
                     key={idx}
-                    className={`${colorClass} rounded-lg border p-2 sm:p-2.5 text-center min-w-0`}>
+                    className={`${colorClass} rounded-lg border p-2 sm:p-2.5 text-center min-w-0`}
+                  >
                     <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 truncate">
                       {stat.label}
                     </p>
@@ -517,7 +482,8 @@ const TeacherReportModal = ({
           px-4 sm:px-6 py-3 sm:py-4 
           bg-white dark:bg-slate-900 
           border-b border-slate-200 dark:border-slate-700
-        ">
+        "
+        >
           <div className="flex flex-col gap-3">
             {/* Search Input */}
             <div className="relative w-full">
@@ -559,13 +525,13 @@ const TeacherReportModal = ({
                       focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
                       focus:border-indigo-500 dark:focus:border-indigo-400
                       text-sm
-                    ">
+                    "
+                  >
                     <option value="">Semua Mapel</option>
                     {uniqueSubjects.map((subject) => (
                       <option key={subject} value={subject}>
                         {isMobile
-                          ? subject.slice(0, 15) +
-                            (subject.length > 15 ? "..." : "")
+                          ? subject.slice(0, 15) + (subject.length > 15 ? "..." : "")
                           : subject}
                       </option>
                     ))}
@@ -588,7 +554,8 @@ const TeacherReportModal = ({
                       focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
                       focus:border-indigo-500 dark:focus:border-indigo-400
                       text-sm
-                    ">
+                    "
+                  >
                     <option value="">Semua Kelas</option>
                     {uniqueClasses.map((kelas) => (
                       <option key={kelas} value={kelas}>
@@ -616,7 +583,8 @@ const TeacherReportModal = ({
                     rounded-lg
                     hover:bg-slate-50 dark:hover:bg-slate-800
                     transition-colors
-                  ">
+                  "
+                >
                   Reset Filter
                 </button>
               )}
@@ -660,7 +628,8 @@ const TeacherReportModal = ({
                       border-r border-slate-200 dark:border-slate-700
                       whitespace-nowrap
                       sticky left-0 bg-inherit z-10
-                    ">
+                    "
+                    >
                       No
                     </th>
                     {effectiveHeaders.map((header, idx) => (
@@ -674,7 +643,8 @@ const TeacherReportModal = ({
                           border-r border-slate-200 dark:border-slate-700
                           whitespace-nowrap
                           min-w-[120px]
-                        ">
+                        "
+                      >
                         <div className="truncate">
                           {isMobile && header.length > 15
                             ? header.slice(0, 12) + "..."
@@ -693,7 +663,8 @@ const TeacherReportModal = ({
                       className="
                         hover:bg-slate-50 dark:hover:bg-slate-800/50 
                         transition-colors
-                      ">
+                      "
+                    >
                       <td
                         className="
                         px-3 py-2 sm:px-4 sm:py-3 
@@ -702,7 +673,8 @@ const TeacherReportModal = ({
                         font-medium
                         sticky left-0 bg-inherit z-10
                         whitespace-nowrap
-                      ">
+                      "
+                      >
                         {startIndex + rowIdx + 1}
                       </td>
                       {effectiveHeaders.map((header, colIdx) => {
@@ -712,9 +684,7 @@ const TeacherReportModal = ({
 
                         // If header is generated (Title Case), find matching snake_case key
                         if (value === undefined || value === null) {
-                          const snakeCase = header
-                            .toLowerCase()
-                            .replace(/\s+/g, "_");
+                          const snakeCase = header.toLowerCase().replace(/\s+/g, "_");
                           value = row[snakeCase];
                         }
 
@@ -723,8 +693,7 @@ const TeacherReportModal = ({
                           const matchingKey = originalKeys.find(
                             (k) =>
                               k.toLowerCase() === header.toLowerCase() ||
-                              k.toLowerCase().replace(/_/g, " ") ===
-                                header.toLowerCase()
+                              k.toLowerCase().replace(/_/g, " ") === header.toLowerCase()
                           );
                           if (matchingKey) {
                             value = row[matchingKey];
@@ -735,11 +704,7 @@ const TeacherReportModal = ({
                           // Try common alternatives - EXPANDED MAPPING
                           const keyMap = {
                             NIS: ["nis", "student_nis"],
-                            "Nama Lengkap": [
-                              "full_name",
-                              "name",
-                              "student_name",
-                            ],
+                            "Nama Lengkap": ["full_name", "name", "student_name"],
                             "Nama Siswa": ["full_name", "name", "student_name"],
                             "Jenis Kelamin": ["gender"],
                             Kelas: ["class_id", "class"],
@@ -757,11 +722,7 @@ const TeacherReportModal = ({
                             "Rata-rata": ["average", "avg_grade"],
                             "Total Nilai": ["total_grades"],
                             "Total Presensi": ["total_attendance"],
-                            "Tingkat Kehadiran": [
-                              "attendance_rate",
-                              "persentase",
-                              "percentage",
-                            ],
+                            "Tingkat Kehadiran": ["attendance_rate", "persentase", "percentage"],
                             "Jumlah Siswa": ["total_students"],
                             Tertinggi: ["highest"],
                             Terendah: ["lowest"],
@@ -772,11 +733,7 @@ const TeacherReportModal = ({
                             Alpa: ["alpa", "absent", "tidak_hadir"],
                             Absen: ["tidak_hadir", "absent"],
                             Total: ["total", "total_days"],
-                            Persentase: [
-                              "persentase",
-                              "percentage",
-                              "attendance_rate",
-                            ],
+                            Persentase: ["persentase", "percentage", "attendance_rate"],
                           };
 
                           const alternatives = keyMap[header] || [];
@@ -801,10 +758,9 @@ const TeacherReportModal = ({
                               text-sm text-slate-700 dark:text-slate-300 
                               border-r border-slate-200 dark:border-slate-700
                               max-w-[200px] lg:max-w-xs
-                            ">
-                            <div className="truncate">
-                              {renderCell(header, value)}
-                            </div>
+                            "
+                          >
+                            <div className="truncate">{renderCell(header, value)}</div>
                           </td>
                         );
                       })}
@@ -819,7 +775,8 @@ const TeacherReportModal = ({
               flex flex-col items-center justify-center 
               py-8 sm:py-12 
               text-center
-            ">
+            "
+            >
               <AlertCircle
                 className="
                 w-10 h-10 sm:w-12 sm:h-12 
@@ -831,14 +788,16 @@ const TeacherReportModal = ({
                 className="
                 text-slate-500 dark:text-slate-400 
                 text-base sm:text-lg font-medium
-              ">
+              "
+              >
                 Tidak ada data yang sesuai
               </p>
               <p
                 className="
                 text-slate-400 dark:text-slate-500 
                 text-sm mt-1 sm:mt-2
-              ">
+              "
+              >
                 Coba ubah filter atau kata kunci pencarian
               </p>
             </div>
@@ -851,7 +810,8 @@ const TeacherReportModal = ({
           px-4 sm:px-6 py-3 
           bg-slate-50 dark:bg-slate-800/50 
           border-t-2 border-slate-200 dark:border-slate-700
-        ">
+        "
+        >
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Pagination Info + Controls */}
             {totalPages > 1 ? (
@@ -861,9 +821,9 @@ const TeacherReportModal = ({
                   text-xs sm:text-sm 
                   text-slate-600 dark:text-slate-400 
                   whitespace-nowrap
-                ">
-                  Menampilkan {startIndex + 1} -{" "}
-                  {Math.min(endIndex, filteredData.length)} dari{" "}
+                "
+                >
+                  Menampilkan {startIndex + 1} - {Math.min(endIndex, filteredData.length)} dari{" "}
                   {filteredData.length} data
                 </div>
 
@@ -880,30 +840,29 @@ const TeacherReportModal = ({
                       transition-colors
                       min-h-[44px] min-w-[44px] flex items-center justify-center
                     "
-                    aria-label="Halaman sebelumnya">
+                    aria-label="Halaman sebelumnya"
+                  >
                     <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4" />
                   </button>
 
                   <div className="flex items-center gap-1">
-                    {Array.from(
-                      { length: Math.min(isMobile ? 3 : 5, totalPages) },
-                      (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5 || isMobile) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
+                    {Array.from({ length: Math.min(isMobile ? 3 : 5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5 || isMobile) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
 
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`
                             px-3 py-2 rounded-lg 
                             text-xs sm:text-sm font-medium 
                             transition-colors
@@ -913,18 +872,16 @@ const TeacherReportModal = ({
                                 ? `${colors.button} text-white`
                                 : "border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                             }
-                          `}>
-                            {pageNum}
-                          </button>
-                        );
-                      }
-                    )}
+                          `}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className="
                       p-2 sm:px-3 sm:py-2 
@@ -935,7 +892,8 @@ const TeacherReportModal = ({
                       transition-colors
                       min-h-[44px] min-w-[44px] flex items-center justify-center
                     "
-                    aria-label="Halaman berikutnya">
+                    aria-label="Halaman berikutnya"
+                  >
                     <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4" />
                   </button>
                 </div>
@@ -960,7 +918,8 @@ const TeacherReportModal = ({
                   transition-colors
                   text-sm
                   min-h-[44px]
-                ">
+                "
+              >
                 Tutup
               </button>
               <button
@@ -976,7 +935,8 @@ const TeacherReportModal = ({
                   flex items-center justify-center gap-2
                   text-sm
                   min-h-[44px]
-                `}>
+                `}
+              >
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-1.5"></div>

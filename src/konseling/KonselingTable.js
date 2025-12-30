@@ -1,34 +1,18 @@
 import React from "react";
-import {
-  Edit3,
-  Trash2,
-  Eye,
-  FileText,
-  AlertTriangle,
-  Calendar,
-} from "lucide-react";
+import { Edit3, Trash2, Eye, FileText, AlertTriangle, Calendar } from "lucide-react";
 import { Clock, CheckCircle, XCircle } from "lucide-react";
 
-const KonselingTable = ({
-  data,
-  loading,
-  onView,
-  onEdit,
-  onDelete,
-  onExportPDF,
-}) => {
+const KonselingTable = ({ data, loading, onView, onEdit, onDelete, onExportPDF }) => {
   // Status Badge
   const getStatusBadge = (status) => {
     const statusConfig = {
       "Dalam Proses": {
-        color:
-          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+        color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
         icon: Clock,
         label: "Dalam Proses",
       },
       Selesai: {
-        color:
-          "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+        color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
         icon: CheckCircle,
         label: "Selesai",
       },
@@ -44,7 +28,8 @@ const KonselingTable = ({
 
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
+      >
         <IconComponent size={12} />
         {config.label}
       </span>
@@ -84,7 +69,8 @@ const KonselingTable = ({
 
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${config.color}`}>
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${config.color}`}
+      >
         <span>{config.emoji}</span>
         {config.label}
       </span>
@@ -95,8 +81,7 @@ const KonselingTable = ({
   const getCategoryBadge = (category) => {
     const categoryConfig = {
       Akademik: {
-        color:
-          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+        color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
         emoji: "📚",
       },
       Perilaku: {
@@ -104,28 +89,23 @@ const KonselingTable = ({
         emoji: "⚠️",
       },
       "Sosial-Emosional": {
-        color:
-          "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+        color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
         emoji: "😔",
       },
       Pertemanan: {
-        color:
-          "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
+        color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
         emoji: "👥",
       },
       Keluarga: {
-        color:
-          "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+        color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
         emoji: "🏠",
       },
       Percintaan: {
-        color:
-          "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300",
+        color: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300",
         emoji: "💔",
       },
       "Teknologi/Gadget": {
-        color:
-          "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300",
+        color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300",
         emoji: "📱",
       },
       Kenakalan: {
@@ -133,8 +113,7 @@ const KonselingTable = ({
         emoji: "🚬",
       },
       "Kesehatan Mental": {
-        color:
-          "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
+        color: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
         emoji: "🧠",
       },
       Lainnya: {
@@ -147,7 +126,8 @@ const KonselingTable = ({
 
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${config.color}`}>
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${config.color}`}
+      >
         <span>{config.emoji}</span>
         {category}
       </span>
@@ -186,7 +166,8 @@ const KonselingTable = ({
         {data.map((item) => (
           <div
             key={item.id}
-            className="border-b border-gray-200 dark:border-gray-700 p-4 hover:bg-blue-50 dark:hover:bg-gray-700/50 transition-colors">
+            className="border-b border-gray-200 dark:border-gray-700 p-4 hover:bg-blue-50 dark:hover:bg-gray-700/50 transition-colors"
+          >
             {/* Header Row */}
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">
@@ -199,7 +180,8 @@ const KonselingTable = ({
                     {item.perlu_followup && (
                       <span
                         className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 rounded-full text-xs font-medium border border-purple-300 dark:border-purple-700"
-                        title="Perlu Follow-up">
+                        title="Perlu Follow-up"
+                      >
                         <Calendar size={10} />
                         Follow-up
                       </span>
@@ -217,14 +199,16 @@ const KonselingTable = ({
                   onClick={() => onView(item)}
                   className="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                   title="Lihat Detail"
-                  aria-label="Lihat Detail">
+                  aria-label="Lihat Detail"
+                >
                   <Eye size={16} />
                 </button>
                 <button
                   onClick={() => onExportPDF(item)}
                   className="p-2 text-purple-600 hover:bg-purple-100 dark:text-purple-400 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
                   title="Export PDF"
-                  aria-label="Export PDF">
+                  aria-label="Export PDF"
+                >
                   <FileText size={16} />
                 </button>
               </div>
@@ -233,9 +217,7 @@ const KonselingTable = ({
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mt-3">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Tanggal
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tanggal</p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {new Date(item.tanggal).toLocaleDateString("id-ID", {
                     day: "numeric",
@@ -246,54 +228,33 @@ const KonselingTable = ({
                 {item.perlu_followup && item.tanggal_followup && (
                   <p className="text-xs text-purple-600 dark:text-purple-400 mt-1 flex items-center gap-1">
                     <Calendar size={10} />
-                    {new Date(item.tanggal_followup).toLocaleDateString(
-                      "id-ID",
-                      {
-                        day: "numeric",
-                        month: "short",
-                      }
-                    )}
+                    {new Date(item.tanggal_followup).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                    })}
                   </p>
                 )}
               </div>
 
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Urgensi
-                </p>
-                <div className="text-sm">
-                  {getUrgencyBadge(item.tingkat_urgensi)}
-                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Urgensi</p>
+                <div className="text-sm">{getUrgencyBadge(item.tingkat_urgensi)}</div>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Kategori
-                </p>
-                <div className="text-sm">
-                  {getCategoryBadge(item.kategori_masalah)}
-                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Kategori</p>
+                <div className="text-sm">{getCategoryBadge(item.kategori_masalah)}</div>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Layanan
-                </p>
-                <p className="text-sm text-gray-900 dark:text-white">
-                  {item.jenis_layanan}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {item.bidang_bimbingan}
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Layanan</p>
+                <p className="text-sm text-gray-900 dark:text-white">{item.jenis_layanan}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{item.bidang_bimbingan}</p>
               </div>
 
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  Guru BK
-                </p>
-                <p className="text-sm text-gray-900 dark:text-white">
-                  {item.guru_bk_name}
-                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Guru BK</p>
+                <p className="text-sm text-gray-900 dark:text-white">{item.guru_bk_name}</p>
               </div>
             </div>
 
@@ -302,14 +263,16 @@ const KonselingTable = ({
               <button
                 onClick={() => onEdit(item)}
                 className="flex-1 py-2 px-3 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
-                aria-label="Edit Konseling">
+                aria-label="Edit Konseling"
+              >
                 <Edit3 size={14} />
                 Edit
               </button>
               <button
                 onClick={() => onDelete(item.id, item.full_name)}
                 className="flex-1 py-2 px-3 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                aria-label="Hapus Konseling">
+                aria-label="Hapus Konseling"
+              >
                 <Trash2 size={14} />
                 Hapus
               </button>
@@ -353,7 +316,8 @@ const KonselingTable = ({
             {data.map((item) => (
               <tr
                 key={item.id}
-                className="hover:bg-blue-50 dark:hover:bg-gray-700/50 transition-colors">
+                className="hover:bg-blue-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
                 <td className="px-4 py-4">
                   <div>
                     <div className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -362,7 +326,8 @@ const KonselingTable = ({
                       {item.perlu_followup && (
                         <span
                           className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 rounded-full text-xs font-medium border border-purple-300 dark:border-purple-700"
-                          title="Perlu Follow-up">
+                          title="Perlu Follow-up"
+                        >
                           <Calendar size={10} />
                           Follow-up
                         </span>
@@ -384,26 +349,19 @@ const KonselingTable = ({
                   {item.perlu_followup && item.tanggal_followup && (
                     <div className="text-xs text-purple-600 dark:text-purple-400 mt-1 flex items-center gap-1">
                       <Calendar size={10} />
-                      {new Date(item.tanggal_followup).toLocaleDateString(
-                        "id-ID",
-                        {
-                          day: "numeric",
-                          month: "short",
-                        }
-                      )}
+                      {new Date(item.tanggal_followup).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                     </div>
                   )}
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
                   {getUrgencyBadge(item.tingkat_urgensi)}
                 </td>
+                <td className="px-4 py-4">{getCategoryBadge(item.kategori_masalah)}</td>
                 <td className="px-4 py-4">
-                  {getCategoryBadge(item.kategori_masalah)}
-                </td>
-                <td className="px-4 py-4">
-                  <div className="text-sm text-gray-900 dark:text-white">
-                    {item.jenis_layanan}
-                  </div>
+                  <div className="text-sm text-gray-900 dark:text-white">{item.jenis_layanan}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {item.bidang_bimbingan}
                   </div>
@@ -420,28 +378,32 @@ const KonselingTable = ({
                       onClick={() => onView(item)}
                       className="p-2 text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                       title="Lihat Detail"
-                      aria-label="Lihat Detail">
+                      aria-label="Lihat Detail"
+                    >
                       <Eye size={16} />
                     </button>
                     <button
                       onClick={() => onEdit(item)}
                       className="p-2 text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                       title="Edit"
-                      aria-label="Edit">
+                      aria-label="Edit"
+                    >
                       <Edit3 size={16} />
                     </button>
                     <button
                       onClick={() => onExportPDF(item)}
                       className="p-2 text-purple-600 hover:bg-purple-100 dark:text-purple-400 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
                       title="Export PDF"
-                      aria-label="Export PDF">
+                      aria-label="Export PDF"
+                    >
                       <FileText size={16} />
                     </button>
                     <button
                       onClick={() => onDelete(item.id, item.full_name)}
                       className="p-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       title="Hapus"
-                      aria-label="Hapus">
+                      aria-label="Hapus"
+                    >
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -456,11 +418,8 @@ const KonselingTable = ({
       <div className="bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 py-3 border-t border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <span className="text-sm sm:text-base">
-            Total:{" "}
-            <strong className="text-gray-900 dark:text-white">
-              {data.length}
-            </strong>{" "}
-            data konseling
+            Total: <strong className="text-gray-900 dark:text-white">{data.length}</strong> data
+            konseling
           </span>
           <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
             <span className="flex items-center gap-1">
