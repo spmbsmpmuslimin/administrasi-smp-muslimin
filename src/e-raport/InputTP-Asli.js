@@ -9,9 +9,10 @@ import {
 } from "../services/academicYearService";
 
 function InputTP({ user, onShowToast, darkMode }) {
+  const [tingkat, setTingkat] = useState("");
   const [selectedMapel, setSelectedMapel] = useState("");
-  const [selectedSemesterId, setSelectedSemesterId] = useState("");
-  const [availableSemesters, setAvailableSemesters] = useState([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState(""); // ✅ Sekarang pakai ID semester
+  const [availableSemesters, setAvailableSemesters] = useState([]); // ✅ List semester dalam tahun aktif
   const [tpList, setTpList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
@@ -20,12 +21,6 @@ function InputTP({ user, onShowToast, darkMode }) {
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-
-  // ✅ State untuk modal
-  const [showModal, setShowModal] = useState(false);
-  const [modalTingkat, setModalTingkat] = useState("");
-  const [modalAction, setModalAction] = useState(""); // "add", "download", "import"
-  const [importFile, setImportFile] = useState(null);
 
   const getFaseByTingkat = (tingkatNumber) => {
     if (tingkatNumber >= 1 && tingkatNumber <= 2) return "A";
@@ -40,22 +35,25 @@ function InputTP({ user, onShowToast, darkMode }) {
   }, []);
 
   useEffect(() => {
-    if (selectedMapel && selectedSemesterId) {
+    if (selectedMapel && tingkat && selectedSemesterId) {
       loadTP();
     }
-  }, [selectedMapel, selectedSemesterId]);
+  }, [selectedMapel, tingkat, selectedSemesterId]);
 
   const loadAcademicInfoAndAssignments = async () => {
     try {
       setLoading(true);
       setErrorMessage("");
 
+      // ✅ Load academic info
       const academicInfo = await getActiveAcademicInfo();
       setAcademicInfo(academicInfo);
 
+      // ✅ Load semua semester dalam tahun aktif
       const semesters = await getAllSemestersInActiveYear();
       setAvailableSemesters(semesters);
 
+      // ✅ Set semester aktif sebagai default pilihan
       if (academicInfo && academicInfo.activeSemesterId) {
         setSelectedSemesterId(academicInfo.activeSemesterId);
       }
@@ -75,6 +73,7 @@ function InputTP({ user, onShowToast, darkMode }) {
       console.log("👨‍🏫 Teacher Code:", teacherCode);
       console.log("🎯 Active Semester ID:", academicInfo.activeSemesterId);
 
+      // ✅ Query teacher_assignments dengan semester ID aktif
       const { data: assignments, error: assignmentsError } = await supabase
         .from("teacher_assignments")
         .select("subject")
@@ -122,16 +121,17 @@ function InputTP({ user, onShowToast, darkMode }) {
       }
 
       console.log("=== LOAD TP DEBUG ===");
+      console.log("Tingkat selected:", tingkat);
       console.log("Mapel selected:", selectedMapel);
       console.log("Semester ID selected:", selectedSemesterId);
 
+      // ✅ Query dengan semester ID yang dipilih
       const { data, error } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
         .eq("mata_pelajaran", selectedMapel)
-        .eq("academic_year_id", selectedSemesterId)
-        .in("tingkat", [7, 8, 9])
-        .order("tingkat")
+        .eq("tingkat", parseInt(tingkat))
+        .eq("academic_year_id", selectedSemesterId) // ✅ Filter by semester ID
         .order("urutan");
 
       if (error) {
@@ -147,6 +147,7 @@ function InputTP({ user, onShowToast, darkMode }) {
 
       setTpList(data || []);
 
+      // ✅ Cari info semester untuk display
       const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
       const semesterText = selectedSemester
         ? selectedSemester.semester === 1
@@ -158,7 +159,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         if (data?.length > 0) {
           onShowToast(`${data.length} TP ditemukan untuk semester ${semesterText}`, "info");
         } else {
-          onShowToast("Belum ada data TP untuk mapel/semester ini", "warning");
+          onShowToast("Belum ada data TP untuk mapel/tingkat/semester ini", "warning");
         }
       }
     } catch (error) {
@@ -169,10 +170,14 @@ function InputTP({ user, onShowToast, darkMode }) {
     }
   };
 
-  const handleImportExcel = async (file) => {
-    try {
-      const faseDefault = getFaseByTingkat(parseInt(modalTingkat));
+  const handleImportExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedSemesterId) return;
 
+    try {
+      const faseDefault = getFaseByTingkat(parseInt(tingkat));
+
+      // ✅ Cari semester value dari selected semester
       const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
       if (!selectedSemester) {
         if (onShowToast) onShowToast("Data semester tidak ditemukan!", "error");
@@ -191,13 +196,13 @@ function InputTP({ user, onShowToast, darkMode }) {
           const noCell = row.getCell(1).value;
           if (noCell && !isNaN(noCell)) {
             imported.push({
-              tingkat: parseInt(modalTingkat),
+              tingkat: parseInt(tingkat),
               fase: row.getCell(3).value || faseDefault,
               deskripsi_tp: row.getCell(4).value,
               urutan: Number(noCell),
               mata_pelajaran: selectedMapel,
               academic_year_id: selectedSemesterId,
-              semester: selectedSemester.semester,
+              semester: selectedSemester.semester, // ✅ Tambahkan semester value
               is_active: true,
             });
           }
@@ -219,12 +224,19 @@ function InputTP({ user, onShowToast, darkMode }) {
     } catch (error) {
       console.error("❌ Import error:", error);
       if (onShowToast) onShowToast(`Import gagal: ${error.message}`, "error");
+    } finally {
+      e.target.value = "";
     }
   };
 
   const handleDownloadTemplate = async () => {
     try {
-      const faseDefault = getFaseByTingkat(parseInt(modalTingkat));
+      if (!tingkat || !selectedSemesterId) {
+        if (onShowToast) onShowToast("Pilih tingkat dan semester terlebih dahulu!", "warning");
+        return;
+      }
+
+      const faseDefault = getFaseByTingkat(parseInt(tingkat));
       const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
       const semesterText = selectedSemester
         ? selectedSemester.semester === 1
@@ -263,7 +275,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         horizontal: "left",
       };
 
-      worksheet.getCell("A3").value = `Tingkat: ${modalTingkat}`;
+      worksheet.getCell("A3").value = `Tingkat: ${tingkat}`;
       worksheet.getCell("A3").font = { bold: true, size: 12 };
       worksheet.getCell("A3").alignment = {
         vertical: "middle",
@@ -304,9 +316,9 @@ function InputTP({ user, onShowToast, darkMode }) {
       worksheet.getColumn(4).width = 70;
 
       const exampleRows = [
-        [1, parseInt(modalTingkat), faseDefault, "Siswa mampu menjelaskan konsep dasar..."],
-        [2, parseInt(modalTingkat), faseDefault, "Siswa mampu menganalisis..."],
-        [3, parseInt(modalTingkat), faseDefault, "Siswa mampu membuat..."],
+        [1, parseInt(tingkat), faseDefault, "Siswa mampu menjelaskan konsep dasar..."],
+        [2, parseInt(tingkat), faseDefault, "Siswa mampu menganalisis..."],
+        [3, parseInt(tingkat), faseDefault, "Siswa mampu membuat..."],
       ];
 
       exampleRows.forEach((rowData, idx) => {
@@ -333,7 +345,7 @@ function InputTP({ user, onShowToast, darkMode }) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Template_TP_${selectedMapel}_Tingkat${modalTingkat}_Semester${semesterText}.xlsx`;
+        a.download = `Template_TP_${selectedMapel}_Tingkat${tingkat}_Semester${semesterText}.xlsx`;
         a.click();
         window.URL.revokeObjectURL(url);
 
@@ -347,8 +359,14 @@ function InputTP({ user, onShowToast, darkMode }) {
 
   const handleAddRow = async () => {
     try {
-      const faseDefault = getFaseByTingkat(parseInt(modalTingkat));
+      if (!tingkat || !selectedSemesterId) {
+        if (onShowToast) onShowToast("Pilih tingkat dan semester terlebih dahulu!", "warning");
+        return;
+      }
 
+      const faseDefault = getFaseByTingkat(parseInt(tingkat));
+
+      // ✅ Cari semester value (1 atau 2) dari selected semester
       const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
       if (!selectedSemester) {
         if (onShowToast) onShowToast("Data semester tidak ditemukan!", "error");
@@ -356,13 +374,13 @@ function InputTP({ user, onShowToast, darkMode }) {
       }
 
       const newRow = {
-        tingkat: parseInt(modalTingkat),
+        tingkat: parseInt(tingkat),
         fase: faseDefault,
         deskripsi_tp: "",
-        urutan: tpList.filter((tp) => tp.tingkat === parseInt(modalTingkat)).length + 1,
+        urutan: tpList.length + 1,
         mata_pelajaran: selectedMapel,
         academic_year_id: selectedSemesterId,
-        semester: selectedSemester.semester,
+        semester: selectedSemester.semester, // ✅ Tambahkan semester value
         is_active: true,
       };
 
@@ -404,6 +422,7 @@ function InputTP({ user, onShowToast, darkMode }) {
           tingkat: editData.tingkat,
           fase: editData.fase,
           deskripsi_tp: editData.deskripsi_tp,
+          // ✅ JANGAN update academic_year_id, biarkan tetap
         })
         .eq("id", editingId);
 
@@ -458,52 +477,6 @@ function InputTP({ user, onShowToast, darkMode }) {
     } catch (error) {
       console.error("Error:", error);
       if (onShowToast) onShowToast(`Gagal: ${error.message}`, "error");
-    }
-  };
-
-  const openModal = (action) => {
-    if (!selectedMapel || !selectedSemesterId) {
-      if (onShowToast) onShowToast("Pilih mata pelajaran dan semester terlebih dahulu!", "warning");
-      return;
-    }
-    setModalAction(action);
-    setModalTingkat("");
-    setImportFile(null);
-    setShowModal(true);
-  };
-
-  const executeModalAction = async () => {
-    if (!modalTingkat) {
-      if (onShowToast) onShowToast("Pilih tingkat terlebih dahulu!", "warning");
-      return;
-    }
-
-    try {
-      if (modalAction === "add") {
-        await handleAddRow();
-      } else if (modalAction === "download") {
-        await handleDownloadTemplate();
-      } else if (modalAction === "import") {
-        if (!importFile) {
-          if (onShowToast) onShowToast("Pilih file Excel terlebih dahulu!", "warning");
-          return;
-        }
-        await handleImportExcel(importFile);
-      }
-
-      // Reset modal setelah action selesai
-      setShowModal(false);
-      setModalTingkat("");
-      setImportFile(null);
-    } catch (error) {
-      console.error("Error executing modal action:", error);
-    }
-  };
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImportFile(file);
     }
   };
 
@@ -601,7 +574,6 @@ function InputTP({ user, onShowToast, darkMode }) {
       </div>
     );
   }
-
   return (
     <div
       className={`min-h-screen py-4 sm:py-8 px-4 transition-colors duration-300 ${
@@ -684,7 +656,33 @@ function InputTP({ user, onShowToast, darkMode }) {
           )}
 
           {/* Filter Section - Responsive Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6 md:mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 md:mb-8">
+            <div>
+              <label
+                className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
+                  darkMode ? "text-gray-300" : "text-gray-700"
+                }`}
+              >
+                Pilih Tingkat
+              </label>
+              <select
+                value={tingkat}
+                onChange={(e) => setTingkat(e.target.value)}
+                className={`w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[44px] ${
+                  darkMode
+                    ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
+                    : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                }`}
+              >
+                <option value="" disabled>
+                  -- Pilih Tingkat --
+                </option>
+                <option value="7">Tingkat 7</option>
+                <option value="8">Tingkat 8</option>
+                <option value="9">Tingkat 9</option>
+              </select>
+            </div>
+
             <div>
               <label
                 className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
@@ -713,7 +711,7 @@ function InputTP({ user, onShowToast, darkMode }) {
               </select>
             </div>
 
-            <div>
+            <div className="md:col-span-2 lg:col-span-1">
               <label
                 className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-700"
@@ -749,7 +747,7 @@ function InputTP({ user, onShowToast, darkMode }) {
             </div>
           </div>
 
-          {!selectedMapel || !selectedSemesterId ? (
+          {!selectedMapel || !tingkat || !selectedSemesterId ? (
             <div
               className={`text-center py-8 sm:py-12 rounded-xl border-2 border-dashed ${
                 darkMode
@@ -773,7 +771,7 @@ function InputTP({ user, onShowToast, darkMode }) {
                 </svg>
               </div>
               <p className="text-base sm:text-lg font-medium mb-2">
-                Pilih Mata Pelajaran dan Semester
+                Pilih Mata Pelajaran, Tingkat, dan Semester
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Untuk memulai input Tujuan Pembelajaran
@@ -793,7 +791,7 @@ function InputTP({ user, onShowToast, darkMode }) {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 md:mb-8 justify-end">
                 <button
-                  onClick={() => openModal("add")}
+                  onClick={handleAddRow}
                   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 min-h-[44px] w-full sm:w-auto ${
                     darkMode
                       ? "bg-blue-600 hover:bg-blue-500 text-white"
@@ -804,7 +802,7 @@ function InputTP({ user, onShowToast, darkMode }) {
                   <span className="text-sm sm:text-base">Tambah TP</span>
                 </button>
                 <button
-                  onClick={() => openModal("download")}
+                  onClick={handleDownloadTemplate}
                   className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 min-h-[44px] w-full sm:w-auto ${
                     darkMode
                       ? "bg-blue-700 hover:bg-blue-600 text-white"
@@ -814,9 +812,8 @@ function InputTP({ user, onShowToast, darkMode }) {
                   <Upload size={18} />
                   <span className="text-sm sm:text-base">Download Template</span>
                 </button>
-                <button
-                  onClick={() => openModal("import")}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 min-h-[44px] w-full sm:w-auto ${
+                <label
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 min-h-[44px] w-full sm:w-auto ${
                     darkMode
                       ? "bg-blue-800 hover:bg-blue-700 text-white"
                       : "bg-blue-800 hover:bg-blue-900 text-white"
@@ -824,7 +821,13 @@ function InputTP({ user, onShowToast, darkMode }) {
                 >
                   <Upload size={18} />
                   <span className="text-sm sm:text-base">Import TP</span>
-                </button>
+                  <input
+                    type="file"
+                    accept=".xlsx"
+                    onChange={handleImportExcel}
+                    className="hidden"
+                  />
+                </label>
               </div>
 
               {/* Table - Mobile Responsive */}
@@ -1175,119 +1178,6 @@ function InputTP({ user, onShowToast, darkMode }) {
                 </div>
               </div>
             </>
-          )}
-
-          {/* Modal Input Tingkat */}
-          {showModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div
-                className={`rounded-2xl p-6 max-w-md w-full shadow-2xl ${
-                  darkMode ? "bg-gray-800" : "bg-white"
-                }`}
-              >
-                <h3
-                  className={`text-xl font-bold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}
-                >
-                  {modalAction === "add" && "Tambah TP Baru"}
-                  {modalAction === "download" && "Download Template"}
-                  {modalAction === "import" && "Import TP dari Excel"}
-                </h3>
-                <p className={`text-sm mb-4 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-                  Mata Pelajaran: <strong>{selectedMapel}</strong>
-                </p>
-                <p className={`text-sm mb-6 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-                  Semester:{" "}
-                  <strong>
-                    {(() => {
-                      const sem = availableSemesters.find((s) => s.id === selectedSemesterId);
-                      return sem?.semester === 1 ? "Ganjil" : "Genap";
-                    })()}
-                  </strong>
-                </p>
-
-                <div className="mb-6">
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Pilih Tingkat
-                  </label>
-                  <select
-                    value={modalTingkat}
-                    onChange={(e) => setModalTingkat(e.target.value)}
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all min-h-[44px] ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400"
-                        : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500"
-                    }`}
-                  >
-                    <option value="">-- Pilih Tingkat --</option>
-                    <option value="7">Tingkat 7</option>
-                    <option value="8">Tingkat 8</option>
-                    <option value="9">Tingkat 9</option>
-                  </select>
-                </div>
-
-                {/* File upload untuk import */}
-                {modalAction === "import" && (
-                  <div className="mb-6">
-                    <label
-                      className={`block text-sm font-medium mb-2 ${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      Pilih File Excel
-                    </label>
-                    <input
-                      type="file"
-                      accept=".xlsx"
-                      onChange={handleFileSelect}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all ${
-                        darkMode
-                          ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400"
-                          : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500"
-                      }`}
-                    />
-                    <p className={`text-xs mt-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                      * Gunakan template yang sudah didownload
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setShowModal(false);
-                      setModalTingkat("");
-                      setImportFile(null);
-                    }}
-                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all min-h-[44px] ${
-                      darkMode
-                        ? "bg-gray-600 hover:bg-gray-500 text-white"
-                        : "bg-gray-500 hover:bg-gray-600 text-white"
-                    }`}
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={executeModalAction}
-                    disabled={!modalTingkat || (modalAction === "import" && !importFile)}
-                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all min-h-[44px] ${
-                      modalTingkat && (modalAction !== "import" || importFile)
-                        ? darkMode
-                          ? "bg-blue-600 hover:bg-blue-500 text-white"
-                          : "bg-blue-600 hover:bg-blue-700 text-white"
-                        : "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    }`}
-                  >
-                    {modalAction === "add" && "Tambah TP"}
-                    {modalAction === "download" && "Download"}
-                    {modalAction === "import" && "Import"}
-                  </button>
-                </div>
-              </div>
-            </div>
           )}
         </div>
       </div>

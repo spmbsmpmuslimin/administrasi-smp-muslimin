@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { getActiveAcademicInfo } from "../services/academicYearService";
+import {
+  getActiveAcademicInfo,
+  getAllSemestersInActiveYear,
+  getActiveSemesterId,
+} from "../services/academicYearService";
 import { RefreshCw } from "lucide-react";
 
 // ✅ STANDARDISASI NAMA MAPEL - sama kayak InputNilai.js
@@ -27,7 +31,8 @@ const standardizeMapelName = (mapel) => {
 
 function CekNilai({ darkMode, user }) {
   const [loading, setLoading] = useState(false);
-  const [semester, setSemester] = useState("");
+  const [selectedSemesterId, setSelectedSemesterId] = useState(""); // ✅ Ubah dari semester (string) ke semesterId
+  const [availableSemesters, setAvailableSemesters] = useState([]); // ✅ Tambah state untuk list semester
   const [classList, setClassList] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [mapelList, setMapelList] = useState([]);
@@ -61,17 +66,35 @@ function CekNilai({ darkMode, user }) {
 
   // Load nilai saat semua filter dipilih
   useEffect(() => {
-    if (selectedClass && selectedMapel && semester && academicInfo) {
+    if (selectedClass && selectedMapel && selectedSemesterId && academicInfo) {
       loadNilaiData();
     } else {
       setNilaiData([]);
     }
-  }, [selectedClass, selectedMapel, semester, academicInfo]);
+  }, [selectedClass, selectedMapel, selectedSemesterId, academicInfo]);
 
   const loadAcademicInfo = async () => {
-    const info = await getActiveAcademicInfo();
-    setAcademicInfo(info);
-    console.log("📅 Academic Info:", info);
+    try {
+      setLoading(true);
+      const info = await getActiveAcademicInfo();
+      setAcademicInfo(info);
+
+      // ✅ Load semua semester dalam tahun aktif
+      const semesters = await getAllSemestersInActiveYear();
+      setAvailableSemesters(semesters);
+
+      // ✅ Set semester aktif sebagai default pilihan
+      if (info && info.activeSemesterId) {
+        setSelectedSemesterId(info.activeSemesterId);
+      }
+
+      console.log("📅 Academic Info:", info);
+      console.log("📚 Available Semesters:", semesters);
+    } catch (error) {
+      console.error("❌ Error loading academic info:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadTeacherAssignments = async () => {
@@ -86,12 +109,14 @@ function CekNilai({ darkMode, user }) {
       }
 
       console.log("👨‍🏫 Loading assignments for teacher:", teacherId);
+      console.log("🎯 Active Semester ID:", academicInfo?.activeSemesterId);
 
+      // ✅ GANTI: Query dengan academic_year_id (semester ID)
       const { data, error } = await supabase
         .from("teacher_assignments")
         .select("*")
         .eq("teacher_id", teacherId)
-        .eq("academic_year_id", academicInfo?.yearId);
+        .eq("academic_year_id", academicInfo?.activeSemesterId); // ✅ Pakai activeSemesterId
 
       if (error) throw error;
 
@@ -99,9 +124,7 @@ function CekNilai({ darkMode, user }) {
       setTeacherAssignments(data || []);
 
       // Extract unique class_id untuk dropdown kelas
-      const uniqueClasses = [
-        ...new Set(data?.map((item) => item.class_id)),
-      ].filter(Boolean);
+      const uniqueClasses = [...new Set(data?.map((item) => item.class_id))].filter(Boolean);
 
       // Load class details
       if (uniqueClasses.length > 0) {
@@ -129,15 +152,13 @@ function CekNilai({ darkMode, user }) {
 
   const loadMapelList = () => {
     try {
-      // Filter assignments by selected class (tanpa semester dulu)
+      // Filter assignments by selected class
       const filteredAssignments = teacherAssignments.filter(
         (assignment) => assignment.class_id === selectedClass
       );
 
       // Get unique subjects
-      const uniqueMapel = [
-        ...new Set(filteredAssignments.map((item) => item.subject)),
-      ];
+      const uniqueMapel = [...new Set(filteredAssignments.map((item) => item.subject))];
       setMapelList(uniqueMapel.sort());
       console.log("📚 Mapel List for class", selectedClass, ":", uniqueMapel);
     } catch (error) {
@@ -155,8 +176,8 @@ function CekNilai({ darkMode, user }) {
       console.log("  - Original mapel:", selectedMapel);
       console.log("  - Standardized mapel:", standardizedMapel);
       console.log("  - class_id:", selectedClass);
-      console.log("  - semester:", semester);
-      console.log("  - academic_year_id:", academicInfo?.yearId);
+      console.log("  - semester ID:", selectedSemesterId);
+      console.log("  - academic_year_id:", selectedSemesterId); // ✅ Pakai semester ID langsung
 
       const { data, error } = await supabase
         .from("nilai_eraport")
@@ -167,9 +188,8 @@ function CekNilai({ darkMode, user }) {
         `
         )
         .eq("class_id", selectedClass)
-        .eq("semester", semester)
         .eq("mata_pelajaran", standardizedMapel)
-        .eq("academic_year_id", academicInfo?.yearId)
+        .eq("academic_year_id", selectedSemesterId) // ✅ Filter by semester ID
         .eq("students.is_active", true)
         .order("students(full_name)");
 
@@ -186,7 +206,7 @@ function CekNilai({ darkMode, user }) {
   };
 
   const handleRefresh = () => {
-    if (selectedClass && semester && selectedMapel && academicInfo) {
+    if (selectedClass && selectedSemesterId && selectedMapel && academicInfo) {
       loadNilaiData();
     }
   };
@@ -196,18 +216,29 @@ function CekNilai({ darkMode, user }) {
     return kelas ? `Kelas ${kelas.id}` : "";
   };
 
+  // ✅ Helper function untuk mendapatkan semester number dari semester ID
+  const getSemesterNumber = (semesterId) => {
+    const semester = availableSemesters.find((s) => s.id === semesterId);
+    return semester ? semester.semester : null;
+  };
+
+  // ✅ Helper function untuk mendapatkan semester text
+  const getSemesterText = (semesterId) => {
+    const semester = availableSemesters.find((s) => s.id === semesterId);
+    return semester ? (semester.semester === 1 ? "Ganjil" : "Genap") + ` - ${semester.year}` : "";
+  };
+
   if (!academicInfo || loading) {
     return (
       <div
         className={`min-h-screen flex items-center justify-center p-4 ${
           darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-50 to-sky-100"
-        }`}>
+        }`}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-3"></div>
           <p className={darkMode ? "text-gray-300" : "text-gray-600"}>
-            {!academicInfo
-              ? "Memuat informasi akademik..."
-              : "Memuat data mengajar..."}
+            {!academicInfo ? "Memuat informasi akademik..." : "Memuat data mengajar..."}
           </p>
         </div>
       </div>
@@ -219,28 +250,26 @@ function CekNilai({ darkMode, user }) {
     return (
       <div
         className={`min-h-screen py-4 sm:py-8 px-3 sm:px-4 lg:px-6 ${
-          darkMode
-            ? "bg-gray-900"
-            : "bg-gradient-to-br from-blue-50 to-blue-100"
-        }`}>
+          darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-50 to-blue-100"
+        }`}
+      >
         <div className="max-w-7xl mx-auto">
           <div
             className={`rounded-2xl shadow-xl p-8 text-center ${
-              darkMode
-                ? "bg-gray-800 border border-gray-700"
-                : "bg-white border border-blue-200"
-            }`}>
+              darkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-blue-200"
+            }`}
+          >
             <div
               className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
                 darkMode ? "bg-yellow-900/30" : "bg-yellow-100"
-              }`}>
+              }`}
+            >
               <svg
-                className={`w-8 h-8 ${
-                  darkMode ? "text-yellow-400" : "text-yellow-600"
-                }`}
+                className={`w-8 h-8 ${darkMode ? "text-yellow-400" : "text-yellow-600"}`}
                 fill="none"
                 stroke="currentColor"
-                viewBox="0 0 24 24">
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -249,15 +278,11 @@ function CekNilai({ darkMode, user }) {
                 />
               </svg>
             </div>
-            <h3
-              className={`text-lg font-bold mb-2 ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}>
+            <h3 className={`text-lg font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
               Tidak Ada Data Mengajar
             </h3>
             <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
-              Anda belum ditugaskan mengajar kelas/mata pelajaran untuk tahun
-              ajaran ini.
+              Anda belum ditugaskan mengajar kelas/mata pelajaran untuk tahun ajaran ini.
             </p>
           </div>
         </div>
@@ -269,28 +294,28 @@ function CekNilai({ darkMode, user }) {
     <div
       className={`min-h-screen py-4 sm:py-8 px-3 sm:px-4 lg:px-6 ${
         darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-50 to-blue-100"
-      }`}>
+      }`}
+    >
       <div className="max-w-7xl mx-auto">
         <div
           className={`rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 ${
-            darkMode
-              ? "bg-gray-800 border border-gray-700"
-              : "bg-white border border-blue-200"
-          }`}>
+            darkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-blue-200"
+          }`}
+        >
           {/* Header dengan Info Akademik */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b">
             <h2
               className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-0 ${
                 darkMode ? "text-white" : "text-blue-800"
-              }`}>
+              }`}
+            >
               Cek Nilai Siswa
             </h2>
             <div
               className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                darkMode
-                  ? "bg-blue-900/30 text-blue-300"
-                  : "bg-blue-100 text-blue-800"
-              }`}>
+                darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-800"
+              }`}
+            >
               {academicInfo.displayText}
             </div>
           </div>
@@ -299,23 +324,20 @@ function CekNilai({ darkMode, user }) {
           <div
             className="mb-6 p-4 rounded-lg border bg-opacity-50"
             style={{
-              backgroundColor: darkMode
-                ? "rgba(30, 58, 138, 0.2)"
-                : "rgba(219, 234, 254, 0.5)",
+              backgroundColor: darkMode ? "rgba(30, 58, 138, 0.2)" : "rgba(219, 234, 254, 0.5)",
               borderColor: darkMode ? "#374151" : "#bfdbfe",
-            }}>
+            }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex flex-col">
                 <span
                   className={`text-xs font-medium mb-1 ${
                     darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  }`}
+                >
                   Tahun Ajaran Aktif
                 </span>
-                <span
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}>
+                <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
                   {academicInfo.year}
                 </span>
               </div>
@@ -323,27 +345,23 @@ function CekNilai({ darkMode, user }) {
                 <span
                   className={`text-xs font-medium mb-1 ${
                     darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  }`}
+                >
                   Semester Aktif di Sistem
                 </span>
-                <span
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}>
-                  {academicInfo.semesterText}
+                <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  Semester {academicInfo.activeSemester === 1 ? "Ganjil" : "Genap"}
                 </span>
               </div>
               <div className="flex flex-col">
                 <span
                   className={`text-xs font-medium mb-1 ${
                     darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  }`}
+                >
                   Status Tahun Ajaran
                 </span>
-                <span
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}>
+                <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
                   {academicInfo.isActive ? "Aktif" : "Tidak Aktif"}
                 </span>
               </div>
@@ -357,7 +375,8 @@ function CekNilai({ darkMode, user }) {
               <label
                 className={`block text-sm sm:text-base font-semibold mb-2 ${
                   darkMode ? "text-gray-300" : "text-blue-700"
-                }`}>
+                }`}
+              >
                 Pilih Kelas
               </label>
               <select
@@ -365,22 +384,20 @@ function CekNilai({ darkMode, user }) {
                 onChange={(e) => {
                   setSelectedClass(e.target.value);
                   setSelectedMapel("");
-                  setSemester("");
+                  setSelectedSemesterId("");
                   setNilaiData([]);
                 }}
                 className={`w-full p-3 sm:p-4 rounded-xl border text-sm sm:text-base transition-all duration-200 ${
                   darkMode
                     ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
-                }`}>
+                }`}
+              >
                 <option value="" className="dark:bg-gray-800">
                   -- Pilih Kelas --
                 </option>
                 {classList.map((kelas) => (
-                  <option
-                    key={kelas.id}
-                    value={kelas.id}
-                    className="dark:bg-gray-800">
+                  <option key={kelas.id} value={kelas.id} className="dark:bg-gray-800">
                     Kelas {kelas.id}
                   </option>
                 ))}
@@ -392,14 +409,15 @@ function CekNilai({ darkMode, user }) {
               <label
                 className={`block text-sm sm:text-base font-semibold mb-2 ${
                   darkMode ? "text-gray-300" : "text-blue-700"
-                }`}>
+                }`}
+              >
                 Pilih Mata Pelajaran
               </label>
               <select
                 value={selectedMapel}
                 onChange={(e) => {
                   setSelectedMapel(e.target.value);
-                  setSemester("");
+                  setSelectedSemesterId("");
                   setNilaiData([]);
                 }}
                 disabled={!selectedClass}
@@ -407,7 +425,8 @@ function CekNilai({ darkMode, user }) {
                   darkMode
                     ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}>
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
                 <option value="" className="dark:bg-gray-800">
                   -- Pilih Mata Pelajaran --
                 </option>
@@ -424,13 +443,14 @@ function CekNilai({ darkMode, user }) {
               <label
                 className={`block text-sm sm:text-base font-semibold mb-2 ${
                   darkMode ? "text-gray-300" : "text-blue-700"
-                }`}>
+                }`}
+              >
                 Pilih Semester
               </label>
               <select
-                value={semester}
+                value={selectedSemesterId}
                 onChange={(e) => {
-                  setSemester(e.target.value);
+                  setSelectedSemesterId(e.target.value);
                   setNilaiData([]);
                 }}
                 disabled={!selectedMapel}
@@ -438,17 +458,24 @@ function CekNilai({ darkMode, user }) {
                   darkMode
                     ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}>
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
                 <option value="" className="dark:bg-gray-800">
                   -- Pilih Semester --
                 </option>
-                <option value="1" className="dark:bg-gray-800">
-                  Semester Ganjil
-                </option>
-                <option value="2" className="dark:bg-gray-800">
-                  Semester Genap
-                </option>
+                {availableSemesters.map((sem) => (
+                  <option key={sem.id} value={sem.id} className="dark:bg-gray-800">
+                    Semester {sem.semester === 1 ? "Ganjil" : "Genap"} - {sem.year}
+                    {sem.is_active ? " (Aktif)" : ""}
+                  </option>
+                ))}
               </select>
+              {academicInfo && (
+                <p className={`text-xs mt-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  Semester aktif sistem: Semester{" "}
+                  {academicInfo.activeSemester === 1 ? "Ganjil" : "Genap"}
+                </p>
+              )}
             </div>
           </div>
 
@@ -459,7 +486,8 @@ function CekNilai({ darkMode, user }) {
               <p
                 className={`mt-3 text-sm sm:text-base ${
                   darkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
+                }`}
+              >
                 Memuat data nilai...
               </p>
             </div>
@@ -471,18 +499,11 @@ function CekNilai({ darkMode, user }) {
               {/* Action Bar */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
                 <div>
-                  <h3
-                    className={`text-lg font-bold ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
+                  <h3 className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
                     Daftar Nilai - {selectedMapel}
                   </h3>
-                  <p
-                    className={`text-sm ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}>
-                    {getKelasName()} • Semester {semester} •{" "}
-                    {academicInfo?.year}
+                  <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    {getKelasName()} • {getSemesterText(selectedSemesterId)} • {academicInfo?.year}
                   </p>
                 </div>
                 <button
@@ -491,7 +512,8 @@ function CekNilai({ darkMode, user }) {
                     darkMode
                       ? "bg-blue-600 hover:bg-blue-700 text-white"
                       : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}>
+                  }`}
+                >
                   <RefreshCw size={18} />
                   Refresh
                 </button>
@@ -499,29 +521,25 @@ function CekNilai({ darkMode, user }) {
 
               {/* Table */}
               <div className="overflow-x-auto rounded-xl border shadow-sm">
-                <table className="w-full border-collapse">
-                  <thead
-                    className={
-                      darkMode
-                        ? "bg-gray-700 text-white"
-                        : "bg-blue-700 text-white"
-                    }>
+                <table className="w-full border-collapse table-fixed">
+                  <thead className={darkMode ? "bg-gray-700 text-white" : "bg-blue-700 text-white"}>
                     <tr>
-                      <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600">
+                      <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 w-16">
                         No
                       </th>
-                      <th className="p-3 sm:p-4 text-left border-r border-gray-600 dark:border-gray-600">
+                      <th className="p-3 sm:p-4 text-left border-r border-gray-600 dark:border-gray-600 w-40">
                         Nama Siswa
                       </th>
-                      <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600">
+                      <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 w-32">
                         NIS
                       </th>
-                      <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600">
+                      <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 w-32">
+                        Semester
+                      </th>
+                      <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 w-24">
                         Nilai Akhir
                       </th>
-                      <th className="p-3 sm:p-4 text-left">
-                        Capaian Kompetensi
-                      </th>
+                      <th className="p-3 sm:p-4 text-left">Capaian Kompetensi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -532,35 +550,61 @@ function CekNilai({ darkMode, user }) {
                           darkMode
                             ? "border-gray-700 hover:bg-gray-800/50"
                             : "border-blue-100 hover:bg-blue-50/50"
-                        }`}>
+                        }`}
+                      >
                         <td
                           className={`p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 font-medium ${
                             darkMode ? "text-white" : "text-gray-900"
-                          }`}>
+                          }`}
+                        >
                           {idx + 1}
                         </td>
                         <td
                           className={`p-3 sm:p-4 border-r border-gray-600 dark:border-gray-600 font-medium ${
                             darkMode ? "text-white" : "text-gray-900"
-                          }`}>
+                          }`}
+                        >
                           {nilai.students?.full_name || "-"}
                         </td>
                         <td
                           className={`p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 font-mono ${
                             darkMode ? "text-white" : "text-gray-900"
-                          }`}>
+                          }`}
+                        >
                           {nilai.students?.nis || "-"}
+                        </td>
+                        <td
+                          className={`p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 ${
+                            darkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                              nilai.semester === 1
+                                ? darkMode
+                                  ? "bg-orange-900/30 text-orange-300"
+                                  : "bg-orange-100 text-orange-800"
+                                : darkMode
+                                ? "bg-green-900/30 text-green-300"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {nilai.semester === 1 ? "Ganjil" : "Genap"}
+                          </span>
                         </td>
                         <td
                           className={`p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 font-bold text-lg ${
                             darkMode ? "text-white" : "text-blue-900"
-                          }`}>
+                          }`}
+                        >
                           {nilai.nilai_akhir || "-"}
                         </td>
+                        {/* KOLOM TERAKHIR SAJA YANG DIUBAH */}
                         <td
-                          className={`p-3 sm:p-4 text-sm ${
+                          className={`p-3 sm:p-4 text-sm text-justify ${
                             darkMode ? "text-gray-300" : "text-gray-700"
-                          }`}>
+                          }`}
+                        >
                           {nilai.deskripsi_capaian || "-"}
                         </td>
                       </tr>
@@ -572,13 +616,13 @@ function CekNilai({ darkMode, user }) {
               {/* Summary */}
               <div
                 className={`mt-4 p-3 rounded-lg ${
-                  darkMode
-                    ? "bg-blue-900/30 text-blue-300"
-                    : "bg-blue-100 text-blue-800"
-                }`}>
+                  darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-800"
+                }`}
+              >
                 <p className="text-sm">
-                  <span className="font-semibold">Total Siswa:</span>{" "}
-                  {nilaiData.length} siswa
+                  <span className="font-semibold">Total Siswa:</span> {nilaiData.length} siswa •{" "}
+                  <span className="font-semibold">Semester:</span>{" "}
+                  {getSemesterText(selectedSemesterId)}
                 </p>
               </div>
             </>
@@ -587,15 +631,13 @@ function CekNilai({ darkMode, user }) {
           {/* Empty State - Belum Pilih Filter */}
           {!loadingData && !selectedMapel && (
             <div className="text-center py-12 rounded-xl border border-dashed">
-              <div
-                className={`${
-                  darkMode ? "text-gray-500" : "text-blue-400"
-                } mb-3`}>
+              <div className={`${darkMode ? "text-gray-500" : "text-blue-400"} mb-3`}>
                 <svg
                   className="w-16 h-16 mx-auto"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -604,36 +646,29 @@ function CekNilai({ darkMode, user }) {
                   />
                 </svg>
               </div>
-              <p
-                className={`text-sm sm:text-base ${
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                }`}>
-                Silakan pilih Kelas, Mata Pelajaran, dan Semester untuk melihat
-                nilai siswa
+              <p className={`text-sm sm:text-base ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                Silakan pilih Kelas, Mata Pelajaran, dan Semester untuk melihat nilai siswa
               </p>
               <div
                 className={`mt-3 px-3 py-1.5 rounded-lg text-sm inline-block ${
-                  darkMode
-                    ? "bg-blue-900/30 text-blue-300"
-                    : "bg-blue-100 text-blue-800"
-                }`}>
+                  darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-800"
+                }`}
+              >
                 Tahun Ajaran: {academicInfo.year}
               </div>
             </div>
           )}
 
           {/* Empty State - Data Kosong */}
-          {!loadingData && selectedMapel && nilaiData.length === 0 && (
+          {!loadingData && selectedMapel && selectedSemesterId && nilaiData.length === 0 && (
             <div className="text-center py-12 rounded-xl border border-dashed">
-              <div
-                className={`${
-                  darkMode ? "text-gray-500" : "text-gray-400"
-                } mb-2`}>
+              <div className={`${darkMode ? "text-gray-500" : "text-gray-400"} mb-2`}>
                 <svg
                   className="w-16 h-16 mx-auto"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -642,11 +677,11 @@ function CekNilai({ darkMode, user }) {
                   />
                 </svg>
               </div>
-              <p
-                className={`text-sm sm:text-base ${
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                }`}>
+              <p className={`text-sm sm:text-base ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                 Tidak ada data nilai untuk filter yang dipilih
+              </p>
+              <p className={`text-xs mt-1 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+                {getSemesterText(selectedSemesterId)} • {getKelasName()} • {selectedMapel}
               </p>
             </div>
           )}

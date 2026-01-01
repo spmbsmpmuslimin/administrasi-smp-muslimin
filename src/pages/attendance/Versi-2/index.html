@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Presensi Siswa V2 - Design Concept</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+      * {
+        font-family: "Inter", sans-serif;
+      }
+
+      .glass-effect {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .stat-card {
+        transition: all 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+      }
+
+      .filter-card {
+        animation: slideDown 0.4s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .action-btn {
+        transition: all 0.2s ease;
+      }
+
+      .action-btn:hover {
+        transform: scale(1.02);
+      }
+
+      .action-btn:active {
+        transform: scale(0.98);
+      }
+
+      .table-row {
+        transition: all 0.2s ease;
+      }
+
+      .table-row:hover {
+        background: rgba(99, 102, 241, 0.05);
+      }
+
+      .badge {
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 min-h-screen">
+    <!-- Main Container -->
+    <div class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <!-- Header Section - Modern Card -->
+      <div class="glass-effect rounded-2xl shadow-xl p-6 sm:p-8 mb-6 border border-white/50">
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-2">
+              <div
+                class="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center text-white text-2xl shadow-lg"
+              >
+                📋
+              </div>
+              <div>
+                <h1
+                  class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"
+                >
+                  Input Presensi Siswa
+                </h1>
+                <p class="text-sm text-slate-600 mt-1">
+                  Kelola kehadiran siswa dengan mudah dan cepat
+                </p>
+              </div>
+            </div>
+
+            <!-- Academic Info Badges -->
+            <div class="flex flex-wrap gap-2 mt-4">
+              <span
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-xs font-medium shadow-sm"
+              >
+                <span class="text-base">📅</span>
+                Tahun Ajaran: 2024/2025
+              </span>
+              <span
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-medium shadow-sm"
+              >
+                <span class="text-base">✓</span>
+                Semester Aktif: 1 (Ganjil)
+              </span>
+            </div>
+          </div>
+
+          <!-- User Info -->
+          <div class="flex flex-col items-start sm:items-end gap-2">
+            <div class="flex items-center gap-2">
+              <div
+                class="w-10 h-10 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-sm shadow-md"
+              >
+                AB
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-semibold text-slate-800">Ahmad Budi, S.Pd</div>
+                <div class="text-xs text-slate-500">Guru Matematika</div>
+              </div>
+            </div>
+            <span
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-100 text-purple-700 text-xs font-medium shadow-sm"
+            >
+              <span class="text-base">🏠</span>
+              Wali Kelas 7A
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters Section - Compact & Modern -->
+      <div class="filter-card glass-effect rounded-2xl shadow-xl p-6 mb-6 border border-white/50">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Semester Selector -->
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-700 uppercase tracking-wide"
+              >Semester</label
+            >
+            <select
+              class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition bg-white text-sm font-medium"
+            >
+              <option>2024/2025 - Sem 1 ✓</option>
+              <option>2023/2024 - Sem 2</option>
+              <option>2023/2024 - Sem 1</option>
+            </select>
+          </div>
+
+          <!-- Subject Selector -->
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-700 uppercase tracking-wide"
+              >Mata Pelajaran</label
+            >
+            <select
+              class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition bg-white text-sm font-medium"
+            >
+              <option>Pilih Mapel</option>
+              <option>Matematika</option>
+              <option>Bahasa Indonesia</option>
+              <option>IPA</option>
+              <option>PRESENSI HARIAN 7A</option>
+            </select>
+          </div>
+
+          <!-- Class Selector -->
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-700 uppercase tracking-wide"
+              >Kelas</label
+            >
+            <select
+              class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition bg-white text-sm font-medium"
+            >
+              <option>Pilih Kelas</option>
+              <option>Kelas 7A</option>
+              <option>Kelas 7B</option>
+              <option>Kelas 7C</option>
+            </select>
+          </div>
+
+          <!-- Date Picker -->
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-700 uppercase tracking-wide"
+              >Tanggal</label
+            >
+            <input
+              type="date"
+              value="2025-01-15"
+              class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition bg-white text-sm font-medium"
+            />
+          </div>
+
+          <!-- Load Button -->
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-transparent uppercase tracking-wide"
+              >Action</label
+            >
+            <button
+              class="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:shadow-lg transition transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              🔍 Load Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Cards - Modern Design -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- Hadir Card -->
+        <div class="stat-card glass-effect rounded-2xl p-5 border border-white/50 shadow-lg">
+          <div class="flex items-start justify-between mb-3">
+            <div
+              class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-2xl shadow-md"
+            >
+              ✓
+            </div>
+            <span class="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-lg">
+              +12%
+            </span>
+          </div>
+          <div class="text-3xl font-bold text-slate-800 mb-1">28</div>
+          <div class="text-sm text-slate-600 font-medium">Hadir</div>
+          <div class="mt-3 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+              style="width: 93%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Izin Card -->
+        <div class="stat-card glass-effect rounded-2xl p-5 border border-white/50 shadow-lg">
+          <div class="flex items-start justify-between mb-3">
+            <div
+              class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl shadow-md"
+            >
+              📝
+            </div>
+            <span class="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-lg">
+              -2%
+            </span>
+          </div>
+          <div class="text-3xl font-bold text-slate-800 mb-1">2</div>
+          <div class="text-sm text-slate-600 font-medium">Izin</div>
+          <div class="mt-3 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"
+              style="width: 7%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Sakit Card -->
+        <div class="stat-card glass-effect rounded-2xl p-5 border border-white/50 shadow-lg">
+          <div class="flex items-start justify-between mb-3">
+            <div
+              class="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white text-2xl shadow-md"
+            >
+              🏥
+            </div>
+            <span class="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-1 rounded-lg">
+              0%
+            </span>
+          </div>
+          <div class="text-3xl font-bold text-slate-800 mb-1">0</div>
+          <div class="text-sm text-slate-600 font-medium">Sakit</div>
+          <div class="mt-3 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full"
+              style="width: 0%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Alpha Card -->
+        <div class="stat-card glass-effect rounded-2xl p-5 border border-white/50 shadow-lg">
+          <div class="flex items-start justify-between mb-3">
+            <div
+              class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white text-2xl shadow-md"
+            >
+              ✗
+            </div>
+            <span class="text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-lg">
+              0%
+            </span>
+          </div>
+          <div class="text-3xl font-bold text-slate-800 mb-1">0</div>
+          <div class="text-sm text-slate-600 font-medium">Alpha</div>
+          <div class="mt-3 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-gradient-to-r from-red-400 to-red-600 rounded-full"
+              style="width: 0%"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Bar - Compact & Modern -->
+      <div class="glass-effect rounded-2xl shadow-xl p-4 mb-6 border border-white/50">
+        <div class="flex flex-col lg:flex-row gap-3">
+          <!-- Search Bar -->
+          <div class="flex-1 relative">
+            <input
+              type="text"
+              placeholder="🔍 Cari siswa (nama/NIS)..."
+              class="w-full px-4 py-3 pl-12 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition bg-white text-sm font-medium"
+            />
+            <span class="absolute left-4 top-3.5 text-xl">🔍</span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap gap-2">
+            <button
+              class="action-btn px-5 py-3 rounded-xl bg-blue-50 border-2 border-blue-200 text-blue-700 font-semibold hover:bg-blue-100 text-sm flex items-center gap-2 shadow-sm"
+            >
+              <span class="text-lg">✓</span>
+              Hadir Semua
+            </button>
+
+            <button
+              class="action-btn px-5 py-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold hover:shadow-lg text-sm flex items-center gap-2 shadow-md"
+            >
+              <span class="text-lg">💾</span>
+              Simpan Presensi
+            </button>
+
+            <button
+              class="action-btn px-5 py-3 rounded-xl bg-purple-50 border-2 border-purple-200 text-purple-700 font-semibold hover:bg-purple-100 text-sm flex items-center gap-2 shadow-sm"
+            >
+              <span class="text-lg">📊</span>
+              Rekap
+            </button>
+
+            <button
+              class="action-btn px-5 py-3 rounded-xl bg-orange-50 border-2 border-orange-200 text-orange-700 font-semibold hover:bg-orange-100 text-sm flex items-center gap-2 shadow-sm"
+            >
+              <span class="text-lg">📅</span>
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Section - Modern Design -->
+      <div class="glass-effect rounded-2xl shadow-xl overflow-hidden border border-white/50">
+        <!-- Table Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <span class="text-2xl">👥</span>
+              Daftar Siswa Kelas 7A
+            </h3>
+            <span
+              class="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg text-white text-sm font-semibold"
+            >
+              Total: 30 Siswa
+            </span>
+          </div>
+        </div>
+
+        <!-- Table Content -->
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-slate-50 border-b-2 border-slate-200">
+              <tr>
+                <th
+                  class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider"
+                >
+                  No
+                </th>
+                <th
+                  class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider"
+                >
+                  NIS
+                </th>
+                <th
+                  class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider"
+                >
+                  Nama Siswa
+                </th>
+                <th
+                  class="px-6 py-4 text-center text-xs font-bold text-slate-700 uppercase tracking-wider"
+                >
+                  Status Kehadiran
+                </th>
+                <th
+                  class="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider"
+                >
+                  Keterangan
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-100">
+              <!-- Row 1 -->
+              <tr class="table-row">
+                <td class="px-6 py-4 text-sm font-medium text-slate-900">1</td>
+                <td class="px-6 py-4 text-sm text-slate-600 font-mono">2024001</td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md"
+                    >
+                      AA
+                    </div>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-900">Ahmad Abdullah</div>
+                      <div class="text-xs text-slate-500">L • Kelas 7A</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex justify-center gap-2">
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-green-500 text-white text-xs font-semibold shadow-sm hover:bg-green-600 transition"
+                    >
+                      ✓ Hadir
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-blue-100 hover:text-blue-700 transition"
+                    >
+                      Izin
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-yellow-100 hover:text-yellow-700 transition"
+                    >
+                      Sakit
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-red-100 hover:text-red-700 transition"
+                    >
+                      Alpha
+                    </button>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <input
+                    type="text"
+                    placeholder="Tambah keterangan..."
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition text-sm"
+                  />
+                </td>
+              </tr>
+
+              <!-- Row 2 -->
+              <tr class="table-row">
+                <td class="px-6 py-4 text-sm font-medium text-slate-900">2</td>
+                <td class="px-6 py-4 text-sm text-slate-600 font-mono">2024002</td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-sm shadow-md"
+                    >
+                      BS
+                    </div>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-900">Bella Safitri</div>
+                      <div class="text-xs text-slate-500">P • Kelas 7A</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex justify-center gap-2">
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-green-100 hover:text-green-700 transition"
+                    >
+                      Hadir
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-semibold shadow-sm hover:bg-blue-600 transition"
+                    >
+                      📝 Izin
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-yellow-100 hover:text-yellow-700 transition"
+                    >
+                      Sakit
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-red-100 hover:text-red-700 transition"
+                    >
+                      Alpha
+                    </button>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <input
+                    type="text"
+                    placeholder="Tambah keterangan..."
+                    value="Ada acara keluarga"
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition text-sm"
+                  />
+                </td>
+              </tr>
+
+              <!-- Row 3 -->
+              <tr class="table-row">
+                <td class="px-6 py-4 text-sm font-medium text-slate-900">3</td>
+                <td class="px-6 py-4 text-sm text-slate-600 font-mono">2024003</td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-md"
+                    >
+                      CP
+                    </div>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-900">Citra Putri Dewi</div>
+                      <div class="text-xs text-slate-500">P • Kelas 7A</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex justify-center gap-2">
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-green-500 text-white text-xs font-semibold shadow-sm hover:bg-green-600 transition"
+                    >
+                      ✓ Hadir
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-blue-100 hover:text-blue-700 transition"
+                    >
+                      Izin
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-yellow-100 hover:text-yellow-700 transition"
+                    >
+                      Sakit
+                    </button>
+                    <button
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-medium hover:bg-red-100 hover:text-red-700 transition"
+                    >
+                      Alpha
+                    </button>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <input
+                    type="text"
+                    placeholder="Tambah keterangan..."
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition text-sm"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table Footer -->
+        <div class="bg-slate-50 px-6 py-4 border-t-2 border-slate-200">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600"
+              >Menampilkan <span class="font-semibold text-slate-900">3</span> dari
+              <span class="font-semibold text-slate-900">30</span> siswa</span
+            >
+            <div class="flex gap-2">
+              <button
+                class="px-4 py-2 rounded-lg bg-white border-2 border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition disabled:opacity-50"
+                disabled
+              >
+                ← Prev
+              </button>
+              <button
+                class="px-4 py-2 rounded-lg bg-white border-2 border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="mt-6 text-center">
+        <p class="text-sm text-slate-500">
+          💡 <span class="font-semibold">Tips:</span> Gunakan
+          <span class="font-mono bg-slate-200 px-2 py-0.5 rounded">Ctrl+S</span> untuk simpan cepat
+          • <span class="font-mono bg-slate-200 px-2 py-0.5 rounded">Ctrl+F</span> untuk pencarian
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -3,6 +3,9 @@ import { supabase } from "../supabaseClient";
 import {
   getActiveAcademicInfo,
   applyAcademicFilters,
+  getActiveAcademicYear,
+  getSemesterDisplayName,
+  getAllSemestersInActiveYear, // ✅ Tambah import ini
 } from "../services/academicYearService";
 
 // ✅ FUNGSI MAPPING NAMA MAPEL
@@ -26,13 +29,11 @@ const mapelToRaportName = (mapelTeacher) => {
     "BP/BK": "BP/BK",
 
     // Tambahan mapping dari format yang mungkin ada di database
-    "PENDIDIKAN AGAMA ISLAM DAN BUDI PEKERTI":
-      "Pendidikan Agama Islam dan Budi Pekerti",
+    "PENDIDIKAN AGAMA ISLAM DAN BUDI PEKERTI": "Pendidikan Agama Islam dan Budi Pekerti",
     "MATEMATIKA (UMUM)": "Matematika (Umum)",
     "ILMU PENGETAHUAN ALAM (IPA)": "Ilmu Pengetahuan Alam (IPA)",
     "ILMU PENGETAHUAN SOSIAL (IPS)": "Ilmu Pengetahuan Sosial (IPS)",
-    "PENDIDIKAN JASMANI, OLAHRAGA DAN KESEHATAN":
-      "Pendidikan Jasmani, Olahraga dan Kesehatan",
+    "PENDIDIKAN JASMANI, OLAHRAGA DAN KESEHATAN": "Pendidikan Jasmani, Olahraga dan Kesehatan",
     "MUATAN LOKAL BAHASA DAERAH": "Muatan Lokal Bahasa Daerah",
     "KODING DAN AI": "Koding dan AI",
   };
@@ -42,7 +43,7 @@ const mapelToRaportName = (mapelTeacher) => {
   return mapped;
 };
 
-const CekNilai = ({ user, darkMode, onShowToast }) => {
+const CekStatusNilai = ({ user, darkMode, onShowToast }) => {
   const [selectedKelas, setSelectedKelas] = useState("");
   const [kelasList, setKelasList] = useState([]);
   const [statusData, setStatusData] = useState([]);
@@ -51,7 +52,14 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
   const [academicInfo, setAcademicInfo] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
-  const [showDebug, setShowDebug] = useState(false); // For debugging
+  const [showDebug, setShowDebug] = useState(false);
+  const [activeSemesterId, setActiveSemesterId] = useState(null);
+  const [activeYear, setActiveYear] = useState(null);
+
+  // ✅ STATE BARU UNTUK PILIHAN SEMESTER
+  const [availableSemesters, setAvailableSemesters] = useState([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState("");
+  const [selectedSemesterInfo, setSelectedSemesterInfo] = useState(null);
 
   // Load user data dan tahun ajaran aktif saat component mount
   useEffect(() => {
@@ -60,12 +68,12 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
     }
   }, [user]);
 
-  // Load status penilaian ketika kelas dipilih
+  // Load status penilaian ketika kelas atau semester dipilih
   useEffect(() => {
-    if (selectedKelas && academicInfo) {
+    if (selectedKelas && selectedSemesterId) {
       loadStatusPenilaian();
     }
-  }, [selectedKelas, academicInfo]);
+  }, [selectedKelas, selectedSemesterId]);
 
   // Load initial data
   const loadInitialData = async () => {
@@ -78,30 +86,64 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
       // 1. Set current user dari props
       setCurrentUser(user);
 
-      // ✅ 2. Pakai getActiveAcademicInfo dari service
-      const academicData = await getActiveAcademicInfo();
+      // ✅ 2. Dapatkan data akademik lengkap dari service yang baru
+      const activeYearData = await getActiveAcademicYear();
 
-      if (!academicData) {
+      if (!activeYearData) {
         throw new Error("Informasi tahun ajaran aktif tidak ditemukan.");
       }
 
-      setAcademicInfo(academicData);
+      // ✅ 3. Set state activeSemesterId dan activeYear
+      setActiveSemesterId(activeYearData.activeSemesterId);
+      setActiveYear(activeYearData.year);
 
-      console.log(
-        "📅 Academic Info:",
-        academicData,
-        "Year ID:",
-        academicData.yearId,
-        "Semester:",
-        academicData.semester
-      );
+      // ✅ 4. Dapatkan semua semester dalam tahun ajaran aktif
+      const semesters = await getAllSemestersInActiveYear();
+      console.log("📚 Available semesters:", semesters);
+      setAvailableSemesters(semesters || []);
 
-      // 3. Load kelas list (kelas yang dia jadi wali kelas)
+      // ✅ 5. Set default selected semester ke semester aktif
+      if (activeYearData.activeSemesterId) {
+        setSelectedSemesterId(activeYearData.activeSemesterId);
+
+        // Set selected semester info
+        const activeSemesterInfo = semesters.find((s) => s.id === activeYearData.activeSemesterId);
+        if (activeSemesterInfo) {
+          setSelectedSemesterInfo(activeSemesterInfo);
+        }
+      }
+
+      // ✅ 6. Dapatkan info akademik untuk display
+      const academicData = await getActiveAcademicInfo();
+
+      // ✅ 7. Buat semesterText manual berdasarkan activeSemester
+      const semesterText =
+        activeYearData.activeSemester === 1 ? "Semester 1 (Ganjil)" : "Semester 2 (Genap)";
+
+      // ✅ 8. Buat academicInfo dengan data yang lengkap
+      const formattedAcademicInfo = {
+        ...academicData,
+        // Untuk backward compatibility
+        yearId: activeYearData.activeSemesterId,
+        semester: activeYearData.activeSemester,
+        year: activeYearData.year,
+        semesterText: semesterText,
+        isActive: true,
+        displayText: academicData?.fullDisplayText || activeYearData.year,
+        activeSemesterId: activeYearData.activeSemesterId,
+        activeSemester: activeYearData.activeSemester,
+      };
+
+      setAcademicInfo(formattedAcademicInfo);
+
+      console.log("📅 Active Year Data:", activeYearData);
+      console.log("🎯 Active Semester ID:", activeYearData.activeSemesterId);
+      console.log("📅 Active Year:", activeYearData.year);
+      console.log("📊 Academic Info:", formattedAcademicInfo);
+
+      // 9. Load kelas list (kelas yang dia jadi wali kelas)
       if (user.homeroom_class_id) {
-        console.log(
-          "👨‍🏫 User is homeroom teacher for class:",
-          user.homeroom_class_id
-        );
+        console.log("👨‍🏫 User is homeroom teacher for class:", user.homeroom_class_id);
 
         const { data: kelasData, error: kelasError } = await supabase
           .from("classes")
@@ -131,9 +173,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         }
       } else {
         console.log("❌ User is NOT a homeroom teacher");
-        setErrorMessage(
-          "Anda bukan wali kelas. Fitur ini hanya untuk wali kelas."
-        );
+        setErrorMessage("Anda bukan wali kelas. Fitur ini hanya untuk wali kelas.");
       }
     } catch (error) {
       console.error("Error loading initial data:", error);
@@ -147,8 +187,8 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
   };
 
   const loadStatusPenilaian = async () => {
-    if (!academicInfo) {
-      setErrorMessage("Informasi tahun ajaran belum tersedia");
+    if (!selectedSemesterId || !selectedKelas) {
+      setErrorMessage("Pilih kelas dan semester terlebih dahulu");
       return;
     }
 
@@ -157,8 +197,12 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
     try {
       console.log("📊 ========== START LOAD STATUS ==========");
       console.log("📊 Class:", selectedKelas);
-      console.log("📊 Academic Year ID:", academicInfo.yearId);
-      console.log("📊 Semester:", academicInfo.semester);
+      console.log("📊 Selected Semester ID:", selectedSemesterId);
+      console.log("📊 Selected Semester Info:", selectedSemesterInfo);
+
+      // Update selected semester info
+      const semInfo = availableSemesters.find((s) => s.id === selectedSemesterId);
+      setSelectedSemesterInfo(semInfo);
 
       // 1. Hitung total siswa di kelas
       const { data: siswaData, error: siswaError } = await supabase
@@ -179,8 +223,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         .from("nilai_eraport")
         .select("mata_pelajaran")
         .eq("class_id", selectedKelas)
-        .eq("academic_year_id", academicInfo.yearId)
-        .eq("semester", academicInfo.semester);
+        .eq("academic_year_id", selectedSemesterId); // ✅ Pakai selectedSemesterId
 
       if (!nilaiDebugError && nilaiDebug) {
         // Group manual untuk debugging
@@ -197,28 +240,24 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         .select("subject, teacher_id")
         .eq("class_id", selectedKelas);
 
+      // ✅ PASTIKAN pakai selectedSemesterId
       assignmentsQuery = await applyAcademicFilters(assignmentsQuery, {
         filterYearId: true,
         filterSemester: true,
+        specificSemesterId: selectedSemesterId, // ✅ Ganti ke selectedSemesterId
       });
 
-      const { data: assignmentsData, error: assignmentsError } =
-        await assignmentsQuery;
+      const { data: assignmentsData, error: assignmentsError } = await assignmentsQuery;
 
       if (assignmentsError) {
         console.error("Error loading teacher assignments:", assignmentsError);
         throw assignmentsError;
       }
 
-      console.log(
-        "📚 Teacher assignments found:",
-        assignmentsData?.length || 0
-      );
+      console.log("📚 Teacher assignments found:", assignmentsData?.length || 0);
 
       // Get unique subjects dari teacher_assignments
-      const subjectsFromTeacher = [
-        ...new Set(assignmentsData?.map((item) => item.subject) || []),
-      ];
+      const subjectsFromTeacher = [...new Set(assignmentsData?.map((item) => item.subject) || [])];
 
       console.log("📚 Subjects from teacher_assignments:", subjectsFromTeacher);
 
@@ -296,7 +335,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
   };
 
   const getMapelStatus = async (mapel, index, jumlahSiswa) => {
-    if (!academicInfo) return null;
+    if (!selectedSemesterId) return null;
 
     try {
       console.log(`🔍 Checking status for: ${mapel}`);
@@ -316,8 +355,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         )
         .eq("class_id", selectedKelas)
         .eq("mata_pelajaran", mapel)
-        .eq("academic_year_id", academicInfo.yearId)
-        .eq("semester", academicInfo.semester)
+        .eq("academic_year_id", selectedSemesterId) // ✅ Pakai selectedSemesterId
         .eq("students.is_active", true);
 
       if (nilaiError) {
@@ -337,8 +375,7 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         // Cek apakah semua TP sudah dicentang (ada detail dan ada status_tercapai)
         const detailTP = item.nilai_eraport_detail || [];
         const semuaTPTercentang =
-          detailTP.length > 0 &&
-          detailTP.every((detail) => detail.status_tercapai !== null);
+          detailTP.length > 0 && detailTP.every((detail) => detail.status_tercapai !== null);
 
         // ✅ Cek nilai (SELALU hitung, TIDAK peduli TP)
         if (item.nilai_akhir !== null && item.nilai_akhir !== undefined) {
@@ -376,13 +413,10 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         // Hitung duplikat per student
         const studentCount = {};
         nilaiData?.forEach((item) => {
-          studentCount[item.student_id] =
-            (studentCount[item.student_id] || 0) + 1;
+          studentCount[item.student_id] = (studentCount[item.student_id] || 0) + 1;
         });
 
-        const duplicates = Object.entries(studentCount).filter(
-          ([_, count]) => count > 1
-        );
+        const duplicates = Object.entries(studentCount).filter(([_, count]) => count > 1);
         if (duplicates.length > 0) {
           console.warn(`⚠️  Student dengan data ganda:`, duplicates);
         }
@@ -419,36 +453,30 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
     return "text-amber-600 dark:text-amber-400";
   };
 
-  const getStatusIcon = (jumlah, total) => {
-    if (jumlah === 0) return "❌";
-    if (jumlah === total) return "✅";
-    if (jumlah > total) return "⚠️";
-    return "🟡";
-  };
-
   // Fungsi untuk membersihkan data duplikat
   const cleanDuplicateData = async () => {
-    if (!selectedKelas || !academicInfo) {
-      alert("Pilih kelas terlebih dahulu");
+    if (!selectedKelas || !selectedSemesterId) {
+      alert("Pilih kelas dan semester terlebih dahulu");
       return;
     }
 
     if (
       !window.confirm(
-        "Yakin ingin membersihkan data duplikat? Tindakan ini tidak dapat dibatalkan."
+        `Yakin ingin membersihkan data duplikat untuk Semester ${
+          selectedSemesterInfo?.semester === 1 ? "1 (Ganjil)" : "2 (Genap)"
+        }?\nTindakan ini tidak dapat dibatalkan.`
       )
     ) {
       return;
     }
 
     try {
-      // Ambil semua data nilai untuk kelas dan tahun ajaran ini
+      // Ambil semua data nilai untuk kelas dan semester yang dipilih
       const { data: allNilai, error } = await supabase
         .from("nilai_eraport")
         .select("*")
         .eq("class_id", selectedKelas)
-        .eq("academic_year_id", academicInfo.yearId)
-        .eq("semester", academicInfo.semester)
+        .eq("academic_year_id", selectedSemesterId)
         .order("student_id", { ascending: true })
         .order("mata_pelajaran", { ascending: true })
         .order("created_at", { ascending: false });
@@ -489,6 +517,13 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
     }
   };
 
+  // Handle semester change
+  const handleSemesterChange = (semesterId) => {
+    setSelectedSemesterId(semesterId);
+    const semInfo = availableSemesters.find((s) => s.id === semesterId);
+    setSelectedSemesterInfo(semInfo);
+  };
+
   if (loading && !selectedKelas) {
     return (
       <div
@@ -496,16 +531,19 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-sky-100"
-        }`}>
+        }`}
+      >
         <div className="text-center">
           <div
             className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "border-blue-400" : "border-blue-600"
-            }`}></div>
+            }`}
+          ></div>
           <p
             className={`text-sm sm:text-base font-medium transition-colors ${
               darkMode ? "text-gray-300" : "text-gray-700"
-            }`}>
+            }`}
+          >
             Memuat data...
           </p>
         </div>
@@ -520,26 +558,28 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-sky-100"
-        }`}>
+        }`}
+      >
         <div className="max-w-7xl mx-auto">
           <div
             className={`rounded-2xl shadow-2xl p-4 sm:p-8 border transition-colors ${
-              darkMode
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-blue-200"
-            }`}>
+              darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-blue-200"
+            }`}
+          >
             <div className="text-center py-8 sm:py-12">
               <div
                 className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 ${
                   darkMode ? "bg-blue-900/30" : "bg-blue-100"
-                }`}>
+                }`}
+              >
                 <svg
                   className={`w-7 h-7 sm:w-8 sm:h-8 ${
                     darkMode ? "text-blue-400" : "text-blue-600"
                   }`}
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -551,13 +591,15 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
               <h3
                 className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
                   darkMode ? "text-white" : "text-gray-900"
-                }`}>
+                }`}
+              >
                 Akses Dibatasi
               </h3>
               <p
                 className={`text-sm sm:text-base mb-6 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
+                }`}
+              >
                 {errorMessage}
               </p>
             </div>
@@ -573,20 +615,21 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
         darkMode
           ? "bg-gradient-to-br from-gray-900 to-gray-800"
           : "bg-gradient-to-br from-blue-50 to-sky-100"
-      }`}>
+      }`}
+    >
       <div className="max-w-7xl mx-auto">
         <div
           className={`rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 border transition-colors ${
-            darkMode
-              ? "bg-gray-800 border-gray-700"
-              : "bg-white border-blue-200"
-          }`}>
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-blue-200"
+          }`}
+        >
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-4">
             <h1
               className={`text-lg md:text-xl lg:text-2xl font-bold transition-colors ${
                 darkMode ? "text-white" : "text-gray-900"
-              }`}>
+              }`}
+            >
               STATUS PENILAIAN OLEH GURU MAPEL
             </h1>
 
@@ -597,17 +640,17 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                   darkMode
                     ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}>
+                }`}
+              >
                 {showDebug ? "Hide Debug" : "Show Debug"}
               </button>
 
-              {statusData.some(
-                (item) => item.jumlah_nilai > item.total_siswa
-              ) && (
+              {statusData.some((item) => item.jumlah_nilai > item.total_siswa) && (
                 <button
                   onClick={cleanDuplicateData}
                   className="px-3 py-2 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-700"
-                  title="Bersihkan data duplikat">
+                  title="Bersihkan data duplikat"
+                >
                   🧹 Clean Duplicates
                 </button>
               )}
@@ -619,48 +662,41 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
             <div
               className="mb-6 p-4 rounded-lg border bg-opacity-50"
               style={{
-                backgroundColor: darkMode
-                  ? "rgba(30, 58, 138, 0.2)"
-                  : "rgba(219, 234, 254, 0.5)",
+                backgroundColor: darkMode ? "rgba(30, 58, 138, 0.2)" : "rgba(219, 234, 254, 0.5)",
                 borderColor: darkMode ? "#374151" : "#bfdbfe",
-              }}>
+              }}
+            >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="flex flex-col">
                   <span
                     className={`text-xs font-medium mb-1 ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
-                    Semester Aktif
-                  </span>
-                  <span
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
-                    {academicInfo.semesterText ||
-                      (academicInfo.semester === 1
-                        ? "Semester 1 (Ganjil)"
-                        : "Semester 2 (Genap)")}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span
-                    className={`text-xs font-medium mb-1 ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
                     Tahun Ajaran
                   </span>
-                  <span
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
-                    {academicInfo.displayText || academicInfo.year || "Aktif"}
+                  <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {academicInfo.year}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <span
                     className={`text-xs font-medium mb-1 ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
+                    Semester Sistem Aktif
+                  </span>
+                  <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {academicInfo.semester === 1 ? "Semester 1 (Ganjil)" : "Semester 2 (Genap)"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span
+                    className={`text-xs font-medium mb-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     Status
                   </span>
                   <span
@@ -672,7 +708,8 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                         : darkMode
                         ? "bg-red-900/30 text-red-300"
                         : "bg-red-100 text-red-700"
-                    }`}>
+                    }`}
+                  >
                     {academicInfo.isActive ? "Aktif" : "Nonaktif"}
                   </span>
                 </div>
@@ -682,10 +719,11 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
               {showDebug && (
                 <div className="mt-4 p-3 rounded bg-gray-800/30 dark:bg-gray-900/30">
                   <div className="text-xs font-mono">
-                    <div>Year ID: {academicInfo.yearId}</div>
-                    <div>Semester: {academicInfo.semester}</div>
-                    <div>Start: {academicInfo.startDate}</div>
-                    <div>End: {academicInfo.endDate}</div>
+                    <div>Active Semester ID: {activeSemesterId}</div>
+                    <div>Selected Semester ID: {selectedSemesterId}</div>
+                    <div>Active Year: {activeYear}</div>
+                    <div>Semester Aktif: {academicInfo.semester}</div>
+                    <div>Available Semesters: {availableSemesters.length}</div>
                   </div>
                 </div>
               )}
@@ -696,22 +734,23 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
           {currentUser && (
             <div
               className={`mb-6 p-4 rounded-xl border ${
-                darkMode
-                  ? "bg-blue-900/20 border-blue-500"
-                  : "bg-blue-50 border-blue-300"
-              }`}>
+                darkMode ? "bg-blue-900/20 border-blue-500" : "bg-blue-50 border-blue-300"
+              }`}
+            >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex-1">
                   <h3
                     className={`font-bold text-base sm:text-lg transition-colors ${
                       darkMode ? "text-white" : "text-gray-900"
-                    }`}>
+                    }`}
+                  >
                     {currentUser.full_name}
                   </h3>
                   <p
                     className={`text-sm sm:text-base mt-1 transition-colors ${
                       darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}>
+                    }`}
+                  >
                     {currentUser.teacher_id} • {currentUser.role}
                   </p>
                 </div>
@@ -724,7 +763,8 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                       : darkMode
                       ? "bg-gray-700 text-gray-300"
                       : "bg-gray-600 text-white"
-                  }`}>
+                  }`}
+                >
                   {currentUser.homeroom_class_id
                     ? `Wali Kelas ${currentUser.homeroom_class_id}`
                     : "Bukan Wali Kelas"}
@@ -733,16 +773,18 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
             </div>
           )}
 
-          {/* Filter Section */}
+          {/* ✅ FILTER SECTION DENGAN PILIHAN SEMESTER */}
           <div className="mb-6 md:mb-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <label
-                className={`text-sm sm:text-base font-medium w-full sm:w-32 transition-colors ${
-                  darkMode ? "text-gray-300" : "text-gray-700"
-                }`}>
-                Pilih Kelas:
-              </label>
-              <div className="flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* Pilih Kelas */}
+              <div className="flex flex-col">
+                <label
+                  className={`text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Pilih Kelas:
+                </label>
                 <select
                   value={selectedKelas}
                   onChange={(e) => setSelectedKelas(e.target.value)}
@@ -751,11 +793,10 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                     darkMode
                       ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400 disabled:bg-gray-800"
                       : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                  }`}>
+                  }`}
+                >
                   <option value="" disabled className="text-gray-400">
-                    {kelasList.length === 0
-                      ? "-- Tidak ada kelas --"
-                      : "-- Pilih Kelas --"}
+                    {kelasList.length === 0 ? "-- Tidak ada kelas --" : "-- Pilih Kelas --"}
                   </option>
                   {kelasList.map((kelas) => (
                     <option key={kelas.id} value={kelas.id}>
@@ -764,13 +805,84 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                   ))}
                 </select>
               </div>
+
+              {/* ✅ Pilih Semester */}
+              <div className="flex flex-col">
+                <label
+                  className={`text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Pilih Semester:
+                </label>
+                <select
+                  value={selectedSemesterId}
+                  onChange={(e) => handleSemesterChange(e.target.value)}
+                  disabled={availableSemesters.length === 0}
+                  className={`w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[44px] ${
+                    darkMode
+                      ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400 disabled:bg-gray-800"
+                      : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                  }`}
+                >
+                  <option value="" disabled className="text-gray-400">
+                    {availableSemesters.length === 0
+                      ? "-- Loading semester --"
+                      : "-- Pilih Semester --"}
+                  </option>
+                  {availableSemesters.map((sem) => (
+                    <option key={sem.id} value={sem.id}>
+                      Semester {sem.semester === 1 ? "1 (Ganjil)" : "2 (Genap)"} - {sem.year}
+                      {sem.id === academicInfo?.activeSemesterId ? " (Aktif)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {selectedKelas && totalSiswa > 0 && (
+            {/* Info Selected Semester */}
+            {selectedSemesterInfo && selectedKelas && (
+              <div
+                className={`mt-4 p-3 rounded-lg border ${
+                  darkMode ? "bg-gray-800/50 border-gray-700" : "bg-blue-50 border-blue-200"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      selectedSemesterInfo.id === academicInfo?.activeSemesterId
+                        ? "bg-green-500"
+                        : "bg-blue-500"
+                    }`}
+                  ></div>
+                  <div>
+                    <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                      Mengecek data untuk:{" "}
+                      <strong>
+                        Semester {selectedSemesterInfo.semester === 1 ? "1 (Ganjil)" : "2 (Genap)"}
+                      </strong>
+                    </span>
+                    <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                      Kelas: <strong>{selectedKelas}</strong> | Total Siswa:{" "}
+                      <strong>{totalSiswa}</strong> |
+                      {selectedSemesterInfo.id === academicInfo?.activeSemesterId && (
+                        <span className="text-green-600 dark:text-green-400">
+                          {" "}
+                          ✓ Semester Aktif
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedKelas && totalSiswa > 0 && !selectedSemesterInfo && (
               <div
                 className={`mt-4 text-sm sm:text-base transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
+                }`}
+              >
                 Total Siswa di Kelas {selectedKelas}:{" "}
                 <span className="font-semibold">{totalSiswa} siswa</span>
               </div>
@@ -778,37 +890,39 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
           </div>
 
           {/* Table Section */}
-          {selectedKelas ? (
+          {selectedKelas && selectedSemesterId ? (
             <div
               className={`rounded-xl border overflow-hidden ${
                 darkMode ? "border-gray-700" : "border-gray-200"
-              }`}>
+              }`}
+            >
               {loading ? (
                 <div className="text-center py-12">
                   <div
                     className={`inline-block animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-4 mx-auto mb-3 sm:mb-4 ${
                       darkMode ? "border-blue-400" : "border-blue-600"
-                    }`}></div>
+                    }`}
+                  ></div>
                   <p
                     className={`text-sm sm:text-base transition-colors ${
                       darkMode ? "text-gray-300" : "text-gray-600"
-                    }`}>
-                    Memuat data penilaian...
+                    }`}
+                  >
+                    Memuat data penilaian untuk Semester{" "}
+                    {selectedSemesterInfo?.semester === 1 ? "1 (Ganjil)" : "2 (Genap)"}...
                   </p>
                 </div>
               ) : statusData.length === 0 ? (
                 <div
-                  className={`text-center py-12 ${
-                    darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  className={`text-center py-12 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                >
                   <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <svg
-                      className={`w-12 h-12 ${
-                        darkMode ? "text-gray-600" : "text-blue-400"
-                      }`}
+                      className={`w-12 h-12 ${darkMode ? "text-gray-600" : "text-blue-400"}`}
                       fill="none"
                       stroke="currentColor"
-                      viewBox="0 0 24 24">
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -817,14 +931,24 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                       />
                     </svg>
                   </div>
-                  <p className="text-base sm:text-lg font-medium mb-1">
-                    Belum ada data penilaian
-                  </p>
+                  <p className="text-base sm:text-lg font-medium mb-1">Belum ada data penilaian</p>
                   <p className="text-sm">
-                    {academicInfo
-                      ? `Guru mapel belum mengisi nilai untuk kelas ini di semester ${academicInfo.semester}`
+                    {selectedSemesterInfo
+                      ? `Guru mapel belum mengisi nilai untuk kelas ${selectedKelas} di Semester ${
+                          selectedSemesterInfo.semester === 1 ? "1 (Ganjil)" : "2 (Genap)"
+                        }`
                       : "Guru mapel belum mengisi nilai untuk kelas ini"}
                   </p>
+                  <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                    <p>Pastikan:</p>
+                    <ul className="list-disc list-inside text-left max-w-md mx-auto">
+                      <li>
+                        Guru mapel sudah ditugaskan mengajar kelas ini di semester yang dipilih
+                      </li>
+                      <li>Guru mapel sudah menginput nilai dan deskripsi</li>
+                      <li>Data penugasan guru sudah sesuai dengan semester yang dipilih</li>
+                    </ul>
+                  </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -834,41 +958,48 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                         <th
                           className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
                             darkMode ? "border-blue-800" : "border-blue-600"
-                          } w-16`}>
+                          } w-16`}
+                        >
                           No
                         </th>
                         <th
                           className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium border-r ${
                             darkMode ? "border-blue-800" : "border-blue-600"
-                          }`}>
+                          }`}
+                        >
                           Nama Mapel
                         </th>
                         <th
                           className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
                             darkMode ? "border-blue-800" : "border-blue-600"
-                          } w-40`}>
+                          } w-40`}
+                        >
                           Kelas
                         </th>
                         <th
                           className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
                             darkMode ? "border-blue-800" : "border-blue-600"
                           }`}
-                          colSpan="3">
+                          colSpan="3"
+                        >
                           <div className="font-bold mb-2">Nilai Rapor</div>
                           <div
                             className={`flex border-t ${
                               darkMode ? "border-blue-800" : "border-blue-600"
-                            }`}>
+                            }`}
+                          >
                             <div
                               className={`flex-1 py-2 border-r ${
                                 darkMode ? "border-blue-800" : "border-blue-600"
-                              }`}>
+                              }`}
+                            >
                               Nilai Rapor
                             </div>
                             <div
                               className={`flex-1 py-2 border-r ${
                                 darkMode ? "border-blue-800" : "border-blue-600"
-                              }`}>
+                              }`}
+                            >
                               Deskripsi
                             </div>
                             <div className="flex-1 py-2">Lengkap</div>
@@ -888,13 +1019,15 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                               : index % 2 === 0
                               ? "bg-blue-50 border-blue-100"
                               : "bg-white border-blue-100"
-                          }`}>
+                          }`}
+                        >
                           <td
                             className={`p-3 sm:p-4 text-center text-sm sm:text-base font-semibold border-r ${
                               darkMode
                                 ? "border-gray-700 text-gray-300"
                                 : "border-blue-100 text-gray-700"
-                            }`}>
+                            }`}
+                          >
                             {item.no}
                           </td>
                           <td
@@ -902,7 +1035,8 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                               darkMode
                                 ? "border-gray-700 text-gray-200"
                                 : "border-blue-100 text-gray-900"
-                            }`}>
+                            }`}
+                          >
                             {item.nama_mapel}
                             {showDebug && (
                               <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
@@ -915,7 +1049,8 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                               darkMode
                                 ? "border-gray-700 text-gray-300"
                                 : "border-blue-100 text-gray-700"
-                            }`}>
+                            }`}
+                          >
                             {item.kelas}
                           </td>
                           <td
@@ -923,44 +1058,41 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                               darkMode
                                 ? "bg-gray-700/50 border-gray-700"
                                 : "bg-gray-100 border-blue-100"
-                            }`}>
+                            }`}
+                          >
                             <span
                               className={`font-semibold ${getTextColor(
                                 item.jumlah_nilai,
                                 item.total_siswa
-                              )}`}>
-                              {formatStatusNilai(
-                                item.jumlah_nilai,
-                                item.total_siswa
-                              )}
+                              )}`}
+                            >
+                              {formatStatusNilai(item.jumlah_nilai, item.total_siswa)}
                             </span>
                           </td>
                           <td
                             className={`p-3 sm:p-4 text-center text-sm sm:text-base ${
                               darkMode ? "bg-gray-700/50" : "bg-gray-100"
-                            }`}>
+                            }`}
+                          >
                             <span
                               className={`font-semibold ${getTextColor(
                                 item.jumlah_deskripsi,
                                 item.total_siswa
-                              )}`}>
-                              {formatStatusNilai(
-                                item.jumlah_deskripsi,
-                                item.total_siswa
-                              )}
+                              )}`}
+                            >
+                              {formatStatusNilai(item.jumlah_deskripsi, item.total_siswa)}
                             </span>
                           </td>
                           <td
                             className={`p-3 sm:p-4 text-center text-sm sm:text-base ${
                               darkMode ? "bg-gray-700/50" : "bg-gray-100"
-                            }`}>
+                            }`}
+                          >
                             {item.jumlah_nilai === item.total_siswa &&
                             item.jumlah_deskripsi === item.total_siswa ? (
                               <span className="text-2xl">✅</span>
                             ) : (
-                              <span className="text-gray-400 dark:text-gray-600">
-                                -
-                              </span>
+                              <span className="text-gray-400 dark:text-gray-600">-</span>
                             )}
                           </td>
                         </tr>
@@ -976,15 +1108,15 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                 darkMode
                   ? "text-gray-400 border-gray-700 bg-gray-800/50"
                   : "text-gray-500 border-blue-300 bg-blue-50"
-              }`}>
+              }`}
+            >
               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                 <svg
-                  className={`w-12 h-12 ${
-                    darkMode ? "text-gray-600" : "text-blue-400"
-                  }`}
+                  className={`w-12 h-12 ${darkMode ? "text-gray-600" : "text-blue-400"}`}
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -994,66 +1126,68 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                 </svg>
               </div>
               <p className="text-base sm:text-lg font-medium mb-2">
-                {kelasList.length === 0
-                  ? "Anda bukan wali kelas"
-                  : "Pilih Kelas"}
+                {kelasList.length === 0 ? "Anda bukan wali kelas" : "Pilih Kelas & Semester"}
               </p>
               <p className="text-sm">
                 {kelasList.length === 0
                   ? "Fitur ini hanya tersedia untuk wali kelas"
-                  : "Untuk melihat status penilaian guru mapel"}
+                  : "Pilih kelas dan semester untuk melihat status penilaian guru mapel"}
               </p>
+              {kelasList.length > 0 && (
+                <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                  <p>Pilih:</p>
+                  <ol className="list-decimal list-inside text-left max-w-md mx-auto">
+                    <li>Kelas yang anda wali</li>
+                    <li>Semester yang ingin dicek (1/2)</li>
+                  </ol>
+                </div>
+              )}
             </div>
           )}
 
           {/* Legend */}
-          {selectedKelas && statusData.length > 0 && (
+          {selectedKelas && selectedSemesterId && statusData.length > 0 && (
             <div
               className={`mt-6 p-4 rounded-xl border ${
-                darkMode
-                  ? "bg-gray-800/50 border-gray-700"
-                  : "bg-blue-50 border-blue-200"
-              }`}>
+                darkMode ? "bg-gray-800/50 border-gray-700" : "bg-blue-50 border-blue-200"
+              }`}
+            >
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
                 <h3
                   className={`font-semibold transition-colors ${
                     darkMode ? "text-white" : "text-gray-700"
-                  }`}>
+                  }`}
+                >
                   Keterangan Status:
                 </h3>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Semester: {selectedSemesterInfo?.semester === 1 ? "1 (Ganjil)" : "2 (Genap)"} |
                   Total Mapel: {statusData.length} | Siswa: {totalSiswa}
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 bg-green-700 dark:bg-green-500 rounded"></span>
-                  <span
-                    className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                  <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
                     ✅ Lengkap (semua siswa sudah dinilai)
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 bg-amber-600 dark:bg-amber-500 rounded"></span>
-                  <span
-                    className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                  <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
                     🟡 Sebagian (belum semua siswa dinilai)
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 bg-red-600 dark:bg-red-500 rounded"></span>
-                  <span
-                    className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                  <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
                     ❌ Kosong (belum ada yang dinilai)
                   </span>
                 </div>
-                {statusData.some(
-                  (item) => item.jumlah_nilai > item.total_siswa
-                ) && (
+                {statusData.some((item) => item.jumlah_nilai > item.total_siswa) && (
                   <div className="flex items-center gap-2">
                     <span className="w-4 h-4 bg-purple-600 dark:bg-purple-500 rounded"></span>
-                    <span
-                      className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                    <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
                       ⚠️ Duplikat (data lebih dari jumlah siswa)
                     </span>
                   </div>
@@ -1065,52 +1199,31 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="text-center">
                     <div className="font-bold text-green-700 dark:text-green-400">
-                      {
-                        statusData.filter(
-                          (item) => item.jumlah_nilai === item.total_siswa
-                        ).length
-                      }
+                      {statusData.filter((item) => item.jumlah_nilai === item.total_siswa).length}
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400">
-                      Lengkap
-                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">Lengkap</div>
                   </div>
                   <div className="text-center">
                     <div className="font-bold text-amber-600 dark:text-amber-400">
                       {
                         statusData.filter(
-                          (item) =>
-                            item.jumlah_nilai > 0 &&
-                            item.jumlah_nilai < item.total_siswa
+                          (item) => item.jumlah_nilai > 0 && item.jumlah_nilai < item.total_siswa
                         ).length
                       }
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400">
-                      Sebagian
-                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">Sebagian</div>
                   </div>
                   <div className="text-center">
                     <div className="font-bold text-red-600 dark:text-red-400">
-                      {
-                        statusData.filter((item) => item.jumlah_nilai === 0)
-                          .length
-                      }
+                      {statusData.filter((item) => item.jumlah_nilai === 0).length}
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400">
-                      Kosong
-                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">Kosong</div>
                   </div>
                   <div className="text-center">
                     <div className="font-bold text-purple-600 dark:text-purple-400">
-                      {
-                        statusData.filter(
-                          (item) => item.jumlah_nilai > item.total_siswa
-                        ).length
-                      }
+                      {statusData.filter((item) => item.jumlah_nilai > item.total_siswa).length}
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400">
-                      Duplikat
-                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">Duplikat</div>
                   </div>
                 </div>
               </div>
@@ -1132,4 +1245,4 @@ const CekNilai = ({ user, darkMode, onShowToast }) => {
   );
 };
 
-export default CekNilai;
+export default CekStatusNilai;

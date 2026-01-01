@@ -243,13 +243,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     };
 
     fetchClasses();
-  }, [
-    selectedSubject,
-    teacherId,
-    isHomeroomTeacher,
-    homeroomClass,
-    selectedSemester,
-  ]);
+  }, [selectedSubject, teacherId, isHomeroomTeacher, homeroomClass, selectedSemester]);
 
   // Fetch ALL unique dates without pagination first
   const fetchAllUniqueDates = async () => {
@@ -347,12 +341,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
   // Fetch attendance dates with pagination
   useEffect(() => {
     const fetchAttendanceDates = async () => {
-      if (
-        !selectedClass ||
-        !selectedSubject ||
-        !teacherId ||
-        !selectedSemester
-      ) {
+      if (!selectedClass || !selectedSubject || !teacherId || !selectedSemester) {
         setAttendanceDates([]);
         setTotalDates(0);
         return;
@@ -375,12 +364,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
         const endIndex = startIndex + itemsPerPage;
         const paginatedDates = allUniqueDates.slice(startIndex, endIndex);
 
-        console.log(
-          "📅 Paginated dates:",
-          paginatedDates.length,
-          "out of",
-          allUniqueDates.length
-        );
+        console.log("📅 Paginated dates:", paginatedDates.length, "out of", allUniqueDates.length);
 
         // Now fetch stats for paginated dates
         const [year, semester] = selectedSemester.split("-");
@@ -405,10 +389,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               .eq("type", typeValue);
 
             if (recordsError) {
-              console.error(
-                `Error fetching records for date ${date}:`,
-                recordsError
-              );
+              console.error(`Error fetching records for date ${date}:`, recordsError);
               return {
                 date,
                 hadir: 0,
@@ -491,8 +472,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
 
   // Refresh data function
   const refreshData = async () => {
-    if (!selectedClass || !selectedSubject || !teacherId || !selectedSemester)
-      return;
+    if (!selectedClass || !selectedSubject || !teacherId || !selectedSemester) return;
 
     setLoading(true);
     try {
@@ -770,10 +750,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       if (error) throw error;
 
       if (onShowToast) {
-        onShowToast(
-          `Presensi tanggal ${selectedDateData.date} berhasil dihapus!`,
-          "success"
-        );
+        onShowToast(`Presensi tanggal ${selectedDateData.date} berhasil dihapus!`, "success");
       }
 
       setShowDeleteModal(false);
@@ -810,18 +787,14 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             <div>
               <h2 className="text-xl font-bold">Edit Presensi</h2>
               <p className="text-blue-100 text-sm">
-                Tanggal: {formatDateToIndonesian(selectedDateData?.date)} |{" "}
-                {selectedSubject}
+                Tanggal: {formatDateToIndonesian(selectedDateData?.date)} | {selectedSubject}
               </p>
             </div>
             <button
               onClick={() => setShowEditModal(false)}
-              className="p-2 hover:bg-blue-600 rounded-lg transition">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
+              className="p-2 hover:bg-blue-600 rounded-lg transition"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -835,27 +808,19 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           {/* Stats */}
           <div className="grid grid-cols-4 gap-3 p-4 bg-slate-50">
             <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-green-500">
-              <div className="text-2xl font-bold text-slate-800">
-                {stats.Hadir}
-              </div>
+              <div className="text-2xl font-bold text-slate-800">{stats.Hadir}</div>
               <div className="text-xs text-slate-600">Hadir</div>
             </div>
             <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-yellow-500">
-              <div className="text-2xl font-bold text-slate-800">
-                {stats.Sakit}
-              </div>
+              <div className="text-2xl font-bold text-slate-800">{stats.Sakit}</div>
               <div className="text-xs text-slate-600">Sakit</div>
             </div>
             <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-500">
-              <div className="text-2xl font-bold text-slate-800">
-                {stats.Izin}
-              </div>
+              <div className="text-2xl font-bold text-slate-800">{stats.Izin}</div>
               <div className="text-xs text-slate-600">Izin</div>
             </div>
             <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-red-500">
-              <div className="text-2xl font-bold text-slate-800">
-                {stats.Alpa}
-              </div>
+              <div className="text-2xl font-bold text-slate-800">{stats.Alpa}</div>
               <div className="text-xs text-slate-600">Alpa</div>
             </div>
           </div>
@@ -864,17 +829,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <div className="flex-1 overflow-y-auto p-4">
             <div className="space-y-3">
               {studentsAttendance.map((record, index) => (
-                <div
-                  key={record.id}
-                  className="bg-white border border-slate-200 rounded-lg p-4">
+                <div key={record.id} className="bg-white border border-slate-200 rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="font-medium text-slate-900">
                         {index + 1}. {record.students?.full_name}
                       </div>
-                      <div className="text-sm text-slate-600">
-                        NIS: {record.students?.nis}
-                      </div>
+                      <div className="text-sm text-slate-600">NIS: {record.students?.nis}</div>
                     </div>
                   </div>
 
@@ -903,7 +864,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                                 ...prev,
                                 [record.id]: status,
                               }))
-                            }>
+                            }
+                          >
                             {status === "Hadir"
                               ? "✓"
                               : status === "Sakit"
@@ -944,13 +906,15 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <div className="border-t border-slate-200 p-4 bg-slate-50 flex gap-3">
             <button
               onClick={() => setShowEditModal(false)}
-              className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">
+              className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+            >
               Batal
             </button>
             <button
               onClick={handleSaveEdit}
               disabled={loading}
-              className="flex-1 px-4 py-3 bg-blue-500 border border-blue-600 text-white rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+              className="flex-1 px-4 py-3 bg-blue-500 border border-blue-600 text-white rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {loading ? "Menyimpan..." : "💾 Simpan Perubahan"}
             </button>
           </div>
@@ -969,18 +933,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-t-xl flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold">Ganti Tanggal</h2>
-              <p className="text-orange-100 text-sm">
-                Ubah tanggal presensi secara batch
-              </p>
+              <p className="text-orange-100 text-sm">Ubah tanggal presensi secara batch</p>
             </div>
             <button
               onClick={() => setShowChangeDateModal(false)}
-              className="p-2 hover:bg-orange-600 rounded-lg transition">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
+              className="p-2 hover:bg-orange-600 rounded-lg transition"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -993,9 +952,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
 
           <div className="p-6">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tanggal Lama
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tanggal Lama</label>
               <input
                 type="text"
                 value={formatDateToIndonesian(selectedDateData?.date)}
@@ -1005,9 +962,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tanggal Baru
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tanggal Baru</label>
               <input
                 type="date"
                 value={newDate}
@@ -1022,7 +977,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                   className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1032,8 +988,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 </svg>
                 <div>
                   <p className="text-sm text-orange-700">
-                    Semua data presensi ({selectedDateData?.total} siswa) akan
-                    dipindahkan ke tanggal baru.
+                    Semua data presensi ({selectedDateData?.total} siswa) akan dipindahkan ke
+                    tanggal baru.
                   </p>
                 </div>
               </div>
@@ -1042,13 +998,15 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowChangeDateModal(false)}
-                className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">
+                className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+              >
                 Batal
               </button>
               <button
                 onClick={handleSaveChangeDate}
                 disabled={loading}
-                className="flex-1 px-4 py-3 bg-orange-500 border border-orange-600 text-white rounded-lg hover:bg-orange-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                className="flex-1 px-4 py-3 bg-orange-500 border border-orange-600 text-white rounded-lg hover:bg-orange-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {loading ? "Mengubah..." : "📅 Ganti Tanggal"}
               </button>
             </div>
@@ -1068,18 +1026,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold">Hapus Presensi</h2>
-              <p className="text-red-100 text-sm">
-                Konfirmasi penghapusan data
-              </p>
+              <p className="text-red-100 text-sm">Konfirmasi penghapusan data</p>
             </div>
             <button
               onClick={() => setShowDeleteModal(false)}
-              className="p-2 hover:bg-red-600 rounded-lg transition">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
+              className="p-2 hover:bg-red-600 rounded-lg transition"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1119,7 +1072,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                   className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1128,12 +1082,10 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                   />
                 </svg>
                 <div>
-                  <p className="text-sm font-semibold text-red-700 mb-1">
-                    Perhatian!
-                  </p>
+                  <p className="text-sm font-semibold text-red-700 mb-1">Perhatian!</p>
                   <p className="text-sm text-red-700">
-                    Data yang dihapus tidak dapat dikembalikan. Pastikan Anda
-                    sudah yakin sebelum melanjutkan.
+                    Data yang dihapus tidak dapat dikembalikan. Pastikan Anda sudah yakin sebelum
+                    melanjutkan.
                   </p>
                 </div>
               </div>
@@ -1142,13 +1094,15 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">
+                className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+              >
                 Batal
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={loading}
-                className="flex-1 px-4 py-3 bg-red-500 border border-red-600 text-white rounded-lg hover:bg-red-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                className="flex-1 px-4 py-3 bg-red-500 border border-red-600 text-white rounded-lg hover:bg-red-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {loading ? "Menghapus..." : "🗑️ Ya, Hapus"}
               </button>
             </div>
@@ -1179,15 +1133,16 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     return (
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 bg-white rounded-lg border border-slate-200">
         <div className="text-sm text-slate-600">
-          Menampilkan {attendanceDates.length} dari {totalDates} tanggal
-          (Halaman {currentPage} dari {totalPages})
+          Menampilkan {attendanceDates.length} dari {totalDates} tanggal (Halaman {currentPage} dari{" "}
+          {totalPages})
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
-            className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
             ← Sebelumnya
           </button>
 
@@ -1196,7 +1151,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               <>
                 <button
                   onClick={() => goToPage(1)}
-                  className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition">
+                  className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+                >
                   1
                 </button>
                 {startPage > 2 && <span className="px-2 py-2">...</span>}
@@ -1211,19 +1167,19 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                   currentPage === page
                     ? "bg-blue-500 text-white border-blue-500"
                     : "border-slate-300 hover:bg-slate-50"
-                }`}>
+                }`}
+              >
                 {page}
               </button>
             ))}
 
             {endPage < totalPages && (
               <>
-                {endPage < totalPages - 1 && (
-                  <span className="px-2 py-2">...</span>
-                )}
+                {endPage < totalPages - 1 && <span className="px-2 py-2">...</span>}
                 <button
                   onClick={() => goToPage(totalPages)}
-                  className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition">
+                  className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition"
+                >
                   {totalPages}
                 </button>
               </>
@@ -1233,7 +1189,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}
-            className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
             Selanjutnya →
           </button>
         </div>
@@ -1255,9 +1212,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     return (
       <div className="p-4 sm:p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-600 text-lg">
-            Anda harus login untuk mengakses halaman ini
-          </p>
+          <p className="text-red-600 text-lg">Anda harus login untuk mengakses halaman ini</p>
         </div>
       </div>
     );
@@ -1274,8 +1229,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 Management Presensi
               </h1>
               <p className="text-sm sm:text-base text-slate-600">
-                Edit, Ubah Tanggal, atau Hapus Data Presensi yang Sudah
-                Tersimpan
+                Edit, Ubah Tanggal, atau Hapus Data Presensi yang Sudah Tersimpan
               </p>
             </div>
             <div className="sm:text-right">
@@ -1298,9 +1252,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm mb-4 sm:mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">
-              Semester
-            </label>
+            <label className="block text-sm font-medium text-slate-700">Semester</label>
             <select
               value={selectedSemester}
               onChange={(e) => {
@@ -1311,7 +1263,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={loading || !teacherId}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            >
               <option value="">Pilih Semester</option>
               {semesters.map((semester, index) => (
                 <option key={index} value={semester.value}>
@@ -1322,9 +1275,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">
-              Mata Pelajaran
-            </label>
+            <label className="block text-sm font-medium text-slate-700">Mata Pelajaran</label>
             <select
               value={selectedSubject}
               onChange={(e) => {
@@ -1334,7 +1285,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={loading || !teacherId || !selectedSemester}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            >
               <option value="">Pilih Mata Pelajaran</option>
               {subjects.map((subject, index) => (
                 <option key={index} value={subject}>
@@ -1345,9 +1297,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">
-              Kelas
-            </label>
+            <label className="block text-sm font-medium text-slate-700">Kelas</label>
             <select
               value={selectedClass}
               onChange={(e) => {
@@ -1355,7 +1305,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={!selectedSubject || loading || isHomeroomDaily()}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-slate-50">
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-slate-50"
+            >
               <option value="">Pilih Kelas</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>
@@ -1371,9 +1322,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">
-              Filter Bulan
-            </label>
+            <label className="block text-sm font-medium text-slate-700">Filter Bulan</label>
             <select
               value={selectedMonth}
               onChange={(e) => {
@@ -1381,7 +1330,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={!selectedClass}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            >
               {months.map((month) => (
                 <option key={month.value} value={month.value}>
                   {month.label}
@@ -1410,7 +1360,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               className="w-16 h-16 mx-auto mb-4 text-slate-300"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1432,14 +1383,11 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               <div>
                 <h3 className="text-base sm:text-lg font-semibold text-slate-800">
                   Daftar Tanggal Presensi - {selectedSubject}
-                  <span className="text-sm text-slate-600 ml-2">
-                    ({totalDates} tanggal total)
-                  </span>
+                  <span className="text-sm text-slate-600 ml-2">({totalDates} tanggal total)</span>
                 </h3>
                 {selectedMonth && (
                   <p className="text-sm text-slate-600 mt-1">
-                    Filter:{" "}
-                    {months.find((m) => m.value === selectedMonth)?.label}
+                    Filter: {months.find((m) => m.value === selectedMonth)?.label}
                   </p>
                 )}
               </div>
@@ -1451,9 +1399,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             {/* Mobile View */}
             <div className="block sm:hidden">
               {attendanceDates.map((dateData) => (
-                <div
-                  key={dateData.date}
-                  className="border-b border-slate-100 p-4">
+                <div key={dateData.date} className="border-b border-slate-100 p-4">
                   <div className="mb-3">
                     <div className="font-semibold text-slate-900 mb-2">
                       📅 {formatDateToIndonesian(dateData.date)}
@@ -1481,17 +1427,20 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => handleEdit(dateData)}
-                      className="w-full px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition text-sm font-medium">
+                      className="w-full px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
+                    >
                       ✏️ Edit
                     </button>
                     <button
                       onClick={() => handleChangeDate(dateData)}
-                      className="w-full px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-100 transition text-sm font-medium">
+                      className="w-full px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-100 transition text-sm font-medium"
+                    >
                       📅 Ganti Tanggal
                     </button>
                     <button
                       onClick={() => handleDelete(dateData)}
-                      className="w-full px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition text-sm font-medium">
+                      className="w-full px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition text-sm font-medium"
+                    >
                       🗑️ Hapus
                     </button>
                   </div>
@@ -1529,9 +1478,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 </thead>
                 <tbody>
                   {attendanceDates.map((dateData) => (
-                    <tr
-                      key={dateData.date}
-                      className="border-b border-slate-100 hover:bg-slate-50">
+                    <tr key={dateData.date} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="px-4 py-3 text-sm font-medium text-slate-900">
                         📅 {formatDateToIndonesian(dateData.date)}
                       </td>
@@ -1563,19 +1510,22 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                           <button
                             onClick={() => handleEdit(dateData)}
                             className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition text-xs font-medium"
-                            title="Edit">
+                            title="Edit"
+                          >
                             ✏️ Edit
                           </button>
                           <button
                             onClick={() => handleChangeDate(dateData)}
                             className="px-3 py-1.5 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-100 transition text-xs font-medium"
-                            title="Ganti Tanggal">
+                            title="Ganti Tanggal"
+                          >
                             📅
                           </button>
                           <button
                             onClick={() => handleDelete(dateData)}
                             className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition text-xs font-medium"
-                            title="Hapus">
+                            title="Hapus"
+                          >
                             🗑️
                           </button>
                         </div>

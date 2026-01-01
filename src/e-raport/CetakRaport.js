@@ -1,19 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import {
-  Download,
-  Printer,
-  Edit,
-  ChevronDown,
-  ChevronUp,
-  Save,
-} from "lucide-react";
+import { Download, Printer, Edit, ChevronDown, ChevronUp, Save } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-import {
-  getActiveAcademicInfo,
-  applyAcademicFilters,
-} from "../services/academicYearService";
+import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academicYearService";
 
 // ✅ URUTAN MAPEL STANDAR
 const getMapelOrder = (mapel) => {
@@ -98,17 +88,10 @@ function CetakRaport() {
       userData = JSON.parse(sessionData);
       homeroomClassId = userData.homeroom_class_id;
 
-      console.log(
-        "✅ User loaded:",
-        userData.username,
-        "Kelas:",
-        homeroomClassId
-      );
+      console.log("✅ User loaded:", userData.username, "Kelas:", homeroomClassId);
 
       if (!homeroomClassId) {
-        throw new Error(
-          "Anda bukan wali kelas. Fitur ini hanya untuk wali kelas."
-        );
+        throw new Error("Anda bukan wali kelas. Fitur ini hanya untuk wali kelas.");
       }
 
       // Validasi kelas
@@ -120,9 +103,7 @@ function CetakRaport() {
         .single();
 
       if (classError || !classData) {
-        throw new Error(
-          `Kelas ${homeroomClassId} tidak ditemukan atau tidak aktif.`
-        );
+        throw new Error(`Kelas ${homeroomClassId} tidak ditemukan atau tidak aktif.`);
       }
 
       console.log("✅ Kelas valid:", classData.grade);
@@ -150,12 +131,18 @@ function CetakRaport() {
         throw new Error("Informasi tahun ajaran aktif tidak ditemukan.");
       }
 
-      // Convert ke format yang dipake di CetakRaport
+      // ✅ BENAR - Pakai activeSemesterId
       setAcademicYear({
-        id: academicInfo.yearId,
+        id: academicInfo.activeSemesterId, // ✅ INI yang benar!
         year: academicInfo.year || academicInfo.displayText,
-        semester: academicInfo.semester,
+        semester: academicInfo.activeSemester, // ✅ Ganti juga ini
         is_active: academicInfo.isActive,
+      });
+
+      console.log("✅ Academic year loaded:", {
+        id: academicInfo.activeSemesterId,
+        year: academicInfo.year,
+        semester: academicInfo.activeSemester,
       });
 
       console.log("✅ Academic year loaded:", academicInfo);
@@ -196,7 +183,7 @@ function CetakRaport() {
   };
 
   const getSemesterText = () => {
-    return semester === "1" ? "Semester Ganjil" : "Semester Genap";
+    return semester == 1 ? "Semester Ganjil" : "Semester Genap";
   };
 
   const generateCapaianKompetensi = (nilaiData) => {
@@ -207,10 +194,7 @@ function CetakRaport() {
       item.nilai_eraport_detail?.forEach((detail) => {
         if (detail.status_tercapai === true && detail.tujuan_pembelajaran) {
           tercapai.push(detail.tujuan_pembelajaran.deskripsi_tp);
-        } else if (
-          detail.status_tercapai === false &&
-          detail.tujuan_pembelajaran
-        ) {
+        } else if (detail.status_tercapai === false && detail.tujuan_pembelajaran) {
           peningkatan.push(detail.tujuan_pembelajaran.deskripsi_tp);
         }
       });
@@ -218,9 +202,7 @@ function CetakRaport() {
 
     let text = "";
     if (tercapai.length > 0) {
-      text += `Mencapai Kompetensi dengan sangat baik dalam hal ${tercapai.join(
-        ", "
-      )}.`;
+      text += `Mencapai Kompetensi dengan sangat baik dalam hal ${tercapai.join(", ")}.`;
     }
     if (peningkatan.length > 0) {
       if (text) text += "\n";
@@ -268,9 +250,7 @@ function CetakRaport() {
       const enrichedData =
         nilaiData?.map((nilai) => {
           const tpForMapel =
-            tpData?.filter(
-              (tp) => tp.mata_pelajaran === nilai.mata_pelajaran
-            ) || [];
+            tpData?.filter((tp) => tp.mata_pelajaran === nilai.mata_pelajaran) || [];
           const detailsMap = {};
           nilai.nilai_eraport_detail?.forEach((detail) => {
             detailsMap[detail.tujuan_pembelajaran_id] = detail.status_tercapai;
@@ -279,9 +259,8 @@ function CetakRaport() {
           const tpWithStatus = tpForMapel.map((tp) => ({
             ...tp,
             status_tercapai: detailsMap[tp.id] ?? null,
-            detail_id: nilai.nilai_eraport_detail?.find(
-              (d) => d.tujuan_pembelajaran_id === tp.id
-            )?.id,
+            detail_id: nilai.nilai_eraport_detail?.find((d) => d.tujuan_pembelajaran_id === tp.id)
+              ?.id,
           }));
 
           return { ...nilai, tujuan_pembelajaran_list: tpWithStatus };
@@ -289,9 +268,7 @@ function CetakRaport() {
 
       // ✅ SORT berdasarkan urutan mapel standar
       const sortedEnrichedData = enrichedData.sort((a, b) => {
-        return (
-          getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran)
-        );
+        return getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran);
       });
 
       setNilaiDetailList(sortedEnrichedData);
@@ -304,8 +281,7 @@ function CetakRaport() {
 
   const handleStatusChange = (nilaiIndex, tpIndex, newStatus) => {
     const updated = [...nilaiDetailList];
-    updated[nilaiIndex].tujuan_pembelajaran_list[tpIndex].status_tercapai =
-      newStatus;
+    updated[nilaiIndex].tujuan_pembelajaran_list[tpIndex].status_tercapai = newStatus;
     setNilaiDetailList(updated);
   };
 
@@ -333,13 +309,11 @@ function CetakRaport() {
             if (error) errorCount++;
             else successCount++;
           } else {
-            const { error } = await supabase
-              .from("nilai_eraport_detail")
-              .insert({
-                nilai_eraport_id: nilai.id,
-                tujuan_pembelajaran_id: tp.id,
-                status_tercapai: tp.status_tercapai,
-              });
+            const { error } = await supabase.from("nilai_eraport_detail").insert({
+              nilai_eraport_id: nilai.id,
+              tujuan_pembelajaran_id: tp.id,
+              status_tercapai: tp.status_tercapai,
+            });
             if (error) errorCount++;
             else successCount++;
           }
@@ -453,8 +427,7 @@ function CetakRaport() {
       const sessionData = localStorage.getItem("userSession");
       const currentUser = sessionData ? JSON.parse(sessionData) : null;
       let waliKelas = {
-        full_name:
-          currentUser?.full_name || currentUser?.username || "Wali Kelas",
+        full_name: currentUser?.full_name || currentUser?.username || "Wali Kelas",
         nip: currentUser?.nip || "-",
       };
 
@@ -473,9 +446,7 @@ function CetakRaport() {
       // Metadata
       const { data: metadataData } = await supabase
         .from("raport_metadata")
-        .select(
-          "tanggal_raport, tempat, nama_kepala_sekolah, nip_kepala_sekolah"
-        )
+        .select("tanggal_raport, tempat, nama_kepala_sekolah, nip_kepala_sekolah")
         .eq("academic_year_id", academicYear?.id)
         .eq("semester", semester)
         .single();
@@ -489,8 +460,7 @@ function CetakRaport() {
           })
         : "20 Desember 2024";
 
-      const namaKepalaSekolah =
-        metadataData?.nama_kepala_sekolah || "Ade Nurmugni";
+      const namaKepalaSekolah = metadataData?.nama_kepala_sekolah || "Ade Nurmugni";
       const nipKepalaSekolah = metadataData?.nip_kepala_sekolah || "-";
 
       if (!isFirstStudent) doc.addPage();
@@ -516,25 +486,13 @@ function CetakRaport() {
         yPos += 4.5;
 
         doc.text("Sekolah", 20, yPos);
-        doc.text(
-          `: ${schoolSettings.school_name || "SMP MUSLIMIN CILILIN"}`,
-          50,
-          yPos
-        );
+        doc.text(`: ${schoolSettings.school_name || "SMP MUSLIMIN CILILIN"}`, 50, yPos);
         doc.text("Semester", 145, yPos);
-        doc.text(
-          `: ${semester === "1" ? "Ganjil (1)" : "Genap (2)"}`,
-          170,
-          yPos
-        );
+        doc.text(`: ${semester == 1 ? "Ganjil (1)" : "Genap (2)"}`, 170, yPos);
         yPos += 4.5;
 
         doc.text("Alamat", 20, yPos);
-        doc.text(
-          `: ${schoolSettings.school_address || "JL. RAYA WARUNGAWI"}`,
-          50,
-          yPos
-        );
+        doc.text(`: ${schoolSettings.school_address || "JL. RAYA WARUNGAWI"}`, 50, yPos);
         doc.text("Tahun Ajaran", 145, yPos);
         doc.text(`: ${academicYear?.year || "2024/2025"}`, 170, yPos);
         yPos += 4;
@@ -557,8 +515,7 @@ function CetakRaport() {
 
       // ========== TABEL MATA PELAJARAN ==========
       const tableData = sortedNilaiData.map((nilai, idx) => {
-        let capaian =
-          nilai.deskripsi_capaian || generateCapaianKompetensi([nilai]) || "-";
+        let capaian = nilai.deskripsi_capaian || generateCapaianKompetensi([nilai]) || "-";
 
         // ✅ Bersihkan deskripsi dari format aneh
         capaian = capaian
@@ -570,12 +527,7 @@ function CetakRaport() {
           .replace(/\.\s*\./g, ".") // Hapus titik ganda
           .trim();
 
-        return [
-          idx + 1,
-          nilai.mata_pelajaran,
-          nilai.nilai_akhir || "-",
-          capaian,
-        ];
+        return [idx + 1, nilai.mata_pelajaran, nilai.nilai_akhir || "-", capaian];
       });
 
       if (tableData.length === 0) {
@@ -628,11 +580,7 @@ function CetakRaport() {
         // Footer halaman 1
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
-        doc.text(
-          `Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
-          20,
-          287
-        );
+        doc.text(`Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`, 20, 287);
         doc.text(`Halaman : 1`, 175, 287);
 
         doc.addPage();
@@ -812,21 +760,13 @@ function CetakRaport() {
         // Cuma 1 halaman
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
-        doc.text(
-          `Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
-          20,
-          287
-        );
+        doc.text(`Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`, 20, 287);
         doc.text(`Halaman : 1`, 175, 287);
       } else if (currentPage === 2) {
         // Halaman 2
         doc.setFontSize(8);
         doc.setFont("helvetica", "italic");
-        doc.text(
-          `Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`,
-          20,
-          287
-        );
+        doc.text(`Kelas ${kelasId} | ${siswa.full_name.toUpperCase()} | ${siswa.nis}`, 20, 287);
         doc.text(`Halaman : 2`, 175, 287);
       }
 
@@ -870,9 +810,7 @@ function CetakRaport() {
       const doc = new jsPDF();
       await addStudentPages(doc, siswa, true);
       doc.save(
-        `RAPOR_${siswa.full_name}_Kelas${classId}_${getSemesterText()}_${
-          academicYear?.year
-        }.pdf`
+        `RAPOR_${siswa.full_name}_Kelas${classId}_${getSemesterText()}_${academicYear?.year}.pdf`
       );
     } catch (error) {
       alert("Gagal download: " + error.message);
@@ -908,9 +846,7 @@ function CetakRaport() {
         await addStudentPages(doc, siswa, i === 0);
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
-      doc.save(
-        `RAPOR_Kelas${classId}_${getSemesterText()}_${academicYear?.year}.pdf`
-      );
+      doc.save(`RAPOR_Kelas${classId}_${getSemesterText()}_${academicYear?.year}.pdf`);
       alert("Berhasil! File PDF telah didownload.");
     } catch (error) {
       alert("Gagal download: " + error.message);
@@ -940,7 +876,8 @@ function CetakRaport() {
               className="w-8 h-8 text-red-600"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -949,9 +886,7 @@ function CetakRaport() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
-            Akses Dibatasi
-          </h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Akses Dibatasi</h3>
           <p className="text-gray-600 mb-6">{errorMessage}</p>
         </div>
       </div>
@@ -967,7 +902,8 @@ function CetakRaport() {
               className="w-8 h-8 text-blue-600"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -976,12 +912,8 @@ function CetakRaport() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
-            Akses Terbatas
-          </h3>
-          <p className="text-gray-600">
-            Hanya wali kelas yang dapat mengakses fitur ini.
-          </p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Akses Terbatas</h3>
+          <p className="text-gray-600">Hanya wali kelas yang dapat mengakses fitur ini.</p>
         </div>
       </div>
     );
@@ -1009,7 +941,8 @@ function CetakRaport() {
             <select
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
-              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400">
+              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
+            >
               <option value="">-- Pilih Semester --</option>
               <option value="1">Semester Ganjil</option>
               <option value="2">Semester Genap</option>
@@ -1022,11 +955,10 @@ function CetakRaport() {
             <button
               onClick={handleDownloadAllPDF}
               disabled={generating}
-              className="bg-red-700 hover:bg-red-800 dark:bg-red-800 dark:hover:bg-red-900 text-white px-4 md:px-6 py-3 rounded-lg hover:shadow-lg flex items-center gap-2 disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed min-h-[44px] text-sm md:text-base font-semibold">
+              className="bg-red-700 hover:bg-red-800 dark:bg-red-800 dark:hover:bg-red-900 text-white px-4 md:px-6 py-3 rounded-lg hover:shadow-lg flex items-center gap-2 disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed min-h-[44px] text-sm md:text-base font-semibold"
+            >
               <Download size={18} />
-              <span className="hidden sm:inline">
-                Download Semua Raport (1 PDF)
-              </span>
+              <span className="hidden sm:inline">Download Semua Raport (1 PDF)</span>
               <span className="sm:hidden">Download Semua</span>
             </button>
           </div>
@@ -1062,7 +994,8 @@ function CetakRaport() {
                       idx % 2 === 0
                         ? "bg-red-50/30 dark:bg-gray-800/50"
                         : "bg-white dark:bg-gray-900"
-                    }>
+                    }
+                  >
                     <td className="border border-gray-300 dark:border-gray-700 p-2 md:p-3 text-center font-medium">
                       {idx + 1}
                     </td>
@@ -1081,7 +1014,8 @@ function CetakRaport() {
                           onClick={() => openDetailModal(siswa)}
                           disabled={generating}
                           className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-3 py-2 rounded-lg hover:shadow flex items-center gap-1 disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed min-h-[44px] text-xs font-medium"
-                          title="Edit Detail">
+                          title="Edit Detail"
+                        >
                           <Edit size={14} />
                           <span className="hidden md:inline">Detail</span>
                         </button>
@@ -1089,7 +1023,8 @@ function CetakRaport() {
                           onClick={() => handlePrint(siswa)}
                           disabled={generating}
                           className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-3 py-2 rounded-lg hover:shadow flex items-center gap-1 disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed min-h-[44px] text-xs font-medium"
-                          title="Print">
+                          title="Print"
+                        >
                           <Printer size={14} />
                           <span className="hidden md:inline">Print</span>
                         </button>
@@ -1097,7 +1032,8 @@ function CetakRaport() {
                           onClick={() => handleDownloadPDF(siswa)}
                           disabled={generating}
                           className="bg-red-700 hover:bg-red-800 dark:bg-red-800 dark:hover:bg-red-900 text-white px-3 py-2 rounded-lg hover:shadow flex items-center gap-1 disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed min-h-[44px] text-xs font-medium"
-                          title="Download PDF">
+                          title="Download PDF"
+                        >
                           <Download size={14} />
                           <span className="hidden md:inline">PDF</span>
                         </button>
@@ -1131,9 +1067,7 @@ function CetakRaport() {
 
         {!loading && classId && !semester && (
           <div className="text-center py-6 md:py-8 text-gray-500 dark:text-gray-400">
-            <p className="text-sm md:text-base">
-              Silakan pilih semester terlebih dahulu.
-            </p>
+            <p className="text-sm md:text-base">Silakan pilih semester terlebih dahulu.</p>
           </div>
         )}
       </div>
@@ -1150,14 +1084,12 @@ function CetakRaport() {
               <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2">
                 {generateProgress.action === "print" && "Menyiapkan Print..."}
                 {generateProgress.action === "download" && "Membuat PDF..."}
-                {generateProgress.action === "all" &&
-                  "Membuat PDF Semua Siswa..."}
+                {generateProgress.action === "all" && "Membuat PDF Semua Siswa..."}
               </h3>
               {generateProgress.action === "all" && (
                 <>
                   <p className="text-gray-600 dark:text-gray-300 text-center text-sm md:text-base mb-4">
-                    {generateProgress.current} dari {generateProgress.total}{" "}
-                    siswa
+                    {generateProgress.current} dari {generateProgress.total} siswa
                   </p>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3">
                     <div
@@ -1165,26 +1097,21 @@ function CetakRaport() {
                       style={{
                         width: `${
                           generateProgress.total > 0
-                            ? (generateProgress.current /
-                                generateProgress.total) *
-                              100
+                            ? (generateProgress.current / generateProgress.total) * 100
                             : 0
                         }%`,
-                      }}></div>
+                      }}
+                    ></div>
                   </div>
                   <p className="text-xl md:text-2xl font-bold text-red-700 dark:text-red-500 mt-2">
                     {generateProgress.total > 0
-                      ? Math.round(
-                          (generateProgress.current / generateProgress.total) *
-                            100
-                        )
+                      ? Math.round((generateProgress.current / generateProgress.total) * 100)
                       : 0}
                     %
                   </p>
                 </>
               )}
-              {(generateProgress.action === "print" ||
-                generateProgress.action === "download") && (
+              {(generateProgress.action === "print" || generateProgress.action === "download") && (
                 <p className="text-gray-600 dark:text-gray-300 text-center text-sm md:text-base">
                   Mohon tunggu sebentar...
                 </p>
@@ -1199,16 +1126,15 @@ function CetakRaport() {
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-blue-600 text-white p-6 rounded-t-xl flex justify-between items-center z-10">
               <div>
-                <h3 className="text-2xl font-bold">
-                  Input Detail Capaian Kompetensi
-                </h3>
+                <h3 className="text-2xl font-bold">Input Detail Capaian Kompetensi</h3>
                 <p className="text-sm text-blue-100 mt-1">
                   {selectedSiswa?.full_name} - {selectedSiswa?.nis}
                 </p>
               </div>
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg font-medium">
+                className="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg font-medium"
+              >
                 Tutup
               </button>
             </div>
@@ -1217,26 +1143,22 @@ function CetakRaport() {
               {loadingDetail ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Memuat data...
-                  </p>
+                  <p className="text-gray-600 dark:text-gray-300">Memuat data...</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {nilaiDetailList.map((nilai, nilaiIndex) => (
                     <div
                       key={nilai.id}
-                      className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
+                      className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden"
+                    >
                       <div
                         onClick={() => toggleExpand(nilaiIndex)}
-                        className="bg-blue-600 text-white p-4 cursor-pointer hover:bg-blue-700 flex justify-between items-center">
+                        className="bg-blue-600 text-white p-4 cursor-pointer hover:bg-blue-700 flex justify-between items-center"
+                      >
                         <div>
-                          <h4 className="font-bold text-lg">
-                            {nilai.mata_pelajaran}
-                          </h4>
-                          <p className="text-sm text-blue-100">
-                            Nilai: {nilai.nilai_akhir || "-"}
-                          </p>
+                          <h4 className="font-bold text-lg">{nilai.mata_pelajaran}</h4>
+                          <p className="text-sm text-blue-100">Nilai: {nilai.nilai_akhir || "-"}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm bg-blue-500 px-3 py-1 rounded-full">
@@ -1253,81 +1175,70 @@ function CetakRaport() {
                       {expandedMapel[nilaiIndex] && (
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 space-y-3">
                           {nilai.tujuan_pembelajaran_list?.length > 0 ? (
-                            nilai.tujuan_pembelajaran_list.map(
-                              (tp, tpIndex) => (
-                                <div
-                                  key={tp.id}
-                                  className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold">
-                                      {tp.urutan || tpIndex + 1}
-                                    </div>
-                                    <div className="flex-grow">
-                                      <p className="text-gray-800 dark:text-gray-200 mb-2">
-                                        {tp.deskripsi_tp}
-                                      </p>
-                                      <div className="flex gap-2 flex-wrap">
-                                        <button
-                                          onClick={() =>
-                                            handleStatusChange(
-                                              nilaiIndex,
-                                              tpIndex,
-                                              true
-                                            )
-                                          }
-                                          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                                            tp.status_tercapai === true
-                                              ? "bg-green-600 text-white shadow-md"
-                                              : "bg-green-100 text-green-700 hover:bg-green-200"
-                                          }`}>
-                                          ✓ Sudah Menguasai
-                                        </button>
-                                        <button
-                                          onClick={() =>
-                                            handleStatusChange(
-                                              nilaiIndex,
-                                              tpIndex,
-                                              false
-                                            )
-                                          }
-                                          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                                            tp.status_tercapai === false
-                                              ? "bg-yellow-600 text-white shadow-md"
-                                              : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                                          }`}>
-                                          ⚠ Perlu Perbaikan
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div className="flex-shrink-0">
-                                      {tp.status_tercapai === true && (
-                                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                                          ✓ Sudah
-                                        </span>
-                                      )}
-                                      {tp.status_tercapai === false && (
-                                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
-                                          ⚠ Perlu
-                                        </span>
-                                      )}
-                                      {tp.status_tercapai === null && (
-                                        <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-xs font-medium">
-                                          - Belum
-                                        </span>
-                                      )}
+                            nilai.tujuan_pembelajaran_list.map((tp, tpIndex) => (
+                              <div
+                                key={tp.id}
+                                className="bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold">
+                                    {tp.urutan || tpIndex + 1}
+                                  </div>
+                                  <div className="flex-grow">
+                                    <p className="text-gray-800 dark:text-gray-200 mb-2">
+                                      {tp.deskripsi_tp}
+                                    </p>
+                                    <div className="flex gap-2 flex-wrap">
+                                      <button
+                                        onClick={() =>
+                                          handleStatusChange(nilaiIndex, tpIndex, true)
+                                        }
+                                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                          tp.status_tercapai === true
+                                            ? "bg-green-600 text-white shadow-md"
+                                            : "bg-green-100 text-green-700 hover:bg-green-200"
+                                        }`}
+                                      >
+                                        ✓ Sudah Menguasai
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleStatusChange(nilaiIndex, tpIndex, false)
+                                        }
+                                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                                          tp.status_tercapai === false
+                                            ? "bg-yellow-600 text-white shadow-md"
+                                            : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                        }`}
+                                      >
+                                        ⚠ Perlu Perbaikan
+                                      </button>
                                     </div>
                                   </div>
+                                  <div className="flex-shrink-0">
+                                    {tp.status_tercapai === true && (
+                                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                        ✓ Sudah
+                                      </span>
+                                    )}
+                                    {tp.status_tercapai === false && (
+                                      <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
+                                        ⚠ Perlu
+                                      </span>
+                                    )}
+                                    {tp.status_tercapai === null && (
+                                      <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded text-xs font-medium">
+                                        - Belum
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                              )
-                            )
+                              </div>
+                            ))
                           ) : (
                             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                              <p className="font-medium">
-                                Belum ada Tujuan Pembelajaran
-                              </p>
-                              <p className="text-sm">
-                                Silakan buat TP terlebih dahulu
-                              </p>
+                              <p className="font-medium">Belum ada Tujuan Pembelajaran</p>
+                              <p className="text-sm">Silakan buat TP terlebih dahulu</p>
                             </div>
                           )}
                         </div>
@@ -1339,7 +1250,8 @@ function CetakRaport() {
                     <button
                       onClick={handleSimpanDetail}
                       disabled={savingDetail}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all">
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
+                    >
                       <Save size={20} />
                       {savingDetail ? "Menyimpan..." : "Simpan Semua"}
                     </button>
@@ -1359,9 +1271,7 @@ function CetakRaport() {
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 Menyimpan Data...
               </h3>
-              <p className="text-gray-600 dark:text-gray-300 text-center">
-                Mohon tunggu sebentar
-              </p>
+              <p className="text-gray-600 dark:text-gray-300 text-center">Mohon tunggu sebentar</p>
             </div>
           </div>
         </div>

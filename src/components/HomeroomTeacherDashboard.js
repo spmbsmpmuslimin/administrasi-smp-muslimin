@@ -300,22 +300,18 @@ const HomeroomTeacherDashboard = ({ user }) => {
       const maleCount = students.filter((s) => s.gender === "L").length;
       const femaleCount = students.filter((s) => s.gender === "P").length;
 
-      // Calculate attendance stats - based on status column (note: "Hadir" with capital H)
-      const uniqueStudentsPresent = new Set();
+      // Calculate attendance stats - based on status column
       const uniqueStudentsAbsent = new Set();
       const sakitCount = new Set();
       const izinCount = new Set();
       const alpaCount = new Set();
 
+      // Hitung yang tidak hadir dulu
       attendances.forEach((att) => {
-        const status = att.status; // Keep original case
+        const status = att.status;
 
-        // Check if student is present (note: "Hadir" starts with capital H)
-        if (status === "Hadir") {
-          uniqueStudentsPresent.add(att.student_id);
-        }
-        // Check if student is absent (Izin, Sakit, Alpa)
-        else if (status === "Sakit") {
+        // Track students yang tidak hadir dan kategorinya
+        if (status === "Sakit") {
           uniqueStudentsAbsent.add(att.student_id);
           sakitCount.add(att.student_id);
         } else if (status === "Izin") {
@@ -327,12 +323,16 @@ const HomeroomTeacherDashboard = ({ user }) => {
         }
       });
 
+      // Hadir = Total Siswa - Yang Tidak Hadir
+      const presentCount = students.length - uniqueStudentsAbsent.size;
+
       if (process.env.NODE_ENV === "development") {
-        console.log("✅ Students present:", uniqueStudentsPresent.size);
+        console.log("✅ Students present:", presentCount);
         console.log("❌ Students absent:", uniqueStudentsAbsent.size);
         console.log("🏥 Sakit:", sakitCount.size);
         console.log("📋 Izin:", izinCount.size);
         console.log("✖ Alpa:", alpaCount.size);
+        console.log("📊 Total students:", students.length);
         console.log("📊 Total attendance records:", attendances.length);
         console.log("📊 Unique status values:", [...new Set(attendances.map((a) => a.status))]);
       }
@@ -361,7 +361,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         totalStudents: students.length,
         maleStudents: maleCount,
         femaleStudents: femaleCount,
-        presentToday: uniqueStudentsPresent.size,
+        presentToday: presentCount,
         absentToday: uniqueStudentsAbsent.size,
         sakitToday: sakitCount.size,
         izinToday: izinCount.size,

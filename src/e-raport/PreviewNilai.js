@@ -2,10 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { FileSpreadsheet, Download, RefreshCw } from "lucide-react";
 import ExcelJS from "exceljs";
-import {
-  getActiveAcademicInfo,
-  applyAcademicFilters,
-} from "../services/academicYearService";
+import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academicYearService";
 
 function PreviewNilai({ classId, semester, setSemester, academicYear }) {
   const [loading, setLoading] = useState(false);
@@ -74,19 +71,22 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
 
       if (siswaError) throw siswaError;
 
-      // 2. Load semua nilai dari tabel nilai_eraport menggunakan applyAcademicFilters
-      let query = supabase
+      // ✅ KODE BARU (BENAR):
+      const activeSemesters = academicInfo.availableSemesters || [];
+      const targetSemester = activeSemesters.find((s) => s.semester === parseInt(semester));
+
+      if (!targetSemester) {
+        throw new Error(
+          `Semester ${semester} tidak ditemukan untuk tahun ajaran ${academicInfo.year}`
+        );
+      }
+
+      // Query dengan filter semester yang benar
+      const { data: nilai, error: nilaiError } = await supabase
         .from("nilai_eraport")
         .select("student_id, mata_pelajaran, nilai_akhir, kkm")
-        .eq("class_id", classId);
-
-      // Apply academic filters
-      query = await applyAcademicFilters(query, {
-        filterYearId: true, // Filter by academic_year_id
-        customSemester: semester, // Gunakan semester yang dipilih
-      });
-
-      const { data: nilai, error: nilaiError } = await query;
+        .eq("class_id", classId)
+        .eq("academic_year_id", targetSemester.id); // ✅ Filter by semester ID yang tepat
 
       if (nilaiError) throw nilaiError;
 
@@ -203,7 +203,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       const workbook = new ExcelJS.Workbook();
       const semesterLabel =
         academicInfo.semesterText ||
-        (academicInfo.semester === "1" ? "Ganjil" : "Genap");
+        (academicInfo.semester === 1 ? "Semester 1 (Ganjil)" : "Semester 2 (Genap)");
       const tahunAjaran = academicInfo.year || "Tahun Ajaran";
 
       // ========== SHEET 1: LEGER NILAI (Urut Nama) ==========
@@ -232,14 +232,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       });
 
       // Header kolom
-      const headersNilai = [
-        "No",
-        "NIS",
-        "Nama Siswa",
-        ...mapelList,
-        "JML",
-        "Rata2",
-      ];
+      const headersNilai = ["No", "NIS", "Nama Siswa", ...mapelList, "JML", "Rata2"];
       const headerRowNilai = wsNilai.getRow(rowNilai);
       headerRowNilai.values = headersNilai;
       headerRowNilai.height = 30;
@@ -292,10 +285,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
         // RATA-RATA: Dengan 2 desimal
         const rataRata =
           nilaiList.length > 0
-            ? (
-                nilaiList.reduce((sum, n) => sum + parseFloat(n), 0) /
-                nilaiList.length
-              ).toFixed(2)
+            ? (nilaiList.reduce((sum, n) => sum + parseFloat(n), 0) / nilaiList.length).toFixed(2)
             : "-";
 
         const rowData = [
@@ -381,9 +371,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
         r.getCell(1).value = row[0];
         const totalColumns = mapelList.length + 5;
         const lastColumn = String.fromCharCode(65 + totalColumns - 1);
-        wsPeringkat.mergeCells(
-          `A${rowPeringkat - 1}:${lastColumn}${rowPeringkat - 1}`
-        );
+        wsPeringkat.mergeCells(`A${rowPeringkat - 1}:${lastColumn}${rowPeringkat - 1}`);
         r.getCell(1).font = {
           bold: true,
           size: rowPeringkat <= 4 ? 14 : 11,
@@ -392,14 +380,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
         r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
       });
 
-      const headersPeringkat = [
-        "No",
-        "NIS",
-        "Nama Siswa",
-        ...mapelList,
-        "JML",
-        "Rata2",
-      ];
+      const headersPeringkat = ["No", "NIS", "Nama Siswa", ...mapelList, "JML", "Rata2"];
 
       const headerRowPeringkat = wsPeringkat.getRow(rowPeringkat);
       headerRowPeringkat.values = headersPeringkat;
@@ -444,10 +425,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
           // RATA-RATA: Dengan 2 desimal
           const rataRata =
             nilaiList.length > 0
-              ? (
-                  nilaiList.reduce((sum, n) => sum + parseFloat(n), 0) /
-                  nilaiList.length
-                ).toFixed(2)
+              ? (nilaiList.reduce((sum, n) => sum + parseFloat(n), 0) / nilaiList.length).toFixed(2)
               : "-";
 
           return {
@@ -545,12 +523,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
               type: "pattern",
               pattern: "solid",
               fgColor: {
-                argb:
-                  index === 0
-                    ? "FFFFFFCC"
-                    : index === 1
-                    ? "FFE8E8E8"
-                    : "FFF5E6CC",
+                argb: index === 0 ? "FFFFFFCC" : index === 1 ? "FFE8E8E8" : "FFF5E6CC",
               },
             };
           } else if (index % 2 !== 0) {
@@ -573,8 +546,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       a.href = url;
 
       const semesterShort = semesterLabel;
-      const tahunAjaranShort =
-        academicInfo.year?.replace("/", "-") || "Tahun-Ajaran";
+      const tahunAjaranShort = academicInfo.year?.replace("/", "-") || "Tahun-Ajaran";
 
       a.download = `Leger_Nilai_Kelas_${classId}_${semesterShort}_${tahunAjaranShort}.xlsx`;
       document.body.appendChild(a);
@@ -595,9 +567,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       <div className="p-6 text-center">
         <div className="inline-flex flex-col items-center">
           <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-700 font-medium">
-            Memuat informasi tahun ajaran...
-          </p>
+          <p className="text-gray-700 font-medium">Memuat informasi tahun ajaran...</p>
         </div>
       </div>
     );
@@ -623,13 +593,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
           <div>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <FileSpreadsheet
-                className="text-blue-600 dark:text-blue-400"
-                size={24}
-              />
-              <span className="text-base sm:text-lg md:text-xl">
-                Preview Nilai (Leger)
-              </span>
+              <FileSpreadsheet className="text-blue-600 dark:text-blue-400" size={24} />
+              <span className="text-base sm:text-lg md:text-xl">Preview Nilai (Leger)</span>
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
               Kelas {classId} - {academicInfo.displayText || academicInfo.year}
@@ -640,7 +605,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
             {!loading && semester && (
               <button
                 onClick={loadLegerData}
-                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg flex items-center gap-2 font-medium text-sm sm:text-base shadow hover:shadow-md transition-all min-h-[44px] min-w-[44px]">
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg flex items-center gap-2 font-medium text-sm sm:text-base shadow hover:shadow-md transition-all min-h-[44px] min-w-[44px]"
+              >
                 <RefreshCw size={18} />
                 <span className="hidden sm:inline">Refresh</span>
               </button>
@@ -649,14 +615,13 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
               <button
                 onClick={exportExcel}
                 disabled={exporting}
-                className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg flex items-center gap-2 font-medium text-sm sm:text-base shadow hover:shadow-md transition-all disabled:opacity-50 min-h-[44px] min-w-[44px]">
+                className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg flex items-center gap-2 font-medium text-sm sm:text-base shadow hover:shadow-md transition-all disabled:opacity-50 min-h-[44px] min-w-[44px]"
+              >
                 <FileSpreadsheet size={18} />
                 <span className="hidden sm:inline">
                   {exporting ? "Exporting..." : "Export Excel"}
                 </span>
-                <span className="sm:hidden">
-                  {exporting ? "..." : "Export"}
-                </span>
+                <span className="sm:hidden">{exporting ? "..." : "Export"}</span>
               </button>
             )}
           </div>
@@ -675,7 +640,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                 bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-600
                 transition-all duration-200 text-sm sm:text-base
-                hover:border-blue-400 dark:hover:border-blue-500 min-h-[44px]">
+                hover:border-blue-400 dark:hover:border-blue-500 min-h-[44px]"
+            >
               <option value="">-- Pilih Semester --</option>
               <option value="1">Semester Ganjil</option>
               <option value="2">Semester Genap</option>
@@ -688,7 +654,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                 siswaList.length > 0
                   ? "bg-blue-500 dark:bg-blue-400"
                   : "bg-gray-400 dark:bg-gray-600"
-              }`}></div>
+              }`}
+            ></div>
             <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               {siswaList.length > 0
                 ? `Data: ${siswaList.length} siswa, ${mapelList.length} mapel`
@@ -723,45 +690,27 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       {/* EMPTY STATE */}
       {!loading && !semester && (
         <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
-          <FileSpreadsheet
-            size={48}
-            className="mx-auto mb-3 sm:mb-4 opacity-30"
-          />
-          <p className="text-sm sm:text-base font-medium">
-            Silakan pilih semester terlebih dahulu
-          </p>
+          <FileSpreadsheet size={48} className="mx-auto mb-3 sm:mb-4 opacity-30" />
+          <p className="text-sm sm:text-base font-medium">Silakan pilih semester terlebih dahulu</p>
         </div>
       )}
 
       {!loading && semester && siswaList.length === 0 && (
         <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
-          <FileSpreadsheet
-            size={48}
-            className="mx-auto mb-3 sm:mb-4 opacity-30"
-          />
-          <p className="text-sm sm:text-base font-medium">
-            Tidak ada data siswa di kelas ini
-          </p>
+          <FileSpreadsheet size={48} className="mx-auto mb-3 sm:mb-4 opacity-30" />
+          <p className="text-sm sm:text-base font-medium">Tidak ada data siswa di kelas ini</p>
         </div>
       )}
 
-      {!loading &&
-        semester &&
-        siswaList.length > 0 &&
-        mapelList.length === 0 && (
-          <div className="text-center py-8 sm:py-12 text-yellow-600 dark:text-yellow-400">
-            <FileSpreadsheet
-              size={48}
-              className="mx-auto mb-3 sm:mb-4 opacity-50"
-            />
-            <p className="text-sm sm:text-base font-medium">
-              Tidak ada data nilai untuk semester ini
-            </p>
-            <p className="text-xs sm:text-sm mt-1 sm:mt-2">
-              Silakan input nilai terlebih dahulu
-            </p>
-          </div>
-        )}
+      {!loading && semester && siswaList.length > 0 && mapelList.length === 0 && (
+        <div className="text-center py-8 sm:py-12 text-yellow-600 dark:text-yellow-400">
+          <FileSpreadsheet size={48} className="mx-auto mb-3 sm:mb-4 opacity-50" />
+          <p className="text-sm sm:text-base font-medium">
+            Tidak ada data nilai untuk semester ini
+          </p>
+          <p className="text-xs sm:text-sm mt-1 sm:mt-2">Silakan input nilai terlebih dahulu</p>
+        </div>
+      )}
 
       {/* TABEL LEGER */}
       {!loading && semester && siswaList.length > 0 && mapelList.length > 0 && (
@@ -782,11 +731,9 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                   {mapelList.map((mapel, idx) => (
                     <th
                       key={idx}
-                      title={
-                        nilaiData[siswaList[0]?.id]?.[mapel]?.nama_lengkap ||
-                        mapel
-                      }
-                      className="border border-blue-600 dark:border-blue-800 p-2 text-center font-bold w-[60px] sm:w-[65px] whitespace-nowrap cursor-help">
+                      title={nilaiData[siswaList[0]?.id]?.[mapel]?.nama_lengkap || mapel}
+                      className="border border-blue-600 dark:border-blue-800 p-2 text-center font-bold w-[60px] sm:w-[65px] whitespace-nowrap cursor-help"
+                    >
                       {mapel}
                     </th>
                   ))}
@@ -810,17 +757,14 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                   // JUMLAH: Tanpa desimal
                   const jumlahNilai =
                     nilaiList.length > 0
-                      ? Math.round(
-                          nilaiList.reduce((sum, n) => sum + parseFloat(n), 0)
-                        )
+                      ? Math.round(nilaiList.reduce((sum, n) => sum + parseFloat(n), 0))
                       : null;
 
                   // RATA-RATA: Dengan 2 desimal
                   const rataRata =
                     nilaiList.length > 0
                       ? (
-                          nilaiList.reduce((sum, n) => sum + parseFloat(n), 0) /
-                          nilaiList.length
+                          nilaiList.reduce((sum, n) => sum + parseFloat(n), 0) / nilaiList.length
                         ).toFixed(2)
                       : null;
 
@@ -831,7 +775,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                         idx % 2 === 0
                           ? "bg-blue-50/30 dark:bg-gray-800/50"
                           : "bg-white dark:bg-gray-900"
-                      }>
+                      }
+                    >
                       <td className="border border-gray-300 dark:border-gray-700 p-2 text-center font-medium sticky left-0 bg-inherit z-[5]">
                         {idx + 1}
                       </td>
@@ -840,7 +785,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                       </td>
                       <td
                         className="border border-gray-300 dark:border-gray-700 p-2 font-medium sticky left-[115px] sm:left-[140px] bg-inherit z-[5] truncate"
-                        title={siswa.full_name}>
+                        title={siswa.full_name}
+                      >
                         {siswa.full_name}
                       </td>
                       {mapelList.map((mapel, mapelIdx) => {
@@ -858,7 +804,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                                   ? "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20"
                                   : "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20"
                                 : "text-gray-400 dark:text-gray-600"
-                            }`}>
+                            }`}
+                          >
                             {nilai || "-"}
                           </td>
                         );
@@ -868,7 +815,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                           jumlahNilai
                             ? "text-yellow-800 dark:text-yellow-300"
                             : "text-gray-400 dark:text-gray-600"
-                        }`}>
+                        }`}
+                      >
                         {jumlahNilai || "-"}
                       </td>
                       <td
@@ -878,7 +826,8 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
                               ? "text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30"
                               : "text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30"
                             : "text-gray-400 dark:text-gray-600"
-                        }`}>
+                        }`}
+                      >
                         {rataRata || "-"}
                       </td>
                     </tr>
@@ -893,35 +842,24 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
             <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded"></div>
-                <span className="text-gray-700 dark:text-gray-300">
-                  Nilai ≥ KKM
-                </span>
+                <span className="text-gray-700 dark:text-gray-300">Nilai ≥ KKM</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded"></div>
-                <span className="text-gray-700 dark:text-gray-300">
-                  Nilai &lt; KKM
-                </span>
+                <span className="text-gray-700 dark:text-gray-300">Nilai &lt; KKM</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded"></div>
-                <span className="text-gray-700 dark:text-gray-300">
-                  Jumlah Nilai
-                </span>
+                <span className="text-gray-700 dark:text-gray-300">Jumlah Nilai</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-gray-500 dark:text-gray-500 font-mono">
-                  -
-                </span>
-                <span className="text-gray-700 dark:text-gray-300">
-                  Belum ada nilai
-                </span>
+                <span className="text-gray-500 dark:text-gray-500 font-mono">-</span>
+                <span className="text-gray-700 dark:text-gray-300">Belum ada nilai</span>
               </div>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-              💡 Scroll horizontal untuk melihat semua mata pelajaran. Hover
-              pada nama mapel untuk lihat nama lengkap. Total siswa:{" "}
-              {siswaList.length} | Total mapel: {mapelList.length}
+              💡 Scroll horizontal untuk melihat semua mata pelajaran. Hover pada nama mapel untuk
+              lihat nama lengkap. Total siswa: {siswaList.length} | Total mapel: {mapelList.length}
             </p>
           </div>
         </div>

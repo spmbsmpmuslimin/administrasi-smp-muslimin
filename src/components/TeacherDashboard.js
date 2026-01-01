@@ -232,7 +232,7 @@ const TeacherDashboard = ({ user }) => {
       // 1. Get current academic year ID
       const { data: academicYearData, error: yearError } = await supabase
         .from("academic_years")
-        .select("id, year")
+        .select("id, year, semester")
         .eq("is_active", true)
         .single();
 
@@ -241,31 +241,42 @@ const TeacherDashboard = ({ user }) => {
       }
 
       const academicYearId = academicYearData.id;
+      const activeSemester = academicYearData.semester; // ✅ AMBIL LANGSUNG DARI DB!
       setCurrentAcademicYearId(academicYearId);
 
       console.log("📅 Academic Year ID:", academicYearId, "Year:", academicYearData.year);
+      console.log("📅 Active Semester (from DB):", activeSemester);
+      console.log("🔍 Teacher Code:", teacherCode);
 
-      // ✅ GUNAKAN SEMESTER DARI ACADEMIC YEAR SERVICE
-      const activeSemester = activeAcademicInfo?.semester || 1;
-      console.log("📅 Active Semester (from service):", activeSemester);
-
-      // 2. Get teacher assignments - FILTER BY SEMESTER DARI SERVICE
+      // 2. Get teacher assignments - GUNAKAN SEMESTER DARI DB LANGSUNG
       const { data: assignments, error: assignError } = await supabase
         .from("teacher_assignments")
-        .select("id, class_id, subject, academic_year_id, semester")
+        .select("id, class_id, subject, academic_year_id, semester, academic_year")
         .eq("teacher_id", teacherCode)
         .eq("academic_year_id", academicYearId)
-        .eq("semester", activeSemester); // ✅ FILTER SEMESTER AKTIF DARI SERVICE
+        .eq("semester", activeSemester); // ✅ PAKAI SEMESTER DARI DB!
+
+      console.log("✅ Assignments result:", assignments);
+      console.log("❌ Assignment error:", assignError);
 
       if (assignError) {
         console.error("❌ Teacher assignments error:", assignError);
         throw assignError;
       }
 
+      // ✅ JANGAN THROW ERROR, SET KOSONG AJA
       if (!assignments || assignments.length === 0) {
-        throw new Error(
-          `Tidak ada penugasan untuk ${activeAcademicInfo?.displayText || "semester ini"}`
-        );
+        console.log("⚠️ Tidak ada penugasan untuk semester ini");
+        setStats({
+          totalStudents: 0,
+          totalClasses: 0,
+          subjects: [],
+          classesTaught: [],
+        });
+        setAnnouncements([]);
+        setTodaySchedule([]);
+        setLoading(false);
+        return;
       }
 
       console.log("✅ Teacher assignments:", assignments);

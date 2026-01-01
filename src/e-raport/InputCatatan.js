@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Save } from "lucide-react";
-import { getActiveAcademicInfo } from "../services/academicYearService";
+import {
+  getActiveAcademicInfo,
+  getAllSemestersInActiveYear,
+  getActiveSemesterId,
+} from "../services/academicYearService";
 
 function InputCatatan({ user, onShowToast, darkMode }) {
   const [kelas, setKelas] = useState("");
-  const [semester, setSemester] = useState("");
+  const [selectedSemesterId, setSelectedSemesterId] = useState(""); // ✅ Ubah dari semester
+  const [availableSemesters, setAvailableSemesters] = useState([]); // ✅ Tambah list semester
   const [siswaList, setSiswaList] = useState([]);
-  const [academicYear, setAcademicYear] = useState(null);
+  const [academicInfo, setAcademicInfo] = useState(null); // ✅ Ubah dari academicYear
   const [availableClasses, setAvailableClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -21,10 +26,10 @@ function InputCatatan({ user, onShowToast, darkMode }) {
   }, []);
 
   useEffect(() => {
-    if (kelas && semester && academicYear) {
+    if (kelas && selectedSemesterId && academicInfo) {
       loadData();
     }
-  }, [kelas, semester, academicYear]);
+  }, [kelas, selectedSemesterId, academicInfo]);
 
   const loadUserAndAssignments = async () => {
     try {
@@ -39,9 +44,7 @@ function InputCatatan({ user, onShowToast, darkMode }) {
 
       if (!homeroomClassId) {
         setIsWaliKelas(false);
-        setErrorMessage(
-          "Anda bukan wali kelas. Fitur Input Catatan hanya untuk wali kelas."
-        );
+        setErrorMessage("Anda bukan wali kelas. Fitur Input Catatan hanya untuk wali kelas.");
         setLoading(false);
 
         if (onShowToast) {
@@ -53,17 +56,23 @@ function InputCatatan({ user, onShowToast, darkMode }) {
       // ✅ PAKAI getActiveAcademicInfo dari service
       const academicInfo = await getActiveAcademicInfo();
 
-      if (!academicInfo || !academicInfo.yearId) {
+      if (!academicInfo || !academicInfo.activeSemesterId) {
         throw new Error("Tahun ajaran aktif tidak ditemukan.");
       }
 
-      // ✅ Set dengan format yang konsisten
-      setAcademicYear({
-        id: academicInfo.yearId,
-        year: academicInfo.year,
-        semester: academicInfo.semester,
-        is_active: academicInfo.isActive,
-      });
+      setAcademicInfo(academicInfo);
+
+      // ✅ Load semua semester dalam tahun aktif
+      const semesters = await getAllSemestersInActiveYear();
+      setAvailableSemesters(semesters);
+
+      // ✅ Set semester aktif sebagai default pilihan
+      if (academicInfo && academicInfo.activeSemesterId) {
+        setSelectedSemesterId(academicInfo.activeSemesterId);
+      }
+
+      console.log("📅 Academic Info:", academicInfo);
+      console.log("📚 Available Semesters:", semesters);
 
       const { data: classData, error: classError } = await supabase
         .from("classes")
@@ -75,9 +84,7 @@ function InputCatatan({ user, onShowToast, darkMode }) {
       if (classError || !classData) {
         console.error("❌ Kelas wali tidak ditemukan:", classError);
         setIsWaliKelas(false);
-        setErrorMessage(
-          `Kelas wali ${homeroomClassId} tidak ditemukan atau sudah tidak aktif.`
-        );
+        setErrorMessage(`Kelas wali ${homeroomClassId} tidak ditemukan atau sudah tidak aktif.`);
         setLoading(false);
         return;
       }
@@ -91,7 +98,6 @@ function InputCatatan({ user, onShowToast, darkMode }) {
 
       setIsWaliKelas(true);
       setWaliKelasName(user.full_name || user.username);
-
       setLoading(false);
 
       if (onShowToast) {
@@ -109,8 +115,20 @@ function InputCatatan({ user, onShowToast, darkMode }) {
     }
   };
 
+  // ✅ Helper function untuk mendapatkan semester number dari semester ID
+  const getSemesterNumber = (semesterId) => {
+    const semester = availableSemesters.find((s) => s.id === semesterId);
+    return semester ? semester.semester : null;
+  };
+
+  // ✅ Helper function untuk mendapatkan semester text
+  const getSemesterText = (semesterId) => {
+    const semester = availableSemesters.find((s) => s.id === semesterId);
+    return semester ? (semester.semester === 1 ? "Ganjil" : "Genap") + ` - ${semester.year}` : "";
+  };
+
   const loadData = async () => {
-    if (!kelas || !semester || !academicYear) return;
+    if (!kelas || !selectedSemesterId || !academicInfo) return;
 
     setLoading(true);
     try {
@@ -131,12 +149,15 @@ function InputCatatan({ user, onShowToast, darkMode }) {
         throw new Error(`Gagal load siswa: ${studentsError.message}`);
       }
 
+      const semesterNumber = getSemesterNumber(selectedSemesterId);
+
+      // ✅ GANTI: Query dengan semester ID dan filter semester number
       const { data: existingCatatan, error: catatanError } = await supabase
         .from("catatan_eraport")
         .select("*")
         .eq("class_id", selectedClass.id)
-        .eq("academic_year_id", academicYear.id) // ✅ GANTI INI
-        .eq("semester", semester);
+        .eq("academic_year_id", selectedSemesterId) // ✅ Filter by semester ID
+        .eq("semester", semesterNumber); // ✅ Filter semester number
 
       if (catatanError) {
         console.error("❌ Error loading catatan:", catatanError);
@@ -151,14 +172,14 @@ function InputCatatan({ user, onShowToast, darkMode }) {
           full_name: siswa.full_name,
           catatan_id: catatan?.id,
           catatan_wali_kelas: catatan?.catatan_wali_kelas || "",
+          semester: catatan?.semester || semesterNumber, // ✅ Simpan semester untuk display
         };
       });
 
       setSiswaList(merged);
     } catch (error) {
       console.error("❌ Error loading data:", error);
-      if (onShowToast)
-        onShowToast(`Gagal memuat data: ${error.message}`, "error");
+      if (onShowToast) onShowToast(`Gagal memuat data: ${error.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -175,20 +196,17 @@ function InputCatatan({ user, onShowToast, darkMode }) {
   };
 
   const handleSave = async () => {
-    if (!kelas || !semester) {
-      if (onShowToast)
-        onShowToast("Pilih Kelas dan Semester terlebih dahulu!", "warning");
+    if (!kelas || !selectedSemesterId) {
+      if (onShowToast) onShowToast("Pilih Kelas dan Semester terlebih dahulu!", "warning");
       return;
     }
 
     if (siswaList.length === 0) {
-      if (onShowToast)
-        onShowToast("Tidak ada data siswa untuk disimpan!", "warning");
+      if (onShowToast) onShowToast("Tidak ada data siswa untuk disimpan!", "warning");
       return;
     }
 
-    if (!window.confirm(`Simpan catatan untuk ${siswaList.length} siswa?`))
-      return;
+    if (!window.confirm(`Simpan catatan untuk ${siswaList.length} siswa?`)) return;
 
     setSaving(true);
     setSaveProgress({ current: 0, total: siswaList.length });
@@ -198,6 +216,7 @@ function InputCatatan({ user, onShowToast, darkMode }) {
       if (!selectedClass) throw new Error("Kelas tidak ditemukan!");
 
       const userId = user.id;
+      const semesterNumber = getSemesterNumber(selectedSemesterId);
 
       for (let i = 0; i < siswaList.length; i++) {
         const siswa = siswaList[i];
@@ -206,11 +225,10 @@ function InputCatatan({ user, onShowToast, darkMode }) {
         const catatanData = {
           student_id: siswa.id,
           class_id: selectedClass.id,
-          academic_year_id: academicYear.id, // ✅ GANTI INI
-          semester: semester,
+          academic_year_id: selectedSemesterId, // ✅ GANTI: Pakai semester ID
+          semester: semesterNumber,
           catatan_wali_kelas: siswa.catatan_wali_kelas || "",
           created_by: userId,
-          updated_by: userId,
           updated_at: new Date().toISOString(),
         };
 
@@ -227,9 +245,13 @@ function InputCatatan({ user, onShowToast, darkMode }) {
             );
           }
         } else {
-          const { error: insertError } = await supabase
-            .from("catatan_eraport")
-            .insert(catatanData);
+          // ✅ Untuk insert baru, tambah created_at
+          const insertData = {
+            ...catatanData,
+            created_at: new Date().toISOString(),
+          };
+
+          const { error: insertError } = await supabase.from("catatan_eraport").insert(insertData);
 
           if (insertError) {
             console.error("❌ Insert error:", insertError);
@@ -246,8 +268,7 @@ function InputCatatan({ user, onShowToast, darkMode }) {
       await loadData();
     } catch (error) {
       console.error("Error saving data:", error);
-      if (onShowToast)
-        onShowToast(`Gagal menyimpan: ${error.message}`, "error");
+      if (onShowToast) onShowToast(`Gagal menyimpan: ${error.message}`, "error");
     } finally {
       setSaving(false);
       setSaveProgress({ current: 0, total: 0 });
@@ -261,16 +282,19 @@ function InputCatatan({ user, onShowToast, darkMode }) {
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-sky-100"
-        }`}>
+        }`}
+      >
         <div className="text-center">
           <div
             className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "border-blue-400" : "border-blue-600"
-            }`}></div>
+            }`}
+          ></div>
           <p
             className={`text-sm sm:text-base font-medium transition-colors ${
               darkMode ? "text-gray-300" : "text-gray-700"
-            }`}>
+            }`}
+          >
             Memuat data wali kelas...
           </p>
         </div>
@@ -284,74 +308,66 @@ function InputCatatan({ user, onShowToast, darkMode }) {
         darkMode
           ? "bg-gradient-to-br from-gray-900 to-gray-800"
           : "bg-gradient-to-br from-blue-50 to-sky-100"
-      }`}>
+      }`}
+    >
       <div className="max-w-7xl mx-auto">
         <div
           className={`rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 border transition-colors ${
-            darkMode
-              ? "bg-gray-800 border-gray-700"
-              : "bg-white border-blue-200"
-          }`}>
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-blue-200"
+          }`}
+        >
           <h2
             className={`text-lg md:text-xl lg:text-2xl font-bold mb-6 md:mb-8 transition-colors ${
               darkMode ? "text-white" : "text-gray-900"
-            }`}>
+            }`}
+          >
             Input Catatan Wali Kelas
           </h2>
 
           {/* Info Akademik */}
-          {academicYear && (
+          {academicInfo && (
             <div
               className="mb-6 p-4 rounded-lg border bg-opacity-50"
               style={{
-                backgroundColor: darkMode
-                  ? "rgba(30, 58, 138, 0.2)"
-                  : "rgba(219, 234, 254, 0.5)",
+                backgroundColor: darkMode ? "rgba(30, 58, 138, 0.2)" : "rgba(219, 234, 254, 0.5)",
                 borderColor: darkMode ? "#374151" : "#bfdbfe",
-              }}>
+              }}
+            >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="flex flex-col">
                   <span
                     className={`text-xs font-medium mb-1 ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
                     Tahun Ajaran Aktif
                   </span>
-                  <span
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
-                    {academicYear.year}
+                  <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {academicInfo.year}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <span
                     className={`text-xs font-medium mb-1 ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
                     Semester Aktif di Sistem
                   </span>
-                  <span
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
-                    {academicYear.semester === 1
-                      ? "Semester 1 (Ganjil)"
-                      : "Semester 2 (Genap)"}
+                  <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    Semester {academicInfo.activeSemester === 1 ? "Ganjil" : "Genap"}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <span
                     className={`text-xs font-medium mb-1 ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
                     Status Tahun Ajaran
                   </span>
-                  <span
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
-                    {academicYear.is_active ? "Aktif" : "Tidak Aktif"}
+                  <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {academicInfo.isActive ? "Aktif" : "Tidak Aktif"}
                   </span>
                 </div>
               </div>
@@ -363,14 +379,16 @@ function InputCatatan({ user, onShowToast, darkMode }) {
               <div
                 className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 ${
                   darkMode ? "bg-blue-900/30" : "bg-blue-100"
-                }`}>
+                }`}
+              >
                 <svg
                   className={`w-7 h-7 sm:w-8 sm:h-8 ${
                     darkMode ? "text-blue-400" : "text-blue-600"
                   }`}
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -382,13 +400,15 @@ function InputCatatan({ user, onShowToast, darkMode }) {
               <h3
                 className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
                   darkMode ? "text-white" : "text-gray-900"
-                }`}>
+                }`}
+              >
                 Akses Dibatasi
               </h3>
               <p
                 className={`text-sm sm:text-base mb-6 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
+                }`}
+              >
                 {errorMessage}
               </p>
             </div>
@@ -398,7 +418,8 @@ function InputCatatan({ user, onShowToast, darkMode }) {
                 darkMode
                   ? "text-gray-400 border-gray-700 bg-gray-800/50"
                   : "text-gray-500 border-blue-300 bg-blue-50"
-              }`}>
+              }`}
+            >
               <p className="text-base sm:text-lg">Memuat data wali kelas...</p>
             </div>
           ) : (
@@ -407,31 +428,31 @@ function InputCatatan({ user, onShowToast, darkMode }) {
               {isWaliKelas && (
                 <div
                   className={`mb-6 md:mb-8 p-4 md:p-6 rounded-xl border ${
-                    darkMode
-                      ? "bg-blue-900/20 border-blue-500"
-                      : "bg-blue-50 border-blue-300"
-                  }`}>
+                    darkMode ? "bg-blue-900/20 border-blue-500" : "bg-blue-50 border-blue-300"
+                  }`}
+                >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex-1">
                       <h3
                         className={`font-bold text-base sm:text-lg transition-colors ${
                           darkMode ? "text-white" : "text-gray-900"
-                        }`}>
+                        }`}
+                      >
                         Anda adalah wali kelas
                       </h3>
                       <p
                         className={`text-sm sm:text-base mt-1 transition-colors ${
                           darkMode ? "text-gray-300" : "text-gray-700"
-                        }`}>
+                        }`}
+                      >
                         {waliKelasName}
                       </p>
                     </div>
                     <div
                       className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
-                        darkMode
-                          ? "bg-blue-700 text-blue-100"
-                          : "bg-blue-600 text-white"
-                      }`}>
+                        darkMode ? "bg-blue-700 text-blue-100" : "bg-blue-600 text-white"
+                      }`}
+                    >
                       Wali Kelas
                     </div>
                   </div>
@@ -444,7 +465,8 @@ function InputCatatan({ user, onShowToast, darkMode }) {
                   <label
                     className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
                       darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}>
+                    }`}
+                  >
                     Pilih Kelas
                   </label>
                   <select
@@ -454,7 +476,8 @@ function InputCatatan({ user, onShowToast, darkMode }) {
                       darkMode
                         ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
                         : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
-                    }`}>
+                    }`}
+                  >
                     <option value="" disabled className="text-gray-400">
                       -- Pilih Kelas --
                     </option>
@@ -475,27 +498,39 @@ function InputCatatan({ user, onShowToast, darkMode }) {
                   <label
                     className={`block text-sm sm:text-base font-medium mb-1.5 sm:mb-2 transition-colors ${
                       darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}>
+                    }`}
+                  >
                     Pilih Semester
                   </label>
                   <select
-                    value={semester}
-                    onChange={(e) => setSemester(e.target.value)}
+                    value={selectedSemesterId}
+                    onChange={(e) => setSelectedSemesterId(e.target.value)}
                     className={`w-full p-2.5 sm:p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[44px] ${
                       darkMode
                         ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
                         : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
-                    }`}>
+                    }`}
+                  >
                     <option value="" disabled className="text-gray-400">
                       -- Pilih Semester --
                     </option>
-                    <option value="1">Semester Ganjil</option>
-                    <option value="2">Semester Genap</option>
+                    {availableSemesters.map((sem) => (
+                      <option key={sem.id} value={sem.id}>
+                        Semester {sem.semester === 1 ? "Ganjil" : "Genap"} - {sem.year}
+                        {sem.is_active ? " (Aktif)" : ""}
+                      </option>
+                    ))}
                   </select>
+                  {academicInfo && (
+                    <p className={`text-xs mt-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                      Semester aktif sistem: Semester{" "}
+                      {academicInfo.activeSemester === 1 ? "Ganjil" : "Genap"}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {kelas && semester && (
+              {kelas && selectedSemesterId && (
                 <>
                   {/* Action Button */}
                   <div className="flex justify-end mb-6 md:mb-8">
@@ -506,7 +541,8 @@ function InputCatatan({ user, onShowToast, darkMode }) {
                         darkMode
                           ? "bg-blue-600 hover:bg-blue-500 text-white disabled:bg-blue-800 disabled:cursor-not-allowed"
                           : "bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400 disabled:cursor-not-allowed"
-                      }`}>
+                      }`}
+                    >
                       <Save size={18} />
                       <span className="text-sm sm:text-base">
                         {saving ? "Menyimpan..." : "Simpan Semua Catatan"}
@@ -519,123 +555,139 @@ function InputCatatan({ user, onShowToast, darkMode }) {
                       <div
                         className={`inline-block animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-4 mb-3 sm:mb-4 ${
                           darkMode ? "border-blue-400" : "border-blue-600"
-                        }`}></div>
+                        }`}
+                      ></div>
                       <p
                         className={`text-sm sm:text-base transition-colors ${
                           darkMode ? "text-gray-300" : "text-gray-600"
-                        }`}>
+                        }`}
+                      >
                         Memuat data siswa...
                       </p>
                     </div>
                   ) : siswaList.length > 0 ? (
-                    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-                      <table className="w-full min-w-[768px]">
-                        <thead
-                          className={darkMode ? "bg-blue-900" : "bg-blue-700"}>
-                          <tr>
-                            <th
-                              className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
-                                darkMode ? "border-blue-800" : "border-blue-600"
-                              } w-16`}>
-                              No
-                            </th>
-                            <th
-                              className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium border-r ${
-                                darkMode ? "border-blue-800" : "border-blue-600"
-                              } w-32`}>
-                              NIS
-                            </th>
-                            <th
-                              className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium border-r ${
-                                darkMode ? "border-blue-800" : "border-blue-600"
-                              } w-64`}>
-                              Nama Siswa
-                            </th>
-                            <th
-                              className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium ${
-                                darkMode ? "border-blue-800" : "border-blue-600"
-                              }`}>
-                              Catatan Wali Kelas
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {siswaList.map((siswa, idx) => (
-                            <tr
-                              key={siswa.id}
-                              className={`border-b ${
-                                darkMode
-                                  ? "border-gray-700 hover:bg-gray-700/50"
-                                  : "border-gray-200 hover:bg-gray-50"
-                              }`}>
-                              <td
-                                className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
-                                  darkMode
-                                    ? "border-gray-700 text-gray-300"
-                                    : "border-gray-200 text-gray-700"
-                                }`}>
-                                {idx + 1}
-                              </td>
-                              <td
-                                className={`p-3 sm:p-4 text-sm sm:text-base border-r ${
-                                  darkMode
-                                    ? "border-gray-700 text-gray-300"
-                                    : "border-gray-200 text-gray-700"
-                                }`}>
-                                {siswa.nis}
-                              </td>
-                              <td
-                                className={`p-3 sm:p-4 text-sm sm:text-base font-medium border-r ${
-                                  darkMode
-                                    ? "border-gray-700 text-gray-200"
-                                    : "border-gray-200 text-gray-900"
-                                }`}>
-                                {siswa.full_name}
-                              </td>
-                              <td className="p-3 sm:p-4">
-                                <textarea
-                                  value={siswa.catatan_wali_kelas || ""}
-                                  onChange={(e) =>
-                                    handleCatatanChange(
-                                      siswa.id,
-                                      e.target.value
-                                    )
-                                  }
-                                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[120px] ${
-                                    darkMode
-                                      ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
-                                      : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
-                                  }`}
-                                  placeholder="Masukkan catatan untuk siswa ini..."
-                                />
-                                <div
-                                  className={`text-xs mt-1 ${
-                                    darkMode ? "text-gray-400" : "text-gray-500"
-                                  }`}>
-                                  {siswa.catatan_wali_kelas?.length || 0}{" "}
-                                  karakter
-                                </div>
-                              </td>
+                    <>
+                      <div
+                        className={`mb-4 p-3 rounded-lg ${
+                          darkMode ? "bg-blue-900/20 text-blue-300" : "bg-blue-50 text-blue-700"
+                        }`}
+                      >
+                        <p className="text-sm">
+                          Menampilkan {siswaList.length} siswa • Semester:{" "}
+                          {getSemesterText(selectedSemesterId)}
+                        </p>
+                      </div>
+                      <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                        <table className="w-full min-w-[768px]">
+                          <thead className={darkMode ? "bg-blue-900" : "bg-blue-700"}>
+                            <tr>
+                              <th
+                                className={`p-3 sm:p-4 text-center text-white text-sm sm:text-base font-medium border-r ${
+                                  darkMode ? "border-blue-800" : "border-blue-600"
+                                } w-16`}
+                              >
+                                No
+                              </th>
+                              <th
+                                className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium border-r ${
+                                  darkMode ? "border-blue-800" : "border-blue-600"
+                                } w-32`}
+                              >
+                                NIS
+                              </th>
+                              <th
+                                className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium border-r ${
+                                  darkMode ? "border-blue-800" : "border-blue-600"
+                                } w-64`}
+                              >
+                                Nama Siswa
+                              </th>
+                              <th
+                                className={`p-3 sm:p-4 text-left text-white text-sm sm:text-base font-medium ${
+                                  darkMode ? "border-blue-800" : "border-blue-600"
+                                }`}
+                              >
+                                Catatan Wali Kelas
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {siswaList.map((siswa, idx) => (
+                              <tr
+                                key={siswa.id}
+                                className={`border-b ${
+                                  darkMode
+                                    ? "border-gray-700 hover:bg-gray-700/50"
+                                    : "border-gray-200 hover:bg-gray-50"
+                                }`}
+                              >
+                                <td
+                                  className={`p-3 sm:p-4 text-center text-sm sm:text-base border-r ${
+                                    darkMode
+                                      ? "border-gray-700 text-gray-300"
+                                      : "border-gray-200 text-gray-700"
+                                  }`}
+                                >
+                                  {idx + 1}
+                                </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-sm sm:text-base border-r ${
+                                    darkMode
+                                      ? "border-gray-700 text-gray-300"
+                                      : "border-gray-200 text-gray-700"
+                                  }`}
+                                >
+                                  {siswa.nis}
+                                </td>
+                                <td
+                                  className={`p-3 sm:p-4 text-sm sm:text-base font-medium border-r ${
+                                    darkMode
+                                      ? "border-gray-700 text-gray-200"
+                                      : "border-gray-200 text-gray-900"
+                                  }`}
+                                >
+                                  {siswa.full_name}
+                                </td>
+                                <td className="p-3 sm:p-4">
+                                  <textarea
+                                    value={siswa.catatan_wali_kelas || ""}
+                                    onChange={(e) => handleCatatanChange(siswa.id, e.target.value)}
+                                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:outline-none transition-all text-sm sm:text-base min-h-[120px] ${
+                                      darkMode
+                                        ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-400 focus:border-blue-400"
+                                        : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
+                                    }`}
+                                    placeholder="Masukkan catatan untuk siswa ini..."
+                                  />
+                                  <div
+                                    className={`text-xs mt-1 ${
+                                      darkMode ? "text-gray-400" : "text-gray-500"
+                                    }`}
+                                  >
+                                    {siswa.catatan_wali_kelas?.length || 0} karakter
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
                   ) : (
                     <div
                       className={`text-center py-12 rounded-xl border-2 border-dashed ${
                         darkMode
                           ? "text-gray-400 border-gray-700 bg-gray-800/50"
                           : "text-gray-500 border-blue-300 bg-blue-50"
-                      }`}>
+                      }`}
+                    >
                       <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                         <svg
-                          className={`w-12 h-12 ${
-                            darkMode ? "text-gray-600" : "text-blue-400"
-                          }`}
+                          className={`w-12 h-12 ${darkMode ? "text-gray-600" : "text-blue-400"}`}
                           fill="none"
                           stroke="currentColor"
-                          viewBox="0 0 24 24">
+                          viewBox="0 0 24 24"
+                        >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -644,32 +696,28 @@ function InputCatatan({ user, onShowToast, darkMode }) {
                           />
                         </svg>
                       </div>
-                      <p className="text-base sm:text-lg font-medium mb-1">
-                        Tidak ada data siswa
-                      </p>
-                      <p className="text-sm">
-                        Tidak ada siswa terdaftar di kelas ini
-                      </p>
+                      <p className="text-base sm:text-lg font-medium mb-1">Tidak ada data siswa</p>
+                      <p className="text-sm">Tidak ada siswa terdaftar di kelas ini</p>
                     </div>
                   )}
                 </>
               )}
 
-              {(!kelas || !semester) && isWaliKelas && (
+              {(!kelas || !selectedSemesterId) && isWaliKelas && (
                 <div
                   className={`text-center py-12 rounded-xl border-2 border-dashed ${
                     darkMode
                       ? "text-gray-400 border-gray-700 bg-gray-800/50"
                       : "text-gray-500 border-blue-300 bg-blue-50"
-                  }`}>
+                  }`}
+                >
                   <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <svg
-                      className={`w-12 h-12 ${
-                        darkMode ? "text-gray-600" : "text-blue-400"
-                      }`}
+                      className={`w-12 h-12 ${darkMode ? "text-gray-600" : "text-blue-400"}`}
                       fill="none"
                       stroke="currentColor"
-                      viewBox="0 0 24 24">
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -678,12 +726,8 @@ function InputCatatan({ user, onShowToast, darkMode }) {
                       />
                     </svg>
                   </div>
-                  <p className="text-base sm:text-lg font-medium mb-2">
-                    Pilih Kelas dan Semester
-                  </p>
-                  <p className="text-sm">
-                    Untuk mulai input catatan wali kelas
-                  </p>
+                  <p className="text-base sm:text-lg font-medium mb-2">Pilih Kelas dan Semester</p>
+                  <p className="text-sm">Untuk mulai input catatan wali kelas</p>
                 </div>
               )}
             </>
@@ -696,43 +740,46 @@ function InputCatatan({ user, onShowToast, darkMode }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
             className={`rounded-xl p-6 sm:p-8 w-full max-w-md border transition-colors ${
-              darkMode
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-blue-200"
-            }`}>
+              darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-blue-200"
+            }`}
+          >
             <div className="text-center">
               <div
                 className={`animate-spin rounded-full h-12 w-12 sm:h-14 sm:w-14 border-b-4 mx-auto mb-4 ${
                   darkMode ? "border-blue-400" : "border-blue-600"
-                }`}></div>
+                }`}
+              ></div>
               <h3
                 className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
                   darkMode ? "text-white" : "text-gray-900"
-                }`}>
+                }`}
+              >
                 Menyimpan Catatan...
               </h3>
               <p
                 className={`text-sm sm:text-base mb-4 transition-colors ${
                   darkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
+                }`}
+              >
                 {saveProgress.current} dari {saveProgress.total} siswa
               </p>
               <div
                 className={`w-full rounded-full h-2.5 mb-2 ${
                   darkMode ? "bg-gray-700" : "bg-blue-100"
-                }`}>
+                }`}
+              >
                 <div
                   className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                   style={{
-                    width: `${
-                      (saveProgress.current / saveProgress.total) * 100
-                    }%`,
-                  }}></div>
+                    width: `${(saveProgress.current / saveProgress.total) * 100}%`,
+                  }}
+                ></div>
               </div>
               <div
                 className={`text-xs transition-colors ${
                   darkMode ? "text-gray-400" : "text-gray-500"
-                }`}>
+                }`}
+              >
                 Jangan tutup halaman ini...
               </div>
             </div>

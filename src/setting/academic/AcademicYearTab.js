@@ -1,5 +1,6 @@
 // src/components/settings/academic/AcademicYearTab.js
-// ✅ REFACTORED: Multi-semester support dengan semester selector
+// ✅ REFACTORED & FIXED: Multi-semester support dengan semester selector
+// 🔧 REVISI: Sesuai dengan academicYearService.js + Fix semua masalah
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 import { Calendar, RefreshCw } from "lucide-react";
@@ -9,6 +10,7 @@ import {
   getActiveAcademicInfo,
   getAllSemestersInActiveYear,
   getSemesterDisplayName,
+  getSemesterById,
   filterBySemester,
 } from "../../services/academicYearService";
 
@@ -22,6 +24,12 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
   const [availableSemesters, setAvailableSemesters] = useState([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState(null);
   const [selectedSemesterName, setSelectedSemesterName] = useState("");
+
+  // ✅ NEW: Flag untuk mencegah duplikat loading
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+  // ✅ NEW: Flag untuk cek struktur database
+  const [hasAcademicYearColumn, setHasAcademicYearColumn] = useState(true);
 
   // Shared states
   const [academicInfo, setAcademicInfo] = useState(null);
@@ -40,10 +48,13 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
     classesPerGrade: schoolConfig?.classesPerGrade || ["A", "B", "C", "D", "E", "F"],
   };
 
-  // ✅ Load academic info dan available semesters
+  // ✅ OPTIMIZED: Load academic info hanya sekali saat initial
   useEffect(() => {
-    loadAcademicInfo();
-  }, []);
+    if (!initialLoadComplete) {
+      loadAcademicInfo();
+      setInitialLoadComplete(true);
+    }
+  }, [initialLoadComplete]);
 
   // ✅ Load school data pas selectedSemester berubah
   useEffect(() => {
@@ -52,7 +63,7 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
     }
   }, [selectedSemesterId]);
 
-  // ✅ Load academic info from service
+  // ✅ REVISI: Load academic info from service dengan fallback
   const loadAcademicInfo = async () => {
     try {
       setLoading(true);
@@ -65,12 +76,20 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
       const semesters = await getAllSemestersInActiveYear();
       setAvailableSemesters(semesters);
 
-      // Set default selected semester to active semester
-      if (info.activeSemesterId) {
-        setSelectedSemesterId(info.activeSemesterId);
-        const displayName = await getSemesterDisplayName(info.activeSemesterId);
-        setSelectedSemesterName(displayName);
+      // ✅ REVISI: Dengan fallback logic
+      let targetSemesterId = info.activeSemesterId;
+      let targetDisplayName = "";
+
+      if (targetSemesterId) {
+        targetDisplayName = await getSemesterDisplayName(targetSemesterId);
+      } else if (semesters.length > 0) {
+        // Fallback ke semester pertama jika tidak ada yang aktif
+        targetSemesterId = semesters[0].id;
+        targetDisplayName = await getSemesterDisplayName(targetSemesterId);
       }
+
+      setSelectedSemesterId(targetSemesterId);
+      setSelectedSemesterName(targetDisplayName);
 
       setSchoolStats((prev) => ({
         ...prev,
@@ -81,6 +100,7 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
         year: info.year,
         activeSemester: info.activeSemester,
         availableSemesters: semesters.length,
+        selectedSemesterId: targetSemesterId,
       });
     } catch (error) {
       console.error("❌ Error loading academic info:", error);
@@ -90,7 +110,34 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
     }
   };
 
-  // ✅ REFACTORED: Load data sekolah dengan semester filter
+  // ✅ REVISI: Helper untuk proses data siswa
+  const processStudentsData = (studentsData) => {
+    console.log(`✅ Loaded ${studentsData.length || 0} students`);
+
+    const studentsByClass = {};
+    studentsData.forEach((student) => {
+      const classId = student.class_id;
+      const grade = student.classes?.grade;
+
+      if (classId && grade !== null && grade !== undefined) {
+        if (!studentsByClass[classId]) {
+          studentsByClass[classId] = {
+            grade: grade,
+            students: [],
+          };
+        }
+        studentsByClass[classId].students.push(student);
+      }
+    });
+
+    setStudentsByClass(studentsByClass);
+    setSchoolStats((prev) => ({
+      ...prev,
+      total_students: studentsData.length || 0,
+    }));
+  };
+
+  // ✅ REFACTORED & FIXED: Load data sekolah dengan semester filter yang benar
   const loadSchoolData = async () => {
     try {
       setLoading(true);
@@ -101,6 +148,13 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
       }
 
       console.log("📊 Loading school data for semester:", selectedSemesterId);
+
+      // ✅ REVISI: Cek dulu apakah semester ada
+      const semester = await getSemesterById(selectedSemesterId);
+      if (!semester) {
+        showToast("Semester tidak ditemukan", "error");
+        return;
+      }
 
       // ✅ Build query untuk data siswa aktif
       let query = supabase
@@ -124,38 +178,70 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
         .eq("is_active", true)
         .order("full_name");
 
-      // ✅ CRITICAL: Apply semester filter
-      query = filterBySemester(query, selectedSemesterId, { strict: true });
+      // ✅ REVISI FIXED: Gunakan filterBySemester dengan parameter yang benar
+      // Sesuai dengan academicYearService.js
+      try {
+        query = filterBySemester(query, selectedSemesterId, {
+          strict: true,
+          throwOnMissing: false,
+        });
 
-      const { data: studentsData, error: studentsError } = await query;
+        const { data: studentsData, error: studentsError } = await query;
 
-      if (studentsError) throw studentsError;
+        if (studentsError) {
+          // ✅ REVISI: Jika error karena kolom academic_year_id tidak ada
+          if (
+            studentsError.message.includes("academic_year_id") ||
+            studentsError.message.includes("column") ||
+            studentsError.code === "42703"
+          ) {
+            console.warn(
+              "⚠️ academic_year_id column not found in students table, using unfiltered query"
+            );
+            setHasAcademicYearColumn(false);
 
-      console.log(`✅ Loaded ${studentsData?.length || 0} students for this semester`);
+            // Query tanpa filter semester (fallback)
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from("students")
+              .select(
+                `
+                id, 
+                nis, 
+                full_name, 
+                gender, 
+                class_id, 
+                is_active,
+                classes:class_id (
+                  id,
+                  grade
+                )
+              `
+              )
+              .eq("is_active", true)
+              .order("full_name");
 
-      // Organize students by class
-      const studentsByClass = {};
+            if (fallbackError) throw fallbackError;
 
-      studentsData?.forEach((student) => {
-        const classId = student.class_id;
-        const grade = student.classes?.grade;
+            processStudentsData(fallbackData || []);
 
-        if (classId && grade !== null && grade !== undefined) {
-          if (!studentsByClass[classId]) {
-            studentsByClass[classId] = {
-              grade: grade,
-              students: [],
-            };
+            // Tampilkan warning toast
+            showToast(
+              "Perhatian: Kolom academic_year_id tidak ditemukan. Menampilkan semua siswa aktif.",
+              "warning"
+            );
+
+            return;
           }
-          studentsByClass[classId].students.push(student);
+          throw studentsError;
         }
-      });
 
-      setStudentsByClass(studentsByClass);
-      setSchoolStats((prev) => ({
-        ...prev,
-        total_students: studentsData?.length || 0,
-      }));
+        // ✅ Jika berhasil dengan filter
+        setHasAcademicYearColumn(true);
+        processStudentsData(studentsData || []);
+      } catch (filterError) {
+        console.error("❌ Error in filterBySemester:", filterError);
+        throw filterError;
+      }
     } catch (error) {
       console.error("❌ Error loading school data:", error);
       showToast("Gagal memuat data sekolah: " + error.message, "error");
@@ -167,11 +253,22 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
   // ✅ Handler untuk ganti semester
   const handleSemesterChange = async (semesterId) => {
     try {
+      if (!semesterId) return;
+
       setSelectedSemesterId(semesterId);
       const displayName = await getSemesterDisplayName(semesterId);
       setSelectedSemesterName(displayName);
 
       console.log("🔄 Semester changed to:", displayName);
+
+      // Tampilkan toast info jika bukan semester aktif
+      const semester = await getSemesterById(semesterId);
+      if (semester && !semester.is_active) {
+        showToast(
+          `Melihat data ${semester.year} Semester ${semester.semester} (tidak aktif)`,
+          "info"
+        );
+      }
     } catch (error) {
       console.error("❌ Error changing semester:", error);
       showToast("Gagal mengubah semester", "error");
@@ -184,7 +281,7 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
     // Data akan auto-reload karena selectedSemesterId berubah (via useEffect)
   };
 
-  // Fungsi untuk menghitung siswa per grade
+  // ✅ Fungsi untuk menghitung siswa per grade
   const getStudentsByGrade = () => {
     const byGrade = { 7: 0, 8: 0, 9: 0 };
 
@@ -235,6 +332,15 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               {config.schoolName} - {config.schoolLevel}
             </p>
+
+            {/* ✅ Warning jika kolom academic_year_id tidak ada */}
+            {!hasAcademicYearColumn && (
+              <div className="mt-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-2">
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                  ⚠️ Kolom academic_year_id tidak ditemukan. Filter semester mungkin tidak bekerja.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* ✅ Refresh Button */}
@@ -253,7 +359,7 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
       </div>
 
       {/* ✅ NEW: Semester Selector */}
-      {availableSemesters.length > 1 && (
+      {availableSemesters.length > 0 ? (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-fit">
@@ -263,6 +369,7 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
               value={selectedSemesterId || ""}
               onChange={(e) => handleSemesterChange(e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={!hasAcademicYearColumn}
             >
               {availableSemesters.map((semester) => (
                 <option key={semester.id} value={semester.id}>
@@ -285,11 +392,27 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
           </div>
 
           {/* Info Text */}
-          {!isActiveSemester && (
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
-              ℹ️ Anda sedang melihat data semester yang tidak aktif. Data ini hanya untuk referensi.
-            </p>
-          )}
+          <div className="space-y-2 mt-3">
+            {!isActiveSemester && (
+              <p className="text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                ℹ️ Anda sedang melihat data semester yang tidak aktif. Data ini hanya untuk
+                referensi.
+              </p>
+            )}
+
+            {!hasAcademicYearColumn && (
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                ⚠️ Filter semester tidak aktif karena kolom academic_year_id tidak ditemukan di
+                tabel students.
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mb-6">
+          <p className="text-sm text-yellow-700 dark:text-yellow-400">
+            ⚠️ Tidak ada semester tersedia. Silakan buat tahun ajaran baru terlebih dahulu.
+          </p>
         </div>
       )}
 
@@ -317,6 +440,7 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
               {selectedSemesterName && (
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                   📅 {selectedSemesterName}
+                  {!hasAcademicYearColumn && " (Semua Semester)"}
                 </p>
               )}
             </div>

@@ -1,5 +1,12 @@
 // File: src/services/academicYearService.js
+// 🎯 COMPLETE FINAL VERSION: Production-Ready Academic Year Management
+// ✅ Full Multi-Semester Support + Data Integrity + Year Transition + Year Creation
+
 import { supabase } from "../supabaseClient";
+
+// ========================================
+// 🔌 CORE: Active Year Management
+// ========================================
 
 export const getActiveAcademicYear = async () => {
   try {
@@ -116,6 +123,10 @@ export const getSemesterDisplayName = async (semesterId) => {
   }
 };
 
+// ========================================
+// 🎯 FILTERING: Smart Query Builder
+// ========================================
+
 export const filterBySemester = (query, selectedSemesterId, options = {}) => {
   const { strict = true, throwOnMissing = false } = options;
 
@@ -157,6 +168,10 @@ export const filterByActiveYear = async (query) => {
   const semesterIds = activeYear.semesters.map((s) => s.id);
   return query.in("academic_year_id", semesterIds);
 };
+
+// ========================================
+// 📊 HELPER FUNCTIONS
+// ========================================
 
 export const getActiveSemesterId = async () => {
   const activeYear = await getActiveAcademicYear();
@@ -201,6 +216,10 @@ export const getActiveAcademicInfo = async () => {
     isActive: false,
   };
 };
+
+// ========================================
+// 📄 LEGACY COMPATIBILITY
+// ========================================
 
 export const applyAcademicFilters = async (query, options = {}) => {
   const {
@@ -261,6 +280,10 @@ export const applyAcademicFilters = async (query, options = {}) => {
   return query;
 };
 
+// ========================================
+// 🔧 ADMIN FUNCTIONS
+// ========================================
+
 export const setActiveAcademicYear = async (semesterId) => {
   try {
     const targetSemester = await getSemesterById(semesterId);
@@ -290,6 +313,12 @@ export const setActiveAcademicYear = async (semesterId) => {
 
     if (enableError) throw enableError;
 
+    console.log("✅ Active semester changed:");
+    console.log(
+      `   From: ${currentActive?.year} - Semester ${currentActive?.activeSemester}`
+    );
+    console.log(`   To:   ${data.year} - Semester ${data.semester}`);
+
     return {
       success: true,
       message: `Semester ${data.semester} tahun ${data.year} berhasil diaktifkan`,
@@ -311,6 +340,10 @@ export const transitionToNewAcademicYear = async (
   startingSemester = 1
 ) => {
   try {
+    console.log(
+      `📅 Starting transition to ${newYear} Semester ${startingSemester}`
+    );
+
     const currentActive = await getActiveAcademicYear();
     if (!currentActive) {
       return {
@@ -331,7 +364,8 @@ export const transitionToNewAcademicYear = async (
         success: false,
         message: `Tahun ajaran ${newYear} Semester ${startingSemester} belum dibuat`,
         error: "NEW_YEAR_NOT_FOUND",
-        suggestion: "Silakan buat tahun ajaran baru terlebih dahulu",
+        suggestion:
+          "Gunakan createNewAcademicYear() atau smartTransitionToNewYear()",
       };
     }
 
@@ -339,6 +373,10 @@ export const transitionToNewAcademicYear = async (
     const result = await setActiveAcademicYear(newSemesterId);
 
     if (result.success) {
+      console.log("✅ Year transition completed successfully");
+      console.log(`   Old: ${currentActive.year}`);
+      console.log(`   New: ${newYear}`);
+
       return {
         success: true,
         message: `Berhasil transisi ke tahun ajaran ${newYear} Semester ${startingSemester}`,
@@ -363,6 +401,217 @@ export const transitionToNewAcademicYear = async (
   }
 };
 
+export const createNewAcademicYear = async (year, dates = {}) => {
+  try {
+    console.log(`📝 Creating new academic year: ${year}`);
+
+    // Validasi format tahun
+    if (!/^\d{4}\/\d{4}$/.test(year)) {
+      return {
+        success: false,
+        message: "Format tahun salah. Gunakan format: 2026/2027",
+        error: "INVALID_FORMAT",
+      };
+    }
+
+    // Validasi tahun harus berurutan
+    const [year1, year2] = year.split("/").map(Number);
+    if (year2 !== year1 + 1) {
+      return {
+        success: false,
+        message: "Tahun harus berurutan (contoh: 2026/2027)",
+        error: "INVALID_YEAR_SEQUENCE",
+      };
+    }
+
+    // Cek apakah tahun sudah ada
+    const { data: existing } = await supabase
+      .from("academic_years")
+      .select("*")
+      .eq("year", year);
+
+    if (existing && existing.length > 0) {
+      console.warn(`⚠️ Year ${year} already exists`);
+      return {
+        success: false,
+        message: `Tahun ajaran ${year} sudah ada di database`,
+        error: "YEAR_ALREADY_EXISTS",
+        data: existing,
+      };
+    }
+
+    // Default dates kalau gak dikasih
+    const yearNum = parseInt(year.split("/")[0]);
+    const defaultDates = {
+      sem1Start: dates.sem1Start || `${yearNum}-07-01`,
+      sem1End: dates.sem1End || `${yearNum}-12-31`,
+      sem2Start: dates.sem2Start || `${yearNum + 1}-01-01`,
+      sem2End: dates.sem2End || `${yearNum + 1}-06-30`,
+    };
+
+    // Validasi tanggal
+    const validateDate = (dateStr) => {
+      const date = new Date(dateStr);
+      return date instanceof Date && !isNaN(date);
+    };
+
+    if (
+      !validateDate(defaultDates.sem1Start) ||
+      !validateDate(defaultDates.sem1End) ||
+      !validateDate(defaultDates.sem2Start) ||
+      !validateDate(defaultDates.sem2End)
+    ) {
+      return {
+        success: false,
+        message: "Format tanggal tidak valid",
+        error: "INVALID_DATE_FORMAT",
+      };
+    }
+
+    // Validasi urutan tanggal
+    if (new Date(defaultDates.sem1Start) >= new Date(defaultDates.sem1End)) {
+      return {
+        success: false,
+        message:
+          "Tanggal mulai semester 1 harus lebih awal dari tanggal selesai",
+        error: "INVALID_DATE_ORDER",
+      };
+    }
+
+    if (new Date(defaultDates.sem2Start) >= new Date(defaultDates.sem2End)) {
+      return {
+        success: false,
+        message:
+          "Tanggal mulai semester 2 harus lebih awal dari tanggal selesai",
+        error: "INVALID_DATE_ORDER",
+      };
+    }
+
+    if (new Date(defaultDates.sem1End) >= new Date(defaultDates.sem2Start)) {
+      return {
+        success: false,
+        message: "Semester 1 harus selesai sebelum semester 2 dimulai",
+        error: "INVALID_DATE_ORDER",
+      };
+    }
+
+    console.log("📅 Inserting Semester 1...");
+
+    // Insert Semester 1
+    const { data: sem1, error: err1 } = await supabase
+      .from("academic_years")
+      .insert({
+        year: year,
+        semester: 1,
+        start_date: defaultDates.sem1Start,
+        end_date: defaultDates.sem1End,
+        is_active: false,
+      })
+      .select()
+      .single();
+
+    if (err1) {
+      console.error("❌ Error creating semester 1:", err1);
+      throw err1;
+    }
+
+    console.log("📅 Inserting Semester 2...");
+
+    // Insert Semester 2
+    const { data: sem2, error: err2 } = await supabase
+      .from("academic_years")
+      .insert({
+        year: year,
+        semester: 2,
+        start_date: defaultDates.sem2Start,
+        end_date: defaultDates.sem2End,
+        is_active: false,
+      })
+      .select()
+      .single();
+
+    if (err2) {
+      console.error("❌ Error creating semester 2:", err2);
+      // Rollback: hapus semester 1 yang udah ke-insert
+      await supabase.from("academic_years").delete().eq("id", sem1.id);
+      throw err2;
+    }
+
+    console.log(`✅ Created new academic year: ${year}`);
+    console.log(
+      `   Semester 1: ${defaultDates.sem1Start} to ${defaultDates.sem1End}`
+    );
+    console.log(
+      `   Semester 2: ${defaultDates.sem2Start} to ${defaultDates.sem2End}`
+    );
+
+    return {
+      success: true,
+      message: `Tahun ajaran ${year} berhasil dibuat (2 semester)`,
+      data: {
+        year: year,
+        semester1: sem1,
+        semester2: sem2,
+      },
+    };
+  } catch (error) {
+    console.error("❌ Error creating academic year:", error);
+    return {
+      success: false,
+      message: "Gagal membuat tahun ajaran baru",
+      error,
+    };
+  }
+};
+
+export const smartTransitionToNewYear = async (
+  newYear,
+  startingSemester = 1,
+  dates = {}
+) => {
+  try {
+    console.log(
+      `🚀 Smart transition to ${newYear} Semester ${startingSemester}`
+    );
+
+    // Cek apakah tahun baru udah ada
+    const { data: existing } = await supabase
+      .from("academic_years")
+      .select("*")
+      .eq("year", newYear)
+      .eq("semester", startingSemester);
+
+    // Kalau belum ada, bikin dulu
+    if (!existing || existing.length === 0) {
+      console.log(`📝 Year ${newYear} doesn't exist yet, creating...`);
+
+      const createResult = await createNewAcademicYear(newYear, dates);
+
+      if (!createResult.success) {
+        return createResult;
+      }
+
+      console.log(
+        "✅ New year created successfully, proceeding with transition..."
+      );
+    } else {
+      console.log(
+        `✅ Year ${newYear} already exists, proceeding with transition...`
+      );
+    }
+
+    // Lakukan transisi
+    return await transitionToNewAcademicYear(newYear, startingSemester);
+  } catch (error) {
+    console.error("❌ Error in smart transition:", error);
+    return {
+      success: false,
+      message: "Gagal melakukan transisi pintar",
+      error,
+    };
+  }
+};
+
 export const getAllAcademicYears = async () => {
   try {
     const { data, error } = await supabase
@@ -379,12 +628,56 @@ export const getAllAcademicYears = async () => {
   }
 };
 
+export const deleteAcademicYear = async (year) => {
+  try {
+    console.log(`🗑️ Attempting to delete academic year: ${year}`);
+
+    // Cek apakah tahun ini aktif
+    const activeYear = await getActiveAcademicYear();
+    if (activeYear && activeYear.year === year) {
+      return {
+        success: false,
+        message: "Tidak bisa menghapus tahun ajaran yang sedang aktif",
+        error: "CANNOT_DELETE_ACTIVE",
+      };
+    }
+
+    // Hapus semua semester di tahun ini
+    const { error } = await supabase
+      .from("academic_years")
+      .delete()
+      .eq("year", year);
+
+    if (error) throw error;
+
+    console.log(`✅ Deleted academic year: ${year}`);
+
+    return {
+      success: true,
+      message: `Tahun ajaran ${year} berhasil dihapus`,
+    };
+  } catch (error) {
+    console.error("❌ Error deleting academic year:", error);
+    return {
+      success: false,
+      message: "Gagal menghapus tahun ajaran",
+      error,
+    };
+  }
+};
+
+// ========================================
+// 🛡️ DATA INTEGRITY & VALIDATION
+// ========================================
+
 export const validateAcademicYearData = async () => {
   const issues = [];
   const warnings = [];
   let isHealthy = true;
 
   try {
+    console.log("🔍 Starting academic year data validation...");
+
     const { data: activeSemesters } = await supabase
       .from("academic_years")
       .select("*")
@@ -396,7 +689,8 @@ export const validateAcademicYearData = async () => {
         type: "MULTIPLE_ACTIVE",
         severity: "CRITICAL",
         message: `Found ${activeSemesters.length} active semesters (should be only 1)`,
-        recommendation: "Run setActiveAcademicYear() to fix",
+        data: activeSemesters.map((s) => `${s.year} - Semester ${s.semester}`),
+        recommendation: "Run autoFixDataIntegrity() to fix automatically",
       });
     }
 
@@ -424,7 +718,12 @@ export const validateAcademicYearData = async () => {
           warnings.push({
             type: "DATE_OVERLAP",
             severity: "WARNING",
-            message: `Date overlap detected between semesters`,
+            message: `Date overlap between ${current.year} Sem ${current.semester} and ${next.year} Sem ${next.semester}`,
+            data: {
+              semester1: `${current.year} - Semester ${current.semester}`,
+              semester2: `${next.year} - Semester ${next.semester}`,
+              overlap: `${current.end_date} overlaps ${next.start_date}`,
+            },
           });
         }
       }
@@ -460,6 +759,14 @@ export const validateAcademicYearData = async () => {
       warnings,
     };
 
+    if (isHealthy && warnings.length === 0) {
+      console.log("✅ Academic year data is healthy!");
+    } else {
+      console.warn("⚠️ Validation completed with issues:");
+      console.warn(`   Critical Issues: ${issues.length}`);
+      console.warn(`   Warnings: ${warnings.length}`);
+    }
+
     return report;
   } catch (error) {
     console.error("Error during validation:", error);
@@ -475,6 +782,8 @@ export const autoFixDataIntegrity = async () => {
   const fixes = [];
 
   try {
+    console.log("🔧 Starting auto-fix...");
+
     const { data: activeSemesters } = await supabase
       .from("academic_years")
       .select("*")
@@ -495,6 +804,14 @@ export const autoFixDataIntegrity = async () => {
         message: `Deactivated ${deactivateIds.length} duplicate active semesters`,
         kept: `${keepActive.year} - Semester ${keepActive.semester}`,
       });
+
+      console.log(
+        `✅ Fixed: Kept ${keepActive.year} Semester ${keepActive.semester} as active`
+      );
+    }
+
+    if (fixes.length === 0) {
+      console.log("✅ No fixes needed - data is already healthy");
     }
 
     return {
@@ -510,6 +827,10 @@ export const autoFixDataIntegrity = async () => {
     };
   }
 };
+
+// ========================================
+// 🎨 FORMATTING & UTILITIES
+// ========================================
 
 export const formatSemesterDisplay = (semester) => {
   return semester === 1 ? "Semester 1 (Ganjil)" : "Semester 2 (Genap)";
@@ -531,18 +852,44 @@ export const getCurrentSemesterFallback = () => {
   return month >= 7 ? 1 : 2;
 };
 
+export const generateAcademicYearString = (startYear) => {
+  const year = parseInt(startYear);
+  if (isNaN(year) || year < 2000 || year > 2100) {
+    return null;
+  }
+  return `${year}/${year + 1}`;
+};
+
+export const parseAcademicYearString = (yearString) => {
+  const match = yearString.match(/^(\d{4})\/(\d{4})$/);
+  if (!match) return null;
+
+  const startYear = parseInt(match[1]);
+  const endYear = parseInt(match[2]);
+
+  if (endYear !== startYear + 1) return null;
+
+  return { startYear, endYear };
+};
+
+// ========================================
+// 📋 DEBUGGING & LOGGING
+// ========================================
+
 export const logAcademicInfo = async () => {
   const info = await getActiveAcademicInfo();
-  console.log("📅 ACADEMIC YEAR INFO:");
+  console.log("📅 ===== ACADEMIC YEAR INFO =====");
   console.log("Active Year:", info.year);
   console.log("Active Semester:", info.activeSemester);
   console.log("Active Semester ID:", info.activeSemesterId);
   console.log("Available Semesters:", info.availableSemesters);
+  console.log("Display:", info.displayText);
+  console.log("====================================");
   return info;
 };
 
 export const systemHealthCheck = async () => {
-  console.log("🏥 SYSTEM HEALTH CHECK");
+  console.log("🏥 ===== SYSTEM HEALTH CHECK =====");
 
   await logAcademicInfo();
 
@@ -558,13 +905,19 @@ export const systemHealthCheck = async () => {
     console.log("\n🚨 Critical Issues:");
     validation.issues.forEach((issue) => {
       console.log(`   - ${issue.type}: ${issue.message}`);
+      if (issue.recommendation) {
+        console.log(`     💡 ${issue.recommendation}`);
+      }
     });
   }
 
   if (validation.warnings.length > 0) {
-    console.log("\n⚠️  Warnings:");
+    console.log("\n⚠️ Warnings:");
     validation.warnings.forEach((warning) => {
       console.log(`   - ${warning.type}: ${warning.message}`);
+      if (warning.recommendation) {
+        console.log(`     💡 ${warning.recommendation}`);
+      }
     });
   }
 
@@ -572,14 +925,25 @@ export const systemHealthCheck = async () => {
     console.log("\n🔧 Attempting auto-fix...");
     const fixResult = await autoFixDataIntegrity();
 
-    if (fixResult.success) {
+    if (fixResult.success && fixResult.fixesApplied > 0) {
       console.log(`✅ Auto-fix applied ${fixResult.fixesApplied} fixes`);
+      fixResult.fixes.forEach((fix) => {
+        console.log(`   - ${fix.type}: ${fix.message}`);
+      });
+    } else if (fixResult.success) {
+      console.log("✅ No fixes needed");
+    } else {
+      console.log("❌ Auto-fix failed");
     }
   }
 
-  console.log("🏥 HEALTH CHECK COMPLETE");
+  console.log("\n🏥 ===== HEALTH CHECK COMPLETE =====\n");
   return validation;
 };
+
+// ========================================
+// 🎯 SMART SELECTION & VALIDATION
+// ========================================
 
 export const getSmartSemesterSelection = async (options = {}) => {
   const {
@@ -699,7 +1063,9 @@ export const validateSemesterForInput = async (semesterId) => {
     if (today < startDate) {
       return {
         valid: false,
-        message: `Semester belum dimulai (mulai ${startDate.toLocaleDateString()})`,
+        message: `Semester belum dimulai (mulai ${startDate.toLocaleDateString(
+          "id-ID"
+        )})`,
         code: "SEMESTER_NOT_STARTED",
       };
     }
@@ -707,7 +1073,9 @@ export const validateSemesterForInput = async (semesterId) => {
     if (today > endDate) {
       return {
         valid: false,
-        message: `Semester sudah berakhir (selesai ${endDate.toLocaleDateString()})`,
+        message: `Semester sudah berakhir (selesai ${endDate.toLocaleDateString(
+          "id-ID"
+        )})`,
         code: "SEMESTER_ENDED",
       };
     }
@@ -728,32 +1096,85 @@ export const validateSemesterForInput = async (semesterId) => {
   }
 };
 
+export const canInputToSemester = async (semesterId) => {
+  const validation = await validateSemesterForInput(semesterId);
+  return validation.valid;
+};
+
+export const getSemesterStatus = async (semesterId) => {
+  try {
+    const semester = await getSemesterById(semesterId);
+    if (!semester) return "not_found";
+
+    const today = new Date();
+    const startDate = new Date(semester.start_date);
+    const endDate = new Date(semester.end_date);
+
+    if (today < startDate) return "upcoming";
+    if (today > endDate) return "ended";
+    if (semester.is_active) return "active";
+
+    return "inactive";
+  } catch (error) {
+    console.error("Error getting semester status:", error);
+    return "error";
+  }
+};
+
+// ========================================
+// 📦 DEFAULT EXPORT
+// ========================================
+
 export default {
+  // Core functions
   getActiveAcademicYear,
   getAllSemestersInYear,
   getAllSemestersInActiveYear,
   getSemesterById,
   getSemesterDisplayName,
+
+  // Filtering
   filterBySemester,
   filterByYear,
   filterBySemesterNumber,
   filterByActiveYear,
   applyAcademicFilters,
+
+  // Helpers
   getActiveSemesterId,
   getActiveSemester,
   getActiveYearString,
   getActiveAcademicInfo,
+
+  // Admin functions
   setActiveAcademicYear,
   transitionToNewAcademicYear,
+  createNewAcademicYear,
+  smartTransitionToNewYear,
   getAllAcademicYears,
+  deleteAcademicYear,
+
+  // Data integrity
   validateAcademicYearData,
   autoFixDataIntegrity,
+
+  // Formatting
   formatSemesterDisplay,
   formatAcademicYearDisplay,
+  generateAcademicYearString,
+  parseAcademicYearString,
+
+  // Fallbacks
   getCurrentAcademicYearFallback,
   getCurrentSemesterFallback,
-  logAcademicInfo,
-  systemHealthCheck,
+
+  // Smart selection & validation
   getSmartSemesterSelection,
   validateSemesterForInput,
+  canInputToSemester,
+  getSemesterStatus,
+
+  // Debug & logging
+  logAcademicInfo,
+  systemHealthCheck,
 };

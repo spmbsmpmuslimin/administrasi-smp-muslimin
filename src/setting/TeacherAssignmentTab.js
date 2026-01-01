@@ -104,10 +104,10 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
 
         // ✅ Set default semester dari data dinamis
         if (info) {
-          setSelectedSemester(info.semester.toString());
+          setSelectedSemester(info.activeSemester.toString());
           setFormData((prev) => ({
             ...prev,
-            semester: info.semester.toString(),
+            semester: info.activeSemester.toString(),
           }));
         }
       } catch (error) {
@@ -213,7 +213,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const loadAssignments = async () => {
     try {
       // ✅ UPDATED: Gunakan academic info untuk filter default
-      const { semester: activeSemester, yearId: activeYearId } = await getActiveAcademicInfo();
+      const { activeSemester, activeSemesterId: activeYearId } = await getActiveAcademicInfo();
 
       let query = supabase
         .from("teacher_assignments")
@@ -374,7 +374,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const calculateStats = async (assignmentData) => {
     try {
       // ✅ UPDATED: Gunakan academic info dinamis
-      const { yearId: activeYearId } = await getActiveAcademicInfo();
+      const { activeSemesterId: activeYearId } = await getActiveAcademicInfo();
 
       const activeAssignments = assignmentData.filter((a) => a.academic_year_id === activeYearId);
 
@@ -422,7 +422,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
     } else {
       try {
         // ✅ UPDATED: Set default semester dari data dinamis
-        const { semester: activeSemester, yearId: activeYearId } = await getActiveAcademicInfo();
+        const { activeSemester, activeSemesterId: activeYearId } = await getActiveAcademicInfo();
 
         setFormData({
           teacher_id: "",
@@ -652,7 +652,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const handleResetFilters = async () => {
     try {
       // ✅ UPDATED: Reset ke akademik aktif
-      const { semester: activeSemester, yearId: activeYearId } = await getActiveAcademicInfo();
+      const { activeSemester, activeSemesterId: activeYearId } = await getActiveAcademicInfo();
       const activeYear = academicYears.find((y) => y.is_active);
 
       setSelectedAcademicYear(activeYear?.id || "");
@@ -688,7 +688,8 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
   const handleExportData = async () => {
     try {
       // ✅ UPDATED: Gunakan academic info dinamis
-      const { displayText, semesterText } = await getActiveAcademicInfo();
+      const info = await getActiveAcademicInfo();
+      const { displayText, fullDisplayText: semesterText } = info;
 
       const filters = {
         academicYear: academicYears.find((y) => y.id === selectedAcademicYear)?.year,
@@ -698,7 +699,7 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         subject: selectedSubject,
         academicInfo: displayText, // ✅ Tambahkan info akademik
       };
-      await exportAssignments(assignments, filters, showToast);
+      await exportAssignments(assignments, showToast);
     } catch (error) {
       console.error("Error getting academic info for export:", error);
       const filters = {
@@ -708,7 +709,6 @@ const TeacherAssignmentTab = ({ user, showToast, schoolConfig }) => {
         teacher: teachers.find((t) => t.teacher_id === selectedTeacher)?.full_name,
         subject: selectedSubject,
       };
-      await exportAssignments(assignments, filters, showToast);
     }
   };
 

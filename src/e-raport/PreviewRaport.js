@@ -70,7 +70,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
     try {
       console.log("🔍 DEBUG: Mulai load user dan class");
 
-      const sessionData = localStorage.getItem("userSession");
+      const sessionData = localStorage.getItem("user");
       console.log("📦 Session Data:", sessionData);
 
       if (!sessionData) {
@@ -170,37 +170,33 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
 
       if (siswaError) throw new Error("Siswa tidak ditemukan atau tidak aktif");
 
-      // Load nilai data - COBA FINALIZED DULU (hanya siswa aktif)
-      let { data: nilai } = await supabase
+      // Load nilai data
+      const { data: nilai, error: nilaiError } = await supabase
         .from("nilai_eraport")
-        .select(
-          `*, nilai_eraport_detail(*, tujuan_pembelajaran(*)), students!inner(is_active)`
-        )
+        .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", selectedSiswaId)
         .eq("class_id", classId)
         .eq("academic_year_id", academicYear?.id)
-        .eq("semester", semester)
-        .eq("is_finalized", true)
-        .eq("students.is_active", true);
-      // ✅ HAPUS .order("mata_pelajaran") - nanti sort manual
+        .eq("semester", semester);
 
-      console.log("📊 Nilai Finalized:", nilai?.length || 0);
+      if (nilaiError) {
+        console.error("❌ Error loading nilai:", nilaiError);
+        throw new Error("Gagal memuat data nilai: " + nilaiError.message);
+      }
 
-      // FALLBACK: Kalau ngga ada yang finalized, ambil semua (termasuk draft, tapi tetap siswa aktif)
+      console.log("📊 Nilai loaded:", nilai?.length || 0);
+
+      // FALLBACK: Kalau ngga ada yang finalized, ambil semua (termasuk draft)
       if (!nilai || nilai.length === 0) {
         console.log("⚠️ Tidak ada nilai finalized, coba ambil semua data...");
 
         const { data: nilaiAll } = await supabase
           .from("nilai_eraport")
-          .select(
-            `*, nilai_eraport_detail(*, tujuan_pembelajaran(*)), students!inner(is_active)`
-          )
+          .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
           .eq("student_id", selectedSiswaId)
           .eq("class_id", classId)
           .eq("academic_year_id", academicYear?.id)
-          .eq("semester", semester)
-          .eq("students.is_active", true);
-        // ✅ HAPUS .order("mata_pelajaran") - nanti sort manual
+          .eq("semester", semester);
 
         nilai = nilaiAll;
         console.log("📊 Nilai Total (termasuk draft):", nilai?.length || 0);
@@ -208,9 +204,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
 
       // ✅ SORT berdasarkan urutan mapel standar
       const sortedNilai = (nilai || []).sort((a, b) => {
-        return (
-          getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran)
-        );
+        return getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran);
       });
 
       console.log("✅ Nilai sudah disort berdasarkan urutan mapel standar");
@@ -239,19 +233,14 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
     nilaiItem.nilai_eraport_detail?.forEach((detail) => {
       if (detail.status_tercapai === true && detail.tujuan_pembelajaran) {
         tercapai.push(detail.tujuan_pembelajaran.deskripsi_tp);
-      } else if (
-        detail.status_tercapai === false &&
-        detail.tujuan_pembelajaran
-      ) {
+      } else if (detail.status_tercapai === false && detail.tujuan_pembelajaran) {
         peningkatan.push(detail.tujuan_pembelajaran.deskripsi_tp);
       }
     });
 
     let text = "";
     if (tercapai.length > 0) {
-      text += `Mencapai Kompetensi dengan sangat baik dalam hal ${tercapai.join(
-        ", "
-      )}.`;
+      text += `Mencapai Kompetensi dengan sangat baik dalam hal ${tercapai.join(", ")}.`;
     }
     if (peningkatan.length > 0) {
       if (text) text += " ";
@@ -275,7 +264,8 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
             className="w-8 h-8 text-red-600 dark:text-red-400"
             fill="none"
             stroke="currentColor"
-            viewBox="0 0 24 24">
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -284,9 +274,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
             />
           </svg>
         </div>
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-          Akses Terbatas
-        </h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Akses Terbatas</h3>
         <p className="text-gray-600 dark:text-gray-400">{errorMessage}</p>
       </div>
     );
@@ -306,7 +294,8 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
               value={selectedSiswaId}
               onChange={(e) => setSelectedSiswaId(e.target.value)}
               disabled={loading || !classId}
-              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed">
+              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+            >
               <option value="">-- Pilih Siswa --</option>
               {siswaList.map((siswa) => (
                 <option key={siswa.id} value={siswa.id}>
@@ -324,7 +313,8 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
             <select
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
-              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            >
               <option value="">-- Pilih Semester --</option>
               <option value="1">Semester Ganjil</option>
               <option value="2">Semester Genap</option>
@@ -338,9 +328,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
         <div className="text-center py-12">
           <div className="inline-flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 dark:border-blue-400 mb-3"></div>
-            <p className="text-gray-700 dark:text-gray-300">
-              Memuat preview raport...
-            </p>
+            <p className="text-gray-700 dark:text-gray-300">Memuat preview raport...</p>
           </div>
         </div>
       )}
@@ -356,15 +344,15 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
                   Preview Raport - {siswaData.full_name}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  NIS: {siswaData.nis} • Semester {semester} •{" "}
-                  {academicYear?.year || "2025/2026"}
+                  NIS: {siswaData.nis} • Semester {semester} • {academicYear?.year || "2025/2026"}
                 </p>
               </div>
 
               <div className="flex gap-2">
                 <button
                   onClick={loadPreviewData}
-                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2"
+                >
                   <RefreshCw size={18} />
                   Refresh
                 </button>
@@ -375,56 +363,48 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
           {/* Raport Preview */}
           <div
             id="preview-content"
-            className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 md:p-8 print:shadow-none print:p-0">
+            className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 md:p-8 print:shadow-none print:p-0"
+          >
             {/* Header Info */}
             <div className="mb-6 print:mb-4 text-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
                 <div className="flex">
                   <span className="font-medium w-32">Nama</span>
                   <span className="mx-2">:</span>
-                  <span className="font-bold uppercase">
-                    {siswaData.full_name}
-                  </span>
+                  <span className="font-bold uppercase">{siswaData.full_name}</span>
                 </div>
                 <div className="flex">
-                  <span className="font-medium w-32">Kelas</span>
+                  <span className="font-medium w-[240px]">Kelas</span>
                   <span className="mx-2">:</span>
                   <span className="font-bold">Kelas {kelasInfo?.grade}</span>
                 </div>
-
                 <div className="flex">
                   <span className="font-medium w-32">NIS</span>
                   <span className="mx-2">:</span>
                   <span>{siswaData.nis || "-"}</span>
                 </div>
                 <div className="flex">
-                  <span className="font-medium w-32">Fase</span>
+                  <span className="font-medium w-[240px]">Fase</span>
                   <span className="mx-2">:</span>
                   <span>{fase}</span>
                 </div>
-
                 <div className="flex">
                   <span className="font-medium w-32">Nama Sekolah</span>
                   <span className="mx-2">:</span>
-                  <span>
-                    {schoolSettings.school_name || "SMP MUSLIMIN CILILIN"}
-                  </span>
+                  <span>{schoolSettings.school_name || "SMP MUSLIMIN CILILIN"}</span>
                 </div>
                 <div className="flex">
-                  <span className="font-medium w-32">Semester</span>
+                  <span className="font-medium w-[240px]">Semester</span>
                   <span className="mx-2">:</span>
-                  <span>{semester === "1" ? "1 (Ganjil)" : "2 (Genap)"}</span>
+                  <span>{semester === "1" || semester === 1 ? "1 (Ganjil)" : "2 (Genap)"}</span>
                 </div>
-
                 <div className="flex">
                   <span className="font-medium w-32">Alamat</span>
                   <span className="mx-2">:</span>
-                  <span>
-                    {schoolSettings.school_address || "Jl. Raya Warungawi"}
-                  </span>
+                  <span>{schoolSettings.school_address || "Jl. Raya Warungawi"}</span>
                 </div>
                 <div className="flex">
-                  <span className="font-medium w-32">Tahun Pelajaran</span>
+                  <span className="font-medium w-[240px]">Tahun Pelajaran</span>
                   <span className="mx-2">:</span>
                   <span>{academicYear?.year || "2025/2026"}</span>
                 </div>
@@ -466,7 +446,8 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
                           idx % 2 === 0
                             ? "bg-red-50/30 dark:bg-gray-800/50 print:bg-gray-100"
                             : "bg-white dark:bg-gray-900"
-                        }>
+                        }
+                      >
                         <td className="border border-gray-300 dark:border-gray-700 p-2 text-center font-medium print:border-black print:p-1">
                           {idx + 1}
                         </td>
@@ -477,9 +458,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
                           {nilai.nilai_akhir || "-"}
                         </td>
                         <td className="border border-gray-300 dark:border-gray-700 p-2 text-sm print:border-black print:p-1">
-                          {nilai.deskripsi_capaian ||
-                            generateCapaianKompetensi(nilai) ||
-                            "-"}
+                          {nilai.deskripsi_capaian || generateCapaianKompetensi(nilai) || "-"}
                         </td>
                       </tr>
                     ))
@@ -487,7 +466,8 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
                     <tr>
                       <td
                         colSpan="4"
-                        className="border border-gray-300 dark:border-gray-700 p-4 text-center text-gray-500 dark:text-gray-400 print:border-black print:p-2">
+                        className="border border-gray-300 dark:border-gray-700 p-4 text-center text-gray-500 dark:text-gray-400 print:border-black print:p-2"
+                      >
                         Belum ada data nilai untuk semester ini
                       </td>
                     </tr>
@@ -500,9 +480,8 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
             {nilaiData && nilaiData.length > 0 && (
               <div className="mt-6 print:mt-4 text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg print:hidden">
                 <p className="font-medium">
-                  ℹ️ Ini Adalah Preview Tabel Nilai Saja. Untuk Mencetak Raport
-                  Lengkap Dengan Kehadiran, Catatan, Dan Tanda Tangan, Gunakan
-                  Menu <strong>Cetak Raport</strong>.
+                  ℹ️ Ini Adalah Preview Tabel Nilai Saja. Untuk Mencetak Raport Lengkap Dengan
+                  Kehadiran, Catatan, Dan Tanda Tangan, Gunakan Menu <strong>Cetak Raport</strong>.
                 </p>
               </div>
             )}
@@ -518,7 +497,8 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
               className="w-8 h-8 text-gray-400 dark:text-gray-600"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -544,7 +524,8 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
               className="w-8 h-8 text-blue-600 dark:text-blue-400"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -553,9 +534,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-            Preview Raport
-          </h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Preview Raport</h3>
           <p className="text-gray-600 dark:text-gray-400">
             Pilih siswa dan semester untuk melihat preview raport
           </p>

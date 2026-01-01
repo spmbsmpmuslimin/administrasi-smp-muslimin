@@ -4,10 +4,8 @@ import ExcelJS from "exceljs";
 import { Save, Download, Upload } from "lucide-react";
 import {
   getActiveAcademicInfo,
-  getActiveSemester,
-  getActiveYearString,
-  getActiveAcademicYearId,
-  applyAcademicFilters,
+  getActiveSemesterId,
+  getAllSemestersInActiveYear,
 } from "../services/academicYearService";
 
 // ✅ CONSTANT DEFAULT KKM - Ganti di sini kalau mau ubah default
@@ -66,7 +64,8 @@ const getTingkatFromKelas = (kelas) => {
 function InputNilai({ user, onShowToast, darkMode }) {
   const [kelas, setKelas] = useState("");
   const [selectedMapel, setSelectedMapel] = useState("");
-  const [selectedSemester, setSelectedSemester] = useState("");
+  const [selectedSemesterId, setSelectedSemesterId] = useState(""); // ✅ Ganti dari selectedSemester
+  const [availableSemesters, setAvailableSemesters] = useState([]); // ✅ Tambah state untuk list semester
   const [siswaList, setSiswaList] = useState([]);
   const [tpList, setTpList] = useState([]);
   const [academicInfo, setAcademicInfo] = useState(null);
@@ -91,17 +90,17 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
   // Load data saat filter berubah
   useEffect(() => {
-    if (kelas && selectedMapel && selectedSemester && academicInfo) {
+    if (kelas && selectedMapel && selectedSemesterId && academicInfo) {
       loadData();
     }
-  }, [kelas, selectedMapel, selectedSemester, academicInfo]);
+  }, [kelas, selectedMapel, selectedSemesterId, academicInfo]);
 
   // Load TP terpisah untuk validasi
   useEffect(() => {
-    if (kelas && selectedMapel && selectedSemester && academicInfo) {
+    if (kelas && selectedMapel && selectedSemesterId && academicInfo) {
       loadTP();
     }
-  }, [kelas, selectedMapel, selectedSemester, academicInfo]);
+  }, [kelas, selectedMapel, selectedSemesterId, academicInfo]);
 
   const loadAcademicInfoAndAssignments = async () => {
     try {
@@ -111,12 +110,17 @@ function InputNilai({ user, onShowToast, darkMode }) {
       const academicInfo = await getActiveAcademicInfo();
       setAcademicInfo(academicInfo);
 
-      // Set semester aktif sebagai default
-      if (academicInfo && academicInfo.semester) {
-        setSelectedSemester(academicInfo.semester.toString());
+      // ✅ Load semua semester dalam tahun aktif
+      const semesters = await getAllSemestersInActiveYear();
+      setAvailableSemesters(semesters);
+
+      // ✅ Set semester aktif sebagai default pilihan
+      if (academicInfo && academicInfo.activeSemesterId) {
+        setSelectedSemesterId(academicInfo.activeSemesterId);
       }
 
       console.log("📅 Academic Info loaded:", academicInfo);
+      console.log("📚 Available Semesters:", semesters);
 
       if (!user) {
         throw new Error("Session tidak valid. Silakan login ulang.");
@@ -128,27 +132,22 @@ function InputNilai({ user, onShowToast, darkMode }) {
       }
 
       console.log("👨‍🏫 Teacher ID:", teacherId);
-      console.log("🎯 Academic Year ID:", academicInfo.yearId);
+      console.log("🎯 Active Semester ID:", academicInfo.activeSemesterId);
 
-      // ✅ GANTI: Ambil teacher assignments dengan academicInfo.yearId
+      // ✅ GANTI: Ambil teacher assignments dengan semester ID aktif
       const { data: assignments, error: assignmentsError } = await supabase
         .from("teacher_assignments")
         .select("*")
         .eq("teacher_id", teacherId)
-        .eq("academic_year_id", academicInfo.yearId);
+        .eq("academic_year_id", academicInfo.activeSemesterId);
 
       if (assignmentsError) {
-        throw new Error(
-          `Gagal load tugas mengajar: ${assignmentsError.message}`
-        );
+        throw new Error(`Gagal load tugas mengajar: ${assignmentsError.message}`);
       }
 
       if (!assignments || assignments.length === 0) {
         if (onShowToast)
-          onShowToast(
-            "Anda belum ditugaskan mengajar kelas/mapel apapun.",
-            "warning"
-          );
+          onShowToast("Anda belum ditugaskan mengajar kelas/mapel apapun.", "warning");
         setLoading(false);
         return;
       }
@@ -206,26 +205,23 @@ function InputNilai({ user, onShowToast, darkMode }) {
   const loadTP = async () => {
     try {
       const tingkat = getTingkatFromKelas(kelas);
-      if (!tingkat || !academicInfo || !selectedSemester) return;
+      if (!tingkat || !selectedSemesterId) return;
+      console.log("=== LOAD DATA DEBUG ===");
+      console.log("Kelas:", kelas);
+      console.log("Tingkat:", tingkat);
+      console.log("Mapel:", selectedMapel);
+      console.log("Semester ID:", selectedSemesterId);
+      console.log("=======================");
 
-      // ✅ HAPUS manual filter tahun_ajaran_id, pakai applyAcademicFilters
-      let query = supabase
+      // ✅ GANTI: Query dengan academic_year_id (semester ID)
+      const { data: tp, error } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
         .eq("tingkat", tingkat)
         .eq("mata_pelajaran", selectedMapel)
-        .eq("semester", selectedSemester)
+        .eq("academic_year_id", selectedSemesterId) // ✅ Filter by semester ID
         .eq("is_active", true)
         .order("urutan");
-      // ❌ HAPUS INI KALAU ADA: .eq("tahun_ajaran_id", academicInfo.yearId)
-
-      // ✅ PAKAI applyAcademicFilters (otomatis pakai academic_year_id)
-      query = await applyAcademicFilters(query, {
-        filterYearId: true,
-        filterSemester: false,
-      });
-
-      const { data: tp, error } = await query;
 
       if (error) {
         console.error("Error loading TP:", error);
@@ -240,7 +236,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
   };
 
   const loadData = async () => {
-    if (!kelas || !selectedMapel || !selectedSemester || !academicInfo) return;
+    if (!kelas || !selectedMapel || !selectedSemesterId || !academicInfo) return;
 
     setLoading(true);
     try {
@@ -257,8 +253,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
       const { data: jenjangKKM } = await supabase
         .from("raport_config")
         .select("kkm")
-        .eq("academic_year_id", academicInfo.yearId)
-        .eq("semester", parseInt(selectedSemester))
+        .eq("academic_year_id", selectedSemesterId) // ✅ Ganti dengan semester ID
         .eq("jenjang", parseInt(jenjang))
         .eq("mata_pelajaran", selectedMapel)
         .eq("is_jenjang_default", true)
@@ -278,7 +273,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
           .select("kkm")
           .eq("class_id", kelas)
           .eq("mata_pelajaran", selectedMapel)
-          .eq("academic_year_id", academicInfo.yearId)
+          .eq("academic_year_id", selectedSemesterId) // ✅ Ganti dengan semester ID
           .maybeSingle();
 
         if (kelasKKM?.kkm) {
@@ -301,8 +296,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
         throw new Error(`Gagal load siswa: ${studentsError.message}`);
       }
 
-      // ✅ GANTI: Load existing nilai dengan applyAcademicFilters
-      let query = supabase
+      // ✅ GANTI: Load existing nilai dengan semester ID
+      const { data: existingNilai, error: nilaiError } = await supabase
         .from("nilai_eraport")
         .select(
           `
@@ -319,97 +314,39 @@ function InputNilai({ user, onShowToast, darkMode }) {
         )
         .eq("class_id", kelas)
         .eq("mata_pelajaran", standardizeMapelName(selectedMapel))
-        .eq("semester", selectedSemester); // ✅ Filter manual - string langsung
-
-      // Apply academic filter untuk tahun ajaran
-      query = await applyAcademicFilters(query, {
-        filterYearId: true,
-        filterSemester: false, // ✅ MATIIN karena udah filter manual di atas
-      });
-
-      // ✅ DEBUG LOG SEBELUM EXECUTE QUERY
-      console.log("🔍 Filter Query Nilai:");
-      console.log("  - class_id:", kelas);
-      console.log("  - mata_pelajaran:", standardizeMapelName(selectedMapel));
-      console.log(
-        "  - semester:",
-        selectedSemester,
-        "(manual filter, type:",
-        typeof selectedSemester,
-        ")"
-      );
-      console.log("  - academic_year_id:", academicInfo.yearId);
-
-      const { data: existingNilai, error: nilaiError } = await query;
-
-      // ✅ DEBUG LOG ERROR (kalau ada)
-      if (nilaiError) {
-        console.error("❌ Error loading nilai:", nilaiError);
-      }
+        .eq("academic_year_id", selectedSemesterId); // ✅ Filter by semester ID
 
       // ✅ DEBUG LOG HASIL QUERY
       console.log("📊 Existing nilai loaded:", existingNilai?.length || 0);
-      console.log(
-        "🔍 existingNilai FULL:",
-        JSON.stringify(existingNilai, null, 2)
-      );
+      console.log("🔍 existingNilai FULL:", JSON.stringify(existingNilai, null, 2));
       console.log("🔍 Sample student:", existingNilai?.[0]);
       console.log("🔍 Detail TP:", existingNilai?.[0]?.nilai_eraport_detail);
-
-      // ✅ DEBUG LOG TIPE DATA SEMESTER (PERBAIKAN 3)
-      if (existingNilai && existingNilai.length > 0) {
-        console.log("🔍 ===== CEK TIPE DATA SEMESTER =====");
-        console.log("🔍 Sample data dari DB:", existingNilai[0]);
-        console.log("🔍 DB semester value:", existingNilai[0].semester);
-        console.log("🔍 DB semester type:", typeof existingNilai[0].semester);
-        console.log("🔍 Filter semester value:", selectedSemester);
-        console.log("🔍 Filter semester type:", typeof selectedSemester);
-        console.log(
-          "🔍 Apakah sama (strict)?",
-          existingNilai[0].semester === selectedSemester
-        );
-        console.log(
-          "🔍 Apakah sama (loose)?",
-          existingNilai[0].semester == selectedSemester
-        );
-        console.log("🔍 =====================================");
-      } else {
-        console.warn("⚠️ TIDAK ADA DATA existingNilai!");
-        console.log("🔍 Filter yang digunakan:");
-        console.log("  - class_id:", kelas);
-        console.log("  - mata_pelajaran:", standardizeMapelName(selectedMapel));
-        console.log(
-          "  - semester:",
-          selectedSemester,
-          "(type:",
-          typeof selectedSemester,
-          ")"
-        );
-        console.log("  - academic_year_id:", academicInfo.yearId);
-        console.log("🔍 Coba cek manual di Supabase dengan query:");
-        console.log(
-          `  SELECT * FROM nilai_eraport WHERE class_id = '${kelas}' AND mata_pelajaran = '${standardizeMapelName(
-            selectedMapel
-          )}' AND semester = '${selectedSemester}' AND academic_year_id = '${
-            academicInfo.yearId
-          }';`
-        );
-      }
-      console.log("🔍 Detail TP:", existingNilai?.[0]?.nilai_eraport_detail);
-
-      // ✅ CEK TIPE DATA SEMESTER DI DATABASE
-      if (existingNilai && existingNilai.length > 0) {
-        console.log("🔍 DB semester value:", existingNilai[0].semester);
-        console.log("🔍 DB semester type:", typeof existingNilai[0].semester);
-        console.log("🔍 Filter semester value:", selectedSemester);
-        console.log("🔍 Filter semester type:", typeof selectedSemester);
-      }
 
       if (nilaiError) {
         console.error("❌ Error loading nilai:", nilaiError);
       }
 
       console.log("📊 Existing nilai loaded:", existingNilai?.length || 0);
+
+      // ✅ Cari info semester untuk display
+      const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
+      const semesterNumber = selectedSemester ? selectedSemester.semester : null;
+
+      // ✅ Validasi semester number (TANPA isAutoSave karena ini bukan di handleSave)
+      if (!semesterNumber) {
+        console.error("❌ Semester number not found for ID:", selectedSemesterId);
+        if (onShowToast) onShowToast("Semester tidak valid!", "error");
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Validasi semester number
+      if (!semesterNumber) {
+        console.error("❌ Semester number not found for ID:", selectedSemesterId);
+        if (onShowToast) onShowToast("Semester tidak valid!", "error");
+        setLoading(false);
+        return;
+      }
 
       // MERGE DATA
       const merged = (students || []).map((siswa) => {
@@ -424,20 +361,15 @@ function InputNilai({ user, onShowToast, darkMode }) {
           nilai_akhir: nilaiAkhir,
           deskripsi_capaian: nilai?.deskripsi_capaian || "",
           kkm: kkm,
+          semester: semesterNumber, // ✅ Tambah info semester
           rapor_id: nilai?.id,
           tp_tercapai:
             nilai?.nilai_eraport_detail
-              ?.filter(
-                (d) =>
-                  d.status_tercapai === true || d.status_tercapai === "true"
-              )
+              ?.filter((d) => d.status_tercapai === true || d.status_tercapai === "true")
               .map((d) => d.tujuan_pembelajaran_id) || [],
           tp_perlu_peningkatan:
             nilai?.nilai_eraport_detail
-              ?.filter(
-                (d) =>
-                  d.status_tercapai === false || d.status_tercapai === "false"
-              )
+              ?.filter((d) => d.status_tercapai === false || d.status_tercapai === "false")
               .map((d) => d.tujuan_pembelajaran_id) || [],
         };
       });
@@ -445,8 +377,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
       setSiswaList(merged);
     } catch (error) {
       console.error("❌ Error loading data:", error);
-      if (onShowToast)
-        onShowToast(`Gagal memuat data: ${error.message}`, "error");
+      if (onShowToast) onShowToast(`Gagal memuat data: ${error.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -563,12 +494,9 @@ function InputNilai({ user, onShowToast, darkMode }) {
       return;
     }
 
-    if (!kelas || !selectedMapel || !selectedSemester || !academicInfo) {
+    if (!kelas || !selectedMapel || !selectedSemesterId || !academicInfo) {
       if (!isAutoSave && onShowToast)
-        onShowToast(
-          "Pilih Kelas, Mapel, dan Semester terlebih dahulu!",
-          "warning"
-        );
+        onShowToast("Pilih Kelas, Mapel, dan Semester terlebih dahulu!", "warning");
       return;
     }
 
@@ -588,11 +516,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
     }
 
     // Skip konfirmasi untuk auto-save
-    if (
-      !isAutoSave &&
-      !window.confirm(`Simpan nilai untuk ${siswaList.length} siswa?`)
-    )
-      return;
+    if (!isAutoSave && !window.confirm(`Simpan nilai untuk ${siswaList.length} siswa?`)) return;
 
     setSaving(true);
     setIsAutoSaving(isAutoSave); // ✅ TAMBAH BARIS INI
@@ -607,12 +531,25 @@ function InputNilai({ user, onShowToast, darkMode }) {
       // ✅ GET KKM - dengan konsep baru (per jenjang) + fallback ke legacy
       const jenjang = kelas.charAt(0); // "7A" → "7"
 
+      // ✅ Cari info semester untuk mendapatkan semester number
+      // ✅ Cari info semester untuk mendapatkan semester number
+      const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
+      const semesterNumber = selectedSemester ? selectedSemester.semester : null;
+
+      // ✅ Validasi semester number
+      if (!semesterNumber) {
+        console.error("❌ Semester number not found for ID:", selectedSemesterId);
+        if (!isAutoSave && onShowToast) onShowToast("Semester tidak valid!", "error");
+        setSaving(false);
+        setIsAutoSaving(false);
+        return;
+      }
+
       // 1. Coba ambil KKM per jenjang (konsep baru)
       const { data: jenjangKKM } = await supabase
         .from("raport_config")
         .select("kkm")
-        .eq("academic_year_id", academicInfo.yearId)
-        .eq("semester", academicInfo.semester)
+        .eq("academic_year_id", selectedSemesterId) // ✅ Ganti dengan semester ID
         .eq("jenjang", parseInt(jenjang))
         .eq("mata_pelajaran", selectedMapel)
         .eq("is_jenjang_default", true)
@@ -632,7 +569,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
           .select("kkm")
           .eq("class_id", kelas)
           .eq("mata_pelajaran", selectedMapel)
-          .eq("academic_year_id", academicInfo.yearId)
+          .eq("academic_year_id", selectedSemesterId) // ✅ Ganti dengan semester ID
           .maybeSingle();
 
         if (kelasKKM?.kkm) {
@@ -646,9 +583,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
       // ✅ FILTER: Hanya siswa yang ada datanya
       const siswaWithData = siswaList.filter((siswa) => {
         const hasNilai = siswa.nilai_akhir && siswa.nilai_akhir > 0;
-        const hasTP =
-          siswa.tp_tercapai?.length > 0 ||
-          siswa.tp_perlu_peningkatan?.length > 0;
+        const hasTP = siswa.tp_tercapai?.length > 0 || siswa.tp_perlu_peningkatan?.length > 0;
         return hasNilai || hasTP;
       });
 
@@ -674,8 +609,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
           class_id: kelas,
           mata_pelajaran: standardizeMapelName(selectedMapel),
           guru_id: userId,
-          academic_year_id: academicInfo.yearId, // ✅ FIX: academic_year_id
-          semester: selectedSemester, // ✅ GANTI: selectedSemester
+          academic_year_id: selectedSemesterId, // ✅ GANTI: Pakai semester ID
+          semester: siswa.semester, // ✅ Ambil dari data siswa
           nilai_akhir: siswa.nilai_akhir || 0,
           deskripsi_capaian: deskripsiGenerated,
           kkm: kkm,
@@ -702,10 +637,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
       if (dataToUpdate.length > 0) {
         const updatePromises = dataToUpdate.map(async (data) => {
           const { id, student_id_key, ...updateData } = data;
-          const { error } = await supabase
-            .from("nilai_eraport")
-            .update(updateData)
-            .eq("id", id);
+          const { error } = await supabase.from("nilai_eraport").update(updateData).eq("id", id);
 
           if (error) throw error;
           return id;
@@ -719,16 +651,13 @@ function InputNilai({ user, onShowToast, darkMode }) {
       // ✅ BULK UPSERT (mencegah duplikat!)
       let newRapors = [];
       if (dataToInsert.length > 0) {
-        const insertData = dataToInsert.map(
-          ({ student_id_key, ...rest }) => rest
-        );
+        const insertData = dataToInsert.map(({ student_id_key, ...rest }) => rest);
 
         // Pakai upsert dengan onConflict
         const { data: inserted, error: insertError } = await supabase
           .from("nilai_eraport")
           .upsert(insertData, {
-            onConflict:
-              "student_id,class_id,mata_pelajaran,academic_year_id,semester",
+            onConflict: "student_id,class_id,mata_pelajaran,academic_year_id,semester",
             ignoreDuplicates: false, // Update kalau ada duplikat
           })
           .select();
@@ -744,16 +673,12 @@ function InputNilai({ user, onShowToast, darkMode }) {
       }
 
       // ✅ HAPUS SEMUA TP DETAIL LAMA (BULK DELETE - satu query!)
-      const allRaporIds = [
-        ...dataToUpdate.map((d) => d.id),
-        ...newRapors.map((r) => r.id),
-      ].filter(Boolean);
+      const allRaporIds = [...dataToUpdate.map((d) => d.id), ...newRapors.map((r) => r.id)].filter(
+        Boolean
+      );
 
       if (allRaporIds.length > 0) {
-        await supabase
-          .from("nilai_eraport_detail")
-          .delete()
-          .in("nilai_eraport_id", allRaporIds);
+        await supabase.from("nilai_eraport_detail").delete().in("nilai_eraport_id", allRaporIds);
       }
 
       // ✅ PREPARE TP DETAILS (BULK INSERT)
@@ -831,16 +756,20 @@ function InputNilai({ user, onShowToast, darkMode }) {
   };
 
   const handleDownloadTemplate = () => {
-    if (!selectedMapel || !kelas || !selectedSemester || !academicInfo) {
-      if (onShowToast)
-        onShowToast(
-          "Pilih Kelas, Mapel, dan Semester terlebih dahulu!",
-          "warning"
-        );
+    if (!selectedMapel || !kelas || !selectedSemesterId || !academicInfo) {
+      if (onShowToast) onShowToast("Pilih Kelas, Mapel, dan Semester terlebih dahulu!", "warning");
       return;
     }
 
     try {
+      // ✅ Cari info semester untuk display
+      const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
+      const semesterText = selectedSemester
+        ? selectedSemester.semester === 1
+          ? "Ganjil"
+          : "Genap"
+        : "";
+
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Template Nilai");
 
@@ -857,9 +786,9 @@ function InputNilai({ user, onShowToast, darkMode }) {
       worksheet.getCell("A2").font = { bold: true };
 
       worksheet.mergeCells("A3:C3");
-      worksheet.getCell("A3").value = `Kelas: ${kelas} | Semester: ${
-        selectedSemester === "1" ? "Ganjil" : "Genap"
-      } | Tahun Ajaran: ${academicInfo.year}`;
+      worksheet.getCell(
+        "A3"
+      ).value = `Kelas: ${kelas} | Semester: ${semesterText} | Tahun Ajaran: ${academicInfo.year}`;
       worksheet.getCell("A3").font = { bold: true };
 
       const headerRow = worksheet.getRow(5);
@@ -903,7 +832,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Template_Nilai_${selectedMapel}_${kelas}_Semester_${selectedSemester}_${academicInfo.year.replace(
+        a.download = `Template_Nilai_${selectedMapel}_${kelas}_Semester_${semesterText}_${academicInfo.year.replace(
           /\//g,
           "-"
         )}.xlsx`;
@@ -914,8 +843,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
       });
     } catch (error) {
       console.error("Template error:", error);
-      if (onShowToast)
-        onShowToast(`Gagal membuat template: ${error.message}`, "error");
+      if (onShowToast) onShowToast(`Gagal membuat template: ${error.message}`, "error");
     }
   };
 
@@ -923,12 +851,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!selectedMapel || !kelas || !selectedSemester || !academicInfo) {
-      if (onShowToast)
-        onShowToast(
-          "Pilih Kelas, Mapel, dan Semester terlebih dahulu!",
-          "warning"
-        );
+    if (!selectedMapel || !kelas || !selectedSemesterId || !academicInfo) {
+      if (onShowToast) onShowToast("Pilih Kelas, Mapel, dan Semester terlebih dahulu!", "warning");
       return;
     }
 
@@ -952,16 +876,13 @@ function InputNilai({ user, onShowToast, darkMode }) {
       });
 
       if (importedData.length === 0) {
-        if (onShowToast)
-          onShowToast("Tidak ada data ditemukan di file Excel!", "warning");
+        if (onShowToast) onShowToast("Tidak ada data ditemukan di file Excel!", "warning");
         return;
       }
 
       let importCount = 0;
       const updatedSiswaList = siswaList.map((siswa) => {
-        const imported = importedData.find(
-          (item) => item.nis === siswa.nis.toString()
-        );
+        const imported = importedData.find((item) => item.nis === siswa.nis.toString());
         if (imported) {
           importCount++;
           return { ...siswa, nilai_akhir: imported.nilai };
@@ -971,15 +892,11 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
       setSiswaList(updatedSiswaList);
 
-      if (onShowToast)
-        onShowToast(`${importCount} nilai berhasil diimport!`, "success");
+      if (onShowToast) onShowToast(`${importCount} nilai berhasil diimport!`, "success");
     } catch (error) {
       console.error("Import error:", error);
       if (onShowToast)
-        onShowToast(
-          "Gagal import file! Pastikan format Excel sesuai template.",
-          "error"
-        );
+        onShowToast("Gagal import file! Pastikan format Excel sesuai template.", "error");
     } finally {
       e.target.value = "";
     }
@@ -996,10 +913,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
     // ✅ Toast muncul untuk konfirmasi aksi user
     if (onShowToast)
-      onShowToast(
-        `✓ Semua TP ditandai tercapai untuk ${siswaList.length} siswa`,
-        "success"
-      );
+      onShowToast(`✓ Semua TP ditandai tercapai untuk ${siswaList.length} siswa`, "success");
 
     // Auto-save silent di background
     triggerAutoSave();
@@ -1014,10 +928,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
     setSiswaList(updated);
 
     if (onShowToast)
-      onShowToast(
-        `⚠ Semua TP ditandai perlu peningkatan untuk ${siswaList.length} siswa`,
-        "info"
-      );
+      onShowToast(`⚠ Semua TP ditandai perlu peningkatan untuk ${siswaList.length} siswa`, "info");
 
     triggerAutoSave();
   };
@@ -1031,10 +942,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
     setSiswaList(updated);
 
     if (onShowToast)
-      onShowToast(
-        `↺ Semua centang TP direset untuk ${siswaList.length} siswa`,
-        "info"
-      );
+      onShowToast(`↺ Semua centang TP direset untuk ${siswaList.length} siswa`, "info");
 
     triggerAutoSave();
   };
@@ -1059,19 +967,20 @@ function InputNilai({ user, onShowToast, darkMode }) {
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-sky-100"
-        }`}>
+        }`}
+      >
         <div className="text-center">
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
               darkMode ? "bg-red-900/30" : "bg-red-100"
-            }`}>
+            }`}
+          >
             <svg
-              className={`w-8 h-8 ${
-                darkMode ? "text-red-400" : "text-red-600"
-              }`}
+              className={`w-8 h-8 ${darkMode ? "text-red-400" : "text-red-600"}`}
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1080,10 +989,7 @@ function InputNilai({ user, onShowToast, darkMode }) {
               />
             </svg>
           </div>
-          <h3
-            className={`text-lg font-bold mb-2 ${
-              darkMode ? "text-white" : "text-gray-900"
-            }`}>
+          <h3 className={`text-lg font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
             Data Akademik Tidak Ditemukan
           </h3>
           <p className={`${darkMode ? "text-gray-300" : "text-gray-600"}`}>
@@ -1098,28 +1004,28 @@ function InputNilai({ user, onShowToast, darkMode }) {
     <div
       className={`min-h-screen py-4 sm:py-8 px-3 sm:px-4 lg:px-6 ${
         darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-50 to-blue-100"
-      }`}>
+      }`}
+    >
       <div className="max-w-7xl mx-auto">
         <div
           className={`rounded-2xl shadow-xl p-4 sm:p-6 lg:p-8 ${
-            darkMode
-              ? "bg-gray-800 border border-gray-700"
-              : "bg-white border border-blue-200"
-          }`}>
+            darkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-blue-200"
+          }`}
+        >
           {/* Header dengan Info Akademik */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b">
             <h2
               className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-0 ${
                 darkMode ? "text-white" : "text-blue-800"
-              }`}>
+              }`}
+            >
               Input Nilai e-Raport
             </h2>
             <div
               className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                darkMode
-                  ? "bg-blue-900/30 text-blue-300"
-                  : "bg-blue-100 text-blue-800"
-              }`}>
+                darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-800"
+              }`}
+            >
               {academicInfo.displayText}
             </div>
           </div>
@@ -1128,23 +1034,20 @@ function InputNilai({ user, onShowToast, darkMode }) {
           <div
             className="mb-6 p-4 rounded-lg border bg-opacity-50"
             style={{
-              backgroundColor: darkMode
-                ? "rgba(30, 58, 138, 0.2)"
-                : "rgba(219, 234, 254, 0.5)",
+              backgroundColor: darkMode ? "rgba(30, 58, 138, 0.2)" : "rgba(219, 234, 254, 0.5)",
               borderColor: darkMode ? "#374151" : "#bfdbfe",
-            }}>
+            }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex flex-col">
                 <span
                   className={`text-xs font-medium mb-1 ${
                     darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  }`}
+                >
                   Tahun Ajaran Aktif
                 </span>
-                <span
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}>
+                <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
                   {academicInfo.year}
                 </span>
               </div>
@@ -1152,27 +1055,23 @@ function InputNilai({ user, onShowToast, darkMode }) {
                 <span
                   className={`text-xs font-medium mb-1 ${
                     darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  }`}
+                >
                   Semester Aktif di Sistem
                 </span>
-                <span
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}>
-                  {academicInfo.semesterText}
+                <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  Semester {academicInfo.activeSemester === 1 ? "Ganjil" : "Genap"}
                 </span>
               </div>
               <div className="flex flex-col">
                 <span
                   className={`text-xs font-medium mb-1 ${
                     darkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  }`}
+                >
                   Status Tahun Ajaran
                 </span>
-                <span
-                  className={`font-medium ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}>
+                <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
                   {academicInfo.isActive ? "Aktif" : "Tidak Aktif"}
                 </span>
               </div>
@@ -1185,7 +1084,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
               <label
                 className={`block text-sm sm:text-base font-semibold mb-2 ${
                   darkMode ? "text-gray-300" : "text-blue-700"
-                }`}>
+                }`}
+              >
                 Pilih Kelas
               </label>
               <select
@@ -1195,15 +1095,13 @@ function InputNilai({ user, onShowToast, darkMode }) {
                   darkMode
                     ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
-                }`}>
+                }`}
+              >
                 <option value="" className="dark:bg-gray-800">
                   -- Pilih Kelas --
                 </option>
                 {availableClasses.map((cls) => (
-                  <option
-                    key={cls.id}
-                    value={cls.grade}
-                    className="dark:bg-gray-800">
+                  <option key={cls.id} value={cls.grade} className="dark:bg-gray-800">
                     Kelas {cls.grade}
                   </option>
                 ))}
@@ -1214,7 +1112,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
               <label
                 className={`block text-sm sm:text-base font-semibold mb-2 ${
                   darkMode ? "text-gray-300" : "text-blue-700"
-                }`}>
+                }`}
+              >
                 Pilih Mata Pelajaran
               </label>
               <select
@@ -1224,15 +1123,13 @@ function InputNilai({ user, onShowToast, darkMode }) {
                   darkMode
                     ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
-                }`}>
+                }`}
+              >
                 <option value="" className="dark:bg-gray-800">
                   -- Pilih Mata Pelajaran --
                 </option>
                 {availableSubjects.map((subject, idx) => (
-                  <option
-                    key={idx}
-                    value={subject}
-                    className="dark:bg-gray-800">
+                  <option key={idx} value={subject} className="dark:bg-gray-800">
                     {subject}
                   </option>
                 ))}
@@ -1243,31 +1140,39 @@ function InputNilai({ user, onShowToast, darkMode }) {
               <label
                 className={`block text-sm sm:text-base font-semibold mb-2 ${
                   darkMode ? "text-gray-300" : "text-blue-700"
-                }`}>
+                }`}
+              >
                 Pilih Semester
               </label>
               <select
-                value={selectedSemester}
-                onChange={(e) => setSelectedSemester(e.target.value)}
+                value={selectedSemesterId}
+                onChange={(e) => setSelectedSemesterId(e.target.value)}
                 className={`w-full p-3 sm:p-4 rounded-xl border text-sm sm:text-base transition-all duration-200 ${
                   darkMode
                     ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     : "bg-white border-blue-300 text-blue-900 focus:border-blue-500 focus:ring-3 focus:ring-blue-500/20"
-                }`}>
+                }`}
+              >
                 <option value="" className="dark:bg-gray-800">
                   -- Pilih Semester --
                 </option>
-                <option value="1" className="dark:bg-gray-800">
-                  Semester Ganjil
-                </option>
-                <option value="2" className="dark:bg-gray-800">
-                  Semester Genap
-                </option>
+                {availableSemesters.map((sem) => (
+                  <option key={sem.id} value={sem.id} className="dark:bg-gray-800">
+                    Semester {sem.semester === 1 ? "Ganjil" : "Genap"} - {sem.year}
+                    {sem.is_active ? " (Aktif)" : ""}
+                  </option>
+                ))}
               </select>
+              {academicInfo && (
+                <p className={`text-xs mt-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  Semester aktif sistem: Semester{" "}
+                  {academicInfo.activeSemester === 1 ? "Ganjil" : "Genap"}
+                </p>
+              )}
             </div>
           </div>
 
-          {kelas && selectedMapel && selectedSemester && (
+          {kelas && selectedMapel && selectedSemesterId && (
             <>
               {/* ✅ SEMUA TOMBOL DALAM 1 BARIS */}
               <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 justify-end items-center">
@@ -1279,9 +1184,9 @@ function InputNilai({ user, onShowToast, darkMode }) {
                       ? "bg-green-900/50 hover:bg-green-800 text-green-200 border border-green-700"
                       : "bg-green-100 hover:bg-green-200 text-green-800 border border-green-300"
                   }`}
-                  title="Tandai semua TP tercapai untuk semua siswa">
-                  <span className="hidden sm:inline">✓</span> Tandai Semua
-                  Tercapai
+                  title="Tandai semua TP tercapai untuk semua siswa"
+                >
+                  <span className="hidden sm:inline">✓</span> Tandai Semua Tercapai
                 </button>
 
                 <button
@@ -1292,9 +1197,9 @@ function InputNilai({ user, onShowToast, darkMode }) {
                       ? "bg-yellow-900/50 hover:bg-yellow-800 text-yellow-200 border border-yellow-700"
                       : "bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300"
                   }`}
-                  title="Tandai semua TP perlu peningkatan untuk semua siswa">
-                  <span className="hidden sm:inline">⚠</span> Tandai Perlu
-                  Peningkatan
+                  title="Tandai semua TP perlu peningkatan untuk semua siswa"
+                >
+                  <span className="hidden sm:inline">⚠</span> Tandai Perlu Peningkatan
                 </button>
 
                 <button
@@ -1305,15 +1210,15 @@ function InputNilai({ user, onShowToast, darkMode }) {
                       ? "bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600"
                       : "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
                   }`}
-                  title="Reset semua centang TP untuk semua siswa">
+                  title="Reset semua centang TP untuk semua siswa"
+                >
                   <span className="hidden sm:inline">↺</span> Reset Semua
                 </button>
 
                 {/* Separator */}
                 <div
-                  className={`hidden lg:block w-px h-8 ${
-                    darkMode ? "bg-gray-600" : "bg-gray-300"
-                  }`}></div>
+                  className={`hidden lg:block w-px h-8 ${darkMode ? "bg-gray-600" : "bg-gray-300"}`}
+                ></div>
 
                 <button
                   onClick={handleDownloadTemplate}
@@ -1321,7 +1226,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
                     darkMode
                       ? "bg-green-600 hover:bg-green-700 text-white"
                       : "bg-green-600 hover:bg-green-700 text-white"
-                  }`}>
+                  }`}
+                >
                   <Download size={16} className="sm:w-5 sm:h-5" />
                   <span className="hidden sm:inline">Download</span> Template
                 </button>
@@ -1331,7 +1237,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
                     darkMode
                       ? "bg-blue-600 hover:bg-blue-700 text-white"
                       : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}>
+                  }`}
+                >
                   <Upload size={16} className="sm:w-5 sm:h-5" />
                   <span className="hidden sm:inline">Import</span> Excel
                   <input
@@ -1350,7 +1257,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
                   <p
                     className={`mt-3 text-sm sm:text-base ${
                       darkMode ? "text-gray-300" : "text-gray-600"
-                    }`}>
+                    }`}
+                  >
                     Memuat data siswa...
                   </p>
                 </div>
@@ -1359,11 +1267,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
                   <div className="overflow-x-auto rounded-xl border shadow-sm">
                     <table className="w-full border-collapse">
                       <thead
-                        className={
-                          darkMode
-                            ? "bg-gray-700 text-white"
-                            : "bg-blue-700 text-white"
-                        }>
+                        className={darkMode ? "bg-gray-700 text-white" : "bg-blue-700 text-white"}
+                      >
                         <tr>
                           <th className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 text-xs sm:text-sm lg:text-base">
                             No
@@ -1393,32 +1298,34 @@ function InputNilai({ user, onShowToast, darkMode }) {
                               darkMode
                                 ? "border-gray-700 hover:bg-gray-800/50"
                                 : "border-blue-100 hover:bg-blue-50/50"
-                            }`}>
+                            }`}
+                          >
                             <td
                               className={`p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600 text-sm sm:text-base ${
                                 darkMode ? "text-white" : "text-gray-900"
-                              }`}>
+                              }`}
+                            >
                               {idx + 1}
                             </td>
                             <td
                               className={`p-3 sm:p-4 border-r border-gray-600 dark:border-gray-600 text-sm sm:text-base font-mono ${
                                 darkMode ? "text-white" : "text-gray-900"
-                              }`}>
+                              }`}
+                            >
                               {siswa.nis}
                             </td>
                             <td
                               className={`p-3 sm:p-4 border-r border-gray-600 dark:border-gray-600 text-sm sm:text-base ${
                                 darkMode ? "text-white" : "text-gray-900"
-                              }`}>
+                              }`}
+                            >
                               {siswa.full_name}
                             </td>
                             <td className="p-3 sm:p-4 text-center border-r border-gray-600 dark:border-gray-600">
                               <input
                                 type="number"
                                 value={siswa.nilai_akhir || ""}
-                                onChange={(e) =>
-                                  handleNilaiChange(siswa.id, e.target.value)
-                                }
+                                onChange={(e) => handleNilaiChange(siswa.id, e.target.value)}
                                 className={`w-16 sm:w-20 p-2 sm:p-3 text-center rounded-lg border text-sm sm:text-base transition-all duration-200 ${
                                   darkMode
                                     ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
@@ -1434,27 +1341,19 @@ function InputNilai({ user, onShowToast, darkMode }) {
                                 {tpList.map((tp) => (
                                   <label
                                     key={tp.id}
-                                    className="flex items-start gap-3 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/10 p-2 rounded-lg transition-colors duration-150">
+                                    className="flex items-start gap-3 cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/10 p-2 rounded-lg transition-colors duration-150"
+                                  >
                                     <input
                                       type="checkbox"
-                                      checked={siswa.tp_tercapai?.includes(
-                                        tp.id
-                                      )}
-                                      onChange={() =>
-                                        handleTPChange(
-                                          siswa.id,
-                                          tp.id,
-                                          "tercapai"
-                                        )
-                                      }
+                                      checked={siswa.tp_tercapai?.includes(tp.id)}
+                                      onChange={() => handleTPChange(siswa.id, tp.id, "tercapai")}
                                       className="mt-1 accent-green-600 w-4 h-4 flex-shrink-0"
                                     />
                                     <span
                                       className={`flex-1 text-sm leading-relaxed ${
-                                        darkMode
-                                          ? "text-gray-300"
-                                          : "text-gray-700"
-                                      }`}>
+                                        darkMode ? "text-gray-300" : "text-gray-700"
+                                      }`}
+                                    >
                                       {tp.deskripsi_tp}
                                     </span>
                                   </label>
@@ -1467,27 +1366,21 @@ function InputNilai({ user, onShowToast, darkMode }) {
                                 {tpList.map((tp) => (
                                   <label
                                     key={tp.id}
-                                    className="flex items-start gap-3 cursor-pointer hover:bg-yellow-50 dark:hover:bg-yellow-900/10 p-2 rounded-lg transition-colors duration-150">
+                                    className="flex items-start gap-3 cursor-pointer hover:bg-yellow-50 dark:hover:bg-yellow-900/10 p-2 rounded-lg transition-colors duration-150"
+                                  >
                                     <input
                                       type="checkbox"
-                                      checked={siswa.tp_perlu_peningkatan?.includes(
-                                        tp.id
-                                      )}
+                                      checked={siswa.tp_perlu_peningkatan?.includes(tp.id)}
                                       onChange={() =>
-                                        handleTPChange(
-                                          siswa.id,
-                                          tp.id,
-                                          "peningkatan"
-                                        )
+                                        handleTPChange(siswa.id, tp.id, "peningkatan")
                                       }
                                       className="mt-1 accent-yellow-600 w-4 h-4 flex-shrink-0"
                                     />
                                     <span
                                       className={`flex-1 text-sm leading-relaxed ${
-                                        darkMode
-                                          ? "text-gray-300"
-                                          : "text-gray-700"
-                                      }`}>
+                                        darkMode ? "text-gray-300" : "text-gray-700"
+                                      }`}
+                                    >
                                       {tp.deskripsi_tp}
                                     </span>
                                   </label>
@@ -1504,10 +1397,9 @@ function InputNilai({ user, onShowToast, darkMode }) {
                   <div className="mt-6 flex justify-end">
                     <button
                       onClick={() => handleSave(false)}
-                      disabled={
-                        saving || siswaList.length === 0 || tpList.length === 0
-                      }
-                      className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 min-h-[44px] rounded-xl bg-blue-700 hover:bg-blue-800 text-white transition-all duration-200 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                      disabled={saving || siswaList.length === 0 || tpList.length === 0}
+                      className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 min-h-[44px] rounded-xl bg-blue-700 hover:bg-blue-800 text-white transition-all duration-200 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       <Save size={24} />
                       Simpan Semua Data ({siswaList.length} Siswa)
                     </button>
@@ -1515,15 +1407,13 @@ function InputNilai({ user, onShowToast, darkMode }) {
                 </>
               ) : (
                 <div className="text-center py-12 rounded-xl border border-dashed">
-                  <div
-                    className={`${
-                      darkMode ? "text-gray-500" : "text-gray-400"
-                    } mb-2`}>
+                  <div className={`${darkMode ? "text-gray-500" : "text-gray-400"} mb-2`}>
                     <svg
                       className="w-16 h-16 mx-auto"
                       fill="none"
                       stroke="currentColor"
-                      viewBox="0 0 24 24">
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -1535,7 +1425,8 @@ function InputNilai({ user, onShowToast, darkMode }) {
                   <p
                     className={`text-sm sm:text-base ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
                     Tidak ada data siswa untuk kelas ini
                   </p>
                 </div>
@@ -1545,15 +1436,13 @@ function InputNilai({ user, onShowToast, darkMode }) {
 
           {!kelas && !loading && (
             <div className="text-center py-12 rounded-xl border border-dashed">
-              <div
-                className={`${
-                  darkMode ? "text-gray-500" : "text-blue-400"
-                } mb-3`}>
+              <div className={`${darkMode ? "text-gray-500" : "text-blue-400"} mb-3`}>
                 <svg
                   className="w-16 h-16 mx-auto"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1562,19 +1451,15 @@ function InputNilai({ user, onShowToast, darkMode }) {
                   />
                 </svg>
               </div>
-              <p
-                className={`text-sm sm:text-base ${
-                  darkMode ? "text-gray-400" : "text-gray-500"
-                }`}>
+              <p className={`text-sm sm:text-base ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                 Silakan pilih Kelas, Mata Pelajaran, dan Semester untuk memulai
               </p>
               {academicInfo && (
                 <div
                   className={`mt-3 px-3 py-1.5 rounded-lg text-sm inline-block ${
-                    darkMode
-                      ? "bg-blue-900/30 text-blue-300"
-                      : "bg-blue-100 text-blue-800"
-                  }`}>
+                    darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-800"
+                  }`}
+                >
                   Tahun Ajaran: {academicInfo.year}
                 </div>
               )}
@@ -1588,37 +1473,38 @@ function InputNilai({ user, onShowToast, darkMode }) {
         <div className="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50 p-4">
           <div
             className={`rounded-2xl p-6 sm:p-8 w-full max-w-md shadow-2xl ${
-              darkMode
-                ? "bg-gray-800 border border-gray-700"
-                : "bg-white border border-blue-200"
-            }`}>
+              darkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-blue-200"
+            }`}
+          >
             <div className="text-center">
               <div className="animate-spin rounded-full h-14 w-14 border-b-3 border-blue-600 mx-auto mb-5"></div>
               <h3
                 className={`text-lg sm:text-xl font-bold mb-3 ${
                   darkMode ? "text-white" : "text-blue-800"
-                }`}>
+                }`}
+              >
                 Menyimpan Data...
               </h3>
               <p
                 className={`text-sm sm:text-base mb-5 ${
                   darkMode ? "text-gray-300" : "text-blue-600"
-                }`}>
+                }`}
+              >
                 {saveProgress.current} dari {saveProgress.total} siswa
               </p>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 sm:h-3.5 mb-2 overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${
-                      (saveProgress.current / saveProgress.total) * 100
-                    }%`,
-                  }}></div>
+                    width: `${(saveProgress.current / saveProgress.total) * 100}%`,
+                  }}
+                ></div>
               </div>
               <p
                 className={`text-xs sm:text-sm mt-2 ${
                   darkMode ? "text-gray-400" : "text-blue-500"
-                }`}>
+                }`}
+              >
                 Mohon tunggu sebentar...
               </p>
             </div>

@@ -16,8 +16,7 @@ const AttendanceTable = ({
       {/* Table Header */}
       <div className="p-4 xs:p-5 sm:p-6 border-b border-slate-200 dark:border-slate-700">
         <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200">
-          Daftar Siswa -{" "}
-          {classes.find((c) => c.id === selectedClass)?.displayName}
+          Daftar Siswa - {classes.find((c) => c.id === selectedClass)?.displayName}
           {searchTerm && (
             <span className="text-sm text-slate-600 dark:text-slate-400 ml-2">
               ({filteredStudents.length} siswa)
@@ -30,15 +29,14 @@ const AttendanceTable = ({
       <div className="block sm:hidden">
         {filteredStudents.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-slate-500 dark:text-slate-400">
-              Tidak ada siswa yang ditemukan
-            </p>
+            <p className="text-slate-500 dark:text-slate-400">Tidak ada siswa yang ditemukan</p>
           </div>
         ) : (
           filteredStudents.map((student, index) => (
             <div
               key={student.id}
-              className="border-b border-slate-100 dark:border-slate-800 p-4 xs:p-5">
+              className="border-b border-slate-100 dark:border-slate-800 p-4 xs:p-5"
+            >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-slate-900 dark:text-slate-100 mb-1 truncate">
@@ -65,7 +63,8 @@ const AttendanceTable = ({
                       }`}
                       onClick={() => handleStatusChange(student.id, "Hadir")}
                       disabled={loading}
-                      aria-label="Hadir">
+                      aria-label="Hadir"
+                    >
                       <span className="text-base mr-2">✓</span>
                       <span>Hadir</span>
                     </button>
@@ -77,7 +76,8 @@ const AttendanceTable = ({
                       }`}
                       onClick={() => handleStatusChange(student.id, "Sakit")}
                       disabled={loading}
-                      aria-label="Sakit">
+                      aria-label="Sakit"
+                    >
                       <span className="text-base mr-2">🏥</span>
                       <span>Sakit</span>
                     </button>
@@ -89,7 +89,8 @@ const AttendanceTable = ({
                       }`}
                       onClick={() => handleStatusChange(student.id, "Izin")}
                       disabled={loading}
-                      aria-label="Izin">
+                      aria-label="Izin"
+                    >
                       <span className="text-base mr-2">📋</span>
                       <span>Izin</span>
                     </button>
@@ -101,7 +102,8 @@ const AttendanceTable = ({
                       }`}
                       onClick={() => handleStatusChange(student.id, "Alpa")}
                       disabled={loading}
-                      aria-label="Alpa">
+                      aria-label="Alpa"
+                    >
                       <span className="text-base mr-2">✖</span>
                       <span>Alpa</span>
                     </button>
@@ -118,9 +120,7 @@ const AttendanceTable = ({
                     className="w-full p-3.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-600 dark:focus:border-blue-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 transition-all duration-200 touch-manipulation min-h-[44px]"
                     placeholder="Tambahkan keterangan jika diperlukan..."
                     value={attendanceNotes[student.id] || ""}
-                    onChange={(e) =>
-                      handleNotesChange(student.id, e.target.value)
-                    }
+                    onChange={(e) => handleNotesChange(student.id, e.target.value)}
                     disabled={loading}
                     aria-label={`Keterangan untuk ${student.full_name}`}
                   />
@@ -135,9 +135,7 @@ const AttendanceTable = ({
       <div className="hidden sm:block overflow-x-auto">
         {filteredStudents.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-slate-500 dark:text-slate-400">
-              Tidak ada siswa yang ditemukan
-            </p>
+            <p className="text-slate-500 dark:text-slate-400">Tidak ada siswa yang ditemukan</p>
           </div>
         ) : (
           <table className="w-full">
@@ -164,7 +162,8 @@ const AttendanceTable = ({
               {filteredStudents.map((student, index) => (
                 <tr
                   key={student.id}
-                  className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                >
                   <td className="px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100">
                     {index + 1}
                   </td>
@@ -184,7 +183,8 @@ const AttendanceTable = ({
                         }`}
                         onClick={() => handleStatusChange(student.id, "Hadir")}
                         disabled={loading}
-                        aria-label="Hadir">
+                        aria-label="Hadir"
+                      >
                         <span className="text-base">✓</span>
                         <span>Hadir</span>
                       </button>
@@ -196,7 +196,8 @@ const AttendanceTable = ({
                         }`}
                         onClick={() => handleStatusChange(student.id, "Sakit")}
                         disabled={loading}
-                        aria-label="Sakit">
+                        aria-label="Sakit"
+                      >
                         <span className="text-base">🏥</span>
                         <span>Sakit</span>
                       </button>
@@ -208,7 +209,8 @@ const AttendanceTable = ({
                         }`}
                         onClick={() => handleStatusChange(student.id, "Izin")}
                         disabled={loading}
-                        aria-label="Izin">
+                        aria-label="Izin"
+                      >
                         <span className="text-base">📋</span>
                         <span>Izin</span>
                       </button>
@@ -220,7 +222,8 @@ const AttendanceTable = ({
                         }`}
                         onClick={() => handleStatusChange(student.id, "Alpa")}
                         disabled={loading}
-                        aria-label="Alpa">
+                        aria-label="Alpa"
+                      >
                         <span className="text-base">✖</span>
                         <span>Alpa</span>
                       </button>
@@ -232,9 +235,7 @@ const AttendanceTable = ({
                       className="w-full p-3 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-600 dark:focus:border-blue-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 transition-all duration-200 min-h-[44px]"
                       placeholder="Tambahkan keterangan..."
                       value={attendanceNotes[student.id] || ""}
-                      onChange={(e) =>
-                        handleNotesChange(student.id, e.target.value)
-                      }
+                      onChange={(e) => handleNotesChange(student.id, e.target.value)}
                       disabled={loading}
                       aria-label={`Keterangan untuk ${student.full_name}`}
                     />

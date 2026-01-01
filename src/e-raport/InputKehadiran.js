@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Save, Download, Upload } from "lucide-react";
-import { getActiveAcademicInfo } from "../services/academicYearService";
+import {
+  getActiveAcademicInfo,
+  getAllSemestersInActiveYear,
+  getActiveSemesterId,
+} from "../services/academicYearService";
 
 function InputKehadiran({ user, onShowToast, darkMode }) {
   const [kelas, setKelas] = useState("");
-  const [semester, setSemester] = useState("");
+  const [selectedSemesterId, setSelectedSemesterId] = useState(""); // ✅ Ubah dari semester ke semesterId
+  const [availableSemesters, setAvailableSemesters] = useState([]); // ✅ Tambah state untuk list semester
   const [siswaList, setSiswaList] = useState([]);
-  const [academicYear, setAcademicYear] = useState(null);
+  const [academicInfo, setAcademicInfo] = useState(null); // ✅ Ganti academicYear jadi academicInfo
   const [availableClasses, setAvailableClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -21,10 +26,10 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
   }, []);
 
   useEffect(() => {
-    if (kelas && semester && academicYear) {
+    if (kelas && selectedSemesterId && academicInfo) {
       loadData();
     }
-  }, [kelas, semester, academicYear]);
+  }, [kelas, selectedSemesterId, academicInfo]);
 
   const loadUserAndAssignments = async () => {
     try {
@@ -39,9 +44,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
 
       if (!homeroomClassId) {
         setIsWaliKelas(false);
-        setErrorMessage(
-          "Anda bukan wali kelas. Fitur Input Kehadiran hanya untuk wali kelas."
-        );
+        setErrorMessage("Anda bukan wali kelas. Fitur Input Kehadiran hanya untuk wali kelas.");
         setLoading(false);
 
         if (onShowToast) {
@@ -53,17 +56,23 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
       // ✅ PAKAI getActiveAcademicInfo dari service
       const academicInfo = await getActiveAcademicInfo();
 
-      if (!academicInfo || !academicInfo.yearId) {
+      if (!academicInfo || !academicInfo.activeSemesterId) {
         throw new Error("Tahun ajaran aktif tidak ditemukan.");
       }
 
-      // ✅ Set dengan format yang konsisten
-      setAcademicYear({
-        id: academicInfo.yearId,
-        year: academicInfo.year,
-        semester: academicInfo.semester,
-        is_active: academicInfo.isActive,
-      });
+      setAcademicInfo(academicInfo);
+
+      // ✅ Load semua semester dalam tahun aktif
+      const semesters = await getAllSemestersInActiveYear();
+      setAvailableSemesters(semesters);
+
+      // ✅ Set semester aktif sebagai default pilihan
+      if (academicInfo && academicInfo.activeSemesterId) {
+        setSelectedSemesterId(academicInfo.activeSemesterId);
+      }
+
+      console.log("📅 Academic Info:", academicInfo);
+      console.log("📚 Available Semesters:", semesters);
 
       const { data: classData, error: classError } = await supabase
         .from("classes")
@@ -75,9 +84,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
       if (classError || !classData) {
         console.error("Kelas wali tidak ditemukan:", classError);
         setIsWaliKelas(false);
-        setErrorMessage(
-          `Kelas wali ${homeroomClassId} tidak ditemukan atau sudah tidak aktif.`
-        );
+        setErrorMessage(`Kelas wali ${homeroomClassId} tidak ditemukan atau sudah tidak aktif.`);
         setLoading(false);
         return;
       }
@@ -108,7 +115,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
   };
 
   const loadData = async () => {
-    if (!kelas || !semester || !academicYear) return;
+    if (!kelas || !selectedSemesterId || !academicInfo) return;
 
     setLoading(true);
     try {
@@ -129,21 +136,20 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
         throw new Error(`Gagal load siswa: ${studentsError.message}`);
       }
 
+      // ✅ GANTI: Query dengan semester ID
+      // Query terpisah tanpa join ke students
       const { data: existingKehadiran, error: kehadiranError } = await supabase
         .from("catatan_eraport")
         .select("*")
         .eq("class_id", selectedClass.id)
-        .eq("academic_year_id", academicYear.id) // ✅ GANTI INI
-        .eq("semester", semester);
+        .eq("academic_year_id", selectedSemesterId);
 
       if (kehadiranError) {
         console.error("Error loading kehadiran:", kehadiranError);
       }
 
       const merged = (students || []).map((siswa) => {
-        const kehadiran = existingKehadiran?.find(
-          (k) => k.student_id === siswa.id
-        );
+        const kehadiran = existingKehadiran?.find((k) => k.student_id === siswa.id);
 
         return {
           id: siswa.id,
@@ -153,17 +159,29 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
           sakit: kehadiran?.sakit || 0,
           ijin: kehadiran?.ijin || 0,
           tanpa_keterangan: kehadiran?.tanpa_keterangan || 0,
+          semester: kehadiran?.semester || null, // ✅ Simpan semester untuk display
         };
       });
 
       setSiswaList(merged);
     } catch (error) {
       console.error("Error loading data:", error);
-      if (onShowToast)
-        onShowToast(`Gagal memuat data: ${error.message}`, "error");
+      if (onShowToast) onShowToast(`Gagal memuat data: ${error.message}`, "error");
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ Helper function untuk mendapatkan semester number dari semester ID
+  const getSemesterNumber = (semesterId) => {
+    const semester = availableSemesters.find((s) => s.id === semesterId);
+    return semester ? semester.semester : null;
+  };
+
+  // ✅ Helper function untuk mendapatkan semester text
+  const getSemesterText = (semesterId) => {
+    const semester = availableSemesters.find((s) => s.id === semesterId);
+    return semester ? (semester.semester === 1 ? "Ganjil" : "Genap") + ` - ${semester.year}` : "";
   };
 
   // ✅ FIXED: Handling input number yang lebih baik
@@ -228,37 +246,28 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
   };
 
   const handleSave = async () => {
-    if (!kelas || !semester) {
-      if (onShowToast)
-        onShowToast("Pilih Kelas dan Semester terlebih dahulu!", "warning");
+    if (!kelas || !selectedSemesterId) {
+      if (onShowToast) onShowToast("Pilih Kelas dan Semester terlebih dahulu!", "warning");
       return;
     }
 
     if (siswaList.length === 0) {
-      if (onShowToast)
-        onShowToast("Tidak ada data siswa untuk disimpan!", "warning");
+      if (onShowToast) onShowToast("Tidak ada data siswa untuk disimpan!", "warning");
       return;
     }
 
     const hasError = siswaList.some((siswa) => {
-      const total =
-        (siswa.sakit || 0) + (siswa.ijin || 0) + (siswa.tanpa_keterangan || 0);
+      const total = (siswa.sakit || 0) + (siswa.ijin || 0) + (siswa.tanpa_keterangan || 0);
       return total > 120;
     });
 
     if (hasError) {
       if (onShowToast)
-        onShowToast(
-          "Total hari tidak hadir tidak boleh melebihi 120 hari!",
-          "error"
-        );
+        onShowToast("Total hari tidak hadir tidak boleh melebihi 120 hari!", "error");
       return;
     }
 
-    if (
-      !window.confirm(`Simpan data kehadiran untuk ${siswaList.length} siswa?`)
-    )
-      return;
+    if (!window.confirm(`Simpan data kehadiran untuk ${siswaList.length} siswa?`)) return;
 
     setSaving(true);
     setSaveProgress({ current: 0, total: siswaList.length });
@@ -268,6 +277,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
       if (!selectedClass) throw new Error("Kelas tidak ditemukan!");
 
       const userId = user.id;
+      const semesterNumber = getSemesterNumber(selectedSemesterId);
 
       for (let i = 0; i < siswaList.length; i++) {
         const siswa = siswaList[i];
@@ -275,23 +285,17 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
 
         // Hitung total tidak hadir
         const totalTidakHadir =
-          (siswa.sakit || 0) +
-          (siswa.ijin || 0) +
-          (siswa.tanpa_keterangan || 0);
+          (siswa.sakit || 0) + (siswa.ijin || 0) + (siswa.tanpa_keterangan || 0);
 
         const kehadiranData = {
           student_id: siswa.id,
           class_id: selectedClass.id,
-          academic_year_id: academicYear.id, // ✅ GANTI INI
-          semester: semester,
+          academic_year_id: selectedSemesterId, // ✅ GANTI INI
+          semester: semesterNumber,
           sakit: siswa.sakit || 0,
           ijin: siswa.ijin || 0,
           tanpa_keterangan: siswa.tanpa_keterangan || 0,
-          total_hadir: totalTidakHadir,
-          catatan_kepribadian: "",
-          catatan_ekskul: "",
-          catatan_prestasi: "",
-          saran: "",
+          total_hadir: totalTidakHadir, // ❌ HAPUS INI KALAU GAK ADA DI TABEL
           created_by: userId,
           updated_at: new Date().toISOString(),
         };
@@ -324,13 +328,11 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
         setSaveProgress({ current: i + 1, total: siswaList.length });
       }
 
-      if (onShowToast)
-        onShowToast("Data kehadiran berhasil disimpan!", "success");
+      if (onShowToast) onShowToast("Data kehadiran berhasil disimpan!", "success");
       await loadData();
     } catch (error) {
       console.error("Error saving data:", error);
-      if (onShowToast)
-        onShowToast(`Gagal menyimpan: ${error.message}`, "error");
+      if (onShowToast) onShowToast(`Gagal menyimpan: ${error.message}`, "error");
     } finally {
       setSaving(false);
       setSaveProgress({ current: 0, total: 0 });
@@ -343,13 +345,11 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
       return;
     }
 
-    if (onShowToast)
-      onShowToast("Fitur export Excel akan segera tersedia", "info");
+    if (onShowToast) onShowToast("Fitur export Excel akan segera tersedia", "info");
   };
 
   const handleImportExcel = () => {
-    if (onShowToast)
-      onShowToast("Fitur import Excel akan segera tersedia", "info");
+    if (onShowToast) onShowToast("Fitur import Excel akan segera tersedia", "info");
   };
 
   if (loading && !kelas) {
@@ -369,74 +369,66 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
     <div
       className={`min-h-screen py-4 sm:py-8 px-3 sm:px-4 ${
         darkMode ? "bg-gray-900" : "bg-gradient-to-br from-blue-50 to-gray-50"
-      }`}>
+      }`}
+    >
       <div className="max-w-7xl mx-auto">
         <div
           className={`rounded-xl shadow-lg p-4 sm:p-6 ${
-            darkMode
-              ? "bg-gray-800 border border-gray-700"
-              : "bg-white border border-blue-100"
-          }`}>
+            darkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-blue-100"
+          }`}
+        >
           <h2
             className={`text-xl sm:text-2xl font-bold mb-6 ${
               darkMode ? "text-white" : "text-blue-900"
-            }`}>
+            }`}
+          >
             📊 Input Kehadiran Siswa
           </h2>
 
           {/* ✅ TAMBAH INFO AKADEMIK DI SINI */}
-          {academicYear && (
+          {academicInfo && (
             <div
               className="mb-6 p-4 rounded-lg border bg-opacity-50"
               style={{
-                backgroundColor: darkMode
-                  ? "rgba(30, 58, 138, 0.2)"
-                  : "rgba(219, 234, 254, 0.5)",
+                backgroundColor: darkMode ? "rgba(30, 58, 138, 0.2)" : "rgba(219, 234, 254, 0.5)",
                 borderColor: darkMode ? "#374151" : "#bfdbfe",
-              }}>
+              }}
+            >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="flex flex-col">
                   <span
                     className={`text-xs font-medium mb-1 ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
                     Tahun Ajaran Aktif
                   </span>
-                  <span
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
-                    {academicYear.year}
+                  <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {academicInfo.year}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <span
                     className={`text-xs font-medium mb-1 ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
                     Semester Aktif di Sistem
                   </span>
-                  <span
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
-                    {academicYear.semester === 1
-                      ? "Semester 1 (Ganjil)"
-                      : "Semester 2 (Genap)"}
+                  <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    Semester {academicInfo.activeSemester === 1 ? "Ganjil" : "Genap"}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <span
                     className={`text-xs font-medium mb-1 ${
                       darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    }`}
+                  >
                     Status Tahun Ajaran
                   </span>
-                  <span
-                    className={`font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}>
-                    {academicYear.is_active ? "Aktif" : "Tidak Aktif"}
+                  <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
+                    {academicInfo.isActive ? "Aktif" : "Tidak Aktif"}
                   </span>
                 </div>
               </div>
@@ -448,14 +440,14 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
                   darkMode ? "bg-red-900/30" : "bg-red-100"
-                }`}>
+                }`}
+              >
                 <svg
-                  className={`w-8 h-8 ${
-                    darkMode ? "text-red-400" : "text-red-600"
-                  }`}
+                  className={`w-8 h-8 ${darkMode ? "text-red-400" : "text-red-600"}`}
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24">
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -467,21 +459,18 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
               <h3
                 className={`text-lg sm:text-xl font-bold mb-2 ${
                   darkMode ? "text-white" : "text-gray-900"
-                }`}>
+                }`}
+              >
                 Akses Dibatasi
               </h3>
               <p
-                className={`mb-6 max-w-md mx-auto ${
-                  darkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
+                className={`mb-6 max-w-md mx-auto ${darkMode ? "text-gray-300" : "text-gray-600"}`}
+              >
                 {errorMessage}
               </p>
             </div>
           ) : !isWaliKelas ? (
-            <div
-              className={`text-center py-8 ${
-                darkMode ? "text-gray-300" : "text-gray-500"
-              }`}>
+            <div className={`text-center py-8 ${darkMode ? "text-gray-300" : "text-gray-500"}`}>
               Memuat data wali kelas...
             </div>
           ) : (
@@ -489,31 +478,23 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
               {isWaliKelas && (
                 <div
                   className={`mb-6 p-4 rounded-lg border ${
-                    darkMode
-                      ? "bg-blue-900/20 border-blue-500"
-                      : "bg-blue-50 border-blue-200"
-                  }`}>
+                    darkMode ? "bg-blue-900/20 border-blue-500" : "bg-blue-50 border-blue-200"
+                  }`}
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h3
-                        className={`font-bold ${
-                          darkMode ? "text-white" : "text-blue-900"
-                        }`}>
+                      <h3 className={`font-bold ${darkMode ? "text-white" : "text-blue-900"}`}>
                         👨‍🏫 Anda adalah wali kelas
                       </h3>
-                      <p
-                        className={`text-sm ${
-                          darkMode ? "text-blue-300" : "text-blue-700"
-                        } mt-1`}>
+                      <p className={`text-sm ${darkMode ? "text-blue-300" : "text-blue-700"} mt-1`}>
                         {waliKelasName}
                       </p>
                     </div>
                     <div
                       className={`px-4 py-2 rounded-full ${
-                        darkMode
-                          ? "bg-blue-800 text-blue-100"
-                          : "bg-blue-600 text-white"
-                      }`}>
+                        darkMode ? "bg-blue-800 text-blue-100" : "bg-blue-600 text-white"
+                      }`}
+                    >
                       <span className="text-sm font-medium">Wali Kelas</span>
                     </div>
                   </div>
@@ -525,7 +506,8 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                   <label
                     className={`block text-sm font-medium mb-2 ${
                       darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}>
+                    }`}
+                  >
                     Pilih Kelas
                   </label>
                   <select
@@ -535,7 +517,8 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                       darkMode
                         ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500"
                         : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
-                    }`}>
+                    }`}
+                  >
                     <option value="" disabled>
                       -- Pilih Kelas --
                     </option>
@@ -547,9 +530,8 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                   </select>
                   {availableClasses.length === 1 && !kelas && (
                     <p
-                      className={`text-xs mt-1 ${
-                        darkMode ? "text-yellow-400" : "text-yellow-600"
-                      }`}>
+                      className={`text-xs mt-1 ${darkMode ? "text-yellow-400" : "text-yellow-600"}`}
+                    >
                       Pilih kelas di atas untuk melanjutkan
                     </p>
                   )}
@@ -559,33 +541,46 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                   <label
                     className={`block text-sm font-medium mb-2 ${
                       darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}>
+                    }`}
+                  >
                     Pilih Semester
                   </label>
                   <select
-                    value={semester}
-                    onChange={(e) => setSemester(e.target.value)}
+                    value={selectedSemesterId}
+                    onChange={(e) => setSelectedSemesterId(e.target.value)}
                     className={`w-full p-3 rounded-lg border text-sm sm:text-base ${
                       darkMode
                         ? "bg-gray-700 border-gray-600 text-white focus:ring-blue-500 focus:border-blue-500"
                         : "bg-white border-blue-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500"
-                    }`}>
+                    }`}
+                  >
                     <option value="" disabled>
                       -- Pilih Semester --
                     </option>
-                    <option value="1">Semester Ganjil</option>
-                    <option value="2">Semester Genap</option>
+                    {availableSemesters.map((sem) => (
+                      <option key={sem.id} value={sem.id}>
+                        Semester {sem.semester === 1 ? "Ganjil" : "Genap"} - {sem.year}
+                        {sem.is_active ? " (Aktif)" : ""}
+                      </option>
+                    ))}
                   </select>
+                  {academicInfo && (
+                    <p className={`text-xs mt-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                      Semester aktif sistem: Semester{" "}
+                      {academicInfo.activeSemester === 1 ? "Ganjil" : "Genap"}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {kelas && semester && (
+              {kelas && selectedSemesterId && (
                 <>
                   <div className="flex flex-wrap justify-end gap-3 mb-6">
                     <button
                       onClick={handleImportExcel}
                       className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors text-sm min-h-[44px] min-w-[44px] shadow-sm hover:shadow-md"
-                      aria-label="Import Excel">
+                      aria-label="Import Excel"
+                    >
                       <Upload size={18} />
                       <span className="hidden sm:inline">Import Excel</span>
                     </button>
@@ -593,7 +588,8 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                       onClick={handleExportExcel}
                       disabled={siswaList.length === 0}
                       className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors text-sm min-h-[44px] min-w-[44px] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      aria-label="Export Excel">
+                      aria-label="Export Excel"
+                    >
                       <Download size={18} />
                       <span className="hidden sm:inline">Export Excel</span>
                     </button>
@@ -601,7 +597,8 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                       onClick={handleSave}
                       disabled={saving || siswaList.length === 0}
                       className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-700 hover:bg-blue-800 text-white transition-colors text-sm min-h-[44px] min-w-[44px] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      aria-label="Simpan Semua Kehadiran">
+                      aria-label="Simpan Semua Kehadiran"
+                    >
                       <Save size={18} />
                       <span className="hidden sm:inline">Simpan Semua</span>
                     </button>
@@ -610,10 +607,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                   {loading ? (
                     <div className="text-center py-8">
                       <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <p
-                        className={`mt-2 ${
-                          darkMode ? "text-gray-300" : "text-gray-600"
-                        }`}>
+                      <p className={`mt-2 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
                         Memuat data siswa...
                       </p>
                     </div>
@@ -621,23 +615,21 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                     <>
                       <div
                         className={`mb-4 p-3 rounded-lg ${
-                          darkMode
-                            ? "bg-blue-900/20 text-blue-300"
-                            : "bg-blue-50 text-blue-700"
-                        }`}>
+                          darkMode ? "bg-blue-900/20 text-blue-300" : "bg-blue-50 text-blue-700"
+                        }`}
+                      >
                         <p className="text-sm">
-                          Menampilkan {siswaList.length} siswa untuk semester{" "}
-                          {semester === "1" ? "Ganjil" : "Genap"}
+                          Menampilkan {siswaList.length} siswa • Semester:{" "}
+                          {getSemesterText(selectedSemesterId)}
                         </p>
                       </div>
                       <div className="overflow-x-auto rounded-lg border shadow-sm">
                         <table className="w-full border-collapse min-w-[640px]">
                           <thead
                             className={
-                              darkMode
-                                ? "bg-blue-900 text-white"
-                                : "bg-blue-700 text-white"
-                            }>
+                              darkMode ? "bg-blue-900 text-white" : "bg-blue-700 text-white"
+                            }
+                          >
                             <tr>
                               <th className="p-3 text-center border-r border-blue-600 w-16 text-sm sm:text-base">
                                 No
@@ -675,23 +667,27 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                     darkMode
                                       ? "border-gray-700 hover:bg-gray-800/50"
                                       : "border-blue-100 hover:bg-blue-50/50"
-                                  }`}>
+                                  }`}
+                                >
                                   <td
                                     className={`p-3 text-center border-r border-blue-100 dark:border-gray-700 text-sm sm:text-base ${
                                       darkMode ? "text-white" : "text-gray-900"
-                                    }`}>
+                                    }`}
+                                  >
                                     {idx + 1}
                                   </td>
                                   <td
                                     className={`p-3 border-r border-blue-100 dark:border-gray-700 font-medium text-sm sm:text-base ${
                                       darkMode ? "text-white" : "text-gray-900"
-                                    }`}>
+                                    }`}
+                                  >
                                     {siswa.nis}
                                   </td>
                                   <td
                                     className={`p-3 border-r border-blue-100 dark:border-gray-700 font-medium text-sm sm:text-base ${
                                       darkMode ? "text-white" : "text-gray-900"
-                                    }`}>
+                                    }`}
+                                  >
                                     {siswa.full_name}
                                   </td>
                                   <td className="p-3 border-r border-blue-100 dark:border-gray-700">
@@ -699,15 +695,9 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                       type="text"
                                       inputMode="numeric"
                                       pattern="[0-9]*"
-                                      value={
-                                        siswa.sakit === 0 ? "" : siswa.sakit
-                                      }
+                                      value={siswa.sakit || ""}
                                       onChange={(e) =>
-                                        handleKehadiranChange(
-                                          siswa.id,
-                                          "sakit",
-                                          e.target.value
-                                        )
+                                        handleKehadiranChange(siswa.id, "sakit", e.target.value)
                                       }
                                       className={`w-full p-2 sm:p-3 border rounded text-center text-sm sm:text-base ${
                                         darkMode
@@ -723,13 +713,9 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                       type="text"
                                       inputMode="numeric"
                                       pattern="[0-9]*"
-                                      value={siswa.ijin === 0 ? "" : siswa.ijin}
+                                      value={siswa.ijin || ""}
                                       onChange={(e) =>
-                                        handleKehadiranChange(
-                                          siswa.id,
-                                          "ijin",
-                                          e.target.value
-                                        )
+                                        handleKehadiranChange(siswa.id, "ijin", e.target.value)
                                       }
                                       className={`w-full p-2 sm:p-3 border rounded text-center text-sm sm:text-base ${
                                         darkMode
@@ -745,11 +731,7 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                       type="text"
                                       inputMode="numeric"
                                       pattern="[0-9]*"
-                                      value={
-                                        siswa.tanpa_keterangan === 0
-                                          ? ""
-                                          : siswa.tanpa_keterangan
-                                      }
+                                      value={siswa.tanpa_keterangan || ""}
                                       onChange={(e) =>
                                         handleKehadiranChange(
                                           siswa.id,
@@ -780,7 +762,8 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                                           : darkMode
                                           ? "bg-red-900/30 text-red-300"
                                           : "bg-red-100 text-red-800"
-                                      }`}>
+                                      }`}
+                                    >
                                       {totalTidakHadir} hari
                                     </span>
                                   </td>
@@ -793,21 +776,16 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
                     </>
                   ) : (
                     <div
-                      className={`text-center py-8 ${
-                        darkMode ? "text-gray-300" : "text-gray-500"
-                      }`}>
-                      Tidak ada data siswa untuk kelas ini atau terjadi
-                      kesalahan saat memuat data.
+                      className={`text-center py-8 ${darkMode ? "text-gray-300" : "text-gray-500"}`}
+                    >
+                      Tidak ada data siswa untuk kelas ini atau terjadi kesalahan saat memuat data.
                     </div>
                   )}
                 </>
               )}
 
-              {(!kelas || !semester) && isWaliKelas && (
-                <div
-                  className={`text-center py-8 ${
-                    darkMode ? "text-gray-300" : "text-gray-500"
-                  }`}>
+              {(!kelas || !selectedSemesterId) && isWaliKelas && (
+                <div className={`text-center py-8 ${darkMode ? "text-gray-300" : "text-gray-500"}`}>
                   Silakan pilih Kelas dan Semester untuk melanjutkan
                 </div>
               )}
@@ -819,34 +797,25 @@ function InputKehadiran({ user, onShowToast, darkMode }) {
       {saving && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div
-            className={`rounded-xl p-6 w-full max-w-md ${
-              darkMode ? "bg-gray-800" : "bg-white"
-            }`}>
+            className={`rounded-xl p-6 w-full max-w-md ${darkMode ? "bg-gray-800" : "bg-white"}`}
+          >
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <h3
-                className={`text-lg font-bold mb-2 ${
-                  darkMode ? "text-white" : "text-gray-900"
-                }`}>
+              <h3 className={`text-lg font-bold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>
                 Menyimpan Kehadiran...
               </h3>
-              <p
-                className={`text-sm mb-4 ${
-                  darkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
+              <p className={`text-sm mb-4 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
                 {saveProgress.current} dari {saveProgress.total} siswa
               </p>
               <div
-                className={`w-full rounded-full h-2 ${
-                  darkMode ? "bg-gray-700" : "bg-gray-200"
-                }`}>
+                className={`w-full rounded-full h-2 ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}
+              >
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{
-                    width: `${
-                      (saveProgress.current / saveProgress.total) * 100
-                    }%`,
-                  }}></div>
+                    width: `${(saveProgress.current / saveProgress.total) * 100}%`,
+                  }}
+                ></div>
               </div>
             </div>
           </div>

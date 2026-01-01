@@ -33,7 +33,7 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
     try {
       const info = await getActiveAcademicInfo();
       setActiveAcademicInfo(info);
-      console.log("✅ Active Academic Info loaded:", info);
+      console.log("✅ Active Academic Info loaded:", JSON.stringify(info, null, 2));
       return info;
     } catch (err) {
       console.error("❌ Error in fetchActiveAcademicInfo:", err);
@@ -210,7 +210,6 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
             )
             .eq("teacher_id", teacherId)
             .eq("academic_year", activeYear)
-            .eq("semester", activeSemester) // ✅ TAMBAH BARIS INI! (FIX DUPLICATE!)
             .order("semester", { ascending: false });
 
           // ✅ DEBUG LOG
@@ -334,10 +333,10 @@ const ProfileTab = ({ userId, user, showToast, loading, setLoading }) => {
 
   const { teaching_assignments: assignments = [] } = profileData;
 
-  // ✅ GANTI: Filter current assignments dengan semester
   const currentAssignments = assignments.filter(
     (a) =>
-      a.academic_year === activeAcademicInfo?.year && a.semester === activeAcademicInfo?.semester // ✅ CRITICAL FIX!
+      a.academic_year === activeAcademicInfo?.year &&
+      a.semester === activeAcademicInfo?.activeSemester // ✅ BENAR! pake .activeSemester
   );
 
   // Calculate stats for current year
