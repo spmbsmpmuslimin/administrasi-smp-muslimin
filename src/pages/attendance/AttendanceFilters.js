@@ -20,7 +20,6 @@ const AttendanceFilters = ({
   selectedSemesterId,
   availableSemesters,
   onSemesterChange,
-  // ✅ TAMBAH PROPS BARU INI
   isReadOnlyMode,
 }) => {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
@@ -56,16 +55,12 @@ const AttendanceFilters = ({
   }, [availableSemesters]);
 
   // ✅ FUNCTION BARU: VALIDASI TANGGAL DI DATE PICKER
-  // âœ… HELPER FUNCTIONS UNTUK DATE HANDLING
   const getTodayWIB = () => {
     const now = new Date();
-    const wibOffset = 7 * 60; // WIB = UTC+7 dalam menit
+    const wibOffset = 7 * 60;
     const localOffset = now.getTimezoneOffset();
     const wibTime = new Date(now.getTime() + (wibOffset + localOffset) * 60000);
-
-    // Set ke midnight (00:00:00)
     wibTime.setHours(0, 0, 0, 0);
-
     return wibTime;
   };
 
@@ -74,30 +69,19 @@ const AttendanceFilters = ({
     return new Date(year, month - 1, day, 0, 0, 0, 0);
   };
 
-  // âœ… FUNCTION VALIDASI TANGGAL - DIPERBAIKI
   const validateSelectedDate = (selectedDate) => {
     if (!selectedDate || !selectedSemesterId) return true;
 
     const selectedSemester = availableSemesters?.find((s) => s.id === selectedSemesterId);
-
     if (!selectedSemester) return true;
 
-    // âœ… Parse dengan benar menggunakan helper functions
     const inputDate = parseDate(selectedDate);
     const today = getTodayWIB();
-
     const startDate = parseDate(selectedSemester.start_date);
     const endDate = parseDate(selectedSemester.end_date);
 
-    // Cek: tanggal tidak boleh masa depan
-    if (inputDate > today) {
-      return false;
-    }
-
-    // Cek: tanggal harus dalam range semester
-    if (inputDate < startDate || inputDate > endDate) {
-      return false;
-    }
+    if (inputDate > today) return false;
+    if (inputDate < startDate || inputDate > endDate) return false;
 
     return true;
   };
@@ -155,9 +139,7 @@ const AttendanceFilters = ({
       "0"
     )}`;
 
-    // ✅ VALIDASI SEBELUM SET
     if (!validateSelectedDate(formatted)) {
-      // Tanggal tidak valid, tidak diset
       return;
     }
 
@@ -165,9 +147,7 @@ const AttendanceFilters = ({
   };
 
   const handleSetDate = () => {
-    // ✅ VALIDASI FINAL SEBELUM APPLY
     if (!validateSelectedDate(tempDate)) {
-      // Biarkan error handling di Attendance.js
       setDate(tempDate);
       setShowCustomDatePicker(false);
       return;
@@ -194,7 +174,6 @@ const AttendanceFilters = ({
       now.getDate()
     ).padStart(2, "0")}`;
 
-    // ✅ VALIDASI TANGGAL HARI INI
     if (!validateSelectedDate(today)) {
       setTempDate(today);
       setDate(today);
@@ -215,23 +194,7 @@ const AttendanceFilters = ({
     }
   };
 
-  // ✅ GET CURRENT SEMESTER DISPLAY - SIMPLIFIED
-  const getCurrentSemesterDisplay = () => {
-    if (!selectedSemesterId) return "Pilih Semester";
-
-    if (semesterDisplayNames[selectedSemesterId]) {
-      return semesterDisplayNames[selectedSemesterId];
-    }
-
-    const semester = availableSemesters?.find((s) => s.id === selectedSemesterId);
-    if (semester) {
-      return semester.semester === 1 ? "Semester Ganjil" : "Semester Genap";
-    }
-
-    return "Semester";
-  };
-
-  // ✅ RENDER CALENDAR DENGAN VALIDASI
+  // ✅ RENDER CALENDAR YANG BENER-BENER VISIBLE
   const renderCalendar = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -240,12 +203,10 @@ const AttendanceFilters = ({
 
     const days = [];
 
-    // Empty cells for first week
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-8"></div>);
     }
 
-    // Day cells
     for (let day = 1; day <= daysInMonth; day++) {
       const dayString = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
         2,
@@ -259,8 +220,6 @@ const AttendanceFilters = ({
       )}-${String(today.getDate()).padStart(2, "0")}`;
       const isToday = dayString === todayString;
       const isSelected = tempDate === dayString;
-
-      // ✅ CEK VALIDASI TANGGAL
       const isValid = validateSelectedDate(dayString);
 
       days.push(
@@ -269,23 +228,19 @@ const AttendanceFilters = ({
           onClick={() => handleDayClick(day)}
           disabled={!isValid || isReadOnlyMode}
           className={`
-            h-8 w-8 rounded-full flex items-center justify-center text-sm
-            transition-all duration-200 active:scale-95 touch-manipulation
-            ${
-              !isValid
-                ? "opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-500"
-                : isSelected
-                ? "bg-blue-500 text-white font-semibold"
-                : isToday
-                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
-                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-            }
-            ${isReadOnlyMode ? "opacity-60 cursor-not-allowed" : ""}
-          `}
-          aria-label={`Pilih tanggal ${day} ${currentMonth.toLocaleDateString("id-ID", {
-            month: "long",
-          })} ${year} ${!isValid ? "(tidak valid)" : ""}`}
-          title={!isValid ? "Tanggal tidak valid untuk semester ini" : ""}
+          h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium
+          transition-all duration-200 active:scale-95 touch-manipulation
+          border
+          ${
+            !isValid
+              ? "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+              : isSelected
+              ? "border-blue-500 bg-blue-500 text-white"
+              : isToday
+              ? "border-blue-400 dark:border-blue-500 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+              : "border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-slate-800"
+          }
+        `}
         >
           {day}
         </button>
@@ -299,7 +254,7 @@ const AttendanceFilters = ({
     <>
       <div className="bg-white dark:bg-slate-900 p-4 xs:p-5 sm:p-6 rounded-xl shadow-sm dark:shadow-slate-800/50 mb-4 sm:mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xs:gap-5 sm:gap-6">
-          {/* ✅ SEMESTER FILTER - DENGAN READ-ONLY INDICATOR */}
+          {/* SEMESTER FILTER */}
           <div className="space-y-2 xs:space-y-3">
             <div className="flex items-center gap-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -315,14 +270,7 @@ const AttendanceFilters = ({
               value={selectedSemesterId || ""}
               onChange={handleSemesterChange}
               disabled={loading || !availableSemesters || availableSemesters.length === 0}
-              className={`
-                w-full p-3 xs:p-3.5 sm:p-4 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none
-                ${
-                  isReadOnlyMode
-                    ? "border-yellow-300 dark:border-yellow-700"
-                    : "border-slate-300 dark:border-slate-700"
-                }
-              `}
+              className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none"
               aria-label="Pilih Semester"
             >
               <option
@@ -335,13 +283,11 @@ const AttendanceFilters = ({
                 <option
                   key={semester.id}
                   value={semester.id}
-                  className={`
-                    ${
-                      semester.is_active
-                        ? "font-semibold text-blue-600 dark:text-blue-400"
-                        : "text-slate-600 dark:text-slate-400"
-                    }
-                  `}
+                  className={
+                    semester.is_active
+                      ? "font-semibold text-blue-600 dark:text-blue-400"
+                      : "text-slate-600 dark:text-slate-400"
+                  }
                 >
                   {semester.semester === 1 ? "Semester Ganjil" : "Semester Genap"}
                   {semester.is_active && " (Aktif)"}
@@ -363,15 +309,8 @@ const AttendanceFilters = ({
                 setStudents([]);
                 setStudentsLoaded(false);
               }}
-              disabled={loading || !teacherId || !selectedSemesterId || isReadOnlyMode}
-              className={`
-                w-full p-3 xs:p-3.5 sm:p-4 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none
-                ${
-                  isReadOnlyMode
-                    ? "border-yellow-300 dark:border-yellow-700"
-                    : "border-slate-300 dark:border-slate-700"
-                }
-              `}
+              disabled={loading || !teacherId || !selectedSemesterId}
+              className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none"
               aria-label="Pilih Mata Pelajaran"
             >
               <option
@@ -404,29 +343,9 @@ const AttendanceFilters = ({
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              disabled={
-                !selectedSubject ||
-                loading ||
-                isHomeroomDaily() ||
-                !selectedSemesterId ||
-                isReadOnlyMode
-              }
-              className={`
-                w-full p-3 xs:p-3.5 sm:p-4 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none
-                ${
-                  isReadOnlyMode
-                    ? "border-yellow-300 dark:border-yellow-700"
-                    : "border-slate-300 dark:border-slate-700"
-                }
-              `}
+              disabled={!selectedSubject || loading || isHomeroomDaily() || !selectedSemesterId}
+              className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none"
               aria-label="Pilih Kelas"
-              aria-disabled={
-                !selectedSubject ||
-                loading ||
-                isHomeroomDaily() ||
-                !selectedSemesterId ||
-                isReadOnlyMode
-              }
             >
               <option
                 value=""
@@ -450,42 +369,18 @@ const AttendanceFilters = ({
             </select>
           </div>
 
-          {/* Tanggal Filter dengan CUSTOM DATE PICKER */}
+          {/* Tanggal Filter */}
           <div className="space-y-2 xs:space-y-3">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Tanggal
             </label>
             <div className="relative">
-              <input type="hidden" name="date" value={date} />
-
               <div
-                onClick={() => !loading && !isReadOnlyMode && setShowCustomDatePicker(true)}
-                className={`
-                  w-full p-3 xs:p-3.5 sm:p-4 text-sm border rounded-lg transition-all duration-200 
-                  bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 
-                  ${
-                    loading || isReadOnlyMode
-                      ? "opacity-60 cursor-not-allowed"
-                      : "cursor-pointer hover:border-blue-500 dark:hover:border-blue-400"
-                  }
-                  ${
-                    isReadOnlyMode
-                      ? "border-yellow-300 dark:border-yellow-700"
-                      : "border-slate-300 dark:border-slate-700"
-                  }
-                  min-h-[44px] flex items-center
-                `}
-                aria-label="Pilih Tanggal"
-                role="button"
-                tabIndex={loading || isReadOnlyMode ? -1 : 0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !loading && !isReadOnlyMode) {
-                    setShowCustomDatePicker(true);
-                  }
-                }}
+                onClick={() => !loading && setShowCustomDatePicker(true)}
+                className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg transition-all duration-200 bg-white dark:bg-slate-800 text-black dark:text-white hover:border-blue-500 cursor-pointer min-h-[44px] flex items-center justify-between"
               >
                 <span className="flex-1">{date ? formatDate(date) : "Pilih tanggal..."}</span>
-                <span className="text-slate-600 dark:text-slate-300 text-lg ml-2">📅</span>
+                <span className="text-lg">📅</span>
               </div>
             </div>
           </div>
@@ -522,10 +417,7 @@ const AttendanceFilters = ({
                 </button>
                 <div className="text-center">
                   <div className="font-semibold text-slate-800 dark:text-slate-200">
-                    {currentMonth.toLocaleDateString("id-ID", {
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    {currentMonth.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
                   </div>
                   {tempDate && (
                     <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -557,7 +449,7 @@ const AttendanceFilters = ({
                 {renderCalendar()}
               </div>
 
-              {/* ✅ INFORMASI VALIDASI */}
+              {/* INFORMASI VALIDASI */}
               {selectedSemesterId && (
                 <div className="text-xs text-slate-500 dark:text-slate-400 mb-3 p-2 bg-slate-50 dark:bg-slate-900/50 rounded">
                   <div className="flex items-start gap-2">
@@ -576,13 +468,11 @@ const AttendanceFilters = ({
               <button
                 onClick={handleToday}
                 disabled={isReadOnlyMode}
-                className={`w-full mb-3 px-4 py-3 rounded-lg font-medium active:scale-95 transition-all duration-200 flex items-center justify-center gap-2
-                  ${
-                    isReadOnlyMode
-                      ? "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed"
-                      : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50"
-                  }
-                `}
+                className={`w-full mb-3 px-4 py-3 rounded-lg font-medium active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 ${
+                  isReadOnlyMode
+                    ? "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                    : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50"
+                }`}
               >
                 <span className="text-base">📅</span>
                 <span>Hari Ini</span>

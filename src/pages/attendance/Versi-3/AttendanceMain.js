@@ -1,499 +1,234 @@
-// AttendanceMain.js - REVISI FIXED
-import React, { useState, useEffect } from "react";
-import { supabase } from "../../supabaseClient";
+// AttendanceMain.js (With Export Modal)
+import React, { useState } from "react";
 import Attendance from "./Attendance";
-import AttendanceFilters from "./AttendanceFilters";
-import AttendanceTable from "./AttendanceTable";
-import AttendanceStats from "./AttendanceStats";
-import { exportAttendanceToExcel } from "./AttendanceExcel";
 import AttendanceModals from "./AttendanceModals";
+import { exportAttendanceToExcel } from "./AttendanceExcel";
 
 const AttendanceMain = () => {
   const [activeTab, setActiveTab] = useState("input");
-  const [currentDate, setCurrentDate] = useState("");
-  const [currentTime, setCurrentTime] = useState("");
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [filters, setFilters] = useState({
-    date: new Date().toISOString().split("T")[0],
-    class: "",
-    status: "",
-    search: "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({
-    totalStudents: 0,
-    presentToday: 0,
-    absentToday: 0,
-    lateToday: 0,
-  });
-
-  // Update waktu real-time
-  useEffect(() => {
-    const updateDateTime = () => {
-      const now = new Date();
-      setCurrentDate(
-        now.toLocaleDateString("id-ID", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      );
-      setCurrentTime(
-        now.toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
-      );
-    };
-
-    updateDateTime();
-    const interval = setInterval(updateDateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch data awal
-  useEffect(() => {
-    fetchAttendanceStats();
-    fetchAttendanceData();
-  }, [filters.date]);
-
-  // Fetch statistik presensi
-  const fetchAttendanceStats = async () => {
-    try {
-      const today = filters.date || new Date().toISOString().split("T")[0];
-
-      // Total siswa aktif
-      const { count: totalStudents, error: countError } = await supabase
-        .from("students")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "active");
-
-      if (countError) throw countError;
-
-      // Presensi hari ini berdasarkan filter tanggal
-      const { data: todayAttendance, error: attendanceError } = await supabase
-        .from("attendance")
-        .select("status, time_in")
-        .eq("date", today);
-
-      if (attendanceError) throw attendanceError;
-
-      const presentToday = todayAttendance?.filter((a) => a.status === "present").length || 0;
-      const absentToday = todayAttendance?.filter((a) => a.status === "absent").length || 0;
-
-      // Hitung yang terlambat
-      const lateToday =
-        todayAttendance?.filter((a) => {
-          if (a.time_in && a.status === "present") {
-            const timeIn = new Date(`2000-01-01T${a.time_in}`);
-            const lateThreshold = new Date(`2000-01-01T07:30:00`);
-            return timeIn > lateThreshold;
-          }
-          return false;
-        }).length || 0;
-
-      setStats({
-        totalStudents: totalStudents || 0,
-        presentToday,
-        absentToday,
-        lateToday,
-      });
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-      setStats({
-        totalStudents: 0,
-        presentToday: 0,
-        absentToday: 0,
-        lateToday: 0,
-      });
-    }
-  };
-
-  // Fetch data presensi dengan filter
-  const fetchAttendanceData = async () => {
-    setLoading(true);
-    try {
-      let query = supabase.from("attendance").select(`
-          *,
-          students(name, nis, class)
-        `);
-
-      // Apply filters
-      if (filters.date) {
-        query = query.eq("date", filters.date);
-      }
-
-      if (filters.class) {
-        query = query.eq("students.class", filters.class);
-      }
-
-      if (filters.status) {
-        query = query.eq("status", filters.status);
-      }
-
-      if (filters.search) {
-        query = query.or(
-          `students.name.ilike.%${filters.search}%,students.nis.ilike.%${filters.search}%`
-        );
-      }
-
-      // Sort by waktu input terbaru
-      query = query.order("created_at", { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      setAttendanceData(data || []);
-    } catch (error) {
-      console.error("Error fetching attendance data:", error);
-      // Fallback ke array kosong jika error
-      setAttendanceData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle filter changes
-  const handleFilterChange = (newFilters) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-  };
-
-  // Refresh data setelah operasi CRUD
-  const refreshData = () => {
-    fetchAttendanceStats();
-    fetchAttendanceData();
-  };
-
-  // Reset semua filter
-  const resetFilters = () => {
-    const today = new Date().toISOString().split("T")[0];
-    setFilters({
-      date: today,
-      class: "",
-      status: "",
-      search: "",
-    });
-  };
+  const [isExporting, setIsExporting] = useState(false);
 
   const navigationItems = [
     {
       id: "input",
       icon: "📝",
       title: "Input Presensi",
-      subtitle: "Kelola Kehadiran Harian",
+      subtitle: "Input Data Kehadiran Siswa",
       badge: "Input",
-      color: "blue",
-      gradient: "from-blue-500 to-blue-600",
     },
     {
       id: "preview",
       icon: "📊",
       title: "Data Presensi",
-      subtitle: "Lihat & Kelola Data",
+      subtitle: "Lihat dan Kelola Data",
       badge: "Data",
-      color: "green",
-      gradient: "from-green-500 to-green-600",
     },
     {
       id: "export",
       icon: "📤",
       title: "Export Data",
-      subtitle: "Download Laporan",
+      subtitle: "Download Laporan Excel",
       badge: "Export",
-      color: "purple",
-      gradient: "from-purple-500 to-purple-600",
     },
   ];
 
+  // Handle export dengan pilihan periode
+  const handleExport = async (period) => {
+    setIsExporting(true);
+
+    try {
+      await exportAttendanceToExcel(period);
+      alert(`✅ Data ${period} berhasil diexport!`);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("❌ Export gagal! Silakan coba lagi.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:px-8">
-        {/* Header Section */}
-        <div className="rounded-xl sm:rounded-2xl shadow-lg mb-4 sm:mb-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-blue-100 dark:bg-blue-900/30">
-                <span className="text-xl sm:text-2xl">📋</span>
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold">Sistem Presensi Siswa</h1>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                  {currentDate} • {currentTime}
-                </p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                Sistem Presensi Siswa
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-1">Kelola Kehadiran Siswa</p>
             </div>
 
-            {/* Statistik Ringkas */}
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              <div className="px-3 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-xs text-gray-600 dark:text-gray-300">Total Siswa</p>
-                <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                  {stats.totalStudents}
-                </p>
-              </div>
-              <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-xs text-gray-600 dark:text-gray-300">Hadir</p>
-                <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  {stats.presentToday}
-                </p>
-              </div>
-              <div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <p className="text-xs text-gray-600 dark:text-gray-300">Tidak Hadir</p>
-                <p className="text-lg font-bold text-red-600 dark:text-red-400">
-                  {stats.absentToday}
-                </p>
+            {/* Date Info */}
+            <div className="flex gap-2">
+              <div className="px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm">
+                <span className="text-gray-500 dark:text-gray-400">📅</span>
+                <span className="ml-2 font-medium">
+                  {new Date().toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Navigation - Responsive */}
-        <div className="mb-4 sm:mb-6">
-          {/* Mobile View: Ikon sejajar */}
-          <div className="block sm:hidden">
-            <div className="flex justify-between items-center bg-white dark:bg-gray-800 rounded-xl p-2 border border-gray-200 dark:border-gray-700 shadow-sm">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 min-h-[60px] w-full max-w-[80px] ${
-                    activeTab === item.id
-                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                      : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  <div className="text-2xl mb-1">{item.icon}</div>
+        {/* Navigation - Mobile */}
+        <div className="block sm:hidden mb-6">
+          <div className="flex justify-between bg-white dark:bg-gray-800 rounded-xl p-2 border border-gray-200 dark:border-gray-700 shadow-sm">
+            {navigationItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex flex-col items-center justify-center p-3 rounded-lg w-full max-w-[90px] transition-all ${
+                  activeTab === item.id
+                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                }`}
+              >
+                <div className="text-2xl mb-1">{item.icon}</div>
+                <div className="text-xs font-medium">{item.badge}</div>
+                {activeTab === item.id && (
+                  <div className="mt-1 w-6 h-1 rounded-full bg-blue-500 animate-pulse"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Navigation - Desktop */}
+        <div className="hidden sm:block mb-6">
+          <div className="grid grid-cols-3 gap-4">
+            {navigationItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`group relative p-5 rounded-xl border transition-all duration-300 ${
+                  activeTab === item.id
+                    ? "border-blue-500 bg-white dark:bg-gray-800 shadow-lg scale-[1.02]"
+                    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md"
+                }`}
+              >
+                {activeTab === item.id && (
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-xl"></div>
+                )}
+
+                <div className="flex items-center gap-4">
                   <div
-                    className={`text-xs font-medium ${
+                    className={`p-3 rounded-xl transition-all ${
                       activeTab === item.id
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-gray-600 dark:text-gray-400"
+                        ? "bg-blue-100 dark:bg-blue-900/30 scale-110"
+                        : "bg-gray-100 dark:bg-gray-700 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20"
                     }`}
                   >
-                    {item.badge}
+                    <span className="text-2xl">{item.icon}</span>
                   </div>
-                  {activeTab === item.id && (
-                    <div className="mt-1 w-6 h-1 rounded-full bg-blue-500"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Desktop View: Card kecil */}
-          <div className="hidden sm:block">
-            <div className="grid grid-cols-3 gap-3">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`relative overflow-hidden rounded-xl border transition-all duration-300 min-h-[100px] flex items-center justify-center ${
-                    activeTab === item.id
-                      ? `border-${item.color}-500 shadow-md bg-white dark:bg-gray-800 scale-[1.01]`
-                      : `border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-sm`
-                  }`}
-                >
-                  <div className="p-4 w-full">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className={`p-2 rounded-lg bg-${item.color}-50 dark:bg-gray-700`}>
-                        <span className="text-xl">{item.icon}</span>
-                      </div>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${item.gradient}`}
-                      >
-                        {item.badge}
-                      </span>
-                    </div>
-
-                    <h3 className="font-semibold text-sm mb-1 text-gray-900 dark:text-white text-left truncate">
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
                       {item.title}
                     </h3>
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 text-left truncate">
-                      {item.subtitle}
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{item.subtitle}</p>
+                  </div>
+                </div>
 
-                    {activeTab === item.id && (
-                      <div
-                        className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${item.gradient}`}
+                {activeTab === item.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-b-xl"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg p-4 sm:p-6 min-h-[500px]">
+          <div className="animate-fadeIn">
+            {activeTab === "input" && <Attendance />}
+
+            {activeTab === "preview" && <AttendanceModals />}
+
+            {activeTab === "export" && (
+              <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 mb-6 shadow-lg">
+                  <span className="text-4xl">📥</span>
+                </div>
+
+                <h3 className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">
+                  Export Data Presensi
+                </h3>
+                <p className="mb-8 text-gray-600 dark:text-gray-300 max-w-md mx-auto">
+                  Pilih periode untuk download laporan presensi dalam format Excel
+                </p>
+
+                {/* Export Options Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8">
+                  <button
+                    onClick={() => handleExport("bulanan")}
+                    disabled={isExporting}
+                    className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-xl border-2 border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    <div className="text-4xl mb-3">📊</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                      Export Bulanan
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Download data kehadiran per bulan
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handleExport("semester")}
+                    disabled={isExporting}
+                    className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-xl border-2 border-green-200 dark:border-green-700 hover:border-green-400 dark:hover:border-green-500 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    <div className="text-4xl mb-3">📅</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                      Export Semester
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Download data kehadiran per semester
+                    </div>
+                  </button>
+                </div>
+
+                {/* Loading State */}
+                {isExporting && (
+                  <div className="flex items-center justify-center gap-3 text-blue-600 dark:text-blue-400 mb-4">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
                       />
-                    )}
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span className="font-medium">Exporting...</span>
                   </div>
-                </button>
-              ))}
-            </div>
+                )}
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  File akan otomatis tersimpan di folder Downloads
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Content Area - Berdasarkan Tab Aktif */}
-        <div className="animate-fadeIn">
-          {/* Tab 1: Input Presensi */}
-          {activeTab === "input" && (
-            <div className="space-y-6">
-              {/* Statistik Hari Ini */}
-              <div className="rounded-xl shadow-lg overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                <AttendanceStats
-                  totalStudents={stats.totalStudents}
-                  presentToday={stats.presentToday}
-                  absentToday={stats.absentToday}
-                  lateToday={stats.lateToday}
-                  date={filters.date}
-                  onRefresh={refreshData}
-                  showRefreshButton={true}
-                />
-              </div>
-
-              {/* Komponen Input Presensi Utama */}
-              <div className="rounded-xl shadow-lg overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <div className="p-4 sm:p-6">
-                  <Attendance onAttendanceSubmit={refreshData} currentDate={filters.date} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 2: Data & Preview Presensi */}
-          {activeTab === "preview" && (
-            <div className="space-y-6">
-              {/* Filter Data */}
-              <div className="rounded-xl shadow-lg overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <div className="p-4 sm:p-6">
-                  <AttendanceFilters
-                    filters={filters}
-                    onFilterChange={handleFilterChange}
-                    onApplyFilters={fetchAttendanceData}
-                    onResetFilters={resetFilters}
-                  />
-                </div>
-              </div>
-
-              {/* Statistik Berdasarkan Filter */}
-              <div className="rounded-xl shadow-lg overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                <AttendanceStats
-                  totalStudents={stats.totalStudents}
-                  presentToday={stats.presentToday}
-                  absentToday={stats.absentToday}
-                  lateToday={stats.lateToday}
-                  date={filters.date}
-                  filteredData={attendanceData}
-                  showFilteredStats={true}
-                />
-              </div>
-
-              {/* Tabel Data Presensi */}
-              <div className="rounded-xl shadow-lg overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <div className="p-4 sm:p-6">
-                  {loading ? (
-                    <div className="flex justify-center items-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-                    </div>
-                  ) : (
-                    <AttendanceTable
-                      data={attendanceData}
-                      onEdit={refreshData}
-                      onDelete={refreshData}
-                      isLoading={loading}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Modal untuk Edit/Detail */}
-              <AttendanceModals data={attendanceData} onDataUpdate={refreshData} />
-            </div>
-          )}
-
-          {/* Tab 3: Export Data */}
-          {activeTab === "export" && (
-            <div className="space-y-6">
-              {/* Statistik untuk Export */}
-              <div className="rounded-xl shadow-lg overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                <AttendanceStats
-                  totalStudents={stats.totalStudents}
-                  presentToday={stats.presentToday}
-                  absentToday={stats.absentToday}
-                  lateToday={stats.lateToday}
-                  date={filters.date}
-                  showExportInfo={true}
-                  dataCount={attendanceData.length}
-                />
-              </div>
-
-              {/* Area Export */}
-              <div className="rounded-xl shadow-lg overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <div className="p-4 sm:p-6">
-                  <div className="text-center py-6 sm:py-8">
-                    <div className="inline-flex items-center justify-center w-14 h-14 sm:w-20 sm:h-20 rounded-full mb-4 sm:mb-6 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30">
-                      <span className="text-xl sm:text-3xl">📊</span>
-                    </div>
-
-                    <h3 className="text-base sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 text-gray-900 dark:text-white">
-                      Export Data Presensi
-                    </h3>
-
-                    <p className="mb-4 sm:mb-6 max-w-md mx-auto text-xs sm:text-sm text-gray-600 dark:text-gray-300 px-2">
-                      Download laporan presensi lengkap dengan semua data yang telah difilter.
-                    </p>
-
-                    <div className="mb-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Data yang akan diexport:
-                      </p>
-                      <ul className="text-xs text-gray-600 dark:text-gray-400 text-left max-w-xs mx-auto">
-                        <li className="flex items-center gap-2 mb-1">
-                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                          <span>{attendanceData.length} records presensi</span>
-                        </li>
-                        <li className="flex items-center gap-2 mb-1">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          <span>Periode: {filters.date || "Hari ini"}</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                          <span>Format: Excel (.xlsx)</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <button
-                      onClick={() => exportAttendanceToExcel(attendanceData, filters)}
-                      className="inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl text-sm sm:text-base min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={attendanceData.length === 0}
-                    >
-                      <span className="text-lg sm:text-xl">📥</span>
-                      <span>
-                        {attendanceData.length === 0
-                          ? "Tidak Ada Data untuk Diexport"
-                          : `Download Excel (${attendanceData.length} Data)`}
-                      </span>
-                    </button>
-
-                    {attendanceData.length === 0 && (
-                      <p className="mt-3 text-xs text-red-500 dark:text-red-400">
-                        Gunakan filter pada tab "Data Presensi" untuk memilih data yang akan
-                        diexport
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Quick Stats Footer */}
-        <div className="mt-4 sm:mt-6">
-          <div className="rounded-xl p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
-            <div className="text-center text-xs text-gray-600 dark:text-gray-400 flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-3">
-              <span>Sistem Presensi v1.0</span>
-              <span className="hidden sm:inline">•</span>
-              <span>Terakhir diperbarui: {currentTime}</span>
-              <span className="hidden sm:inline">•</span>
-              <span>Tab Aktif: {navigationItems.find((item) => item.id === activeTab)?.title}</span>
-            </div>
-          </div>
+        {/* Footer Info */}
+        <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          <p>SMP Muslimin Cililin - Sistem Presensi Siswa</p>
         </div>
       </div>
 
@@ -509,8 +244,9 @@ const AttendanceMain = () => {
             transform: translateY(0);
           }
         }
+
         .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
+          animation: fadeIn 0.4s ease-out;
         }
       `}</style>
     </div>

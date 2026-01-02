@@ -142,31 +142,104 @@ const RecapModal = ({
     label: name,
   }));
 
-  // Reset saat modal dibuka
+  // ✅ HELPER: Tentukan Semester ID berdasarkan bulan & tahun yang dipilih
+  const getSemesterIdForMonth = (month, year) => {
+    console.log("🔍 getSemesterIdForMonth called:", { month, year });
+    console.log("📚 availableSemesters:", availableSemesters);
+    console.log("🎯 selectedSemesterId (fallback):", selectedSemesterId);
+
+    if (!availableSemesters || availableSemesters.length === 0) {
+      console.warn("⚠️ availableSemesters KOSONG! Using fallback:", selectedSemesterId);
+      return selectedSemesterId;
+    }
+
+    // Bulan 7-12 = Semester 1 (Ganjil)
+    // Bulan 1-6 = Semester 2 (Genap)
+    const targetSemester = month >= 7 ? 1 : 2;
+
+    // Cari tahun ajaran yang sesuai
+    const academicYearStr = month >= 7 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
+
+    console.log(`🔍 Searching for:`);
+    console.log(`   - Academic Year: ${academicYearStr}`);
+    console.log(`   - Semester: ${targetSemester}`);
+
+    // Debug: Tampilkan semua semester yang ada
+    console.log("📋 All available semesters:");
+    availableSemesters.forEach((s, idx) => {
+      console.log(`   ${idx}: year="${s.year}", semester=${s.semester}, id=${s.id}`);
+    });
+
+    // Cari semester yang match
+    const matchedSemester = availableSemesters.find(
+      (s) => s.year === academicYearStr && s.semester === targetSemester
+    );
+
+    if (matchedSemester) {
+      console.log("✅ FOUND MATCH:", matchedSemester);
+      return matchedSemester.id;
+    }
+
+    console.warn("❌ NO MATCH FOUND!");
+    console.warn("   Tried to match:", { year: academicYearStr, semester: targetSemester });
+    console.warn("   Using fallback semester ID:", selectedSemesterId);
+
+    return selectedSemesterId;
+  };
+
+  // Reset saat modal dibuka - DIPERBAIKI
   useEffect(() => {
     if (showModal) {
       const now = new Date();
-      const currentMonth = now.getMonth() + 1; // 1-12
-      setSelectedMonth(currentMonth);
-      setSelectedYear(now.getFullYear());
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
 
-      if (activeAcademicInfo?.year) {
-        setSelectedAcademicYear(activeAcademicInfo.year);
+      if (selectedSemesterId && availableSemesters) {
+        const selectedSemesterInfo = availableSemesters.find((s) => s.id === selectedSemesterId);
+        if (selectedSemesterInfo) {
+          const semesterNumber = selectedSemesterInfo.semester;
 
-        // ✅ PERBAIKAN: Cek bulan saat ini untuk tentukan semester
-        // Januari (1) adalah Semester 2
-        // Juli (7) adalah Semester 1
-        const currentSemester = currentMonth >= 7 ? "ganjil" : "genap";
-        setSelectedSemester(currentSemester);
+          // Tentukan bulan default berdasarkan semester
+          let defaultMonth = currentMonth;
+          let defaultYear = currentYear;
 
-        console.log("📅 Modal opened - Current month:", currentMonth, "Semester:", currentSemester);
+          const [startYear, endYear] = selectedSemesterInfo.year.split("/").map(Number);
+
+          if (semesterNumber === 1) {
+            // Semester 1: Juli-Desember
+            if (currentMonth < 7 || currentMonth > 12) {
+              defaultMonth = 7; // Default ke Juli
+            }
+            defaultYear = startYear; // Gunakan tahun awal
+          } else if (semesterNumber === 2) {
+            // Semester 2: Januari-Juni
+            if (currentMonth < 1 || currentMonth > 6) {
+              defaultMonth = 1; // Default ke Januari
+            }
+            defaultYear = endYear; // Gunakan tahun akhir
+          }
+
+          setSelectedMonth(defaultMonth);
+          setSelectedYear(defaultYear);
+
+          console.log(
+            "📅 Modal opened - Semester:",
+            semesterNumber,
+            "Bulan default:",
+            defaultMonth,
+            "Tahun:",
+            defaultYear
+          );
+        }
       } else {
-        setSelectedAcademicYear("2025/2026");
-        setSelectedSemester(currentMonth >= 7 ? "ganjil" : "genap");
+        // Fallback ke logika lama
+        setSelectedMonth(currentMonth);
+        setSelectedYear(currentYear);
       }
+
       setViewMode("monthly");
     }
-  }, [showModal, activeAcademicInfo]);
+  }, [showModal, selectedSemesterId, availableSemesters]);
 
   // Auto-fetch saat viewMode berubah
   useEffect(() => {
@@ -183,13 +256,36 @@ const RecapModal = ({
     fetchDataForCurrentView();
   }, [viewMode, showModal, selectedMonth, selectedYear, selectedSemester, selectedAcademicYear]);
 
-  // Handle monthly change
+  // Handle monthly change - DIPERBAIKI
   const handleMonthlyChange = async (month, year) => {
-    if (month !== selectedMonth || year !== selectedYear) {
-      setSelectedMonth(month);
-      setSelectedYear(year);
+    console.log("🔧 handleMonthlyChange:", { month, year, selectedSemesterId });
+
+    // Cek apakah bulan sesuai dengan semester yang dipilih
+    if (selectedSemesterId && availableSemesters) {
+      const selectedSemesterInfo = availableSemesters.find((s) => s.id === selectedSemesterId);
+      if (selectedSemesterInfo) {
+        const semesterNumber = selectedSemesterInfo.semester;
+
+        // Validasi bulan sesuai semester
+        if (semesterNumber === 1 && (month < 7 || month > 12)) {
+          // Auto-pilih bulan pertama semester 1 (Juli)
+          console.log("🔄 Auto-pilih Juli untuk Semester 1");
+          month = 7;
+        } else if (semesterNumber === 2 && (month < 1 || month > 6)) {
+          // Auto-pilih bulan pertama semester 2 (Januari)
+          console.log("🔄 Auto-pilih Januari untuk Semester 2");
+          month = 1;
+        }
+      }
     }
-    await fetchMonthlyData(month, year);
+
+    setSelectedMonth(month);
+    setSelectedYear(year);
+
+    // Tunggu state update sebelum fetch
+    setTimeout(() => {
+      fetchMonthlyData(month, year);
+    }, 50);
   };
 
   // Handle semester change
@@ -201,7 +297,7 @@ const RecapModal = ({
     await fetchSemesterData(semester, academicYear);
   };
 
-  // FETCH MONTHLY DATA DENGAN FILTER SEMESTER
+  // FETCH MONTHLY DATA DENGAN FILTER SEMESTER DAN VALIDASI BULAN
   const fetchMonthlyData = async (month, year) => {
     if (
       (attendanceMode === "subject" && (!selectedClass || !selectedSubject)) ||
@@ -222,21 +318,76 @@ const RecapModal = ({
 
     // VALIDASI: HARUS ADA SEMESTER YANG DIPILIH
     if (!selectedSemesterId) {
-      console.error("❌ fetchMonthlyData: selectedSemesterId kosong!", {
-        activeAcademicInfo,
-        availableSemesters,
-        attendanceMode,
-        selectedClass,
-        selectedSubject,
-      });
-
+      console.error("❌ fetchMonthlyData: selectedSemesterId kosong!");
       if (onShowToast) {
         onShowToast("Semester belum dipilih atau tidak ada semester aktif!", "error");
       }
       return;
     }
 
-    console.log("✅ fetchMonthlyData dengan semester ID:", selectedSemesterId);
+    // TAMBAHKAN: Cari info semester dari availableSemesters
+    const selectedSemesterInfo = availableSemesters?.find((s) => s.id === selectedSemesterId);
+
+    if (!selectedSemesterInfo) {
+      console.error("❌ Semester info tidak ditemukan:", selectedSemesterId);
+      if (onShowToast) {
+        onShowToast("Informasi semester tidak ditemukan!", "error");
+      }
+      return;
+    }
+
+    console.log("✅ fetchMonthlyData dengan semester:", selectedSemesterInfo);
+
+    // TAMBAHKAN: Validasi apakah bulan yang dipilih sesuai dengan semester
+    const semesterNumber = selectedSemesterInfo.semester; // 1 atau 2
+    const isSemester1 = semesterNumber === 1; // Juli-Desember
+    const isSemester2 = semesterNumber === 2; // Januari-Juni
+
+    // Validasi rentang bulan berdasarkan semester
+    if (isSemester1 && (month < 7 || month > 12)) {
+      // Semester 1 hanya Juli (7) hingga Desember (12)
+      console.warn(`⚠️ Bulan ${month} tidak sesuai dengan Semester 1 (Juli-Desember)`);
+      if (onShowToast) {
+        onShowToast(`Bulan tidak sesuai dengan Semester 1. Pilih bulan Juli-Desember.`, "warning");
+      }
+      setRekapData([]);
+      setAttendanceDates([]);
+      return;
+    }
+
+    if (isSemester2 && (month < 1 || month > 6)) {
+      // Semester 2 hanya Januari (1) hingga Juni (6)
+      console.warn(`⚠️ Bulan ${month} tidak sesuai dengan Semester 2 (Januari-Juni)`);
+      if (onShowToast) {
+        onShowToast(`Bulan tidak sesuai dengan Semester 2. Pilih bulan Januari-Juni.`, "warning");
+      }
+      setRekapData([]);
+      setAttendanceDates([]);
+      return;
+    }
+
+    // TAMBAHKAN: Validasi tahun akademik
+    const [startYear, endYear] = selectedSemesterInfo.year.split("/").map(Number);
+    let expectedYear = year;
+
+    if (isSemester1) {
+      // Semester 1: Juli-Desember menggunakan tahun awal (misal 2025 untuk 2025/2026)
+      expectedYear = startYear;
+    } else if (isSemester2) {
+      // Semester 2: Januari-Juni menggunakan tahun akhir (misal 2026 untuk 2025/2026)
+      expectedYear = endYear;
+    }
+
+    // Jika tahun yang dipilih tidak sesuai, sesuaikan otomatis
+    if (year !== expectedYear) {
+      console.log(
+        `📅 Menyesuaikan tahun dari ${year} menjadi ${expectedYear} untuk semester ${semesterNumber}`
+      );
+      setSelectedYear(expectedYear);
+      // Panggil ulang dengan tahun yang benar
+      await fetchMonthlyData(month, expectedYear);
+      return;
+    }
 
     setRekapLoading(true);
     try {
@@ -258,27 +409,12 @@ const RecapModal = ({
         startDate,
         endDate,
         selectedSemesterId,
+        semesterNumber,
+        isSemester1,
+        isSemester2,
       });
 
-      // Query WITHOUT semester filter first (untuk debug)
-      let testQuery = supabase
-        .from("attendances")
-        .select("student_id, status, date, academic_year_id, semester")
-        .eq("subject", subjectFilter)
-        .eq("class_id", classFilter)
-        .eq("type", typeFilter)
-        .gte("date", startDate)
-        .lte("date", endDate);
-
-      const { data: testData, error: testError } = await testQuery;
-
-      console.log("📊 Data TANPA filter semester:", {
-        count: testData?.length || 0,
-        sample: testData?.[0],
-        error: testError,
-      });
-
-      // Sekarang query DENGAN filter semester
+      // Query dengan filter semester
       let query = supabase
         .from("attendances")
         .select("student_id, status, date")
@@ -404,23 +540,29 @@ const RecapModal = ({
       return;
     }
 
-    // VALIDASI: HARUS ADA SEMESTER YANG DIPILIH
-    if (!selectedSemesterId) {
-      console.error("❌ fetchMonthlyData: selectedSemesterId kosong!", {
-        activeAcademicInfo,
+    // ✅ TENTUKAN SEMESTER ID DARI PARAMETER YANG DIPILIH USER
+    const semesterNumber = semester === "ganjil" ? 1 : 2;
+    const targetSemester = availableSemesters?.find(
+      (s) => s.year === academicYear && s.semester === semesterNumber
+    );
+
+    if (!targetSemester) {
+      console.error("❌ fetchSemesterData: semester tidak ditemukan!", {
+        semester,
+        academicYear,
+        semesterNumber,
         availableSemesters,
-        attendanceMode,
-        selectedClass,
-        selectedSubject,
       });
 
       if (onShowToast) {
-        onShowToast("Semester belum dipilih atau tidak ada semester aktif!", "error");
+        onShowToast(`Semester ${semester} tahun ${academicYear} tidak ditemukan!`, "error");
       }
       return;
     }
 
-    console.log("✅ fetchMonthlyData dengan semester ID:", selectedSemesterId);
+    const targetSemesterId = targetSemester.id;
+    console.log("✅ fetchSemesterData dengan semester ID:", targetSemesterId);
+    console.log("   Semester:", semester, "Year:", academicYear);
 
     setRekapLoading(true);
     try {
@@ -460,7 +602,7 @@ const RecapModal = ({
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
         // TAMBAH FILTER ACADEMIC_YEAR_ID
-        query = filterBySemester(query, selectedSemesterId);
+        query = filterBySemester(query, targetSemesterId);
 
         const { data, error } = await query;
 
@@ -538,26 +680,39 @@ const RecapModal = ({
     }
   };
 
-  // Dynamic subtitle - SEDERHANA
+  // Dynamic subtitle - DIPERBAIKI
   const getDynamicSubtitle = () => {
-    const classId = attendanceMode === "subject" ? selectedClass : homeroomClass;
     const subjectName = attendanceMode === "subject" ? selectedSubject : "PRESENSI HARIAN";
 
-    // JIKA ADA SEMESTER INFO, TAMPILKAN
-    if (selectedSemesterId && availableSemesters) {
-      const selectedSemester = availableSemesters.find((s) => s.id === selectedSemesterId);
-      if (selectedSemester) {
-        return `${subjectName} | ${selectedSemester.year} - Semester ${selectedSemester.semester}`;
-      }
-    }
+    // AMBIL INFO SEMESTER
+    const selectedSemesterInfo =
+      selectedSemesterId && availableSemesters
+        ? availableSemesters.find((s) => s.id === selectedSemesterId)
+        : null;
 
-    // FALLBACK KE YANG LAMA
+    // JIKA VIEW MODE MONTHLY, TAMPILKAN BULAN + TAHUN AJARAN + SEMESTER
     if (viewMode === "monthly") {
       const monthName = monthNames[selectedMonth - 1];
-      return `${subjectName} | ${monthName} ${selectedYear}`;
-    } else {
-      const semesterName = selectedSemester === "ganjil" ? "Ganjil" : "Genap";
-      return `${subjectName} | Semester ${semesterName} ${selectedAcademicYear}`;
+
+      if (selectedSemesterInfo) {
+        // Format: Agustus (2025/2026 - Semester 1)
+        return `${subjectName} | ${monthName} (${selectedSemesterInfo.year} - Semester ${selectedSemesterInfo.semester})`;
+      } else {
+        // Fallback
+        return `${subjectName} | ${monthName} ${selectedYear}`;
+      }
+    }
+    // JIKA VIEW MODE SEMESTER, TAMPILKAN SEMESTER + TAHUN AJARAN
+    else {
+      if (selectedSemesterInfo) {
+        const semesterName = selectedSemesterInfo.semester === 1 ? "Ganjil" : "Genap";
+        // Format: Semester Ganjil 2025/2026
+        return `${subjectName} | Semester ${semesterName} ${selectedSemesterInfo.year}`;
+      } else {
+        // Fallback ke logika lama
+        const semesterName = selectedSemester === "ganjil" ? "Ganjil" : "Genap";
+        return `${subjectName} | Semester ${semesterName} ${selectedAcademicYear}`;
+      }
     }
   };
 

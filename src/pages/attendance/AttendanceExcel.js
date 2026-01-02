@@ -301,7 +301,7 @@ const ExportModal = ({ type = "monthly", show, onClose, onExport, loading }) => 
 /**
  * Show export modal wrapper
  */
-const showExportModal = ({ type, onExport }) => {
+export const showExportModal = ({ type, onExport }) => {
   return new Promise((resolve) => {
     const modalContainer = document.createElement("div");
     modalContainer.id = "export-modal-container";

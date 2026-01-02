@@ -406,17 +406,17 @@ const Attendance = ({ user, onShowToast }) => {
 
       if (!teacherId) return;
 
+      // ✅ WAJIB ADA SEMESTER SELECTION
+      if (!selectedSemesterId) return;
+
       try {
-        // ✅ GUNAKAN FILTER DENGAN SEMESTER YANG DIPILIH
         let query = supabase
           .from("teacher_assignments")
           .select("subject")
           .eq("teacher_id", teacherId);
 
-        // Filter berdasarkan academic_year_id jika ada semester yang dipilih
-        if (selectedSemesterId) {
-          query = filterBySemester(query, selectedSemesterId);
-        }
+        // ✅ SELALU FILTER BY SEMESTER (baik active atau non-active)
+        query = filterBySemester(query, selectedSemesterId);
 
         const { data, error } = await query;
 
@@ -497,9 +497,10 @@ const Attendance = ({ user, onShowToast }) => {
           return;
         }
 
-        // ✅ GUNAKAN SEMESTER YANG DIPILIH (DEFAULT KE ACTIVE)
+        // ✅ WAJIB ADA SEMESTER SELECTION
         if (!selectedSemesterId) {
-          console.log("⚠️ Waiting for semester selection...");
+          setClasses([]);
+          setMessage("Pilih semester terlebih dahulu");
           return;
         }
 
@@ -507,6 +508,7 @@ const Attendance = ({ user, onShowToast }) => {
           teacherId,
           selectedSubject,
           semesterId: selectedSemesterId,
+          isReadOnly: isReadOnlyMode,
         });
 
         // ✅ FILTER DENGAN ACADEMIC_YEAR_ID
@@ -585,6 +587,20 @@ const Attendance = ({ user, onShowToast }) => {
     }
   }, [selectedClass]);
 
+  // ========== FETCH ATTENDANCE WHEN DATE/CLASS/SUBJECT CHANGES (TAMBAHAN BARU) ==========
+  useEffect(() => {
+    if (
+      students.length > 0 &&
+      studentsLoaded &&
+      selectedClass &&
+      date &&
+      selectedSubject &&
+      selectedSemesterId
+    ) {
+      fetchExistingAttendance();
+    }
+  }, [date, selectedClass, selectedSubject, students, studentsLoaded, selectedSemesterId]);
+
   const fetchStudentsForClass = async (classId) => {
     if (!classId) {
       setStudents([]);
@@ -613,6 +629,81 @@ const Attendance = ({ user, onShowToast }) => {
     } catch (error) {
       console.error("Error fetching students:", error);
       setMessage("Error: Gagal mengambil data siswa - " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ========== FETCH EXISTING ATTENDANCE DATA (TAMBAHAN BARU) ==========
+  const fetchExistingAttendance = async () => {
+    if (!selectedClass || !date || !selectedSubject || !teacherId || !selectedSemesterId) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Get teacher UUID
+      const { data: teacherUser, error: teacherError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("teacher_id", teacherId)
+        .single();
+
+      if (teacherError || !teacherUser) {
+        console.error("Error fetching teacher UUID:", teacherError);
+        return;
+      }
+
+      const teacherUUID = teacherUser.id;
+      const typeValue = isHomeroomDaily() ? "harian" : "mapel";
+
+      // Fetch attendance data
+      let query = supabase
+        .from("attendances")
+        .select("student_id, status, notes")
+        .eq("teacher_id", teacherUUID)
+        .eq("date", date)
+        .eq("type", typeValue)
+        .eq("class_id", selectedClass);
+
+      // Filter by semester
+      query = filterBySemester(query, selectedSemesterId);
+
+      const { data: attendanceData, error: attendanceError } = await query;
+
+      if (attendanceError) {
+        console.error("Error fetching attendance:", attendanceError);
+        return;
+      }
+
+      // Load data ke state
+      if (attendanceData && attendanceData.length > 0) {
+        const statusMap = {};
+        const notesMap = {};
+
+        attendanceData.forEach((record) => {
+          statusMap[record.student_id] = record.status;
+          if (record.notes) {
+            notesMap[record.student_id] = record.notes;
+          }
+        });
+
+        setAttendanceStatus(statusMap);
+        setAttendanceNotes(notesMap);
+
+        console.log("✅ Loaded existing attendance data:", attendanceData.length, "records");
+      } else {
+        // Kalau tidak ada data, set semua ke "Hadir" (default)
+        const defaultStatus = {};
+        students.forEach((student) => {
+          defaultStatus[student.id] = "Hadir";
+        });
+        setAttendanceStatus(defaultStatus);
+        setAttendanceNotes({});
+      }
+    } catch (error) {
+      console.error("Error in fetchExistingAttendance:", error);
     } finally {
       setLoading(false);
     }
@@ -886,9 +977,11 @@ const Attendance = ({ user, onShowToast }) => {
   // ========== RENDER LOGIC ==========
   if (authLoading) {
     return (
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex justify-center items-center h-64">
-          <div className="text-blue-500 text-lg">Memeriksa autentikasi...</div>
+          <div className="text-blue-600 dark:text-blue-400 text-lg animate-pulse">
+            Memeriksa autentikasi...
+          </div>
         </div>
       </div>
     );
@@ -896,9 +989,9 @@ const Attendance = ({ user, onShowToast }) => {
 
   if (!user) {
     return (
-      <div className="p-4 sm:p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center dark:bg-red-900/30 dark:border-red-800">
-          <p className="text-red-600 dark:text-red-400 text-lg">
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-xl p-6 text-center">
+          <p className="text-red-600 dark:text-red-400 text-lg font-medium">
             Anda harus login untuk mengakses halaman ini
           </p>
         </div>
@@ -907,31 +1000,31 @@ const Attendance = ({ user, onShowToast }) => {
   }
 
   return (
-    <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 dark:bg-slate-900 min-h-screen transition-colors duration-200">
       {/* Header Section */}
-      <div className="mb-6 sm:mb-8">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-2">
+      <div className="mb-6 sm:mb-8 lg:mb-10">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6 lg:p-8 transition-colors duration-200">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 lg:gap-6">
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-700 dark:text-blue-400">
                 Input Presensi
               </h1>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
+              <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 font-medium">
                 Kelola Kehadiran Siswa Untuk Mata Pelajaran Dan Kelas
               </p>
               {/* ✅ TAMBAH INFO TAHUN AJARAN & SEMESTER */}
               {activeAcademicInfo && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded border border-blue-200 dark:border-blue-800 text-xs sm:text-sm text-blue-600 dark:text-blue-400">
-                    Tahun Ajaran: {activeAcademicInfo.year}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-sm font-medium border border-blue-200 dark:border-blue-700">
+                    📅 Tahun Ajaran: {activeAcademicInfo.year}
                   </span>
-                  <span className="bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded border border-green-200 dark:border-green-800 text-xs sm:text-sm text-green-600 dark:text-green-400">
-                    Semester Aktif: {activeAcademicInfo.activeSemester}
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-sm font-medium border border-emerald-200 dark:border-emerald-700">
+                    🎯 Semester Aktif: {activeAcademicInfo.activeSemester}
                   </span>
                   {selectedSemesterId &&
                     selectedSemesterId !== activeAcademicInfo.activeSemesterId && (
-                      <span className="bg-yellow-50 dark:bg-yellow-900/30 px-2 py-1 rounded border border-yellow-200 dark:border-yellow-800 text-xs sm:text-sm text-yellow-600 dark:text-yellow-400">
-                        View Mode: Semester{" "}
+                      <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-sm font-medium border border-amber-200 dark:border-amber-700">
+                        👁️ View Mode: Semester{" "}
                         {availableSemesters.find((s) => s.id === selectedSemesterId)?.semester}
                       </span>
                     )}
@@ -939,13 +1032,13 @@ const Attendance = ({ user, onShowToast }) => {
               )}
             </div>
             <div className="sm:text-right">
-              <div className="text-slate-800 dark:text-slate-200 font-medium text-sm sm:text-base">
+              <div className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">
                 {user?.full_name || user?.username}
               </div>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-3">
                 {isHomeroomTeacher && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                    Wali Kelas {homeroomClass}
+                  <span className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-sm">
+                    👨‍🏫 Wali Kelas {homeroomClass}
                   </span>
                 )}
               </div>
@@ -954,18 +1047,21 @@ const Attendance = ({ user, onShowToast }) => {
         </div>
       </div>
 
-      {/* ✅ READ-ONLY MODE WARNING - TAMBAH INI */}
+      {/* ✅ READ-ONLY MODE WARNING */}
       {isReadOnlyMode && (
-        <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-600 rounded-xl p-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl sm:text-3xl">🔒</span>
+        <div className="mb-6 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 border-2 border-amber-300 dark:border-amber-600 rounded-2xl p-5 shadow-sm transition-colors duration-200">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-800 flex items-center justify-center">
+              <span className="text-2xl">🔒</span>
+            </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-1 text-sm sm:text-base">
+              <h3 className="font-bold text-lg text-amber-800 dark:text-amber-300 mb-2">
                 Mode View Only (Read-Only)
               </h3>
-              <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-400 leading-relaxed">
-                Semester ini tidak aktif. Anda hanya bisa melihat data, tidak bisa input atau edit
-                presensi. Untuk input data baru, pilih semester yang aktif.
+              <p className="text-amber-700 dark:text-amber-400 leading-relaxed">
+                Semester ini tidak aktif. Anda hanya bisa{" "}
+                <strong>melihat data, export, dan rekap</strong>. Untuk input presensi baru, pilih
+                semester yang sedang aktif.
               </p>
             </div>
           </div>
@@ -1001,72 +1097,88 @@ const Attendance = ({ user, onShowToast }) => {
           <AttendanceStats attendanceStatus={attendanceStatus} students={students} />
 
           {/* Action Buttons & Table */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="relative flex-grow min-w-full sm:min-w-[250px]">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6 lg:mb-8">
+            <div className="relative flex-grow">
               <input
                 type="text"
                 placeholder="Cari siswa (nama/NIS)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-4 py-2.5 sm:py-2 text-sm sm:text-base border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 dark:focus:border-blue-600 transition w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+                className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-blue-200 dark:border-blue-700 rounded-xl focus:ring-3 focus:ring-blue-500/30 dark:focus:ring-blue-500/50 focus:border-blue-500 dark:focus:border-blue-500 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 shadow-sm"
               />
-              <span className="absolute right-3 top-2.5 sm:top-2 text-slate-400 dark:text-slate-500 text-lg">
+              <span className="absolute right-4 top-3.5 text-blue-500 dark:text-blue-400 text-xl">
                 🔍
               </span>
             </div>
 
-            <button
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-              onClick={setAllHadir}
-              disabled={loading}
-              style={{ minHeight: "44px" }}
-            >
-              ✅ Hadir Semua
-            </button>
+            <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+              <button
+                className="flex-1 sm:flex-none min-h-[52px] px-5 py-3 text-base font-medium bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-2 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 rounded-xl hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-800/40 dark:hover:to-blue-700/40 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                onClick={setAllHadir}
+                disabled={loading || isReadOnlyMode}
+                title={isReadOnlyMode ? "Tidak bisa edit di semester non-aktif" : ""}
+                style={{ minWidth: "140px" }}
+              >
+                ✅ Hadir Semua
+              </button>
 
-            <button
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium touch-manipulation"
-              onClick={processAttendanceSubmission}
-              disabled={
-                loading ||
-                !selectedSubject ||
-                !selectedClass ||
-                !selectedSemesterId ||
-                students.length === 0 ||
-                isReadOnlyMode // ✅ TAMBAH INI
-              }
-              style={{ minHeight: "44px" }}
-            >
-              {loading ? "Menyimpan..." : isReadOnlyMode ? "🔒 View Only" : "💾 Simpan Presensi"}{" "}
-              {/* ✅ UBAH TEXT JIKA READ-ONLY */}
-            </button>
+              <button
+                className={`flex-1 sm:flex-none min-h-[52px] px-5 py-3 text-base font-semibold rounded-xl active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${
+                  isReadOnlyMode
+                    ? "bg-gradient-to-r from-gray-400 to-gray-500 dark:from-gray-600 dark:to-gray-700 border-2 border-gray-400 dark:border-gray-600 text-white"
+                    : "bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 border-2 border-emerald-500 dark:border-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 dark:hover:from-emerald-700 dark:hover:to-emerald-800"
+                }`}
+                onClick={processAttendanceSubmission}
+                disabled={
+                  loading ||
+                  !selectedSubject ||
+                  !selectedClass ||
+                  !selectedSemesterId ||
+                  students.length === 0 ||
+                  isReadOnlyMode
+                }
+                title={isReadOnlyMode ? "Tidak bisa input di semester non-aktif" : ""}
+                style={{ minWidth: "180px" }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                    Menyimpan...
+                  </span>
+                ) : isReadOnlyMode ? (
+                  "🔒 View Only Mode"
+                ) : (
+                  "💾 Simpan Presensi"
+                )}
+              </button>
 
-            <button
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-              onClick={handleShowRekap}
-              disabled={!selectedClass || !selectedSubject || students.length === 0}
-              style={{ minHeight: "44px" }}
-            >
-              📊 Lihat Rekap
-            </button>
+              <button
+                className="flex-1 sm:flex-none min-h-[52px] px-5 py-3 text-base font-medium bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-2 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-xl hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-800/40 dark:hover:to-purple-700/40 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                onClick={handleShowRekap}
+                disabled={!selectedClass || !selectedSubject || students.length === 0}
+                style={{ minWidth: "140px" }}
+              >
+                📊 Lihat Rekap
+              </button>
 
-            <button
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-              onClick={handleExportMonthly}
-              disabled={students.length === 0}
-              style={{ minHeight: "44px" }}
-            >
-              📅 Export Bulanan
-            </button>
+              <button
+                className="flex-1 sm:flex-none min-h-[52px] px-5 py-3 text-base font-medium bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border-2 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-300 rounded-xl hover:from-orange-100 hover:to-orange-200 dark:hover:from-orange-800/40 dark:hover:to-orange-700/40 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                onClick={handleExportMonthly}
+                disabled={students.length === 0}
+                style={{ minWidth: "160px" }}
+              >
+                📅 Export Bulanan
+              </button>
 
-            <button
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm sm:text-base bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-              onClick={handleExportSemester}
-              disabled={!selectedClass || !selectedSubject || students.length === 0}
-              style={{ minHeight: "44px" }}
-            >
-              📚 Export Semester
-            </button>
+              <button
+                className="flex-1 sm:flex-none min-h-[52px] px-5 py-3 text-base font-medium bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 border-2 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 rounded-xl hover:from-indigo-100 hover:to-indigo-200 dark:hover:from-indigo-800/40 dark:hover:to-indigo-700/40 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                onClick={handleExportSemester}
+                disabled={!selectedClass || !selectedSubject || students.length === 0}
+                style={{ minWidth: "160px" }}
+              >
+                📚 Export Semester
+              </button>
+            </div>
           </div>
 
           {/* Table Component */}
@@ -1086,14 +1198,18 @@ const Attendance = ({ user, onShowToast }) => {
 
       {/* Empty States */}
       {selectedClass && students.length === 0 && !loading && (
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm text-center text-slate-500 dark:text-slate-400">
-          <p>Tidak ada siswa aktif di kelas ini</p>
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 text-center transition-colors duration-200">
+          <div className="text-5xl mb-4 text-slate-300 dark:text-slate-600">📝</div>
+          <p className="text-lg text-slate-500 dark:text-slate-400 font-medium">
+            Tidak ada siswa aktif di kelas ini
+          </p>
         </div>
       )}
 
       {!selectedClass && selectedSubject && classes.length === 0 && !isHomeroomDaily() && (
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm text-center text-slate-500 dark:text-slate-400">
-          <p>
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 text-center transition-colors duration-200">
+          <div className="text-5xl mb-4 text-slate-300 dark:text-slate-600">🏫</div>
+          <p className="text-lg text-slate-500 dark:text-slate-400 font-medium">
             {selectedSemesterId
               ? `Tidak ada kelas untuk "${selectedSubject}" di semester yang dipilih`
               : "Pilih semester terlebih dahulu"}
@@ -1102,8 +1218,11 @@ const Attendance = ({ user, onShowToast }) => {
       )}
 
       {!selectedSubject && (
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm text-center text-slate-500 dark:text-slate-400">
-          <p>Pilih mata pelajaran untuk memulai</p>
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 text-center transition-colors duration-200">
+          <div className="text-5xl mb-4 text-slate-300 dark:text-slate-600">📚</div>
+          <p className="text-lg text-slate-500 dark:text-slate-400 font-medium">
+            Pilih mata pelajaran untuk memulai
+          </p>
         </div>
       )}
 
