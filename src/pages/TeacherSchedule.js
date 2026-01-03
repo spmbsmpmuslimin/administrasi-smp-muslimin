@@ -590,29 +590,77 @@ const TeacherSchedule = ({ user }) => {
 
         {/* Action Buttons */}
         <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 p-4">
-          {/* Info Box */}
-          <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-2">
-              📝 <strong>Cara Input Jadwal:</strong>
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-blue-700 dark:text-blue-400">
-              <div className="flex items-start gap-2">
-                <span className="text-lg">👆</span>
-                <div>
-                  <strong>Inline Edit:</strong> Klik cell di tabel untuk input 1 jam pelajaran
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-lg">📋</span>
-                <div>
-                  <strong>Multi-Jam:</strong> Gunakan tombol "Tambah Multi-Jam" untuk jadwal 2+ JP
-                  berturut-turut
-                </div>
-              </div>
+          {/* MOBILE: 2 Rows Layout (hidden di desktop) */}
+          <div className="block sm:hidden space-y-2">
+            {/* Row 1: View Mode + Primary Action */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center border transition-all ${
+                  viewMode === "grid"
+                    ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300"
+                    : "bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 border-slate-300"
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Grid
+              </button>
+
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center border transition-all ${
+                  viewMode === "list"
+                    ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300"
+                    : "bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 border-slate-300"
+                }`}
+              >
+                <List className="w-4 h-4" />
+                List
+              </button>
+
+              <button
+                onClick={() => handleOpenModal()}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Tambah
+              </button>
+            </div>
+
+            {/* Row 2: Secondary Actions */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleExportToExcel}
+                disabled={schedules.length === 0}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:bg-gray-100 disabled:text-gray-400 text-slate-700 dark:text-gray-300 dark:bg-gray-700 px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center border border-slate-300 dark:border-gray-600"
+              >
+                <Download className="w-4 h-4" />
+                Export
+              </button>
+
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-gray-300 dark:bg-gray-700 px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center border border-slate-300 dark:border-gray-600"
+              >
+                <Download className="w-4 h-4" />
+                Template
+              </button>
+
+              <label className="flex-1 bg-slate-100 hover:bg-slate-200 cursor-pointer text-slate-700 dark:text-gray-300 dark:bg-gray-700 px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center border border-slate-300 dark:border-gray-600">
+                <Upload className="w-4 h-4" />
+                Import
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleImportFromExcel}
+                  className="hidden"
+                />
+              </label>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center flex-wrap">
+          {/* DESKTOP: Original Layout (hidden di mobile) */}
+          <div className="hidden sm:flex flex-row gap-2 sm:gap-3 justify-center flex-wrap">
             <button
               onClick={() => setViewMode("grid")}
               className={`flex-1 min-w-[120px] sm:min-w-[140px] px-3 py-2.5 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border transition-all ${
@@ -699,45 +747,6 @@ const TeacherSchedule = ({ user }) => {
         {/* Schedule Grid */}
         {viewMode === "grid" && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 p-4">
-            <div className="mb-4 p-4 bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 dark:from-green-900/20 dark:via-blue-900/20 dark:to-purple-900/20 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg">
-              <div className="flex items-start gap-3">
-                <div className="text-3xl">💡</div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-blue-900 dark:text-blue-200 mb-2">
-                    Cara Menggunakan Tabel:
-                  </p>
-                  <ul className="space-y-1.5 text-xs text-blue-800 dark:text-blue-300">
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-green-600 dark:text-green-400">✓</span>
-                      <span>
-                        <strong>Klik cell kosong</strong> untuk menambah jadwal 1 jam pelajaran
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-blue-600 dark:text-blue-400">✓</span>
-                      <span>
-                        <strong>Klik cell yang sudah terisi</strong> untuk mengubah atau menghapus
-                        jadwal
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-purple-600 dark:text-purple-400">✓</span>
-                      <span>
-                        <strong>Pilih "-- Kosongkan --"</strong> untuk menghapus jadwal dari cell
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-orange-600 dark:text-orange-400">✓</span>
-                      <span>
-                        <strong>Gunakan tombol "Tambah Multi-Jam"</strong> untuk jadwal 2+ JP
-                        berturut (misal: Jam 2-4)
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
             <div className="overflow-x-auto">
               <table className="w-full border-collapse min-w-max">
                 <thead>
