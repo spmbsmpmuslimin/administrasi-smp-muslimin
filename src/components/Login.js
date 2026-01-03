@@ -1,16 +1,18 @@
-// components/Login3.js
+// components/Login.js
 import React, { useState, useEffect, useMemo } from "react";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import Logo from "./Logo";
+import logoSekolah from "../assets/logo_sekolah.png";
 import backgroundImage from "../assets/Background.JPG";
 
-export const Login3 = ({ onLogin, onShowToast }) => {
+export const Login = ({ onLogin, onShowToast }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [errors, setErrors] = useState({});
   const [stats, setStats] = useState({
     activeTeachers: 0,
@@ -63,6 +65,16 @@ export const Login3 = ({ onLogin, onShowToast }) => {
 
   useEffect(() => {
     fetchStatsData();
+
+    const img = new Image();
+    img.src = backgroundImage;
+    img.onload = () => {
+      setTimeout(() => setImageLoaded(true), 100);
+    };
+    img.onerror = () => {
+      console.error("Failed to load background image");
+      setImageLoaded(true);
+    };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -117,11 +129,12 @@ export const Login3 = ({ onLogin, onShowToast }) => {
         created_at: data.created_at,
       };
 
-      onLogin(userData, rememberMe);
+      // 🔥 TAMBAHAN: Simpan ke localStorage (konsisten semua browser!)
+      localStorage.setItem("userSession", JSON.stringify(userData));
+      console.log("✅ Session saved to localStorage:", userData.username);
 
-      if (onShowToast) {
-        onShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
-      }
+      // Call onLogin
+      onLogin(userData, rememberMe);
     } catch (error) {
       setErrors({ general: error.message });
 
@@ -138,270 +151,262 @@ export const Login3 = ({ onLogin, onShowToast }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Image with Blur - SAMA untuk mobile & desktop */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          filter: "blur(1px)",
-          transform: "scale(1.05)",
-        }}
-      ></div>
-
-      {/* Dark Overlay - lebih tipis biar gambar lebih keliatan */}
-      <div className="absolute inset-0 bg-slate-900/30"></div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+      {/* Animated background patterns */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+        <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+      </div>
 
       <style>{`
-        @keyframes wave {
-          0% { transform: translateX(0) translateY(0); }
-          50% { transform: translateX(-25%) translateY(-10px); }
-          100% { transform: translateX(-50%) translateY(0); }
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
         }
-        @keyframes glow-pulse {
-          0%, 100% { opacity: 0.5; filter: blur(20px); }
-          50% { opacity: 0.8; filter: blur(25px); }
+        .animate-blob {
+          animation: blob 7s infinite;
         }
-        @keyframes slide-in-right {
-          from { opacity: 0; transform: translateX(30px); }
-          to { opacity: 1; transform: translateX(0); }
+        .animation-delay-2000 {
+          animation-delay: 2s;
         }
-        @keyframes slide-in-left {
-          from { opacity: 0; transform: translateX(-30px); }
-          to { opacity: 1; transform: translateX(0); }
+        .animation-delay-4000 {
+          animation-delay: 4s;
         }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        @keyframes shimmer {
+          0% { background-position: -1000px 0; }
+          100% { background-position: 1000px 0; }
         }
-        .wave-pattern {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 200%;
-          height: 100%;
-          background: linear-gradient(to top, rgba(59, 130, 246, 0.1), transparent);
-          animation: wave 20s linear infinite;
+        .animate-shimmer {
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+          background-size: 1000px 100%;
+          animation: shimmer 3s infinite;
         }
-        .glow-effect {
-          animation: glow-pulse 3s ease-in-out infinite;
-        }
-        .slide-in-right {
-          animation: slide-in-right 0.6s ease-out forwards;
-        }
-        .slide-in-left {
-          animation: slide-in-left 0.6s ease-out forwards;
-        }
-        .fade-in {
-          animation: fade-in 0.8s ease-out forwards;
-        }
+        /* Fix browser autofill kuning */
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
         input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+          -webkit-box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.1) inset !important;
           -webkit-text-fill-color: white !important;
+          transition: background-color 5000s ease-in-out 0s;
         }
       `}</style>
 
-      {/* Animated Background Effects */}
-      <div className="absolute inset-0">
-        {/* Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/20 via-blue-900/10 to-slate-900/20"></div>
-
-        {/* Glowing Orbs */}
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/20 rounded-full glow-effect"></div>
+      <div className="flex-1 flex flex-col lg:flex-row relative z-10">
+        {/* PHOTO SECTION - Enhanced with overlays */}
         <div
-          className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/15 rounded-full glow-effect"
-          style={{ animationDelay: "1.5s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 left-1/3 w-64 h-64 bg-cyan-500/15 rounded-full glow-effect"
-          style={{ animationDelay: "0.8s" }}
-        ></div>
-
-        {/* Wave Pattern */}
-        <div className="wave-pattern"></div>
-
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)`,
-              backgroundSize: "50px 50px",
-            }}
-          ></div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-4 lg:mx-8">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          {/* Left Side - Welcome Message */}
-          <div className="slide-in-left">
-            <div className="space-y-8">
-              {/* Welcome Message */}
-              <div className="text-white text-center">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 leading-tight uppercase">
-                  Selamat Datang di
-                  <br />
-                  SMP Muslimin Cililin
-                </h1>
-                <div className="space-y-3">
-                  <p className="text-blue-300 text-lg sm:text-xl font-semibold">Visi :</p>
-                  {/* Visi - 2 baris di semua ukuran layar */}
-                  <p className="text-slate-200 text-base sm:text-lg lg:text-xl leading-relaxed max-w-2xl mx-auto">
-                    <span className="block">Mewujudkan Peserta Didik yang Berakhlak Mulia</span>
-                    <span className="block">Moderat, Mandiri dan Berprestasi</span>
-                  </p>
-                </div>
+          className={`relative overflow-hidden flex-shrink-0 h-[35vh] lg:h-auto lg:flex-[7] transition-all duration-1000 ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            backgroundImage: imageLoaded ? `url(${backgroundImage})` : "none",
+            backgroundSize: "cover",
+            backgroundPosition: "center 40%",
+            backgroundRepeat: "no-repeat",
+          }}
+        >
+          {/* Loading State */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 flex items-center justify-center">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
+                <div
+                  className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-purple-400/50 rounded-full animate-spin"
+                  style={{ animationDuration: "1.5s" }}
+                ></div>
               </div>
             </div>
+          )}
+
+          {/* Multi-layer gradient overlays for depth */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-purple-900/30 to-pink-900/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.3)_100%)]"></div>
+
+          {/* Shimmer effect overlay */}
+          <div className="absolute inset-0 animate-shimmer opacity-20"></div>
+
+          {/* Floating particles effect */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div
+              className="absolute top-1/4 left-1/4 w-2 h-2 bg-white/30 rounded-full animate-ping"
+              style={{ animationDuration: "3s" }}
+            ></div>
+            <div
+              className="absolute top-3/4 right-1/3 w-2 h-2 bg-blue-300/30 rounded-full animate-ping"
+              style={{ animationDuration: "4s", animationDelay: "1s" }}
+            ></div>
+            <div
+              className="absolute top-1/2 right-1/4 w-2 h-2 bg-purple-300/30 rounded-full animate-ping"
+              style={{ animationDuration: "5s", animationDelay: "2s" }}
+            ></div>
           </div>
+        </div>
 
-          {/* Right Side - Login Form */}
-          <div className="slide-in-right flex justify-center lg:justify-end">
-            <div className="bg-slate-800/70 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 lg:p-8 shadow-2xl w-full max-w-md">
-              {/* Logo - Rounded corners */}
-              <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl overflow-hidden p-2">
-                  <Logo size="large" className="rounded-xl" />
+        {/* FORM SECTION - Premium glassmorphism */}
+        <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden flex-1 lg:flex-[2] bg-gradient-to-br from-slate-900/50 to-blue-900/50 backdrop-blur-xl">
+          {/* Animated gradient orbs */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div
+            className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"
+            style={{ animationDelay: "1s" }}
+          ></div>
+
+          <form
+            className={`relative w-full max-w-md lg:max-w-sm transition-all duration-700 delay-500 ${
+              imageLoaded ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"
+            }`}
+            onSubmit={handleSubmit}
+          >
+            {/* Glass card with enhanced effects */}
+            <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/20 shadow-2xl relative overflow-hidden group hover:bg-white/[0.12] transition-all duration-500 hover:scale-[1.02] hover:shadow-blue-500/20">
+              {/* Gradient border effect on hover */}
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/20 group-hover:via-purple-500/20 group-hover:to-pink-500/20 transition-all duration-500 -z-10"></div>
+
+              {/* Header with logo */}
+              <div className="text-center mb-8 relative">
+                <div className="mb-4 flex justify-center">
+                  <div className="relative group/logo">
+                    <Logo
+                      size="medium"
+                      className="opacity-90 drop-shadow-2xl transition-transform duration-300 group-hover/logo:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-blue-400/20 blur-xl rounded-full scale-150 group-hover/logo:bg-blue-400/30 transition-all duration-300"></div>
+                  </div>
                 </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-lg">
+                  Selamat Datang
+                </h2>
+                <p className="text-blue-200/80 text-sm sm:text-base">Silakan Masuk Ke Akun Anda</p>
+                <div className="mt-3 w-16 h-1 mx-auto bg-gradient-to-r from-transparent via-blue-400/50 to-transparent rounded-full"></div>
               </div>
 
-              {/* Form Header */}
-              <div className="mb-6">
-                <p className="text-slate-300 text-sm text-center">Silakan Masuk Ke Akun Anda</p>
-              </div>
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Username Field */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Username
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                    </div>
-                    <input
-                      type="text"
-                      className={`w-full pl-11 pr-4 py-3 bg-slate-900/50 border-2 rounded-xl text-white placeholder-slate-500 transition-all duration-300 ${
-                        errors.username
-                          ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/20"
-                          : "border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
-                      } focus:outline-none focus:bg-slate-900/70`}
-                      placeholder="Masukkan username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      required
-                    />
-                  </div>
-                  {errors.username && (
-                    <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                      <span className="mr-1">⚠</span>
-                      {errors.username}
-                    </p>
-                  )}
+              {/* Username Field - Enhanced */}
+              <div className="mb-5 relative group/input">
+                <label className="block font-semibold text-white/90 mb-2 text-sm tracking-wide">
+                  Username
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="username"
+                    className={`w-full px-4 py-3.5 bg-white/10 backdrop-blur-sm border-2 rounded-xl text-white placeholder-white/40 transition-all duration-300 autofill:bg-white/10 autofill:text-white ${
+                      errors.username
+                        ? "border-red-400/50 shadow-lg shadow-red-500/20"
+                        : "border-white/20 focus:border-blue-400/50 focus:shadow-lg focus:shadow-blue-500/20"
+                    } focus:outline-none hover:border-white/30`}
+                    placeholder="Masukkan username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover/input:from-blue-500/5 group-hover/input:to-purple-500/5 transition-all duration-300 pointer-events-none"></div>
                 </div>
-
-                {/* Password Field */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">
-                    Password
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                    </div>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      className={`w-full pl-11 pr-12 py-3 bg-slate-900/50 border-2 rounded-xl text-white placeholder-slate-500 transition-all duration-300 ${
-                        errors.password
-                          ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/20"
-                          : "border-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
-                      } focus:outline-none focus:bg-slate-900/70`}
-                      placeholder="Masukkan password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
-                      onClick={togglePasswordVisibility}
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                      <span className="mr-1">⚠</span>
-                      {errors.password}
-                    </p>
-                  )}
-                </div>
-
-                {/* Remember Me & Forgot Password */}
-                <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-2 border-slate-600 bg-slate-900/50 text-blue-500 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                    />
-                    <span className="ml-2 text-slate-300 group-hover:text-slate-300 transition-colors select-none">
-                      Ingat saya
-                    </span>
-                  </label>
-                  <a
-                    href="#"
-                    className="text-sm font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    Lupa password?
-                  </a>
-                </div>
-
-                {/* Error Message */}
-                {errors.general && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl text-sm flex items-start">
-                    <span className="mr-2 mt-0.5">⚠</span>
-                    <span>{errors.general}</span>
+                {errors.username && (
+                  <div className="text-red-300 text-sm mt-2 flex items-center font-medium animate-pulse">
+                    <span className="mr-2">⚠️</span>
+                    {errors.username}
                   </div>
                 )}
+              </div>
 
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 hover:from-blue-700 hover:via-blue-600 hover:to-purple-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                  disabled={isLoading}
+              {/* Password Field - Enhanced */}
+              <div className="mb-5 relative group/input">
+                <label className="block font-semibold text-white/90 mb-2 text-sm tracking-wide">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    className={`w-full px-4 py-3.5 pr-12 bg-white/10 backdrop-blur-sm border-2 rounded-xl text-white placeholder-white/40 transition-all duration-300 autofill:bg-white/10 autofill:text-white ${
+                      errors.password
+                        ? "border-red-400/50 shadow-lg shadow-red-500/20"
+                        : "border-white/20 focus:border-purple-400/50 focus:shadow-lg focus:shadow-purple-500/20"
+                    } focus:outline-none hover:border-white/30`}
+                    placeholder="Masukkan password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-all duration-300 p-2 hover:bg-white/10 rounded-lg"
+                    onClick={togglePasswordVisibility}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 to-pink-500/0 group-hover/input:from-purple-500/5 group-hover/input:to-pink-500/5 transition-all duration-300 pointer-events-none"></div>
+                </div>
+                {errors.password && (
+                  <div className="text-red-300 text-sm mt-2 flex items-center font-medium animate-pulse">
+                    <span className="mr-2">⚠️</span>
+                    {errors.password}
+                  </div>
+                )}
+              </div>
+
+              {/* Error Message - Enhanced */}
+              {errors.general && (
+                <div className="mb-5 p-4 bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-red-200 rounded-xl text-sm font-medium shadow-lg shadow-red-500/10 animate-pulse">
+                  ⚠️ {errors.general}
+                </div>
+              )}
+
+              {/* Remember Me & Forgot Password */}
+              <div className="flex justify-between items-center mb-6">
+                <label className="flex items-center gap-2 cursor-pointer group/check">
+                  <input
+                    type="checkbox"
+                    id="remember"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded bg-white/10 border-2 border-white/30 checked:bg-blue-500 checked:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all cursor-pointer"
+                  />
+                  <span className="text-sm text-white/80 group-hover/check:text-white transition-colors select-none">
+                    Ingat saya
+                  </span>
+                </label>
+                <a
+                  href="#"
+                  className="text-sm text-blue-300 hover:text-blue-200 transition-colors font-medium hover:underline"
                 >
-                  {isLoading ? (
-                    <>
-                      <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                      <span>Memproses...</span>
-                    </>
-                  ) : (
-                    <span>Masuk Sekarang</span>
-                  )}
-                </button>
-              </form>
+                  Lupa password?
+                </a>
+              </div>
+
+              {/* Submit Button - Navy Classic */}
+              <button
+                type="submit"
+                className="relative w-full py-4 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 hover:from-blue-800 hover:via-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl text-white font-bold transition-all duration-500 flex items-center justify-center shadow-xl shadow-blue-900/40 hover:shadow-2xl hover:shadow-blue-800/60 hover:scale-[1.02] active:scale-[0.98] group/btn overflow-hidden"
+                disabled={isLoading}
+              >
+                {/* Animated gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
+
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <span className="relative z-10">Login</span>
+                )}
+              </button>
 
               {/* Footer */}
-              <div className="mt-6 pt-5 border-t border-slate-700/30 text-center">
-                <p className="text-xs text-slate-400">© 2025 SMP MUSLIMIN CILILIN</p>
-                <p className="text-xs text-slate-400 mt-1">Sistem Administrasi Sekolah v1.0.0</p>
+              <div className="mt-6 pt-6 border-t border-white/10 text-center">
+                <p className="text-xs text-white/60 mb-1">© 2025 SMP MUSLIMIN CILILIN</p>
+                <p className="text-xs text-white/40">Sistem Administrasi Sekolah • v1.0.0</p>
               </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login3;
+export default Login;
