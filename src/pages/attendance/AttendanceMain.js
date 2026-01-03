@@ -389,7 +389,7 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 sm:mb-8 text-center px-2">
             <h1
-              className={`text-2xl sm:text-3xl font-bold mb-2 ${
+              className={`text-2xl sm:text-2xl font-bold mb-2 ${
                 darkMode ? "text-white" : "text-gray-900"
               }`}
             >

@@ -253,21 +253,6 @@ const TeacherAttendance = ({ user }) => {
                 </p>
               </div>
             </div>
-
-            {/* User Info - Responsive */}
-            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-gray-200 dark:border-gray-600">
-              <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                {currentUser.full_name.charAt(0)}
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-semibold text-gray-800 dark:text-white">
-                  {currentUser.full_name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-300 capitalize">
-                  {currentUser.role === "guru_bk" ? "Guru BK" : "Guru"}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

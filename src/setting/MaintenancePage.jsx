@@ -1,31 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, RotateCcw, Moon, Sun } from "lucide-react";
+import { Settings, RotateCcw } from "lucide-react";
 
-const MaintenancePage = ({ message }) => {
+const MaintenancePage = ({ message, darkMode }) => {
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(false);
-
-  // Check system preference and localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("darkMode");
-    if (savedTheme) {
-      setDarkMode(savedTheme === "true");
-    } else {
-      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setDarkMode(isDark);
-    }
-  }, []);
-
-  // Save dark mode preference
-  useEffect(() => {
-    localStorage.setItem("darkMode", darkMode.toString());
-  }, [darkMode]);
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
 
   // ✅ Handle Refresh - Clear session & redirect to login
   const handleRefresh = () => {
@@ -57,23 +35,6 @@ const MaintenancePage = ({ message }) => {
           : "bg-gradient-to-br from-red-50 via-orange-50 to-red-100"
       }`}
     >
-      {/* Dark Mode Toggle */}
-      <button
-        onClick={toggleDarkMode}
-        className={`fixed top-4 right-4 sm:top-6 sm:right-6 p-2 sm:p-3 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 z-50 ${
-          darkMode
-            ? "bg-gray-700 text-yellow-400 hover:bg-gray-600 focus:ring-yellow-400"
-            : "bg-white text-red-600 hover:bg-gray-50 focus:ring-red-500"
-        }`}
-        aria-label="Toggle Dark Mode"
-      >
-        {darkMode ? (
-          <Sun className="w-5 h-5 sm:w-6 sm:h-6" />
-        ) : (
-          <Moon className="w-5 h-5 sm:w-6 sm:h-6" />
-        )}
-      </button>
-
       {/* Main Card */}
       <div
         className={`p-6 sm:p-8 md:p-10 lg:p-12 rounded-2xl md:rounded-3xl shadow-2xl max-w-xs sm:max-w-sm md:max-w-lg lg:max-w-2xl xl:max-w-3xl w-full text-center transition-all duration-300 ${

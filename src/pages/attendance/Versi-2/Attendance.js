@@ -1031,18 +1031,7 @@ const Attendance = ({ user, onShowToast }) => {
                 </div>
               )}
             </div>
-            <div className="sm:text-right">
-              <div className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">
-                {user?.full_name || user?.username}
-              </div>
-              <div className="flex gap-2 mt-3">
-                {isHomeroomTeacher && (
-                  <span className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-sm">
-                    👨‍🏫 Wali Kelas {homeroomClass}
-                  </span>
-                )}
-              </div>
-            </div>
+            <div className="sm:text-right"></div>
           </div>
         </div>
       </div>

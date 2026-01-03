@@ -354,7 +354,7 @@ export const Login3 = ({ onLogin, onShowToast }) => {
                       onChange={(e) => setRememberMe(e.target.checked)}
                       className="w-4 h-4 rounded border-2 border-slate-600 bg-slate-900/50 text-blue-500 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
                     />
-                    <span className="ml-2 text-slate-400 group-hover:text-slate-300 transition-colors select-none">
+                    <span className="ml-2 text-slate-300 group-hover:text-slate-300 transition-colors select-none">
                       Ingat saya
                     </span>
                   </label>
@@ -392,9 +392,9 @@ export const Login3 = ({ onLogin, onShowToast }) => {
               </form>
 
               {/* Footer */}
-              <div className="mt-6 pt-5 border-t border-slate-700/50 text-center">
-                <p className="text-xs text-slate-500">© 2025 SMP MUSLIMIN CILILIN</p>
-                <p className="text-xs text-slate-600 mt-1">Sistem Administrasi Sekolah v1.0.0</p>
+              <div className="mt-6 pt-5 border-t border-slate-700/30 text-center">
+                <p className="text-xs text-slate-400">© 2025 SMP MUSLIMIN CILILIN</p>
+                <p className="text-xs text-slate-400 mt-1">Sistem Administrasi Sekolah v1.0.0</p>
               </div>
             </div>
           </div>

@@ -10,7 +10,7 @@ import Dashboard from "./components/Dashboard";
 import Teachers from "./pages/Teachers";
 import Classes from "./pages/Classes";
 import Students from "./pages/Students";
-import Attendance from "./pages/attendance/Attendance";
+import AttendanceMain from "./pages/attendance/AttendanceMain";
 import AttendanceManagement from "./pages/attendance/AttendanceManagement";
 import Grades from "./pages/grades/Grades";
 import GradesKatrol from "./pages/grades/GradesKatrol";
@@ -756,7 +756,7 @@ function App() {
               onShowToast={handleShowToast}
             >
               <LayoutWrapper>
-                <Attendance user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <AttendanceMain user={user} onShowToast={handleShowToast} darkMode={darkMode} />
               </LayoutWrapper>
             </ProtectedRoute>
           }

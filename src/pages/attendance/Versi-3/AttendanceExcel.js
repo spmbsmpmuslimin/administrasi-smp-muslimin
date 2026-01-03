@@ -1,52 +1,406 @@
 //[file name]: AttendanceExcel.js
 import ExcelJS from "exceljs";
+import React, { useState } from "react";
+import ReactDOM from "react-dom/client";
 import { supabase } from "../../supabaseClient";
+// ✅ TAMBAH IMPORT FILTER BY SEMESTER
 import { filterBySemester } from "../../services/academicYearService";
 
 /**
+ * Modal component for export selection
+ * type: 'monthly' | 'semester'
+ */
+const ExportModal = ({ type = "monthly", show, onClose, onExport, loading }) => {
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState("1");
+
+  // Initialize with current values when modal opens
+  React.useEffect(() => {
+    if (show) {
+      const now = new Date();
+      setSelectedYear(now.getFullYear().toString());
+
+      if (type === "monthly") {
+        setSelectedMonth(String(now.getMonth() + 1).padStart(2, "0"));
+      } else {
+        // For semester, default to semester 1 if Jan-Jun, semester 2 if Jul-Dec
+        const currentMonth = now.getMonth() + 1;
+        setSelectedSemester(currentMonth >= 7 ? "2" : "1");
+      }
+    }
+  }, [show, type]);
+
+  const handleExport = () => {
+    if (!selectedYear) return;
+
+    if (type === "monthly") {
+      if (!selectedMonth) return;
+      const yearMonth = `${selectedYear}-${selectedMonth}`;
+      onExport(yearMonth, selectedSemester);
+    } else {
+      onExport(selectedYear, selectedSemester);
+    }
+  };
+
+  if (!show) return null;
+
+  // Year options
+  const yearOptions = [];
+  const currentYear = new Date().getFullYear();
+  for (let year = 2025; year <= currentYear + 2; year++) {
+    yearOptions.push(year);
+  }
+
+  // Month names
+  const monthNames = [
+    "JANUARI",
+    "FEBRUARI",
+    "MARET",
+    "APRIL",
+    "MEI",
+    "JUNI",
+    "JULI",
+    "AGUSTUS",
+    "SEPTEMBER",
+    "OKTOBER",
+    "NOVEMBER",
+    "DESEMBER",
+  ];
+
+  // Dark mode class
+  const darkMode = document.documentElement.classList.contains("dark");
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div
+        className={`${
+          darkMode ? "bg-gray-800 text-white" : "bg-white"
+        } rounded-xl shadow-2xl w-full max-w-md`}
+      >
+        {/* Header - Blue theme */}
+        <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-xl flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">
+                {type === "monthly" ? "Export Bulanan" : "Export Semester"}
+              </h2>
+              <p className="text-blue-100 text-sm">
+                {type === "monthly" ? "Pilih bulan dan tahun" : "Pilih semester dan tahun"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="p-2 hover:bg-blue-600 rounded-lg transition disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {/* Semester Selection (only for semester export) */}
+          {type === "semester" && (
+            <div className="mb-4">
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  darkMode ? "text-gray-200" : "text-gray-700"
+                }`}
+              >
+                Pilih Semester
+              </label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSemester("1")}
+                  className={`flex-1 p-3 rounded-lg border transition ${
+                    darkMode ? "border-gray-600" : "border-gray-300"
+                  } ${
+                    selectedSemester === "1"
+                      ? "bg-blue-500 text-white border-blue-600"
+                      : darkMode
+                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Semester 1 (Ganjil)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSemester("2")}
+                  className={`flex-1 p-3 rounded-lg border transition ${
+                    darkMode ? "border-gray-600" : "border-gray-300"
+                  } ${
+                    selectedSemester === "2"
+                      ? "bg-blue-500 text-white border-blue-600"
+                      : darkMode
+                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Semester 2 (Genap)
+                </button>
+              </div>
+              <p className={`text-xs mt-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                {selectedSemester === "1" ? "Periode: Juli - Desember" : "Periode: Januari - Juni"}
+              </p>
+            </div>
+          )}
+
+          {/* Month Selection (only for monthly export) */}
+          {type === "monthly" && (
+            <div className="mb-4">
+              <label
+                className={`block text-sm font-medium mb-2 ${
+                  darkMode ? "text-gray-200" : "text-gray-700"
+                }`}
+              >
+                Pilih Bulan
+              </label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                disabled={loading}
+                className={`w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                  darkMode ? "bg-gray-700 border-gray-600 text-white" : "border border-gray-300"
+                }`}
+              >
+                <option value="">-- Pilih Bulan --</option>
+                {monthNames.map((name, index) => (
+                  <option key={index} value={String(index + 1).padStart(2, "0")}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Year Selection */}
+          <div className="mb-6">
+            <label
+              className={`block text-sm font-medium mb-2 ${
+                darkMode ? "text-gray-200" : "text-gray-700"
+              }`}
+            >
+              Pilih Tahun
+            </label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              disabled={loading}
+              className={`w-full p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition ${
+                darkMode ? "bg-gray-700 border-gray-600 text-white" : "border border-gray-300"
+              }`}
+            >
+              <option value="">-- Pilih Tahun --</option>
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Info Box */}
+          <div
+            className={`rounded-lg p-4 mb-6 ${
+              darkMode
+                ? "bg-blue-900 bg-opacity-30 border border-blue-800"
+                : "bg-blue-50 border border-blue-200"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <svg
+                className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <div>
+                <p className={`text-sm ${darkMode ? "text-blue-300" : "text-blue-700"}`}>
+                  {type === "monthly"
+                    ? `Data akan diekspor dalam format Excel (.xlsx) untuk periode yang dipilih`
+                    : `Data akan diekspor dalam format Excel (.xlsx) untuk semester ${
+                        selectedSemester === "1" ? "Ganjil" : "Genap"
+                      }`}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className={`flex-1 px-4 py-3 rounded-lg border font-medium transition disabled:opacity-50 ${
+                darkMode
+                  ? "bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600"
+                  : "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={loading || !selectedYear || (type === "monthly" && !selectedMonth)}
+              className="flex-1 px-4 py-3 bg-blue-500 border border-blue-600 text-white rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Mengunduh...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  <span>Download</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Show export modal wrapper
+ */
+export const showExportModal = ({ type, onExport }) => {
+  return new Promise((resolve) => {
+    const modalContainer = document.createElement("div");
+    modalContainer.id = "export-modal-container";
+    document.body.appendChild(modalContainer);
+
+    const ModalWrapper = () => {
+      const [show, setShow] = useState(true);
+      const [loading, setLoading] = useState(false);
+
+      const handleClose = () => {
+        setShow(false);
+        setTimeout(() => {
+          document.body.removeChild(modalContainer);
+        }, 300);
+        resolve(null);
+      };
+
+      const handleExport = async (period, semester) => {
+        setLoading(true);
+        try {
+          await onExport(period, semester);
+          setShow(false);
+          setTimeout(() => {
+            document.body.removeChild(modalContainer);
+          }, 300);
+          resolve({ period, semester });
+        } catch (error) {
+          console.error("Export error:", error);
+          setLoading(false);
+        }
+      };
+
+      return (
+        <ExportModal
+          type={type}
+          show={show}
+          onClose={handleClose}
+          onExport={handleExport}
+          loading={loading}
+        />
+      );
+    };
+
+    const root = ReactDOM.createRoot(modalContainer);
+    root.render(<ModalWrapper />);
+  });
+};
+
+/**
  * ============================================================
- * CORE EXPORT FUNCTION - UNTUK DIPANGGIL DARI AttendanceMain.js
+ * MONTHLY EXPORT FUNCTIONS
  * ============================================================
  */
 
 /**
- * Export attendance data to Excel
- * @returns {Promise<{success: boolean, message: string}>} Success status
+ * Main monthly export function - ✅ TAMBAH PARAMETER SEMESTER_ID
  */
-export const exportAttendanceToExcel = async (params = {}) => {
+export const exportAttendanceToExcel = async (
+  students,
+  selectedClass,
+  selectedSubject,
+  date,
+  attendanceStatus,
+  attendanceNotes,
+  onShowToast,
+  yearMonth,
+  teacherName = null,
+  homeroomClass = null,
+  // ✅ TAMBAH PARAMETER BARU
+  semesterId = null,
+  academicYear = null,
+  semester = null
+) => {
   try {
-    const {
-      students,
-      selectedClass,
-      selectedSubject,
-      date,
-      attendanceStatus,
-      attendanceNotes,
-      onShowToast,
-      yearMonth,
-      teacherName = null,
-      homeroomClass = null,
-      semesterId = null,
-      academicYear = null,
-      semester = null,
-    } = params;
-
-    // Validation
     if (!students || students.length === 0) {
-      if (onShowToast) onShowToast("Tidak ada data siswa untuk diexport!", "error");
+      onShowToast?.("Tidak ada data siswa untuk diexport!", "error");
       return { success: false, message: "Tidak ada data siswa" };
     }
 
+    // ✅ VALIDASI: HARUS ADA SEMESTER_ID - SAMA SEPERTI DI AttendanceModals.js
     if (!semesterId) {
-      console.error("❌ exportAttendanceToExcel: semesterId kosong!");
-      if (onShowToast) onShowToast("Semester belum dipilih untuk export!", "error");
+      console.error("❌ exportAttendanceToExcel: semesterId kosong!", {
+        studentsLength: students.length,
+        selectedClass,
+        selectedSubject,
+        yearMonth,
+        academicYear,
+        semester,
+      });
+
+      onShowToast?.("Semester belum dipilih untuk export!", "error");
       return { success: false, message: "Semester tidak dipilih" };
     }
 
     console.log("✅ exportAttendanceToExcel dengan semester ID:", semesterId);
 
-    // Get teacher name from database if not provided
+    // ✅ AMBIL NAMA GURU DARI DATABASE
     let fetchedTeacherName = teacherName;
+
     if (!fetchedTeacherName) {
       try {
         const {
@@ -75,7 +429,7 @@ export const exportAttendanceToExcel = async (params = {}) => {
     const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
     const endDate = `${year}-${month}-${String(lastDay).padStart(2, "0")}`;
 
-    // Determine subject filter
+    // Determine subject filter - SAMA SEPERTI DI AttendanceModals.js
     let subjectFilter;
     const subjectUpper = selectedSubject.toUpperCase();
 
@@ -85,7 +439,7 @@ export const exportAttendanceToExcel = async (params = {}) => {
       subjectFilter = selectedSubject.split("-")[0].trim();
     }
 
-    // Determine attendance mode and type filter
+    // Determine attendance mode and type filter - SAMA SEPERTI DI AttendanceModals.js
     const isHomeroomDaily = subjectFilter === "Harian";
     const typeFilter = isHomeroomDaily ? "harian" : "mapel";
     const classFilter = isHomeroomDaily ? homeroomClass : selectedClass;
@@ -100,7 +454,7 @@ export const exportAttendanceToExcel = async (params = {}) => {
       isHomeroomDaily,
     });
 
-    // Query attendance records with semester filter
+    // Query attendance records dengan FILTER SEMESTER - SAMA SEPERTI DI AttendanceModals.js
     let query = supabase
       .from("attendances")
       .select("student_id, date, status, notes")
@@ -111,6 +465,7 @@ export const exportAttendanceToExcel = async (params = {}) => {
       .lte("date", endDate)
       .order("date", { ascending: true });
 
+    // ✅ TAMBAH FILTER SEMESTER - SAMA SEPERTI DI AttendanceModals.js
     query = filterBySemester(query, semesterId);
 
     const { data: attendanceRecords, error } = await query;
@@ -119,13 +474,12 @@ export const exportAttendanceToExcel = async (params = {}) => {
 
     if (error) {
       console.error("❌ Query error:", error);
-      if (onShowToast) onShowToast("Error mengambil data presensi: " + error.message, "error");
+      onShowToast?.("Error mengambil data presensi: " + error.message, "error");
       return { success: false, message: error.message };
     }
 
     if (!attendanceRecords || attendanceRecords.length === 0) {
-      if (onShowToast)
-        onShowToast("Tidak ada data kehadiran untuk diekspor di bulan ini!", "error");
+      onShowToast?.("Tidak ada data kehadiran untuk diekspor di bulan ini!", "error");
       return { success: false, message: "Tidak ada data kehadiran" };
     }
 
@@ -140,7 +494,7 @@ export const exportAttendanceToExcel = async (params = {}) => {
         };
       });
 
-    // Helper function untuk normalize status
+    // ✅ Helper function untuk normalize status - SAMA SEPERTI DI AttendanceModals.js
     const normalizeStatus = (status) => {
       if (!status) return null;
       const normalized = status.toString().toLowerCase().trim();
@@ -218,7 +572,7 @@ export const exportAttendanceToExcel = async (params = {}) => {
     const monthName = monthNames[parseInt(month) - 1];
     const periodText = `${monthName} ${year}`;
 
-    // Tambah info tahun ajaran & semester di header
+    // ✅ TAMBAH INFO TAHUN AJARAN & SEMESTER DI HEADER - SAMA SEPERTI DI AttendanceModals.js
     let academicInfo = "";
     if (academicYear && semester) {
       academicInfo = ` | ${academicYear} - Semester ${semester}`;
@@ -392,13 +746,13 @@ export const exportAttendanceToExcel = async (params = {}) => {
       worksheet.getColumn(summaryStartCol + i).width = i === 5 ? 12 : 8; // Persentase wider
     }
 
-    // Footer with teacher name
+    // ✅ FOOTER WITH TEACHER NAME - IMPROVED
     const footerStartRow = dataStartRow + students.length + 2;
 
-    // Cek apakah user adalah wali kelas
+    // ✅ CEK APAKAH USER ADALAH WALI KELAS - SAMA SEPERTI DI AttendanceModals.js
     const isHomeroom = homeroomClass && homeroomClass === classFilter;
 
-    // Tentukan role title
+    // ✅ TENTUKAN ROLE TITLE - SAMA SEPERTI DI AttendanceModals.js
     let roleTitle;
     if (isHomeroomDaily) {
       roleTitle = "Wali Kelas";
@@ -434,7 +788,7 @@ export const exportAttendanceToExcel = async (params = {}) => {
     // Empty rows for signature space (3 rows)
     const nameRow = footerStartRow + 5;
 
-    // Teacher name
+    // ✅ TEACHER NAME - USE PROVIDED teacherName OR DEFAULT
     const displayName = fetchedTeacherName || "(____________________)";
     worksheet.getCell(nameRow, signatureCol).value = displayName;
     worksheet.getCell(nameRow, signatureCol).font = {
@@ -447,7 +801,7 @@ export const exportAttendanceToExcel = async (params = {}) => {
       horizontal: "center",
     };
 
-    // Update file name dengan info semester
+    // ✅ UPDATE FILE NAME DENGAN INFO SEMESTER
     const semesterInfo = semester ? `_Sem${semester}` : "";
     const fileName = `Rekap_Presensi_${classFilter}_${selectedSubject.replace(
       /[^a-zA-Z0-9]/g,
@@ -470,63 +824,55 @@ export const exportAttendanceToExcel = async (params = {}) => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
 
-    if (onShowToast) onShowToast("File Excel berhasil diunduh!", "success");
+    onShowToast?.("File Excel berhasil diunduh!", "success");
     return { success: true, message: "File Excel berhasil diunduh!" };
   } catch (error) {
     console.error("Error exporting to Excel:", error);
-    if (onShowToast) onShowToast("Gagal mengunduh file Excel: " + error.message, "error");
+    onShowToast?.("Gagal mengunduh file Excel: " + error.message, "error");
     return { success: false, message: error.message };
   }
 };
 
 /**
- * Wrapper for showing monthly export modal - UNTUK BACKWARD COMPATIBILITY
+ * Wrapper for showing monthly export modal - ✅ UPDATE PARAMETER
  */
-export const showMonthlyExportModal = async (params = {}) => {
-  try {
-    const {
-      students,
-      selectedClass,
-      selectedSubject,
-      date,
-      attendanceStatus,
-      attendanceNotes,
-      onShowToast,
-      teacherName = null,
-      homeroomClass = null,
-      academicYear = null,
-      semester = null,
-      semesterId = null,
-    } = params;
-
-    // For backward compatibility, assume yearMonth is provided
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
-    const yearMonth = `${currentYear}-${currentMonth}`;
-
-    // Call the main export function
-    const result = await exportAttendanceToExcel({
-      students,
-      selectedClass,
-      selectedSubject,
-      date,
-      attendanceStatus,
-      attendanceNotes,
-      onShowToast,
-      yearMonth,
-      teacherName,
-      homeroomClass,
-      semesterId,
-      academicYear,
-      semester,
-    });
-
-    return result;
-  } catch (error) {
-    console.error("Error in showMonthlyExportModal:", error);
-    throw error;
-  }
+export const showMonthlyExportModal = async ({
+  students,
+  selectedClass,
+  selectedSubject,
+  date,
+  attendanceStatus,
+  attendanceNotes,
+  onShowToast,
+  teacherName = null,
+  homeroomClass = null,
+  // ✅ TAMBAH PARAMETER BARU
+  academicYear = null,
+  semester = null,
+  semesterId = null,
+}) => {
+  const result = await showExportModal({
+    type: "monthly",
+    onExport: async (yearMonth, semesterNumber) => {
+      await exportAttendanceToExcel(
+        students,
+        selectedClass,
+        selectedSubject,
+        date,
+        attendanceStatus,
+        attendanceNotes,
+        onShowToast,
+        yearMonth,
+        teacherName,
+        homeroomClass,
+        // ✅ PASS SEMESTER DATA
+        semesterId,
+        academicYear,
+        semester
+      );
+    },
+  });
+  return result;
 };
 
 /**
@@ -536,160 +882,28 @@ export const showMonthlyExportModal = async (params = {}) => {
  */
 
 /**
- * Export semester recap to Excel
- * @returns {Promise<{success: boolean, message: string}>} Success status
+ * Export semester attendance recap to Excel (SEMESTER) - SMP VERSION
+ * ✅ TAMBAH PARAMETER SEMESTER_ID
  */
-export const exportSemesterRecapFromComponent = async (params = {}) => {
+const exportSemesterRecapToExcel = async ({
+  classId,
+  semester, // 1 (Ganjil) or 2 (Genap)
+  year,
+  studentsData,
+  attendanceRecords,
+  subject,
+  namaSekolah = "SMP MUSLIMIN CILILIN",
+  namaGuru = "",
+  homeroomClass = null,
+  onShowToast = null,
+  // ✅ TAMBAH PARAMETER BARU
+  academicYear = null,
+  semesterId = null,
+}) => {
   try {
-    const {
-      classId,
-      semester,
-      year,
-      studentsData,
-      subject,
-      type = "mapel",
-      currentUser = null,
-      homeroomClass = null,
-      onShowToast = null,
-      academicYear = null,
-      semesterId = null,
-    } = params;
-
-    const students = studentsData || [];
-
-    if (students.length === 0) {
-      if (onShowToast) onShowToast("Tidak ada data siswa untuk kelas ini", "error");
-      return {
-        success: false,
-        message: "Tidak ada data siswa untuk kelas ini",
-      };
-    }
-
-    // Validasi: Harus ada semesterId
-    if (!semesterId) {
-      console.error("❌ exportSemesterRecapFromComponent: semesterId kosong!");
-      if (onShowToast) onShowToast("Semester belum dipilih untuk export!", "error");
-      return {
-        success: false,
-        message: "Semester tidak dipilih",
-      };
-    }
-
-    console.log("✅ exportSemesterRecapFromComponent dengan semester ID:", semesterId);
-
-    // Convert semester
-    const semesterType = semester === 1 ? "Ganjil" : "Genap";
-    const academicYearForQuery =
-      academicYear || (semester === 1 ? `${year}/${year + 1}` : `${year - 1}/${year}`);
-
-    const months = semester === 1 ? [7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5, 6];
-
-    console.log({
-      classId,
-      academicYear: academicYearForQuery,
-      semesterType,
-      subject,
-      type,
-      months,
-      semesterId,
-    });
-
-    // Date range
-    const [startYear, endYear] = academicYearForQuery.split("/").map(Number);
-    let startDate, endDate;
-
-    if (semesterType === "Ganjil") {
-      startDate = `${startYear}-07-01`;
-      endDate = `${startYear}-12-31`;
-    } else {
-      startDate = `${endYear}-01-01`;
-      endDate = `${endYear}-06-30`;
-    }
-
-    console.log("📅 Date range:", { startDate, endDate });
-
-    // Fetch with pagination and semester filter
-    console.log("🔍 Fetching with pagination and semester filter...");
-
-    let allRecords = [];
-    let page = 0;
-    const pageSize = 1000;
-    let hasMore = true;
-
-    while (hasMore) {
-      let query = supabase
-        .from("attendances")
-        .select("student_id, status, date")
-        .eq("class_id", classId)
-        .eq("subject", subject)
-        .eq("type", type)
-        .gte("date", startDate)
-        .lte("date", endDate)
-        .order("date", { ascending: true })
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-
-      query = filterBySemester(query, semesterId);
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("❌ Query error:", error);
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        allRecords = [...allRecords, ...data];
-        console.log(`📄 Page ${page + 1}: ${data.length} records (Total: ${allRecords.length})`);
-
-        if (data.length < pageSize) {
-          hasMore = false;
-        } else {
-          page++;
-        }
-      } else {
-        hasMore = false;
-      }
-    }
-
-    console.log("✅ Total records fetched:", allRecords.length);
-
-    if (allRecords.length === 0) {
-      if (onShowToast) onShowToast("Tidak ada data kehadiran untuk semester yang dipilih", "error");
-      return {
-        success: false,
-        message: "Tidak ada data kehadiran untuk semester yang dipilih",
-      };
-    }
-
-    // Filter by month
-    const filteredData = allRecords.filter((r) => {
-      const parts = r.date.split("-");
-      const month = parseInt(parts[1], 10);
-      return months.includes(month);
-    });
-
-    console.log("Data setelah filter:", filteredData.length);
-
-    if (filteredData.length === 0) {
-      if (onShowToast) onShowToast("Tidak ada data kehadiran untuk semester yang dipilih", "error");
-      return {
-        success: false,
-        message: "Tidak ada data kehadiran untuk semester yang dipilih",
-      };
-    }
-
-    // Get teacher name
-    let namaGuru = "";
-    if (currentUser && currentUser.full_name) {
-      namaGuru = currentUser.full_name;
-    } else if (currentUser && currentUser.username) {
-      namaGuru = currentUser.username;
-    }
-
-    // Create workbook
     const workbook = new ExcelJS.Workbook();
 
-    // Update worksheet name dengan info semester
+    // ✅ UPDATE WORKSHEET NAME DENGAN INFO SEMESTER
     const semesterText = semester === 1 ? "Ganjil" : "Genap";
     const academicInfo = academicYear ? `${academicYear} - ` : "";
     const worksheetName = `Sem ${semesterText} Kelas ${classId}`;
@@ -698,10 +912,10 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
     const semesterPeriodText = semester === 1 ? "Ganjil (Juli-Desember)" : "Genap (Januari-Juni)";
 
     // Calculate hari efektif
-    const uniqueDates = [...new Set(filteredData.map((r) => r.date))];
+    const uniqueDates = [...new Set(attendanceRecords.map((r) => r.date))];
     const totalHariEfektif = uniqueDates.length;
 
-    // Helper function untuk normalize status
+    // ✅ Helper function untuk normalize status - SAMA SEPERTI DI AttendanceModals.js
     const normalizeStatus = (status) => {
       if (!status) return null;
       const normalized = status.toString().toLowerCase().trim();
@@ -712,7 +926,7 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
     // Process student data
     const studentMatrix = {};
 
-    students.forEach((student) => {
+    studentsData.forEach((student) => {
       studentMatrix[student.id] = {
         nis: student.nis,
         name: student.full_name,
@@ -720,7 +934,7 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
       };
     });
 
-    filteredData.forEach((record) => {
+    attendanceRecords.forEach((record) => {
       if (studentMatrix[record.student_id]) {
         const summary = studentMatrix[record.student_id].summary;
         const normalizedStatus = normalizeStatus(record.status);
@@ -737,7 +951,7 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
       }
     });
 
-    // Get category helper
+    // Get category helper - SAMA SEPERTI DI AttendanceModals.js
     const getCategory = (percentage) => {
       if (percentage >= 90) return "Sangat Baik";
       if (percentage >= 80) return "Baik";
@@ -750,12 +964,12 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
     // School name header
     worksheet.mergeCells(1, 1, 1, totalCols);
     const schoolCell = worksheet.getCell(1, 1);
-    schoolCell.value = "SMP MUSLIMIN CILILIN".toUpperCase();
+    schoolCell.value = namaSekolah.toUpperCase();
     schoolCell.font = { name: "Arial", size: 14, bold: true };
     schoolCell.alignment = { horizontal: "center", vertical: "middle" };
     worksheet.getRow(1).height = 25;
 
-    // Title row - tambah info tahun ajaran
+    // Title row - ✅ TAMBAH INFO TAHUN AJARAN
     worksheet.mergeCells(2, 1, 2, totalCols);
     const titleCell = worksheet.getCell(2, 1);
     const yearInfo = academicYear ? ` | ${academicYear}` : "";
@@ -816,7 +1030,7 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
 
     // Data rows
     let rowIndex = headerRow + 1;
-    students.forEach((student, index) => {
+    studentsData.forEach((student, index) => {
       const studentData = studentMatrix[student.id];
       const summary = studentData.summary;
 
@@ -854,7 +1068,7 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
           cell.alignment = { horizontal: "left", vertical: "middle" };
         }
 
-        // Category coloring
+        // Category coloring - SAMA SEPERTI DI AttendanceModals.js
         if (colIndex === 9) {
           if (category === "Sangat Baik") {
             cell.fill = {
@@ -891,7 +1105,7 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
     // Footer
     rowIndex += 2;
 
-    // Determine role
+    // Determine role - SAMA SEPERTI DI AttendanceModals.js
     const isHomeroomDaily = subject === "Harian";
     const isHomeroom = homeroomClass && homeroomClass === classId;
 
@@ -937,7 +1151,7 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
     worksheet.getColumn(9).width = 8;
     worksheet.getColumn(10).width = 15;
 
-    // Update file name dengan info semester dan tahun ajaran
+    // ✅ UPDATE FILE NAME DENGAN INFO SEMESTER DAN TAHUN AJARAN
     const yearInfoForFile = academicYear
       ? academicYear.replace("/", "-")
       : `${year}-${semester === 1 ? year + 1 : year - 1}`;
@@ -959,66 +1173,244 @@ export const exportSemesterRecapFromComponent = async (params = {}) => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
 
-    if (onShowToast) onShowToast("File Excel semester berhasil di-download!", "success");
+    onShowToast?.("File Excel semester berhasil di-download!", "success");
     return {
       success: true,
       message: "File Excel semester berhasil di-download!",
     };
   } catch (error) {
     console.error("Error creating semester Excel file:", error);
-    if (onShowToast) onShowToast("Gagal mengunduh file semester: " + error.message, "error");
+    onShowToast?.("Gagal mengunduh file semester: " + error.message, "error");
     return { success: false, message: `Error: ${error.message}` };
   }
 };
 
 /**
- * Wrapper for showing semester export modal - UNTUK BACKWARD COMPATIBILITY
+ * Integration function for semester export - SMP VERSION
+ * ✅ TAMBAH PARAMETER SEMESTER_ID
  */
-export const showSemesterExportModal = async (params = {}) => {
+export const exportSemesterRecapFromComponent = async (
+  classId,
+  semester, // 1 or 2
+  year,
+  studentsData,
+  subject,
+  type = "mapel",
+  currentUser = null,
+  homeroomClass = null,
+  onShowToast = null,
+  // ✅ TAMBAH PARAMETER BARU
+  academicYear = null, // ← parameter ke-10
+  semesterId = null // ← parameter ke-11
+) => {
   try {
-    const {
-      classId,
-      studentsData,
-      subject,
-      type = "mapel",
-      currentUser = null,
-      homeroomClass = null,
-      onShowToast = null,
-      semester = null,
-      academicYear = null,
-      semesterId = null,
-    } = params;
+    const students = studentsData || [];
 
-    // For backward compatibility, assume current year and semester
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    const defaultSemester = currentMonth >= 7 ? 2 : 1;
+    if (students.length === 0) {
+      onShowToast?.("Tidak ada data siswa untuk kelas ini", "error");
+      return {
+        success: false,
+        message: "Tidak ada data siswa untuk kelas ini",
+      };
+    }
 
-    // Call the main export function
-    const result = await exportSemesterRecapFromComponent({
+    // ✅ VALIDASI: HARUS ADA SEMESTER_ID - SAMA SEPERTI DI AttendanceModals.js
+    if (!semesterId) {
+      console.error("❌ exportSemesterRecapFromComponent: semesterId kosong!", {
+        classId,
+        semester,
+        year,
+        studentsLength: students.length,
+        subject,
+        type,
+        academicYear,
+      });
+
+      onShowToast?.("Semester belum dipilih untuk export!", "error");
+      return {
+        success: false,
+        message: "Semester tidak dipilih",
+      };
+    }
+
+    console.log("✅ exportSemesterRecapFromComponent dengan semester ID:", semesterId);
+    console.log("=== EXPORT SEMESTER DATA (SMP) ===");
+
+    // Convert semester
+    const semesterType = semester === 1 ? "Ganjil" : "Genap";
+    const academicYearForQuery =
+      academicYear || (semester === 1 ? `${year}/${year + 1}` : `${year - 1}/${year}`);
+
+    const months = semester === 1 ? [7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5, 6];
+
+    console.log({
       classId,
-      semester: semester || defaultSemester,
-      year: currentYear,
-      studentsData,
+      academicYear: academicYearForQuery,
+      semesterType,
       subject,
       type,
-      currentUser,
-      homeroomClass,
-      onShowToast,
-      academicYear,
+      months,
       semesterId,
+    });
+
+    // Date range
+    const [startYear, endYear] = academicYearForQuery.split("/").map(Number);
+    let startDate, endDate;
+
+    if (semesterType === "Ganjil") {
+      startDate = `${startYear}-07-01`;
+      endDate = `${startYear}-12-31`;
+    } else {
+      startDate = `${endYear}-01-01`;
+      endDate = `${endYear}-06-30`;
+    }
+
+    console.log("📅 Date range:", { startDate, endDate });
+
+    // FETCH WITH PAGINATION DAN FILTER SEMESTER - SAMA SEPERTI DI AttendanceModals.js
+    console.log("🔍 Fetching with pagination and semester filter...");
+
+    let allRecords = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      let query = supabase
+        .from("attendances")
+        .select("student_id, status, date")
+        .eq("class_id", classId)
+        .eq("subject", subject)
+        .eq("type", type)
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .order("date", { ascending: true })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      // ✅ TAMBAH FILTER SEMESTER - SAMA SEPERTI DI AttendanceModals.js
+      query = filterBySemester(query, semesterId);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("❌ Query error:", error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        allRecords = [...allRecords, ...data];
+        console.log(`📄 Page ${page + 1}: ${data.length} records (Total: ${allRecords.length})`);
+
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    console.log("✅ Total records fetched:", allRecords.length);
+
+    if (allRecords.length === 0) {
+      onShowToast?.("Tidak ada data kehadiran untuk semester yang dipilih", "error");
+      return {
+        success: false,
+        message: "Tidak ada data kehadiran untuk semester yang dipilih",
+      };
+    }
+
+    // Filter by month
+    const filteredData = allRecords.filter((r) => {
+      const parts = r.date.split("-");
+      const month = parseInt(parts[1], 10);
+      return months.includes(month);
+    });
+
+    console.log("Data setelah filter:", filteredData.length);
+
+    if (filteredData.length === 0) {
+      onShowToast?.("Tidak ada data kehadiran untuk semester yang dipilih", "error");
+      return {
+        success: false,
+        message: "Tidak ada data kehadiran untuk semester yang dipilih",
+      };
+    }
+
+    // Get teacher name
+    let namaGuru = "";
+    if (currentUser && currentUser.full_name) {
+      namaGuru = currentUser.full_name;
+    } else if (currentUser && currentUser.username) {
+      namaGuru = currentUser.username;
+    }
+
+    // Export
+    const result = await exportSemesterRecapToExcel({
+      classId: classId,
+      semester: semester,
+      year: year,
+      studentsData: students,
+      attendanceRecords: filteredData,
+      subject: subject,
+      namaSekolah: "SMP MUSLIMIN CILILIN",
+      namaGuru: namaGuru,
+      homeroomClass: homeroomClass,
+      onShowToast: onShowToast,
+      // ✅ PASS SEMESTER DATA
+      academicYear: academicYear,
+      semesterId: semesterId,
     });
 
     return result;
   } catch (error) {
-    console.error("Error in showSemesterExportModal:", error);
-    throw error;
+    console.error("Error in exportSemesterRecapFromComponent:", error);
+    onShowToast?.("Gagal mengekspor data semester: " + error.message, "error");
+    return { success: false, message: `Error: ${error.message}` };
   }
 };
 
 /**
- * Legacy function untuk backward compatibility (deprecated)
+ * Wrapper for showing semester export modal - ✅ UPDATE PARAMETER
+ */
+export const showSemesterExportModal = async ({
+  classId,
+  studentsData,
+  subject,
+  type = "mapel",
+  currentUser = null,
+  homeroomClass = null,
+  onShowToast = null,
+  // ✅ TAMBAH PARAMETER BARU
+  semester = null,
+  academicYear = null,
+  semesterId = null,
+}) => {
+  const result = await showExportModal({
+    type: "semester",
+    onExport: async (year, semesterNumber) => {
+      await exportSemesterRecapFromComponent(
+        classId,
+        parseInt(semesterNumber),
+        parseInt(year),
+        studentsData,
+        subject,
+        type,
+        currentUser,
+        homeroomClass,
+        onShowToast,
+        // ✅ PASS SEMESTER DATA - PERBAIKI URUTAN!
+        academicYear, // ← academicYear DULU (parameter ke-10)
+        semesterId // ← semesterId KEMUDIAN (parameter ke-11)
+      );
+    },
+  });
+  return result;
+};
+
+/**
+ * Legacy function for backward compatibility (deprecated)
  */
 export const exportAttendanceFromComponent = async (
   supabase,
@@ -1028,6 +1420,6 @@ export const exportAttendanceFromComponent = async (
   studentsData,
   userData
 ) => {
-  console.warn("exportAttendanceFromComponent is deprecated. Use exportAttendanceToExcel instead.");
+  console.warn("exportAttendanceFromComponent is deprecated. Use showMonthlyExportModal instead.");
   return { success: false, message: "Deprecated function" };
 };
