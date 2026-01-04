@@ -32,76 +32,77 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
   const navigationTimeoutRef = useRef(null);
   const profileDropdownRef = useRef(null);
 
-  // 🔥 COOL DARK MODE TOGGLE COMPONENT
+  // 🌓 SEGMENTED CONTROL DARK MODE TOGGLE (Like the image)
   const CoolDarkModeToggle = ({ size = "default" }) => {
     const sizes = {
-      small: { container: "w-12 h-6", circle: "w-4 h-4", icon: 10 },
-      default: { container: "w-14 h-7", circle: "w-5 h-5", icon: 12 },
-      large: { container: "w-16 h-8", circle: "w-6 h-6", icon: 14 },
+      small: {
+        container: "h-8",
+        text: "text-xs",
+        icon: 12,
+        padding: "px-2.5",
+      },
+      default: {
+        container: "h-9",
+        text: "text-sm",
+        icon: 14,
+        padding: "px-3",
+      },
+      large: {
+        container: "h-10",
+        text: "text-base",
+        icon: 16,
+        padding: "px-4",
+      },
     };
 
     const currentSize = sizes[size];
 
     return (
-      <button
-        onClick={onToggleDarkMode}
-        className={`relative ${
-          currentSize.container
-        } rounded-full transition-all duration-500 ease-in-out shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 ${
-          darkMode
-            ? "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600"
-            : "bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-400"
-        }`}
-        aria-label="Toggle Dark Mode"
-        title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+      <div
+        className={`inline-flex items-center ${currentSize.container} bg-gray-200 dark:bg-gray-600 rounded-full p-1 transition-colors duration-300`}
+        role="group"
       >
-        {darkMode && (
-          <>
-            <span className="absolute top-1 left-2 w-1 h-1 bg-white rounded-full animate-pulse"></span>
-            <span className="absolute top-1.5 right-2 w-0.5 h-0.5 bg-white rounded-full animate-pulse delay-100"></span>
-            <span className="absolute bottom-1.5 left-2.5 w-0.5 h-0.5 bg-white rounded-full animate-pulse delay-200"></span>
-          </>
-        )}
-
-        {!darkMode && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="absolute w-full h-full animate-spin-slow">
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-0.5 h-1 bg-yellow-200 rounded-full"
-                  style={{
-                    top: "50%",
-                    left: "50%",
-                    transform: `rotate(${i * 45}deg) translateY(-${
-                      size === "large" ? "10" : size === "default" ? "8" : "6"
-                    }px)`,
-                    transformOrigin: "0 0",
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div
-          className={`absolute top-0.5 ${
-            currentSize.circle
-          } bg-white rounded-full shadow-md flex items-center justify-center transition-all duration-500 ease-in-out transform ${
-            darkMode ? `translate-x-[calc(100%-0.125rem)]` : "translate-x-0"
+        {/* Light Mode Button */}
+        <button
+          onClick={() => !darkMode && onToggleDarkMode()}
+          className={`flex items-center gap-1.5 ${currentSize.padding} ${
+            currentSize.container
+          } rounded-full transition-all duration-300 ${
+            !darkMode
+              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md"
+              : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
           }`}
+          aria-label="Light Mode"
+          aria-pressed={!darkMode}
         >
-          {darkMode ? (
-            <Moon
-              size={currentSize.icon}
-              className="text-indigo-600 animate-spin-slow"
-              fill="currentColor"
-            />
-          ) : (
-            <Sun size={currentSize.icon} className="text-orange-500 animate-pulse" />
-          )}
-        </div>
-      </button>
+          <Sun
+            size={currentSize.icon}
+            className={`transition-transform duration-300 ${!darkMode ? "rotate-0" : "rotate-180"}`}
+          />
+          <span className={`${currentSize.text} font-medium whitespace-nowrap`}>Light</span>
+        </button>
+
+        {/* Dark Mode Button */}
+        <button
+          onClick={() => darkMode && onToggleDarkMode()}
+          className={`flex items-center gap-1.5 ${currentSize.padding} ${
+            currentSize.container
+          } rounded-full transition-all duration-300 ${
+            darkMode
+              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md"
+              : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+          }`}
+          aria-label="Dark Mode"
+          aria-pressed={darkMode}
+        >
+          <Moon
+            size={currentSize.icon}
+            className={`transition-transform duration-300 ${darkMode ? "rotate-0" : "-rotate-90"}`}
+            fill={darkMode ? "currentColor" : "none"}
+          />
+          <span className={`${currentSize.text} font-medium whitespace-nowrap`}>Dark</span>
+        </button>
+      </div>
     );
   };
 

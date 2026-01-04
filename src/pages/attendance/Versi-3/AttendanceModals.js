@@ -358,11 +358,9 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
             console.log("🏠 Homeroom classes:", classesList);
             setClasses(classesList);
 
-            // ✅ AUTO-SELECT: Pilih homeroom class jika belum ada yang dipilih
-            if (!selectedClass) {
-              console.log("🎯 Auto-selecting homeroom class:", homeroomClass);
-              setSelectedClass(homeroomClass);
-            }
+            // ✅ AUTO-SELECT: ALWAYS select homeroom class untuk presensi harian
+            console.log("🎯 Auto-selecting homeroom class:", homeroomClass);
+            setSelectedClass(homeroomClass);
           }
           return;
         }
@@ -440,7 +438,7 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
 
         const { data, error } = await supabase
           .from("students")
-          .select("id, full_name, nis")
+          .select("id, full_name, nis, gender")
           .eq("class_id", selectedClass)
           .eq("is_active", true)
           .order("full_name");
@@ -925,6 +923,7 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
             ))}
           </select>
 
+          {/* ✅ Class Selector - DISABLED untuk Presensi Harian (auto-select homeroom) */}
           <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
@@ -932,8 +931,14 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
               darkMode
                 ? "bg-slate-700 border-slate-600 text-white"
                 : "bg-white border-gray-300 text-gray-900"
+            } ${
+              selectedSubject.includes("PRESENSI HARIAN") ? "opacity-60 cursor-not-allowed" : ""
             }`}
-            disabled={!selectedSubject || classes.length === 0}
+            disabled={
+              !selectedSubject ||
+              classes.length === 0 ||
+              selectedSubject.includes("PRESENSI HARIAN")
+            }
           >
             <option value="">Kelas</option>
             {classes.map((cls) => (
@@ -1130,7 +1135,7 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                         <th
                           className={`p-2 text-center font-bold ${
                             darkMode
-                              ? "text-slate-200 border-slate-600"
+                              ? "text-white border-slate-600" // ✅ SUDAH BENAR (No.)
                               : "text-gray-800 border-gray-300"
                           } border-r-2 ${
                             darkMode ? "bg-slate-700" : "bg-gray-100"
@@ -1141,7 +1146,7 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                         <th
                           className={`p-2 text-left font-bold ${
                             darkMode
-                              ? "text-slate-200 border-slate-600"
+                              ? "text-white border-slate-600" // ❌ GANTI JADI text-white
                               : "text-gray-800 border-gray-300"
                           } border-r-2 ${
                             darkMode ? "bg-slate-700" : "bg-gray-100"
@@ -1154,7 +1159,7 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                           <th
                             key={date}
                             className={`p-2 text-center font-bold ${
-                              darkMode ? "text-slate-200" : "text-gray-800"
+                              darkMode ? "text-white" : "text-gray-800" // ❌ GANTI JADI text-white
                             } min-w-[45px] border-r ${
                               darkMode ? "border-slate-600" : "border-gray-300"
                             }`}
@@ -1163,6 +1168,7 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                           </th>
                         ))}
 
+                        {/* H - Hadir */}
                         <th
                           className={`p-2 text-center font-bold ${
                             darkMode
@@ -1172,15 +1178,8 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                         >
                           H
                         </th>
-                        <th
-                          className={`p-2 text-center font-bold ${
-                            darkMode
-                              ? "text-blue-300 border-slate-600"
-                              : "text-blue-700 border-gray-300"
-                          } min-w-[40px] ${darkMode ? "bg-blue-900/30" : "bg-blue-50"} border-r`}
-                        >
-                          I
-                        </th>
+
+                        {/* S - Sakit */}
                         <th
                           className={`p-2 text-center font-bold ${
                             darkMode
@@ -1192,6 +1191,19 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                         >
                           S
                         </th>
+
+                        {/* I - Izin */}
+                        <th
+                          className={`p-2 text-center font-bold ${
+                            darkMode
+                              ? "text-blue-300 border-slate-600"
+                              : "text-blue-700 border-gray-300"
+                          } min-w-[40px] ${darkMode ? "bg-blue-900/30" : "bg-blue-50"} border-r`}
+                        >
+                          I
+                        </th>
+
+                        {/* A - Alpa */}
                         <th
                           className={`p-2 text-center font-bold ${
                             darkMode
@@ -1203,6 +1215,7 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                         >
                           A
                         </th>
+
                         <th
                           className={`p-2 text-center font-bold ${
                             darkMode
@@ -1271,15 +1284,7 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                             >
                               {student.hadir}
                             </td>
-                            <td
-                              className={`p-2 text-center font-bold border-r ${
-                                darkMode
-                                  ? "text-blue-300 border-slate-700 bg-blue-900/20"
-                                  : "text-blue-700 border-gray-200 bg-blue-50/50"
-                              }`}
-                            >
-                              {student.izin}
-                            </td>
+
                             <td
                               className={`p-2 text-center font-bold border-r ${
                                 darkMode
@@ -1288,6 +1293,16 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                               }`}
                             >
                               {student.sakit}
+                            </td>
+
+                            <td
+                              className={`p-2 text-center font-bold border-r ${
+                                darkMode
+                                  ? "text-blue-300 border-slate-700 bg-blue-900/20"
+                                  : "text-blue-700 border-gray-200 bg-blue-50/50"
+                              }`}
+                            >
+                              {student.izin}
                             </td>
                             <td
                               className={`p-2 text-center font-bold border-r-2 ${

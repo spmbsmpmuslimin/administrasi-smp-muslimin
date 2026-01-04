@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import {
   Plus,
@@ -544,10 +544,12 @@ const TeacherSchedule = ({ user }) => {
 
   if (academicLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center transition-colors duration-300">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600 dark:text-gray-400">Memuat informasi tahun ajaran...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto transition-colors duration-300"></div>
+          <p className="mt-4 text-slate-600 dark:text-gray-400 transition-colors duration-300">
+            Memuat informasi tahun ajaran...
+          </p>
         </div>
       </div>
     );
@@ -555,8 +557,8 @@ const TeacherSchedule = ({ user }) => {
 
   if (!academicInfo) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-6 py-4 rounded-lg max-w-md">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center transition-colors duration-300">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 px-6 py-4 rounded-lg max-w-md transition-colors duration-300">
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle className="w-5 h-5" />
             <h3 className="font-bold">Gagal Memuat Data</h3>
@@ -568,10 +570,10 @@ const TeacherSchedule = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 p-4 sm:p-6">
+        <div className="mb-4 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 transition-colors duration-300 p-4 sm:p-6 transition-colors duration-300">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
               <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600 dark:text-indigo-400" />
@@ -589,7 +591,7 @@ const TeacherSchedule = ({ user }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 p-4">
+        <div className="mb-8 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 transition-colors duration-300 p-4">
           {/* MOBILE: 2 Rows Layout (hidden di desktop) */}
           <div className="block sm:hidden space-y-2">
             {/* Row 1: View Mode + Primary Action */}
@@ -746,7 +748,7 @@ const TeacherSchedule = ({ user }) => {
 
         {/* Schedule Grid */}
         {viewMode === "grid" && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 p-4">
+          <div className="bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-sm border border-slate-200 p-4">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse min-w-max">
                 <thead>
@@ -912,7 +914,7 @@ const TeacherSchedule = ({ user }) => {
 
         {/* List View */}
         {viewMode === "list" && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 transition-colors duration-300 overflow-hidden">
             <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-gray-700">
               <h2 className="text-lg font-bold text-slate-800 dark:text-gray-100">
                 Jadwal Mengajar Mingguan (Tampilan List)
@@ -920,7 +922,7 @@ const TeacherSchedule = ({ user }) => {
             </div>
 
             {loading && schedules.length === 0 ? (
-              <div className="p-8 text-center text-slate-600 dark:text-gray-400">
+              <div className="p-8 text-center text-slate-600 dark:text-gray-400 transition-colors duration-300">
                 Memuat jadwal...
               </div>
             ) : schedules.length === 0 ? (
@@ -960,7 +962,7 @@ const TeacherSchedule = ({ user }) => {
                         return (
                           <tr
                             key={schedule.id}
-                            className="border-b border-slate-200 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-700/50 text-sm"
+                            className="border-b border-slate-200 dark:border-gray-700 transition-colors duration-300 hover:bg-slate-50 dark:hover:bg-gray-700/50 text-sm"
                           >
                             {idx === 0 && (
                               <td
@@ -1012,7 +1014,7 @@ const TeacherSchedule = ({ user }) => {
       {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 flex flex-col">
+          <div className="bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 flex flex-col">
             <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-gray-100">
                 {editingId ? "Edit Jadwal Multi-Jam" : "Tambah Jadwal Multi-Jam"}

@@ -1,5 +1,5 @@
 // components/Classes.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import { DataExcel } from "../pages/DataExcel";
 
@@ -7,36 +7,6 @@ export const Classes = ({ user, onShowToast }) => {
   const [kelasData, setKelasData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // ✅ DARK MODE SYNC - Baca dari HTML class & localStorage
-  useEffect(() => {
-    const checkDarkMode = () => {
-      const htmlHasDark = document.documentElement.classList.contains("dark");
-      const savedTheme = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-      const shouldBeDark = htmlHasDark || savedTheme === "dark" || (!savedTheme && prefersDark);
-
-      setIsDarkMode(shouldBeDark);
-      if (shouldBeDark) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-
-    checkDarkMode();
-
-    // ✅ Observer untuk detect perubahan dark mode dari halaman lain
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     fetchDataKelas();
@@ -140,18 +110,18 @@ export const Classes = ({ user, onShowToast }) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-200">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <div className="mb-4 sm:mb-6 md:mb-8">
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
               Data Kelas
             </h1>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 transition-colors duration-300">
               Memuat data kelas...
             </p>
           </div>
           <div className="flex justify-center items-center h-48 sm:h-64">
-            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 border-t-3 border-b-3 border-blue-500 dark:border-blue-400"></div>
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 border-t-3 border-b-3 border-blue-500 dark:border-blue-400 transition-colors duration-300"></div>
           </div>
         </div>
       </div>
@@ -160,13 +130,13 @@ export const Classes = ({ user, onShowToast }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-200">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           <div className="mb-4 sm:mb-6 md:mb-8">
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
               Data Kelas
             </h1>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 transition-colors duration-300">
               Manajemen Data Kelas SMP Muslimin Cililin
             </p>
           </div>
@@ -188,15 +158,15 @@ export const Classes = ({ user, onShowToast }) => {
                   ></path>
                 </svg>
               </div>
-              <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-white mb-1">
+              <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-white mb-1 transition-colors duration-300">
                 Terjadi Kesalahan
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 transition-colors duration-300">
                 {error}
               </p>
               <button
                 onClick={fetchDataKelas}
-                className="px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 text-xs sm:text-sm touch-manipulation min-h-[44px]"
+                className="px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 text-xs sm:text-sm touch-manipulation min-h-[44px]"
               >
                 Coba Lagi
               </button>
@@ -208,15 +178,15 @@ export const Classes = ({ user, onShowToast }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         {/* Header dengan tombol Export */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 sm:mb-6 md:mb-8 gap-2 sm:gap-3">
           <div>
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
               Data Kelas
             </h1>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 transition-colors duration-300">
               Manajemen Data Kelas SMP Muslimin Cililin
             </p>
           </div>
@@ -226,7 +196,7 @@ export const Classes = ({ user, onShowToast }) => {
             {kelasData.length > 0 && (
               <button
                 onClick={handleExportExcel}
-                className="bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 transition-all duration-200 text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg touch-manipulation min-h-[44px]"
+                className="bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 transition-all duration-300 text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg touch-manipulation min-h-[44px]"
               >
                 <svg
                   className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
@@ -291,7 +261,7 @@ export const Classes = ({ user, onShowToast }) => {
                 <div className="flex justify-between items-center text-center">
                   <div className="flex-1 border-r border-gray-100 dark:border-gray-700 pr-2">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Total Siswa</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
+                    <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
                       {kelas.jumlah_siswa}
                     </p>
                   </div>

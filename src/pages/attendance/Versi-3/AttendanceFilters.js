@@ -69,6 +69,13 @@ const AttendanceFilters = ({
     return new Date(year, month - 1, day, 0, 0, 0, 0);
   };
 
+  // ✅ FUNCTION: Check if date is weekend (Sabtu=6, Minggu=0)
+  const isWeekend = (dateString) => {
+    const date = parseDate(dateString);
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // 0 = Minggu, 6 = Sabtu
+  };
+
   const validateSelectedDate = (selectedDate) => {
     if (!selectedDate || !selectedSemesterId) return true;
 
@@ -221,18 +228,21 @@ const AttendanceFilters = ({
       const isToday = dayString === todayString;
       const isSelected = tempDate === dayString;
       const isValid = validateSelectedDate(dayString);
+      const isWeekendDay = isWeekend(dayString); // ✅ CHECK WEEKEND
 
       days.push(
         <button
           key={day}
           onClick={() => handleDayClick(day)}
-          disabled={!isValid || isReadOnlyMode}
+          disabled={!isValid || isReadOnlyMode || isWeekendDay} // ✅ DISABLE WEEKEND
           className={`
           h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium
           transition-all duration-200 active:scale-95 touch-manipulation
           border
           ${
-            !isValid
+            isWeekendDay
+              ? "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-red-400 dark:text-red-700 cursor-not-allowed" // ✅ WEEKEND STYLE (clean)
+              : !isValid
               ? "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
               : isSelected
               ? "border-blue-500 bg-blue-500 text-white"
@@ -355,7 +365,7 @@ const AttendanceFilters = ({
                   ? "View Mode"
                   : selectedSubject
                   ? "Pilih Kelas"
-                  : "Pilih mapel dulu"}
+                  : "Pilih Mapel Dulu"}
               </option>
               {classes.map((cls) => (
                 <option
@@ -441,26 +451,13 @@ const AttendanceFilters = ({
                 {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day, idx) => (
                   <div
                     key={idx}
-                    className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1"
+                    className="text-center text-xs font-medium text-slate-600 dark:text-slate-300 py-1"
                   >
                     {day}
                   </div>
                 ))}
                 {renderCalendar()}
               </div>
-
-              {/* INFORMASI VALIDASI */}
-              {selectedSemesterId && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 mb-3 p-2 bg-slate-50 dark:bg-slate-900/50 rounded">
-                  <div className="flex items-start gap-2">
-                    <span className="mt-0.5">ℹ️</span>
-                    <div>
-                      Tanggal yang tidak valid untuk semester ini dinonaktifkan.
-                      {isReadOnlyMode && " Mode View Only aktif."}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Action Buttons */}

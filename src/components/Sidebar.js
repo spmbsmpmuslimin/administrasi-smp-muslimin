@@ -537,6 +537,43 @@ const Sidebar = ({
               </div>
             )}
 
+            {/* 📝 Catatan Siswa (Admin & Wali Kelas) */}
+            {(isAdmin || isWaliKelas) && (
+              <a
+                href="#catatan-siswa"
+                className={`
+      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+      touch-manipulation min-h-[44px]
+      ${isCollapsed ? "justify-center" : ""}
+      ${
+        currentPage === "catatan-siswa"
+          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+          : "hover:text-blue-100 dark:hover:text-gray-100"
+      }
+    `}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleMenuClick("catatan-siswa");
+                }}
+                title={isCollapsed ? "Catatan Siswa" : ""}
+              >
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+                {!isCollapsed && <span className="flex-1 text-sm">Catatan Siswa</span>}
+              </a>
+            )}
+
             {/* 📅 Jadwal Saya */}
             {(isAdmin || (!isGuruBK && (userRole === "teacher" || userRole === "homeroom"))) && (
               <a

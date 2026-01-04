@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import { DataExcel } from "./DataExcel"; // ✅ IMPORT DATAEXCEL
 
@@ -6,36 +6,6 @@ export const Teachers = () => {
   const [guruData, setGuruData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [exportLoading, setExportLoading] = useState(false); // ✅ STATE LOADING EXPORT
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // ✅ DARK MODE SYNC - Baca dari HTML class & localStorage
-  useEffect(() => {
-    const checkDarkMode = () => {
-      const htmlHasDark = document.documentElement.classList.contains("dark");
-      const savedTheme = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-      const shouldBeDark = htmlHasDark || savedTheme === "dark" || (!savedTheme && prefersDark);
-
-      setIsDarkMode(shouldBeDark);
-      if (shouldBeDark) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-
-    checkDarkMode();
-
-    // ✅ Observer untuk detect perubahan dark mode dari halaman lain
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     fetchDataGuru();
@@ -136,18 +106,18 @@ export const Teachers = () => {
   // Loading Component
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-200">
+      <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-300">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
             Data Guru
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 transition-colors duration-300">
             Memuat data guru...
           </p>
         </div>
         <div className="text-center py-8 sm:py-12">
-          <div className="inline-block w-8 h-8 sm:w-10 sm:h-10 border-3 sm:border-4 border-blue-200 dark:border-blue-500 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin mb-4"></div>
-          <p className="text-sm sm:text-base text-slate-500 dark:text-gray-400">
+          <div className="inline-block w-8 h-8 sm:w-10 sm:h-10 border-3 sm:border-4 border-blue-200 dark:border-blue-500 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin mb-4 transition-colors duration-300"></div>
+          <p className="text-sm sm:text-base text-slate-500 dark:text-gray-400 transition-colors duration-300">
             Sedang memuat data...
           </p>
         </div>
@@ -156,15 +126,15 @@ export const Teachers = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-200">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-300">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
               Data Guru
             </h1>
-            <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300">
+            <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 transition-colors duration-300">
               Manajemen Data Guru SMP Muslimin Cililin
             </p>
           </div>
@@ -175,7 +145,7 @@ export const Teachers = () => {
             <button
               onClick={handleExportGuru}
               disabled={exportLoading || guruData.length === 0}
-              className={`px-4 sm:px-6 py-3 sm:py-3.5 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 min-w-[140px] sm:min-w-[160px] text-sm sm:text-base touch-manipulation ${
+              className={`px-4 sm:px-6 py-3 sm:py-3.5 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 min-w-[140px] sm:min-w-[160px] text-sm sm:text-base touch-manipulation ${
                 exportLoading || guruData.length === 0
                   ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   : "bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 shadow-md hover:shadow-lg"
@@ -284,7 +254,7 @@ export const Teachers = () => {
       {/* ---------------------------------------------------- */}
       {/* 💻 LAYOUT TABLE - Tablet (sm: ke atas) & Laptop */}
       {/* ---------------------------------------------------- */}
-      <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-blue-100/50 dark:shadow-gray-900/50 overflow-hidden border border-blue-100 dark:border-gray-700 transition-colors duration-200">
+      <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-blue-100/50 dark:shadow-gray-900/50 overflow-hidden border border-blue-100 dark:border-gray-700 transition-colors duration-300">
         {/* Table Wrapper - Responsive Scroll (hanya jika memang tidak muat) */}
         <div className="overflow-x-auto">
           {guruData.length > 0 ? (
@@ -317,7 +287,7 @@ export const Teachers = () => {
                 {guruData.map((guru, index) => (
                   <tr
                     key={guru.id}
-                    className="hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors duration-150"
+                    className="hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors duration-300"
                   >
                     {/* Nomor */}
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-500 dark:text-gray-400 text-center font-medium">

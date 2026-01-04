@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../supabaseClient";
 import AttendanceFilters from "./AttendanceFilters";
 import AttendanceTable from "./AttendanceTable";
+import AttendanceStats from "./AttendanceStats";
 
 // ✅ IMPORT ACADEMIC YEAR SERVICE
 import { getActiveAcademicInfo, filterBySemester } from "../../services/academicYearService";
@@ -35,6 +36,28 @@ const parseDate = (dateString) => {
   return new Date(year, month - 1, day, 0, 0, 0, 0);
 };
 
+// ✅ UTILITY: Check if date is weekend (Saturday = 6, Sunday = 0)
+const isWeekend = (dateString) => {
+  const date = parseDate(dateString);
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
+};
+
+// ✅ UTILITY: Get next weekday if selected date is weekend
+const getNextWeekday = (dateString) => {
+  let date = parseDate(dateString);
+
+  while (date.getDay() === 0 || date.getDay() === 6) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
 const Attendance = ({ user, onShowToast }) => {
   // ========== STATE MANAGEMENT ==========
   const [classes, setClasses] = useState([]);
@@ -56,12 +79,34 @@ const Attendance = ({ user, onShowToast }) => {
   const [existingAttendanceData, setExistingAttendanceData] = useState(null);
   const [pendingAttendanceData, setPendingAttendanceData] = useState(null);
   const [studentsLoaded, setStudentsLoaded] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
   // ✅ ACADEMIC YEAR STATES
   const [activeAcademicInfo, setActiveAcademicInfo] = useState(null);
   const [selectedSemesterId, setSelectedSemesterId] = useState(null);
   const [availableSemesters, setAvailableSemesters] = useState([]);
   const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
+
+  // ✅ WEEKEND VALIDATION: Auto-skip to next weekday if weekend selected
+  const handleDateChange = (newDate) => {
+    if (isWeekend(newDate)) {
+      const nextWeekday = getNextWeekday(newDate);
+      console.log(`⚠️ Weekend detected (${newDate}), auto-skipping to ${nextWeekday}`);
+
+      if (onShowToast) {
+        const dateObj = parseDate(newDate);
+        const dayName = dateObj.getDay() === 0 ? "Minggu" : "Sabtu";
+        onShowToast(
+          `Hari ${dayName} bukan hari efektif. Auto-skip ke hari kerja berikutnya.`,
+          "warning"
+        );
+      }
+
+      setDate(nextWeekday);
+    } else {
+      setDate(newDate);
+    }
+  };
 
   // ========== UTILITY FUNCTIONS ==========
   const isHomeroomDaily = useCallback(() => {
@@ -75,6 +120,16 @@ const Attendance = ({ user, onShowToast }) => {
   );
 
   // ========== CORE HANDLERS ==========
+
+  // ✅ VALIDATE DEFAULT DATE: Skip weekend on mount
+  useEffect(() => {
+    if (date && isWeekend(date)) {
+      const nextWeekday = getNextWeekday(date);
+      console.log(`⚠️ Initial date is weekend (${date}), auto-skipping to ${nextWeekday}`);
+      setDate(nextWeekday);
+    }
+  }, []); // Only run on mount
+
   const setAllHadir = () => {
     if (students.length === 0) {
       if (onShowToast) {
@@ -88,6 +143,7 @@ const Attendance = ({ user, onShowToast }) => {
       newStatus[student.id] = "Hadir";
     });
     setAttendanceStatus(newStatus);
+    setHasUserInteracted(true); // ✅ Mark as interacted
 
     if (onShowToast) {
       onShowToast(`Berhasil mengubah status ${students.length} siswa menjadi HADIR`, "success");
@@ -208,6 +264,7 @@ const Attendance = ({ user, onShowToast }) => {
     setSelectedClass("");
     setStudents([]);
     setStudentsLoaded(false);
+    setHasUserInteracted(false); // ✅ Reset interaction flag
 
     if (onShowToast) {
       if (selectedSemester) {
@@ -361,7 +418,7 @@ const Attendance = ({ user, onShowToast }) => {
           setLoading(true);
           const { data: studentsData, error: studentsError } = await supabase
             .from("students")
-            .select("id, full_name, nis")
+            .select("id, full_name, nis, gender")
             .eq("class_id", homeroomClass)
             .eq("is_active", true)
             .order("full_name");
@@ -480,7 +537,7 @@ const Attendance = ({ user, onShowToast }) => {
       setLoading(true);
       const { data: studentsData, error: studentsError } = await supabase
         .from("students")
-        .select("id, full_name, nis")
+        .select("id, full_name, nis, gender")
         .eq("class_id", classId)
         .eq("is_active", true)
         .order("full_name");
@@ -490,11 +547,10 @@ const Attendance = ({ user, onShowToast }) => {
       setStudents(studentsData || []);
       setStudentsLoaded(true);
 
-      const newStatus = {};
-      studentsData.forEach((student) => {
-        newStatus[student.id] = "Hadir";
-      });
-      setAttendanceStatus(newStatus);
+      // ✅ Reset ke kosong - TIDAK AUTO-SET HADIR
+      setAttendanceStatus({});
+      setAttendanceNotes({});
+      setHasUserInteracted(false); // ✅ Reset interaction flag
     } catch (error) {
       console.error("Error fetching students:", error);
       setMessage("Error: Gagal mengambil data siswa - " + error.message);
@@ -561,15 +617,15 @@ const Attendance = ({ user, onShowToast }) => {
 
         setAttendanceStatus(statusMap);
         setAttendanceNotes(notesMap);
+        setHasUserInteracted(true); // ✅ Existing data = sudah ada interaksi
 
         console.log("✅ Loaded existing attendance data:", attendanceData.length, "records");
       } else {
-        const defaultStatus = {};
-        students.forEach((student) => {
-          defaultStatus[student.id] = "Hadir";
-        });
-        setAttendanceStatus(defaultStatus);
+        // ✅ TIDAK AUTO-SET HADIR - biarkan kosong
+        setAttendanceStatus({});
         setAttendanceNotes({});
+        setHasUserInteracted(false); // ✅ Belum ada interaksi
+        console.log("ℹ️ No existing attendance - waiting for user input");
       }
     } catch (error) {
       console.error("Error in fetchExistingAttendance:", error);
@@ -581,10 +637,12 @@ const Attendance = ({ user, onShowToast }) => {
   // ========== ATTENDANCE PROCESSING ==========
   const handleStatusChange = (studentId, status) => {
     setAttendanceStatus((prev) => ({ ...prev, [studentId]: status }));
+    setHasUserInteracted(true); // ✅ Mark as interacted when user changes status
   };
 
   const handleNotesChange = (studentId, notes) => {
     setAttendanceNotes((prev) => ({ ...prev, [studentId]: notes }));
+    setHasUserInteracted(true); // ✅ Mark as interacted when user adds notes
   };
 
   const checkExistingAttendance = async (teacherUUID, typeValue) => {
@@ -830,12 +888,14 @@ const Attendance = ({ user, onShowToast }) => {
       );
     }
 
+    // ✅ Reset states after successful save
     const newStatus = {};
     students.forEach((student) => {
       newStatus[student.id] = "Hadir";
     });
     setAttendanceStatus(newStatus);
     setAttendanceNotes({});
+    setHasUserInteracted(true); // ✅ Keep as interacted (data sudah tersimpan)
   };
 
   // ========== RENDER LOGIC ==========
@@ -894,7 +954,7 @@ const Attendance = ({ user, onShowToast }) => {
         selectedClass={selectedClass}
         setSelectedClass={setSelectedClass}
         date={date}
-        setDate={setDate}
+        setDate={handleDateChange}
         loading={loading}
         teacherId={teacherId}
         isHomeroomDaily={isHomeroomDaily}
@@ -910,6 +970,9 @@ const Attendance = ({ user, onShowToast }) => {
       {/* Conditional Rendering */}
       {students.length > 0 && (
         <>
+          {/* ✅ ATTENDANCE STATS - Summary Cards */}
+          <AttendanceStats attendanceStatus={attendanceStatus} students={students} />
+
           {/* Action Buttons & Search */}
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6 lg:mb-8">
             <div className="relative flex-grow">
@@ -949,9 +1012,16 @@ const Attendance = ({ user, onShowToast }) => {
                   !selectedClass ||
                   !selectedSemesterId ||
                   students.length === 0 ||
+                  !hasUserInteracted || // ✅ FIXED: Cek apakah user sudah interact
                   isReadOnlyMode
                 }
-                title={isReadOnlyMode ? "Tidak bisa input di semester non-aktif" : ""}
+                title={
+                  isReadOnlyMode
+                    ? "Tidak bisa input di semester non-aktif"
+                    : !hasUserInteracted
+                    ? "Silakan input status presensi siswa terlebih dahulu"
+                    : ""
+                }
                 style={{ minWidth: "180px" }}
               >
                 {loading ? (

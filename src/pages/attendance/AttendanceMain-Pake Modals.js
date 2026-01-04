@@ -682,7 +682,9 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
                       }`}
                     >
                       <div className="text-base sm:text-lg mb-1">🏫</div>
-                      <div className="text-xs sm:text-sm font-semibold">Presensi Harian</div>
+                      <div className="text-xs sm:text-sm font-semibold">
+                        Presensi Harian {fullUserData.homeroom_class_id}
+                      </div>
                       <div className="text-[10px] sm:text-xs opacity-75 mt-1">(Walikelas)</div>
                     </button>
                   )}

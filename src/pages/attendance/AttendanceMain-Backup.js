@@ -11,8 +11,7 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
   const [fullUserData, setFullUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ MODAL EXPORT STATES
-  const [showExportModal, setShowExportModal] = useState(false);
+  // ✅ EXPORT STATES
   const [attendanceType, setAttendanceType] = useState(null); // ✅ Will be set based on homeroom_class_id
   const [exportType, setExportType] = useState("bulanan");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -124,12 +123,12 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
     fetchAcademicYears();
   }, []);
 
-  // ✅ NEW: FETCH SUBJECTS WHEN MODAL OPENS (FOR MAPEL)
+  // ✅ NEW: FETCH SUBJECTS WHEN EXPORT TAB OPENED (FOR MAPEL)
   useEffect(() => {
-    if (showExportModal && attendanceType === "mapel" && fullUserData?.teacher_id) {
+    if (activeTab === "export" && attendanceType === "mapel" && fullUserData?.teacher_id) {
       fetchSubjects();
     }
-  }, [showExportModal, attendanceType, fullUserData]);
+  }, [activeTab, attendanceType, fullUserData]);
 
   // ✅ NEW: FETCH CLASSES WHEN SUBJECT SELECTED
   useEffect(() => {
@@ -253,12 +252,6 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
     { value: 11, label: "November" },
     { value: 12, label: "Desember" },
   ];
-
-  // ✅ HANDLE EXPORT CLICK - OPEN MODAL
-  const handleExportClick = () => {
-    setActiveTab("export"); // ✅ Set active tab ke export
-    setShowExportModal(true);
-  };
 
   // ✅ FETCH STUDENTS DATA
   const fetchStudentsData = async (classId) => {
@@ -396,7 +389,6 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
           const typeLabel =
             attendanceType === "harian" ? "Presensi Harian" : `Mapel ${selectedSubject}`;
           showToast(`✅ Data ${typeLabel} - ${monthName} ${year} berhasil diexport!`, "success");
-          setShowExportModal(false);
         } else {
           showToast(`❌ Export gagal: ${result?.message || "Unknown error"}`, "error");
         }
@@ -435,7 +427,6 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
             `✅ Data ${typeLabel} - Semester ${semesterText} ${selectedYear.year} berhasil diexport!`,
             "success"
           );
-          setShowExportModal(false);
         } else {
           showToast(`❌ Export gagal: ${result?.message || "Unknown error"}`, "error");
         }
@@ -531,13 +522,7 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
               {navigationItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    if (item.id === "export") {
-                      handleExportClick();
-                    } else {
-                      setActiveTab(item.id);
-                    }
-                  }}
+                  onClick={() => setActiveTab(item.id)}
                   className={`relative px-4 sm:px-6 py-3 sm:py-4 rounded-xl transition-all duration-300 flex-1 min-h-[60px] ${
                     activeTab === item.id
                       ? darkMode
@@ -606,163 +591,305 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
               {activeTab === "preview" && (
                 <AttendanceModals user={fullUserData} onShowToast={showToast} darkMode={darkMode} />
               )}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ✅ MODAL EXPORT - UPDATED WITH ATTENDANCE TYPE */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div
-            className={`max-w-lg w-full rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto ${
-              darkMode ? "bg-gray-800" : "bg-white"
-            }`}
-          >
-            {/* Header */}
-            <div
-              className={`px-4 sm:px-6 py-3 sm:py-4 border-b sticky top-0 z-10 ${
-                darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <h3
-                  className={`text-lg sm:text-xl font-bold ${
-                    darkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  📤 Export Presensi
-                </h3>
-                <button
-                  onClick={() => setShowExportModal(false)}
-                  disabled={isExporting}
-                  className={`p-2 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${
-                    darkMode
-                      ? "hover:bg-gray-700 active:bg-gray-600 text-gray-400"
-                      : "hover:bg-gray-100 active:bg-gray-200 text-gray-500"
-                  }`}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-              {/* ✅ NEW: PILIH JENIS PRESENSI */}
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  1. Pilih Jenis Presensi
-                </label>
-                <div
-                  className={`grid ${
-                    fullUserData.homeroom_class_id ? "grid-cols-2" : "grid-cols-1"
-                  } gap-2 sm:gap-3`}
-                >
-                  {/* ✅ ONLY SHOW HARIAN IF USER IS HOMEROOM TEACHER */}
-                  {fullUserData.homeroom_class_id && (
-                    <button
-                      onClick={() => {
-                        setAttendanceType("harian");
-                        setSelectedSubject("");
-                        setSelectedClass("");
-                      }}
-                      className={`px-3 sm:px-4 py-3 rounded-lg font-medium transition-all border-2 min-h-[64px] ${
-                        attendanceType === "harian"
-                          ? darkMode
-                            ? "bg-purple-600 border-purple-500 text-white"
-                            : "bg-purple-500 border-purple-400 text-white"
-                          : darkMode
-                          ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-purple-600 active:bg-gray-600"
-                          : "bg-white border-gray-300 text-gray-700 hover:border-purple-400 active:bg-gray-50"
+              {activeTab === "export" && (
+                <div className="space-y-4 sm:space-y-5">
+                  {/* Header */}
+                  <div className="text-center pb-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2
+                      className={`text-xl sm:text-2xl font-bold mb-2 ${
+                        darkMode ? "text-white" : "text-gray-900"
                       }`}
                     >
-                      <div className="text-base sm:text-lg mb-1">🏫</div>
-                      <div className="text-xs sm:text-sm font-semibold">Presensi Harian</div>
-                      <div className="text-[10px] sm:text-xs opacity-75 mt-1">(Walikelas)</div>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setAttendanceType("mapel");
-                      if (fullUserData?.teacher_id && subjects.length === 0) {
-                        fetchSubjects();
-                      }
-                    }}
-                    className={`px-3 sm:px-4 py-3 rounded-lg font-medium transition-all border-2 min-h-[64px] ${
-                      attendanceType === "mapel"
-                        ? darkMode
-                          ? "bg-purple-600 border-purple-500 text-white"
-                          : "bg-purple-500 border-purple-400 text-white"
-                        : darkMode
-                        ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-purple-600 active:bg-gray-600"
-                        : "bg-white border-gray-300 text-gray-700 hover:border-purple-400 active:bg-gray-50"
-                    }`}
-                  >
-                    <div className="text-base sm:text-lg mb-1">📚</div>
-                    <div className="text-xs sm:text-sm font-semibold">Presensi Mapel</div>
-                    <div className="text-[10px] sm:text-xs opacity-75 mt-1">(Guru Mapel)</div>
-                  </button>
-                </div>
-              </div>
-
-              {/* ✅ NEW: CONDITIONAL FIELDS FOR MAPEL */}
-              {attendanceType === "mapel" && (
-                <>
-                  {/* Pilih Mata Pelajaran */}
-                  <div>
-                    <label
-                      className={`block text-sm font-medium mb-2 ${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      Pilih Mata Pelajaran
-                    </label>
-                    {subjects.length === 0 ? (
-                      <div
-                        className={`w-full px-4 py-3 rounded-lg border-2 text-center ${
-                          darkMode
-                            ? "bg-gray-700 border-gray-600 text-gray-400"
-                            : "bg-gray-100 border-gray-300 text-gray-500"
-                        }`}
-                      >
-                        Tidak ada mata pelajaran tersedia
-                      </div>
-                    ) : (
-                      <select
-                        value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
-                        className={`w-full px-4 py-3 rounded-lg border-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                          darkMode
-                            ? "bg-gray-700 border-gray-600 text-white"
-                            : "bg-white border-gray-300 text-gray-900"
-                        }`}
-                      >
-                        <option value="">-- Pilih Mata Pelajaran --</option>
-                        {subjects.map((subject) => (
-                          <option key={subject} value={subject}>
-                            {subject}
-                          </option>
-                        ))}
-                      </select>
-                    )}
+                      📤 Export Data Presensi
+                    </h2>
+                    <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                      Pilih jenis dan periode data yang ingin diexport
+                    </p>
                   </div>
 
-                  {/* Pilih Kelas */}
-                  {selectedSubject && (
+                  {/* Form Export */}
+                  <div className="space-y-4">
+                    {/* ✅ PILIH JENIS PRESENSI */}
                     <div>
                       <label
                         className={`block text-sm font-medium mb-2 ${
                           darkMode ? "text-gray-300" : "text-gray-700"
                         }`}
                       >
-                        Pilih Kelas
+                        1. Pilih Jenis Presensi
                       </label>
-                      {classes.length === 0 ? (
+                      <div
+                        className={`grid ${
+                          fullUserData.homeroom_class_id ? "grid-cols-2" : "grid-cols-1"
+                        } gap-3`}
+                      >
+                        {/* ✅ ONLY SHOW HARIAN IF USER IS HOMEROOM TEACHER */}
+                        {fullUserData.homeroom_class_id && (
+                          <button
+                            onClick={() => {
+                              setAttendanceType("harian");
+                              setSelectedSubject("");
+                              setSelectedClass("");
+                            }}
+                            className={`px-3 py-3 rounded-lg font-medium transition-all border-2 ${
+                              attendanceType === "harian"
+                                ? darkMode
+                                  ? "bg-purple-600 border-purple-500 text-white shadow-lg"
+                                  : "bg-purple-500 border-purple-400 text-white shadow-lg"
+                                : darkMode
+                                ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-purple-600 active:bg-gray-600"
+                                : "bg-white border-gray-300 text-gray-700 hover:border-purple-400 active:bg-gray-50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">🏫</span>
+                              <div className="text-left">
+                                <div className="text-sm font-semibold">
+                                  Presensi Harian {fullUserData.homeroom_class_id}
+                                </div>
+                                <div className="text-xs opacity-75">(Walikelas)</div>
+                              </div>
+                            </div>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setAttendanceType("mapel");
+                            if (fullUserData?.teacher_id && subjects.length === 0) {
+                              fetchSubjects();
+                            }
+                          }}
+                          className={`px-3 py-3 rounded-lg font-medium transition-all border-2 ${
+                            attendanceType === "mapel"
+                              ? darkMode
+                                ? "bg-purple-600 border-purple-500 text-white shadow-lg"
+                                : "bg-purple-500 border-purple-400 text-white shadow-lg"
+                              : darkMode
+                              ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-purple-600 active:bg-gray-600"
+                              : "bg-white border-gray-300 text-gray-700 hover:border-purple-400 active:bg-gray-50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">📚</span>
+                            <div className="text-left">
+                              <div className="text-sm font-semibold">Presensi Mapel</div>
+                              <div className="text-xs opacity-75">(Guru Mapel)</div>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* ✅ CONDITIONAL FIELDS FOR MAPEL */}
+                    {attendanceType === "mapel" && (
+                      <>
+                        {/* Pilih Mata Pelajaran */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              darkMode ? "text-gray-300" : "text-gray-700"
+                            }`}
+                          >
+                            Pilih Mata Pelajaran
+                          </label>
+                          {subjects.length === 0 ? (
+                            <div
+                              className={`w-full px-4 py-3 rounded-lg border-2 text-center ${
+                                darkMode
+                                  ? "bg-gray-700 border-gray-600 text-gray-400"
+                                  : "bg-gray-100 border-gray-300 text-gray-500"
+                              }`}
+                            >
+                              Tidak ada mata pelajaran tersedia
+                            </div>
+                          ) : (
+                            <select
+                              value={selectedSubject}
+                              onChange={(e) => setSelectedSubject(e.target.value)}
+                              className={`w-full px-4 py-3 rounded-lg border-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                darkMode
+                                  ? "bg-gray-700 border-gray-600 text-white"
+                                  : "bg-white border-gray-300 text-gray-900"
+                              }`}
+                            >
+                              <option value="">-- Pilih Mata Pelajaran --</option>
+                              {subjects.map((subject) => (
+                                <option key={subject} value={subject}>
+                                  {subject}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+
+                        {/* Pilih Kelas */}
+                        {selectedSubject && (
+                          <div>
+                            <label
+                              className={`block text-sm font-medium mb-2 ${
+                                darkMode ? "text-gray-300" : "text-gray-700"
+                              }`}
+                            >
+                              Pilih Kelas
+                            </label>
+                            {classes.length === 0 ? (
+                              <div
+                                className={`w-full px-4 py-3 rounded-lg border-2 text-center ${
+                                  darkMode
+                                    ? "bg-gray-700 border-gray-600 text-gray-400"
+                                    : "bg-gray-100 border-gray-300 text-gray-500"
+                                }`}
+                              >
+                                Tidak ada kelas tersedia
+                              </div>
+                            ) : (
+                              <select
+                                value={selectedClass}
+                                onChange={(e) => setSelectedClass(e.target.value)}
+                                className={`w-full px-4 py-3 rounded-lg border-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                                  darkMode
+                                    ? "bg-gray-700 border-gray-600 text-white"
+                                    : "bg-white border-gray-300 text-gray-900"
+                                }`}
+                              >
+                                <option value="">-- Pilih Kelas --</option>
+                                {classes.map((cls) => (
+                                  <option key={cls.id} value={cls.id}>
+                                    Kelas {cls.id}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Tipe Export (Bulanan/Semester) */}
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        2. Pilih Periode Export
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setExportType("bulanan")}
+                          className={`px-3 py-2.5 rounded-lg font-medium transition-all border-2 ${
+                            exportType === "bulanan"
+                              ? darkMode
+                                ? "bg-blue-600 border-blue-500 text-white shadow-lg"
+                                : "bg-blue-500 border-blue-400 text-white shadow-lg"
+                              : darkMode
+                              ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-blue-600 active:bg-gray-600"
+                              : "bg-white border-gray-300 text-gray-700 hover:border-blue-400 active:bg-gray-50"
+                          }`}
+                        >
+                          <span className="text-base">📅 Bulanan</span>
+                        </button>
+                        <button
+                          onClick={() => setExportType("semester")}
+                          className={`px-3 py-2.5 rounded-lg font-medium transition-all border-2 ${
+                            exportType === "semester"
+                              ? darkMode
+                                ? "bg-blue-600 border-blue-500 text-white shadow-lg"
+                                : "bg-blue-500 border-blue-400 text-white shadow-lg"
+                              : darkMode
+                              ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-blue-600 active:bg-gray-600"
+                              : "bg-white border-gray-300 text-gray-700 hover:border-blue-400 active:bg-gray-50"
+                          }`}
+                        >
+                          <span className="text-sm">📚 Semester</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* BULANAN - Pilih Bulan */}
+                    {exportType === "bulanan" && (
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-2 ${
+                            darkMode ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          Pilih Bulan
+                        </label>
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                          className={`w-full px-4 py-3 rounded-lg border-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                            darkMode
+                              ? "bg-gray-700 border-gray-600 text-white"
+                              : "bg-white border-gray-300 text-gray-900"
+                          }`}
+                        >
+                          {months.map((month) => (
+                            <option key={month.value} value={month.value}>
+                              {month.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* SEMESTER - Pilih Semester */}
+                    {exportType === "semester" && (
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-2 ${
+                            darkMode ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          Pilih Semester
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            onClick={() => setSelectedSemester(1)}
+                            className={`px-3 py-3 rounded-lg font-medium transition-all border-2 ${
+                              selectedSemester === 1
+                                ? darkMode
+                                  ? "bg-green-600 border-green-500 text-white shadow-lg"
+                                  : "bg-green-500 border-green-400 text-white shadow-lg"
+                                : darkMode
+                                ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-green-600 active:bg-gray-600"
+                                : "bg-white border-gray-300 text-gray-700 hover:border-green-400 active:bg-gray-50"
+                            }`}
+                          >
+                            <div className="text-sm font-semibold">Semester Ganjil</div>
+                            <div className="text-xs opacity-75 mt-0.5">(Juli - Des)</div>
+                          </button>
+                          <button
+                            onClick={() => setSelectedSemester(2)}
+                            className={`px-3 py-3 rounded-lg font-medium transition-all border-2 ${
+                              selectedSemester === 2
+                                ? darkMode
+                                  ? "bg-green-600 border-green-500 text-white shadow-lg"
+                                  : "bg-green-500 border-green-400 text-white shadow-lg"
+                                : darkMode
+                                ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-green-600 active:bg-gray-600"
+                                : "bg-white border-gray-300 text-gray-700 hover:border-green-400 active:bg-gray-50"
+                            }`}
+                          >
+                            <div className="text-sm font-semibold">Semester Genap</div>
+                            <div className="text-xs opacity-75 mt-0.5">(Jan - Jun)</div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pilih Tahun Ajaran */}
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          darkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        3. Pilih Tahun Ajaran
+                      </label>
+                      {academicYears.length === 0 ? (
                         <div
                           className={`w-full px-4 py-3 rounded-lg border-2 text-center ${
                             darkMode
@@ -770,249 +897,75 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
                               : "bg-gray-100 border-gray-300 text-gray-500"
                           }`}
                         >
-                          Tidak ada kelas tersedia
+                          Tidak ada tahun ajaran tersedia
                         </div>
                       ) : (
                         <select
-                          value={selectedClass}
-                          onChange={(e) => setSelectedClass(e.target.value)}
+                          value={selectedAcademicYear || ""}
+                          onChange={(e) => setSelectedAcademicYear(e.target.value)}
                           className={`w-full px-4 py-3 rounded-lg border-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
                             darkMode
                               ? "bg-gray-700 border-gray-600 text-white"
                               : "bg-white border-gray-300 text-gray-900"
                           }`}
                         >
-                          <option value="">-- Pilih Kelas --</option>
-                          {classes.map((cls) => (
-                            <option key={cls.id} value={cls.id}>
-                              Kelas {cls.id}
+                          {academicYears.map((year) => (
+                            <option key={year.id} value={year.id}>
+                              {year.year} - Semester {year.semester === 1 ? "Ganjil" : "Genap"}
+                              {year.is_active && " ⭐"}
                             </option>
                           ))}
                         </select>
                       )}
                     </div>
-                  )}
-                </>
-              )}
 
-              {/* Tipe Export (Bulanan/Semester) */}
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  {attendanceType === "mapel"
-                    ? "2. Pilih Periode Export"
-                    : "2. Pilih Periode Export"}
-                </label>
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <button
-                    onClick={() => setExportType("bulanan")}
-                    className={`px-3 sm:px-4 py-3 sm:py-3 rounded-lg font-medium transition-all border-2 min-h-[44px] ${
-                      exportType === "bulanan"
-                        ? darkMode
-                          ? "bg-blue-600 border-blue-500 text-white"
-                          : "bg-blue-500 border-blue-400 text-white"
-                        : darkMode
-                        ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-blue-600 active:bg-gray-600"
-                        : "bg-white border-gray-300 text-gray-700 hover:border-blue-400 active:bg-gray-50"
-                    }`}
-                  >
-                    <span className="text-sm sm:text-base">📅 Bulanan</span>
-                  </button>
-                  <button
-                    onClick={() => setExportType("semester")}
-                    className={`px-3 sm:px-4 py-3 sm:py-3 rounded-lg font-medium transition-all border-2 min-h-[44px] ${
-                      exportType === "semester"
-                        ? darkMode
-                          ? "bg-blue-600 border-blue-500 text-white"
-                          : "bg-blue-500 border-blue-400 text-white"
-                        : darkMode
-                        ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-blue-600 active:bg-gray-600"
-                        : "bg-white border-gray-300 text-gray-700 hover:border-blue-400 active:bg-gray-50"
-                    }`}
-                  >
-                    <span className="text-sm sm:text-base">📚 Semester</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* BULANAN - Pilih Bulan */}
-              {exportType === "bulanan" && (
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Pilih Bulan
-                  </label>
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                    className={`w-full px-4 py-3 rounded-lg border-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
-                  >
-                    {months.map((month) => (
-                      <option key={month.value} value={month.value}>
-                        {month.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* SEMESTER - Pilih Semester */}
-              {exportType === "semester" && (
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Pilih Semester
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                    <button
-                      onClick={() => setSelectedSemester(1)}
-                      className={`px-3 sm:px-4 py-3 rounded-lg font-medium transition-all border-2 min-h-[64px] sm:min-h-[72px] ${
-                        selectedSemester === 1
-                          ? darkMode
-                            ? "bg-green-600 border-green-500 text-white"
-                            : "bg-green-500 border-green-400 text-white"
-                          : darkMode
-                          ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-green-600 active:bg-gray-600"
-                          : "bg-white border-gray-300 text-gray-700 hover:border-green-400 active:bg-gray-50"
-                      }`}
-                    >
-                      <div className="text-xs sm:text-sm font-semibold">Semester Ganjil</div>
-                      <div className="text-[10px] sm:text-xs opacity-75 mt-1">(Juli - Des)</div>
-                    </button>
-                    <button
-                      onClick={() => setSelectedSemester(2)}
-                      className={`px-3 sm:px-4 py-3 rounded-lg font-medium transition-all border-2 min-h-[64px] sm:min-h-[72px] ${
-                        selectedSemester === 2
-                          ? darkMode
-                            ? "bg-green-600 border-green-500 text-white"
-                            : "bg-green-500 border-green-400 text-white"
-                          : darkMode
-                          ? "bg-gray-700 border-gray-600 text-gray-300 hover:border-green-600 active:bg-gray-600"
-                          : "bg-white border-gray-300 text-gray-700 hover:border-green-400 active:bg-gray-50"
-                      }`}
-                    >
-                      <div className="text-xs sm:text-sm font-semibold">Semester Genap</div>
-                      <div className="text-[10px] sm:text-xs opacity-75 mt-1">(Jan - Jun)</div>
-                    </button>
+                    {/* Download Button */}
+                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={handleDownloadExport}
+                        disabled={
+                          isExporting ||
+                          !selectedAcademicYear ||
+                          (attendanceType === "mapel" && (!selectedSubject || !selectedClass))
+                        }
+                        className={`w-full px-4 py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                          darkMode
+                            ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-700 text-white"
+                            : "bg-blue-600 hover:bg-blue-700 active:bg-blue-700 text-white"
+                        }`}
+                      >
+                        {isExporting ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="none"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                            Mengexport...
+                          </span>
+                        ) : (
+                          "📥 Download Excel"
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
-
-              {/* Pilih Tahun Ajaran */}
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  {attendanceType === "mapel" && selectedSubject
-                    ? "3. Pilih Tahun Ajaran"
-                    : "Pilih Tahun Ajaran"}
-                </label>
-                {academicYears.length === 0 ? (
-                  <div
-                    className={`w-full px-4 py-3 rounded-lg border-2 text-center ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-gray-400"
-                        : "bg-gray-100 border-gray-300 text-gray-500"
-                    }`}
-                  >
-                    Tidak ada tahun ajaran tersedia
-                  </div>
-                ) : (
-                  <select
-                    value={selectedAcademicYear || ""}
-                    onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-lg border-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                      darkMode
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
-                  >
-                    {academicYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.year} - Semester {year.semester === 1 ? "Ganjil" : "Genap"}
-                        {year.is_active && " ⭐"}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div
-              className={`px-4 sm:px-6 py-3 sm:py-4 border-t sticky bottom-0 ${
-                darkMode ? "border-gray-700 bg-gray-900/30" : "border-gray-200 bg-gray-50"
-              }`}
-            >
-              <div className="flex gap-2 sm:gap-3">
-                <button
-                  onClick={() => setShowExportModal(false)}
-                  disabled={isExporting}
-                  className={`flex-1 px-3 sm:px-4 py-3 rounded-lg font-medium transition-all disabled:opacity-50 min-h-[44px] ${
-                    darkMode
-                      ? "bg-gray-700 hover:bg-gray-600 active:bg-gray-600 text-white"
-                      : "bg-gray-200 hover:bg-gray-300 active:bg-gray-300 text-gray-700"
-                  }`}
-                >
-                  <span className="text-sm sm:text-base">Batal</span>
-                </button>
-                <button
-                  onClick={handleDownloadExport}
-                  disabled={
-                    isExporting ||
-                    !selectedAcademicYear ||
-                    (attendanceType === "mapel" && (!selectedSubject || !selectedClass))
-                  }
-                  className={`flex-1 px-3 sm:px-4 py-3 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] ${
-                    darkMode
-                      ? "bg-blue-600 hover:bg-blue-700 active:bg-blue-700 text-white"
-                      : "bg-blue-600 hover:bg-blue-700 active:bg-blue-700 text-white"
-                  }`}
-                >
-                  {isExporting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      <span className="text-sm sm:text-base">Mengexport...</span>
-                    </span>
-                  ) : (
-                    <span className="text-sm sm:text-base">📥 Download Excel</span>
-                  )}
-                </button>
-              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

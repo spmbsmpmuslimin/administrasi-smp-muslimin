@@ -138,8 +138,8 @@ export const Login = ({ onLogin, onShowToast }) => {
 
         {/* Form Container */}
         <div className="relative w-full max-w-md">
-          {/* Logo */}
-          <div className="flex justify-center mb-6">
+          {/* Logo - Desktop Only (outside card) */}
+          <div className="hidden lg:flex justify-center mb-6">
             <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden p-2 hover:scale-110 transition-transform duration-300">
               <Logo size="large" className="rounded-xl" />
             </div>
@@ -147,6 +147,12 @@ export const Login = ({ onLogin, onShowToast }) => {
 
           {/* Form Card */}
           <div className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl">
+            {/* Logo - Mobile Only (inside card) */}
+            <div className="flex lg:hidden justify-center mb-6">
+              <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden p-2">
+                <Logo size="large" className="rounded-xl" />
+              </div>
+            </div>
             {/* Form Header */}
             <div className="mb-6 text-center">
               <h2 className="text-2xl font-bold text-white mb-2">Masuk</h2>
@@ -278,12 +284,13 @@ export const Login = ({ onLogin, onShowToast }) => {
       </div>
 
       {/* RIGHT SIDE - Photo Section (70%) */}
-      <div className="relative overflow-hidden flex-shrink-0 h-[40vh] lg:h-screen lg:flex-[7] fade-in">
+      <div className="relative overflow-hidden flex-shrink-0 h-[50vh] lg:h-screen lg:flex-[7] fade-in">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url(${backgroundImage})`,
+            backgroundPosition: "center 35%",
           }}
         ></div>
 
@@ -303,20 +310,6 @@ export const Login = ({ onLogin, onShowToast }) => {
                 <br />
                 <span className="text-blue-300">SMP Muslimin Cililin</span>
               </h1>
-            </div>
-
-            <div className="space-y-4 mt-8">
-              <div className="inline-block px-4 py-2 bg-blue-500/20 backdrop-blur-sm border border-blue-300/30 rounded-full">
-                <p className="text-blue-200 text-lg sm:text-xl font-semibold">Visi Sekolah</p>
-              </div>
-              <p className="text-slate-100 text-base sm:text-lg lg:text-xl xl:text-2xl leading-relaxed drop-shadow-lg max-w-2xl mx-auto">
-                Mewujudkan Peserta Didik yang{" "}
-                <span className="text-blue-300 font-semibold">Berakhlak Mulia</span>,
-                <br className="hidden sm:block" />
-                <span className="text-purple-300 font-semibold">Moderat</span>,{" "}
-                <span className="text-cyan-300 font-semibold">Mandiri</span> dan{" "}
-                <span className="text-pink-300 font-semibold">Berprestasi</span>
-              </p>
             </div>
 
             {/* Decorative Elements */}

@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 import { DataExcel } from "./DataExcel";
 import { Edit2, Trash2, X, Save, Users, GraduationCap, User, UserCheck } from "lucide-react";
 
-export const Students = () => {
+export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   const [siswaData, setSiswaData] = useState([]);
   const [allSiswaData, setAllSiswaData] = useState([]);
   const [kelasOptions, setKelasOptions] = useState([]);
@@ -31,22 +31,63 @@ export const Students = () => {
 
   const [currentUser, setCurrentUser] = useState(null);
 
+  // Fetch user data dari database untuk dapetin teacher_id dan homeroom_class_id
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("userSession"));
-    setCurrentUser(userData);
-  }, []);
+    const fetchUserDetails = async () => {
+      console.log("👤 User from props:", userFromProps);
+
+      if (!userFromProps?.id) {
+        console.log("❌ No user from props");
+        setCurrentUser(null);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("id, role, teacher_id, homeroom_class_id")
+          .eq("id", userFromProps.id)
+          .single();
+
+        if (error) {
+          console.error("❌ Error fetching user details:", error);
+          setCurrentUser(userFromProps);
+          return;
+        }
+
+        console.log("✅ User details fetched:", data);
+        setCurrentUser(data);
+      } catch (error) {
+        console.error("❌ Error in fetchUserDetails:", error);
+        setCurrentUser(userFromProps);
+      }
+    };
+
+    fetchUserDetails();
+  }, [userFromProps]);
 
   const canEditDelete = useMemo(() => {
+    console.log("🔧 canEditDelete calculation - currentUser:", currentUser);
+
+    if (!currentUser) {
+      console.log("❌ No currentUser");
+      return false;
+    }
+
     // Admin bisa edit/hapus semua
     if (currentUser?.role === "admin") {
+      console.log("✅ User is admin");
       return true;
     }
 
     // Wali kelas hanya bisa edit/hapus siswa di kelasnya
     if (currentUser?.role === "teacher" && currentUser?.homeroom_class_id) {
-      return selectedKelas === currentUser?.homeroom_class_id;
+      const canEdit = selectedKelas === currentUser?.homeroom_class_id;
+      console.log("👨‍🏫 Teacher can edit:", canEdit);
+      return canEdit;
     }
 
+    console.log("❌ User cannot edit/delete");
     return false;
   }, [currentUser, selectedKelas]);
 
@@ -59,11 +100,19 @@ export const Students = () => {
     console.log("🏠 Homeroom Class:", currentUser?.homeroom_class_id);
   }, [canEditDelete, selectedKelas, currentUser]);
 
+  // Fetch students dan kelas options saat component mount
   useEffect(() => {
     fetchStudents();
     fetchKelasOptions();
-    fetchTeacherAssignments();
   }, []);
+
+  // Fetch teacher assignments setelah currentUser ready
+  useEffect(() => {
+    if (currentUser) {
+      console.log("✅ Current user loaded, fetching teacher assignments...");
+      fetchTeacherAssignments();
+    }
+  }, [currentUser]);
 
   const fetchStudents = async () => {
     try {
@@ -101,27 +150,77 @@ export const Students = () => {
 
   const fetchTeacherAssignments = async () => {
     try {
-      const currentUser = JSON.parse(localStorage.getItem("userSession"));
+      console.log("👤 Current User from state:", currentUser);
 
       if (!currentUser) {
+        console.log("🔴 No current user found in state");
         setTeacherClasses([]);
         return;
       }
 
       if (currentUser.role === "admin") {
+        console.log("👑 User is admin - showing all classes");
         setTeacherClasses([]);
         return;
       }
 
       if (!currentUser.teacher_id) {
+        console.log("🔴 No teacher_id found for user:", currentUser);
         setTeacherClasses([]);
         return;
       }
 
+      console.log("👨‍🏫 Fetching assignments for teacher_id:", currentUser.teacher_id);
+
+      // Step 1: Ambil academic year yang aktif
+      let activeYear = null;
+
+      // Try 1: Query dengan .single()
+      const { data: yearData, error: yearError } = await supabase
+        .from("academic_years")
+        .select("id, year, semester, is_active")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (yearError) {
+        console.error("❌ Error fetching active academic year (single):", yearError);
+
+        // Try 2: Query tanpa single, ambil semua lalu filter
+        console.log("🔄 Trying alternative query...");
+        const { data: allYears, error: allYearsError } = await supabase
+          .from("academic_years")
+          .select("id, year, semester, is_active");
+
+        if (allYearsError) {
+          console.error("❌ Error fetching all academic years:", allYearsError);
+          console.log("⚠️ Cannot access academic_years table, showing all classes as fallback");
+          setTeacherClasses([]);
+          return;
+        }
+
+        console.log("📋 All academic years:", allYears);
+        activeYear = allYears?.find((y) => y.is_active === true);
+      } else {
+        activeYear = yearData;
+      }
+
+      if (!activeYear) {
+        console.log("⚠️ No active academic year found");
+        console.log(
+          "💡 Tip: Make sure there's a record with is_active = true in academic_years table"
+        );
+        setTeacherClasses([]);
+        return;
+      }
+
+      console.log("📅 Active academic year:", activeYear);
+
+      // Step 2: Ambil assignments berdasarkan teacher_id dan academic_year_id yang aktif
       const { data: assignments, error: assignError } = await supabase
         .from("teacher_assignments")
-        .select("class_id")
-        .eq("teacher_id", currentUser.teacher_id);
+        .select("*")
+        .eq("teacher_id", currentUser.teacher_id)
+        .eq("academic_year_id", activeYear.id);
 
       if (assignError) {
         console.error("❌ Error fetching assignments:", assignError);
@@ -129,7 +228,22 @@ export const Students = () => {
         return;
       }
 
+      console.log("📋 Raw assignments data (ALL COLUMNS):", assignments);
+
+      if (!assignments || assignments.length === 0) {
+        console.log(
+          "⚠️ No assignments found for teacher_id:",
+          currentUser.teacher_id,
+          "in academic_year_id:",
+          activeYear.id
+        );
+        setTeacherClasses([]);
+        return;
+      }
+
       const classIds = [...new Set(assignments.map((a) => a.class_id))].filter(Boolean).sort();
+
+      console.log("✅ Unique class IDs extracted:", classIds);
 
       setTeacherClasses(classIds);
     } catch (error) {
@@ -139,19 +253,32 @@ export const Students = () => {
   };
 
   useEffect(() => {
+    console.log("🔄 useEffect triggered");
+    console.log("📊 teacherClasses:", teacherClasses);
+    console.log("📚 allSiswaData length:", allSiswaData.length);
+    console.log("🎓 allKelasOptions:", allKelasOptions);
+
     if (teacherClasses.length > 0) {
       const filteredSiswa = allSiswaData.filter((siswa) => teacherClasses.includes(siswa.class_id));
       setSiswaData(filteredSiswa);
 
+      console.log("✅ Filtered Siswa length:", filteredSiswa.length);
+
       const filteredKelas = allKelasOptions.filter((kelas) => teacherClasses.includes(kelas));
       setKelasOptions(filteredKelas);
+
+      console.log("🎯 Filtered Kelas:", filteredKelas);
 
       const jenjangSet = new Set(
         filteredKelas.map((kelas) => kelas?.charAt(0)).filter((j) => ["7", "8", "9"].includes(j))
       );
       const jenjangArray = Array.from(jenjangSet).sort();
+
+      console.log("📚 Available Jenjang:", jenjangArray);
+
       setAvailableJenjang(jenjangArray);
     } else {
+      console.log("⚪ No teacher classes - showing all data (Admin atau teacherClasses empty)");
       setSiswaData(allSiswaData);
       setKelasOptions(allKelasOptions);
 
@@ -280,27 +407,31 @@ export const Students = () => {
     }
   };
 
-  const filteredKelasOptions = selectedJenjang
-    ? kelasOptions.filter((kelas) => kelas.startsWith(selectedJenjang))
-    : kelasOptions;
+  const filteredKelasOptions = useMemo(() => {
+    return selectedJenjang
+      ? kelasOptions.filter((kelas) => kelas.startsWith(selectedJenjang))
+      : kelasOptions;
+  }, [selectedJenjang, kelasOptions]);
 
-  const filteredData = siswaData.filter((siswa) => {
-    const matchesSearch =
-      siswa.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      siswa.nis?.toString().includes(searchTerm);
-    const matchesJenjang = selectedJenjang ? siswa.class_id?.startsWith(selectedJenjang) : true;
-    const matchesKelas = selectedKelas ? siswa.class_id === selectedKelas : true;
-    const matchesGender = selectedGender ? siswa.gender === selectedGender : true;
+  const filteredData = useMemo(() => {
+    return siswaData.filter((siswa) => {
+      const matchesSearch =
+        siswa.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        siswa.nis?.toString().includes(searchTerm);
+      const matchesJenjang = selectedJenjang ? siswa.class_id?.startsWith(selectedJenjang) : true;
+      const matchesKelas = selectedKelas ? siswa.class_id === selectedKelas : true;
+      const matchesGender = selectedGender ? siswa.gender === selectedGender : true;
 
-    return matchesSearch && matchesJenjang && matchesKelas && matchesGender;
-  });
+      return matchesSearch && matchesJenjang && matchesKelas && matchesGender;
+    });
+  }, [siswaData, searchTerm, selectedJenjang, selectedKelas, selectedGender]);
 
   const handleJenjangChange = (e) => {
     setSelectedJenjang(e.target.value);
     setSelectedKelas("");
   };
 
-  const EditModal = () => (
+  const EditModal = React.memo(() => (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 px-6 py-5 rounded-t-xl">
@@ -415,9 +546,9 @@ export const Students = () => {
         </form>
       </div>
     </div>
-  );
+  ));
 
-  const DeleteModal = () => (
+  const DeleteModal = React.memo(() => (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
         <div className="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 px-6 py-5 rounded-t-xl">
@@ -478,9 +609,9 @@ export const Students = () => {
         </div>
       </div>
     </div>
-  );
+  ));
 
-  const ExportModal = () => (
+  const ExportModal = React.memo(() => (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 px-6 py-5 rounded-t-xl">
@@ -597,26 +728,28 @@ export const Students = () => {
         </div>
       </div>
     </div>
-  );
+  ));
 
   if (isLoading) {
     return (
-      <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
         <div className="mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
             Data Siswa
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300">Memuat data siswa...</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
+            Memuat data siswa...
+          </p>
         </div>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 dark:border-blue-400"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 dark:border-blue-400 transition-colors duration-300"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {showExportModal && <ExportModal />}
       {showEditModal && <EditModal />}
       {showDeleteModal && <DeleteModal />}
@@ -624,15 +757,18 @@ export const Students = () => {
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
               Data Siswa
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
               Manajemen Data Siswa SMP Muslimin Cililin
             </p>
           </div>
-          <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-            <Users className="text-blue-600 dark:text-blue-400" size={28} />
+          <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl transition-colors duration-300">
+            <Users
+              className="text-blue-600 dark:text-blue-400 transition-colors duration-300"
+              size={28}
+            />
           </div>
         </div>
       </div>
