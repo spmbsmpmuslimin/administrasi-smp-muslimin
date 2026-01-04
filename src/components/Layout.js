@@ -267,8 +267,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
     if (path === "/attendance") return "attendance";
     if (path === "/attendance-management") return "attendance-management";
     if (path === "/attendance-teacher") return "attendance-teacher";
-    if (path === "/grades") return "nilai-asli";
-    if (path === "/grades-katrol") return "nilai-katrol";
+    if (path === "/nilai-siswa") return "nilai-siswa"; // 🚨 PERUBAHAN: dari "/grades" dan "/grades-katrol"
     if (path === "/jadwal-saya") return "jadwal-saya";
     if (path === "/catatan-siswa") return "catatan-siswa";
     if (path === "/konseling") return "konseling";
@@ -308,8 +307,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       "/attendance": "Kehadiran",
       "/attendance-management": "Management Presensi",
       "/attendance-teacher": "Presensi Guru",
-      "/grades": "Nilai Asli",
-      "/grades-katrol": "Nilai Katrol",
+      "/nilai-siswa": "Nilai Siswa", // 🚨 PERUBAHAN: dari "Nilai Asli" & "Nilai Katrol"
       "/jadwal-saya": "Jadwal Saya",
       "/catatan-siswa": "Catatan Siswa",
       "/konseling": "Konseling",
@@ -355,8 +353,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         Kehadiran: "Kelola Kehadiran Siswa",
         "Management Presensi": "Edit, Ubah Tanggal, atau Hapus Data Presensi",
         "Presensi Guru": "Kelola Presensi dan Absensi Guru",
-        "Nilai Asli": "Kelola Nilai Asli Akademik Siswa",
-        "Nilai Katrol": "Kelola Nilai Katrol Akademik Siswa",
+        "Nilai Siswa": "Kelola Nilai Akademik Siswa (Input Nilai & Nilai Katrol)", // 🚨 PERUBAHAN
         "Jadwal Saya": "Lihat Jadwal Mengajar",
         "Catatan Siswa": "Kelola Catatan Perkembangan Siswa",
         Konseling: "Kelola Data Konseling BK/BP",
@@ -400,8 +397,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Kehadiran: `Input Kehadiran Siswa`,
             "Management Presensi": "Kelola Data Presensi yang Sudah Diinput",
             "Presensi Guru": "Input Kehadiran Guru",
-            "Nilai Asli": `Input Nilai Asli Kelas`,
-            "Nilai Katrol": `Input Nilai Katrol Kelas`,
+            "Nilai Siswa": `Input Nilai Akademik (Asli & Katrol) Kelas ${homeroom_class_id}`, // 🚨 PERUBAHAN
             "Catatan Siswa": `Monitor Perkembangan Siswa Kelas ${homeroom_class_id}`,
             "Jadwal Saya": "Lihat Jadwal Mengajar Kelas",
             Laporan: `Laporan Kelas`,
@@ -429,8 +425,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             Kehadiran: "Input kehadiran mata pelajaran",
             "Management Presensi": "Kelola Data Presensi Mata Pelajaran",
             "Presensi Guru": "Input Presensi dan Absensi Guru",
-            "Nilai Asli": "Input nilai asli mata pelajaran",
-            "Nilai Katrol": "Input nilai katrol mata pelajaran",
+            "Nilai Siswa": "Input nilai akademik (asli & katrol) mata pelajaran", // 🚨 PERUBAHAN
             "Jadwal Saya": "Lihat Jadwal Mengajar",
             Laporan: "Laporan mata pelajaran",
             Pengaturan: "Pengaturan akun",
@@ -463,8 +458,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         attendance: "/attendance",
         "attendance-management": "/attendance-management",
         "attendance-teacher": "/attendance-teacher",
-        "nilai-asli": "/grades",
-        "nilai-katrol": "/grades-katrol",
+        "nilai-siswa": "/nilai-siswa", // 🚨 PERUBAHAN: dari "nilai-asli": "/grades" dan "nilai-katrol": "/grades-katrol"
         "jadwal-saya": "/jadwal-saya",
         "catatan-siswa": "/catatan-siswa",
         konseling: "/konseling",

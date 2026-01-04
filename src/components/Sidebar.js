@@ -16,7 +16,6 @@ const Sidebar = ({
   onToggleCollapse = null,
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(darkMode);
-  const [gradesMenuOpen, setGradesMenuOpen] = useState(false);
   const [eraportActive, setEraportActive] = useState(true);
 
   useEffect(() => {
@@ -91,16 +90,10 @@ const Sidebar = ({
     if (onClose) onClose();
   };
 
-  const handleGradesMenuClick = (page) => {
-    handleMenuClick(page);
-    setGradesMenuOpen(false);
-  };
-
   const handleEraMenuClick = (page) => {
     handleMenuClick(page);
   };
 
-  const isNilaiPage = currentPage === "nilai-asli" || currentPage === "nilai-katrol";
   const isEraPage = [
     "era-dashboard-admin",
     "era-dashboard-teacher",
@@ -353,7 +346,6 @@ const Sidebar = ({
                 AKADEMIK
               </div>
             )}
-
             {/* ✓ Presensi Guru */}
             {(isAdmin || isTeacher || isGuruBK) && (
               <a
@@ -390,7 +382,6 @@ const Sidebar = ({
                 {!isCollapsed && <span className="flex-1 text-sm">Presensi Guru</span>}
               </a>
             )}
-
             {/* ✓ Presensi Siswa */}
             {(isAdmin || !isGuruBK) && (
               <a
@@ -428,115 +419,42 @@ const Sidebar = ({
               </a>
             )}
 
-            {/* 📈 Nilai Siswa dengan Submenu */}
+            {/* ✓ Nilai Siswa */}
             {(isAdmin || !isGuruBK) && (
-              <div className="mb-1">
-                <a
-                  href="#nilai-siswa"
-                  className={`
-                    flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                    touch-manipulation min-h-[44px]
-                    ${isCollapsed ? "justify-center" : ""}
-                    ${
-                      isNilaiPage
-                        ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-                        : "hover:text-blue-100 dark:hover:text-gray-100"
-                    }
-                  `}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (!isCollapsed) {
-                      setGradesMenuOpen(!gradesMenuOpen);
-                    } else {
-                      handleGradesMenuClick("nilai-asli");
-                    }
-                  }}
-                  title={isCollapsed ? "Nilai Siswa" : ""}
+              <a
+                href="#nilai-siswa"
+                className={`
+      flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+      touch-manipulation min-h-[44px]
+      ${isCollapsed ? "justify-center" : ""}
+      ${
+        currentPage === "nilai-siswa"
+          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
+          : "hover:text-blue-100 dark:hover:text-gray-100"
+      }
+    `}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleMenuClick("nilai-siswa");
+                }}
+                title={isCollapsed ? "Nilai Siswa" : ""}
+              >
+                <svg
+                  className="w-5 h-5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <div className="flex items-center gap-3">
-                    <svg
-                      className="w-5 h-5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                      />
-                    </svg>
-                    {!isCollapsed && <span className="flex-1 text-sm">Nilai Siswa</span>}
-                  </div>
-
-                  {!isCollapsed && (
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        gradesMenuOpen ? "rotate-90" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  )}
-                </a>
-
-                {!isCollapsed && gradesMenuOpen && (
-                  <div className="ml-8 mt-1 space-y-1">
-                    <a
-                      href="#nilai-asli"
-                      className={`
-                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                        touch-manipulation min-h-[44px]
-                        ${
-                          currentPage === "nilai-asli"
-                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
-                            : "hover:text-blue-100 dark:hover:text-gray-100"
-                        }
-                      `}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleGradesMenuClick("nilai-asli");
-                      }}
-                      title="Nilai Asli"
-                    >
-                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
-                      <span className="flex-1 text-sm">Nilai Asli</span>
-                    </a>
-
-                    <a
-                      href="#nilai-katrol"
-                      className={`
-                        flex items-center gap-3 px-4 sm:px-6 py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-                        touch-manipulation min-h-[44px]
-                        ${
-                          currentPage === "nilai-katrol"
-                            ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-300 dark:border-blue-400 font-semibold text-blue-100 dark:text-gray-100"
-                            : "hover:text-blue-100 dark:hover:text-gray-100"
-                        }
-                      `}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleGradesMenuClick("nilai-katrol");
-                      }}
-                      title="Nilai Katrol"
-                    >
-                      <div className="w-2 h-2 rounded-full bg-blue-300 ml-1"></div>
-                      <span className="flex-1 text-sm">Nilai Katrol</span>
-                    </a>
-                  </div>
-                )}
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                {!isCollapsed && <span className="flex-1 text-sm">Nilai Siswa</span>}
+              </a>
             )}
-
             {/* 📝 Catatan Siswa (Admin & Wali Kelas) */}
             {(isAdmin || isWaliKelas) && (
               <a
@@ -573,7 +491,6 @@ const Sidebar = ({
                 {!isCollapsed && <span className="flex-1 text-sm">Catatan Siswa</span>}
               </a>
             )}
-
             {/* 📅 Jadwal Saya */}
             {(isAdmin || (!isGuruBK && (userRole === "teacher" || userRole === "homeroom"))) && (
               <a
@@ -610,7 +527,6 @@ const Sidebar = ({
                 {!isCollapsed && <span className="flex-1 text-sm">Jadwal Saya</span>}
               </a>
             )}
-
             {/* 📋 Konseling */}
             {(isAdmin || isGuruBK) && (
               <a
@@ -647,7 +563,6 @@ const Sidebar = ({
                 {!isCollapsed && <span className="flex-1 text-sm">Konseling</span>}
               </a>
             )}
-
             {/* 📊 Laporan */}
             {isAdmin && (
               <a

@@ -431,7 +431,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
   }, [navigate]);
 
   const handleGrades = useCallback(() => {
-    navigate("/grades");
+    navigate("/nilai-siswa");
   }, [navigate]);
 
   const handleStudents = useCallback(() => {

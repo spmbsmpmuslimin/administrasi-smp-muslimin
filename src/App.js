@@ -12,8 +12,7 @@ import Classes from "./pages/Classes";
 import Students from "./pages/Students";
 import AttendanceMain from "./pages/attendance/AttendanceMain";
 import AttendanceManagement from "./pages/attendance/AttendanceManagement";
-import Grades from "./pages/grades/Grades";
-import GradesKatrol from "./pages/grades/GradesKatrol";
+import GradeMain from "./pages/grades/GradeMain";
 import TeacherSchedule from "./pages/TeacherSchedule";
 import CatatanSiswa from "./pages/CatatanSiswa";
 import Setting from "./setting/Setting";
@@ -763,22 +762,6 @@ function App() {
         />
 
         <Route
-          path="/grades-katrol"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
-              <LayoutWrapper>
-                <GradesKatrol user={user} onShowToast={handleShowToast} darkMode={darkMode} />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
           path="/attendance-teacher"
           element={
             <ProtectedRoute
@@ -790,6 +773,23 @@ function App() {
             >
               <LayoutWrapper>
                 <TeacherAttendance user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ========== NILAI SISWA (TAB INPUT NILAI & NILAI KATROL) ========== */}
+        <Route
+          path="/nilai-siswa"
+          element={
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}
+            >
+              <LayoutWrapper>
+                <GradeMain user={user} onShowToast={handleShowToast} darkMode={darkMode} />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -811,22 +811,6 @@ function App() {
                   onShowToast={handleShowToast}
                   darkMode={darkMode}
                 />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/grades"
-          element={
-            <ProtectedRoute
-              user={user}
-              loading={loading}
-              darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
-              <LayoutWrapper>
-                <Grades user={user} onShowToast={handleShowToast} darkMode={darkMode} />
               </LayoutWrapper>
             </ProtectedRoute>
           }

@@ -850,20 +850,6 @@ const Grades = ({ user, onShowToast }) => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-            <div>
-              <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                <Calculator className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-indigo-600 dark:text-indigo-400" />
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
-                  Input Nilai Siswa
-                </h1>
-              </div>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
-                Kelola Nilai Siswa Untuk Mata Pelajaran
-              </p>
-            </div>
-          </div>
-
           {/* Message */}
           {message && (
             <div
@@ -929,12 +915,6 @@ const Grades = ({ user, onShowToast }) => {
                   </option>
                 ))}
               </select>
-              {selectedSemesterInfo && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Periode: {selectedSemesterInfo.start_date} s/d {selectedSemesterInfo.end_date}
-                  {selectedSemesterInfo.is_active && " • Aktif"}
-                </p>
-              )}
             </div>
 
             {/* Mata Pelajaran */}

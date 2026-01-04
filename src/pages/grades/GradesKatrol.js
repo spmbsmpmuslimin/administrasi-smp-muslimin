@@ -243,10 +243,10 @@ const GradesKatrol = ({
   const [selectedSubjectState, setSelectedSubjectState] = useState(selectedSubject || "");
   const [selectedClassId, setSelectedClassId] = useState(selectedClass || "");
 
-  const [academicYears, setAcademicYears] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [classes, setClasses] = useState([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const academicYears = []; // Dummy to prevent legacy reference errors
 
   // ✅ FUNGSI HELPER UNTUK MENDAPATKAN ACADEMIC_YEAR_ID DENGAN FALLBACK
   const getValidAcademicYearId = () => {
@@ -333,7 +333,6 @@ const GradesKatrol = ({
       selectedSemester,
       selectedSubjectState,
       selectedClassId,
-      academicYearsLength: academicYears.length,
       subjectsLength: subjects.length,
       classesLength: classes.length,
       loading,
@@ -345,86 +344,11 @@ const GradesKatrol = ({
     selectedSemester,
     selectedSubjectState,
     selectedClassId,
-    academicYears,
     subjects,
     classes,
     loading,
     processing,
   ]);
-
-  // Fetch Academic Years
-  useEffect(() => {
-    console.log("🔄 fetchAcademicYears TRIGGERED", { teacherId });
-    const fetchAcademicYears = async () => {
-      if (!teacherId) {
-        console.log("⚠️ teacherId not available, skipping fetch");
-        setIsInitialLoad(false);
-        return;
-      }
-      console.log("📡 Fetching academic years...");
-      try {
-        // ✅ GUNAKAN applyAcademicFilters untuk query
-        let query = supabase
-          .from("teacher_assignments")
-          .select("academic_year")
-          .eq("teacher_id", teacherId);
-
-        // Filter tahun ajaran yang masih aktif/relevant
-        const { year: activeYear } = await getActiveAcademicInfo();
-        if (activeYear) {
-          query = query.gte("academic_year", activeYear.split("/")[0]);
-        }
-
-        const { data: assignmentData, error: assignmentError } = await query;
-
-        console.log("✅ Academic years fetched:", assignmentData?.length || 0);
-
-        if (assignmentError) {
-          console.error("Error fetching academic years:", assignmentError);
-          setMessage({
-            text: "Error: Gagal mengambil tahun akademik",
-            type: "error",
-          });
-          setIsInitialLoad(false);
-          return;
-        }
-
-        if (!assignmentData || assignmentData.length === 0) {
-          setAcademicYears([]);
-          setMessage({
-            text: "Tidak ada data tahun akademik untuk guru ini",
-            type: "error",
-          });
-          setIsInitialLoad(false);
-          return;
-        }
-
-        const uniqueYears = [...new Set(assignmentData.map((item) => item.academic_year))];
-        const sortedYears = uniqueYears.sort((a, b) => {
-          const yearA = parseInt(a.split("/")[0]);
-          const yearB = parseInt(b.split("/")[0]);
-          return yearB - yearA;
-        });
-
-        console.log("📊 Sorted academic years:", sortedYears);
-        setAcademicYears(sortedYears);
-
-        if (!selectedAcademicYear && sortedYears.length > 0) {
-          console.log("🎯 Auto-setting academic year to:", sortedYears[0]);
-          setSelectedAcademicYear(sortedYears[0]);
-        }
-        setIsInitialLoad(false);
-      } catch (error) {
-        console.error("Error in fetchAcademicYears:", error);
-        setMessage({
-          text: "Error: Terjadi kesalahan sistem saat mengambil tahun akademik",
-          type: "error",
-        });
-        setIsInitialLoad(false);
-      }
-    };
-    fetchAcademicYears();
-  }, [teacherId]);
 
   // Fetch Subjects
   useEffect(() => {
@@ -1410,34 +1334,6 @@ const GradesKatrol = ({
         data={pendingSaveData}
       />
 
-      {/* Header dengan tombol close */}
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-700 dark:from-purple-950 dark:to-indigo-900 rounded-xl shadow-lg p-4 sm:p-6 text-white">
-          <div className="flex items-center gap-3">
-            <Zap className="w-6 h-6 sm:w-8 sm:h-8" />
-            <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Proses Katrol Nilai</h1>
-              {/* ✅ TAMPILKAN INFO ACADEMIC DI HEADER */}
-              <p className="text-sm text-white/80 mt-1">
-                {academicInfo ? (
-                  <span>Linear Scaling Method untuk {academicInfo.displayText}</span>
-                ) : (
-                  "Linear Scaling Method untuk menaikkan nilai siswa"
-                )}
-              </p>
-            </div>
-          </div>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/20 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Filter Section */}
       <div className="max-w-7xl mx-auto mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
@@ -1452,54 +1348,7 @@ const GradesKatrol = ({
             )}
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {/* Tahun Ajaran */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Tahun Akademik
-              </label>
-              <select
-                key={`academic-year-${academicYears.length}`}
-                value={selectedAcademicYear}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  console.log("🔄 Academic Year onChange:", value);
-                  setSelectedAcademicYear(value);
-                  setSelectedSubjectState("");
-                  setSelectedClassId("");
-                  setSubjects([]);
-                  setClasses([]);
-                  setDataNilai([]);
-                  setHasilKatrol([]);
-                  setKkmSettings(null);
-                }}
-                className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
-                disabled={isInitialLoad || loading}
-                style={{
-                  position: "relative",
-                  zIndex: 9999,
-                  pointerEvents: "auto",
-                  cursor: isInitialLoad || loading ? "not-allowed" : "pointer",
-                }}
-              >
-                <option value="">Pilih Tahun Akademik</option>
-                {academicYears.map((year) => (
-                  <option
-                    key={year}
-                    value={year}
-                    className={
-                      year === academicInfo?.year
-                        ? "font-bold bg-purple-50 dark:bg-purple-900/20"
-                        : ""
-                    }
-                  >
-                    {year} {year === academicInfo?.year ? "(Aktif)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             {/* Semester */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
@@ -1507,7 +1356,6 @@ const GradesKatrol = ({
                 Semester
               </label>
               <select
-                key={`semester-${selectedAcademicYear}`}
                 value={selectedSemester}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -1522,19 +1370,19 @@ const GradesKatrol = ({
                   setKkmSettings(null);
                 }}
                 className="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
-                disabled={isInitialLoad || !selectedAcademicYear}
+                disabled={isInitialLoad}
                 style={{
                   position: "relative",
                   zIndex: 9999,
                   pointerEvents: "auto",
-                  cursor: isInitialLoad || !selectedAcademicYear ? "not-allowed" : "pointer",
+                  cursor: isInitialLoad ? "not-allowed" : "pointer",
                 }}
               >
                 <option value="1">Semester 1 (Ganjil)</option>
                 <option value="2">Semester 2 (Genap)</option>
               </select>
               {/* ✅ INFO SEMESTER AKTIF */}
-              {academicInfo && selectedAcademicYear === academicInfo.year && (
+              {academicInfo && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Semester aktif: {academicInfo.semesterText}
                 </p>
@@ -1616,168 +1464,176 @@ const GradesKatrol = ({
             </div>
           </div>
 
-          {/* ✅ KKM & Nilai Maksimal - FLEXIBLE VERSION */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold dark:text-gray-200 flex items-center gap-2">
-                <Calculator className="w-5 h-5 text-blue-600 dark:text-blue-500" />
-                Pengaturan KKM
-                {/* ✅ INFO ACADEMIC CONTEXT */}
-                {academicInfo && (
-                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
-                    untuk {academicInfo.displayText}
-                  </span>
-                )}
-              </h3>
+          {selectedSemester && selectedSubjectState && selectedClassId && (
+            <>
+              {/* ✅ KKM & Nilai Maksimal - FLEXIBLE VERSION */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold dark:text-gray-200 flex items-center gap-2">
+                    <Calculator className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+                    Pengaturan KKM
+                    {/* ✅ INFO ACADEMIC CONTEXT */}
+                    {academicInfo && (
+                      <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                        untuk {academicInfo.displayText}
+                      </span>
+                    )}
+                  </h3>
 
-              {kkmSettings && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full flex items-center gap-1">
-                    <CheckCircle className="w-3 h-3" />
-                    Tersimpan
-                  </div>
-                  <button
-                    onClick={resetKkmSettings}
-                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center gap-1"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    Reset
-                  </button>
+                  {kkmSettings && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Tersimpan
+                      </div>
+                      <button
+                        onClick={resetKkmSettings}
+                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center gap-1"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Reset
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* REVISI: Grid 3 kolom untuk KKM + Nilai Maksimal + Tombol */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-              {/* Kolom 1: KKM */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  KKM (Kriteria Ketuntasan Minimal)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={kkm}
-                  onChange={(e) => setKkm(parseInt(e.target.value) || 75)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
-                  placeholder="75"
-                />
+                {/* REVISI: Grid 3 kolom untuk KKM + Nilai Maksimal + Tombol */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                  {/* Kolom 1: KKM */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      KKM (Kriteria Ketuntasan Minimal)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={kkm}
+                      onChange={(e) => setKkm(parseInt(e.target.value) || 75)}
+                      className="w-full px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
+                      placeholder="75"
+                    />
+                  </div>
+
+                  {/* Kolom 2: Nilai Maksimal Target */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Nilai Maksimal Target
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={nilaiMaksimal}
+                      onChange={(e) => setNilaiMaksimal(parseInt(e.target.value) || 100)}
+                      className="w-full px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
+                      placeholder="100"
+                    />
+                  </div>
+
+                  {/* Kolom 3: Tombol Simpan KKM */}
+                  <div className="flex items-end">
+                    {selectedClassId && selectedSubjectState && (
+                      <button
+                        onClick={saveKkmSettings}
+                        disabled={isSavingKkm}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors text-sm"
+                      >
+                        {isSavingKkm ? (
+                          <>
+                            <Loader className="w-3 h-3 animate-spin" />
+                            Menyimpan...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-3 h-3" />
+                            {kkmSettings ? "Update Pengaturan KKM" : "Simpan Pengaturan KKM"}
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
+            </>
+          )}
 
-              {/* Kolom 2: Nilai Maksimal Target */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Nilai Maksimal Target
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={nilaiMaksimal}
-                  onChange={(e) => setNilaiMaksimal(parseInt(e.target.value) || 100)}
-                  className="w-full px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 dark:text-gray-200 transition-colors"
-                  placeholder="100"
-                />
-              </div>
+          {selectedSemester && selectedSubjectState && selectedClassId && (
+            <>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={fetchDataNilai}
+                  disabled={
+                    !selectedClassId || !selectedSubjectState || !selectedAcademicYear || loading
+                  }
+                  className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
+                >
+                  {loading ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Memuat Data...
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      Muat Data Nilai
+                    </>
+                  )}
+                </button>
 
-              {/* Kolom 3: Tombol Simpan KKM */}
-              <div className="flex items-end">
-                {selectedClassId && selectedSubjectState && (
+                {/* ✅ REVISI 5: BUTTON LABEL - CONDITIONAL TEXT */}
+                <button
+                  onClick={prosesKatrol}
+                  disabled={!selectedClassId || !selectedSubjectState || processing}
+                  className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
+                >
+                  {processing ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <Calculator className="w-4 h-4" />
+                      {hasilKatrol.length > 0 ? "Proses Katrol Ulang" : "Proses Katrol"}
+                    </>
+                  )}
+                </button>
+
+                {hasilKatrol.length > 0 && (
                   <button
-                    onClick={saveKkmSettings}
-                    disabled={isSavingKkm}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors text-sm"
+                    onClick={saveKatrolToDatabase}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
                   >
-                    {isSavingKkm ? (
+                    {saving ? (
                       <>
-                        <Loader className="w-3 h-3 animate-spin" />
+                        <Loader className="w-4 h-4 animate-spin" />
                         Menyimpan...
                       </>
                     ) : (
                       <>
-                        <Save className="w-3 h-3" />
-                        {kkmSettings ? "Update Pengaturan KKM" : "Simpan Pengaturan KKM"}
+                        <Save className="w-4 h-4" />
+                        Simpan ke Database
                       </>
                     )}
                   </button>
                 )}
-              </div>
-            </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={fetchDataNilai}
-              disabled={
-                !selectedClassId || !selectedSubjectState || !selectedAcademicYear || loading
-              }
-              className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
-            >
-              {loading ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Memuat Data...
-                </>
-              ) : (
-                <>
-                  <Eye className="w-4 h-4" />
-                  Muat Data Nilai
-                </>
-              )}
-            </button>
-
-            {/* ✅ REVISI 5: BUTTON LABEL - CONDITIONAL TEXT */}
-            <button
-              onClick={prosesKatrol}
-              disabled={!selectedClassId || !selectedSubjectState || processing}
-              className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
-            >
-              {processing ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Memproses...
-                </>
-              ) : (
-                <>
-                  <Calculator className="w-4 h-4" />
-                  {hasilKatrol.length > 0 ? "Proses Katrol Ulang" : "Proses Katrol"}
-                </>
-              )}
-            </button>
-
-            {hasilKatrol.length > 0 && (
-              <button
-                onClick={saveKatrolToDatabase}
-                disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
-              >
-                {saving ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Simpan ke Database
-                  </>
+                {hasilKatrol.length > 0 && (
+                  <button
+                    onClick={handleExport}
+                    disabled={exporting}
+                    className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export Excel
+                  </button>
                 )}
-              </button>
-            )}
-
-            {hasilKatrol.length > 0 && (
-              <button
-                onClick={handleExport}
-                disabled={exporting}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white rounded-lg disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Export Excel
-              </button>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
