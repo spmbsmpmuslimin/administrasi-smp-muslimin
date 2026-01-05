@@ -497,24 +497,14 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
   }
 
   return (
-    <div
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode
-          ? "bg-gradient-to-br from-gray-900 to-gray-800"
-          : "bg-gradient-to-br from-blue-50 to-indigo-100"
-      }`}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+        <div>
           <div className="mb-6 sm:mb-8 text-center px-2">
-            <h1
-              className={`text-2xl sm:text-2xl font-bold mb-2 ${
-                darkMode ? "text-white" : "text-gray-900"
-              }`}
-            >
+            <h1 className="text-2xl sm:text-2xl font-bold mb-2 text-gray-900 dark:text-white">
               📋 Sistem Presensi Siswa
             </h1>
-            <p className={`text-sm sm:text-base ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Kelola Presensi Siswa Dengan Mudah Dan Efisien
             </p>
           </div>

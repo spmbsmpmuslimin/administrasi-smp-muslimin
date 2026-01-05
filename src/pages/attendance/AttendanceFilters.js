@@ -319,7 +319,7 @@ const AttendanceFilters = ({
                 setStudents([]);
                 setStudentsLoaded(false);
               }}
-              disabled={loading || !teacherId || !selectedSemesterId}
+              disabled={loading || !teacherId || !selectedSemesterId || isReadOnlyMode}
               className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none"
               aria-label="Pilih Mata Pelajaran"
             >
@@ -353,7 +353,13 @@ const AttendanceFilters = ({
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              disabled={!selectedSubject || loading || isHomeroomDaily() || !selectedSemesterId}
+              disabled={
+                !selectedSubject ||
+                loading ||
+                isHomeroomDaily() ||
+                !selectedSemesterId ||
+                isReadOnlyMode
+              }
               className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none"
               aria-label="Pilih Kelas"
             >
@@ -365,7 +371,7 @@ const AttendanceFilters = ({
                   ? "View Mode"
                   : selectedSubject
                   ? "Pilih Kelas"
-                  : "Pilih Mapel Dulu"}
+                  : "Pilih mapel dulu"}
               </option>
               {classes.map((cls) => (
                 <option
@@ -386,11 +392,18 @@ const AttendanceFilters = ({
             </label>
             <div className="relative">
               <div
-                onClick={() => !loading && setShowCustomDatePicker(true)}
-                className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg transition-all duration-200 bg-white dark:bg-slate-800 text-black dark:text-white hover:border-blue-500 cursor-pointer min-h-[44px] flex items-center justify-between"
+                onClick={() => !loading && !isReadOnlyMode && setShowCustomDatePicker(true)}
+                className={`w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 touch-manipulation min-h-[44px] appearance-none flex items-center justify-between leading-normal ${
+                  isReadOnlyMode
+                    ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400"
+                    : "hover:border-blue-500 cursor-pointer"
+                }`}
+                style={{ height: "auto" }}
               >
-                <span className="flex-1">{date ? formatDate(date) : "Pilih tanggal..."}</span>
-                <span className="text-lg">📅</span>
+                <span className="flex-1 leading-normal">
+                  {date ? formatDate(date) : "Pilih tanggal..."}
+                </span>
+                <span className="text-lg leading-none">📅</span>
               </div>
             </div>
           </div>
@@ -451,13 +464,26 @@ const AttendanceFilters = ({
                 {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day, idx) => (
                   <div
                     key={idx}
-                    className="text-center text-xs font-medium text-slate-600 dark:text-slate-300 py-1"
+                    className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1"
                   >
                     {day}
                   </div>
                 ))}
                 {renderCalendar()}
               </div>
+
+              {/* INFORMASI VALIDASI */}
+              {selectedSemesterId && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 mb-3 p-2 bg-slate-50 dark:bg-slate-900/50 rounded">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5">ℹ️</span>
+                    <div>
+                      Tanggal yang tidak valid untuk semester ini dinonaktifkan.
+                      {isReadOnlyMode && " Mode View Only aktif."}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

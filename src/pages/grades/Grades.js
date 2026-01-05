@@ -843,11 +843,11 @@ const Grades = ({ user, onShowToast }) => {
   const stats = getGradeStats();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6">
+    <div className="min-h-screen">
       {/* Loading Overlay */}
       {loading && loadingMessage && <LoadingOverlay message={loadingMessage} />}
 
-      <div className="max-w-7xl mx-auto">
+      <div>
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-6 mb-4 sm:mb-6">
           {/* Message */}
@@ -911,7 +911,8 @@ const Grades = ({ user, onShowToast }) => {
                       sem.is_active ? "font-semibold" : ""
                     }`}
                   >
-                    {sem.year} - {formatSemesterDisplay(sem.semester)} {sem.is_active ? "✓" : ""}
+                    {sem.semester === 1 ? "Semester Ganjil" : "Semester Genap"}
+                    {sem.is_active ? " (Aktif)" : ""}
                   </option>
                 ))}
               </select>
@@ -931,8 +932,8 @@ const Grades = ({ user, onShowToast }) => {
                   setStudents([]);
                   setGrades({});
                 }}
-                className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
-                disabled={loading || !selectedSemesterId || subjects.length === 0}
+                className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors disabled:bg-slate-50 dark:disabled:bg-gray-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 disabled:cursor-not-allowed"
+                disabled={loading || !selectedSemesterId || subjects.length === 0 || isReadOnlyMode}
                 style={{ minHeight: "44px", touchAction: "manipulation" }}
               >
                 <option value="" className="dark:bg-gray-700">
@@ -963,8 +964,8 @@ const Grades = ({ user, onShowToast }) => {
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
-                disabled={!selectedSubject || loading || classes.length === 0}
+                className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors disabled:bg-slate-50 dark:disabled:bg-gray-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 disabled:cursor-not-allowed"
+                disabled={!selectedSubject || loading || classes.length === 0 || isReadOnlyMode}
                 style={{ minHeight: "44px", touchAction: "manipulation" }}
               >
                 <option value="" className="dark:bg-gray-700">

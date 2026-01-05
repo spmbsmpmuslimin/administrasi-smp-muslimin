@@ -1,5 +1,5 @@
-// components/Login_V2_SplitVertical.js
-import React, { useState } from "react";
+// components/Login3.js (OPSI 3 - CENTER FOCUS)
+import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import Logo from "./Logo";
@@ -86,37 +86,42 @@ export const Login = ({ onLogin, onShowToast }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      {/* Background Image with Blur */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          filter: "blur(2px)",
+          transform: "scale(1.1)",
+        }}
+      ></div>
+
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/70 via-blue-900/60 to-slate-900/70"></div>
+
       <style>{`
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        @keyframes slide-in-down {
+          from { opacity: 0; transform: translateY(-30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes slide-in-left {
-          from { opacity: 0; transform: translateX(-50px); }
-          to { opacity: 1; transform: translateX(0); }
+        @keyframes slide-in-up {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
+        @keyframes glow-pulse {
+          0%, 100% { opacity: 0.3; filter: blur(40px); }
+          50% { opacity: 0.6; filter: blur(50px); }
         }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
+        .slide-in-down {
+          animation: slide-in-down 0.8s ease-out forwards;
         }
-        .fade-in {
-          animation: fade-in 1s ease-out forwards;
+        .slide-in-up {
+          animation: slide-in-up 0.8s ease-out 0.2s forwards;
+          opacity: 0;
         }
-        .slide-in-left {
-          animation: slide-in-left 0.8s ease-out forwards;
-        }
-        .shimmer-effect {
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-          background-size: 1000px 100%;
-          animation: shimmer 3s infinite;
-        }
-        .float-animation {
-          animation: float 6s ease-in-out infinite;
+        .glow-effect {
+          animation: glow-pulse 4s ease-in-out infinite;
         }
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
@@ -127,36 +132,43 @@ export const Login = ({ onLogin, onShowToast }) => {
         }
       `}</style>
 
-      {/* LEFT SIDE - Form Section (30%) */}
-      <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden flex-1 lg:flex-[3] bg-slate-900 slide-in-left">
-        {/* Animated Gradient Orbs */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+      {/* Subtle Background Effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full glow-effect"></div>
         <div
-          className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full glow-effect"
+          style={{ animationDelay: "2s" }}
         ></div>
+      </div>
 
-        {/* Form Container */}
-        <div className="relative w-full max-w-md">
-          {/* Logo - Desktop Only (outside card) */}
-          <div className="hidden lg:flex justify-center mb-6">
-            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden p-2 hover:scale-110 transition-transform duration-300">
-              <Logo size="large" className="rounded-xl" />
-            </div>
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-md mx-4 sm:mx-6">
+        {/* Welcome Header */}
+        <div className="text-center mb-8 slide-in-down">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight uppercase drop-shadow-2xl">
+            SMP Muslimin Cililin
+          </h1>
+          <div className="max-w-lg mx-auto">
+            <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
+              <span className="text-blue-300 font-semibold">Visi: </span>
+              Mewujudkan Peserta Didik yang Berakhlak Mulia, Moderat, Mandiri dan Berprestasi
+            </p>
           </div>
+        </div>
 
-          {/* Form Card */}
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl">
-            {/* Logo - Mobile Only (inside card) */}
-            <div className="flex lg:hidden justify-center mb-6">
-              <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden p-2">
+        {/* Form Card */}
+        <div className="slide-in-up">
+          <div className="bg-slate-800/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 sm:p-8 shadow-2xl">
+            {/* Logo */}
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl overflow-hidden p-2">
                 <Logo size="large" className="rounded-xl" />
               </div>
             </div>
+
             {/* Form Header */}
             <div className="mb-6 text-center">
-              <h2 className="text-2xl font-bold text-white mb-2">Masuk</h2>
-              <p className="text-slate-400 text-sm">Silakan login ke akun Anda</p>
+              <p className="text-slate-300 text-sm">Silakan Masuk Ke Akun Anda</p>
             </div>
 
             {/* Form */}
@@ -281,54 +293,6 @@ export const Login = ({ onLogin, onShowToast }) => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* RIGHT SIDE - Photo Section (70%) */}
-      <div className="relative overflow-hidden flex-shrink-0 h-[50vh] lg:h-screen lg:flex-[7] fade-in">
-        {/* Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundPosition: "center 35%",
-          }}
-        ></div>
-
-        {/* Multi-layer Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/50 via-purple-900/40 to-slate-900/60"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-
-        {/* Shimmer Effect */}
-        <div className="absolute inset-0 shimmer-effect opacity-20"></div>
-
-        {/* Content Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center px-6 sm:px-8 lg:px-12">
-          <div className="text-white text-center max-w-3xl">
-            <div className="float-animation">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 leading-tight uppercase drop-shadow-2xl">
-                Selamat Datang di
-                <br />
-                <span className="text-blue-300">SMP Muslimin Cililin</span>
-              </h1>
-            </div>
-
-            {/* Decorative Elements */}
-            <div className="mt-12 flex justify-center gap-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-              <div
-                className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"
-                style={{ animationDelay: "0.2s" }}
-              ></div>
-              <div
-                className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
-                style={{ animationDelay: "0.4s" }}
-              ></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Gradient Fade (Mobile Only) */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent lg:hidden"></div>
       </div>
     </div>
   );

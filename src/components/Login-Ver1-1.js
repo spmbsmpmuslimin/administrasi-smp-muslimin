@@ -104,10 +104,6 @@ export const Login = ({ onLogin, onShowToast }) => {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-20px); }
         }
-        @keyframes glow-pulse {
-          0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-          50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.5); }
-        }
         .fade-in {
           animation: fade-in 1s ease-out forwards;
         }
@@ -115,28 +111,25 @@ export const Login = ({ onLogin, onShowToast }) => {
           animation: slide-in-left 0.8s ease-out forwards;
         }
         .shimmer-effect {
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
           background-size: 1000px 100%;
           animation: shimmer 3s infinite;
         }
         .float-animation {
           animation: float 6s ease-in-out infinite;
         }
-        .glow-pulse {
-          animation: glow-pulse 3s ease-in-out infinite;
-        }
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
         input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
-          -webkit-text-fill-color: white !important;
+          -webkit-box-shadow: 0 0 0 30px white inset !important;
+          -webkit-text-fill-color: #1e293b !important;
         }
       `}</style>
 
-      {/* PHOTO SECTION (80%) - KANAN DI DESKTOP, ATAS DI MOBILE */}
-      <div className="relative overflow-hidden flex-shrink-0 h-[40vh] lg:h-screen lg:flex-[8] fade-in bg-slate-950">
-        {/* Background Image - CLEAR & CRISP */}
+      {/* PHOTO SECTION (80%) - KANAN DI DESKTOP, ATAS DI MOBILE - LEBIH LEBAR! */}
+      <div className="relative overflow-hidden flex-shrink-0 h-[40vh] lg:h-screen lg:flex-[8] fade-in bg-slate-900">
+        {/* Background Image - MOBILE: contain + object-fit hack biar minim space */}
         <div
           className="absolute inset-0"
           style={{
@@ -158,38 +151,33 @@ export const Login = ({ onLogin, onShowToast }) => {
           }}
         ></div>
 
-        {/* Aesthetic Overlay - HANYA EDGES BLUR, CENTER TETAP JELAS */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-transparent to-purple-900/30"></div>
+        {/* Multi-layer Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/50 via-purple-900/40 to-slate-900/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
 
-        {/* Vignette Effect - Gelap di pinggir, terang di tengah */}
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/50"></div>
+        {/* Shimmer Effect */}
+        <div className="absolute inset-0 shimmer-effect opacity-20"></div>
 
-        {/* Bottom Fade untuk Aesthetic */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
-
-        {/* Light Shimmer untuk Glow Effect */}
-        <div className="absolute inset-0 shimmer-effect opacity-10"></div>
-
-        {/* Content Overlay dengan Glass Effect */}
+        {/* Content Overlay - TURUN KE BAWAH biar ga nutupin muka guru! */}
         <div className="absolute bottom-8 left-0 right-0 px-6 sm:px-8 lg:px-12">
           <div className="text-white text-center max-w-3xl mx-auto">
             <div className="float-animation">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 leading-tight uppercase drop-shadow-2xl">
                 Selamat Datang di
                 <br />
-                <span className="text-blue-300 glow-pulse inline-block">SMP Muslimin Cililin</span>
+                <span className="text-blue-300">SMP Muslimin Cililin</span>
               </h1>
             </div>
 
-            {/* Decorative Elements dengan Glow */}
-            <div className="mt-6 flex justify-center gap-3">
-              <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse shadow-lg shadow-blue-400/50"></div>
+            {/* Decorative Elements */}
+            <div className="mt-4 flex justify-center gap-2">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
               <div
-                className="w-3 h-3 bg-purple-400 rounded-full animate-pulse shadow-lg shadow-purple-400/50"
+                className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"
                 style={{ animationDelay: "0.2s" }}
               ></div>
               <div
-                className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50"
+                className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
                 style={{ animationDelay: "0.4s" }}
               ></div>
             </div>
@@ -200,55 +188,54 @@ export const Login = ({ onLogin, onShowToast }) => {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent lg:hidden"></div>
       </div>
 
-      {/* FORM SECTION (20%) - KIRI DI DESKTOP, BAWAH DI MOBILE */}
+      {/* FORM SECTION (20%) - KIRI DI DESKTOP, BAWAH DI MOBILE - LEBIH KECIL! */}
       <div className="flex items-center justify-center p-4 sm:p-6 lg:p-6 relative overflow-hidden flex-1 lg:flex-[2] bg-slate-900 slide-in-left">
         {/* Animated Gradient Orbs */}
-        <div className="absolute top-0 left-0 w-72 h-72 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div
-          className="absolute bottom-0 right-0 w-72 h-72 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"
+          className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         ></div>
 
         {/* Form Container */}
         <div className="relative w-full max-w-sm">
           {/* Logo - Desktop Only (outside card) */}
-          <div className="hidden lg:flex justify-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-white to-blue-50 rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden p-2.5 hover:scale-110 transition-all duration-300 glow-pulse">
+          <div className="hidden lg:flex justify-center mb-4">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden p-2 hover:scale-110 transition-transform duration-300">
               <Logo size="medium" className="rounded-xl" />
             </div>
           </div>
 
-          {/* Form Card dengan Glass Morphism */}
-          <div className="bg-slate-800/70 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 sm:p-7 shadow-2xl shadow-blue-500/10">
+          {/* Form Card - BACKGROUND PUTIH */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-2xl">
             {/* Logo - Mobile Only (inside card) */}
-            <div className="flex lg:hidden justify-center mb-5">
-              <div className="w-20 h-20 bg-gradient-to-br from-white to-blue-50 rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden p-2.5">
+            <div className="flex lg:hidden justify-center mb-4">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden p-2">
                 <Logo size="medium" className="rounded-xl" />
               </div>
             </div>
 
             {/* Form Header */}
-            <div className="mb-5 text-center">
-              <h2 className="text-white text-base font-bold mb-1">Login</h2>
-              <p className="text-slate-300 text-xs">Silakan Login Ke Akun Anda</p>
+            <div className="mb-4 text-center">
+              <p className="text-slate-800 text-xs font-medium">Silakan Login Ke Akun Anda</p>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Username Field */}
               <div>
-                <label className="block text-xs font-semibold text-slate-200 mb-2">Username</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">Username</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-4 w-4 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
+                    <Mail className="h-4 w-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                   </div>
                   <input
                     type="text"
-                    className={`w-full pl-10 pr-3 py-3 bg-slate-900/60 backdrop-blur-sm border-2 rounded-xl text-sm text-white placeholder-slate-400 transition-all duration-300 ${
+                    className={`w-full pl-10 pr-3 py-2.5 bg-slate-50 border-2 rounded-xl text-sm text-slate-900 placeholder-slate-500 transition-all duration-300 ${
                       errors.username
                         ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/20"
-                        : "border-slate-600/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
-                    } focus:outline-none focus:bg-slate-900/80`}
+                        : "border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
+                    } focus:outline-none focus:bg-white`}
                     placeholder="Masukkan username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -256,7 +243,7 @@ export const Login = ({ onLogin, onShowToast }) => {
                   />
                 </div>
                 {errors.username && (
-                  <p className="text-red-400 text-xs mt-1.5 flex items-center font-medium">
+                  <p className="text-red-600 text-xs mt-1 flex items-center font-medium">
                     <span className="mr-1">⚠</span>
                     {errors.username}
                   </p>
@@ -265,18 +252,18 @@ export const Login = ({ onLogin, onShowToast }) => {
 
               {/* Password Field */}
               <div>
-                <label className="block text-xs font-semibold text-slate-200 mb-2">Password</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">Password</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
+                    <Lock className="h-4 w-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    className={`w-full pl-10 pr-10 py-3 bg-slate-900/60 backdrop-blur-sm border-2 rounded-xl text-sm text-white placeholder-slate-400 transition-all duration-300 ${
+                    className={`w-full pl-10 pr-10 py-2.5 bg-slate-50 border-2 rounded-xl text-sm text-slate-900 placeholder-slate-500 transition-all duration-300 ${
                       errors.password
                         ? "border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/20"
-                        : "border-slate-600/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
-                    } focus:outline-none focus:bg-slate-900/80`}
+                        : "border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
+                    } focus:outline-none focus:bg-white`}
                     placeholder="Masukkan password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -284,14 +271,14 @@ export const Login = ({ onLogin, onShowToast }) => {
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-700 transition-colors"
                     onClick={togglePasswordVisibility}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-red-400 text-xs mt-1.5 flex items-center font-medium">
+                  <p className="text-red-600 text-xs mt-1 flex items-center font-medium">
                     <span className="mr-1">⚠</span>
                     {errors.password}
                   </p>
@@ -299,15 +286,15 @@ export const Login = ({ onLogin, onShowToast }) => {
               </div>
 
               {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between text-xs pt-1">
+              <div className="flex items-center justify-between text-xs">
                 <label className="flex items-center cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-2 border-slate-500 bg-slate-900/50 text-blue-500 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-2 border-slate-300 bg-white text-blue-500 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
                   />
-                  <span className="ml-2 text-slate-200 select-none font-medium">Ingat saya</span>
+                  <span className="ml-1.5 text-slate-800 select-none font-medium">Ingat saya</span>
                 </label>
                 <button
                   type="button"
@@ -317,7 +304,7 @@ export const Login = ({ onLogin, onShowToast }) => {
                       "info"
                     )
                   }
-                  className="font-semibold text-blue-300 hover:text-blue-200 transition-colors"
+                  className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   Lupa password?
                 </button>
@@ -325,16 +312,16 @@ export const Login = ({ onLogin, onShowToast }) => {
 
               {/* Error Message */}
               {errors.general && (
-                <div className="p-3 bg-red-500/20 backdrop-blur-sm border border-red-500/40 text-red-200 rounded-xl text-xs flex items-start">
-                  <span className="mr-2 mt-0.5">⚠</span>
-                  <span className="font-medium">{errors.general}</span>
+                <div className="p-2.5 bg-red-50 border border-red-300 text-red-700 rounded-xl text-xs flex items-start font-medium">
+                  <span className="mr-1.5 mt-0.5">⚠</span>
+                  <span>{errors.general}</span>
                 </div>
               )}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 hover:from-blue-700 hover:via-blue-600 hover:to-purple-700 text-white text-sm font-bold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/40 hover:shadow-xl hover:shadow-blue-500/60 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full py-3 bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 hover:from-blue-700 hover:via-blue-600 hover:to-purple-700 text-white text-sm font-bold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -349,11 +336,11 @@ export const Login = ({ onLogin, onShowToast }) => {
             </form>
 
             {/* Footer */}
-            <div className="mt-5 pt-5 border-t border-slate-700/50 text-center">
-              <p className="text-[10px] text-slate-300 font-semibold">
-                © 2025 SMP MUSLIMIN CILILIN
+            <div className="mt-4 pt-4 border-t border-slate-200 text-center">
+              <p className="text-[10px] text-slate-500">© 2025 SMP MUSLIMIN CILILIN</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">
+                Sistem Administrasi Sekolah v1.0.0
               </p>
-              <p className="text-[10px] text-slate-400 mt-1">Sistem Administrasi Sekolah v1.0.0</p>
             </div>
           </div>
         </div>

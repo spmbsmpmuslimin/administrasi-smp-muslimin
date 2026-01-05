@@ -116,28 +116,15 @@ const Setting = ({ user, onShowToast }) => {
     window.history.replaceState(null, "", `/setting?tab=${tabId}`);
   };
 
-  // Menu cards configuration
+  // Menu cards configuration - DIURUTKAN SESUAI PERMINTAAN
   const menuCards = [
+    // BARIS 1
     {
       id: "profile",
       title: "Profile",
       description: "Kelola informasi profil pribadi Anda",
       icon: User,
       available: true,
-    },
-    {
-      id: "user-management",
-      title: "Manajemen User",
-      description: "Kelola akun pengguna dan hak akses",
-      icon: Users,
-      available: user?.role === "admin",
-    },
-    {
-      id: "school",
-      title: "Manajemen Sekolah",
-      description: "Kelola data siswa dan kelas",
-      icon: School,
-      available: user?.role === "admin" || user?.role === "guru_bk",
     },
     {
       id: "academic",
@@ -147,9 +134,24 @@ const Setting = ({ user, onShowToast }) => {
       available: user?.role === "admin",
     },
     {
+      id: "school",
+      title: "Manajemen Sekolah",
+      description: "Kelola data siswa dan kelas",
+      icon: School,
+      available: user?.role === "admin" || user?.role === "guru_bk",
+    },
+    // BARIS 2
+    {
       id: "assignment",
       title: "Manajemen Penugasan Guru",
       description: "Kelola penugasan guru dan mata pelajaran",
+      icon: Users,
+      available: user?.role === "admin",
+    },
+    {
+      id: "user-management",
+      title: "Manajemen User",
+      description: "Kelola akun pengguna dan hak akses",
       icon: Users,
       available: user?.role === "admin",
     },
@@ -160,18 +162,19 @@ const Setting = ({ user, onShowToast }) => {
       icon: Building2,
       available: user?.role === "admin",
     },
-    {
-      id: "raport",
-      title: "Konfigurasi E-Raport",
-      description: "Setup template dan format raport",
-      icon: FileText,
-      available: user?.role === "admin",
-    },
+    // BARIS 3
     {
       id: "system",
       title: "Manajemen System",
       description: "Pengaturan sistem dan database",
       icon: Database,
+      available: user?.role === "admin",
+    },
+    {
+      id: "raport",
+      title: "Konfigurasi E-Raport",
+      description: "Setup template dan format raport",
+      icon: FileText,
       available: user?.role === "admin",
     },
     {
@@ -245,8 +248,8 @@ const Setting = ({ user, onShowToast }) => {
     const IconComponent = currentCard?.icon || Settings;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 p-3 sm:p-4 lg:p-6 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="px-4 py-8">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-5 overflow-x-auto">
             <button
@@ -313,10 +316,10 @@ const Setting = ({ user, onShowToast }) => {
     );
   }
 
-  // Dashboard View - Card Grid
+  // Dashboard View - Card Grid dengan layout lebih compact
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 p-3 sm:p-4 lg:p-6 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800">
+      <div className="px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-5 overflow-x-auto">
           <button
@@ -335,18 +338,18 @@ const Setting = ({ user, onShowToast }) => {
           </span>
         </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 sm:mb-8">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-xl shadow-md">
-              <Settings className="w-6 h-6 sm:w-7 sm:h-7" />
+        {/* Header yang lebih compact */}
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-xl shadow-md">
+              <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-gray-100">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">
                 Pengaturan Sistem
               </h1>
               {schoolConfig && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">
                   {schoolConfig.schoolName} - {schoolConfig.schoolLevel}
                 </p>
               )}
@@ -354,47 +357,49 @@ const Setting = ({ user, onShowToast }) => {
           </div>
         </div>
 
-        {/* Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {availableCards.map((card) => {
-            const IconComponent = card.icon;
+        {/* Cards Grid dengan layout 3 kolom dan tinggi card lebih compact */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {availableCards.map((card) => {
+              const IconComponent = card.icon;
 
-            return (
-              <button
-                key={card.id}
-                onClick={() => changeTab(card.id)}
-                className="group relative bg-white dark:bg-gray-800 rounded-xl p-5 sm:p-6 shadow-sm hover:shadow-lg dark:shadow-gray-900/30 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 text-left hover:-translate-y-1 active:scale-95"
-              >
-                {/* Icon Container */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
-                    <IconComponent className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              return (
+                <button
+                  key={card.id}
+                  onClick={() => changeTab(card.id)}
+                  className="group relative bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg dark:shadow-gray-900/30 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 text-left hover:-translate-y-0.5 active:scale-95 min-h-[140px] flex flex-col"
+                >
+                  {/* Icon Container yang lebih compact */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
+                      <IconComponent className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-400 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <ArrowRight className="w-5 h-5 text-gray-400 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
 
-                {/* Content */}
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {card.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                    {card.description}
-                  </p>
-                </div>
+                  {/* Content yang lebih compact */}
+                  <div className="flex-grow">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-100 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {card.title}
+                    </h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-tight">
+                      {card.description}
+                    </p>
+                  </div>
 
-                {/* Hover Effect Border */}
-                <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-blue-500/20 dark:group-hover:border-blue-500/30 transition-all pointer-events-none"></div>
-              </button>
-            );
-          })}
+                  {/* Hover Effect Border */}
+                  <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-blue-500/20 dark:group-hover:border-blue-500/30 transition-all pointer-events-none"></div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Info Footer */}
+        {/* Info Footer yang lebih compact */}
         {user?.role === "admin" && (
-          <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-            <p className="text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2">
-              <AlertCircle size={16} />
+          <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+            <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-300 flex items-center gap-2">
+              <AlertCircle size={14} />
               <span>Anda memiliki akses penuh sebagai Administrator</span>
             </p>
           </div>

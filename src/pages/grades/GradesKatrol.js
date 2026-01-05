@@ -1277,7 +1277,7 @@ const GradesKatrol = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6">
+    <div className="min-h-screen">
       {/* 🎨 INJECT CUSTOM STYLES */}
       <style>{customStyles}</style>
 
@@ -1335,7 +1335,7 @@ const GradesKatrol = ({
       />
 
       {/* Filter Section */}
-      <div className="max-w-7xl mx-auto mb-6">
+      <div className="mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
           <h2 className="text-lg font-semibold mb-4 dark:text-gray-200 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-500" />
@@ -1639,7 +1639,7 @@ const GradesKatrol = ({
 
       {/* Message Alert */}
       {message.text && (
-        <div className="max-w-7xl mx-auto mb-6">
+        <div className="mb-6">
           <div
             className={`flex items-center gap-3 p-4 rounded-lg border ${
               message.type === "success"

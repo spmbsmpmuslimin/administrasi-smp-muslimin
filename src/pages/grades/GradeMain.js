@@ -119,8 +119,12 @@ const GradeMain = ({ user, onShowToast, darkMode }) => {
                   onClick={() => setActiveTab(item.id)}
                   className={`relative px-4 sm:px-6 py-3 sm:py-4 rounded-xl transition-all duration-300 flex-1 min-h-[60px] ${
                     activeTab === item.id
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 dark:shadow-blue-500/50"
-                      : "bg-white dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700"
+                      ? darkMode
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/50"
+                        : "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+                      : darkMode
+                      ? "bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 active:bg-gray-700"
+                      : "bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                   }`}
                 >
                   {/* Mobile: Icon + Badge */}
@@ -128,7 +132,13 @@ const GradeMain = ({ user, onShowToast, darkMode }) => {
                     <span className="text-2xl">{item.icon}</span>
                     <span
                       className={`text-[10px] font-medium px-2 py-0.5 rounded ${
-                        activeTab === item.id ? "bg-blue-700" : "bg-gray-100 dark:bg-gray-700"
+                        activeTab === item.id
+                          ? darkMode
+                            ? "bg-blue-700"
+                            : "bg-blue-700"
+                          : darkMode
+                          ? "bg-gray-700"
+                          : "bg-gray-100"
                       }`}
                     >
                       {item.badge}
@@ -144,7 +154,9 @@ const GradeMain = ({ user, onShowToast, darkMode }) => {
                         className={`text-xs ${
                           activeTab === item.id
                             ? "text-blue-100"
-                            : "text-gray-500 dark:text-gray-500"
+                            : darkMode
+                            ? "text-gray-500"
+                            : "text-gray-500"
                         }`}
                       >
                         {item.subtitle}
@@ -160,7 +172,11 @@ const GradeMain = ({ user, onShowToast, darkMode }) => {
             </div>
           </div>
 
-          <div className="rounded-xl border shadow-lg overflow-hidden min-h-[400px] sm:min-h-[500px] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <div
+            className={`rounded-xl border shadow-lg min-h-[400px] sm:min-h-[500px] ${
+              darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            }`}
+          >
             <div className="animate-fadeIn">
               {activeTab === "input" ? (
                 <Grades user={fullUserData} onShowToast={onShowToast} darkMode={darkMode} />
