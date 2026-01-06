@@ -102,17 +102,6 @@ const CekStatusNilai = ({ user, darkMode, onShowToast }) => {
       console.log("📚 Available semesters:", semesters);
       setAvailableSemesters(semesters || []);
 
-      // ✅ 5. Set default selected semester ke semester aktif
-      if (activeYearData.activeSemesterId) {
-        setSelectedSemesterId(activeYearData.activeSemesterId);
-
-        // Set selected semester info
-        const activeSemesterInfo = semesters.find((s) => s.id === activeYearData.activeSemesterId);
-        if (activeSemesterInfo) {
-          setSelectedSemesterInfo(activeSemesterInfo);
-        }
-      }
-
       // ✅ 6. Dapatkan info akademik untuk display
       const academicData = await getActiveAcademicInfo();
 
@@ -164,12 +153,6 @@ const CekStatusNilai = ({ user, darkMode, onShowToast }) => {
           }));
 
           setKelasList(formattedClasses);
-
-          // Auto select kelas jika cuma 1
-          if (formattedClasses && formattedClasses.length === 1) {
-            setSelectedKelas(formattedClasses[0].id);
-            console.log("✅ Auto-selected class:", formattedClasses[0].id);
-          }
         }
       } else {
         console.log("❌ User is NOT a homeroom teacher");
@@ -727,49 +710,6 @@ const CekStatusNilai = ({ user, darkMode, onShowToast }) => {
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* User Info */}
-          {currentUser && (
-            <div
-              className={`mb-6 p-4 rounded-xl border ${
-                darkMode ? "bg-blue-900/20 border-blue-500" : "bg-blue-50 border-blue-300"
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex-1">
-                  <h3
-                    className={`font-bold text-base sm:text-lg transition-colors ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
-                    {currentUser.full_name}
-                  </h3>
-                  <p
-                    className={`text-sm sm:text-base mt-1 transition-colors ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    {currentUser.teacher_id} • {currentUser.role}
-                  </p>
-                </div>
-                <div
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
-                    currentUser.homeroom_class_id
-                      ? darkMode
-                        ? "bg-blue-700 text-blue-100"
-                        : "bg-blue-600 text-white"
-                      : darkMode
-                      ? "bg-gray-700 text-gray-300"
-                      : "bg-gray-600 text-white"
-                  }`}
-                >
-                  {currentUser.homeroom_class_id
-                    ? `Wali Kelas ${currentUser.homeroom_class_id}`
-                    : "Bukan Wali Kelas"}
-                </div>
-              </div>
             </div>
           )}
 

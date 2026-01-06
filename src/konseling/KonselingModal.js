@@ -18,6 +18,7 @@ const KonselingModal = ({
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [availableKelas, setAvailableKelas] = useState([]);
 
+  // Reset filters when modal opens
   useEffect(() => {
     if (show) {
       setStudentFilters({ jenjang: "", kelas: "" });
@@ -26,6 +27,7 @@ const KonselingModal = ({
     }
   }, [show]);
 
+  // Update available classes based on selected grade
   const updateAvailableKelas = (jenjang) => {
     if (jenjang) {
       const jenjangAngka = jenjang.replace("Kelas ", "");
@@ -39,6 +41,7 @@ const KonselingModal = ({
     }
   };
 
+  // Update filtered students based on selected class
   const updateFilteredStudents = (kelas) => {
     if (kelas) {
       const filtered = students.filter((s) => s.class_id === kelas);
@@ -48,6 +51,7 @@ const KonselingModal = ({
     }
   };
 
+  // Handle student selection
   const handleStudentSelect = (studentId) => {
     const selectedStudent = students.find((s) => s.id === studentId);
     if (selectedStudent) {
@@ -61,205 +65,203 @@ const KonselingModal = ({
     }
   };
 
+  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit();
   };
 
+  // Handle input changes
   const handleInputChange = (field, value) => {
     onFormChange({ [field]: value });
   };
 
+  // If modal is not shown, return null
   if (!show) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-3 md:p-4 overflow-y-auto">
-      {/* DARK MODE FIX - INLINE STYLE UNTUK SELECT */}
-      <style>{`
-        .dark-select option {
-          background-color: #1f2937 !important;
-          color: #f3f4f6 !important;
-        }
-        .dark-select option:hover {
-          background-color: #3b82f6 !important;
-        }
-        .dark-select option:checked {
-          background-color: #3b82f6 !important;
-          color: white !important;
-        }
-        .dark-select:disabled option {
-          background-color: #374151 !important;
-          color: #9ca3af !important;
-        }
-        .dark-select::-webkit-scrollbar {
-          width: 8px;
-        }
-        .dark-select::-webkit-scrollbar-track {
-          background: #374151;
-          border-radius: 4px;
-        }
-        .dark-select::-webkit-scrollbar-thumb {
-          background: #6b7280;
-          border-radius: 4px;
-        }
-        .dark-select::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af;
-        }
-      `}</style>
+  // Base styling classes for consistent design
+  const inputBaseClasses =
+    "w-full px-4 py-3 border rounded-lg text-sm md:text-base min-h-[48px] touch-target transition-all duration-200";
+  const inputLightClasses = "bg-white border-gray-300 text-gray-900 placeholder:text-gray-500";
+  const inputDarkClasses =
+    "dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-400";
+  const inputFocusClasses =
+    "focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 outline-none";
+  const inputDisabledClasses =
+    "disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed";
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] my-4 mx-2 sm:mx-4">
-        {/* Header Sticky */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white p-4 sm:p-5 md:p-6 rounded-t-xl flex justify-between items-center z-10">
+  const selectBaseClasses = `${inputBaseClasses} ${inputLightClasses} ${inputDarkClasses} ${inputFocusClasses} ${inputDisabledClasses} appearance-none bg-select-arrow bg-no-repeat bg-right-4`;
+
+  const textareaBaseClasses =
+    "w-full px-4 py-3 border rounded-lg text-sm md:text-base transition-all duration-200 resize-y min-h-[120px]";
+  const textareaLightClasses = "bg-white border-gray-300 text-gray-900 placeholder:text-gray-500";
+  const textareaDarkClasses =
+    "dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-400";
+  const textareaFocusClasses =
+    "focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 outline-none";
+  const textareaDisabledClasses =
+    "disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed";
+
+  return (
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-2 sm:p-3 md:p-4 overflow-y-auto backdrop-blur-sm">
+      {/* Modal Container */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] my-4 mx-2 sm:mx-4 overflow-hidden flex flex-col">
+        {/* Header - Sticky */}
+        <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-700 dark:to-blue-800 text-white p-4 sm:p-5 md:p-6 flex justify-between items-center z-10">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-white/20 rounded-lg p-1">
               <Users className="w-full h-full" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold">
                 {mode === "add"
                   ? "Tambah Data Konseling"
                   : mode === "edit"
                   ? "Edit Data Konseling"
                   : "Detail Konseling"}
               </h2>
-              <p className="text-blue-100 text-xs sm:text-sm">SMP Muslimin Cililin</p>
+              <p className="text-blue-100 text-xs sm:text-sm mt-1">SMP Muslimin Cililin</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 sm:p-2 hover:bg-blue-600 dark:hover:bg-blue-800 rounded-lg transition min-h-[44px] min-w-[44px] flex items-center justify-center touch-target"
+            className="p-2 hover:bg-white/20 rounded-lg transition min-h-[44px] min-w-[44px] flex items-center justify-center touch-target"
             aria-label="Tutup modal"
           >
-            <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
+        {/* Form Content - Scrollable */}
         <form
           onSubmit={handleSubmit}
-          className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 md:space-y-6"
+          className="flex-1 overflow-y-auto p-4 sm:p-5 md:p-6 space-y-5 sm:space-y-6"
         >
-          {/* ✅ STUDENT SELECTION - Responsif */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 sm:p-4 rounded-lg">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">
-              👤 Pilih Siswa *
+          {/* ✅ STUDENT SELECTION SECTION */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 p-4 sm:p-5 rounded-xl">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
+              <span className="inline-flex items-center gap-2">
+                <span className="text-blue-600 dark:text-blue-400">👤</span>
+                Pilih Siswa *
+              </span>
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
-              {/* Jenjang */}
-              <select
-                value={studentFilters.jenjang}
-                onChange={(e) => {
-                  const jenjang = e.target.value;
-                  setStudentFilters({ jenjang: jenjang, kelas: "" });
-                  updateAvailableKelas(jenjang);
-                  onFormChange({
-                    student_id: "",
-                    nis: "",
-                    full_name: "",
-                    gender: "",
-                    class_id: "",
-                  });
-                }}
-                disabled={mode === "view"}
-                className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                         rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                         disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                         disabled:text-gray-500 dark:disabled:text-gray-400 
-                         text-sm min-h-[44px] touch-target
-                         bg-white dark:bg-gray-800
-                         text-gray-900 dark:text-gray-100"
-                required
-              >
-                <option value="">-- Pilih Jenjang --</option>
-                <option value="Kelas 7">Kelas 7</option>
-                <option value="Kelas 8">Kelas 8</option>
-                <option value="Kelas 9">Kelas 9</option>
-              </select>
 
-              {/* Kelas */}
-              <select
-                value={studentFilters.kelas}
-                onChange={(e) => {
-                  const kelas = e.target.value;
-                  setStudentFilters((prev) => ({ ...prev, kelas }));
-                  updateFilteredStudents(kelas);
-                  onFormChange({
-                    student_id: "",
-                    nis: "",
-                    full_name: "",
-                    gender: "",
-                    class_id: "",
-                  });
-                }}
-                disabled={!studentFilters.jenjang || mode === "view"}
-                className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                         rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                         disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                         disabled:text-gray-500 dark:disabled:text-gray-400 
-                         text-sm min-h-[44px] touch-target
-                         bg-white dark:bg-gray-800
-                         text-gray-900 dark:text-gray-100"
-                required
-              >
-                <option value="">-- Pilih Kelas --</option>
-                {availableKelas.map((kelas) => (
-                  <option key={kelas} value={kelas}>
-                    {kelas}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+              {/* Jenjang Selection */}
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Jenjang
+                </label>
+                <select
+                  value={studentFilters.jenjang}
+                  onChange={(e) => {
+                    const jenjang = e.target.value;
+                    setStudentFilters({ jenjang: jenjang, kelas: "" });
+                    updateAvailableKelas(jenjang);
+                    onFormChange({
+                      student_id: "",
+                      nis: "",
+                      full_name: "",
+                      gender: "",
+                      class_id: "",
+                    });
+                  }}
+                  disabled={mode === "view"}
+                  className={selectBaseClasses}
+                  required
+                >
+                  <option value="">-- Pilih Jenjang --</option>
+                  <option value="Kelas 7">Kelas 7</option>
+                  <option value="Kelas 8">Kelas 8</option>
+                  <option value="Kelas 9">Kelas 9</option>
+                </select>
+              </div>
 
-              {/* ✅ NAMA SISWA */}
-              <select
-                value={formData.student_id}
-                onChange={(e) => handleStudentSelect(e.target.value)}
-                disabled={!studentFilters.kelas || mode === "view"}
-                className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                         rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                         disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                         disabled:text-gray-500 dark:disabled:text-gray-400 
-                         text-sm min-h-[44px] touch-target
-                         bg-white dark:bg-gray-800
-                         text-gray-900 dark:text-gray-100"
-                required
-              >
-                <option value="">-- Pilih Nama Siswa --</option>
-                {filteredStudents.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {student.full_name}
-                  </option>
-                ))}
-              </select>
+              {/* Kelas Selection */}
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Kelas
+                </label>
+                <select
+                  value={studentFilters.kelas}
+                  onChange={(e) => {
+                    const kelas = e.target.value;
+                    setStudentFilters((prev) => ({ ...prev, kelas }));
+                    updateFilteredStudents(kelas);
+                    onFormChange({
+                      student_id: "",
+                      nis: "",
+                      full_name: "",
+                      gender: "",
+                      class_id: "",
+                    });
+                  }}
+                  disabled={!studentFilters.jenjang || mode === "view"}
+                  className={selectBaseClasses}
+                  required
+                >
+                  <option value="">-- Pilih Kelas --</option>
+                  {availableKelas.map((kelas) => (
+                    <option key={kelas} value={kelas}>
+                      {kelas}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Student Selection */}
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Nama Siswa
+                </label>
+                <select
+                  value={formData.student_id}
+                  onChange={(e) => handleStudentSelect(e.target.value)}
+                  disabled={!studentFilters.kelas || mode === "view"}
+                  className={selectBaseClasses}
+                  required
+                >
+                  <option value="">-- Pilih Nama Siswa --</option>
+                  {filteredStudents.map((student) => (
+                    <option key={student.id} value={student.id}>
+                      {student.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
             {filteredStudents.length > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                ✅ {filteredStudents.length} siswa tersedia
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                {filteredStudents.length} siswa tersedia
               </p>
             )}
           </div>
 
-          {/* Student Info (auto-filled) - Responsif */}
+          {/* ✅ STUDENT INFO DISPLAY */}
           {formData.student_id && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-xs sm:text-sm">
-              <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">NIS:</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">NIS</p>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {formData.nis}
                 </p>
               </div>
-              <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">Nama:</span>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Nama Lengkap</p>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {formData.full_name}
                 </p>
               </div>
-              <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">Kelas:</span>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Kelas</p>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {formData.class_id}
                 </p>
               </div>
-              <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs">Kelamin:</span>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Jenis Kelamin</p>
                 <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {formData.gender === "L"
                     ? "Laki-laki"
@@ -271,10 +273,11 @@ const KonselingModal = ({
             </div>
           )}
 
-          {/* Date & Layanan - Responsif */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+          {/* ✅ DATE & SERVICE INFO */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {/* Date */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Tanggal Konseling *
               </label>
               <input
@@ -282,32 +285,21 @@ const KonselingModal = ({
                 value={formData.tanggal}
                 onChange={(e) => handleInputChange("tanggal", e.target.value)}
                 disabled={mode === "view"}
-                className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                         rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                         disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                         disabled:text-gray-500 dark:disabled:text-gray-400 
-                         text-sm min-h-[44px] touch-target
-                         bg-white dark:bg-gray-800
-                         text-gray-900 dark:text-gray-100"
+                className={`${inputBaseClasses} ${inputLightClasses} ${inputDarkClasses} ${inputFocusClasses} ${inputDisabledClasses}`}
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+            {/* Service Type */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Jenis Layanan *
               </label>
               <select
                 value={formData.jenis_layanan}
                 onChange={(e) => handleInputChange("jenis_layanan", e.target.value)}
                 disabled={mode === "view"}
-                className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                         rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                         disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                         disabled:text-gray-500 dark:disabled:text-gray-400 
-                         text-sm min-h-[44px] touch-target
-                         bg-white dark:bg-gray-800
-                         text-gray-900 dark:text-gray-100"
+                className={selectBaseClasses}
                 required
               >
                 <option value="">Pilih Jenis Layanan</option>
@@ -320,21 +312,16 @@ const KonselingModal = ({
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+            {/* Guidance Field */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Bidang Bimbingan *
               </label>
               <select
                 value={formData.bidang_bimbingan}
                 onChange={(e) => handleInputChange("bidang_bimbingan", e.target.value)}
                 disabled={mode === "view"}
-                className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                         rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                         disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                         disabled:text-gray-500 dark:disabled:text-gray-400 
-                         text-sm min-h-[44px] touch-target
-                         bg-white dark:bg-gray-800
-                         text-gray-900 dark:text-gray-100"
+                className={selectBaseClasses}
                 required
               >
                 <option value="">Pilih Bidang Bimbingan</option>
@@ -347,31 +334,28 @@ const KonselingModal = ({
             </div>
           </div>
 
-          {/* Tingkat Urgensi & Kategori Masalah */}
-          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 sm:p-4">
-            <div className="flex items-center gap-2 mb-2 sm:mb-3">
-              <AlertTriangle className="text-orange-600 dark:text-orange-400 w-4 h-4 sm:w-5 sm:h-5" />
-              <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+          {/* ✅ PROBLEM CLASSIFICATION */}
+          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/50 rounded-xl p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-lg">
+                <AlertTriangle className="text-orange-600 dark:text-orange-400 w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg">
                 Klasifikasi Masalah
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+              {/* Urgency Level */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Tingkat Urgensi *
                 </label>
                 <select
                   value={formData.tingkat_urgensi}
                   onChange={(e) => handleInputChange("tingkat_urgensi", e.target.value)}
                   disabled={mode === "view"}
-                  className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                           rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 
-                           disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                           disabled:text-gray-500 dark:disabled:text-gray-400 
-                           text-sm min-h-[44px] touch-target
-                           bg-white dark:bg-gray-800
-                           text-gray-900 dark:text-gray-100"
+                  className={selectBaseClasses}
                   required
                 >
                   <option value="">Pilih Tingkat Urgensi</option>
@@ -382,21 +366,16 @@ const KonselingModal = ({
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+              {/* Problem Category */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Kategori Masalah *
                 </label>
                 <select
                   value={formData.kategori_masalah}
                   onChange={(e) => handleInputChange("kategori_masalah", e.target.value)}
                   disabled={mode === "view"}
-                  className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                           rounded-lg focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 
-                           disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                           disabled:text-gray-500 dark:disabled:text-gray-400 
-                           text-sm min-h-[44px] touch-target
-                           bg-white dark:bg-gray-800
-                           text-gray-900 dark:text-gray-100"
+                  className={selectBaseClasses}
                   required
                 >
                   <option value="">Pilih Kategori Masalah</option>
@@ -415,94 +394,98 @@ const KonselingModal = ({
             </div>
           </div>
 
-          {/* Text Areas - Responsif - INI YANG DIPERBAIKI */}
-          <div className="space-y-3 sm:space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+          {/* ✅ TEXT AREAS SECTION */}
+          <div className="space-y-4 sm:space-y-5">
+            {/* Problem Description */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Permasalahan *
               </label>
               <textarea
                 value={formData.permasalahan}
                 onChange={(e) => handleInputChange("permasalahan", e.target.value)}
                 disabled={mode === "view"}
-                rows="3"
-                className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[120px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                rows={4}
+                className={`${textareaBaseClasses} ${textareaLightClasses} ${textareaDarkClasses} ${textareaFocusClasses} ${textareaDisabledClasses}`}
                 placeholder="Jelaskan permasalahan yang dihadapi siswa secara detail..."
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+            {/* Chronology */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Kronologi *
               </label>
               <textarea
                 value={formData.kronologi}
                 onChange={(e) => handleInputChange("kronologi", e.target.value)}
                 disabled={mode === "view"}
-                rows="3"
-                className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[120px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                rows={4}
+                className={`${textareaBaseClasses} ${textareaLightClasses} ${textareaDarkClasses} ${textareaFocusClasses} ${textareaDisabledClasses}`}
                 placeholder="Jelaskan kronologi kejadian secara runtut..."
                 required
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+            {/* Action & Result */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Tindakan Layanan
                 </label>
                 <textarea
                   value={formData.tindakan_layanan}
                   onChange={(e) => handleInputChange("tindakan_layanan", e.target.value)}
                   disabled={mode === "view"}
-                  rows="3"
-                  className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[120px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                  rows={3}
+                  className={`${textareaBaseClasses} ${textareaLightClasses} ${textareaDarkClasses} ${textareaFocusClasses} ${textareaDisabledClasses}`}
                   placeholder="Jelaskan tindakan yang dilakukan..."
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Hasil Layanan
                 </label>
                 <textarea
                   value={formData.hasil_layanan}
                   onChange={(e) => handleInputChange("hasil_layanan", e.target.value)}
                   disabled={mode === "view"}
-                  rows="3"
-                  className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[120px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                  rows={3}
+                  className={`${textareaBaseClasses} ${textareaLightClasses} ${textareaDarkClasses} ${textareaFocusClasses} ${textareaDisabledClasses}`}
                   placeholder="Jelaskan hasil dari layanan yang diberikan..."
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+            {/* Follow-up Plan */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Rencana Tindak Lanjut
               </label>
               <textarea
                 value={formData.rencana_tindak_lanjut}
                 onChange={(e) => handleInputChange("rencana_tindak_lanjut", e.target.value)}
                 disabled={mode === "view"}
-                rows="2"
-                className="w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 text-sm min-h-[90px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                rows={3}
+                className={`${textareaBaseClasses} ${textareaLightClasses} ${textareaDarkClasses} ${textareaFocusClasses} ${textareaDisabledClasses}`}
                 placeholder="Jelaskan rencana tindak lanjut..."
               />
             </div>
           </div>
 
-          {/* Follow-up */}
-          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 sm:p-4">
-            <div className="flex items-center gap-2 mb-2 sm:mb-3">
-              <Calendar className="text-purple-600 dark:text-purple-400 w-4 h-4 sm:w-5 sm:h-5" />
-              <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
-                Follow-up
-              </h3>
+          {/* ✅ FOLLOW-UP SECTION */}
+          <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/50 rounded-xl p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
+                <Calendar className="text-purple-600 dark:text-purple-400 w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg">Follow-up</h3>
             </div>
 
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex items-center gap-2 sm:gap-3">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   id="perlu_followup"
@@ -514,7 +497,7 @@ const KonselingModal = ({
                     }
                   }}
                   disabled={mode === "view"}
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400 rounded focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 touch-target bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+                  className="w-5 h-5 text-purple-600 dark:text-purple-400 rounded focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 touch-target bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
                 />
                 <label
                   htmlFor="perlu_followup"
@@ -525,8 +508,8 @@ const KonselingModal = ({
               </div>
 
               {formData.perlu_followup && (
-                <div className="ml-0 sm:ml-8 mt-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                <div className="ml-0 sm:ml-8 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Tanggal Follow-up *
                   </label>
                   <input
@@ -535,13 +518,7 @@ const KonselingModal = ({
                     onChange={(e) => handleInputChange("tanggal_followup", e.target.value)}
                     disabled={mode === "view"}
                     min={new Date().toISOString().split("T")[0]}
-                    className="dark-select w-full sm:w-64 px-3 sm:px-4 py-2.5 border border-purple-300 dark:border-purple-600 
-                             rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 
-                             disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                             disabled:text-gray-500 dark:disabled:text-gray-400 
-                             text-sm min-h-[44px] touch-target
-                             bg-white dark:bg-gray-800
-                             text-gray-900 dark:text-gray-100"
+                    className={`${inputBaseClasses} ${inputLightClasses} ${inputDarkClasses} ${inputFocusClasses} ${inputDisabledClasses} border-purple-300 dark:border-purple-600`}
                     required={formData.perlu_followup}
                   />
                 </div>
@@ -549,23 +526,17 @@ const KonselingModal = ({
             </div>
           </div>
 
-          {/* Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+          {/* ✅ STATUS SECTION */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Status Layanan
               </label>
               <select
                 value={formData.status_layanan}
                 onChange={(e) => handleInputChange("status_layanan", e.target.value)}
                 disabled={mode === "view"}
-                className="dark-select w-full px-3 sm:px-4 py-2.5 border border-gray-300 dark:border-gray-600 
-                         rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 
-                         disabled:bg-gray-100 dark:disabled:bg-gray-700 
-                         disabled:text-gray-500 dark:disabled:text-gray-400 
-                         text-sm min-h-[44px] touch-target
-                         bg-white dark:bg-gray-800
-                         text-gray-900 dark:text-gray-100"
+                className={selectBaseClasses}
               >
                 <option value="Dalam Proses">⏳ Dalam Proses</option>
                 <option value="Selesai">✅ Selesai</option>
@@ -574,19 +545,19 @@ const KonselingModal = ({
             </div>
           </div>
 
-          {/* Action Buttons - Responsif */}
+          {/* ✅ ACTION BUTTONS */}
           {mode !== "view" && (
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row gap-3 pt-5 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="submit"
-                className="flex-1 px-4 sm:px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200 shadow-lg hover:shadow-xl"
+                className="flex-1 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-800 dark:hover:to-blue-900 text-white rounded-xl font-semibold text-base min-h-[52px] touch-target transition-all duration-200 shadow-lg hover:shadow-xl active:scale-[0.98]"
               >
                 {mode === "add" ? "✅ Tambah Data Konseling" : "💾 Update Data Konseling"}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 sm:px-6 py-3 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-gray-700 rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200"
+                className="px-6 py-3.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-gray-800 rounded-xl font-semibold text-base min-h-[52px] touch-target transition-all duration-200"
               >
                 Batal
               </button>
@@ -594,11 +565,11 @@ const KonselingModal = ({
           )}
 
           {mode === "view" && (
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="pt-5 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full px-4 sm:px-6 py-3 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200"
+                className="w-full px-6 py-3.5 bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-xl font-semibold text-base min-h-[52px] touch-target transition-all duration-200"
               >
                 Tutup
               </button>

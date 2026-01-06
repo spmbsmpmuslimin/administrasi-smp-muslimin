@@ -160,6 +160,13 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
   const loadPreviewData = async () => {
     setLoadingPreview(true);
     try {
+      // ✅ TAMBAHIN DEBUG INI
+      console.log("🔍 Loading preview with:");
+      console.log("  - Student ID:", selectedSiswaId);
+      console.log("  - Class ID:", classId);
+      console.log("  - Academic Year ID:", academicYear?.id);
+      console.log("  - Semester:", semester);
+
       // Load siswa data (hanya siswa aktif)
       const { data: siswa, error: siswaError } = await supabase
         .from("students")
@@ -170,14 +177,28 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
 
       if (siswaError) throw new Error("Siswa tidak ditemukan atau tidak aktif");
 
-      // Load nilai data
+      // ✅ Cari semester ID yang sesuai dengan year + semester yang dipilih user
+      const { data: correctSemester, error: semesterError } = await supabase
+        .from("academic_years")
+        .select("id")
+        .eq("year", academicYear?.year || "2025/2026")
+        .eq("semester", parseInt(semester))
+        .single();
+
+      if (semesterError) {
+        console.error("❌ Error finding semester:", semesterError);
+        throw new Error("Semester tidak ditemukan untuk tahun dan semester yang dipilih");
+      }
+
+      console.log("🎯 Using semester ID:", correctSemester?.id);
+
+      // Load nilai data menggunakan semester ID yang benar
       const { data: nilai, error: nilaiError } = await supabase
         .from("nilai_eraport")
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", selectedSiswaId)
         .eq("class_id", classId)
-        .eq("academic_year_id", academicYear?.id)
-        .eq("semester", semester);
+        .eq("academic_year_id", correctSemester.id); // ✅ Pakai semester ID yang bener
 
       if (nilaiError) {
         console.error("❌ Error loading nilai:", nilaiError);
@@ -187,6 +208,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
       console.log("📊 Nilai loaded:", nilai?.length || 0);
 
       // FALLBACK: Kalau ngga ada yang finalized, ambil semua (termasuk draft)
+      let finalNilai = nilai;
       if (!nilai || nilai.length === 0) {
         console.log("⚠️ Tidak ada nilai finalized, coba ambil semua data...");
 
@@ -195,15 +217,14 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
           .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
           .eq("student_id", selectedSiswaId)
           .eq("class_id", classId)
-          .eq("academic_year_id", academicYear?.id)
-          .eq("semester", semester);
+          .eq("academic_year_id", academicYear?.id);
 
-        nilai = nilaiAll;
-        console.log("📊 Nilai Total (termasuk draft):", nilai?.length || 0);
+        finalNilai = nilaiAll;
+        console.log("📊 Nilai Total (termasuk draft):", finalNilai?.length || 0);
       }
 
       // ✅ SORT berdasarkan urutan mapel standar
-      const sortedNilai = (nilai || []).sort((a, b) => {
+      const sortedNilai = (finalNilai || []).sort((a, b) => {
         return getMapelOrder(a.mata_pelajaran) - getMapelOrder(b.mata_pelajaran);
       });
 

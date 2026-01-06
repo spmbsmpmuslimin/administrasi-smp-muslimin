@@ -78,8 +78,8 @@ function CetakRaport() {
       let userData = null;
       let homeroomClassId = null;
 
-      // Baca dari localStorage
-      const sessionData = localStorage.getItem("userSession");
+      // Baca dari localStorage - ✅ KEY yang BENAR adalah "user"
+      const sessionData = localStorage.getItem("user");
 
       if (!sessionData) {
         throw new Error("Session tidak ditemukan. Silakan login ulang.");
@@ -221,21 +221,31 @@ function CetakRaport() {
     setExpandedMapel({});
 
     try {
+      // ✅ Cari semester ID yang bener
+      const { data: correctSemester } = await supabase
+        .from("academic_years")
+        .select("id")
+        .eq("year", academicYear?.year || "2025/2026")
+        .eq("semester", parseInt(semester))
+        .single();
+
+      if (!correctSemester) {
+        alert("Semester tidak ditemukan!");
+        return;
+      }
+
       const { data: nilaiData } = await supabase
         .from("nilai_eraport")
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", siswa.id)
         .eq("class_id", classId)
-        .eq("academic_year_id", academicYear?.id)
-        .eq("semester", semester);
-      // ✅ HAPUS .order("mata_pelajaran") - nanti sort manual
+        .eq("academic_year_id", correctSemester.id); // ✅ Pakai ID yang bener
 
       const { data: tpData, error: tpError } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
         .eq("class_id", classId)
-        .eq("academic_year_id", academicYear?.id)
-        .eq("semester", semester)
+        .eq("academic_year_id", correctSemester.id) // ✅ Pakai ID yang bener
         .order("mata_pelajaran")
         .order("urutan");
 
@@ -335,15 +345,28 @@ function CetakRaport() {
   // GANTI fungsi addStudentPages yang lama dengan yang ini
   const addStudentPages = async (doc, siswa, isFirstStudent) => {
     try {
-      // Query nilai_eraport (tanpa filter is_finalized)
+      // ✅ Cari semester ID yang sesuai dengan year + semester yang dipilih
+      const { data: correctSemester, error: semesterError } = await supabase
+        .from("academic_years")
+        .select("id")
+        .eq("year", academicYear?.year || "2025/2026")
+        .eq("semester", parseInt(semester))
+        .single();
+
+      if (semesterError) {
+        console.error("❌ Error finding semester:", semesterError);
+        throw new Error("Semester tidak ditemukan");
+      }
+
+      console.log("🎯 Using semester ID:", correctSemester?.id);
+
+      // Query nilai_eraport menggunakan semester ID yang benar
       const { data: nilaiData, error: nilaiError } = await supabase
         .from("nilai_eraport")
         .select(`*, nilai_eraport_detail(*, tujuan_pembelajaran(*))`)
         .eq("student_id", siswa.id)
         .eq("class_id", classId)
-        .eq("academic_year_id", academicYear?.id)
-        .eq("semester", semester);
-      // ✅ HAPUS .order("mata_pelajaran") - nanti sort manual
+        .eq("academic_year_id", correctSemester.id); // ✅ Pakai semester ID yang bener
 
       if (nilaiError) throw nilaiError;
 
@@ -424,7 +447,7 @@ function CetakRaport() {
       }
 
       // Wali Kelas
-      const sessionData = localStorage.getItem("userSession");
+      const sessionData = localStorage.getItem("user"); // ✅ GANTI jadi "user"
       const currentUser = sessionData ? JSON.parse(sessionData) : null;
       let waliKelas = {
         full_name: currentUser?.full_name || currentUser?.username || "Wali Kelas",
