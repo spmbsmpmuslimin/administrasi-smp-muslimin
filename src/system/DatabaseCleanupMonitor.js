@@ -49,13 +49,38 @@ const DatabaseCleanupMonitor = () => {
       }
 
       const totalRecords = Object.values(tableStats).reduce((sum, count) => sum + count, 0);
-      const estimatedSizeMB = (totalRecords / 1000) * 0.1;
+
+      // TRY to get REAL database size from PostgreSQL
+      let estimatedSizeMB;
+      let percentUsed;
+      let isRealSize = false;
+
+      try {
+        const { data: realSizeData, error: rpcError } = await supabase.rpc("get_real_db_size");
+
+        if (!rpcError && realSizeData) {
+          // Use REAL size from PostgreSQL ✅
+          estimatedSizeMB = realSizeData.database_size_mb;
+          percentUsed = realSizeData.percent_used;
+          isRealSize = true;
+          console.log("✅ Using REAL database size from PostgreSQL:", estimatedSizeMB, "MB");
+        } else {
+          throw new Error("RPC function not available");
+        }
+      } catch (rpcError) {
+        // Fallback to estimation if RPC fails
+        console.warn("⚠️ RPC function not available, using estimation");
+        estimatedSizeMB = totalRecords * 0.00433;
+        percentUsed = ((estimatedSizeMB / 500) * 100).toFixed(1);
+        isRealSize = false;
+      }
 
       setStats({
         tables: tableStats,
         totalRecords,
-        estimatedSizeMB: estimatedSizeMB.toFixed(2),
-        percentUsed: ((estimatedSizeMB / 500) * 100).toFixed(1),
+        estimatedSizeMB: parseFloat(estimatedSizeMB).toFixed(2),
+        percentUsed: parseFloat(percentUsed).toFixed(1),
+        isRealSize: isRealSize,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -257,7 +282,23 @@ const DatabaseCleanupMonitor = () => {
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md dark:shadow-none border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Estimated Size</p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                {stats.isRealSize ? (
+                  <>
+                    Database Size
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                      ✓ Real
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Estimated Size
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
+                      ~ Est
+                    </span>
+                  </>
+                )}
+              </p>
               <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1 truncate">
                 {stats.estimatedSizeMB || 0} MB
               </p>

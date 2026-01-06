@@ -119,9 +119,9 @@ const Setting = ({ user, onShowToast }) => {
     window.history.replaceState(null, "", `/setting?tab=${tabId}`);
   };
 
-  // Menu cards configuration - DIURUTKAN SESUAI PERMINTAAN dengan tambahan Feedback Guru
+  // Menu cards configuration - URUTAN BARU: Profile, Active Users, Feedback Guru di baris 1
   const menuCards = [
-    // BARIS 1
+    // BARIS 1: Profile - Active Users - Feedback Guru
     {
       id: "profile",
       title: "Profile",
@@ -129,6 +129,21 @@ const Setting = ({ user, onShowToast }) => {
       icon: User,
       available: true,
     },
+    {
+      id: "active-users",
+      title: "Active Users",
+      description: "Pantau aktivitas login dan engagement guru",
+      icon: Users,
+      available: user?.role === "admin",
+    },
+    {
+      id: "feedback-guru",
+      title: "Feedback Guru",
+      description: "Kelola masukan, saran, dan laporan bug dari guru",
+      icon: MessageSquare,
+      available: user?.role === "admin",
+    },
+    // BARIS 2: Manajemen Tahun Ajaran - Manajemen Sekolah - Penugasan Guru
     {
       id: "academic",
       title: "Manajemen Tahun Ajaran",
@@ -143,7 +158,6 @@ const Setting = ({ user, onShowToast }) => {
       icon: School,
       available: user?.role === "admin" || user?.role === "guru_bk",
     },
-    // BARIS 2
     {
       id: "assignment",
       title: "Manajemen Penugasan Guru",
@@ -151,6 +165,7 @@ const Setting = ({ user, onShowToast }) => {
       icon: Users,
       available: user?.role === "admin",
     },
+    // BARIS 3: User Management - Settings - System
     {
       id: "user-management",
       title: "Manajemen User",
@@ -158,21 +173,6 @@ const Setting = ({ user, onShowToast }) => {
       icon: Users,
       available: user?.role === "admin",
     },
-    {
-      id: "feedback-guru",
-      title: "Feedback Guru",
-      description: "Kelola masukan, saran, dan laporan bug dari guru",
-      icon: MessageSquare,
-      available: user?.role === "admin",
-    },
-    {
-      id: "active-users",
-      title: "Active Users",
-      description: "Pantau aktivitas login dan engagement guru",
-      icon: Users,
-      available: user?.role === "admin",
-    },
-    // BARIS 3
     {
       id: "settings",
       title: "Manajemen Pengaturan Sekolah",
@@ -187,6 +187,7 @@ const Setting = ({ user, onShowToast }) => {
       icon: Database,
       available: user?.role === "admin",
     },
+    // BARIS 4: Raport - Maintenance
     {
       id: "raport",
       title: "Konfigurasi E-Raport",
@@ -194,7 +195,6 @@ const Setting = ({ user, onShowToast }) => {
       icon: FileText,
       available: user?.role === "admin",
     },
-    // BARIS 4
     {
       id: "maintenance",
       title: "Maintenance",
@@ -379,9 +379,9 @@ const Setting = ({ user, onShowToast }) => {
           </div>
         </div>
 
-        {/* Cards Grid dengan layout 3 kolom dan tinggi card lebih compact */}
+        {/* Cards Grid: 2 kolom di mobile/tablet, 3 kolom di desktop */}
         <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {availableCards.map((card) => {
               const IconComponent = card.icon;
 
