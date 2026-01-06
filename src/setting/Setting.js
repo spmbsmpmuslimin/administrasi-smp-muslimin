@@ -13,6 +13,7 @@ import {
   AlertCircle,
   FileText,
   ArrowRight,
+  MessageSquare,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import ProfileTab from "./ProfileTab";
@@ -24,6 +25,7 @@ import MaintenanceModeTab from "./MaintenanceModeTab";
 import RaportConfig from "../e-raport/RaportConfig";
 import TeacherAssignmentTab from "./TeacherAssignmentTab";
 import UserManagementTab from "./UserManagementTab";
+import FeedbackGuruTab from "./FeedbackGuruTab";
 
 const Setting = ({ user, onShowToast }) => {
   const [searchParams] = useSearchParams();
@@ -116,7 +118,7 @@ const Setting = ({ user, onShowToast }) => {
     window.history.replaceState(null, "", `/setting?tab=${tabId}`);
   };
 
-  // Menu cards configuration - DIURUTKAN SESUAI PERMINTAAN
+  // Menu cards configuration - DIURUTKAN SESUAI PERMINTAAN dengan tambahan Feedback Guru
   const menuCards = [
     // BARIS 1
     {
@@ -156,13 +158,20 @@ const Setting = ({ user, onShowToast }) => {
       available: user?.role === "admin",
     },
     {
+      id: "feedback-guru",
+      title: "Feedback Guru",
+      description: "Kelola masukan, saran, dan laporan bug dari guru",
+      icon: MessageSquare,
+      available: user?.role === "admin",
+    },
+    // BARIS 3
+    {
       id: "settings",
       title: "Manajemen Pengaturan Sekolah",
       description: "Konfigurasi umum sistem sekolah",
       icon: Building2,
       available: user?.role === "admin",
     },
-    // BARIS 3
     {
       id: "system",
       title: "Manajemen System",
@@ -177,6 +186,7 @@ const Setting = ({ user, onShowToast }) => {
       icon: FileText,
       available: user?.role === "admin",
     },
+    // BARIS 4
     {
       id: "maintenance",
       title: "Maintenance",
@@ -225,6 +235,8 @@ const Setting = ({ user, onShowToast }) => {
         return <SystemTab {...commonProps} />;
       case "assignment":
         return <TeacherAssignmentTab {...commonProps} />;
+      case "feedback-guru":
+        return <FeedbackGuruTab {...commonProps} />;
       default:
         return null;
     }

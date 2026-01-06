@@ -970,7 +970,7 @@ const Grades = ({ user, onShowToast }) => {
               >
                 <option value="" className="dark:bg-gray-700">
                   {!selectedSubject
-                    ? "Pilih mata pelajaran dulu"
+                    ? "Pilih Mata Pelajaran Dulu"
                     : classes.length === 0
                     ? "Tidak ada kelas"
                     : "Pilih Kelas"}

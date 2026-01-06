@@ -371,7 +371,7 @@ const AttendanceFilters = ({
                   ? "View Mode"
                   : selectedSubject
                   ? "Pilih Kelas"
-                  : "Pilih mapel dulu"}
+                  : "Pilih Mata Pelajaran Dulu"}
               </option>
               {classes.map((cls) => (
                 <option

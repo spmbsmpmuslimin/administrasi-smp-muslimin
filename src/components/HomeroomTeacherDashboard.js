@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import AnnouncementPopup from "./AnnouncementPopup"; // ✅ INI IMPORT NYA
 import { getActiveAcademicInfo } from "../services/academicYearService";
+import FeedbackGuru from "./FeedbackGuru";
 
 const HomeroomTeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
@@ -1351,6 +1352,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
               </p>
             </div>
           )}
+        </div>
+
+        {/* 💬 Saran & Masukan Guru */}
+        <div className="mt-6">
+          <FeedbackGuru guruId={userId} />
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import AnnouncementPopup from "./AnnouncementPopup";
 import { getActiveAcademicInfo } from "../services/academicYearService";
+import FeedbackGuru from "./FeedbackGuru";
 
 const TeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
@@ -1023,6 +1024,11 @@ const TeacherDashboard = ({ user }) => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* 💬 Saran & Masukan Guru */}
+        <div className="mt-6">
+          <FeedbackGuru guruId={user?.id} />
         </div>
       </div>
     </div>

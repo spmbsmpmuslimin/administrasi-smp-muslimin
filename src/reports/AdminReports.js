@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { exportToExcel } from "./ReportExcel";
 import ReportModal from "./modals/AdminReportModal";
+import DailyAttendanceSection from "./DailyAttendanceSection"; // ✅ NEW
 
 import {
   fetchAttendanceRecapData,
@@ -811,6 +812,9 @@ const AdminReports = ({ user, onShowToast }) => {
             colorClass="bg-red-100 dark:bg-red-800 text-red-600 dark:text-red-300"
           />
         </div>
+
+        {/* ✅ DAILY ATTENDANCE MONITORING SECTION - NEW */}
+        <DailyAttendanceSection supabase={supabase} onShowToast={onShowToast} darkMode={false} />
 
         {/* MONITORING SECTION */}
         <div className="mb-6 sm:mb-8">
