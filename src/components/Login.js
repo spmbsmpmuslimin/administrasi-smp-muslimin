@@ -51,6 +51,15 @@ export const Login = ({ onLogin, onShowToast }) => {
       if (data.password !== password) {
         throw new Error("Password salah");
       }
+      // ✅ UPDATE: Track login activity
+      const currentLoginCount = data.login_count || 0;
+      await supabase
+        .from("users")
+        .update({
+          last_login: new Date().toISOString(),
+          login_count: currentLoginCount + 1,
+        })
+        .eq("id", data.id);
 
       const userData = {
         id: data.id,

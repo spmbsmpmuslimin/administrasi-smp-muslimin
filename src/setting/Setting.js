@@ -26,6 +26,7 @@ import RaportConfig from "../e-raport/RaportConfig";
 import TeacherAssignmentTab from "./TeacherAssignmentTab";
 import UserManagementTab from "./UserManagementTab";
 import FeedbackGuruTab from "./FeedbackGuruTab";
+import ActiveUsersTab from "./ActiveUsersTab";
 
 const Setting = ({ user, onShowToast }) => {
   const [searchParams] = useSearchParams();
@@ -164,6 +165,13 @@ const Setting = ({ user, onShowToast }) => {
       icon: MessageSquare,
       available: user?.role === "admin",
     },
+    {
+      id: "active-users",
+      title: "Active Users",
+      description: "Pantau aktivitas login dan engagement guru",
+      icon: Users,
+      available: user?.role === "admin",
+    },
     // BARIS 3
     {
       id: "settings",
@@ -237,6 +245,8 @@ const Setting = ({ user, onShowToast }) => {
         return <TeacherAssignmentTab {...commonProps} />;
       case "feedback-guru":
         return <FeedbackGuruTab {...commonProps} />;
+      case "active-users":
+        return <ActiveUsersTab {...commonProps} />;
       default:
         return null;
     }
