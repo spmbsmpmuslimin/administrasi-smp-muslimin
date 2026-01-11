@@ -81,6 +81,9 @@ const Attendance = ({ user, onShowToast }) => {
   const [studentsLoaded, setStudentsLoaded] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
+  // ✅ STATE BARU UNTUK EXPORT EXCEL
+  const [teacherAssignment, setTeacherAssignment] = useState(null); // ✅ TAMBAH STATE BARU INI
+
   // ✅ ACADEMIC YEAR STATES
   const [activeAcademicInfo, setActiveAcademicInfo] = useState(null);
   const [selectedSemesterId, setSelectedSemesterId] = useState(null);
@@ -265,6 +268,7 @@ const Attendance = ({ user, onShowToast }) => {
     setStudents([]);
     setStudentsLoaded(false);
     setHasUserInteracted(false); // ✅ Reset interaction flag
+    setTeacherAssignment(null); // ✅ Reset teacher assignment
 
     if (onShowToast) {
       if (selectedSemester) {
@@ -393,6 +397,7 @@ const Attendance = ({ user, onShowToast }) => {
 
       if (!selectedSubject || !teacherId) {
         setClasses([]);
+        setTeacherAssignment(null); // ✅ Reset teacher assignment
         return;
       }
 
@@ -402,7 +407,10 @@ const Attendance = ({ user, onShowToast }) => {
         const isDailyMode = selectedSubject.includes("PRESENSI HARIAN");
 
         if (isDailyMode) {
-          if (!homeroomClass) return;
+          if (!homeroomClass) {
+            setTeacherAssignment(null); // ✅ Reset teacher assignment
+            return;
+          }
 
           const formattedClasses = [
             {
@@ -414,6 +422,7 @@ const Attendance = ({ user, onShowToast }) => {
 
           setClasses(formattedClasses);
           setSelectedClass(homeroomClass);
+          setTeacherAssignment(null); // ✅ RESET teacher assignment untuk harian
 
           setLoading(true);
           const { data: studentsData, error: studentsError } = await supabase
@@ -442,12 +451,14 @@ const Attendance = ({ user, onShowToast }) => {
         if (!selectedSemesterId) {
           setClasses([]);
           setMessage("Pilih semester terlebih dahulu");
+          setTeacherAssignment(null); // ✅ RESET teacher assignment
           return;
         }
 
+        // ✅ UPDATE QUERY: TAMBAH SELECT subject
         let query = supabase
           .from("teacher_assignments")
-          .select("class_id")
+          .select("class_id, subject") // ✅ TAMBAH subject DI SINI
           .eq("teacher_id", teacherId)
           .eq("subject", selectedSubject);
 
@@ -458,6 +469,13 @@ const Attendance = ({ user, onShowToast }) => {
         if (assignmentError) {
           console.error("Assignment error:", assignmentError);
           throw assignmentError;
+        }
+
+        // ✅ SIMPAN TEACHER ASSIGNMENT (ambil yang pertama)
+        if (assignmentData && assignmentData.length > 0) {
+          setTeacherAssignment(assignmentData[0]); // ✅ SIMPAN DATA ASSIGNMENT
+        } else {
+          setTeacherAssignment(null);
         }
 
         if (!assignmentData?.length) {
@@ -494,6 +512,7 @@ const Attendance = ({ user, onShowToast }) => {
       } catch (error) {
         console.error("Error fetching classes:", error);
         setMessage("Error: Gagal mengambil data kelas - " + error.message);
+        setTeacherAssignment(null); // ✅ Reset on error
       }
     };
 
@@ -965,6 +984,7 @@ const Attendance = ({ user, onShowToast }) => {
         availableSemesters={availableSemesters}
         onSemesterChange={handleSemesterChange}
         isReadOnlyMode={isReadOnlyMode}
+        teacherAssignment={teacherAssignment} // ✅ PASS teacherAssignment ke filters jika dibutuhkan
       />
 
       {/* Conditional Rendering */}
@@ -1049,6 +1069,7 @@ const Attendance = ({ user, onShowToast }) => {
             loading={loading}
             handleStatusChange={handleStatusChange}
             handleNotesChange={handleNotesChange}
+            teacherAssignment={teacherAssignment} // ✅ PASS teacherAssignment ke table jika dibutuhkan
           />
         </>
       )}

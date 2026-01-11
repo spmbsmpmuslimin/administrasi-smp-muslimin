@@ -357,7 +357,7 @@ export const showExportModal = ({ type, onExport }) => {
  */
 
 /**
- * Main monthly export function - ✅ TAMBAH PARAMETER SEMESTER_ID
+ * Main monthly export function - ✅ UPDATE PARAMETER DENGAN teacherAssignment
  */
 export const exportAttendanceToExcel = async (
   students,
@@ -370,10 +370,10 @@ export const exportAttendanceToExcel = async (
   yearMonth,
   teacherName = null,
   homeroomClass = null,
-  // ✅ TAMBAH PARAMETER BARU
   semesterId = null,
   academicYear = null,
-  semester = null
+  semester = null,
+  teacherAssignment = null // ✅ PARAMETER BARU UNTUK ROLE TITLE
 ) => {
   try {
     if (!students || students.length === 0) {
@@ -397,6 +397,7 @@ export const exportAttendanceToExcel = async (
     }
 
     console.log("✅ exportAttendanceToExcel dengan semester ID:", semesterId);
+    console.log("✅ Teacher Assignment data:", teacherAssignment); // ✅ LOG DATA ASSIGNMENT
 
     // ✅ AMBIL NAMA GURU DARI DATABASE
     let fetchedTeacherName = teacherName;
@@ -752,15 +753,38 @@ export const exportAttendanceToExcel = async (
     // ✅ CEK APAKAH USER ADALAH WALI KELAS - SAMA SEPERTI DI AttendanceModals.js
     const isHomeroom = homeroomClass && homeroomClass === classFilter;
 
-    // ✅ TENTUKAN ROLE TITLE - SAMA SEPERTI DI AttendanceModals.js
+    // Di exportAttendanceToExcel, ganti bagian roleTitle dengan:
+
+    // ✅ TENTUKAN ROLE TITLE - VERSI DIPERBAIKI
     let roleTitle;
     if (isHomeroomDaily) {
       roleTitle = "Wali Kelas";
-    } else if (isHomeroom) {
-      roleTitle = "Wali Kelas & Guru Mata Pelajaran";
     } else {
-      roleTitle = "Guru Mata Pelajaran";
+      // Prioritaskan dari teacherAssignment
+      if (teacherAssignment && teacherAssignment.subject) {
+        const subjectName = teacherAssignment.subject;
+        // Bersihkan subject name jika perlu
+        const cleanSubject = subjectName.split("-")[0].trim();
+        roleTitle = `Guru Mapel (${cleanSubject})`;
+      }
+      // Fallback ke selectedSubject
+      else if (selectedSubject && !selectedSubject.includes("PRESENSI HARIAN")) {
+        const cleanSubject = selectedSubject.split("-")[0].trim();
+        roleTitle = `Guru Mapel ${cleanSubject}`;
+      }
+      // Final fallback
+      else {
+        roleTitle = "Guru Mata Pelajaran";
+      }
     }
+
+    console.log("✅ Role Title ditentukan sebagai:", {
+      roleTitle,
+      isHomeroomDaily,
+      teacherAssignment,
+      selectedSubject,
+      isHomeroom,
+    });
 
     // Position signature at the right side
     const signatureCol = Math.max(6, totalCols - 3);
@@ -834,7 +858,7 @@ export const exportAttendanceToExcel = async (
 };
 
 /**
- * Wrapper for showing monthly export modal - ✅ UPDATE PARAMETER
+ * Wrapper for showing monthly export modal - ✅ UPDATE PARAMETER DENGAN teacherAssignment
  */
 export const showMonthlyExportModal = async ({
   students,
@@ -846,10 +870,10 @@ export const showMonthlyExportModal = async ({
   onShowToast,
   teacherName = null,
   homeroomClass = null,
-  // ✅ TAMBAH PARAMETER BARU
   academicYear = null,
   semester = null,
   semesterId = null,
+  teacherAssignment = null, // ✅ PARAMETER BARU
 }) => {
   const result = await showExportModal({
     type: "monthly",
@@ -865,10 +889,11 @@ export const showMonthlyExportModal = async ({
         yearMonth,
         teacherName,
         homeroomClass,
-        // ✅ PASS SEMESTER DATA
+        // ✅ PASS SEMESTER DATA & TEACHER ASSIGNMENT
         semesterId,
         academicYear,
-        semester
+        semester,
+        teacherAssignment // ✅ PASS teacherAssignment
       );
     },
   });
@@ -883,7 +908,7 @@ export const showMonthlyExportModal = async ({
 
 /**
  * Export semester attendance recap to Excel (SEMESTER) - SMP VERSION
- * ✅ TAMBAH PARAMETER SEMESTER_ID
+ * ✅ UPDATE PARAMETER DENGAN teacherAssignment
  */
 const exportSemesterRecapToExcel = async ({
   classId,
@@ -896,9 +921,9 @@ const exportSemesterRecapToExcel = async ({
   namaGuru = "",
   homeroomClass = null,
   onShowToast = null,
-  // ✅ TAMBAH PARAMETER BARU
   academicYear = null,
   semesterId = null,
+  teacherAssignment = null, // ✅ PARAMETER BARU
 }) => {
   try {
     const workbook = new ExcelJS.Workbook();
@@ -1105,17 +1130,19 @@ const exportSemesterRecapToExcel = async ({
     // Footer
     rowIndex += 2;
 
-    // Determine role - SAMA SEPERTI DI AttendanceModals.js
+    // Determine role - SESUAI DOKUMENTASI
     const isHomeroomDaily = subject === "Harian";
     const isHomeroom = homeroomClass && homeroomClass === classId;
 
+    // ✅ TENTUKAN ROLE TITLE - SESUAI DOKUMENTASI
     let roleTitle;
     if (isHomeroomDaily) {
       roleTitle = "Wali Kelas";
     } else if (isHomeroom) {
-      roleTitle = "Wali Kelas & Guru Mata Pelajaran";
+      const subjectName = teacherAssignment?.subject || "Mata Pelajaran Tidak Ditemukan";
+      roleTitle = `Guru Mapel (${subjectName})`;
     } else {
-      roleTitle = "Guru Mata Pelajaran";
+      roleTitle = "Guru Mata Pelajaran"; // Fallback untuk non-wali kelas
     }
 
     worksheet.getCell(rowIndex, 8).value = "Mengetahui";
@@ -1187,7 +1214,7 @@ const exportSemesterRecapToExcel = async ({
 
 /**
  * Integration function for semester export - SMP VERSION
- * ✅ TAMBAH PARAMETER SEMESTER_ID
+ * ✅ UPDATE PARAMETER DENGAN teacherAssignment
  */
 export const exportSemesterRecapFromComponent = async (
   classId,
@@ -1199,9 +1226,9 @@ export const exportSemesterRecapFromComponent = async (
   currentUser = null,
   homeroomClass = null,
   onShowToast = null,
-  // ✅ TAMBAH PARAMETER BARU
-  academicYear = null, // ← parameter ke-10
-  semesterId = null // ← parameter ke-11
+  academicYear = null,
+  semesterId = null,
+  teacherAssignment = null // ✅ PARAMETER BARU
 ) => {
   try {
     const students = studentsData || [];
@@ -1234,6 +1261,7 @@ export const exportSemesterRecapFromComponent = async (
     }
 
     console.log("✅ exportSemesterRecapFromComponent dengan semester ID:", semesterId);
+    console.log("✅ Teacher Assignment data:", teacherAssignment); // ✅ LOG DATA ASSIGNMENT
     console.log("=== EXPORT SEMESTER DATA (SMP) ===");
 
     // Convert semester
@@ -1358,9 +1386,10 @@ export const exportSemesterRecapFromComponent = async (
       namaGuru: namaGuru,
       homeroomClass: homeroomClass,
       onShowToast: onShowToast,
-      // ✅ PASS SEMESTER DATA
+      // ✅ PASS SEMESTER DATA DAN TEACHER ASSIGNMENT
       academicYear: academicYear,
       semesterId: semesterId,
+      teacherAssignment: teacherAssignment, // ✅ PASS teacherAssignment
     });
 
     return result;
@@ -1372,7 +1401,7 @@ export const exportSemesterRecapFromComponent = async (
 };
 
 /**
- * Wrapper for showing semester export modal - ✅ UPDATE PARAMETER
+ * Wrapper for showing semester export modal - ✅ UPDATE PARAMETER DENGAN teacherAssignment
  */
 export const showSemesterExportModal = async ({
   classId,
@@ -1382,10 +1411,10 @@ export const showSemesterExportModal = async ({
   currentUser = null,
   homeroomClass = null,
   onShowToast = null,
-  // ✅ TAMBAH PARAMETER BARU
   semester = null,
   academicYear = null,
   semesterId = null,
+  teacherAssignment = null, // ✅ PARAMETER BARU
 }) => {
   const result = await showExportModal({
     type: "semester",
@@ -1400,9 +1429,10 @@ export const showSemesterExportModal = async ({
         currentUser,
         homeroomClass,
         onShowToast,
-        // ✅ PASS SEMESTER DATA - PERBAIKI URUTAN!
+        // ✅ PASS SEMESTER DATA & TEACHER ASSIGNMENT - PERBAIKI URUTAN!
         academicYear, // ← academicYear DULU (parameter ke-10)
-        semesterId // ← semesterId KEMUDIAN (parameter ke-11)
+        semesterId, // ← semesterId KEMUDIAN (parameter ke-11)
+        teacherAssignment // ← teacherAssignment (parameter ke-12)
       );
     },
   });
