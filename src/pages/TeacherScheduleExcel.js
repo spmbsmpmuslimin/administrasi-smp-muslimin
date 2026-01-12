@@ -4,10 +4,10 @@ import { saveAs } from "file-saver";
 // ✅ JAM SCHEDULE SAMA PERSIS DENGAN TeacherSchedule.js
 const JAM_SCHEDULE = {
   Senin: {
-    1: { start: "07:00", end: "08:00" },
-    2: { start: "08:00", end: "08:40" },
-    3: { start: "08:40", end: "09:20" },
-    4: { start: "09:20", end: "10:00" },
+    1: { start: "06:30", end: "07:50" },
+    2: { start: "07:50", end: "08:30" },
+    3: { start: "08:30", end: "09:10" },
+    4: { start: "09:10", end: "09:50" },
     5: { start: "10:30", end: "11:05" },
     6: { start: "11:05", end: "11:40" },
     7: { start: "11:40", end: "12:15" },
@@ -19,9 +19,9 @@ const JAM_SCHEDULE = {
     2: { start: "07:40", end: "08:20" },
     3: { start: "08:20", end: "09:00" },
     4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
     8: { start: "13:00", end: "13:35" },
     9: { start: "13:35", end: "14:10" },
   },
@@ -30,9 +30,9 @@ const JAM_SCHEDULE = {
     2: { start: "07:40", end: "08:20" },
     3: { start: "08:20", end: "09:00" },
     4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
     8: { start: "13:00", end: "13:35" },
     9: { start: "13:35", end: "14:10" },
   },
@@ -41,19 +41,20 @@ const JAM_SCHEDULE = {
     2: { start: "07:40", end: "08:20" },
     3: { start: "08:20", end: "09:00" },
     4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
     8: { start: "13:00", end: "13:35" },
     9: { start: "13:35", end: "14:10" },
   },
   Jumat: {
-    1: { start: "07:00", end: "07:30" },
-    2: { start: "07:30", end: "08:00" },
-    3: { start: "08:00", end: "08:30" },
-    4: { start: "08:30", end: "09:00" },
-    5: { start: "09:30", end: "10:00" },
-    6: { start: "10:00", end: "10:30" },
+    1: { start: "06:30", end: "07:05" },
+    2: { start: "07:05", end: "07:40" },
+    3: { start: "07:40", end: "08:15" },
+    4: { start: "08:15", end: "08:50" },
+    5: { start: "08:50", end: "09:10" },
+    6: { start: "09:40", end: "10:10" },
+    7: { start: "10:10", end: "10:40" },
   },
 };
 
@@ -120,8 +121,8 @@ const TeacherScheduleExcel = {
         const rowData = [period, `${time.start} - ${time.end}`];
 
         days.forEach((day) => {
-          // Jumat cuma sampai jam ke-6
-          if (day === "Jumat" && period > 6) {
+          // Jumat cuma sampai jam ke-7
+          if (day === "Jumat" && period > 7) {
             rowData.push("");
             return;
           }
@@ -130,18 +131,27 @@ const TeacherScheduleExcel = {
             rowData.push(`Kelas ${scheduleGrid[day][period].class_id}`);
           } else if (day === "Senin" && period === 1) {
             rowData.push("UPACARA");
+          } else if (day === "Kamis" && period === 4) {
+            rowData.push("SHOLAT DHUHA");
           } else {
             rowData.push("");
           }
         });
 
         const row = worksheet.addRow(rowData);
-        // Styling untuk UPACARA
+        // Styling untuk UPACARA dan SHOLAT DHUHA
         if (row.getCell(3).value === "UPACARA") {
           row.getCell(3).fill = {
             type: "pattern",
             pattern: "solid",
             fgColor: { argb: "FFFFFF00" },
+          };
+        }
+        if (row.getCell(6).value === "SHOLAT DHUHA") {
+          row.getCell(6).fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF90EE90" }, // Light green
           };
         }
 
@@ -165,6 +175,101 @@ const TeacherScheduleExcel = {
             };
           }
         });
+
+        // ✅ TAMBAH ROW ISTIRAHAT SETELAH JAM 4 (kecuali Jumat)
+        if (period === 4) {
+          const breakRow = worksheet.addRow([
+            "",
+            "",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "",
+          ]);
+          breakRow.eachCell((cell) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFD700" },
+            };
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+          });
+        }
+
+        // ✅ TAMBAH ROW ISTIRAHAT SETELAH JAM 5 (khusus Jumat)
+        if (period === 5) {
+          const breakRow = worksheet.addRow([
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            `🕛 ISTIRAHAT\n${JAM_SCHEDULE.Jumat[5]?.end || "09:10"} - ${
+              JAM_SCHEDULE.Jumat[6]?.start || "09:40"
+            }`,
+          ]);
+          breakRow.eachCell((cell, colNumber) => {
+            if (colNumber === 7) {
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFFD700" },
+              };
+              cell.font = { bold: true, size: 9 };
+            } else {
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFF3F4F6" },
+              };
+            }
+            cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+          });
+          breakRow.height = 30;
+        }
+
+        // ✅ TAMBAH ROW ISTIRAHAT SETELAH JAM 7 (kecuali Jumat)
+        if (period === 7) {
+          const breakRow = worksheet.addRow([
+            "",
+            "",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "",
+          ]);
+          breakRow.eachCell((cell) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFD700" },
+            };
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+          });
+        }
       }
 
       // Auto column width
@@ -277,8 +382,8 @@ const TeacherScheduleExcel = {
 
         // Tambah kolom kosong untuk tiap hari
         days.forEach((day) => {
-          // Jumat cuma sampai jam ke-6
-          if (day === "Jumat" && period > 6) {
+          // Jumat cuma sampai jam ke-7
+          if (day === "Jumat" && period > 7) {
             rowData.push("");
             return;
           }
@@ -286,6 +391,8 @@ const TeacherScheduleExcel = {
           // Senin jam 1 = UPACARA (pre-filled)
           if (day === "Senin" && period === 1) {
             rowData.push("UPACARA");
+          } else if (day === "Kamis" && period === 4) {
+            rowData.push("SHOLAT DHUHA");
           } else {
             rowData.push(""); // Kosong biar guru isi
           }
@@ -301,6 +408,16 @@ const TeacherScheduleExcel = {
             fgColor: { argb: "FFFFFF00" },
           };
           row.getCell(3).font = { bold: true };
+        }
+
+        // Styling untuk SHOLAT DHUHA
+        if (row.getCell(6).value === "SHOLAT DHUHA") {
+          row.getCell(6).fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF90EE90" }, // Light green
+          };
+          row.getCell(6).font = { bold: true };
         }
 
         row.eachCell((cell, colNumber) => {
@@ -325,10 +442,15 @@ const TeacherScheduleExcel = {
           }
 
           // Cell yang bisa diisi (kolom hari) - background putih
-          if (colNumber >= 3 && colNumber <= 7 && cell.value !== "UPACARA") {
-            // Jumat jam 7-9 tetep abu-abu (disabled)
+          if (
+            colNumber >= 3 &&
+            colNumber <= 7 &&
+            cell.value !== "UPACARA" &&
+            cell.value !== "SHOLAT DHUHA"
+          ) {
+            // Jumat jam 8-9 tetep abu-abu (disabled)
             const dayIndex = colNumber - 3;
-            if (days[dayIndex] === "Jumat" && period > 6) {
+            if (days[dayIndex] === "Jumat" && period > 7) {
               // Keep zebra striping
             } else {
               cell.fill = {
@@ -339,6 +461,101 @@ const TeacherScheduleExcel = {
             }
           }
         });
+
+        // ✅ TAMBAH ROW ISTIRAHAT SETELAH JAM 4 (kecuali Jumat) - TEMPLATE
+        if (period === 4) {
+          const breakRow = worksheet.addRow([
+            "",
+            "",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "",
+          ]);
+          breakRow.eachCell((cell) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFD700" },
+            };
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+          });
+        }
+
+        // ✅ TAMBAH ROW ISTIRAHAT SETELAH JAM 5 (khusus Jumat) - TEMPLATE
+        if (period === 5) {
+          const breakRow = worksheet.addRow([
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            `🕛 ISTIRAHAT\n${JAM_SCHEDULE.Jumat[5]?.end || "09:10"} - ${
+              JAM_SCHEDULE.Jumat[6]?.start || "09:40"
+            }`,
+          ]);
+          breakRow.eachCell((cell, colNumber) => {
+            if (colNumber === 7) {
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFFD700" },
+              };
+              cell.font = { bold: true, size: 9 };
+            } else {
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFF3F4F6" },
+              };
+            }
+            cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+          });
+          breakRow.height = 30;
+        }
+
+        // ✅ TAMBAH ROW ISTIRAHAT SETELAH JAM 7 (kecuali Jumat) - TEMPLATE
+        if (period === 7) {
+          const breakRow = worksheet.addRow([
+            "",
+            "",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "🕛 ISTIRAHAT",
+            "",
+          ]);
+          breakRow.eachCell((cell) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFD700" },
+            };
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+          });
+        }
       }
 
       // Auto column width
@@ -434,12 +651,13 @@ const TeacherScheduleExcel = {
 
           const cellValue = row.getCell(colIndex).value?.toString().trim();
 
-          // Skip kalau kosong atau UPACARA
+          // Skip kalau kosong atau UPACARA atau SHOLAT DHUHA
           if (
             !cellValue ||
             cellValue === "" ||
             cellValue === "-" ||
-            cellValue.toUpperCase() === "UPACARA"
+            cellValue.toUpperCase() === "UPACARA" ||
+            cellValue.toUpperCase() === "SHOLAT DHUHA"
           ) {
             return;
           }

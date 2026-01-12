@@ -6,6 +6,63 @@ import AnnouncementPopup from "./AnnouncementPopup";
 import { getActiveAcademicInfo } from "../services/academicYearService";
 import FeedbackGuru from "./FeedbackGuru";
 
+// ✅ JAM SCHEDULE - untuk menghitung jam pelajaran yang benar
+const JAM_SCHEDULE = {
+  Senin: {
+    1: { start: "06:30", end: "07:50" },
+    2: { start: "07:50", end: "08:30" },
+    3: { start: "08:30", end: "09:10" },
+    4: { start: "09:10", end: "09:50" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
+    8: { start: "13:00", end: "13:35" },
+    9: { start: "13:35", end: "14:10" },
+  },
+  Selasa: {
+    1: { start: "07:00", end: "07:40" },
+    2: { start: "07:40", end: "08:20" },
+    3: { start: "08:20", end: "09:00" },
+    4: { start: "09:00", end: "09:40" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
+    8: { start: "13:00", end: "13:35" },
+    9: { start: "13:35", end: "14:10" },
+  },
+  Rabu: {
+    1: { start: "07:00", end: "07:40" },
+    2: { start: "07:40", end: "08:20" },
+    3: { start: "08:20", end: "09:00" },
+    4: { start: "09:00", end: "09:40" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
+    8: { start: "13:00", end: "13:35" },
+    9: { start: "13:35", end: "14:10" },
+  },
+  Kamis: {
+    1: { start: "07:00", end: "07:40" },
+    2: { start: "07:40", end: "08:20" },
+    3: { start: "08:20", end: "09:00" },
+    4: { start: "09:00", end: "09:40" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
+    8: { start: "13:00", end: "13:35" },
+    9: { start: "13:35", end: "14:10" },
+  },
+  Jumat: {
+    1: { start: "06:30", end: "07:05" },
+    2: { start: "07:05", end: "07:40" },
+    3: { start: "07:40", end: "08:15" },
+    4: { start: "08:15", end: "08:50" },
+    5: { start: "08:50", end: "09:10" },
+    6: { start: "09:40", end: "10:10" },
+    7: { start: "10:10", end: "10:40" },
+  },
+};
+
 const TeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
@@ -71,6 +128,29 @@ const TeacherDashboard = ({ user }) => {
   const formatTime = (time) => {
     if (!time) return "-";
     return time.substring(0, 5);
+  };
+
+  // ✅ Fungsi untuk menghitung jam pelajaran berdasarkan start_time dan end_time
+  const calculateSessionNumbers = (dayName, startTime, endTime) => {
+    const daySchedule = JAM_SCHEDULE[dayName];
+    if (!daySchedule) return [];
+
+    const sessions = [];
+    const startTimeStr = startTime.substring(0, 5);
+    const endTimeStr = endTime.substring(0, 5);
+
+    // Loop through all periods untuk hari tersebut
+    for (const [period, timeSlot] of Object.entries(daySchedule)) {
+      const periodStart = timeSlot.start;
+      const periodEnd = timeSlot.end;
+
+      // Check jika period ini termasuk dalam range start-end time
+      if (periodStart >= startTimeStr && periodEnd <= endTimeStr) {
+        sessions.push(parseInt(period));
+      }
+    }
+
+    return sessions;
   };
 
   // Fungsi untuk styling badge berdasarkan status
@@ -211,12 +291,18 @@ const TeacherDashboard = ({ user }) => {
         const kelas = classInfo?.id || `Kelas ${item.class_id}`;
 
         if (!current) {
+          // ✅ Calculate session numbers untuk block pertama
+          const sessionNumbers = calculateSessionNumbers(todayDay, item.start_time, item.end_time);
           current = {
             mapel,
             kelas,
             jam_mulai: formatTime(item.start_time),
             jam_selesai: formatTime(item.end_time),
+            start_time_raw: item.start_time, // ✅ Simpan raw time untuk calculate
+            end_time_raw: item.end_time,
             class_id: item.class_id,
+            sessionCount: sessionNumbers.length,
+            sessionNumbers: sessionNumbers,
           };
         } else {
           const sameClass = current.class_id === item.class_id;
@@ -224,16 +310,40 @@ const TeacherDashboard = ({ user }) => {
           const consecutive = current.jam_selesai === formatTime(item.start_time);
 
           if (sameClass && sameSubject && consecutive) {
+            // ✅ Merge dan recalculate session numbers
             current.jam_selesai = formatTime(item.end_time);
+            current.end_time_raw = item.end_time;
+            const newSessionNumbers = calculateSessionNumbers(
+              todayDay,
+              current.start_time_raw,
+              current.end_time_raw
+            );
+            current.sessionCount = newSessionNumbers.length;
+            current.sessionNumbers = newSessionNumbers;
           } else {
-            merged.push({ ...current });
-            delete merged[merged.length - 1].class_id;
+            // ✅ Push block sebelumnya (hapus raw times dan class_id)
+            const toPush = { ...current };
+            delete toPush.class_id;
+            delete toPush.start_time_raw;
+            delete toPush.end_time_raw;
+            merged.push(toPush);
+
+            // ✅ Start block baru
+            const sessionNumbers = calculateSessionNumbers(
+              todayDay,
+              item.start_time,
+              item.end_time
+            );
             current = {
               mapel,
               kelas,
               jam_mulai: formatTime(item.start_time),
               jam_selesai: formatTime(item.end_time),
+              start_time_raw: item.start_time,
+              end_time_raw: item.end_time,
               class_id: item.class_id,
+              sessionCount: sessionNumbers.length,
+              sessionNumbers: sessionNumbers,
             };
           }
         }
@@ -242,6 +352,8 @@ const TeacherDashboard = ({ user }) => {
       // Push last block
       if (current) {
         delete current.class_id;
+        delete current.start_time_raw;
+        delete current.end_time_raw;
         merged.push(current);
       }
 
@@ -935,6 +1047,10 @@ const TeacherDashboard = ({ user }) => {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1">
                           <div className="text-center min-w-[70px]">
+                            {/* ✅ Tampilkan Session Numbers */}
+                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                              {schedule.sessionCount}JP ({schedule.sessionNumbers.join("-")})
+                            </div>
                             <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
                               {schedule.jam_mulai}
                             </div>

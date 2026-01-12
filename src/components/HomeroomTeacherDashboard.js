@@ -6,6 +6,63 @@ import AnnouncementPopup from "./AnnouncementPopup"; // ✅ INI IMPORT NYA
 import { getActiveAcademicInfo } from "../services/academicYearService";
 import FeedbackGuru from "./FeedbackGuru";
 
+// ✅ JAM SCHEDULE - untuk menghitung jam pelajaran yang benar
+const JAM_SCHEDULE = {
+  Senin: {
+    1: { start: "06:30", end: "07:50" },
+    2: { start: "07:50", end: "08:30" },
+    3: { start: "08:30", end: "09:10" },
+    4: { start: "09:10", end: "09:50" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
+    8: { start: "13:00", end: "13:35" },
+    9: { start: "13:35", end: "14:10" },
+  },
+  Selasa: {
+    1: { start: "07:00", end: "07:40" },
+    2: { start: "07:40", end: "08:20" },
+    3: { start: "08:20", end: "09:00" },
+    4: { start: "09:00", end: "09:40" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
+    8: { start: "13:00", end: "13:35" },
+    9: { start: "13:35", end: "14:10" },
+  },
+  Rabu: {
+    1: { start: "07:00", end: "07:40" },
+    2: { start: "07:40", end: "08:20" },
+    3: { start: "08:20", end: "09:00" },
+    4: { start: "09:00", end: "09:40" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
+    8: { start: "13:00", end: "13:35" },
+    9: { start: "13:35", end: "14:10" },
+  },
+  Kamis: {
+    1: { start: "07:00", end: "07:40" },
+    2: { start: "07:40", end: "08:20" },
+    3: { start: "08:20", end: "09:00" },
+    4: { start: "09:00", end: "09:40" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
+    8: { start: "13:00", end: "13:35" },
+    9: { start: "13:35", end: "14:10" },
+  },
+  Jumat: {
+    1: { start: "06:30", end: "07:05" },
+    2: { start: "07:05", end: "07:40" },
+    3: { start: "07:40", end: "08:15" },
+    4: { start: "08:15", end: "08:50" },
+    5: { start: "08:50", end: "09:10" },
+    6: { start: "09:40", end: "10:10" },
+    7: { start: "10:10", end: "10:40" },
+  },
+};
+
 const HomeroomTeacherDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
@@ -83,6 +140,30 @@ const HomeroomTeacherDashboard = ({ user }) => {
     return time.substring(0, 5);
   };
 
+  // ✅ Fungsi untuk menghitung jam pelajaran berdasarkan start_time dan end_time
+  const calculateSessionNumbers = (dayName, startTime, endTime) => {
+    const daySchedule = JAM_SCHEDULE[dayName];
+    if (!daySchedule) return [];
+
+    const sessions = [];
+    const startTimeStr = startTime.substring(0, 5);
+    const endTimeStr = endTime.substring(0, 5);
+
+    // Loop through all periods untuk hari tersebut
+    for (const [period, timeSlot] of Object.entries(daySchedule)) {
+      const periodStart = timeSlot.start;
+      const periodEnd = timeSlot.end;
+
+      // Check jika period ini termasuk dalam range start-end time
+      // Period termasuk jika periodStart >= startTime dan periodEnd <= endTime
+      if (periodStart >= startTimeStr && periodEnd <= endTimeStr) {
+        sessions.push(parseInt(period));
+      }
+    }
+
+    return sessions;
+  };
+
   // Fungsi untuk styling badge berdasarkan status
   const getStatusBadgeStyle = (status) => {
     switch (status) {
@@ -112,18 +193,25 @@ const HomeroomTeacherDashboard = ({ user }) => {
   };
 
   // Fungsi untuk menggabungkan jadwal berurutan
-  const mergeConsecutiveSchedules = (schedules) => {
+  const mergeConsecutiveSchedules = (schedules, dayName) => {
     if (!schedules || schedules.length === 0) return [];
 
     const merged = [];
     let currentBlock = null;
 
-    schedules.forEach((schedule, index) => {
+    schedules.forEach((schedule) => {
+      // ✅ Calculate session numbers berdasarkan waktu sebenarnya
+      const sessionNumbers = calculateSessionNumbers(
+        dayName,
+        schedule.start_time,
+        schedule.end_time
+      );
+
       if (!currentBlock) {
         currentBlock = {
           ...schedule,
-          sessionCount: 1,
-          sessionNumbers: [index + 1],
+          sessionCount: sessionNumbers.length,
+          sessionNumbers: sessionNumbers,
         };
       } else {
         const canMerge =
@@ -133,14 +221,20 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
         if (canMerge) {
           currentBlock.end_time = schedule.end_time;
-          currentBlock.sessionCount += 1;
-          currentBlock.sessionNumbers.push(index + 1);
+          // ✅ Update session numbers dengan yang baru
+          const newSessionNumbers = calculateSessionNumbers(
+            dayName,
+            currentBlock.start_time,
+            schedule.end_time
+          );
+          currentBlock.sessionCount = newSessionNumbers.length;
+          currentBlock.sessionNumbers = newSessionNumbers;
         } else {
           merged.push(currentBlock);
           currentBlock = {
             ...schedule,
-            sessionCount: 1,
-            sessionNumbers: [index + 1],
+            sessionCount: sessionNumbers.length,
+            sessionNumbers: sessionNumbers,
           };
         }
       }
@@ -201,7 +295,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         };
       });
 
-      const mergedSchedule = mergeConsecutiveSchedules(enrichedSchedules);
+      const mergedSchedule = mergeConsecutiveSchedules(enrichedSchedules, dayName);
       setTodaySchedule(mergedSchedule);
       return mergedSchedule;
     } catch (err) {

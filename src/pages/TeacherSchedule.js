@@ -20,10 +20,10 @@ import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academi
 
 const JAM_SCHEDULE = {
   Senin: {
-    1: { start: "07:00", end: "08:00" },
-    2: { start: "08:00", end: "08:40" },
-    3: { start: "08:40", end: "09:20" },
-    4: { start: "09:20", end: "10:00" },
+    1: { start: "06:30", end: "07:50" },
+    2: { start: "07:50", end: "08:30" },
+    3: { start: "08:30", end: "09:10" },
+    4: { start: "09:10", end: "09:50" },
     5: { start: "10:30", end: "11:05" },
     6: { start: "11:05", end: "11:40" },
     7: { start: "11:40", end: "12:15" },
@@ -35,9 +35,9 @@ const JAM_SCHEDULE = {
     2: { start: "07:40", end: "08:20" },
     3: { start: "08:20", end: "09:00" },
     4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
     8: { start: "13:00", end: "13:35" },
     9: { start: "13:35", end: "14:10" },
   },
@@ -46,9 +46,9 @@ const JAM_SCHEDULE = {
     2: { start: "07:40", end: "08:20" },
     3: { start: "08:20", end: "09:00" },
     4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
     8: { start: "13:00", end: "13:35" },
     9: { start: "13:35", end: "14:10" },
   },
@@ -57,19 +57,20 @@ const JAM_SCHEDULE = {
     2: { start: "07:40", end: "08:20" },
     3: { start: "08:20", end: "09:00" },
     4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
+    5: { start: "10:30", end: "11:05" },
+    6: { start: "11:05", end: "11:40" },
+    7: { start: "11:40", end: "12:15" },
     8: { start: "13:00", end: "13:35" },
     9: { start: "13:35", end: "14:10" },
   },
   Jumat: {
-    1: { start: "07:00", end: "07:30" },
-    2: { start: "07:30", end: "08:00" },
-    3: { start: "08:00", end: "08:30" },
-    4: { start: "08:30", end: "09:00" },
-    5: { start: "09:30", end: "10:00" },
-    6: { start: "10:00", end: "10:30" },
+    1: { start: "06:30", end: "07:05" },
+    2: { start: "07:05", end: "07:40" },
+    3: { start: "07:40", end: "08:15" },
+    4: { start: "08:15", end: "08:50" },
+    5: { start: "08:50", end: "09:10" },
+    6: { start: "09:40", end: "10:10" },
+    7: { start: "10:10", end: "10:40" },
   },
 };
 
@@ -193,6 +194,9 @@ const TeacherSchedule = ({ user }) => {
   const handleCellClick = (day, period) => {
     // Skip Senin Jam 1 (Upacara)
     if (day === "Senin" && period === "1") return;
+
+    // Skip Kamis Jam 4 (Pembiasaan Sholat Dhuha)
+    if (day === "Kamis" && period === "4") return;
 
     setEditingCell({ day, period });
 
@@ -784,118 +788,177 @@ const TeacherSchedule = ({ user }) => {
                           {time.start} - {time.end}
                           {period === "1" && (
                             <div className="text-[10px] mt-1 text-yellow-600">
-                              Senin: 07:00-08:00
+                              Senin: {JAM_SCHEDULE.Senin[1].start}-{JAM_SCHEDULE.Senin[1].end}
                             </div>
                           )}
                         </td>
-                        {days.map((day) => (
-                          <td
-                            key={day}
-                            className="p-2 border border-slate-300 text-center cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                            onClick={() => handleCellClick(day, period)}
-                          >
-                            {editingCell &&
-                            editingCell.day === day &&
-                            editingCell.period === period ? (
-                              // ✅ INLINE EDIT MODE
-                              <div
-                                className="flex flex-col gap-1"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <select
-                                  value={selectedClass}
-                                  onChange={(e) => setSelectedClass(e.target.value)}
-                                  className="w-full px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  autoFocus
+                        {days.map((day) => {
+                          // Check if this period exists for this day
+                          const periodExists = JAM_SCHEDULE[day] && JAM_SCHEDULE[day][period];
+
+                          return (
+                            <td
+                              key={day}
+                              className={`p-2 border border-slate-300 text-center ${
+                                periodExists
+                                  ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                  : "bg-gray-100 dark:bg-gray-800"
+                              }`}
+                              onClick={() => periodExists && handleCellClick(day, period)}
+                            >
+                              {!periodExists ? (
+                                <span className="text-gray-400 dark:text-gray-600 text-xs">-</span>
+                              ) : editingCell &&
+                                editingCell.day === day &&
+                                editingCell.period === period ? (
+                                // ✅ INLINE EDIT MODE
+                                <div
+                                  className="flex flex-col gap-1"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  <option value="">-- Kosongkan --</option>
-                                  {classes.map((cls) => (
-                                    <option key={cls.id} value={cls.id}>
-                                      {cls.id}
-                                    </option>
-                                  ))}
-                                </select>
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={handleInlineSave}
-                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs flex items-center justify-center gap-1"
+                                  <select
+                                    value={selectedClass}
+                                    onChange={(e) => setSelectedClass(e.target.value)}
+                                    className="w-full px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    autoFocus
                                   >
-                                    <Save className="w-3 h-3" />
-                                    Simpan
-                                  </button>
-                                  <button
-                                    onClick={handleInlineCancel}
-                                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"
-                                  >
-                                    Batal
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              // ✅ DISPLAY MODE
-                              <>
-                                {day === "Jumat" ? (
-                                  <div className="flex flex-col items-center">
-                                    {scheduleGrid[day] && scheduleGrid[day][period] ? (
-                                      <>
-                                        <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
-                                          {scheduleGrid[day][period].class_id}
-                                        </span>
-                                        <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
-                                          {JAM_SCHEDULE.Jumat[period]?.start}-
-                                          {JAM_SCHEDULE.Jumat[period]?.end}
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
-                                          -
-                                        </span>
-                                        <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
-                                          {JAM_SCHEDULE.Jumat[period]?.start}-
-                                          {JAM_SCHEDULE.Jumat[period]?.end}
-                                        </div>
-                                      </>
-                                    )}
+                                    <option value="">-- Kosongkan --</option>
+                                    {classes.map((cls) => (
+                                      <option key={cls.id} value={cls.id}>
+                                        {cls.id}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={handleInlineSave}
+                                      className="flex-1 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs flex items-center justify-center gap-1"
+                                    >
+                                      <Save className="w-3 h-3" />
+                                      Simpan
+                                    </button>
+                                    <button
+                                      onClick={handleInlineCancel}
+                                      className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                                    >
+                                      Batal
+                                    </button>
                                   </div>
-                                ) : scheduleGrid[day] && scheduleGrid[day][period] ? (
-                                  <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
-                                    {scheduleGrid[day][period].class_id}
-                                  </span>
-                                ) : day === "Senin" && period === "1" ? (
-                                  <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
-                                    UPACARA
-                                  </span>
-                                ) : (
-                                  <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
-                                    -
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </td>
-                        ))}
+                                </div>
+                              ) : (
+                                // ✅ DISPLAY MODE
+                                <>
+                                  {day === "Jumat" ? (
+                                    <div className="flex flex-col items-center">
+                                      {scheduleGrid[day] && scheduleGrid[day][period] ? (
+                                        <>
+                                          <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
+                                            {scheduleGrid[day][period].class_id}
+                                          </span>
+                                          <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                                            {JAM_SCHEDULE.Jumat[period]?.start}-
+                                            {JAM_SCHEDULE.Jumat[period]?.end}
+                                          </div>
+                                          {period === "5" && (
+                                            <div className="text-[10px] mt-1 text-orange-600 dark:text-orange-400 font-bold">
+                                              🕛 ISTIRAHAT {JAM_SCHEDULE.Jumat[5]?.end}-
+                                              {JAM_SCHEDULE.Jumat[6]?.start}
+                                            </div>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
+                                            -
+                                          </span>
+                                          <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                                            {JAM_SCHEDULE.Jumat[period]?.start}-
+                                            {JAM_SCHEDULE.Jumat[period]?.end}
+                                          </div>
+                                          {period === "5" && (
+                                            <div className="text-[10px] mt-1 text-orange-600 dark:text-orange-400 font-bold">
+                                              🕛 ISTIRAHAT {JAM_SCHEDULE.Jumat[5]?.end}-
+                                              {JAM_SCHEDULE.Jumat[6]?.start}
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  ) : scheduleGrid[day] && scheduleGrid[day][period] ? (
+                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
+                                      {scheduleGrid[day][period].class_id}
+                                    </span>
+                                  ) : day === "Senin" && period === "1" ? (
+                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
+                                      UPACARA
+                                    </span>
+                                  ) : day === "Kamis" && period === "4" ? (
+                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-xs sm:text-base text-center">
+                                      SHOLAT DHUHA
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
+                                      -
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </td>
+                          );
+                        })}
                       </tr>
 
                       {/* ISTIRAHAT */}
+                      {/* Istirahat setelah Jam 4 - KECUALI JUMAT */}
                       {period === "4" && (
                         <tr>
-                          <td
-                            colSpan={7}
-                            className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm"
-                          >
-                            🕛 ISTIRAHAT {time.end} - 10:10 (30 menit)
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            ISTIRAHAT
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            {time.end} - {JAM_SCHEDULE.Senin[5]?.start || "10:30"}
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-center text-slate-500 dark:text-gray-500 font-semibold text-xs sm:text-sm">
+                            -
                           </td>
                         </tr>
                       )}
 
+                      {/* Istirahat setelah Jam 7 - KECUALI JUMAT */}
                       {period === "7" && (
                         <tr>
-                          <td
-                            colSpan={7}
-                            className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm"
-                          >
-                            🕛 ISTIRAHAT 12:10 - 13:00 (50 menit)
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            ISTIRAHAT
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            {time.end} - {JAM_SCHEDULE.Senin[8]?.start || "13:00"}
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-center text-slate-500 dark:text-gray-500 font-semibold text-xs sm:text-sm">
+                            -
                           </td>
                         </tr>
                       )}
