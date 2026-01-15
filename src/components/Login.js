@@ -75,10 +75,6 @@ export const Login = ({ onLogin, onShowToast }) => {
       };
 
       onLogin(userData, rememberMe);
-
-      if (onShowToast) {
-        onShowToast(`Selamat datang, ${userData.full_name}! 👋`, "success");
-      }
     } catch (error) {
       setErrors({ general: error.message });
 
