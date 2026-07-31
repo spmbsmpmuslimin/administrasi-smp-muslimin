@@ -30,7 +30,9 @@ const AttendanceFilters = ({
   // Fungsi untuk mendapatkan tanggal Indonesia (WIB - UTC+7)
   const getIndonesiaDate = () => {
     const now = new Date();
-    const indonesiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+    const indonesiaTime = new Date(
+      now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
+    );
     return indonesiaTime;
   };
 
@@ -46,7 +48,8 @@ const AttendanceFilters = ({
 
       const names = {};
       for (const semester of availableSemesters) {
-        names[semester.id] = semester.semester === 1 ? "Semester Ganjil" : "Semester Genap";
+        names[semester.id] =
+          semester.semester === 1 ? "Semester Ganjil" : "Semester Genap";
       }
       setSemesterDisplayNames(names);
     };
@@ -79,7 +82,9 @@ const AttendanceFilters = ({
   const validateSelectedDate = (selectedDate) => {
     if (!selectedDate || !selectedSemesterId) return true;
 
-    const selectedSemester = availableSemesters?.find((s) => s.id === selectedSemesterId);
+    const selectedSemester = availableSemesters?.find(
+      (s) => s.id === selectedSemesterId,
+    );
     if (!selectedSemester) return true;
 
     const inputDate = parseDate(selectedDate);
@@ -107,7 +112,15 @@ const AttendanceFilters = ({
     if (!dateString) return "";
     const [year, month, day] = dateString.split("-").map(Number);
 
-    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const days = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu",
+    ];
     const months = [
       "Januari",
       "Februari",
@@ -130,21 +143,24 @@ const AttendanceFilters = ({
   };
 
   const handlePrevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
+    );
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
+    );
   };
 
   const handleDayClick = (day) => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
 
-    const formatted = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
-      2,
-      "0"
-    )}`;
+    const formatted = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      day,
+    ).padStart(2, "0")}`;
 
     if (!validateSelectedDate(formatted)) {
       return;
@@ -178,7 +194,7 @@ const AttendanceFilters = ({
   const handleToday = () => {
     const now = getIndonesiaDate();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
-      now.getDate()
+      now.getDate(),
     ).padStart(2, "0")}`;
 
     if (!validateSelectedDate(today)) {
@@ -215,16 +231,14 @@ const AttendanceFilters = ({
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const dayString = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
-        2,
-        "0"
-      )}`;
+      const dayString = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+        day,
+      ).padStart(2, "0")}`;
 
       const today = getIndonesiaDate();
-      const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}-${String(today.getDate()).padStart(2, "0")}`;
+      const todayString = `${today.getFullYear()}-${String(
+        today.getMonth() + 1,
+      ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
       const isToday = dayString === todayString;
       const isSelected = tempDate === dayString;
       const isValid = validateSelectedDate(dayString);
@@ -243,17 +257,16 @@ const AttendanceFilters = ({
             isWeekendDay
               ? "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-red-400 dark:text-red-700 cursor-not-allowed" // ✅ WEEKEND STYLE (clean)
               : !isValid
-              ? "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
-              : isSelected
-              ? "border-blue-500 bg-blue-500 text-white"
-              : isToday
-              ? "border-blue-400 dark:border-blue-500 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-              : "border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-slate-800"
+                ? "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                : isSelected
+                  ? "border-blue-500 bg-blue-500 text-white"
+                  : isToday
+                    ? "border-blue-400 dark:border-blue-500 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                    : "border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-slate-800"
           }
-        `}
-        >
+        `}>
           {day}
-        </button>
+        </button>,
       );
     }
 
@@ -279,15 +292,19 @@ const AttendanceFilters = ({
             <select
               value={selectedSemesterId || ""}
               onChange={handleSemesterChange}
-              disabled={loading || !availableSemesters || availableSemesters.length === 0}
+              disabled={
+                loading ||
+                !availableSemesters ||
+                availableSemesters.length === 0
+              }
               className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none"
-              aria-label="Pilih Semester"
-            >
+              aria-label="Pilih Semester">
               <option
                 value=""
-                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-              >
-                {availableSemesters?.length > 0 ? "Pilih Semester" : "Loading..."}
+                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                {availableSemesters?.length > 0
+                  ? "Pilih Semester"
+                  : "Loading..."}
               </option>
               {availableSemesters?.map((semester) => (
                 <option
@@ -297,9 +314,10 @@ const AttendanceFilters = ({
                     semester.is_active
                       ? "font-semibold text-blue-600 dark:text-blue-400"
                       : "text-slate-600 dark:text-slate-400"
-                  }
-                >
-                  {semester.semester === 1 ? "Semester Ganjil" : "Semester Genap"}
+                  }>
+                  {semester.semester === 1
+                    ? "Semester Ganjil"
+                    : "Semester Genap"}
                   {semester.is_active && " (Aktif)"}
                 </option>
               ))}
@@ -319,26 +337,25 @@ const AttendanceFilters = ({
                 setStudents([]);
                 setStudentsLoaded(false);
               }}
-              disabled={loading || !teacherId || !selectedSemesterId || isReadOnlyMode}
+              disabled={
+                loading || !teacherId || !selectedSemesterId || isReadOnlyMode
+              }
               className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none"
-              aria-label="Pilih Mata Pelajaran"
-            >
+              aria-label="Pilih Mata Pelajaran">
               <option
                 value=""
-                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-              >
+                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 {isReadOnlyMode
                   ? "View Mode"
                   : selectedSemesterId
-                  ? "Pilih Mata Pelajaran"
-                  : "Pilih semester dulu"}
+                    ? "Pilih Mata Pelajaran"
+                    : "Pilih semester dulu"}
               </option>
               {subjects.map((subject, index) => (
                 <option
                   key={index}
                   value={subject}
-                  className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                >
+                  className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                   {subject}
                 </option>
               ))}
@@ -361,27 +378,26 @@ const AttendanceFilters = ({
                 isReadOnlyMode
               }
               className="w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 touch-manipulation min-h-[44px] appearance-none"
-              aria-label="Pilih Kelas"
-            >
+              aria-label="Pilih Kelas">
               <option
                 value=""
-                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-              >
+                className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 {isReadOnlyMode
                   ? "View Mode"
                   : selectedSubject
-                  ? "Pilih Kelas"
-                  : "Pilih Mata Pelajaran Dulu"}
+                    ? "Pilih Kelas"
+                    : "Pilih Mata Pelajaran Dulu"}
               </option>
-              {classes.map((cls) => (
-                <option
-                  key={cls.id}
-                  value={cls.id}
-                  className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                >
-                  {cls.displayName}
-                </option>
-              ))}
+              {[...classes]
+                .sort((a, b) => a.id.localeCompare(b.id))
+                .map((cls) => (
+                  <option
+                    key={cls.id}
+                    value={cls.id}
+                    className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    {cls.displayName}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -392,14 +408,15 @@ const AttendanceFilters = ({
             </label>
             <div className="relative">
               <div
-                onClick={() => !loading && !isReadOnlyMode && setShowCustomDatePicker(true)}
+                onClick={() =>
+                  !loading && !isReadOnlyMode && setShowCustomDatePicker(true)
+                }
                 className={`w-full p-3 xs:p-3.5 sm:p-4 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 transition-all duration-200 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 touch-manipulation min-h-[44px] appearance-none flex items-center justify-between leading-normal ${
                   isReadOnlyMode
                     ? "opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400"
                     : "hover:border-blue-500 cursor-pointer"
                 }`}
-                style={{ height: "auto" }}
-              >
+                style={{ height: "auto" }}>
                 <span className="flex-1 leading-normal">
                   {date ? formatDate(date) : "Pilih tanggal..."}
                 </span>
@@ -423,8 +440,7 @@ const AttendanceFilters = ({
                 <button
                   onClick={handleCancel}
                   className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
-                  aria-label="Tutup"
-                >
+                  aria-label="Tutup">
                   ✕
                 </button>
               </div>
@@ -434,13 +450,15 @@ const AttendanceFilters = ({
                 <button
                   onClick={handlePrevMonth}
                   className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                  aria-label="Bulan sebelumnya"
-                >
+                  aria-label="Bulan sebelumnya">
                   ←
                 </button>
                 <div className="text-center">
                   <div className="font-semibold text-slate-800 dark:text-slate-200">
-                    {currentMonth.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+                    {currentMonth.toLocaleDateString("id-ID", {
+                      month: "long",
+                      year: "numeric",
+                    })}
                   </div>
                   {tempDate && (
                     <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -451,8 +469,7 @@ const AttendanceFilters = ({
                 <button
                   onClick={handleNextMonth}
                   className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                  aria-label="Bulan selanjutnya"
-                >
+                  aria-label="Bulan selanjutnya">
                   →
                 </button>
               </div>
@@ -461,14 +478,15 @@ const AttendanceFilters = ({
             {/* Calendar Grid */}
             <div className="p-4">
               <div className="grid grid-cols-7 gap-1 mb-4">
-                {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day, idx) => (
-                  <div
-                    key={idx}
-                    className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1"
-                  >
-                    {day}
-                  </div>
-                ))}
+                {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(
+                  (day, idx) => (
+                    <div
+                      key={idx}
+                      className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1">
+                      {day}
+                    </div>
+                  ),
+                )}
                 {renderCalendar()}
               </div>
 
@@ -495,8 +513,7 @@ const AttendanceFilters = ({
                   isReadOnlyMode
                     ? "bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed"
                     : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50"
-                }`}
-              >
+                }`}>
                 <span className="text-base">📅</span>
                 <span>Hari Ini</span>
               </button>
@@ -504,24 +521,21 @@ const AttendanceFilters = ({
               <div className="flex gap-2">
                 <button
                   onClick={handleClear}
-                  className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1"
-                >
+                  className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1">
                   <span className="text-sm">🗑️</span>
                   <span className="text-xs sm:text-sm">Hapus</span>
                 </button>
 
                 <button
                   onClick={handleCancel}
-                  className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1"
-                >
+                  className="flex-1 px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1">
                   <span className="text-sm">↩️</span>
                   <span className="text-xs sm:text-sm">Batal</span>
                 </button>
 
                 <button
                   onClick={handleSetDate}
-                  className="flex-1 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all duration-200 flex items-center justify-center gap-1"
-                >
+                  className="flex-1 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all duration-200 flex items-center justify-center gap-1">
                   <span className="text-sm">✓</span>
                   <span className="text-xs sm:text-sm">Pilih</span>
                 </button>
