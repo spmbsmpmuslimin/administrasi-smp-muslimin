@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import Logo from "./Logo";
-import backgroundImage from "../assets/Background.JPG";
+import backgroundImage from "../assets/Background.jpg";
 
 export const Login = ({ onLogin, onShowToast }) => {
   const [username, setUsername] = useState("");
