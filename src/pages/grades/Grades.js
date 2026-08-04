@@ -193,7 +193,7 @@ const Grades = ({ user, onShowToast }) => {
       const mode = isActive ? "Input Mode" : "View Only Mode";
       onShowToast(
         `Switched to ${semesterInfo.year} - Semester ${semesterInfo.semester} (${mode})`,
-        isActive ? "info" : "warning"
+        isActive ? "info" : "warning",
       );
     }
   };
@@ -234,7 +234,9 @@ const Grades = ({ user, onShowToast }) => {
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!teacherId || !selectedSemesterId) {
-        console.log("🔄 Skipping subjects fetch - missing teacherId or semesterId");
+        console.log(
+          "🔄 Skipping subjects fetch - missing teacherId or semesterId",
+        );
         setSubjects([]);
         return;
       }
@@ -272,7 +274,7 @@ const Grades = ({ user, onShowToast }) => {
 
           setSubjects([]);
           setMessage(
-            `Tidak ada mata pelajaran untuk ${selectedSemesterInfo?.year} Semester ${selectedSemesterInfo?.semester}`
+            `Tidak ada mata pelajaran untuk ${selectedSemesterInfo?.year} Semester ${selectedSemesterInfo?.semester}`,
           );
           return;
         }
@@ -321,7 +323,7 @@ const Grades = ({ user, onShowToast }) => {
           console.warn("⚠️ No classes found for this subject in this semester");
           setClasses([]);
           setMessage(
-            `Tidak ada kelas untuk ${selectedSubject} di Semester ${selectedSemesterInfo?.semester}`
+            `Tidak ada kelas untuk ${selectedSubject} di Semester ${selectedSemesterInfo?.semester}`,
           );
           return;
         }
@@ -330,14 +332,32 @@ const Grades = ({ user, onShowToast }) => {
 
         // ✅ KELAS TIDAK PERLU FILTER academic_year_id!
         // Kelas tetap sama untuk semua semester dalam satu tahun
+        // FIX: .in() TIDAK menjamin urutan hasil sesuai urutan classIds yang
+        // dikirim, dan tanpa .order() Postgres bebas ngembaliin baris dalam
+        // urutan apapun (bukan alfabetis) — ini yang bikin dropdown kelas
+        // muncul acak (7B, 7C, ...7A). Tambahin .order("id") biar hasilnya
+        // selalu terurut alfabetis/numerik dari database.
         const { data: classData, error: classError } = await supabase
           .from("classes")
           .select("id, grade")
-          .in("id", classIds);
+          .in("id", classIds)
+          .order("id", { ascending: true });
 
         if (classError) throw classError;
 
-        const formattedClasses = classData.map((cls) => ({
+        // FIX tambahan (jaring pengaman): sort lagi di sisi client pakai
+        // localeCompare dengan opsi numeric, biar "7A".."7F" dan "10A" (kalau
+        // suatu saat ada kelas 2 digit) tetap urut benar walau dari sisi
+        // database ada perubahan collation/locale yang bikin .order() di atas
+        // meleset.
+        const sortedClassData = [...classData].sort((a, b) =>
+          a.id.localeCompare(b.id, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          }),
+        );
+
+        const formattedClasses = sortedClassData.map((cls) => ({
           id: cls.id,
           grade: cls.grade,
           displayName: `Kelas ${cls.id}`,
@@ -420,7 +440,7 @@ const Grades = ({ user, onShowToast }) => {
         .eq("semester", selectedSemesterInfo?.semester) // Filter semester (1 atau 2)
         .in(
           "student_id",
-          studentsData.map((s) => s.id)
+          studentsData.map((s) => s.id),
         )
         .in("assignment_type", assignmentTypes);
 
@@ -445,7 +465,7 @@ const Grades = ({ user, onShowToast }) => {
         if (gradesData) {
           assignmentTypes.forEach((type) => {
             const existingGrade = gradesData.find(
-              (g) => g.student_id === student.id && g.assignment_type === type
+              (g) => g.student_id === student.id && g.assignment_type === type,
             );
             if (existingGrade) {
               formattedGrades[student.id][type] = {
@@ -466,7 +486,9 @@ const Grades = ({ user, onShowToast }) => {
 
         const nhValues = [nh1, nh2, nh3].filter((n) => n > 0);
         const nhAvg =
-          nhValues.length > 0 ? nhValues.reduce((a, b) => a + b, 0) / nhValues.length : 0;
+          nhValues.length > 0
+            ? nhValues.reduce((a, b) => a + b, 0) / nhValues.length
+            : 0;
 
         const na = nhAvg * 0.4 + psts * 0.3 + psas * 0.3;
         formattedGrades[student.id].na = na.toFixed(2);
@@ -496,13 +518,19 @@ const Grades = ({ user, onShowToast }) => {
 
   // Calculate NA
   const calculateNA = (nh1, nh2, nh3, psts, psas) => {
-    const nhValues = [parseFloat(nh1 || 0), parseFloat(nh2 || 0), parseFloat(nh3 || 0)].filter(
-      (n) => n > 0
-    );
+    const nhValues = [
+      parseFloat(nh1 || 0),
+      parseFloat(nh2 || 0),
+      parseFloat(nh3 || 0),
+    ].filter((n) => n > 0);
 
-    const nhAvg = nhValues.length > 0 ? nhValues.reduce((a, b) => a + b, 0) / nhValues.length : 0;
+    const nhAvg =
+      nhValues.length > 0
+        ? nhValues.reduce((a, b) => a + b, 0) / nhValues.length
+        : 0;
 
-    const na = nhAvg * 0.4 + parseFloat(psts || 0) * 0.3 + parseFloat(psas || 0) * 0.3;
+    const na =
+      nhAvg * 0.4 + parseFloat(psts || 0) * 0.3 + parseFloat(psas || 0) * 0.3;
     return na.toFixed(2);
   };
 
@@ -524,7 +552,7 @@ const Grades = ({ user, onShowToast }) => {
         updated.NH2.score,
         updated.NH3.score,
         updated.PSTS.score,
-        updated.PSAS.score
+        updated.PSAS.score,
       );
 
       return { ...prev, [studentId]: updated };
@@ -541,7 +569,12 @@ const Grades = ({ user, onShowToast }) => {
       return;
     }
 
-    if (!teacherId || !selectedSubject || !selectedClass || !selectedSemesterId) {
+    if (
+      !teacherId ||
+      !selectedSubject ||
+      !selectedClass ||
+      !selectedSemesterId
+    ) {
       const msg = "Pilih mata pelajaran, kelas, dan semester terlebih dahulu!";
       setMessage(msg);
       if (onShowToast) onShowToast(msg, "error");
@@ -566,7 +599,8 @@ const Grades = ({ user, onShowToast }) => {
         .eq("teacher_id", teacherId)
         .single();
 
-      if (teacherError) throw new Error("Gagal mengambil data guru: " + teacherError.message);
+      if (teacherError)
+        throw new Error("Gagal mengambil data guru: " + teacherError.message);
 
       const teacherUUID = teacherUser.id;
       const allGrades = [];
@@ -599,7 +633,7 @@ const Grades = ({ user, onShowToast }) => {
 
       if (allGrades.length === 0) {
         throw new Error(
-          "Tidak ada data yang valid untuk disimpan. Pastikan Anda mengisi nilai terlebih dahulu."
+          "Tidak ada data yang valid untuk disimpan. Pastikan Anda mengisi nilai terlebih dahulu.",
         );
       }
 
@@ -622,7 +656,8 @@ const Grades = ({ user, onShowToast }) => {
           const { data, error } = await supabase
             .from("grades")
             .upsert(batch, {
-              onConflict: "student_id,teacher_id,class_id,subject,assignment_type,academic_year_id",
+              onConflict:
+                "student_id,teacher_id,class_id,subject,assignment_type,academic_year_id",
               ignoreDuplicates: false,
             })
             .select();
@@ -642,7 +677,9 @@ const Grades = ({ user, onShowToast }) => {
       }
 
       if (errorCount > 0 && successCount === 0) {
-        throw new Error(`Semua data gagal disimpan.\nDetail:\n${errorDetails.join("\n")}`);
+        throw new Error(
+          `Semua data gagal disimpan.\nDetail:\n${errorDetails.join("\n")}`,
+        );
       }
 
       if (errorCount > 0) {
@@ -685,7 +722,12 @@ const Grades = ({ user, onShowToast }) => {
 
   // Handler Export
   const handleExport = async () => {
-    if (!selectedClass || !selectedSubject || !selectedSemesterId || students.length === 0) {
+    if (
+      !selectedClass ||
+      !selectedSubject ||
+      !selectedSemesterId ||
+      students.length === 0
+    ) {
       const msg = "Pilih mata pelajaran, kelas, dan semester terlebih dahulu!";
       setMessage(msg);
       if (onShowToast) onShowToast(msg, "error");
@@ -723,14 +765,20 @@ const Grades = ({ user, onShowToast }) => {
 
     // ✅ VALIDASI: READ-ONLY MODE
     if (isReadOnlyMode) {
-      const msg = "🔒 Semester ini dalam mode View Only. Tidak bisa import data!";
+      const msg =
+        "🔒 Semester ini dalam mode View Only. Tidak bisa import data!";
       setMessage(msg);
       if (onShowToast) onShowToast(msg, "error");
       event.target.value = "";
       return;
     }
 
-    if (!selectedClass || !selectedSubject || !selectedSemesterId || students.length === 0) {
+    if (
+      !selectedClass ||
+      !selectedSubject ||
+      !selectedSemesterId ||
+      students.length === 0
+    ) {
       const msg = "Pilih mata pelajaran, kelas, dan semester terlebih dahulu!";
       setMessage(msg);
       if (onShowToast) onShowToast(msg, "error");
@@ -781,7 +829,7 @@ const Grades = ({ user, onShowToast }) => {
       stats.total++;
 
       const hasGrades = assignmentTypes.some(
-        (type) => studentGrade[type] && studentGrade[type].score !== ""
+        (type) => studentGrade[type] && studentGrade[type].score !== "",
       );
 
       if (hasGrades) {
@@ -794,7 +842,8 @@ const Grades = ({ user, onShowToast }) => {
       }
     });
 
-    stats.average = completedCount > 0 ? (totalNA / completedCount).toFixed(2) : 0;
+    stats.average =
+      completedCount > 0 ? (totalNA / completedCount).toFixed(2) : 0;
     return stats;
   };
 
@@ -831,7 +880,9 @@ const Grades = ({ user, onShowToast }) => {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 p-6 sm:p-8 text-center max-w-md">
-          <div className="text-red-500 dark:text-red-400 text-4xl sm:text-5xl mb-4">⚠️</div>
+          <div className="text-red-500 dark:text-red-400 text-4xl sm:text-5xl mb-4">
+            ⚠️
+          </div>
           <p className="text-slate-700 dark:text-slate-300 text-sm sm:text-base">
             Anda harus login untuk mengakses halaman ini
           </p>
@@ -857,8 +908,7 @@ const Grades = ({ user, onShowToast }) => {
                 message.includes("Error") || message.includes("Gagal")
                   ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700"
                   : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"
-              }`}
-            >
+              }`}>
               {message}
             </div>
           )}
@@ -873,8 +923,9 @@ const Grades = ({ user, onShowToast }) => {
                     Mode View Only (Read-Only)
                   </h3>
                   <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-400 leading-relaxed">
-                    Semester ini tidak aktif. Anda hanya bisa melihat data, tidak bisa input atau
-                    edit nilai. Untuk input data baru, pilih semester yang aktif.
+                    Semester ini tidak aktif. Anda hanya bisa melihat data,
+                    tidak bisa input atau edit nilai. Untuk input data baru,
+                    pilih semester yang aktif.
                   </p>
                 </div>
               </div>
@@ -898,10 +949,11 @@ const Grades = ({ user, onShowToast }) => {
                     : "border-slate-300 dark:border-gray-600"
                 }`}
                 disabled={availableSemesters.length === 0 || loading}
-                style={{ minHeight: "44px", touchAction: "manipulation" }}
-              >
+                style={{ minHeight: "44px", touchAction: "manipulation" }}>
                 <option value="" className="dark:bg-gray-700">
-                  {availableSemesters.length === 0 ? "Loading semester..." : "Pilih Semester"}
+                  {availableSemesters.length === 0
+                    ? "Loading semester..."
+                    : "Pilih Semester"}
                 </option>
                 {availableSemesters.map((sem) => (
                   <option
@@ -909,8 +961,7 @@ const Grades = ({ user, onShowToast }) => {
                     value={sem.id}
                     className={`dark:bg-gray-700 dark:text-slate-100 ${
                       sem.is_active ? "font-semibold" : ""
-                    }`}
-                  >
+                    }`}>
                     {sem.semester === 1 ? "Semester Ganjil" : "Semester Genap"}
                     {sem.is_active ? " (Aktif)" : ""}
                   </option>
@@ -933,22 +984,25 @@ const Grades = ({ user, onShowToast }) => {
                   setGrades({});
                 }}
                 className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors disabled:bg-slate-50 dark:disabled:bg-gray-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 disabled:cursor-not-allowed"
-                disabled={loading || !selectedSemesterId || subjects.length === 0 || isReadOnlyMode}
-                style={{ minHeight: "44px", touchAction: "manipulation" }}
-              >
+                disabled={
+                  loading ||
+                  !selectedSemesterId ||
+                  subjects.length === 0 ||
+                  isReadOnlyMode
+                }
+                style={{ minHeight: "44px", touchAction: "manipulation" }}>
                 <option value="" className="dark:bg-gray-700">
                   {!selectedSemesterId
                     ? "Pilih semester dulu"
                     : subjects.length === 0
-                    ? "Tidak ada mata pelajaran"
-                    : "Pilih Mata Pelajaran"}
+                      ? "Tidak ada mata pelajaran"
+                      : "Pilih Mata Pelajaran"}
                 </option>
                 {subjects.map((subject, index) => (
                   <option
                     key={index}
                     value={subject}
-                    className="dark:bg-gray-700 dark:text-slate-100"
-                  >
+                    className="dark:bg-gray-700 dark:text-slate-100">
                     {subject}
                   </option>
                 ))}
@@ -965,22 +1019,25 @@ const Grades = ({ user, onShowToast }) => {
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 className="w-full p-3 sm:p-3.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors disabled:bg-slate-50 dark:disabled:bg-gray-800/50 disabled:text-slate-500 dark:disabled:text-slate-400 disabled:cursor-not-allowed"
-                disabled={!selectedSubject || loading || classes.length === 0 || isReadOnlyMode}
-                style={{ minHeight: "44px", touchAction: "manipulation" }}
-              >
+                disabled={
+                  !selectedSubject ||
+                  loading ||
+                  classes.length === 0 ||
+                  isReadOnlyMode
+                }
+                style={{ minHeight: "44px", touchAction: "manipulation" }}>
                 <option value="" className="dark:bg-gray-700">
                   {!selectedSubject
                     ? "Pilih Mata Pelajaran Dulu"
                     : classes.length === 0
-                    ? "Tidak ada kelas"
-                    : "Pilih Kelas"}
+                      ? "Tidak ada kelas"
+                      : "Pilih Kelas"}
                 </option>
                 {classes.map((cls) => (
                   <option
                     key={cls.id}
                     value={cls.id}
-                    className="dark:bg-gray-700 dark:text-slate-100"
-                  >
+                    className="dark:bg-gray-700 dark:text-slate-100">
                     {cls.displayName}
                   </option>
                 ))}
@@ -990,368 +1047,393 @@ const Grades = ({ user, onShowToast }) => {
         </div>
 
         {/* Stats Cards */}
-        {selectedClass && selectedSubject && selectedSemesterId && students.length > 0 && (
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-2.5 sm:p-3 rounded-lg">
-                  <Users className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
-                    {stats.total}
-                  </p>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                    Total Siswa
-                  </p>
+        {selectedClass &&
+          selectedSubject &&
+          selectedSemesterId &&
+          students.length > 0 && (
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-blue-100 dark:bg-blue-900/30 p-2.5 sm:p-3 rounded-lg">
+                    <Users className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
+                      {stats.total}
+                    </p>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                      Total Siswa
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="bg-green-100 dark:bg-green-900/30 p-2.5 sm:p-3 rounded-lg">
-                  <Eye className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
-                    {stats.completed}
-                  </p>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                    Sudah Dinilai
-                  </p>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-green-100 dark:bg-green-900/30 p-2.5 sm:p-3 rounded-lg">
+                    <Eye className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
+                      {stats.completed}
+                    </p>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                      Sudah Dinilai
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="bg-purple-100 dark:bg-purple-900/30 p-2.5 sm:p-3 rounded-lg">
-                  <BarChart3 className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
-                    {stats.average}
-                  </p>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                    Rata-rata NA
-                  </p>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 p-4 sm:p-5 md:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="bg-purple-100 dark:bg-purple-900/30 p-2.5 sm:p-3 rounded-lg">
+                    <BarChart3 className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100">
+                      {stats.average}
+                    </p>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                      Rata-rata NA
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Grades Table/Cards */}
-        {selectedClass && selectedSubject && selectedSemesterId && students.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 overflow-hidden">
-            <div className="p-4 sm:p-5 md:p-6 border-b border-slate-200 dark:border-gray-700">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
-                <div>
-                  <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-100">
-                    Daftar Nilai - {classes.find((c) => c.id === selectedClass)?.displayName}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-                    {selectedSubject} • {selectedSemesterInfo?.year} • Semester{" "}
-                    {selectedSemesterInfo?.semester}
-                    {isReadOnlyMode && " • 🔒 View Only"}
-                  </p>
-                </div>
+        {selectedClass &&
+          selectedSubject &&
+          selectedSemesterId &&
+          students.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm dark:shadow-gray-900/30 border border-slate-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 sm:p-5 md:p-6 border-b border-slate-200 dark:border-gray-700">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
+                  <div>
+                    <h2 className="text-base sm:text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-100">
+                      Daftar Nilai -{" "}
+                      {classes.find((c) => c.id === selectedClass)?.displayName}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                      {selectedSubject} • {selectedSemesterInfo?.year} •
+                      Semester {selectedSemesterInfo?.semester}
+                      {isReadOnlyMode && " • 🔒 View Only"}
+                    </p>
+                  </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-row gap-2 sm:gap-3">
-                  <button
-                    onClick={saveGrades}
-                    disabled={loading || students.length === 0 || isReadOnlyMode}
-                    className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base"
-                    style={{
-                      minHeight: "44px",
-                      touchAction: "manipulation",
-                    }}
-                  >
-                    <Save className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                    <span className="hidden sm:inline">
-                      {loading ? "Menyimpan..." : isReadOnlyMode ? "🔒 View Only" : "Simpan Nilai"}
-                    </span>
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex flex-row gap-2 sm:gap-3">
+                    <button
+                      onClick={saveGrades}
+                      disabled={
+                        loading || students.length === 0 || isReadOnlyMode
+                      }
+                      className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base"
+                      style={{
+                        minHeight: "44px",
+                        touchAction: "manipulation",
+                      }}>
+                      <Save className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                      <span className="hidden sm:inline">
+                        {loading
+                          ? "Menyimpan..."
+                          : isReadOnlyMode
+                            ? "🔒 View Only"
+                            : "Simpan Nilai"}
+                      </span>
+                    </button>
 
-                  <button
-                    onClick={handleExport}
-                    disabled={loading || students.length === 0}
-                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base"
-                    title="Export data nilai ke Excel"
-                    style={{
-                      minHeight: "44px",
-                      touchAction: "manipulation",
-                    }}
-                  >
-                    <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                    <span className="hidden sm:inline">Export Excel</span>
-                    <span className="sm:hidden">Export</span>
-                  </button>
+                    <button
+                      onClick={handleExport}
+                      disabled={loading || students.length === 0}
+                      className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-700 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base"
+                      title="Export data nilai ke Excel"
+                      style={{
+                        minHeight: "44px",
+                        touchAction: "manipulation",
+                      }}>
+                      <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                      <span className="hidden sm:inline">Export Excel</span>
+                      <span className="sm:hidden">Export</span>
+                    </button>
 
-                  <label
-                    className={`flex items-center justify-center gap-2 ${
-                      loading || students.length === 0 || isReadOnlyMode
-                        ? "bg-gray-400 dark:bg-gray-700 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer"
-                    } text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base`}
-                    title="Import nilai dari file Excel"
-                    style={{
-                      minHeight: "44px",
-                      touchAction: "manipulation",
-                    }}
-                  >
-                    <Upload className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                    <span className="hidden sm:inline">Import Excel</span>
-                    <span className="sm:hidden">Import</span>
-                    <input
-                      type="file"
-                      accept=".xlsx,.xls"
-                      onChange={handleImport}
-                      disabled={loading || students.length === 0 || isReadOnlyMode}
-                      className="hidden"
-                    />
-                  </label>
+                    <label
+                      className={`flex items-center justify-center gap-2 ${
+                        loading || students.length === 0 || isReadOnlyMode
+                          ? "bg-gray-400 dark:bg-gray-700 cursor-not-allowed"
+                          : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer"
+                      } text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-lg font-medium transition-colors active:scale-[0.98] text-sm sm:text-base`}
+                      title="Import nilai dari file Excel"
+                      style={{
+                        minHeight: "44px",
+                        touchAction: "manipulation",
+                      }}>
+                      <Upload className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                      <span className="hidden sm:inline">Import Excel</span>
+                      <span className="sm:hidden">Import</span>
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={handleImport}
+                        disabled={
+                          loading || students.length === 0 || isReadOnlyMode
+                        }
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Mobile View - Card Layout */}
-            <div className="block lg:hidden">
-              {students.map((student, index) => {
-                const studentGrade = grades[student.id] || {};
-                return (
-                  <div
-                    key={student.id}
-                    className="border-b border-slate-100 dark:border-gray-700 p-4"
-                  >
-                    <div className="mb-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <div className="font-medium text-slate-900 dark:text-slate-100 text-sm">
-                            {index + 1}. {student.full_name}
+              {/* Mobile View - Card Layout */}
+              <div className="block lg:hidden">
+                {students.map((student, index) => {
+                  const studentGrade = grades[student.id] || {};
+                  return (
+                    <div
+                      key={student.id}
+                      className="border-b border-slate-100 dark:border-gray-700 p-4">
+                      <div className="mb-3">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <div className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                              {index + 1}. {student.full_name}
+                            </div>
+                            <div className="text-xs text-slate-600 dark:text-slate-400">
+                              NIS: {student.nis}
+                            </div>
                           </div>
-                          <div className="text-xs text-slate-600 dark:text-slate-400">
-                            NIS: {student.nis}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">
-                            Nilai Akhir
-                          </div>
-                          <div className="font-bold text-base sm:text-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded px-3 py-1.5">
-                            {studentGrade.na || "0.00"}
+                          <div className="text-right">
+                            <div className="text-xs text-slate-600 dark:text-slate-400 mb-1">
+                              Nilai Akhir
+                            </div>
+                            <div className="font-bold text-base sm:text-lg text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded px-3 py-1.5">
+                              {studentGrade.na || "0.00"}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Grade Inputs - Grid untuk mobile */}
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-3 gap-2">
-                        {/* NH1 */}
-                        <div>
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            NH1
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={studentGrade.NH1?.score || ""}
-                            onChange={(e) => updateGrade(student.id, "NH1", e.target.value)}
-                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
-                            placeholder="0"
-                            disabled={loading || isReadOnlyMode}
-                            style={{
-                              minHeight: "44px",
-                              touchAction: "manipulation",
-                            }}
-                          />
-                        </div>
-
-                        {/* NH2 */}
-                        <div>
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            NH2
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={studentGrade.NH2?.score || ""}
-                            onChange={(e) => updateGrade(student.id, "NH2", e.target.value)}
-                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
-                            placeholder="0"
-                            disabled={loading || isReadOnlyMode}
-                            style={{
-                              minHeight: "44px",
-                              touchAction: "manipulation",
-                            }}
-                          />
-                        </div>
-
-                        {/* NH3 */}
-                        <div>
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            NH3
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={studentGrade.NH3?.score || ""}
-                            onChange={(e) => updateGrade(student.id, "NH3", e.target.value)}
-                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
-                            placeholder="0"
-                            disabled={loading || isReadOnlyMode}
-                            style={{
-                              minHeight: "44px",
-                              touchAction: "manipulation",
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* PSTS */}
-                        <div>
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            PSTS
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={studentGrade.PSTS?.score || ""}
-                            onChange={(e) => updateGrade(student.id, "PSTS", e.target.value)}
-                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
-                            placeholder="0"
-                            disabled={loading || isReadOnlyMode}
-                            style={{
-                              minHeight: "44px",
-                              touchAction: "manipulation",
-                            }}
-                          />
-                        </div>
-
-                        {/* PSAS */}
-                        <div>
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            PSAS
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={studentGrade.PSAS?.score || ""}
-                            onChange={(e) => updateGrade(student.id, "PSAS", e.target.value)}
-                            className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
-                            placeholder="0"
-                            disabled={loading || isReadOnlyMode}
-                            style={{
-                              minHeight: "44px",
-                              touchAction: "manipulation",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Desktop View - Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      No
-                    </th>
-                    <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      NIS
-                    </th>
-                    <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      Nama Siswa
-                    </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      NH1
-                    </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      NH2
-                    </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      NH3
-                    </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      PSTS
-                    </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      PSAS
-                    </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30">
-                      NA
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-slate-200 dark:divide-gray-700">
-                  {students.map((student, index) => {
-                    const studentGrade = grades[student.id] || {};
-                    return (
-                      <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
-                        <td className="px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100">
-                          {index + 1}
-                        </td>
-                        <td className="px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                          {student.nis}
-                        </td>
-                        <td className="px-4 py-3.5 text-sm font-medium text-slate-900 dark:text-slate-100">
-                          {student.full_name}
-                        </td>
-
-                        {/* Input Fields */}
-                        {assignmentTypes.map((type) => (
-                          <td key={type} className="px-4 py-3.5">
+                      {/* Grade Inputs - Grid untuk mobile */}
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          {/* NH1 */}
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                              NH1
+                            </label>
                             <input
                               type="number"
                               min="0"
                               max="100"
                               step="0.01"
-                              value={studentGrade[type]?.score || ""}
-                              onChange={(e) => updateGrade(student.id, type, e.target.value)}
-                              className={`w-24 p-2.5 text-center text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors ${
-                                loading || isReadOnlyMode
-                                  ? "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600"
-                                  : "bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-gray-600"
-                              }`}
+                              value={studentGrade.NH1?.score || ""}
+                              onChange={(e) =>
+                                updateGrade(student.id, "NH1", e.target.value)
+                              }
+                              className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
                               placeholder="0"
                               disabled={loading || isReadOnlyMode}
+                              style={{
+                                minHeight: "44px",
+                                touchAction: "manipulation",
+                              }}
                             />
-                          </td>
-                        ))}
-
-                        {/* Nilai Akhir */}
-                        <td className="px-4 py-3.5">
-                          <div className="text-center font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded px-3 py-2">
-                            {studentGrade.na || "0.00"}
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+
+                          {/* NH2 */}
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                              NH2
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={studentGrade.NH2?.score || ""}
+                              onChange={(e) =>
+                                updateGrade(student.id, "NH2", e.target.value)
+                              }
+                              className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
+                              placeholder="0"
+                              disabled={loading || isReadOnlyMode}
+                              style={{
+                                minHeight: "44px",
+                                touchAction: "manipulation",
+                              }}
+                            />
+                          </div>
+
+                          {/* NH3 */}
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                              NH3
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={studentGrade.NH3?.score || ""}
+                              onChange={(e) =>
+                                updateGrade(student.id, "NH3", e.target.value)
+                              }
+                              className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
+                              placeholder="0"
+                              disabled={loading || isReadOnlyMode}
+                              style={{
+                                minHeight: "44px",
+                                touchAction: "manipulation",
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* PSTS */}
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                              PSTS
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={studentGrade.PSTS?.score || ""}
+                              onChange={(e) =>
+                                updateGrade(student.id, "PSTS", e.target.value)
+                              }
+                              className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
+                              placeholder="0"
+                              disabled={loading || isReadOnlyMode}
+                              style={{
+                                minHeight: "44px",
+                                touchAction: "manipulation",
+                              }}
+                            />
+                          </div>
+
+                          {/* PSAS */}
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                              PSAS
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={studentGrade.PSAS?.score || ""}
+                              onChange={(e) =>
+                                updateGrade(student.id, "PSAS", e.target.value)
+                              }
+                              className="w-full p-3 text-sm text-center border border-slate-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 transition-colors"
+                              placeholder="0"
+                              disabled={loading || isReadOnlyMode}
+                              style={{
+                                minHeight: "44px",
+                                touchAction: "manipulation",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop View - Table */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        No
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        NIS
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Nama Siswa
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        NH1
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        NH2
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        NH3
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        PSTS
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        PSAS
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30">
+                        NA
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-slate-200 dark:divide-gray-700">
+                    {students.map((student, index) => {
+                      const studentGrade = grades[student.id] || {};
+                      return (
+                        <tr
+                          key={student.id}
+                          className="hover:bg-slate-50 dark:hover:bg-gray-700/50">
+                          <td className="px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100">
+                            {index + 1}
+                          </td>
+                          <td className="px-4 py-3.5 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                            {student.nis}
+                          </td>
+                          <td className="px-4 py-3.5 text-sm font-medium text-slate-900 dark:text-slate-100">
+                            {student.full_name}
+                          </td>
+
+                          {/* Input Fields */}
+                          {assignmentTypes.map((type) => (
+                            <td key={type} className="px-4 py-3.5">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                value={studentGrade[type]?.score || ""}
+                                onChange={(e) =>
+                                  updateGrade(student.id, type, e.target.value)
+                                }
+                                className={`w-24 p-2.5 text-center text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors ${
+                                  loading || isReadOnlyMode
+                                    ? "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600"
+                                    : "bg-white dark:bg-gray-700 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-gray-600"
+                                }`}
+                                placeholder="0"
+                                disabled={loading || isReadOnlyMode}
+                              />
+                            </td>
+                          ))}
+
+                          {/* Nilai Akhir */}
+                          <td className="px-4 py-3.5">
+                            <div className="text-center font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded px-3 py-2">
+                              {studentGrade.na || "0.00"}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Empty States */}
         {selectedClass &&
@@ -1365,7 +1447,8 @@ const Grades = ({ user, onShowToast }) => {
                 Tidak ada siswa aktif
               </h3>
               <p className="text-sm sm:text-base text-slate-400 dark:text-slate-500">
-                Tidak ada siswa aktif di kelas ini untuk {selectedSemesterInfo?.year} Semester{" "}
+                Tidak ada siswa aktif di kelas ini untuk{" "}
+                {selectedSemesterInfo?.year} Semester{" "}
                 {selectedSemesterInfo?.semester}
               </p>
             </div>
