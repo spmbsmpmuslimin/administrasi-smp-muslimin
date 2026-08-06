@@ -79,10 +79,45 @@ const Konseling = ({ user, onShowToast }) => {
   });
 
   // Load data
+  const [academicYear, setAcademicYear] = useState(null);
+  const [semester, setSemester] = useState(null);
+
   useEffect(() => {
-    loadKonselingData();
-    loadStudents();
-    loadClasses();
+    const init = async () => {
+      // FIX: Ambil tahun ajaran aktif dari database (bukan hardcode string).
+      // Ini dijalankan PALING DULU, sebelum loadClasses() dipanggil, biar
+      // filter academic_year di loadClasses selalu pakai nilai yang benar
+      // dan otomatis ikut berubah kalau tahun ajaran aktif di database diganti.
+      const { data: activeYear, error: yearError } = await supabase
+        .from("academic_years")
+        .select("year, semester")
+        .eq("is_active", true)
+        .single();
+
+      let currentYear = "2025/2026"; // fallback kalau query gagal
+      let currentSemester = "1";
+
+      if (yearError) {
+        console.warn(
+          "⚠️ Gagal mengambil tahun ajaran aktif, pakai fallback:",
+          yearError,
+        );
+      } else if (activeYear) {
+        currentYear = activeYear.year;
+        currentSemester = String(activeYear.semester);
+      }
+
+      setAcademicYear(currentYear);
+      setSemester(currentSemester);
+
+      await Promise.all([
+        loadKonselingData(),
+        loadStudents(),
+        loadClasses(currentYear),
+      ]);
+    };
+
+    init();
   }, []);
 
   const loadKonselingData = async () => {
@@ -119,12 +154,15 @@ const Konseling = ({ user, onShowToast }) => {
     }
   };
 
-  const loadClasses = async () => {
+  const loadClasses = async (yearParam) => {
     try {
+      // FIX: pakai parameter yang dikirim dari init() (hasil fetch academic_years),
+      // bukan string hardcode. Kalau tahun ajaran aktif di database berubah,
+      // ini otomatis ikut berubah tanpa perlu ubah kode.
       const { data, error } = await supabase
         .from("classes")
         .select("id, grade")
-        .eq("academic_year", "2026/2027")
+        .eq("academic_year", yearParam)
         .order("id");
 
       if (error) throw error;
@@ -337,8 +375,11 @@ const Konseling = ({ user, onShowToast }) => {
         status_layanan: formData.status_layanan,
         guru_bk_id: user.id,
         guru_bk_name: user.full_name,
-        academic_year: "2025/2026",
-        semester: "1",
+        // FIX: pakai state academicYear/semester (hasil fetch dari database),
+        // bukan string hardcode. Data konseling yang tersimpan otomatis
+        // tercatat di tahun ajaran & semester yang benar-benar aktif.
+        academic_year: academicYear,
+        semester: semester,
       };
 
       if (modalMode === "add") {

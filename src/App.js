@@ -30,6 +30,10 @@ import MaintenancePage from "./setting/MaintenancePage";
 // Import Presensi Guru
 import TeacherAttendance from "./attendance-teacher/TeacherAttendance";
 
+// Import Jurnal Harian Mengajar
+import JurnalHarian from "./components/JurnalHarian";
+import AdminJurnalRekap from "./components/AdminJurnalRekap";
+
 // Import E-RAPORT modules - DIUPDATE SESUAI DOKUMENTASI
 import DashboardAdmin from "./e-raport/DashboardAdmin";
 import DashboardTeacher from "./e-raport/DashboardTeacher";
@@ -150,7 +154,11 @@ const ProtectedRoute = ({
         const { data, error } = await supabase
           .from("school_settings")
           .select("setting_key, setting_value")
-          .in("setting_key", ["maintenance_mode", "maintenance_message", "maintenance_whitelist"]);
+          .in("setting_key", [
+            "maintenance_mode",
+            "maintenance_message",
+            "maintenance_whitelist",
+          ]);
 
         if (error) {
           console.error("❌ Error checking maintenance:", error);
@@ -164,12 +172,13 @@ const ProtectedRoute = ({
         });
 
         const isMaintenance =
-          settings.maintenance_mode === "true" || settings.maintenance_mode === true;
+          settings.maintenance_mode === "true" ||
+          settings.maintenance_mode === true;
 
         setMaintenanceMode(isMaintenance);
         setMaintenanceMessage(
           settings.maintenance_message ||
-            "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"
+            "Aplikasi sedang dalam maintenance. Kami akan kembali segera!",
         );
 
         if (settings.maintenance_whitelist) {
@@ -205,12 +214,13 @@ const ProtectedRoute = ({
           event: "*",
           schema: "public",
           table: "school_settings",
-          filter: "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
+          filter:
+            "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
         },
         () => {
           console.log("🔔 Maintenance setting changed");
           checkMaintenance();
-        }
+        },
       )
       .subscribe();
 
@@ -239,19 +249,16 @@ const ProtectedRoute = ({
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}
-      >
+        }`}>
         <div className="text-center">
           <div
             className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "border-blue-400" : "border-blue-600"
-            }`}
-          ></div>
+            }`}></div>
           <p
             className={`text-sm sm:text-base font-medium transition-colors ${
               darkMode ? "text-gray-300" : "text-gray-600"
-            }`}
-          >
+            }`}>
             Checking session...
           </p>
         </div>
@@ -295,20 +302,17 @@ const ProtectedRoute = ({
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}
-      >
+        }`}>
         <div className="text-center max-w-md mx-auto">
           <div
             className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "bg-red-900/30" : "bg-red-100"
-            }`}
-          >
+            }`}>
             <svg
               className={`w-7 h-7 sm:w-8 sm:h-8 ${darkMode ? "text-red-400" : "text-red-600"}`}
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+              viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -320,15 +324,13 @@ const ProtectedRoute = ({
           <h2
             className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
               darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
+            }`}>
             Akses Ditolak
           </h2>
           <p
             className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
               darkMode ? "text-gray-400" : "text-gray-600"
-            }`}
-          >
+            }`}>
             Anda tidak memiliki izin untuk mengakses halaman ini.
           </p>
           <button
@@ -337,8 +339,7 @@ const ProtectedRoute = ({
               darkMode
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
-          >
+            }`}>
             Kembali ke Dashboard
           </button>
         </div>
@@ -366,22 +367,19 @@ const ProtectedRoute = ({
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}
-      >
+        }`}>
         <div className="text-center max-w-md mx-auto">
           <div
             className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "bg-yellow-900/30" : "bg-yellow-100"
-            }`}
-          >
+            }`}>
             <svg
               className={`w-7 h-7 sm:w-8 sm:h-8 ${
                 darkMode ? "text-yellow-400" : "text-yellow-600"
               }`}
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+              viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -393,19 +391,20 @@ const ProtectedRoute = ({
           <h2
             className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
               darkMode ? "text-white" : "text-gray-900"
-            }`}
-          >
+            }`}>
             Akses Khusus Wali Kelas
           </h2>
           <p
             className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
               darkMode ? "text-gray-400" : "text-gray-600"
-            }`}
-          >
+            }`}>
             Halaman ini hanya dapat diakses oleh Wali Kelas atau Admin.
-            {userFullData?.role === "teacher" && userFullData?.homeroom_class_id === null && (
-              <span className="block mt-2 text-xs italic">(Status Anda: Guru Mapel)</span>
-            )}
+            {userFullData?.role === "teacher" &&
+              userFullData?.homeroom_class_id === null && (
+                <span className="block mt-2 text-xs italic">
+                  (Status Anda: Guru Mapel)
+                </span>
+              )}
           </p>
           <button
             onClick={() => (window.location.href = "/era-dashboard-teacher")}
@@ -413,8 +412,7 @@ const ProtectedRoute = ({
               darkMode
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
-          >
+            }`}>
             Kembali ke Dashboard Guru
           </button>
         </div>
@@ -476,7 +474,10 @@ function App() {
             localStorage.removeItem("user");
             localStorage.removeItem("rememberMe");
             setUser(null);
-            handleShowToast("Sesi Anda telah berakhir. Silakan login kembali.", "warning");
+            handleShowToast(
+              "Sesi Anda telah berakhir. Silakan login kembali.",
+              "warning",
+            );
             setLoading(false);
             return;
           }
@@ -587,12 +588,11 @@ function App() {
         user={user}
         onLogout={handleLogout}
         darkMode={darkMode}
-        onToggleDarkMode={handleToggleDarkMode}
-      >
+        onToggleDarkMode={handleToggleDarkMode}>
         {children}
       </Layout>
     ),
-    [user, handleLogout, darkMode, handleToggleDarkMode]
+    [user, handleLogout, darkMode, handleToggleDarkMode],
   );
 
   // ========== 6. RENDER ADMIN PANEL ==========
@@ -603,10 +603,12 @@ function App() {
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,
-        }}
-      >
+        }}>
         <Routes>
-          <Route path="/secret-admin-panel-2024" element={<AdminPanel darkMode={darkMode} />} />
+          <Route
+            path="/secret-admin-panel-2024"
+            element={<AdminPanel darkMode={darkMode} />}
+          />
         </Routes>
       </BrowserRouter>
     );
@@ -620,19 +622,16 @@ function App() {
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}
-      >
+        }`}>
         <div className="text-center">
           <div
             className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "border-blue-400" : "border-blue-600"
-            }`}
-          ></div>
+            }`}></div>
           <p
             className={`text-sm sm:text-base font-medium transition-colors ${
               darkMode ? "text-gray-300" : "text-gray-600"
-            }`}
-          >
+            }`}>
             Loading...
           </p>
         </div>
@@ -645,8 +644,7 @@ function App() {
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true,
-      }}
-    >
+      }}>
       {/* ✅ Toast Notification dengan Dark Mode & Responsive */}
       {showToast && (
         <div className={getToastStyle()}>
@@ -657,7 +655,9 @@ function App() {
               {toastType === "warning" && "⚠️"}
               {toastType === "info" && "ℹ️"}
             </span>
-            <span className="font-medium text-sm sm:text-base break-words">{toastMessage}</span>
+            <span className="font-medium text-sm sm:text-base break-words">
+              {toastMessage}
+            </span>
           </div>
         </div>
       )}
@@ -688,10 +688,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <Dashboard user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <Dashboard
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -704,10 +707,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <Teachers user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <Teachers
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -720,10 +726,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <Classes user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <Classes
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -736,10 +745,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <Students user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <Students
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -752,10 +764,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <AttendanceMain user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <AttendanceMain
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -769,10 +784,57 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["teacher", "guru_bk", "admin"]}
-            >
+              allowedRoles={["teacher", "guru_bk", "admin"]}>
               <LayoutWrapper>
-                <TeacherAttendance user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <TeacherAttendance
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ========== JURNAL HARIAN MENGAJAR ========== */}
+
+        {/* Jurnal Harian - GURU isi jurnal mengajar */}
+        <Route
+          path="/jurnal-harian"
+          element={
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}
+              allowedRoles={["teacher", "guru_bk"]}>
+              <LayoutWrapper>
+                <JurnalHarian
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Rekap Jurnal Harian - ADMIN lihat semua jurnal guru */}
+        <Route
+          path="/jurnal-harian-rekap"
+          element={
+            <ProtectedRoute
+              user={user}
+              loading={loading}
+              darkMode={darkMode}
+              onShowToast={handleShowToast}
+              allowedRoles={["admin"]}>
+              <LayoutWrapper>
+                <AdminJurnalRekap
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -786,10 +848,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <GradeMain user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <GradeMain
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -803,8 +868,7 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["admin"]}
-            >
+              allowedRoles={["admin"]}>
               <LayoutWrapper>
                 <AttendanceManagement
                   user={user}
@@ -823,10 +887,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <TeacherSchedule user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <TeacherSchedule
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -839,10 +906,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <CatatanSiswa user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <CatatanSiswa
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -855,10 +925,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <Konseling user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <Konseling
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -871,10 +944,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <Reports user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <Reports
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -887,10 +963,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <SPMB user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <SPMB
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -903,10 +982,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <Setting user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <Setting
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -919,10 +1001,13 @@ function App() {
               user={user}
               loading={loading}
               darkMode={darkMode}
-              onShowToast={handleShowToast}
-            >
+              onShowToast={handleShowToast}>
               <LayoutWrapper>
-                <MonitorSistem user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <MonitorSistem
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -939,10 +1024,13 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["admin"]}
-            >
+              allowedRoles={["admin"]}>
               <LayoutWrapper>
-                <DashboardAdmin user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <DashboardAdmin
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -957,10 +1045,13 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["teacher"]}
-            >
+              allowedRoles={["teacher"]}>
               <LayoutWrapper>
-                <DashboardTeacher user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <DashboardTeacher
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -976,8 +1067,7 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["teacher"]}
-              requireWaliKelas={true}
-            >
+              requireWaliKelas={true}>
               <LayoutWrapper>
                 <DashboardHomeroomTeacher
                   user={user}
@@ -998,10 +1088,13 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["admin", "teacher"]}
-            >
+              allowedRoles={["admin", "teacher"]}>
               <LayoutWrapper>
-                <InputTP user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <InputTP
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -1016,10 +1109,13 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["admin", "teacher"]}
-            >
+              allowedRoles={["admin", "teacher"]}>
               <LayoutWrapper>
-                <InputNilai user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <InputNilai
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -1034,10 +1130,13 @@ function App() {
               loading={loading}
               darkMode={darkMode}
               onShowToast={handleShowToast}
-              allowedRoles={["admin", "teacher"]}
-            >
+              allowedRoles={["admin", "teacher"]}>
               <LayoutWrapper>
-                <CekNilai user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <CekNilai
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -1053,10 +1152,13 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["teacher"]}
-              requireWaliKelas={true}
-            >
+              requireWaliKelas={true}>
               <LayoutWrapper>
-                <InputKehadiran user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <InputKehadiran
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -1072,10 +1174,13 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["admin", "teacher"]}
-              requireWaliKelas={true}
-            >
+              requireWaliKelas={true}>
               <LayoutWrapper>
-                <InputCatatan user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <InputCatatan
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -1091,10 +1196,13 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["admin", "teacher"]}
-              requireWaliKelas={true}
-            >
+              requireWaliKelas={true}>
               <LayoutWrapper>
-                <InputKokurikuler user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <InputKokurikuler
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -1110,8 +1218,7 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["admin", "teacher"]}
-              requireWaliKelas={true}
-            >
+              requireWaliKelas={true}>
               <LayoutWrapper>
                 <InputEkstrakurikuler
                   user={user}
@@ -1133,10 +1240,13 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["teacher"]}
-              requireWaliKelas={true}
-            >
+              requireWaliKelas={true}>
               <LayoutWrapper>
-                <CekStatusNilai user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <CekStatusNilai
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
@@ -1152,10 +1262,13 @@ function App() {
               darkMode={darkMode}
               onShowToast={handleShowToast}
               allowedRoles={["teacher"]}
-              requireWaliKelas={true}
-            >
+              requireWaliKelas={true}>
               <LayoutWrapper>
-                <RaportPage user={user} onShowToast={handleShowToast} darkMode={darkMode} />
+                <RaportPage
+                  user={user}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                />
               </LayoutWrapper>
             </ProtectedRoute>
           }
