@@ -1,0 +1,209 @@
+| table_name                | columns                                                                                                                                                                                                                                                                                                                                                       |
+| academic_years            | id, year, semester, start_date, end_date, is_active, created_at, updated_at                                                                                                                                                                                                                                                                                   |
+| announcement              | id, title, content, created_at, updated_at, effective_from, effective_until, target_role, is_active                                                                                                                                                                                                                                                           |
+| announcement_reads        | id, announcement_id, user_id, read_at, created_at                                                                                                                                                                                                                                                                                                             |
+| app_config                | id, is_maintenance, maintenance_message, updated_at                                                                                                                                                                                                                                                                                                           |
+| attendance_eraport        | id, student_id, class_id, academic_year_id, semester, sakit, izin, alpa, catatan, is_locked, created_at, updated_at, created_by, updated_by                                                                                                                                                                                                                   |
+| attendances               | id, student_id, teacher_id, date, subject, status, created_at, notes, class_id, type, academic_year_id, semester                                                                                                                                                                                                                                              |
+| attendances_view          | date, class_id, subject, status, notes, type                                                                                                                                                                                                                                                                                                                  |
+| catatan_eraport           | id, student_id, class_id, academic_year_id, semester, catatan_wali_kelas, catatan_ekskul, catatan_prestasi, saran, created_at, updated_at, created_by, sakit, ijin, tanpa_keterangan, total_hadir, updated_by                                                                                                                                                 |
+| classes                   | id, grade, academic_year, created_at, updated_at, is_active, academic_year_id                                                                                                                                                                                                                                                                                 |
+| cleanup_history           | id, timestamp, triggered_by, results, created_at                                                                                                                                                                                                                                                                                                              |
+| ekstrakurikuler_eraport   | id, student_id, academic_year_id, semester, nama_ekskul, predikat, keterangan, created_at, updated_at                                                                                                                                                                                                                                                         |
+| eraport_settings          | id, is_active, active_period, message, updated_at, updated_by                                                                                                                                                                                                                                                                                                 |
+| feedback_guru             | id, guru_id, kategori, pesan, halaman, status, created_at                                                                                                                                                                                                                                                                                                     |
+| grades                    | id, student_id, class_id, teacher_id, subject, assignment_type, score, semester, academic_year, created_at, academic_year_id                                                                                                                                                                                                                                  |
+| grades_katrol             | id, student_id, class_id, teacher_id, academic_year_id, subject, academic_year, semester, nh1, nh2, nh3, psts, psas, rata_nh, nilai_akhir, nilai_akhir_k, kkm, nilai_min_kelas, nilai_max_kelas, target_min, target_max, jumlah_siswa_kelas, formula_used, processed_by, created_at, updated_at, student_name, student_nis                                    |
+| grades_katrol_settings    | id, mata_pelajaran_id, kelas_id, kkm, nilai_maksimal, created_at, updated_at, updated_by, academic_year, semester, academic_year_id                                                                                                                                                                                                                           |
+| jurnal_harian             | id, user_id, teacher_id, assignment_id, class_id, subject, academic_year_id, semester, tanggal, jam_ke, materi, kegiatan_pembelajaran, kendala_catatan, status, created_at, updated_at, tujuan_pembelajaran                                                                                                                                                   |
+| konseling                 | id, student_id, nis, full_name, gender, class_id, tanggal, jenis_layanan, bidang_bimbingan, permasalahan, kronologi, tindakan_layanan, hasil_layanan, rencana_tindak_lanjut, status_layanan, guru_bk_id, guru_bk_name, academic_year, semester, created_at, updated_at, tingkat_urgensi, kategori_masalah, perlu_followup, tanggal_followup, academic_year_id |
+| nilai_eraport             | id, student_id, class_id, mata_pelajaran, guru_id, academic_year_id, semester, nilai_akhir, deskripsi_capaian, kkm, created_at, updated_at, created_by, updated_by                                                                                                                                                                                            |
+| nilai_eraport_detail      | id, nilai_eraport_id, tujuan_pembelajaran_id, status_tercapai, created_at, updated_at                                                                                                                                                                                                                                                                         |
+| raport_config             | id, class_id, mata_pelajaran, academic_year_id, kkm, created_at, updated_at, jenjang, semester, is_jenjang_default                                                                                                                                                                                                                                            |
+| raport_metadata           | id, academic_year_id, semester, tanggal_raport, tempat, nama_kepala_sekolah, nip_kepala_sekolah, ttd_kepala_sekolah, created_at, updated_at                                                                                                                                                                                                                   |
+| school_settings           | id, setting_key, setting_value, created_at, updated_at                                                                                                                                                                                                                                                                                                        |
+| siswa_baru                | id, no_pendaftaran, nama_lengkap, nisn, jenis_kelamin, tempat_lahir, tanggal_lahir, asal_sekolah, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, no_hp, alamat, academic_year, status, is_transferred, tanggal_daftar, created_at, updated_at, transferred_at, transferred_by, kelas, nis                               |
+| spmb_settings             | id, target_academic_year, is_active, registration_start_date, registration_end_date, created_at, updated_at                                                                                                                                                                                                                                                   |
+| student_development_notes | id, student_id, teacher_id, class_id, academic_year, semester, category, label, note_content, action_taken, created_at, updated_at, academic_year_id                                                                                                                                                                                                          |
+| students                  | id, full_name, nis, gender, class_id, academic_year, is_active, created_at, updated_at, academic_year_id                                                                                                                                                                                                                                                      |
+| system_health_logs        | id, checked_at, checked_by, total_issues, critical_count, warning_count, info_count, issues_detail, execution_time, status, created_at                                                                                                                                                                                                                        |
+| teacher_assignments       | id, teacher_id, class_id, subject, academic_year, semester, created_at, academic_year_id, updated_at                                                                                                                                                                                                                                                          |
+| teacher_attendance        | id, teacher_id, attendance_date, status, clock_in, check_in_method, notes, created_at, updated_at, gps_location, is_suspicious, full_name, admin_info                                                                                                                                                                                                         |
+| teacher_attendance_view   | teacher_id, full_name, status, attendance_date, clock_in, check_in_method                                                                                                                                                                                                                                                                                     |
+| teacher_schedules         | id, teacher_id, day, start_time, end_time, class_id, room_number, created_at, updated_at, academic_year_id                                                                                                                                                                                                                                                    |
+| tujuan_pembelajaran       | id, mata_pelajaran, tingkat, fase, deskripsi_tp, urutan, academic_year_id, semester, created_at, updated_at, is_active                                                                                                                                                                                                                                        |
+| users                     | id, username, password, full_name, teacher_id, role, homeroom_class_id, is_active, created_at, updated_at, no_hp, last_login, last_activity, login_count                                                                                                                                                                                                      |
+
+
+
+STRUKTUR FILE
+
+src/
+├── App.js
+├── index.css
+├── index.js
+├── reportWebVitals.js
+├── supabaseClient.js
+│
+├── assets/                        # 🎨 Assets
+│   ├── Background.JPG
+│   └── logo_sekolah.png
+│
+├── attendance-teacher/            # 👨‍🏫 Presensi Guru
+│   ├── AdminAttendanceView.js
+│   ├── AttendanceTabs.js
+│   ├── LocationValidator.js
+│   ├── ManualCheckIn.js
+│   ├── MyAttendanceStatus.js
+│   ├── MyMonthlyHistory.js
+│   ├── QRCodeGenerator.js
+│   ├── QRScanner.js
+│   ├── TeacherAttendance.js
+│   ├── TodaySchedule.js
+│   └── reports/
+│       ├── DailySummary.js
+│       ├── ExportExcel.js
+│       ├── ITMReport.js
+│       ├── ITMReportExcel.js
+│       └── MonthlyView.js
+│
+├── components/                    # 🧩 Shared Components
+│   ├── AdminDashboard.js
+│   ├── AnnouncementPopup.js
+│   ├── FeedbackGuru.js
+│   ├── Dashboard.js
+│   ├── GuruBKDashboard.js
+│   ├── HomeroomTeacherDashboard.js
+│   ├── Layout.js
+│   ├── Login.js
+│   ├── Logo.js
+│   ├── Sidebar.js
+│   └── TeacherDashboard.js
+│
+├── e-raport/                      # 📘 E-Raport
+│   ├── CekNilai.js
+│   ├── CekStatusNilai.js
+│   ├── CetakRaport.js
+│   ├── DashboardAdmin.js
+│   ├── DashboardHomeroomTeacher.js
+│   ├── DashboardTeacher.js
+│   ├── InputCatatan.js
+│   ├── InputEkstrakurikuler.js
+│   ├── InputKehadiran.js
+│   ├── InputKokurikuler.js
+│   ├── InputNilai.js
+│   ├── InputTP.js
+│   ├── PreviewNilai.js
+│   ├── PreviewRaport.js
+│   ├── RaportConfig.js 
+│   ├── RaportPage.js 
+│
+├── hooks/                         # 🪝 Hooks
+│   └── useAuth.js
+│
+├── konseling/                     # 💬 Konseling
+│   ├── ExportPDF.js
+│   ├── FilterBar.js
+│   ├── Konseling.js
+│   ├── KonselingModal.js
+│   ├── KonselingTable.js
+│   └── StatsCards.js
+│
+├── pages/                         # 📄 Pages
+│   ├── CatatanSiswa.js
+│   ├── CatatanSiswaExport.js
+│   ├── Classes.js
+│   ├── DataExcel.js
+│   ├── Students.js
+│   ├── Teachers.js
+│   ├── TeacherSchedule.js
+│   ├── TeacherScheduleExcel.js
+│   │ 
+│   └── attendance/
+│   │   ├── Attendance.js
+│   │   ├── AttendanceMain.js
+│   │   ├── AttendanceExcel.js
+│   │   ├── AttendanceFilters.js
+│   │   ├── AttendanceManagement.js
+│   │   ├── AttendanceModals.js
+│   │   ├── AttendanceStats.js
+│   │   └── AttendanceTable.js
+│   │
+│   └── grade/
+│       ├── GradeMain.js
+│       ├── Grades.js
+│       ├── GradesExcel.js
+│       ├── GradesKatrol.js
+│       ├── KatrolTable.js
+│       ├── Utils.js
+│
+├── reports/                       # 📊 Reports
+│   ├── AdminReports.js
+│   ├── BKReports.js
+│   ├── HomeroomTeacherReports.js
+│   ├── ReportExcel.js
+│   ├── ReportHelpers.js
+│   ├── Reports.js
+│   ├── TeacherReports.js
+│   └── modals/
+│       ├── AcademicGradesView.js
+│       ├── AdminReportModal.js
+│       ├── BKReportModal.js
+│       ├── HomeroomReportModal.js
+│       └── TeacherReportModal.js
+│
+├── services/
+│   └── semesterService.js
+│   └── academicYearService.js
+│
+├── setting/                       # ⚙️ Settings
+│   ├── ActiveUsersTab.js
+│   ├── AdminPanel.js ActiveUsersTab.js
+│   ├── ChangePasswordSection.js
+│   ├── MaintenanceModeTab.js
+│   ├── MaintenancePage.js
+│   ├── ProfileTab.js
+│   ├── ProtectedRoute.js
+│   ├── SchoolSettingsTab.js
+│   ├── Setting.js
+│   ├── SystemTab.js
+│   ├── TeacherAssignmentExcel.js
+│   ├── TeacherAssignmentTab.js
+│   ├── UserManagementTab.js
+│   │
+│   └── academic/                  # 🎓 Academic Settings 
+│   │   ├── AcademicYearTab.js
+│   │   ├── SemesterManagement.js
+│   │   ├── Simulator.js
+│   │   ├── YearTransition.js
+│   │   └── CopyAssignmentsModal.js
+│   │ 
+│   └── school-management/          # School Management    
+│       ├── SchoolManagementTab.js
+│       ├── StudentManagement.js
+│       ├── StudentModalS.js
+│       └── BulkImportModals.js
+│
+├── spmb/                          # 🏫 SPMB
+│   ├── ClassDistribution.js
+│   ├── ClassDivision.js
+│   ├── ClassOperations.js
+│   ├── SPMB.js
+│   ├── SpmbExcel.js
+│   ├── Statistic.js
+│   ├── StudentForm.js
+│   └── StudentList.js
+│
+└── system/                        # 🖥️ System Monitor
+    ├── DatabaseCleanupMonitor.js
+    ├── HealthChecker.js
+    ├── MonitorDashboard.js
+    ├── MonitorHistory.js
+    ├── MonitorResults.js
+    ├── MonitorSistem.js
+    ├── PerformanceMonitor.js
+    └── checkers/
+        ├── AppHealthChecker.js
+        ├── BusinessLogicChecker.js
+        ├── DatabaseChecker.js
+        └── DataValidator.js

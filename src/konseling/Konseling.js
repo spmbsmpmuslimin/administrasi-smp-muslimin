@@ -1,0 +1,634 @@
+import React, { useState, useEffect } from "react";
+import { supabase } from "../supabaseClient";
+import { Plus, Search, Edit3, Trash2, Eye, Users, Clock, CheckCircle, XCircle } from "lucide-react";
+import StatsCards from "./StatsCards";
+import FilterBar from "./FilterBar";
+import KonselingTable from "./KonselingTable";
+import KonselingModal from "./KonselingModal";
+import { exportKonselingPDF, exportLaporanBulananPDF } from "./ExportPDF";
+
+const Konseling = ({ user, onShowToast }) => {
+  const [konselingData, setKonselingData] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState("add");
+  const [selectedKonseling, setSelectedKonseling] = useState(null);
+
+  // Delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    show: false,
+    id: null,
+    studentName: "",
+  });
+
+  // Filters - ✅ UPDATED: Tambah filter urgensi & kategori
+  const [filters, setFilters] = useState({
+    search: "",
+    kelas: "",
+    status: "",
+    tingkat_urgensi: "", // NEW
+    kategori_masalah: "", // NEW
+    perlu_followup: "", // NEW
+    tanggalAwal: "",
+    tanggalAkhir: "",
+  });
+
+  // Form data - ✅ UPDATED: Tambah field baru
+  const [formData, setFormData] = useState({
+    student_id: "",
+    nis: "",
+    full_name: "",
+    gender: "",
+    class_id: "",
+    tanggal: new Date().toISOString().split("T")[0],
+    jenis_layanan: "",
+    bidang_bimbingan: "",
+    tingkat_urgensi: "", // NEW - default Sedang
+    kategori_masalah: "", // NEW
+    permasalahan: "",
+    kronologi: "",
+    tindakan_layanan: "",
+    hasil_layanan: "",
+    rencana_tindak_lanjut: "",
+    perlu_followup: false, // NEW
+    tanggal_followup: "", // NEW
+    status_layanan: "Dalam Proses",
+  });
+
+  // Stats - ✅ UPDATED: Tambah stats urgensi, follow-up, & breakdown kategori/bidang
+  const [stats, setStats] = useState({
+    total: 0,
+    dalam_proses: 0,
+    selesai: 0,
+    darurat: 0, // NEW
+    perlu_followup: 0, // NEW
+    byKategori: [], // NEW: breakdown per kategori masalah
+    byBidang: [], // NEW: breakdown per bidang bimbingan
+  });
+
+  // Load data
+  const [academicYear, setAcademicYear] = useState(null);
+  const [semester, setSemester] = useState(null);
+
+  // ✅ NEW: State untuk Laporan Bulanan
+  const now = new Date();
+  const [laporanBulan, setLaporanBulan] = useState(now.getMonth() + 1); // 1-12
+  const [laporanTahun, setLaporanTahun] = useState(now.getFullYear());
+  const [exportingLaporan, setExportingLaporan] = useState(false);
+
+  useEffect(() => {
+    const init = async () => {
+      // FIX: Ambil tahun ajaran aktif dari database (bukan hardcode string).
+      // Ini dijalankan PALING DULU, sebelum loadClasses() dipanggil, biar
+      // filter academic_year di loadClasses selalu pakai nilai yang benar
+      // dan otomatis ikut berubah kalau tahun ajaran aktif di database diganti.
+      const { data: activeYear, error: yearError } = await supabase
+        .from("academic_years")
+        .select("year, semester")
+        .eq("is_active", true)
+        .single();
+
+      let currentYear = "2025/2026"; // fallback kalau query gagal
+      let currentSemester = "1";
+
+      if (yearError) {
+        console.warn("⚠️ Gagal mengambil tahun ajaran aktif, pakai fallback:", yearError);
+      } else if (activeYear) {
+        currentYear = activeYear.year;
+        currentSemester = String(activeYear.semester);
+      }
+
+      setAcademicYear(currentYear);
+      setSemester(currentSemester);
+
+      await Promise.all([loadKonselingData(), loadStudents(), loadClasses(currentYear)]);
+    };
+
+    init();
+  }, []);
+
+  const loadKonselingData = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("konseling")
+        .select("*")
+        .order("tanggal", { ascending: false });
+
+      if (error) throw error;
+      setKonselingData(data || []);
+      calculateStats(data || []);
+    } catch (error) {
+      console.error("Error loading konseling data:", error);
+      onShowToast("Error memuat data konseling", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStudents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("id, nis, full_name, gender, class_id")
+        .eq("is_active", true)
+        .order("full_name");
+
+      if (error) throw error;
+      setStudents(data || []);
+    } catch (error) {
+      console.error("Error loading students:", error);
+    }
+  };
+
+  const loadClasses = async (yearParam) => {
+    try {
+      // FIX: pakai parameter yang dikirim dari init() (hasil fetch academic_years),
+      // bukan string hardcode. Kalau tahun ajaran aktif di database berubah,
+      // ini otomatis ikut berubah tanpa perlu ubah kode.
+      const { data, error } = await supabase
+        .from("classes")
+        .select("id, grade")
+        .eq("academic_year", yearParam)
+        .order("id");
+
+      if (error) throw error;
+      setClasses(data || []);
+    } catch (error) {
+      console.error("Error loading classes:", error);
+    }
+  };
+
+  // ✅ UPDATED: Calculate stats dengan urgensi & follow-up
+  const calculateStats = (data) => {
+    const total = data.length;
+    const dalam_proses = data.filter((item) => item.status_layanan === "Dalam Proses").length;
+    const selesai = data.filter((item) => item.status_layanan === "Selesai").length;
+    const darurat = data.filter((item) => item.tingkat_urgensi === "Darurat").length;
+    const perlu_followup = data.filter((item) => item.perlu_followup === true).length;
+
+    // ✅ NEW: Breakdown per kategori masalah
+    const kategoriCount = {};
+    data.forEach((item) => {
+      const kategori = item.kategori_masalah || "Belum Dikategorikan";
+      kategoriCount[kategori] = (kategoriCount[kategori] || 0) + 1;
+    });
+    const byKategori = Object.entries(kategoriCount)
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // ✅ NEW: Breakdown per bidang bimbingan
+    const bidangCount = {};
+    data.forEach((item) => {
+      const bidang = item.bidang_bimbingan || "Belum Dikategorikan";
+      bidangCount[bidang] = (bidangCount[bidang] || 0) + 1;
+    });
+    const byBidang = Object.entries(bidangCount)
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count);
+
+    setStats({
+      total,
+      dalam_proses,
+      selesai,
+      darurat,
+      perlu_followup,
+      byKategori,
+      byBidang,
+    });
+  };
+
+  // ✅ UPDATED: Filter functions dengan field baru
+  const filteredKonseling = konselingData.filter((item) => {
+    const matchesSearch =
+      !filters.search ||
+      item.full_name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+      item.nis?.includes(filters.search);
+    const matchesStatus = !filters.status || item.status_layanan === filters.status;
+    const matchesUrgensi =
+      !filters.tingkat_urgensi || item.tingkat_urgensi === filters.tingkat_urgensi;
+    const matchesKategori =
+      !filters.kategori_masalah || item.kategori_masalah === filters.kategori_masalah;
+    const matchesFollowup =
+      !filters.perlu_followup ||
+      (filters.perlu_followup === "true" && item.perlu_followup === true) ||
+      (filters.perlu_followup === "false" && item.perlu_followup === false);
+
+    const itemDate = new Date(item.tanggal);
+    const matchesTanggalAwal = !filters.tanggalAwal || itemDate >= new Date(filters.tanggalAwal);
+    const matchesTanggalAkhir = !filters.tanggalAkhir || itemDate <= new Date(filters.tanggalAkhir);
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesUrgensi &&
+      matchesKategori &&
+      matchesFollowup &&
+      matchesTanggalAwal &&
+      matchesTanggalAkhir
+    );
+  });
+
+  const resetFilters = () => {
+    setFilters({
+      search: "",
+      kelas: "",
+      status: "",
+      tingkat_urgensi: "",
+      kategori_masalah: "",
+      perlu_followup: "",
+      tanggalAwal: "",
+      tanggalAkhir: "",
+    });
+  };
+
+  const handleFilterChange = (field, value) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ✅ UPDATED: Modal handlers dengan field baru
+  const openAddModal = () => {
+    setFormData({
+      student_id: "",
+      nis: "",
+      full_name: "",
+      gender: "",
+      class_id: "",
+      tanggal: new Date().toISOString().split("T")[0],
+      jenis_layanan: "",
+      bidang_bimbingan: "",
+      tingkat_urgensi: "Sedang",
+      kategori_masalah: "",
+      permasalahan: "",
+      kronologi: "",
+      tindakan_layanan: "",
+      hasil_layanan: "",
+      rencana_tindak_lanjut: "",
+      perlu_followup: false,
+      tanggal_followup: "",
+      status_layanan: "Dalam Proses",
+    });
+    setModalMode("add");
+    setShowModal(true);
+  };
+
+  const openEditModal = (konseling) => {
+    setFormData({
+      student_id: konseling.student_id,
+      nis: konseling.nis,
+      full_name: konseling.full_name,
+      gender: konseling.gender,
+      class_id: konseling.class_id,
+      tanggal: konseling.tanggal.split("T")[0],
+      jenis_layanan: konseling.jenis_layanan,
+      bidang_bimbingan: konseling.bidang_bimbingan,
+      tingkat_urgensi: konseling.tingkat_urgensi || "",
+      kategori_masalah: konseling.kategori_masalah || "",
+      permasalahan: konseling.permasalahan,
+      kronologi: konseling.kronologi,
+      tindakan_layanan: konseling.tindakan_layanan,
+      hasil_layanan: konseling.hasil_layanan,
+      rencana_tindak_lanjut: konseling.rencana_tindak_lanjut,
+      perlu_followup: konseling.perlu_followup || false,
+      tanggal_followup: konseling.tanggal_followup || "",
+      status_layanan: konseling.status_layanan,
+    });
+    setSelectedKonseling(konseling);
+    setModalMode("edit");
+    setShowModal(true);
+  };
+
+  const openViewModal = (konseling) => {
+    setSelectedKonseling(konseling);
+    setModalMode("view");
+    setShowModal(true);
+  };
+
+  const handleFormChange = (updates) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
+  };
+
+  // ✅ UPDATED: handleSubmit dengan field baru + validasi
+  const handleSubmit = async () => {
+    try {
+      // Validasi field wajib
+      if (!formData.student_id) {
+        onShowToast("Pilih siswa terlebih dahulu", "error");
+        return;
+      }
+      if (!formData.tanggal) {
+        onShowToast("Tanggal konseling wajib diisi", "error");
+        return;
+      }
+      if (!formData.jenis_layanan) {
+        onShowToast("Jenis layanan wajib dipilih", "error");
+        return;
+      }
+      if (!formData.bidang_bimbingan) {
+        onShowToast("Bidang bimbingan wajib dipilih", "error");
+        return;
+      }
+      if (!formData.tingkat_urgensi) {
+        onShowToast("Tingkat urgensi wajib dipilih", "error");
+        return;
+      }
+      if (!formData.kategori_masalah) {
+        onShowToast("Kategori masalah wajib dipilih", "error");
+        return;
+      }
+      if (!formData.permasalahan?.trim()) {
+        onShowToast("Permasalahan wajib diisi", "error");
+        return;
+      }
+      if (!formData.kronologi?.trim()) {
+        onShowToast("Kronologi wajib diisi", "error");
+        return;
+      }
+      // Validasi: Jika perlu follow-up, tanggal follow-up wajib diisi
+      if (formData.perlu_followup && !formData.tanggal_followup) {
+        onShowToast("Tanggal follow-up wajib diisi jika perlu follow-up", "error");
+        return;
+      }
+
+      setLoading(true);
+
+      // Data yang akan disimpan
+      const konselingData = {
+        student_id: formData.student_id,
+        nis: formData.nis,
+        full_name: formData.full_name,
+        gender: formData.gender,
+        class_id: formData.class_id,
+        tanggal: formData.tanggal,
+        jenis_layanan: formData.jenis_layanan,
+        bidang_bimbingan: formData.bidang_bimbingan,
+        tingkat_urgensi: formData.tingkat_urgensi, // NEW
+        kategori_masalah: formData.kategori_masalah, // NEW
+        permasalahan: formData.permasalahan,
+        kronologi: formData.kronologi,
+        tindakan_layanan: formData.tindakan_layanan || null,
+        hasil_layanan: formData.hasil_layanan || null,
+        rencana_tindak_lanjut: formData.rencana_tindak_lanjut || null,
+        perlu_followup: formData.perlu_followup, // NEW
+        tanggal_followup: formData.tanggal_followup || null, // NEW
+        status_layanan: formData.status_layanan,
+        guru_bk_id: user.id,
+        guru_bk_name: user.full_name,
+        // FIX: pakai state academicYear/semester (hasil fetch dari database),
+        // bukan string hardcode. Data konseling yang tersimpan otomatis
+        // tercatat di tahun ajaran & semester yang benar-benar aktif.
+        academic_year: academicYear,
+        semester: semester,
+      };
+
+      if (modalMode === "add") {
+        const { data, error } = await supabase.from("konseling").insert([konselingData]).select();
+
+        if (error) {
+          console.error("Supabase error:", error);
+          throw error;
+        }
+
+        onShowToast("Data konseling berhasil ditambahkan", "success");
+      } else {
+        const { data, error } = await supabase
+          .from("konseling")
+          .update(konselingData)
+          .eq("id", selectedKonseling.id)
+          .select();
+
+        if (error) {
+          console.error("Supabase error:", error);
+          throw error;
+        }
+
+        onShowToast("Data konseling berhasil diupdate", "success");
+      }
+
+      setShowModal(false);
+      await loadKonselingData();
+    } catch (error) {
+      console.error("Error saving konseling data:", error);
+      onShowToast(`Error: ${error.message || "Gagal menyimpan data"}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete functions
+  const handleDelete = (id, studentName) => {
+    setDeleteConfirm({ show: true, id, studentName });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.id) return;
+    try {
+      setLoading(true);
+      const { error } = await supabase.from("konseling").delete().eq("id", deleteConfirm.id);
+      if (error) throw error;
+      onShowToast("Data konseling berhasil dihapus", "success");
+      await loadKonselingData();
+    } catch (error) {
+      console.error("Error deleting konseling data:", error);
+      onShowToast("Error menghapus data konseling", "error");
+    } finally {
+      setLoading(false);
+      setDeleteConfirm({ show: false, id: null, studentName: "" });
+    }
+  };
+
+  // Export PDF
+  const handleExportPDF = async (item) => {
+    try {
+      await exportKonselingPDF(item);
+      onShowToast("PDF berhasil diunduh", "success");
+    } catch (error) {
+      onShowToast("Error membuat PDF", "error");
+    }
+  };
+
+  // ✅ NEW: Export Laporan Bulanan
+  const handleExportLaporanBulanan = async () => {
+    const dataBulanIni = konselingData.filter((item) => {
+      if (!item.tanggal) return false;
+      const tgl = new Date(item.tanggal);
+      return (
+        tgl.getMonth() + 1 === Number(laporanBulan) && tgl.getFullYear() === Number(laporanTahun)
+      );
+    });
+
+    if (dataBulanIni.length === 0) {
+      onShowToast("Tidak ada data konseling pada bulan tersebut", "error");
+      return;
+    }
+
+    try {
+      setExportingLaporan(true);
+      await exportLaporanBulananPDF(dataBulanIni, laporanBulan, laporanTahun);
+      onShowToast("Laporan bulanan berhasil diunduh", "success");
+    } catch (error) {
+      console.error("Error generating laporan bulanan:", error);
+      onShowToast("Error membuat laporan bulanan", "error");
+    } finally {
+      setExportingLaporan(false);
+    }
+  };
+
+  return (
+    <div className="p-4 sm:p-5 md:p-6 lg:p-6">
+      {/* Header */}
+      <div className="mb-4 sm:mb-5 md:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-1 sm:mb-2">
+          Konseling BK/BP
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+          Manajemen data konseling dan bimbingan siswa
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <StatsCards stats={stats} />
+
+      {/* ✅ NEW: Laporan Bulanan */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6">
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          Cetak Laporan Bulanan
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+          <div className="flex-1">
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Bulan</label>
+            <select
+              value={laporanBulan}
+              onChange={(e) => setLaporanBulan(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            >
+              {[
+                "Januari",
+                "Februari",
+                "Maret",
+                "April",
+                "Mei",
+                "Juni",
+                "Juli",
+                "Agustus",
+                "September",
+                "Oktober",
+                "November",
+                "Desember",
+              ].map((nama, idx) => (
+                <option key={idx + 1} value={idx + 1}>
+                  {nama}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex-1 sm:max-w-[140px]">
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Tahun</label>
+            <input
+              type="number"
+              value={laporanTahun}
+              onChange={(e) => setLaporanTahun(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+
+          <button
+            onClick={handleExportLaporanBulanan}
+            disabled={exportingLaporan}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+          >
+            {exportingLaporan ? "Membuat PDF..." : "Cetak Laporan"}
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <FilterBar
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onResetFilters={resetFilters}
+        onOpenAddModal={openAddModal}
+      />
+
+      {/* Table */}
+      <KonselingTable
+        data={filteredKonseling}
+        loading={loading}
+        onView={openViewModal}
+        onEdit={openEditModal}
+        onDelete={handleDelete}
+        onExportPDF={handleExportPDF}
+      />
+
+      {/* Modals */}
+      <KonselingModal
+        show={showModal}
+        mode={modalMode}
+        formData={formData}
+        students={students}
+        classes={classes}
+        onClose={() => setShowModal(false)}
+        onSubmit={handleSubmit}
+        onFormChange={handleFormChange}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md mx-2 sm:mx-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-5 sm:p-6 rounded-t-xl">
+              <div className="flex items-center gap-3">
+                <XCircle
+                  className="text-red-600 dark:text-red-400"
+                  size={24}
+                  style={{ width: "22px", height: "22px" }}
+                  aria-hidden="true"
+                />
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-300">
+                    Konfirmasi Hapus
+                  </h2>
+                  <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm mt-0.5">
+                    Data konseling akan dihapus permanen
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-5 sm:p-6">
+              <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm sm:text-base">
+                Apakah Anda yakin ingin menghapus data konseling untuk siswa{" "}
+                <strong className="font-semibold">{deleteConfirm.studentName}</strong>?
+              </p>
+              <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 mb-5 sm:mb-6">
+                Tindakan ini tidak dapat dibatalkan!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={confirmDelete}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg disabled:opacity-50 font-medium text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200"
+                >
+                  {loading ? "Menghapus..." : "Ya, Hapus"}
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm({ show: false, id: null, studentName: "" })}
+                  disabled={loading}
+                  className="px-4 sm:px-6 py-3 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-gray-700 rounded-lg disabled:opacity-50 text-sm sm:text-base min-h-[44px] touch-target transition-colors duration-200"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Konseling;
