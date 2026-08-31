@@ -12,6 +12,12 @@ const CATEGORIES = [
     desc: "Cara belajar efektif, tips ujian, teknik menghafal",
   },
   {
+    key: "subject_material",
+    label: "Materi Pelajaran",
+    icon: "📖",
+    desc: "Materi ringan seputar pelajaran sekolah",
+  },
+  {
     key: "digital_literacy",
     label: "Literasi Digital",
     icon: "💻",

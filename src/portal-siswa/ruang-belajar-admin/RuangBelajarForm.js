@@ -6,6 +6,7 @@ import { supabase } from "../../supabaseClient"; // sesuaikan path kalau beda
 
 const CATEGORY_OPTIONS = [
   { value: "learning", label: "🧠 Tips Belajar" },
+  { value: "subject_material", label: "📖 Materi Pelajaran" },
   { value: "digital_literacy", label: "💻 Literasi Digital" },
   { value: "self_development", label: "🎯 Pengembangan Diri" },
   { value: "general_knowledge", label: "🌱 Pengetahuan Umum" },

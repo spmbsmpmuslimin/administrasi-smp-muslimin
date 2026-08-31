@@ -8,6 +8,7 @@ import { supabase } from "../../supabaseClient"; // sesuaikan path kalau beda
 
 const CATEGORIES = [
   { key: "learning", label: "Tips Belajar", icon: "🧠" },
+  { key: "subject_material", label: "Materi Pelajaran", icon: "📖" },
   { key: "digital_literacy", label: "Literasi Digital", icon: "💻" },
   { key: "self_development", label: "Pengembangan Diri", icon: "🎯" },
   { key: "general_knowledge", label: "Pengetahuan Umum", icon: "🌱" },

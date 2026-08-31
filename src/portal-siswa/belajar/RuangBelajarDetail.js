@@ -3,6 +3,7 @@
 // gak fetch ulang ke Supabase.
 const CATEGORY_LABEL = {
   learning: "🧠 Tips Belajar",
+  subject_material: "📖 Materi Pelajaran",
   digital_literacy: "💻 Literasi Digital",
   self_development: "🎯 Pengembangan Diri",
   general_knowledge: "🌱 Pengetahuan Umum",
