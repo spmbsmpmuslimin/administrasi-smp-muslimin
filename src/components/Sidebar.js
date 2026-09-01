@@ -5,7 +5,15 @@ import { supabase } from "../supabaseClient";
 import { sidebarGroups } from "../config/sidebarConfig";
 
 // ========== Sub-komponen: 1 baris menu ==========
-const MenuLink = ({ page, label, icon, isCollapsed, isActive, indent, onClick }) => (
+const MenuLink = ({
+  page,
+  label,
+  icon,
+  isCollapsed,
+  isActive,
+  indent,
+  onClick,
+}) => (
   <a
     href={`#${page}`}
     className={`
@@ -22,11 +30,20 @@ const MenuLink = ({ page, label, icon, isCollapsed, isActive, indent, onClick })
       e.preventDefault();
       onClick(page);
     }}
-    title={isCollapsed ? label : ""}
-  >
-    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    title={isCollapsed ? label : ""}>
+    <svg
+      className="w-5 h-5 flex-shrink-0"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24">
       {icon.map((d, i) => (
-        <path key={i} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={d} />
+        <path
+          key={i}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d={d}
+        />
       ))}
     </svg>
     {!isCollapsed && <span className="flex-1 text-sm">{label}</span>}
@@ -70,7 +87,10 @@ const Sidebar = ({
   useEffect(() => {
     const fetchEraportStatus = async () => {
       try {
-        const { data } = await supabase.from("eraport_settings").select("is_active").single();
+        const { data } = await supabase
+          .from("eraport_settings")
+          .select("is_active")
+          .single();
         setEraportActive(data?.is_active ?? true);
       } catch (error) {
         console.error("Error fetching eraport status:", error);
@@ -85,7 +105,7 @@ const Sidebar = ({
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "eraport_settings" },
-        (payload) => setEraportActive(payload.new.is_active)
+        (payload) => setEraportActive(payload.new.is_active),
       )
       .subscribe();
 
@@ -128,10 +148,18 @@ const Sidebar = ({
   };
 
   // ⭐ ctx dipakai semua show()/label()/page() function di sidebarConfig.js
-  const ctx = { isAdmin, isTeacher, isGuruBK, isWaliKelas, userRole, eraportActive };
+  const ctx = {
+    isAdmin,
+    isTeacher,
+    isGuruBK,
+    isWaliKelas,
+    userRole,
+    eraportActive,
+  };
 
   return (
-    <div className={`h-screen transition-colors duration-300 ${isDarkMode ? "dark" : ""}`}>
+    <div
+      className={`h-screen transition-colors duration-300 ${isDarkMode ? "dark" : ""}`}>
       <div
         className={`
         h-full transition-all duration-300 flex flex-col
@@ -140,16 +168,18 @@ const Sidebar = ({
         sm:translate-x-0 sm:relative
         bg-blue-900 dark:bg-gray-900 text-white border-r border-blue-800 dark:border-gray-800
         overflow-y-auto
-      `}
-      >
+      `}>
         {/* Header */}
         <div className="p-4 sm:p-6 border-b border-blue-700 dark:border-gray-800">
           {onClose && (
             <button
               onClick={onClose}
-              className="lg:hidden absolute top-4 right-4 p-2 text-blue-400 hover:text-white"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              className="lg:hidden absolute top-4 right-4 p-2 text-blue-400 hover:text-white">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -164,9 +194,12 @@ const Sidebar = ({
             <button
               onClick={onToggleCollapse}
               className="hidden lg:block p-2 text-blue-300 hover:text-white dark:text-gray-400 dark:hover:text-white"
-              title="Expand sidebar"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              title="Expand sidebar">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -177,12 +210,12 @@ const Sidebar = ({
             </button>
           )}
 
-          <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
+          <div
+            className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
             <div
               className={`${
                 isCollapsed ? "w-10 h-10" : "w-10 h-10 sm:w-12 sm:h-12"
-              } bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden shadow-lg`}
-            >
+              } bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden shadow-lg`}>
               <img
                 src={sekolahLogo}
                 alt="Logo SMP Muslimin Cililin"
@@ -211,7 +244,9 @@ const Sidebar = ({
 
             // Filter item yang lolos show() dulu, biar tau apakah grup ini
             // akhirnya kosong (kalau kosong, jangan render header-nya).
-            const visibleItems = group.items.filter((item) => (item.show ? item.show(ctx) : true));
+            const visibleItems = group.items.filter((item) =>
+              item.show ? item.show(ctx) : true,
+            );
             if (visibleItems.length === 0) return null;
 
             return (
@@ -223,8 +258,14 @@ const Sidebar = ({
                 )}
 
                 {visibleItems.map((item) => {
-                  const resolvedPage = typeof item.page === "function" ? item.page(ctx) : item.page;
-                  const label = typeof item.label === "function" ? item.label(ctx) : item.label;
+                  const resolvedPage =
+                    typeof item.page === "function"
+                      ? item.page(ctx)
+                      : item.page;
+                  const label =
+                    typeof item.label === "function"
+                      ? item.label(ctx)
+                      : item.label;
                   const isActive = item.highlightPages
                     ? item.highlightPages.includes(currentPage)
                     : currentPage === resolvedPage;
@@ -232,7 +273,10 @@ const Sidebar = ({
                   return (
                     <React.Fragment key={resolvedPage}>
                       {item.sectionHeader && !isCollapsed && (
-                        <SectionHeader text={item.sectionHeader} style={item.sectionHeaderStyle} />
+                        <SectionHeader
+                          text={item.sectionHeader}
+                          style={item.sectionHeaderStyle}
+                        />
                       )}
                       <MenuLink
                         page={resolvedPage}
@@ -254,15 +298,16 @@ const Sidebar = ({
         {/* User Profile Section */}
         <div
           className={`mt-auto border-t ${
-            isDarkMode ? "border-gray-800 bg-gray-800" : "border-blue-700 bg-blue-800"
-          } p-4`}
-        >
-          <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
+            isDarkMode
+              ? "border-gray-800 bg-gray-800"
+              : "border-blue-700 bg-blue-800"
+          } p-4`}>
+          <div
+            className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
             <div
               className={`w-10 h-10 ${
                 isDarkMode ? "bg-blue-700" : "bg-blue-600"
-              } rounded-full flex items-center justify-center flex-shrink-0 shadow-md`}
-            >
+              } rounded-full flex items-center justify-center flex-shrink-0 shadow-md`}>
               <span className="text-white font-bold text-sm">{initials}</span>
             </div>
 
@@ -271,13 +316,11 @@ const Sidebar = ({
                 <div
                   className={`text-sm font-bold truncate ${
                     isDarkMode ? "text-gray-100" : "text-white"
-                  }`}
-                >
+                  }`}>
                   {fullName}
                 </div>
                 <div
-                  className={`text-xs truncate ${isDarkMode ? "text-gray-400" : "text-blue-200"}`}
-                >
+                  className={`text-xs truncate ${isDarkMode ? "text-gray-400" : "text-blue-200"}`}>
                   {roleName}
                 </div>
               </div>

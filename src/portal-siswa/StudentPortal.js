@@ -19,9 +19,14 @@ import StudentDashboard from "./StudentDashboard";
 import StudentJadwal from "./StudentJadwal";
 import StudentPresensi from "./StudentPresensi";
 import StudentInfo from "./StudentInfo";
-import BelajarMain from "./belajar/BelajarMain";
+import BelajarMain from "./ruang-belajar-siswa/BelajarMain";
 
-export default function StudentPortal({ user, onShowToast, darkMode, onLogout }) {
+export default function StudentPortal({
+  user,
+  onShowToast,
+  darkMode,
+  onLogout,
+}) {
   const [currentPage, setCurrentPage] = useState("student-dashboard");
   // Menu StudentInfo yang harus langsung kebuka (mis. "profile"). null =
   // tampilan grid biasa. Direset ke null tiap kali pindah ke halaman lain
@@ -67,8 +72,7 @@ export default function StudentPortal({ user, onShowToast, darkMode, onLogout })
       currentPage={currentPage}
       onPageChange={handlePageChange}
       currentUser={user}
-      onLogout={onLogout}
-    >
+      onLogout={onLogout}>
       {renderPage()}
     </StudentLayout>
   );

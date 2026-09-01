@@ -251,7 +251,8 @@ export const menuConfig = [
   {
     path: "/ruang-belajar-admin",
     component: RuangBelajarAdmin,
-    allowedRoles: ["admin"],
+    allowedRoles: ["admin", "teacher"],
+    requireRuangBelajarAccess: true, // ← whitelist by user id, lihat config/ruangBelajarAccess.js
   },
 
   // ===== PERPUSTAKAAN =====

@@ -1,4 +1,4 @@
-// portal-siswa/belajar/BelajarMain.js
+// portal-siswa/ruang-belajar-siswa/BelajarMain.js
 // Alur: categories (landing, default) -> browse (list terfilter) -> detail.
 // Klik "Belajar" di navbar = masuk sini, level "categories".
 import { useState } from "react";

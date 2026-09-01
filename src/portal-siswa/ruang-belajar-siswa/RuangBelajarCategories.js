@@ -1,4 +1,4 @@
-// portal-siswa/belajar/RuangBelajarCategories.js
+// portal-siswa/ruang-belajar-siswa/RuangBelajarCategories.js
 // Landing screen Ruang Belajar. Ini yang PERTAMA muncul pas siswa klik
 // "Belajar" di navbar -- tujuannya biar siswa langsung ngeh mau buka
 // kategori yang mana, bukan ketemu search+list+rekomendasi sekaligus.

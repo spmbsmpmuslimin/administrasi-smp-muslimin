@@ -7,7 +7,9 @@ import {
   ClipboardCheck,
   LayoutGrid,
   Network,
+  BookOpen,
 } from "lucide-react";
+import { shouldShowRuangBelajarMenu } from "../config/ruangBelajarAccess"; // sesuaikan path relatif
 
 // path di bawah HARUS match dengan menuConfig.js
 const menuItems = [
@@ -58,15 +60,33 @@ const menuItems = [
 export default function PortalSiswaGuru({ user, onShowToast, darkMode }) {
   const navigate = useNavigate();
 
+  // ✅ "Kelola Ruang Belajar" cuma nongol buat user yang di-whitelist
+  // (lihat config/ruangBelajarAccess.js) — bukan buat semua wali kelas,
+  // makanya ga ditaruh statis di array menuItems kayak card lain.
+  const visibleItems = shouldShowRuangBelajarMenu(user?.id)
+    ? [
+        ...menuItems,
+        {
+          title: "Kelola Ruang Belajar",
+          description: "Kelola konten materi & tips belajar siswa",
+          icon: BookOpen,
+          path: "/ruang-belajar-admin",
+          color: "bg-teal-100 text-teal-600",
+        },
+      ]
+    : menuItems;
+
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-1">Portal Siswa</h1>
+      <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-1">
+        Portal Siswa
+      </h1>
       <p className="text-sm text-slate-500 mb-6">
         Akses cepat ke seluruh data dan aktivitas siswa di kelas Anda
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {menuItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
             <button
@@ -74,18 +94,18 @@ export default function PortalSiswaGuru({ user, onShowToast, darkMode }) {
               onClick={() => navigate(item.path)}
               className="group text-left bg-white rounded-2xl border border-slate-200 p-4 shadow-sm
                          hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5
-                         transition-all duration-200 flex flex-col gap-3"
-            >
+                         transition-all duration-200 flex flex-col gap-3">
               <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.color}`}
-              >
+                className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.color}`}>
                 <Icon size={22} />
               </div>
               <div>
                 <h3 className="font-semibold text-slate-800 text-sm md:text-base group-hover:text-blue-600">
                   {item.title}
                 </h3>
-                <p className="text-xs md:text-sm text-slate-500 mt-0.5">{item.description}</p>
+                <p className="text-xs md:text-sm text-slate-500 mt-0.5">
+                  {item.description}
+                </p>
               </div>
             </button>
           );

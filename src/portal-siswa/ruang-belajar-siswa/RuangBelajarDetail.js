@@ -1,4 +1,4 @@
-// portal-siswa/belajar/RuangBelajarDetail.js
+// portal-siswa/ruang-belajar-siswa/RuangBelajarDetail.js
 // Detail 1 konten Ruang Belajar. Nerima `resource` penuh dari Home,
 // gak fetch ulang ke Supabase.
 const CATEGORY_LABEL = {

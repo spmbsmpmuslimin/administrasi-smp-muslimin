@@ -1,8 +1,15 @@
-// portal-siswa/belajar/RuangBelajarHome.js
+// portal-siswa/ruang-belajar-siswa/RuangBelajarHome.js
 // Layar "browse" Ruang Belajar -- muncul SETELAH siswa milih kategori
 // (atau search / "Lihat Semua") dari RuangBelajarCategories.js.
 // Nerima initialCategory & initialSearch buat langsung kefilter begitu
 // masuk, plus onBack buat balik ke landing kategori.
+//
+// ⚠️ FIX: kalau masuk lewat klik kategori spesifik (initialCategory ada
+// isinya), pill-pill kategori (termasuk "Semua") DISEMBUNYIIN. Soalnya
+// user udah milih kategori dari landing, harusnya langsung liat konten
+// kategori itu doang, bukan ketemu tab-tab kategori lain lagi.
+// Pill cuma muncul kalau masuk lewat "Lihat Semua Materi" / search dari
+// landing (initialCategory === null), biar tetep bisa narrow-down manual.
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient"; // sesuaikan path kalau beda
 
@@ -33,6 +40,10 @@ export default function RuangBelajarHome({
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialSearch);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
+
+  // Kalau masuk lewat klik kategori spesifik, kategori ini "terkunci" —
+  // ga ada pill switcher, langsung fokus ke konten kategori itu.
+  const isCategoryLocked = Boolean(initialCategory);
 
   useEffect(() => {
     fetchResources();
@@ -101,23 +112,28 @@ export default function RuangBelajarHome({
         className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
-      <div className="flex flex-wrap gap-2">
-        <CategoryPill
-          label="Semua"
-          icon="📚"
-          active={activeCategory === null}
-          onClick={() => setActiveCategory(null)}
-        />
-        {CATEGORIES.map((c) => (
+      {!isCategoryLocked && (
+        <div className="space-y-2">
           <CategoryPill
-            key={c.key}
-            label={c.label}
-            icon={c.icon}
-            active={activeCategory === c.key}
-            onClick={() => setActiveCategory(c.key)}
+            label="Semua"
+            icon="📚"
+            active={activeCategory === null}
+            onClick={() => setActiveCategory(null)}
+            fullWidth
           />
-        ))}
-      </div>
+          <div className="grid grid-cols-3 gap-2">
+            {CATEGORIES.map((c) => (
+              <CategoryPill
+                key={c.key}
+                label={c.label}
+                icon={c.icon}
+                active={activeCategory === c.key}
+                onClick={() => setActiveCategory(c.key)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         {filtered.length === 0 ? (
@@ -140,16 +156,21 @@ export default function RuangBelajarHome({
   );
 }
 
-function CategoryPill({ label, icon, active, onClick }) {
+function CategoryPill({ label, icon, active, onClick, fullWidth = false }) {
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+      className={`w-full rounded-xl text-xs font-medium transition-colors leading-tight ${
+        fullWidth
+          ? "flex items-center justify-center gap-2 py-2.5"
+          : "flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-center"
+      } ${
         active
           ? "bg-blue-600 text-white"
           : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
       }`}>
-      {icon} {label}
+      <span className={fullWidth ? "text-base" : "text-lg"}>{icon}</span>
+      <span>{label}</span>
     </button>
   );
 }
