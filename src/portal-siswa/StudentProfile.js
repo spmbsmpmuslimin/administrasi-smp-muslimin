@@ -58,11 +58,11 @@ function isValidPhone(raw) {
 // Data Calon Siswa, Bagian B: Data Orang Tua/Wali) biar data yang keisi
 // pas daftar dulu bisa dilanjut/dilengkapi siswa sendiri dari portal ini.
 //
-// Field yang KEMUNGKINAN belum ada kolomnya di tabel `student_profile_details`
-// dan perlu ditambahin (lihat migrasi SQL yang dikirim terpisah):
-//   jenis_kelamin, tempat_lahir, tanggal_lahir, nisn,
-//   nama_ayah, pekerjaan_ayah, pendidikan_ayah,
-//   nama_ibu, pekerjaan_ibu, pendidikan_ibu
+// Field identitas resmi tambahan (agama, NIK, No. KK, akta lahir, ijazah,
+// no peserta ujian, dusun, kode pos, NIK ortu, tempat/tgl lahir ortu,
+// No. KIP, anak ke-, keterangan, no daftar) udah ditambahin ke form ini
+// dan ke query di useStudentProfile.js — kolomnya udah ada di tabel
+// student_profile_details (lihat DDL terbaru).
 // Field lama yang generic (nama_ortu) udah gak dipake di form ini karena
 // dipecah jadi Ayah/Ibu terpisah — kolom lamanya dibiarin aja di DB (gak
 // didrop) buat jaga-jaga data lama, tapi UI-nya udah gak nampilin/isi itu.
@@ -72,6 +72,14 @@ function isValidPhone(raw) {
 // data yang tampil langsung ke-update tanpa reload halaman.
 
 const PENDIDIKAN_OPTIONS = ["SD", "SMP", "SMA", "D3", "S1", "S2"];
+const AGAMA_OPTIONS = [
+  "Islam",
+  "Kristen",
+  "Katolik",
+  "Hindu",
+  "Buddha",
+  "Konghucu",
+];
 
 function formatTanggalLahir(dateStr) {
   if (!dateStr) return null;
@@ -112,6 +120,22 @@ export function ProfileInfo({ student, onUpdated }) {
     pekerjaan_ibu: "",
     pendidikan_ibu: "",
     no_hp_ortu: "",
+    agama: "",
+    nik: "",
+    no_kk: "",
+    no_akta_lahir: "",
+    dusun: "",
+    kode_pos: "",
+    anak_ke: "",
+    no_kip: "",
+    no_ijazah: "",
+    no_peserta_ujian: "",
+    no_daftar: "",
+    nik_ayah: "",
+    tempat_tgl_lahir_ayah: "",
+    nik_ibu: "",
+    tempat_tgl_lahir_ibu: "",
+    keterangan: "",
   });
 
   // Sinkronin form pas data student berubah (pertama kali load, atau
@@ -131,6 +155,22 @@ export function ProfileInfo({ student, onUpdated }) {
       pekerjaan_ibu: student?.pekerjaan_ibu || "",
       pendidikan_ibu: student?.pendidikan_ibu || "",
       no_hp_ortu: student?.no_hp_ortu || "",
+      agama: student?.agama || "",
+      nik: student?.nik || "",
+      no_kk: student?.no_kk || "",
+      no_akta_lahir: student?.no_akta_lahir || "",
+      dusun: student?.dusun || "",
+      kode_pos: student?.kode_pos || "",
+      anak_ke: student?.anak_ke ?? "",
+      no_kip: student?.no_kip || "",
+      no_ijazah: student?.no_ijazah || "",
+      no_peserta_ujian: student?.no_peserta_ujian || "",
+      no_daftar: student?.no_daftar || "",
+      nik_ayah: student?.nik_ayah || "",
+      tempat_tgl_lahir_ayah: student?.tempat_tgl_lahir_ayah || "",
+      nik_ibu: student?.nik_ibu || "",
+      tempat_tgl_lahir_ibu: student?.tempat_tgl_lahir_ibu || "",
+      keterangan: student?.keterangan || "",
     });
   }, [student]);
 
@@ -152,20 +192,44 @@ export function ProfileInfo({ student, onUpdated }) {
     },
     { label: "Sekolah Asal", value: student?.sekolah_asal || "-" },
     { label: "Alamat Lengkap", value: student?.alamat || "-" },
+    { label: "Dusun", value: student?.dusun || "-" },
+    { label: "Kode Pos", value: student?.kode_pos || "-" },
     { label: "No. HP Siswa (Kalau Ada)", value: student?.no_hp || "-" },
+    { label: "Agama", value: student?.agama || "-" },
+    { label: "Anak Ke-", value: student?.anak_ke || "-" },
+    { label: "NIK", value: student?.nik || "-" },
+    { label: "No. Kartu Keluarga (KK)", value: student?.no_kk || "-" },
+    { label: "No. Akta Lahir", value: student?.no_akta_lahir || "-" },
+    { label: "No. KIP", value: student?.no_kip || "-" },
     // divider: true -> section ini yang jadi pemisah antara blok Data
     // Siswa & Data Orangtua (garis lebih tegas, bukan section biasa).
     { section: "Data Orangtua", divider: true },
     { label: "Nama Lengkap Ayah", value: student?.nama_ayah || "-" },
+    { label: "NIK Ayah", value: student?.nik_ayah || "-" },
+    {
+      label: "Tempat, Tanggal Lahir Ayah",
+      value: student?.tempat_tgl_lahir_ayah || "-",
+    },
     { label: "Pekerjaan Ayah", value: student?.pekerjaan_ayah || "-" },
     {
       label: "Pendidikan Terakhir Ayah",
       value: student?.pendidikan_ayah || "-",
     },
     { label: "Nama Lengkap Ibu", value: student?.nama_ibu || "-" },
+    { label: "NIK Ibu", value: student?.nik_ibu || "-" },
+    {
+      label: "Tempat, Tanggal Lahir Ibu",
+      value: student?.tempat_tgl_lahir_ibu || "-",
+    },
     { label: "Pekerjaan Ibu", value: student?.pekerjaan_ibu || "-" },
     { label: "Pendidikan Terakhir Ibu", value: student?.pendidikan_ibu || "-" },
     { label: "No. HP Orang Tua/Wali", value: student?.no_hp_ortu || "-" },
+    // divider: true -> pemisah blok Data Orangtua & Data Kelulusan/Lainnya.
+    { section: "Data Kelulusan & Lainnya", divider: true },
+    { label: "No. Ijazah", value: student?.no_ijazah || "-" },
+    { label: "No. Peserta Ujian", value: student?.no_peserta_ujian || "-" },
+    { label: "No. Daftar", value: student?.no_daftar || "-" },
+    { label: "Keterangan", value: student?.keterangan || "-" },
   ];
 
   const handleSubmit = async (e) => {
@@ -221,6 +285,22 @@ export function ProfileInfo({ student, onUpdated }) {
             no_hp_ortu: form.no_hp_ortu
               ? normalizePhone(form.no_hp_ortu)
               : null,
+            agama: form.agama || null,
+            nik: form.nik || null,
+            no_kk: form.no_kk || null,
+            no_akta_lahir: form.no_akta_lahir || null,
+            dusun: form.dusun || null,
+            kode_pos: form.kode_pos || null,
+            anak_ke: form.anak_ke === "" ? null : Number(form.anak_ke),
+            no_kip: form.no_kip || null,
+            no_ijazah: form.no_ijazah || null,
+            no_peserta_ujian: form.no_peserta_ujian || null,
+            no_daftar: form.no_daftar || null,
+            nik_ayah: form.nik_ayah || null,
+            tempat_tgl_lahir_ayah: form.tempat_tgl_lahir_ayah || null,
+            nik_ibu: form.nik_ibu || null,
+            tempat_tgl_lahir_ibu: form.tempat_tgl_lahir_ibu || null,
+            keterangan: form.keterangan || null,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "student_id" },
@@ -279,6 +359,23 @@ export function ProfileInfo({ student, onUpdated }) {
             </div>
           </div>
 
+          <div>
+            <label className={labelClass}>Agama</label>
+            <select
+              value={form.agama}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, agama: e.target.value }))
+              }
+              className={inputClass}>
+              <option value="">Pilih agama</option>
+              {AGAMA_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Tempat Lahir</label>
@@ -320,6 +417,42 @@ export function ProfileInfo({ student, onUpdated }) {
           </div>
 
           <div>
+            <label className={labelClass}>NIK</label>
+            <input
+              type="text"
+              value={form.nik}
+              onChange={(e) => setForm((f) => ({ ...f, nik: e.target.value }))}
+              placeholder="16 digit NIK siswa"
+              className={inputClass}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>No. Kartu Keluarga (KK)</label>
+              <input
+                type="text"
+                value={form.no_kk}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, no_kk: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>No. Akta Lahir</label>
+              <input
+                type="text"
+                value={form.no_akta_lahir}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, no_akta_lahir: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div>
             <label className={labelClass}>Sekolah Asal</label>
             <input
               type="text"
@@ -345,6 +478,31 @@ export function ProfileInfo({ student, onUpdated }) {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Dusun</label>
+              <input
+                type="text"
+                value={form.dusun}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, dusun: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Kode Pos</label>
+              <input
+                type="text"
+                value={form.kode_pos}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, kode_pos: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+          </div>
+
           <div>
             <label className={labelClass}>No. HP Siswa (Kalau Ada)</label>
             <input
@@ -356,6 +514,32 @@ export function ProfileInfo({ student, onUpdated }) {
               placeholder="08xxxxxxxxxx"
               className={inputClass}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Anak Ke-</label>
+              <input
+                type="number"
+                min="1"
+                value={form.anak_ke}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, anak_ke: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>No. KIP (Kalau Ada)</label>
+              <input
+                type="text"
+                value={form.no_kip}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, no_kip: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
           </div>
         </div>
 
@@ -376,6 +560,35 @@ export function ProfileInfo({ student, onUpdated }) {
               className={inputClass}
             />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>NIK Ayah</label>
+              <input
+                type="text"
+                value={form.nik_ayah}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, nik_ayah: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Tempat, Tgl Lahir Ayah</label>
+              <input
+                type="text"
+                value={form.tempat_tgl_lahir_ayah}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    tempat_tgl_lahir_ayah: e.target.value,
+                  }))
+                }
+                placeholder="Contoh: BANDUNG, 29/12/1989"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
           <div>
             <label className={labelClass}>Pekerjaan Ayah</label>
             <input
@@ -417,6 +630,35 @@ export function ProfileInfo({ student, onUpdated }) {
               className={inputClass}
             />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>NIK Ibu</label>
+              <input
+                type="text"
+                value={form.nik_ibu}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, nik_ibu: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Tempat, Tgl Lahir Ibu</label>
+              <input
+                type="text"
+                value={form.tempat_tgl_lahir_ibu}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    tempat_tgl_lahir_ibu: e.target.value,
+                  }))
+                }
+                placeholder="Contoh: BANDUNG, 05/09/1993"
+                className={inputClass}
+              />
+            </div>
+          </div>
+
           <div>
             <label className={labelClass}>Pekerjaan Ibu</label>
             <input
@@ -455,6 +697,60 @@ export function ProfileInfo({ student, onUpdated }) {
                 setForm((f) => ({ ...f, no_hp_ortu: e.target.value }))
               }
               placeholder="08xxxxxxxxxx"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        {/* ---- Data Kelulusan & Lainnya ---- */}
+        <div className="mt-3 pt-4 border-t-2 border-theme space-y-3">
+          <p className="text-sm font-extrabold uppercase tracking-wide text-theme-secondary">
+            Data Kelulusan & Lainnya
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>No. Ijazah</label>
+              <input
+                type="text"
+                value={form.no_ijazah}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, no_ijazah: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>No. Peserta Ujian</label>
+              <input
+                type="text"
+                value={form.no_peserta_ujian}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, no_peserta_ujian: e.target.value }))
+                }
+                className={inputClass}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>No. Daftar</label>
+            <input
+              type="text"
+              value={form.no_daftar}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, no_daftar: e.target.value }))
+              }
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Keterangan</label>
+            <textarea
+              rows={2}
+              value={form.keterangan}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, keterangan: e.target.value }))
+              }
+              placeholder="Catatan tambahan (opsional)"
               className={inputClass}
             />
           </div>

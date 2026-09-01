@@ -36,14 +36,23 @@ import { exportStudentProfilePDF } from "./StudentProfilePDF";
 
 // Field yang dianggap "wajib" buat status Lengkap. Samain persis sama
 // field di form ProfileInfo (StudentProfile.js).
-const REQUIRED_FIELDS = ["alamat", "no_hp", "nama_ortu", "no_hp_ortu"];
+// ⚠️ UPDATE: `nama_ortu` udah gak dipake lagi di form (diganti nama_ayah +
+// nama_ibu) dan emang gak pernah keisi lagi di DB -- sebelumnya bikin
+// status siswa gak pernah bisa "Lengkap" walau udah isi semua data.
+const REQUIRED_FIELDS = [
+  "alamat",
+  "no_hp",
+  "nama_ayah",
+  "nama_ibu",
+  "no_hp_ortu",
+];
 
 // Tentuin status kelengkapan 1 siswa berdasarkan row student_profile_details
 // (bisa null kalau belum pernah isi sama sekali).
 function getCompletionStatus(detail) {
   if (!detail) return "belum";
   const filledCount = REQUIRED_FIELDS.filter(
-    (f) => detail[f] && String(detail[f]).trim() !== ""
+    (f) => detail[f] && String(detail[f]).trim() !== "",
   ).length;
   if (filledCount === 0) return "belum";
   if (filledCount === REQUIRED_FIELDS.length) return "lengkap";
@@ -73,13 +82,15 @@ const STATUS_META = {
   lengkap: {
     label: "Lengkap",
     icon: CheckCircle2,
-    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    badge:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
     dot: "bg-emerald-500",
   },
   sebagian: {
     label: "Sebagian",
     icon: AlertCircle,
-    badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    badge:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
     dot: "bg-amber-500",
   },
   belum: {
@@ -154,7 +165,8 @@ export default function StudentProfileCompletion({ currentUser }) {
   const hasFullAccess = isAdmin || isGuruBK;
   // Wali kelas (role "teacher" yang punya homeroom_class_id) tetap
   // ter-scope otomatis ke kelasnya sendiri, gak berubah dari sebelumnya.
-  const isWaliKelas = currentUser?.role === "teacher" && !!currentUser?.homeroom_class_id;
+  const isWaliKelas =
+    currentUser?.role === "teacher" && !!currentUser?.homeroom_class_id;
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +178,7 @@ export default function StudentProfileCompletion({ currentUser }) {
   const [jenjangFilter, setJenjangFilter] = useState("all"); // all | "7" | "8" | "9"
   const [classOptions, setClassOptions] = useState([]); // [{ id: "7A", jenjang: "7" }, ...]
   const [classFilter, setClassFilter] = useState(
-    hasFullAccess ? "all" : currentUser?.homeroom_class_id || "all"
+    hasFullAccess ? "all" : currentUser?.homeroom_class_id || "all",
   );
 
   // ====== SELEKSI SISWA UNTUK EXPORT PDF ======
@@ -200,7 +212,10 @@ export default function StudentProfileCompletion({ currentUser }) {
         // sendiri. Admin & Guru BK (hasFullAccess) gak di-filter, bisa
         // liat semua kelas/jenjang.
         if (isWaliKelas) {
-          studentQuery = studentQuery.eq("class_id", currentUser.homeroom_class_id);
+          studentQuery = studentQuery.eq(
+            "class_id",
+            currentUser.homeroom_class_id,
+          );
         }
 
         const [
@@ -216,9 +231,13 @@ export default function StudentProfileCompletion({ currentUser }) {
             // narik kolom lama, jadi Export PDF (StudentProfilePDF.js)
             // gak pernah nerima nilainya walau udah kesimpen di DB.
             .select(
-              "student_id, jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, updated_at"
+              "student_id, jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, updated_at",
             ),
-          supabase.from("academic_years").select("year").eq("is_active", true).limit(1),
+          supabase
+            .from("academic_years")
+            .select("year")
+            .eq("is_active", true)
+            .limit(1),
         ]);
 
         if (studentErr) throw studentErr;
@@ -274,7 +293,9 @@ export default function StudentProfileCompletion({ currentUser }) {
           const uniqueClasses = [
             ...new Set((students || []).map((s) => s.class_id).filter(Boolean)),
           ].sort();
-          setClassOptions(uniqueClasses.map((c) => ({ id: c, jenjang: getJenjang(c) })));
+          setClassOptions(
+            uniqueClasses.map((c) => ({ id: c, jenjang: getJenjang(c) })),
+          );
         }
       } catch (err) {
         console.error("[StudentProfileCompletion] Gagal memuat data:", err);
@@ -295,15 +316,16 @@ export default function StudentProfileCompletion({ currentUser }) {
           acc.total += 1;
           return acc;
         },
-        { total: 0, lengkap: 0, sebagian: 0, belum: 0 }
+        { total: 0, lengkap: 0, sebagian: 0, belum: 0 },
       ),
-    [rows]
+    [rows],
   );
 
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
-      if (jenjangFilter !== "all" && getJenjang(r.class_id) !== jenjangFilter) return false;
+      if (jenjangFilter !== "all" && getJenjang(r.class_id) !== jenjangFilter)
+        return false;
       if (classFilter !== "all" && r.class_id !== classFilter) return false;
       if (search.trim()) {
         const q = search.trim().toLowerCase();
@@ -317,7 +339,9 @@ export default function StudentProfileCompletion({ currentUser }) {
 
   // Daftar jenjang unik (7/8/9) dari classOptions, buat dropdown pertama.
   const jenjangOptions = useMemo(() => {
-    return [...new Set(classOptions.map((c) => c.jenjang).filter(Boolean))].sort();
+    return [
+      ...new Set(classOptions.map((c) => c.jenjang).filter(Boolean)),
+    ].sort();
   }, [classOptions]);
 
   // Dropdown Kelas (kedua) cuma nampilin kelas dari jenjang yang lagi
@@ -335,7 +359,7 @@ export default function StudentProfileCompletion({ currentUser }) {
 
   const paginatedRows = useMemo(
     () => filteredRows.slice(0, visibleCount),
-    [filteredRows, visibleCount]
+    [filteredRows, visibleCount],
   );
 
   // "Pilih semua" ngikutin hasil filter yang lagi ditampilin, bukan semua
@@ -409,7 +433,8 @@ export default function StudentProfileCompletion({ currentUser }) {
               Kelengkapan Data Siswa
             </h1>
             <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm">
-              Pantau siswa/orang tua yang sudah & belum melengkapi data alamat dan kontak.
+              Pantau siswa/orang tua yang sudah & belum melengkapi data alamat
+              dan kontak.
             </p>
           </div>
         </div>
@@ -442,17 +467,17 @@ export default function StudentProfileCompletion({ currentUser }) {
             return (
               <button
                 key={key}
-                onClick={() => setStatusFilter((f) => (f === key ? "all" : key))}
+                onClick={() =>
+                  setStatusFilter((f) => (f === key ? "all" : key))
+                }
                 className={`bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-md p-3 sm:p-4 border text-center transition ${
                   statusFilter === key
                     ? "border-indigo-400 dark:border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900"
                     : "border-slate-100 dark:border-slate-700"
-                }`}
-              >
+                }`}>
                 <div className="flex items-center justify-center mb-2">
                   <div
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-md ${meta.dot}`}
-                  >
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shadow-md ${meta.dot}`}>
                     <Icon size={18} className="text-white" />
                   </div>
                 </div>
@@ -491,72 +516,76 @@ export default function StudentProfileCompletion({ currentUser }) {
             </div>
           </div>
 
-          {hasFullAccess && (jenjangOptions.length > 0 || filteredClassOptions.length > 0) && (
-            <div className="flex flex-nowrap items-end gap-2 sm:gap-3 overflow-x-auto">
-              {jenjangOptions.length > 0 && (
-                <div className="shrink-0 min-w-[130px]">
-                  <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                    Pilih Jenjang
-                  </label>
-                  <select
-                    value={jenjangFilter}
-                    onChange={(e) => {
-                      setJenjangFilter(e.target.value);
-                      // Reset filter Kelas tiap ganti Jenjang, biar gak
-                      // nyangkut pilih kelas dari jenjang yang udah gak aktif.
-                      setClassFilter("all");
-                    }}
-                    className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
-                  >
-                    <option value="all">Semua Jenjang</option>
-                    {jenjangOptions.map((j) => (
-                      <option key={j} value={j}>
-                        Kelas {j}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+          {hasFullAccess &&
+            (jenjangOptions.length > 0 || filteredClassOptions.length > 0) && (
+              <div className="flex flex-nowrap items-end gap-2 sm:gap-3 overflow-x-auto">
+                {jenjangOptions.length > 0 && (
+                  <div className="shrink-0 min-w-[130px]">
+                    <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                      Pilih Jenjang
+                    </label>
+                    <select
+                      value={jenjangFilter}
+                      onChange={(e) => {
+                        setJenjangFilter(e.target.value);
+                        // Reset filter Kelas tiap ganti Jenjang, biar gak
+                        // nyangkut pilih kelas dari jenjang yang udah gak aktif.
+                        setClassFilter("all");
+                      }}
+                      className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900">
+                      <option value="all">Semua Jenjang</option>
+                      {jenjangOptions.map((j) => (
+                        <option key={j} value={j}>
+                          Kelas {j}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-              {filteredClassOptions.length > 0 && (
-                <div className="shrink-0 min-w-[140px]">
-                  <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                    Pilih Kelas
-                  </label>
-                  <select
-                    value={classFilter}
-                    onChange={(e) => setClassFilter(e.target.value)}
-                    className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
-                  >
-                    <option value="all">Semua Kelas</option>
-                    {filteredClassOptions.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        Kelas {c.id}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                {filteredClassOptions.length > 0 && (
+                  <div className="shrink-0 min-w-[140px]">
+                    <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                      Pilih Kelas
+                    </label>
+                    <select
+                      value={classFilter}
+                      onChange={(e) => setClassFilter(e.target.value)}
+                      className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900">
+                      <option value="all">Semua Kelas</option>
+                      {filteredClassOptions.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          Kelas {c.id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-              {(statusFilter !== "all" || jenjangFilter !== "all" || classFilter !== "all") && (
-                <div className="shrink-0">
-                  <span className="block text-[11px] mb-1 invisible">Reset</span>
-                  <button
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setJenjangFilter("all");
-                      setClassFilter(
-                        hasFullAccess ? "all" : currentUser?.homeroom_class_id || "all"
-                      );
-                    }}
-                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap"
-                  >
-                    Reset Filter
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                {(statusFilter !== "all" ||
+                  jenjangFilter !== "all" ||
+                  classFilter !== "all") && (
+                  <div className="shrink-0">
+                    <span className="block text-[11px] mb-1 invisible">
+                      Reset
+                    </span>
+                    <button
+                      onClick={() => {
+                        setStatusFilter("all");
+                        setJenjangFilter("all");
+                        setClassFilter(
+                          hasFullAccess
+                            ? "all"
+                            : currentUser?.homeroom_class_id || "all",
+                        );
+                      }}
+                      className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap">
+                      Reset Filter
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* Wali kelas (gak hasFullAccess) tetap bisa reset status filter
               aja, taruh di baris sendiri karena gak ada dropdown Jenjang/Kelas. */}
@@ -564,8 +593,7 @@ export default function StudentProfileCompletion({ currentUser }) {
             <div>
               <button
                 onClick={() => setStatusFilter("all")}
-                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap"
-              >
+                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap">
                 Reset Filter Status
               </button>
             </div>
@@ -593,8 +621,7 @@ export default function StudentProfileCompletion({ currentUser }) {
             <button
               onClick={handleExportPDF}
               disabled={selectedIds.size === 0 || exporting}
-              className="flex items-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed px-4 py-2 rounded-lg shadow-sm transition"
-            >
+              className="flex items-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed px-4 py-2 rounded-lg shadow-sm transition">
               <FileDown size={16} />
               {exporting
                 ? "Membuat PDF..."
@@ -622,8 +649,7 @@ export default function StudentProfileCompletion({ currentUser }) {
                     selectedIds.has(r.id)
                       ? "border-indigo-400 dark:border-indigo-500 ring-2 ring-indigo-100 dark:ring-indigo-900/50"
                       : "border-slate-100 dark:border-slate-700"
-                  }`}
-                >
+                  }`}>
                   <div className="w-full flex items-center gap-3 p-4">
                     <input
                       type="checkbox"
@@ -633,9 +659,10 @@ export default function StudentProfileCompletion({ currentUser }) {
                       className="w-4 h-4 shrink-0 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-400"
                     />
                     <button
-                      onClick={() => setExpandedId((id) => (id === r.id ? null : r.id))}
-                      className="flex-1 min-w-0 flex items-center justify-between gap-3 text-left"
-                    >
+                      onClick={() =>
+                        setExpandedId((id) => (id === r.id ? null : r.id))
+                      }
+                      className="flex-1 min-w-0 flex items-center justify-between gap-3 text-left">
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
                           {r.full_name}
@@ -646,8 +673,7 @@ export default function StudentProfileCompletion({ currentUser }) {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span
-                          className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${meta.badge}`}
-                        >
+                          className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${meta.badge}`}>
                           <StatusIcon size={13} />
                           {meta.label}
                         </span>
@@ -666,18 +692,22 @@ export default function StudentProfileCompletion({ currentUser }) {
                       {r.detail ? (
                         <div className="divide-y divide-slate-100 dark:divide-slate-700">
                           {DETAIL_ROWS.map(({ key, label, combine } = {}) => {
-                            const value = getDetailRowValue(r.detail, { key, combine });
+                            const value = getDetailRowValue(r.detail, {
+                              key,
+                              combine,
+                            });
                             return (
                               <div
                                 key={key}
-                                className="flex items-start justify-between py-2 gap-3"
-                              >
+                                className="flex items-start justify-between py-2 gap-3">
                                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">
                                   {label}
                                 </span>
                                 <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 text-right break-words">
                                   {value || (
-                                    <span className="text-rose-500 font-medium">Belum diisi</span>
+                                    <span className="text-rose-500 font-medium">
+                                      Belum diisi
+                                    </span>
                                   )}
                                 </span>
                               </div>
@@ -686,17 +716,21 @@ export default function StudentProfileCompletion({ currentUser }) {
                           {r.detail.updated_at && (
                             <p className="text-[11px] text-slate-400 dark:text-slate-500 pt-2">
                               Terakhir diperbarui:{" "}
-                              {new Date(r.detail.updated_at).toLocaleDateString("id-ID", {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              })}
+                              {new Date(r.detail.updated_at).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                },
+                              )}
                             </p>
                           )}
                         </div>
                       ) : (
                         <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-2">
-                          Siswa ini belum pernah mengisi data tambahan sama sekali.
+                          Siswa ini belum pernah mengisi data tambahan sama
+                          sekali.
                         </p>
                       )}
                     </div>
@@ -711,14 +745,15 @@ export default function StudentProfileCompletion({ currentUser }) {
         {filteredRows.length > 0 && (
           <div className="text-center mt-4 sm:mt-5">
             <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
-              Menampilkan {paginatedRows.length} dari {filteredRows.length} siswa
+              Menampilkan {paginatedRows.length} dari {filteredRows.length}{" "}
+              siswa
             </p>
             {visibleCount < filteredRows.length && (
               <button
                 onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-5 py-2.5 rounded-lg transition"
-              >
-                Muat Lebih Banyak ({Math.min(PAGE_SIZE, filteredRows.length - visibleCount)})
+                className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-5 py-2.5 rounded-lg transition">
+                Muat Lebih Banyak (
+                {Math.min(PAGE_SIZE, filteredRows.length - visibleCount)})
               </button>
             )}
           </div>

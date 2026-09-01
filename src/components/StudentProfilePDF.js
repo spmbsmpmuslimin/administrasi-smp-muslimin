@@ -5,8 +5,10 @@
 // yang udah dilakuin di StudentProfileCompletion.js), jadi tinggal dirender.
 // Layout per siswa: Header sekolah -> DATA SISWA (identitas Nama/NIS/Kelas
 // digabung sama field tambahan spt Jenis Kelamin dkk dalam 1 tabel) ->
-// DATA ORANGTUA -> Catatan status & tanggal terakhir update. 1 halaman =
-// 1 siswa.
+// DATA ORANGTUA -> Catatan status & tanggal terakhir update. Tiap siswa
+// mulai di halaman baru (doc.addPage() per siswa di bawah), TAPI karena
+// jumlah field sekarang cukup banyak, 1 siswa bisa saja meluber ke >1
+// halaman -- itu ditangani otomatis sama page-break bawaan jspdf-autotable.
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -26,29 +28,47 @@ const STATUS_COLOR = {
   belum: [244, 63, 94], // rose-500
 };
 
-// Field-field ini disamain sama student_profile_details versi baru
-// (StudentProfile.js) yang udah dipecah Ayah/Ibu & nambah field formulir
-// pendaftaran (jenis_kelamin, tempat/tanggal lahir, nisn). Kolom lama
-// `nama_ortu` (generic) UDAH GAK DIPAKE lagi di sini, digantiin
-// nama_ayah + nama_ibu.
+// Field-field ini disamain sama SEMUA kolom student_profile_details versi
+// baru (StudentProfile.js) yang udah dipecah Ayah/Ibu & nambah field
+// formulir pendaftaran lengkap (jenis_kelamin, tempat/tanggal lahir, nisn,
+// dokumen kependudukan, alamat detail, dst). Kolom lama `nama_ortu`
+// (generic) UDAH GAK DIPAKE lagi di sini, digantiin nama_ayah + nama_ibu.
 //
 // `combine: "ttl"` = field gabungan Tempat + Tanggal Lahir, nilainya
 // diambil dari 2 kolom DB (tempat_lahir, tanggal_lahir) terus dirender
-// jadi 1 baris "Cililin, 12 Januari 2012".
+// jadi 1 baris "Cililin, 12 Januari 2012". Field ortu (tempat_tgl_lahir_ayah
+// / _ibu) SUDAH tersimpan sebagai 1 string gabungan di DB, jadi gak perlu
+// combine lagi -- dirender apa adanya.
 const DATA_SISWA_ROWS = [
   { key: "jenis_kelamin", label: "Jenis Kelamin" },
   { key: "ttl", label: "Tempat, Tanggal Lahir", combine: "ttl" },
   { key: "nisn", label: "NISN" },
+  { key: "nik", label: "NIK Siswa" },
+  { key: "no_kk", label: "No. Kartu Keluarga (KK)" },
+  { key: "no_akta_lahir", label: "No. Akta Lahir" },
+  { key: "agama", label: "Agama" },
+  { key: "anak_ke", label: "Anak ke-" },
   { key: "sekolah_asal", label: "Sekolah Asal" },
+  { key: "no_peserta_ujian", label: "No. Peserta Ujian" },
+  { key: "no_ijazah", label: "No. Ijazah" },
+  { key: "no_kip", label: "No. KIP" },
+  { key: "no_daftar", label: "No. Pendaftaran" },
   { key: "alamat", label: "Alamat Lengkap" },
+  { key: "dusun", label: "Dusun" },
+  { key: "kode_pos", label: "Kode Pos" },
   { key: "no_hp", label: "No. HP Siswa" },
+  { key: "keterangan", label: "Keterangan" },
 ];
 
 const DATA_ORANGTUA_ROWS = [
   { key: "nama_ayah", label: "Nama Lengkap Ayah" },
+  { key: "nik_ayah", label: "NIK Ayah" },
+  { key: "tempat_tgl_lahir_ayah", label: "Tempat, Tanggal Lahir Ayah" },
   { key: "pekerjaan_ayah", label: "Pekerjaan Ayah" },
   { key: "pendidikan_ayah", label: "Pendidikan Terakhir Ayah" },
   { key: "nama_ibu", label: "Nama Lengkap Ibu" },
+  { key: "nik_ibu", label: "NIK Ibu" },
+  { key: "tempat_tgl_lahir_ibu", label: "Tempat, Tanggal Lahir Ibu" },
   { key: "pekerjaan_ibu", label: "Pekerjaan Ibu" },
   { key: "pendidikan_ibu", label: "Pendidikan Terakhir Ibu" },
   { key: "no_hp_ortu", label: "No. HP Orang Tua/Wali" },
@@ -181,7 +201,10 @@ function renderStudentPage(doc, student, academicYear) {
     head: [["Field", "Isian"]],
     body: [
       ...identitasBody,
-      ...DATA_SISWA_ROWS.map((row, i) => [row.label, siswaBody[i].display || "Belum diisi"]),
+      ...DATA_SISWA_ROWS.map((row, i) => [
+        row.label,
+        siswaBody[i].display || "Belum diisi",
+      ]),
     ],
     headStyles: {
       fillColor: [230, 230, 230],
@@ -207,14 +230,19 @@ function renderStudentPage(doc, student, academicYear) {
   doc.setFontSize(10);
   doc.text("DATA ORANGTUA", margin, y);
   y += 3;
-  const orangtuaBody = DATA_ORANGTUA_ROWS.map((row) => getRowValue(detail, row));
+  const orangtuaBody = DATA_ORANGTUA_ROWS.map((row) =>
+    getRowValue(detail, row),
+  );
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
     theme: "grid",
     styles: { fontSize: 9, cellPadding: 2.2 },
     head: [["Field", "Isian"]],
-    body: DATA_ORANGTUA_ROWS.map((row, i) => [row.label, orangtuaBody[i].display || "Belum diisi"]),
+    body: DATA_ORANGTUA_ROWS.map((row, i) => [
+      row.label,
+      orangtuaBody[i].display || "Belum diisi",
+    ]),
     headStyles: {
       fillColor: [230, 230, 230],
       textColor: 30,
@@ -237,9 +265,9 @@ function renderStudentPage(doc, student, academicYear) {
   y = doc.lastAutoTable.finalY + 6;
 
   // --- CATATAN: status kelengkapan + field yang masih kosong + tanggal update ---
-  const missingLabels = ALL_DETAIL_ROWS.filter((row) => getRowValue(detail, row).isEmpty).map(
-    (row) => row.label
-  );
+  const missingLabels = ALL_DETAIL_ROWS.filter(
+    (row) => getRowValue(detail, row).isEmpty,
+  ).map((row) => row.label);
 
   let catatanText;
   if (statusKey === "belum") {
@@ -280,9 +308,14 @@ function renderStudentPage(doc, student, academicYear) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(130);
-  doc.text(`Dicetak: ${formatTanggalCetak(new Date())}`, pageWidth - margin, pageHeight - 12, {
-    align: "right",
-  });
+  doc.text(
+    `Dicetak: ${formatTanggalCetak(new Date())}`,
+    pageWidth - margin,
+    pageHeight - 12,
+    {
+      align: "right",
+    },
+  );
   doc.setTextColor(0);
 }
 

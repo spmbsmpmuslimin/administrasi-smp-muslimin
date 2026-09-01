@@ -111,7 +111,7 @@ export default function useStudentProfile() {
       const { data: detailRow, error: detailErr } = await supabase
         .from("student_profile_details")
         .select(
-          "jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu",
+          "jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, agama, no_kk, nik, no_akta_lahir, no_ijazah, no_peserta_ujian, dusun, kode_pos, nik_ayah, nik_ibu, tempat_tgl_lahir_ayah, tempat_tgl_lahir_ibu, no_kip, anak_ke, keterangan, no_daftar",
         )
         .eq("student_id", studentRow.id)
         .maybeSingle();
@@ -168,6 +168,24 @@ export default function useStudentProfile() {
           nama_ibu: detailRow?.nama_ibu || "",
           pekerjaan_ibu: detailRow?.pekerjaan_ibu || "",
           pendidikan_ibu: detailRow?.pendidikan_ibu || "",
+          // --- Field identitas resmi tambahan (dokumen kependudukan &
+          // administrasi sekolah) ---
+          agama: detailRow?.agama || "",
+          no_kk: detailRow?.no_kk || "",
+          nik: detailRow?.nik || "",
+          no_akta_lahir: detailRow?.no_akta_lahir || "",
+          no_ijazah: detailRow?.no_ijazah || "",
+          no_peserta_ujian: detailRow?.no_peserta_ujian || "",
+          dusun: detailRow?.dusun || "",
+          kode_pos: detailRow?.kode_pos || "",
+          nik_ayah: detailRow?.nik_ayah || "",
+          nik_ibu: detailRow?.nik_ibu || "",
+          tempat_tgl_lahir_ayah: detailRow?.tempat_tgl_lahir_ayah || "",
+          tempat_tgl_lahir_ibu: detailRow?.tempat_tgl_lahir_ibu || "",
+          no_kip: detailRow?.no_kip || "",
+          anak_ke: detailRow?.anak_ke ?? "",
+          keterangan: detailRow?.keterangan || "",
+          no_daftar: detailRow?.no_daftar || "",
         });
         setLoading(false);
       }
