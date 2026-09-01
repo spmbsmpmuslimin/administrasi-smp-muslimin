@@ -294,14 +294,11 @@ export default function StudentLogin({ onLogin, onShowToast }) {
                     <div className="absolute inset-0 bg-teal-400/20 blur-xl rounded-full scale-150 group-hover/logo:bg-teal-400/30 transition-all duration-300"></div>
                   </div>
                 </div>
-                <p className="text-teal-200/80 text-xs font-semibold tracking-[0.2em] uppercase mb-1">
+                <p className="text-teal-200/80 text-xl font-semibold tracking-[0.2em] uppercase mb-1">
                   Portal Siswa
                 </p>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 drop-shadow-lg">
-                  Selamat Datang
-                </h2>
                 <p className="text-blue-200/80 text-sm sm:text-base">
-                  Gunakan username &amp; password dari wali kelas
+                  Gunakan Username &amp; Password Dari Wali Kelas
                 </p>
                 <div className="mt-3 w-16 h-1 mx-auto bg-gradient-to-r from-transparent via-teal-400/50 to-transparent rounded-full"></div>
               </div>
