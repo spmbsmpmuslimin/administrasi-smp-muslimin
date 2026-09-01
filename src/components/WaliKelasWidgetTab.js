@@ -18,6 +18,12 @@ import FeedbackGuru from "./FeedbackGuru";
 import PengumumanWaliKelas from "./PengumumanWaliKelas";
 import SaranMasukanSiswa from "./SaranMasukanSiswa";
 
+// ✅ Konstanta di luar komponen -- biar reference array-nya stabil antar
+// render (kalau ditulis langsung inline di JSX, tiap render bikin array
+// baru -> useCallback/useEffect di AnnouncementList mikir prop berubah
+// terus -> infinite re-fetch).
+const ADMIN_ANNOUNCEMENT_ROLES = ["teacher", "walikelas"];
+
 const SUB_TABS = [
   { id: "dari-admin", label: "Dari Admin", icon: Inbox, group: "admin" },
   { id: "ke-admin", label: "Ke Admin", icon: Send, group: "admin" },
@@ -32,33 +38,40 @@ const WaliKelasWidgetTab = ({ classId, teacherId, currentUser }) => {
 
   return (
     <div>
-      {/* Tab Switcher -- grid biar seimbang: 2x2 rapi di HP, 1 baris 4 kolom
-          di layar lebih lebar (sm ke atas). Sebelumnya flex-wrap bisa numpuk
-          gak rata (misal 3 tab baris pertama, 1 tab nyempil sendirian). */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-3">
-        {SUB_TABS.map((tab) => {
+      {/* Tab Switcher -- dikelompokin per lawan bicara (Admin | Siswa)
+          biar keliatan jelas mana yang ngobrol sama siapa */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        {SUB_TABS.map((tab, idx) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+          const isNewGroup = idx > 0 && SUB_TABS[idx - 1].group !== tab.group;
 
           return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 touch-manipulation active:scale-[0.98] ${
-                isActive
-                  ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md"
-                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}>
-              <Icon size={15} className="shrink-0" />
-              <span className="truncate">{tab.label}</span>
-            </button>
+            <React.Fragment key={tab.id}>
+              {isNewGroup && (
+                <span className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+              )}
+              <button
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 touch-manipulation active:scale-[0.98] ${
+                  isActive
+                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                }`}>
+                <Icon size={15} />
+                {tab.label}
+              </button>
+            </React.Fragment>
           );
         })}
       </div>
 
       {/* Tab Content */}
       {activeTab === "dari-admin" ? (
-        <AnnouncementList userId={currentUser?.id} userRole="walikelas" />
+        <AnnouncementList
+          userId={currentUser?.id}
+          userRole={ADMIN_ANNOUNCEMENT_ROLES}
+        />
       ) : activeTab === "ke-admin" ? (
         <FeedbackGuru guruId={teacherId} />
       ) : activeTab === "pengumuman" ? (

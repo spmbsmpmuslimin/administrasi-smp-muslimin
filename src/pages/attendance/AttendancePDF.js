@@ -2,9 +2,19 @@
 // Generate laporan presensi PDF per satu siswa (bukan rekap satu kelas).
 // Layout: Header sekolah -> Info siswa -> Ringkasan kehadiran ->
 // Rekap per bulan (khusus mode semester) -> Detail per tanggal -> Tanda tangan.
-import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { supabase } from "../../supabaseClient";
+import {
+  SCHOOL_CITY,
+  PDF_COLORS,
+  createPdfDocument,
+  addLetterhead,
+  addSectionLabel,
+  tableTheme,
+  checkPageBreak,
+  savePdf,
+  guardHasData,
+} from "../../utils/pdfExportKit";
 
 const MONTH_NAMES = [
   "Januari",
@@ -21,12 +31,22 @@ const MONTH_NAMES = [
   "Desember",
 ];
 
-const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const DAY_NAMES = [
+  "Minggu",
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+];
 
-const STATUS_LABEL = { hadir: "Hadir", sakit: "Sakit", izin: "Izin", alpa: "Alpa" };
-
-const SCHOOL_NAME = "SMP MUSLIMIN CILILIN";
-const SCHOOL_CITY = "Cililin";
+const STATUS_LABEL = {
+  hadir: "Hadir",
+  sakit: "Sakit",
+  izin: "Izin",
+  alpa: "Alpa",
+};
 
 function normalizeStatus(status) {
   if (!status) return null;
@@ -94,7 +114,8 @@ export async function exportStudentAttendancePDF({
       endDate = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
       monthsInRange = [month];
     } else {
-      monthsInRange = semester === 1 ? [7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5, 6];
+      monthsInRange =
+        semester === 1 ? [7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5, 6];
       startDate = semester === 1 ? `${year}-07-01` : `${year}-01-01`;
       endDate = semester === 1 ? `${year}-12-31` : `${year}-06-30`;
     }
@@ -122,8 +143,15 @@ export async function exportStudentAttendancePDF({
     if (error) throw error;
 
     const records = data || [];
-    if (records.length === 0) {
-      return { success: false, message: "Tidak ada data presensi untuk periode ini" };
+    if (
+      !guardHasData(records, {
+        message: "Tidak ada data presensi untuk periode ini",
+      })
+    ) {
+      return {
+        success: false,
+        message: "Tidak ada data presensi untuk periode ini",
+      };
     }
 
     // ✅ Ringkasan total
@@ -133,7 +161,8 @@ export async function exportStudentAttendancePDF({
       if (summary[s] !== undefined) summary[s] += 1;
     });
     const total = summary.hadir + summary.sakit + summary.izin + summary.alpa;
-    const persentase = total > 0 ? Math.round((summary.hadir / total) * 1000) / 10 : 0;
+    const persentase =
+      total > 0 ? Math.round((summary.hadir / total) * 1000) / 10 : 0;
 
     // ✅ Rekap per bulan (dipakai kalau mode semester)
     const monthlyRecap = monthsInRange.map((m) => {
@@ -148,39 +177,24 @@ export async function exportStudentAttendancePDF({
     });
 
     // ============= BUILD PDF =============
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const doc = createPdfDocument();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 15;
-    let y = 18;
 
     const semesterLabel = semester === 1 ? "Ganjil" : "Genap";
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text(SCHOOL_NAME, pageWidth / 2, y, { align: "center" });
-    y += 6;
-    doc.setFontSize(12);
     const kelasLabel = isHomeroomDaily ? homeroomClass : classId;
-    doc.text(`LAPORAN PRESENSI SISWA KELAS ${kelasLabel}`, pageWidth / 2, y, {
-      align: "center",
-    });
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10.5);
     const headerPeriodText =
       mode === "bulanan"
         ? `BULAN : ${MONTH_NAMES[month - 1].toUpperCase()} ${year}`
         : `SEMESTER : ${semesterLabel.toUpperCase()} ${academicYear || year}`;
-    doc.text(headerPeriodText, pageWidth / 2, y, { align: "center" });
-    y += 4;
-    doc.setLineWidth(0.5);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 7;
+
+    let y = addLetterhead(doc, {
+      title: `LAPORAN PRESENSI SISWA KELAS ${kelasLabel}`,
+      subtitle: headerPeriodText,
+    });
 
     // --- INFORMASI SISWA ---
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("INFORMASI SISWA", margin, y);
+    addSectionLabel(doc, "INFORMASI SISWA", y);
     y += 2;
     const periodeText =
       mode === "bulanan"
@@ -189,10 +203,7 @@ export async function exportStudentAttendancePDF({
           ? `Juli – Desember ${year}`
           : `Januari – Juni ${year}`;
     autoTable(doc, {
-      startY: y,
-      margin: { left: margin, right: margin },
-      theme: "grid",
-      styles: { fontSize: 9.5, cellPadding: 2.2 },
+      ...tableTheme(y, { fontSize: 9.5 }),
       body: [
         ["Nama", `: ${student.full_name}`],
         ["NIS", `: ${student.nis || "-"}`],
@@ -207,26 +218,29 @@ export async function exportStudentAttendancePDF({
     y = doc.lastAutoTable.finalY + 8;
 
     // --- RINGKASAN KEHADIRAN ---
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("RINGKASAN KEHADIRAN", margin, y);
+    addSectionLabel(doc, "RINGKASAN KEHADIRAN", y);
     y += 3;
     autoTable(doc, {
-      startY: y,
-      margin: { left: margin, right: margin },
-      theme: "grid",
-      styles: { fontSize: 9.5, halign: "center", cellPadding: 3 },
+      ...tableTheme(y, {
+        fontSize: 9.5,
+        styles: { halign: "center", cellPadding: 3 },
+      }),
       head: [["HADIR", "SAKIT", "IZIN", "ALPA", "% HADIR"]],
-      body: [[summary.hadir, summary.sakit, summary.izin, summary.alpa, `${persentase}%`]],
-      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: "bold" },
+      body: [
+        [
+          summary.hadir,
+          summary.sakit,
+          summary.izin,
+          summary.alpa,
+          `${persentase}%`,
+        ],
+      ],
     });
     y = doc.lastAutoTable.finalY + 8;
 
     // --- REKAP PRESENSI (per bulan, cuma relevan buat mode semester) ---
     if (mode === "semester") {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text("REKAP PRESENSI", margin, y);
+      addSectionLabel(doc, "REKAP PRESENSI", y);
       y += 3;
       const recapBody = monthlyRecap.map((m) => [
         MONTH_NAMES[m.month - 1],
@@ -236,15 +250,17 @@ export async function exportStudentAttendancePDF({
         m.alpa,
       ]);
       autoTable(doc, {
-        startY: y,
-        margin: { left: margin, right: margin },
-        theme: "grid",
-        styles: { fontSize: 9, halign: "center", cellPadding: 2 },
+        ...tableTheme(y),
         head: [["Bulan", "Hadir", "Sakit", "Izin", "Alpa"]],
         body: recapBody,
-        foot: [["TOTAL", summary.hadir, summary.sakit, summary.izin, summary.alpa]],
-        headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: "bold" },
-        footStyles: { fillColor: [230, 230, 230], textColor: 0, fontStyle: "bold" },
+        foot: [
+          ["TOTAL", summary.hadir, summary.sakit, summary.izin, summary.alpa],
+        ],
+        footStyles: {
+          fillColor: [230, 230, 230],
+          textColor: [0, 0, 0],
+          fontStyle: "bold",
+        },
         columnStyles: { 0: { halign: "left" } },
       });
       y = doc.lastAutoTable.finalY + 8;
@@ -255,15 +271,16 @@ export async function exportStudentAttendancePDF({
     // Mode "semester": cukup yang BUKAN hadir aja (sakit/izin/alpa),
     // biar ga kepanjangan sampe beberapa halaman.
     const detailSource =
-      mode === "semester" ? records.filter((r) => normalizeStatus(r.status) !== "hadir") : records;
+      mode === "semester"
+        ? records.filter((r) => normalizeStatus(r.status) !== "hadir")
+        : records;
 
-    if (y > 250) {
-      doc.addPage();
-      y = 20;
-    }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text(mode === "semester" ? "DETAIL KETIDAKHADIRAN" : "DETAIL PRESENSI", margin, y);
+    y = checkPageBreak(doc, y);
+    addSectionLabel(
+      doc,
+      mode === "semester" ? "DETAIL KETIDAKHADIRAN" : "DETAIL PRESENSI",
+      y,
+    );
     y += 3;
 
     if (detailSource.length === 0) {
@@ -274,7 +291,11 @@ export async function exportStudentAttendancePDF({
     } else {
       const detailBody = detailSource.map((r, idx) => {
         const [yy, mm, dd] = r.date.split("-");
-        const dateObj = new Date(parseInt(yy, 10), parseInt(mm, 10) - 1, parseInt(dd, 10));
+        const dateObj = new Date(
+          parseInt(yy, 10),
+          parseInt(mm, 10) - 1,
+          parseInt(dd, 10),
+        );
         const s = normalizeStatus(r.status);
         return [
           idx + 1,
@@ -285,13 +306,9 @@ export async function exportStudentAttendancePDF({
         ];
       });
       autoTable(doc, {
-        startY: y,
-        margin: { left: margin, right: margin },
-        theme: "grid",
-        styles: { fontSize: 8.5, cellPadding: 1.8 },
+        ...tableTheme(y, { fontSize: 8.5, styles: { cellPadding: 1.8 } }),
         head: [["No", "Tanggal", "Hari", "Status", "Keterangan"]],
         body: detailBody,
-        headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: "bold" },
         columnStyles: {
           0: { cellWidth: 10, halign: "center" },
           1: { cellWidth: 24, halign: "center" },
@@ -304,10 +321,7 @@ export async function exportStudentAttendancePDF({
     y += 10;
 
     // --- FOOTER: persentase + tanda tangan ---
-    if (y > 250) {
-      doc.addPage();
-      y = 20;
-    }
+    y = checkPageBreak(doc, y);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text(`Persentase Kehadiran: ${persentase}%`, margin, y);
@@ -319,7 +333,9 @@ export async function exportStudentAttendancePDF({
     // yang menandatangani laporan ini.
     if (includeSignature) {
       const rightX = pageWidth - margin;
-      doc.text(`${SCHOOL_CITY}, ${formatTanggalCetak(new Date())}`, rightX, y, { align: "right" });
+      doc.text(`${SCHOOL_CITY}, ${formatTanggalCetak(new Date())}`, rightX, y, {
+        align: "right",
+      });
       y += 5;
       const jabatan = isHomeroomDaily
         ? `Wali Kelas ${homeroomClass}`
@@ -334,7 +350,7 @@ export async function exportStudentAttendancePDF({
     const periodFileLabel =
       mode === "bulanan" ? MONTH_NAMES[month - 1] : `Semester${semesterLabel}`;
     const fileName = `Presensi_${student.full_name.replace(/\s+/g, "_")}_${periodFileLabel}_${year}.pdf`;
-    doc.save(fileName);
+    savePdf(doc, fileName);
 
     return { success: true };
   } catch (error) {

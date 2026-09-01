@@ -60,7 +60,7 @@ export const checkDataValidation = async () => {
       console.log(
         `   ${index + 1}. ${issue.severity === "critical" ? "🚨" : "⚠️"} ${
           issue.message
-        }`
+        }`,
       );
       console.log(`      📝 ${issue.details}`);
     });
@@ -156,7 +156,7 @@ const validateStudents = async () => {
       });
 
       const duplicates = Array.from(nisMap.entries()).filter(
-        ([_, names]) => names.length > 1
+        ([_, names]) => names.length > 1,
       );
 
       if (duplicates.length > 0) {
@@ -184,7 +184,7 @@ const validateStudents = async () => {
 
     if (shortNames) {
       const tooShort = shortNames.filter(
-        (s) => s.full_name && s.full_name.trim().length < 3
+        (s) => s.full_name && s.full_name.trim().length < 3,
       );
       if (tooShort.length > 0) {
         issues.push({
@@ -244,13 +244,14 @@ const validateUsers = async () => {
 
   try {
     // 1. Users with invalid roles
-    const validRoles = [
-      "admin",
-      "teacher",
-      "wali_kelas",
-      "guru_bk",
-      "kepala_sekolah",
-    ];
+    // ✅ FIX: role beneran yang dipakai di seluruh app itu admin/teacher/
+    // guru_bk/tu/petugas_perpus (lihat Teachers.js & UserManagementTab.js).
+    // "wali_kelas" & "kepala_sekolah" sebelumnya ada di list ini padahal
+    // gak pernah jadi nilai role beneran (wali kelas = teacher yang punya
+    // homeroom_class_id, Kepala Sekolah cuma metadata cetak raport) --
+    // sementara "tu" & "petugas_perpus" yang BENERAN dipakai malah kelewat,
+    // jadi user TU/petugas perpus selalu salah kena flag "invalid role".
+    const validRoles = ["admin", "teacher", "guru_bk", "tu", "petugas_perpus"];
     const { data: invalidRoles } = await supabase
       .from("users")
       .select("id, username, role, full_name")
@@ -290,7 +291,11 @@ const validateUsers = async () => {
     }
 
     // 3. Active users without valid teacher_id (for teacher roles)
-    const teacherRoles = ["guru", "wali_kelas", "guru_bk"];
+    // ✅ FIX: sebelumnya ["guru", "wali_kelas", "guru_bk"] -- "guru" &
+    // "wali_kelas" gak pernah jadi nilai role beneran, jadi check ini
+    // sebelumnya cuma nyentuh guru_bk doang dan skip semua guru mapel/
+    // wali kelas beneran (role="teacher").
+    const teacherRoles = ["teacher", "guru_bk"];
     const { data: teachersNoId } = await supabase
       .from("users")
       .select("id, username, role")
@@ -334,22 +339,41 @@ const validateUsers = async () => {
       }
     }
 
-    // 5. Wali kelas without homeroom class
-    const { data: waliNoClass } = await supabase
-      .from("users")
-      .select("id, username, full_name")
-      .eq("role", "wali_kelas")
-      .eq("is_active", true)
-      .is("homeroom_class_id", null)
-      .limit(20);
+    // 5. Kelas aktif yang belum punya wali kelas
+    // ✅ REDESIGN: arah query dibalik. Sebelumnya nyari "user role=wali_kelas
+    // tanpa homeroom_class_id" -- gak mungkin ketemu karena wali kelas
+    // didefinisikan JUSTRU sebagai "punya homeroom_class_id" (lihat catatan
+    // di atas), jadi selalu 0 hasil. Sekarang nyari arah sebaliknya: kelas
+    // aktif yang id-nya gak muncul sama sekali di users.homeroom_class_id
+    // manapun -- itu baru valid disebut "kelas belum ada wali kelasnya".
+    const { data: activeClasses } = await supabase
+      .from("classes")
+      .select("id, grade")
+      .eq("is_active", true);
 
-    if (waliNoClass && waliNoClass.length > 0) {
+    const { data: homeroomAssignments } = await supabase
+      .from("users")
+      .select("homeroom_class_id")
+      .eq("is_active", true)
+      .not("homeroom_class_id", "is", null);
+
+    const assignedClassIds = new Set(
+      (homeroomAssignments || []).map((u) => u.homeroom_class_id),
+    );
+    const classesWithoutWali = (activeClasses || []).filter(
+      (c) => !assignedClassIds.has(c.id),
+    );
+
+    if (classesWithoutWali.length > 0) {
       issues.push({
         category: "data",
         severity: "warning",
-        message: "Homeroom teachers without class assignment",
-        details: `Found ${waliNoClass.length} active wali kelas without homeroom_class_id`,
-        table: "users",
+        message: "Kelas aktif tanpa wali kelas",
+        details: `Ditemukan ${classesWithoutWali.length} kelas aktif belum punya wali kelas: ${classesWithoutWali
+          .map((c) => c.id)
+          .slice(0, 10)
+          .join(", ")}`,
+        table: "classes",
       });
     }
   } catch (error) {
@@ -444,7 +468,7 @@ const validateAttendances = async () => {
       });
 
       const duplicates = Array.from(attendanceKeys.values()).filter(
-        (count) => count > 1
+        (count) => count > 1,
       );
       if (duplicates.length > 0) {
         issues.push({
@@ -502,7 +526,7 @@ const validateGrades = async () => {
       .not(
         "assignment_type",
         "in",
-        `(${validTypes.map((t) => `"${t}"`).join(",")})`
+        `(${validTypes.map((t) => `"${t}"`).join(",")})`,
       )
       .limit(50);
 
@@ -541,7 +565,7 @@ const validateGrades = async () => {
         id,
         student_id,
         students!inner(is_active, full_name)
-      `
+      `,
       )
       .eq("students.is_active", false)
       .limit(100);
@@ -683,7 +707,7 @@ const validateTeacherAssignments = async () => {
 
       if (assignments) {
         const invalidYears = assignments.filter(
-          (a) => !validYearSet.has(a.academic_year)
+          (a) => !validYearSet.has(a.academic_year),
         );
         if (invalidYears.length > 0) {
           issues.push({

@@ -1,0 +1,187 @@
+{
+  "generatedAt": "2026-09-01T00:55:28.135Z",
+  "executionTimeMs": 331,
+  "filesScanned": 232,
+  "summary": {
+    "status": "critical",
+    "criticalCount": 1,
+    "warningCount": 1,
+    "infoCount": 4,
+    "totalIssues": 6
+  },
+  "categories": [
+    {
+      "id": "imports",
+      "label": "Import & Dead Files",
+      "issues": [
+        {
+          "severity": "info",
+          "title": "12 file gak pernah di-import di mana pun (dead file candidate)",
+          "description": "File-file ini gak ketemu di-import statis dari file lain. Kemungkinan sisa refactor / fitur lama. Cek manual dulu sebelum dihapus — bisa aja dipake lewat dynamic import atau string reference yang gak kebaca regex.",
+          "details": [
+            "src/components/ConnectedDevices.js",
+            "src/hooks/useAuth.js",
+            "src/pages/withPortalBack.js",
+            "src/portal-siswa/belajar/bahasa-inggris/ChapterDetail.js",
+            "src/portal-siswa/belajar/bahasa-inggris/ChapterList.js",
+            "src/reports/modals/AcademicGradesView.js",
+            "src/reports/modals/HomeroomReportModal.js",
+            "src/reports/modals/TeacherReportModal.js",
+            "src/services/semesterService.js",
+            "src/system/MonitorHistory.js",
+            "src/system/MonitorResults.js",
+            "src/utils/systemHelpers.js"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "menuSidebar",
+      "label": "Menu / Sidebar Consistency",
+      "issues": []
+    },
+    {
+      "id": "darkMode",
+      "label": "Dark Mode Regression",
+      "issues": [
+        {
+          "severity": "info",
+          "title": "4625 class warna (di 169 file) kemungkinan belum dark-mode-aware",
+          "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
+          "details": [
+            "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
+            "src/pages/CatatanSiswa.js — 118 class belum ada dark: variant",
+            "src/pages/grades/Grades.js — 108 class belum ada dark: variant",
+            "src/spmb/ClassDivision.js — 94 class belum ada dark: variant",
+            "src/components/AdminDashboard.js — 93 class belum ada dark: variant",
+            "src/pages/grades/GradesKatrol.js — 88 class belum ada dark: variant",
+            "src/setting/UserManagementTab.js — 86 class belum ada dark: variant",
+            "src/pages/Students.js — 84 class belum ada dark: variant",
+            "src/pages/TeacherSchedule.js — 82 class belum ada dark: variant",
+            "src/pages/attendance/AttendanceManagement.js — 78 class belum ada dark: variant",
+            "src/spmb/StudentForm.js — 78 class belum ada dark: variant",
+            "src/setting/school-management/SchoolSettingsTab.js — 76 class belum ada dark: variant",
+            "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
+            "src/components/HomeroomTeacherDashboard.js — 67 class belum ada dark: variant",
+            "src/reports/modals/AdminReportModal.js — 66 class belum ada dark: variant",
+            "src/attendance-teacher/reports/ITMReport.js — 65 class belum ada dark: variant",
+            "src/system/PerformanceMonitor.js — 65 class belum ada dark: variant",
+            "src/reports/modals/AcademicGradesView.js — 62 class belum ada dark: variant",
+            "src/components/TeacherDashboard.js — 60 class belum ada dark: variant",
+            "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
+            "src/spmb/StudentList.js — 59 class belum ada dark: variant",
+            "src/setting/school-management/SchoolManagementTab.js — 55 class belum ada dark: variant",
+            "src/system/MonitorDashboard.js — 55 class belum ada dark: variant",
+            "src/reports/AdminReports.js — 54 class belum ada dark: variant",
+            "src/system/DatabaseCleanupMonitor.js — 53 class belum ada dark: variant",
+            "src/e-raport/CetakRaport.js — 51 class belum ada dark: variant",
+            "src/setting/academic/Simulator.js — 51 class belum ada dark: variant",
+            "src/reports/modals/HomeroomReportModal.js — 50 class belum ada dark: variant",
+            "src/setting/SystemTab.js — 50 class belum ada dark: variant",
+            "src/pages/attendance/AdminAttendance.js — 49 class belum ada dark: variant",
+            "src/setting/kelola-raport/RekapKelulusan.js — 48 class belum ada dark: variant",
+            "src/components/KelengkapanDataSiswa.js — 47 class belum ada dark: variant",
+            "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
+            "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
+            "src/pages/Classes.js — 47 class belum ada dark: variant",
+            "src/setting/ProfileTab.js — 47 class belum ada dark: variant",
+            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant",
+            "src/pages/DenahDuduk.js — 45 class belum ada dark: variant",
+            "src/system/MonitorResults.js — 44 class belum ada dark: variant",
+            "src/perpustakaan/Pengembalian.js — 42 class belum ada dark: variant"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "embeddedJoin",
+      "label": "Supabase Embedded Join",
+      "issues": [
+        {
+          "severity": "warning",
+          "title": "14 embedded join TANPA disambiguation hint",
+          "description": "Query ini pake relational select (`select('*, table(...)')`) tanpa hint kayak `!inner`, `!nama_fk`, atau `alias:table`. Ini yang paling rawan kena PGRST200 kalau ada lebih dari satu foreign key antar 2 tabel itu. Worth di-cek satu-satu.",
+          "details": [
+            "src/components/StudentLogin.js:70 → select(\"*, students(id, full_name, nis, class_id, academic_year)\")",
+            "src/e-raport/CekStatusNilai.js:329 → select(\"id, student_id, nilai_akhir, deskripsi_capaian, nilai_eraport_detail(id, status_tercapai),\")",
+            "src/e-raport/CetakRaport.js:239 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
+            "src/e-raport/CetakRaport.js:366 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
+            "src/e-raport/InputNilai.js:302 → select(\"id, student_id, nilai_akhir, deskripsi_capaian, nilai_eraport_detail ( id, tujuan_pembelaj\")",
+            "src/e-raport/PreviewRaport.js:198 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
+            "src/e-raport/PreviewRaport.js:217 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
+            "src/pages/attendance/AttendanceManagement.js:553 → select(\"id, student_id, status, notes, students ( id, full_name, nis )\")",
+            "src/portal-siswa/StudentRaport.js:137 → select(\"id, academic_year, semester, status, student_report_grades(subject, score)\")",
+            "src/reports/AdminReports.js:481 → select(\"*, students(nis, full_name, class_id)\")",
+            "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
+            "src/setting/kelola-raport/ManajemenRaportTable.js:102 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
+            "src/setting/kelola-raport/RekapKelulusan.js:105 → select(\"student_nis, semester, student_report_grades(id, subject, score)\")",
+            "src/setting/kelola-raport/RekapMultiSemester.js:52 → select(\"student_name, student_nis, semester, student_report_grades(subject, score)\")"
+          ]
+        },
+        {
+          "severity": "info",
+          "title": "29 embedded join yang UDAH pake disambiguation hint",
+          "description": "FYI aja — ternyata di banyak file (CetakRaport, ReportHelpers, AdminReports, dll) project ini sebenernya pake embedded join Supabase, bukan resolve manual semua di JS. Yang ini kelihatannya udah aman karena udah ada hint (`!inner`, `!nama_fk`, atau `alias:table`) yang secara eksplisit nunjuk relasi mana yang dimaksud — itu emang cara resmi Supabase buat ngehindarin PGRST200. Kalau ternyata ini emang pattern yang lo pake sengaja, gue bakal update catatan gue soal ini.",
+          "details": [
+            "src/attendance-teacher/reports/DailySummary.js:71 → select(\"*, users!teacher_id ( full_name )\")",
+            "src/components/AdminJurnalRekap.js:54 → select(\"*, users:user_id(full_name, teacher_id)\")",
+            "src/components/HomeroomTeacherDashboard.js:513 → select(\"student_id, status, students!inner(full_name), class_id\")",
+            "src/components/HomeroomTeacherDashboard.js:611 → select(\"student_id, status, students!inner(full_name), class_id, subject\")",
+            "src/components/SaranMasukanSiswa.js:73 → select(\"id, message, status, created_at, users:student_id (full_name)\")",
+            "src/components/TeacherDashboard.js:482 → select(\"student_id, status, students!inner(full_name), class_id, subject\")",
+            "src/e-raport/CekNilai.js:184 → select(\"*, students!inner(full_name, nis, is_active)\")",
+            "src/pages/CatatanSiswa.js:1025 → select(\"*, teacher:users(full_name)\")",
+            "src/pages/CatatanSiswa.js:1169 → select(\"id, student:students(full_name)\")",
+            "src/reports/AdminReports.js:38 → select(\"student_id, status, students!inner(nis, full_name, class_id)\")",
+            "src/reports/AdminReports.js:83 → select(\"*, students!inner(nis, full_name, class_id)\")",
+            "src/reports/AdminReports.js:163 → select(\"*, students!inner(nis, full_name, class_id), users!konseling_counselor_id_fkey(full_name)\")",
+            "src/reports/DailyAttendanceSection.js:142 → select(\"*, users:teacher_id ( full_name )\")",
+            "src/reports/DailyAttendanceSection.js:167 → select(\"*, students!inner ( nis, full_name, class_id )\")",
+            "src/reports/HomeroomTeacherReports.js:495 → select(\"*, classes!inner(id)\")",
+            "src/reports/ReportHelpers.js:339 → select(\"*, students!inner(nis, full_name, class_id)\")",
+            "src/reports/ReportHelpers.js:406 → select(\"*, students!inner(nis, full_name, class_id), users!inner(full_name)\")",
+            "src/reports/ReportHelpers.js:481 → select(\"date, student_id, status, subject, type, class_id, students!inner(nis, full_name, class_id\")",
+            "src/services/semesterService.js:54 → select(\"*, students!inner(id, full_name, nis)\")",
+            "src/services/semesterService.js:240 → select(\"*, students!inner(id, full_name, nis)\")",
+            "src/setting/academic/AcademicYearTab.js:162 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
+            "src/setting/academic/AcademicYearTab.js:206 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
+            "src/setting/feedback/FeedbackGuruTab.js:23 → select(\"*, guru:users!feedback_guru_guru_id_fkey ( full_name, username )\")",
+            "src/setting/ProfileTab.js:160 → select(\"id, subject, class_id, academic_year, semester, classes:class_id ( id, grade, academic_yea\")",
+            "src/setting/ProfileTab.js:206 → select(\"id, subject, class_id, academic_year, semester, classes:class_id ( id, grade, academic_yea\")",
+            "src/system/checkers/BusinessLogicChecker.js:243 → select(\"id, date, students!inner(is_active, full_name)\")",
+            "src/system/checkers/BusinessLogicChecker.js:309 → select(\"id, created_at, students!inner(is_active, full_name)\")",
+            "src/system/checkers/DataValidator.js:563 → select(\"id, student_id, students!inner(is_active, full_name)\")",
+            "src/system/MonitorHistory.js:17 → select(\"*, users:checked_by (full_name)\")"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tableDrift",
+      "label": "Table Name Drift",
+      "issues": [
+        {
+          "severity": "critical",
+          "title": "1 query .from() nunjuk ke tabel yang gak ada di strukturfile.txt",
+          "description": "Kemungkinan typo nama tabel, atau tabel udah direname/dihapus tapi kodenya belum di-update, atau strukturfile.txt-nya yang basi. Query ini bakal error di runtime.",
+          "details": [
+            "src/reports/modals/AcademicGradesView.js:69 → .from(\"subjects\")"
+          ]
+        },
+        {
+          "severity": "info",
+          "title": "6 tabel di schema gak pernah dipanggil lewat .from() di kode",
+          "description": "Belum tentu masalah — bisa aja view, tabel yang diakses cuma dari Supabase function/edge function, atau memang belum dipakai. Sekedar info.",
+          "details": [
+            "academic_events",
+            "attendances_view",
+            "event_categories",
+            "kaldik_documents",
+            "teacher_attendance_view",
+            "tindaklanjut_homevisits"
+          ]
+        }
+      ]
+    }
+  ]
+}

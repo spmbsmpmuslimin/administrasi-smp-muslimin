@@ -102,7 +102,7 @@ const checkInactiveRecords = async () => {
           severity: "critical",
           message: "Very high percentage of inactive students",
           details: `${inactivePercentage.toFixed(
-            1
+            1,
           )}% of students (${inactiveStudents}/${totalStudents}) are marked inactive - urgent data cleanup needed`,
           table: "students",
         });
@@ -114,7 +114,7 @@ const checkInactiveRecords = async () => {
           severity: "warning",
           message: "High percentage of inactive students",
           details: `${inactivePercentage.toFixed(
-            1
+            1,
           )}% of students (${inactiveStudents}/${totalStudents}) are marked inactive - consider archiving old data`,
           table: "students",
         });
@@ -126,7 +126,7 @@ const checkInactiveRecords = async () => {
           severity: "info",
           message: "Inactive students detected",
           details: `Found ${inactiveStudents} inactive students (${inactivePercentage.toFixed(
-            1
+            1,
           )}% of ${totalStudents} total) - normal for end of academic year`,
           table: "students",
         });
@@ -153,7 +153,7 @@ const checkInactiveRecords = async () => {
           severity: "warning",
           message: "Many inactive user accounts",
           details: `${inactiveUserPercentage.toFixed(
-            1
+            1,
           )}% of user accounts (${inactiveUsers}/${totalUsers}) are inactive - review user management`,
           table: "users",
         });
@@ -165,7 +165,7 @@ const checkInactiveRecords = async () => {
           severity: "info",
           message: "Some inactive user accounts",
           details: `${inactiveUserPercentage.toFixed(
-            1
+            1,
           )}% of user accounts (${inactiveUsers}/${totalUsers}) are inactive`,
           table: "users",
         });
@@ -244,7 +244,9 @@ const checkRecentActivity = async () => {
   const issues = [];
 
   try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
@@ -266,7 +268,8 @@ const checkRecentActivity = async () => {
           category: "app_health",
           severity: "info",
           message: "No attendance data in system",
-          details: "System has no attendance records yet - normal for new installations",
+          details:
+            "System has no attendance records yet - normal for new installations",
           table: "attendances",
         });
       } else {
@@ -296,7 +299,8 @@ const checkRecentActivity = async () => {
         category: "app_health",
         severity: "info",
         message: "No recent grade entries",
-        details: "No new grades recorded in the past 30 days - normal between assessment periods",
+        details:
+          "No new grades recorded in the past 30 days - normal between assessment periods",
         table: "grades",
       });
     }
@@ -379,7 +383,8 @@ const checkSystemSettings = async () => {
         category: "app_health",
         severity: "warning",
         message: "No system settings configured",
-        details: "School settings table is empty - system may not be properly configured",
+        details:
+          "School settings table is empty - system may not be properly configured",
         table: "school_settings",
       });
       return issues;
@@ -389,7 +394,9 @@ const checkSystemSettings = async () => {
     const criticalSettings = ["school_name", "school_address"];
 
     const settingKeys = new Set(settings.map((s) => s.setting_key));
-    const missingSettings = criticalSettings.filter((key) => !settingKeys.has(key));
+    const missingSettings = criticalSettings.filter(
+      (key) => !settingKeys.has(key),
+    );
 
     if (missingSettings.length > 0) {
       issues.push({
@@ -405,7 +412,7 @@ const checkSystemSettings = async () => {
     const emptySettings = settings.filter(
       (s) =>
         criticalSettings.includes(s.setting_key) &&
-        (!s.setting_value || s.setting_value.trim() === "")
+        (!s.setting_value || s.setting_value.trim() === ""),
     );
 
     if (emptySettings.length > 0) {
@@ -471,7 +478,8 @@ const checkUserAccounts = async () => {
         category: "app_health",
         severity: "critical",
         message: "No active admin users",
-        details: "System has no active admin accounts - system management may be impossible",
+        details:
+          "System has no active admin accounts - system management may be impossible",
         table: "users",
       });
     } else if (adminCount > 5) {
@@ -485,8 +493,13 @@ const checkUserAccounts = async () => {
     }
 
     // Check for teachers
+    // ✅ FIX: role di DB itu "teacher"/"guru_bk" (wali kelas cuma "teacher"
+    // yang punya homeroom_class_id, bukan role terpisah "wali_kelas") --
+    // sebelumnya pakai ["guru", "wali_kelas", "guru_bk"] yang gak pernah
+    // match "teacher", jadi checker ini selalu salah lapor "No active
+    // teacher accounts" walaupun guru-nya banyak.
     const teacherCount = users.filter((u) =>
-      ["guru", "wali_kelas", "guru_bk"].includes(u.role)
+      ["teacher", "guru_bk"].includes(u.role),
     ).length;
     if (teacherCount === 0) {
       issues.push({
@@ -678,8 +691,12 @@ const checkDataFreshness = async () => {
   const issues = [];
 
   try {
-    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
-    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const sixtyDaysAgo = new Date(
+      Date.now() - 60 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const ninetyDaysAgo = new Date(
+      Date.now() - 90 * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
     // 1. Check when was the last student record updated
     const { data: latestStudent } = await supabase
@@ -691,7 +708,8 @@ const checkDataFreshness = async () => {
 
     if (latestStudent && latestStudent.updated_at) {
       const daysSinceUpdate = Math.floor(
-        (Date.now() - new Date(latestStudent.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - new Date(latestStudent.updated_at).getTime()) /
+          (1000 * 60 * 60 * 24),
       );
 
       if (daysSinceUpdate > 180) {
@@ -740,7 +758,8 @@ const checkDataFreshness = async () => {
 
     if (latestAnnouncement && latestAnnouncement.created_at) {
       const daysSinceAnnouncement = Math.floor(
-        (Date.now() - new Date(latestAnnouncement.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - new Date(latestAnnouncement.created_at).getTime()) /
+          (1000 * 60 * 60 * 24),
       );
 
       if (daysSinceAnnouncement > 60) {

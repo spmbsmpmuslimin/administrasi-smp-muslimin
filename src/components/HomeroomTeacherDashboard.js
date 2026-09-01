@@ -696,7 +696,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
       const offset = 7 * 60 * 60 * 1000; // UTC+7 (WIB)
       const todayIndonesia = new Date(now.getTime() + offset);
       const todayString = todayIndonesia.toISOString().split("T")[0];
-      const activeSemester = activeAcademicInfo?.semester || 1;
+      const activeSemester = activeAcademicInfo?.activeSemester || 1;
 
       if (process.env.NODE_ENV === "development") {
         console.log("📅 Today (WIB):", todayString);

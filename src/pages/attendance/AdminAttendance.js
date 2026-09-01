@@ -38,13 +38,25 @@ import {
 } from "lucide-react";
 import ExcelJS from "exceljs";
 import { supabase } from "../../supabaseClient";
-import { getActiveAcademicYear, getAllSemestersInYear } from "../../services/academicYearService";
+import {
+  getActiveAcademicYear,
+  getAllSemestersInYear,
+  getSemesterById,
+} from "../../services/academicYearService";
 import { exportStudentAttendancePDF } from "./AttendancePDF";
 
 // Urutan bulan mengikuti tahun ajaran: Juli (awal Semester Ganjil) s/d Juni (akhir Semester Genap)
 const ACADEMIC_MONTH_ORDER = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
 
-const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+const DAY_NAMES = [
+  "Minggu",
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+];
 const MONTH_NAMES = [
   "Januari",
   "Februari",
@@ -62,7 +74,9 @@ const MONTH_NAMES = [
 
 const getTodayWIB = () => {
   const now = new Date();
-  const wib = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+  const wib = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
+  );
   const yyyy = wib.getFullYear();
   const mm = String(wib.getMonth() + 1).padStart(2, "0");
   const dd = String(wib.getDate()).padStart(2, "0");
@@ -105,7 +119,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
   const [exportMode, setExportMode] = useState("bulanan"); // "bulanan" | "semester"
   const [exportClasses, setExportClasses] = useState([]); // daftar semua kelas aktif
   const [exportClassId, setExportClassId] = useState(""); // "" = semua kelas
-  const [exportMonthNumber, setExportMonthNumber] = useState(Number(getTodayWIB().split("-")[1])); // 1-12
+  const [exportMonthNumber, setExportMonthNumber] = useState(
+    Number(getTodayWIB().split("-")[1]),
+  ); // 1-12
   const [exportYearsList, setExportYearsList] = useState([]);
   const [exportYear, setExportYear] = useState("");
   const [exportSemesters, setExportSemesters] = useState([]);
@@ -118,7 +134,11 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
   const [loadingSummary, setLoadingSummary] = useState(true);
 
   // ===== DETAIL MODAL STATE =====
-  const [detailModal, setDetailModal] = useState({ open: false, classId: null, className: "" });
+  const [detailModal, setDetailModal] = useState({
+    open: false,
+    classId: null,
+    className: "",
+  });
   const [pdfExportMode, setPdfExportMode] = useState("bulanan"); // "bulanan" | "semester"
   const [detailStudents, setDetailStudents] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -131,7 +151,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
     (message, type = "info") => {
       if (onShowToast) onShowToast(message, type);
     },
-    [onShowToast]
+    [onShowToast],
   );
 
   // ===== Tentukan tahun ajaran & semester berdasarkan TANGGAL yang dipilih =====
@@ -163,7 +183,10 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           }
         }
       } catch (error) {
-        console.error("❌ Gagal menentukan tahun ajaran untuk tanggal ini:", error);
+        console.error(
+          "❌ Gagal menentukan tahun ajaran untuk tanggal ini:",
+          error,
+        );
       }
     };
 
@@ -210,7 +233,10 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           setExportYear(uniqueYears[0]);
         }
       } catch (error) {
-        console.error("❌ Gagal memuat daftar tahun ajaran untuk export:", error);
+        console.error(
+          "❌ Gagal memuat daftar tahun ajaran untuk export:",
+          error,
+        );
       }
     };
     initExportPeriod();
@@ -265,7 +291,11 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        let query = supabase.from("classes").select("id, grade").eq("is_active", true).order("id");
+        let query = supabase
+          .from("classes")
+          .select("id, grade")
+          .eq("is_active", true)
+          .order("id");
 
         if (selectedJenjang) {
           query = query.eq("grade", Number(selectedJenjang));
@@ -276,7 +306,10 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
 
         setClasses(data || []);
 
-        if (selectedClassId && !(data || []).some((c) => c.id === selectedClassId)) {
+        if (
+          selectedClassId &&
+          !(data || []).some((c) => c.id === selectedClassId)
+        ) {
           setSelectedClassId("");
         }
       } catch (error) {
@@ -347,7 +380,12 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
 
       const summaries = relevantClasses.map((kelas) => {
         const total = totalPerClass[kelas.id] || 0;
-        const stats = statsPerClass[kelas.id] || { Hadir: 0, Sakit: 0, Izin: 0, Alpa: 0 };
+        const stats = statsPerClass[kelas.id] || {
+          Hadir: 0,
+          Sakit: 0,
+          Izin: 0,
+          Alpa: 0,
+        };
         const tercatat = stats.Hadir + stats.Sakit + stats.Izin + stats.Alpa;
         const belum = Math.max(total - tercatat, 0);
 
@@ -368,7 +406,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         };
       });
 
-      summaries.sort((a, b) => a.grade - b.grade || a.classId.localeCompare(b.classId));
+      summaries.sort(
+        (a, b) => a.grade - b.grade || a.classId.localeCompare(b.classId),
+      );
       setClassSummaries(summaries);
     } catch (error) {
       console.error("❌ Gagal memuat ringkasan presensi:", error);
@@ -384,7 +424,11 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
 
   // ===== Detail presensi per kelas =====
   const openDetail = async (kelas) => {
-    setDetailModal({ open: true, classId: kelas.classId, className: kelas.classId });
+    setDetailModal({
+      open: true,
+      classId: kelas.classId,
+      className: kelas.classId,
+    });
     setPdfExportMode("bulanan");
     setDetailLoading(true);
     try {
@@ -417,7 +461,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           nis: s.nis,
           name: s.full_name,
           // ✅ FIX: tampilkan label yang sudah dinormalisasi ("Alpha" -> "Alpa")
-          status: record ? normalizeStatusKey(record.status) || record.status : "Belum Presensi",
+          status: record
+            ? normalizeStatusKey(record.status) || record.status
+            : "Belum Presensi",
           waktu: record?.created_at
             ? new Date(record.created_at).toLocaleTimeString("id-ID", {
                 hour: "2-digit",
@@ -458,17 +504,42 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         alpa: acc.alpa + c.alpa,
         belum: acc.belum + c.belum,
       }),
-      { total: 0, hadir: 0, sakit: 0, izin: 0, alpa: 0, belum: 0 }
+      { total: 0, hadir: 0, sakit: 0, izin: 0, alpa: 0, belum: 0 },
     );
   }, [classSummaries]);
 
   const summaryCards = [
-    { label: "Total Siswa", value: overallSummary.total, icon: Users, color: "slate" },
-    { label: "Hadir", value: overallSummary.hadir, icon: CheckCircle2, color: "emerald" },
-    { label: "Sakit", value: overallSummary.sakit, icon: Stethoscope, color: "amber" },
-    { label: "Izin", value: overallSummary.izin, icon: FileText, color: "blue" },
+    {
+      label: "Total Siswa",
+      value: overallSummary.total,
+      icon: Users,
+      color: "slate",
+    },
+    {
+      label: "Hadir",
+      value: overallSummary.hadir,
+      icon: CheckCircle2,
+      color: "emerald",
+    },
+    {
+      label: "Sakit",
+      value: overallSummary.sakit,
+      icon: Stethoscope,
+      color: "amber",
+    },
+    {
+      label: "Izin",
+      value: overallSummary.izin,
+      icon: FileText,
+      color: "blue",
+    },
     { label: "Alpa", value: overallSummary.alpa, icon: XCircle, color: "rose" },
-    { label: "Belum Dipresensi", value: overallSummary.belum, icon: Hourglass, color: "orange" },
+    {
+      label: "Belum Dipresensi",
+      value: overallSummary.belum,
+      icon: Hourglass,
+      color: "orange",
+    },
   ];
 
   const colorClasses = {
@@ -527,7 +598,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
       }
       // Tahun kalender: Juli-Desember pakai tahun awal, Januari-Juni pakai tahun akhir
       const [startYearStr, endYearStr] = exportYear.split("/");
-      const year = exportMonthNumber >= 7 ? Number(startYearStr) : Number(endYearStr);
+      const year =
+        exportMonthNumber >= 7 ? Number(startYearStr) : Number(endYearStr);
       const month = exportMonthNumber;
       const monthStr = String(month).padStart(2, "0");
       const yearStr = String(year);
@@ -581,25 +653,39 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .sort()
         .forEach((classId) => {
           const classStudents = grouped[classId];
-          const classAttendance = (attendanceData || []).filter((a) => a.class_id === classId);
+          const classAttendance = (attendanceData || []).filter(
+            (a) => a.class_id === classId,
+          );
 
           // Tanggal unik yang benar-benar ada presensinya, di kelas ini
-          const uniqueDates = [...new Set(classAttendance.map((a) => a.date))].sort().map((d) => {
-            const [, mm, dd] = d.split("-");
-            return { original: d, display: `${dd}-${mm}` };
-          });
+          const uniqueDates = [...new Set(classAttendance.map((a) => a.date))]
+            .sort()
+            .map((d) => {
+              const [, mm, dd] = d.split("-");
+              return { original: d, display: `${dd}-${mm}` };
+            });
 
           // Matrix per siswa: kode H/S/I/A per tanggal + ringkasan
           const matrix = {};
           classStudents.forEach((s) => {
-            matrix[s.id] = { dates: {}, summary: { Hadir: 0, Sakit: 0, Izin: 0, Alpa: 0 } };
+            matrix[s.id] = {
+              dates: {},
+              summary: { Hadir: 0, Sakit: 0, Izin: 0, Alpa: 0 },
+            };
           });
           classAttendance.forEach((a) => {
             const m = matrix[a.student_id];
             if (!m) return;
             const key = normalizeStatusKey(a.status);
             if (!key) return;
-            const code = key === "Hadir" ? "H" : key === "Sakit" ? "S" : key === "Izin" ? "I" : "A";
+            const code =
+              key === "Hadir"
+                ? "H"
+                : key === "Sakit"
+                  ? "S"
+                  : key === "Izin"
+                    ? "I"
+                    : "A";
             m.dates[a.date] = code;
             m.summary[key]++;
           });
@@ -615,19 +701,28 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           sheet.mergeCells(1, 1, 1, totalCols);
           sheet.getCell(1, 1).value = "SMP MUSLIMIN CILILIN";
           sheet.getCell(1, 1).font = { name: "Arial", size: 14, bold: true };
-          sheet.getCell(1, 1).alignment = { horizontal: "center", vertical: "middle" };
+          sheet.getCell(1, 1).alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
           sheet.getRow(1).height = 22;
 
           sheet.mergeCells(2, 1, 2, totalCols);
           sheet.getCell(2, 1).value = `REKAP PRESENSI HARIAN KELAS ${classId}`;
           sheet.getCell(2, 1).font = { name: "Arial", size: 12, bold: true };
-          sheet.getCell(2, 1).alignment = { horizontal: "center", vertical: "middle" };
+          sheet.getCell(2, 1).alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
           sheet.getRow(2).height = 22;
 
           sheet.mergeCells(3, 1, 3, totalCols);
           sheet.getCell(3, 1).value = `BULAN : ${periodText}${academicInfo}`;
           sheet.getCell(3, 1).font = { name: "Arial", size: 12, bold: true };
-          sheet.getCell(3, 1).alignment = { horizontal: "center", vertical: "middle" };
+          sheet.getCell(3, 1).alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
           sheet.getRow(3).height = 22;
 
           // ===== Table header (row 5) =====
@@ -647,7 +742,11 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
             cell.value = label;
             cell.font = { name: "Arial", size: 10, bold: true };
             cell.alignment = { horizontal: "center", vertical: "middle" };
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F4FD" } };
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFE8F4FD" },
+            };
             cell.border = {
               top: { style: "thin" },
               left: { style: "thin" },
@@ -696,13 +795,29 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               } else if (colIdx >= 2 && colIdx < 2 + dateCols) {
                 cell.alignment = { horizontal: "center", vertical: "middle" };
                 if (value === "H") {
-                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4F1D4" } };
+                  cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFD4F1D4" },
+                  };
                 } else if (value === "S") {
-                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF4CD" } };
+                  cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFFFF4CD" },
+                  };
                 } else if (value === "I") {
-                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFCDE4FF" } };
+                  cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFCDE4FF" },
+                  };
                 } else if (value === "A") {
-                  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD4D4" } };
+                  cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFFFD4D4" },
+                  };
                 }
               } else {
                 cell.alignment = { horizontal: "center", vertical: "middle" };
@@ -762,12 +877,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
 
     setExportingExcelSemester(true);
     try {
-      const { data: semRow, error: semErr } = await supabase
-        .from("academic_years")
-        .select("start_date, end_date, semester, year")
-        .eq("id", exportSemesterId)
-        .single();
-      if (semErr) throw semErr;
+      const semRow = await getSemesterById(exportSemesterId);
+      if (!semRow) throw new Error("Semester tidak ditemukan");
 
       const { start_date: startDate, end_date: endDate } = semRow;
       const semesterLabel = semRow.semester === 1 ? "Ganjil" : "Genap";
@@ -813,7 +924,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
       workbook.creator = "Sistem Presensi";
       workbook.created = new Date();
       const semesterPeriodText =
-        semRow.semester === 1 ? "Ganjil (Juli-Desember)" : "Genap (Januari-Juni)";
+        semRow.semester === 1
+          ? "Ganjil (Juli-Desember)"
+          : "Genap (Januari-Juni)";
 
       const getCategory = (pct) => {
         if (pct >= 90) return "Sangat Baik";
@@ -832,26 +945,38 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .sort()
         .forEach((classId) => {
           const classStudents = grouped[classId];
-          const sheet = workbook.addWorksheet(`Sem ${semesterLabel} ${classId}`.substring(0, 31));
+          const sheet = workbook.addWorksheet(
+            `Sem ${semesterLabel} ${classId}`.substring(0, 31),
+          );
           const totalCols = 10;
 
           sheet.mergeCells(1, 1, 1, totalCols);
           sheet.getCell(1, 1).value = "SMP MUSLIMIN CILILIN";
           sheet.getCell(1, 1).font = { name: "Arial", size: 14, bold: true };
-          sheet.getCell(1, 1).alignment = { horizontal: "center", vertical: "middle" };
+          sheet.getCell(1, 1).alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
           sheet.getRow(1).height = 25;
 
           sheet.mergeCells(2, 1, 2, totalCols);
-          sheet.getCell(2, 1).value = `REKAP PRESENSI - KELAS ${classId} | ${semRow.year}`;
+          sheet.getCell(2, 1).value =
+            `REKAP PRESENSI - KELAS ${classId} | ${semRow.year}`;
           sheet.getCell(2, 1).font = { name: "Arial", size: 12, bold: true };
-          sheet.getCell(2, 1).alignment = { horizontal: "center", vertical: "middle" };
+          sheet.getCell(2, 1).alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
           sheet.getRow(2).height = 20;
 
           sheet.mergeCells(3, 1, 3, totalCols);
           sheet.getCell(3, 1).value =
             `PRESENSI HARIAN | SEMESTER ${semesterPeriodText.toUpperCase()}`;
           sheet.getCell(3, 1).font = { name: "Arial", size: 11 };
-          sheet.getCell(3, 1).alignment = { horizontal: "center", vertical: "middle" };
+          sheet.getCell(3, 1).alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
           sheet.getRow(3).height = 20;
           sheet.getRow(4).height = 15;
 
@@ -870,8 +995,17 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           headerLabels.forEach((label, idx) => {
             const cell = sheet.getCell(5, idx + 1);
             cell.value = label;
-            cell.font = { name: "Arial", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4472C4" } };
+            cell.font = {
+              name: "Arial",
+              size: 11,
+              bold: true,
+              color: { argb: "FFFFFFFF" },
+            };
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FF4472C4" },
+            };
             cell.alignment = { horizontal: "center", vertical: "middle" };
             cell.border = {
               top: { style: "thin" },
@@ -883,7 +1017,12 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           sheet.getRow(5).height = 25;
 
           classStudents.forEach((s, idx) => {
-            const stats = byStudent[s.id] || { Hadir: 0, Sakit: 0, Izin: 0, Alpa: 0 };
+            const stats = byStudent[s.id] || {
+              Hadir: 0,
+              Sakit: 0,
+              Izin: 0,
+              Alpa: 0,
+            };
             const total = stats.Hadir + stats.Sakit + stats.Izin + stats.Alpa;
             const pct = total > 0 ? Math.round((stats.Hadir / total) * 100) : 0;
             const category = getCategory(pct);
@@ -964,7 +1103,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
   const handleExportPdfStudent = async (student) => {
     setExportingPdfId(student.id);
     try {
-      const selectedSemesterObj = semesters.find((s) => s.id === selectedSemesterId);
+      const selectedSemesterObj = semesters.find(
+        (s) => s.id === selectedSemesterId,
+      );
       const semesterNumber = selectedSemesterObj?.semester;
 
       let pdfParams = {
@@ -989,7 +1130,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
       } else {
         // Mode "semester": tahun kalender ditentukan dari string "2025/2026"
         // — semester ganjil pakai tahun awal, semester genap pakai tahun akhir.
-        const [startYear, endYear] = (selectedYear || "").split("/").map(Number);
+        const [startYear, endYear] = (selectedYear || "")
+          .split("/")
+          .map(Number);
         const calendarYear = semesterNumber === 1 ? startYear : endYear;
         pdfParams = {
           ...pdfParams,
@@ -1024,7 +1167,10 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <ClipboardList className="text-blue-600 dark:text-blue-400" size={28} />
+                <ClipboardList
+                  className="text-blue-600 dark:text-blue-400"
+                  size={28}
+                />
                 Monitoring Presensi Siswa
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
@@ -1041,7 +1187,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     {user.full_name}
                   </p>
                   <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded font-medium">
-                    {user.role === "guru_bk" ? "🧑‍⚕️ Guru BK/BP" : "Administrator"}
+                    {user.role === "guru_bk"
+                      ? "🧑‍⚕️ Guru BK/BP"
+                      : "Administrator"}
                   </span>
                 </div>
               </div>
@@ -1059,8 +1207,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               activeTab === "monitor"
                 ? "bg-blue-600 text-white"
                 : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-            }`}
-          >
+            }`}>
             <ClipboardList size={16} /> Monitor Presensi
           </button>
           <button
@@ -1069,8 +1216,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               activeTab === "export"
                 ? "bg-blue-600 text-white"
                 : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-            }`}
-          >
+            }`}>
             <FileSpreadsheet size={16} /> Export Presensi
           </button>
         </div>
@@ -1082,9 +1228,12 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               {selectedYear && (
                 <div className="mb-3 text-xs font-medium text-slate-500 dark:text-slate-400">
                   Tahun Ajaran{" "}
-                  <span className="text-slate-700 dark:text-slate-200">{selectedYear}</span>
+                  <span className="text-slate-700 dark:text-slate-200">
+                    {selectedYear}
+                  </span>
                   {" · "}
-                  {semesters.find((s) => s.id === selectedSemesterId)?.semester === 1
+                  {semesters.find((s) => s.id === selectedSemesterId)
+                    ?.semester === 1
                     ? "Semester Ganjil"
                     : "Semester Genap"}
                 </div>
@@ -1109,8 +1258,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={selectedJenjang}
-                    onChange={(e) => setSelectedJenjang(e.target.value)}
-                  >
+                    onChange={(e) => setSelectedJenjang(e.target.value)}>
                     <option value="">Semua Jenjang</option>
                     <option value="7">Kelas 7</option>
                     <option value="8">Kelas 8</option>
@@ -1125,8 +1273,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                  >
+                    onChange={(e) => setSelectedClassId(e.target.value)}>
                     <option value="">Semua Kelas</option>
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1143,8 +1290,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={selectedStatusFilter}
-                    onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  >
+                    onChange={(e) => setSelectedStatusFilter(e.target.value)}>
                     <option value="">Semua Status</option>
                     <option value="selesai">Selesai</option>
                     <option value="sebagian">Sebagian</option>
@@ -1161,13 +1307,16 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                 return (
                   <div
                     key={card.label}
-                    className={`rounded-lg border p-3 sm:p-4 shadow-sm ${colorClasses[card.color]}`}
-                  >
+                    className={`rounded-lg border p-3 sm:p-4 shadow-sm ${colorClasses[card.color]}`}>
                     <div className="flex items-center justify-between mb-1">
                       <Icon size={18} />
-                      <span className="text-xl sm:text-2xl font-bold">{card.value}</span>
+                      <span className="text-xl sm:text-2xl font-bold">
+                        {card.value}
+                      </span>
                     </div>
-                    <div className="text-xs sm:text-sm font-medium">{card.label}</div>
+                    <div className="text-xs sm:text-sm font-medium">
+                      {card.label}
+                    </div>
                   </div>
                 );
               })}
@@ -1183,8 +1332,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={fetchAttendanceSummary}
-                    className="px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800/40 dark:hover:bg-blue-800/60 text-blue-700 dark:text-blue-300 rounded-lg font-medium flex items-center gap-2 text-sm min-h-[38px]"
-                  >
+                    className="px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800/40 dark:hover:bg-blue-800/60 text-blue-700 dark:text-blue-300 rounded-lg font-medium flex items-center gap-2 text-sm min-h-[38px]">
                     <RefreshCw size={15} />
                     <span>Refresh</span>
                   </button>
@@ -1210,7 +1358,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                         <th className="px-1 py-2 sm:px-3 text-center">Sakit</th>
                         <th className="px-1 py-2 sm:px-3 text-center">Izin</th>
                         <th className="px-1 py-2 sm:px-3 text-center">Alpa</th>
-                        <th className="px-1 py-2 sm:px-3 text-center">Status</th>
+                        <th className="px-1 py-2 sm:px-3 text-center">
+                          Status
+                        </th>
                         <th className="px-1 py-2 sm:px-3 text-center">Aksi</th>
                       </tr>
                     </thead>
@@ -1218,8 +1368,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                       {filteredSummaries.map((k) => (
                         <tr
                           key={k.classId}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-700/30"
-                        >
+                          className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                           <td className="px-1.5 py-2 sm:px-4 font-semibold text-slate-800 dark:text-slate-200">
                             {k.classId}
                           </td>
@@ -1238,12 +1387,13 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                           <td className="px-1 py-2 sm:px-3 text-center font-bold text-rose-600 dark:text-rose-400">
                             {k.alpa}
                           </td>
-                          <td className="px-1 py-2 sm:px-3 text-center">{statusBadge(k.status)}</td>
+                          <td className="px-1 py-2 sm:px-3 text-center">
+                            {statusBadge(k.status)}
+                          </td>
                           <td className="px-1 py-2 sm:px-3 text-center">
                             <button
                               onClick={() => openDetail(k)}
-                              className="px-1.5 py-1 sm:px-2 rounded-md text-[10px] sm:text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-                            >
+                              className="px-1.5 py-1 sm:px-2 rounded-md text-[10px] sm:text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50">
                               Detail
                             </button>
                           </td>
@@ -1269,8 +1419,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     exportMode === "bulanan"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                  }`}
-                >
+                  }`}>
                   Bulanan
                 </button>
                 <button
@@ -1279,8 +1428,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     exportMode === "semester"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                  }`}
-                >
+                  }`}>
                   Semester
                 </button>
               </div>
@@ -1293,8 +1441,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={exportClassId}
-                    onChange={(e) => setExportClassId(e.target.value)}
-                  >
+                    onChange={(e) => setExportClassId(e.target.value)}>
                     <option value="">Semua Kelas</option>
                     {exportClasses.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1311,8 +1458,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={exportYear}
-                    onChange={(e) => setExportYear(e.target.value)}
-                  >
+                    onChange={(e) => setExportYear(e.target.value)}>
                     {exportYearsList.map((y) => (
                       <option key={y} value={y}>
                         {y}
@@ -1329,8 +1475,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     <select
                       className={inputClass}
                       value={exportMonthNumber}
-                      onChange={(e) => setExportMonthNumber(Number(e.target.value))}
-                    >
+                      onChange={(e) =>
+                        setExportMonthNumber(Number(e.target.value))
+                      }>
                       {ACADEMIC_MONTH_ORDER.map((m) => (
                         <option key={m} value={m}>
                           {MONTH_NAMES[m - 1]}
@@ -1346,8 +1493,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     <select
                       className={inputClass}
                       value={exportSemesterId}
-                      onChange={(e) => setExportSemesterId(e.target.value)}
-                    >
+                      onChange={(e) => setExportSemesterId(e.target.value)}>
                       {exportSemesters.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.semester === 1 ? "Ganjil" : "Genap"}
@@ -1359,12 +1505,21 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
 
                 <button
                   onClick={
-                    exportMode === "bulanan" ? handleExportExcelBulanan : handleExportExcelSemester
+                    exportMode === "bulanan"
+                      ? handleExportExcelBulanan
+                      : handleExportExcelSemester
                   }
-                  disabled={exportMode === "bulanan" ? exportingExcel : exportingExcelSemester}
-                  className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 text-sm disabled:opacity-60"
-                >
-                  {(exportMode === "bulanan" ? exportingExcel : exportingExcelSemester) ? (
+                  disabled={
+                    exportMode === "bulanan"
+                      ? exportingExcel
+                      : exportingExcelSemester
+                  }
+                  className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 text-sm disabled:opacity-60">
+                  {(
+                    exportMode === "bulanan"
+                      ? exportingExcel
+                      : exportingExcelSemester
+                  ) ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <FileSpreadsheet size={16} />
@@ -1375,8 +1530,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 sm:p-4 text-xs sm:text-sm text-blue-700 dark:text-blue-300">
-              💡 Untuk export PDF presensi per siswa, buka tab <strong>Monitor Presensi</strong> →
-              klik <strong>Detail</strong> pada kelas yang dituju → pilih siswa.
+              💡 Untuk export PDF presensi per siswa, buka tab{" "}
+              <strong>Monitor Presensi</strong> → klik <strong>Detail</strong>{" "}
+              pada kelas yang dituju → pilih siswa.
             </div>
           </>
         )}
@@ -1389,7 +1545,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                 <h2 className="text-base sm:text-lg font-bold text-white">
                   Detail Presensi — {detailModal.className}
                 </h2>
-                <button onClick={closeDetail} className="text-white/80 hover:text-white">
+                <button
+                  onClick={closeDetail}
+                  className="text-white/80 hover:text-white">
                   <X size={20} />
                 </button>
               </div>
@@ -1407,8 +1565,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                           pdfExportMode === "bulanan"
                             ? "bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-400 shadow-sm"
                             : "text-slate-500 dark:text-slate-400"
-                        }`}
-                      >
+                        }`}>
                         Bulanan
                       </button>
                       <button
@@ -1417,8 +1574,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                           pdfExportMode === "semester"
                             ? "bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-400 shadow-sm"
                             : "text-slate-500 dark:text-slate-400"
-                        }`}
-                      >
+                        }`}>
                         Semester
                       </button>
                     </div>
@@ -1446,7 +1602,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                       {detailStudents.map((s) => (
                         <tr key={s.id}>
-                          <td className="py-2 text-slate-800 dark:text-slate-200">{s.name}</td>
+                          <td className="py-2 text-slate-800 dark:text-slate-200">
+                            {s.name}
+                          </td>
                           <td className="py-2 text-center text-slate-600 dark:text-slate-300">
                             {s.status}
                           </td>
@@ -1461,8 +1619,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                               onClick={() => handleExportPdfStudent(s)}
                               disabled={exportingPdfId === s.id}
                               className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-60"
-                              title="Export PDF presensi bulanan siswa ini"
-                            >
+                              title="Export PDF presensi bulanan siswa ini">
                               {exportingPdfId === s.id ? (
                                 <Loader2 size={13} className="animate-spin" />
                               ) : (

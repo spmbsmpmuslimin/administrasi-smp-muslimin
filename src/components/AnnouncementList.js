@@ -39,21 +39,25 @@ export default function AnnouncementList({ userId, userRole }) {
     try {
       const now = new Date().toISOString();
 
+      // ✅ FIX: userRole sekarang boleh string tunggal ATAU array (misal
+      // wali kelas yang statusnya dobel: "teacher" + "walikelas"). Semua
+      // role itu di-OR-kan bareng "semua".
+      const roles = Array.isArray(userRole) ? userRole : [userRole];
+      const roleFilter = [...roles, "semua"]
+        .map((r) => `target_role.eq.${r}`)
+        .join(",");
+
       // 1. Ambil pengumuman aktif yang masih dalam rentang tanggal berlaku
-      //    ✅ FIX: sebelumnya pakai .lte("effective_from", now) dan
-      //    .gte("effective_until", now) langsung -- kalau admin bikin
-      //    pengumuman tanpa isi salah satu/kedua tanggal itu (maksudnya
-      //    "berlaku terus, gak ada batas"), PostgREST bakal treat
-      //    null >= now sebagai FALSE, jadi pengumumannya kesaring keluar
-      //    walaupun is_active-nya true. Sekarang null dianggap "gak ada
-      //    batas" (tetep muncul) pakai .or() per kolom.
+      //    ✅ FIX: null di effective_from/effective_until dianggap "gak ada
+      //    batas" (tetep muncul) -- .lte/.gte langsung ke kolom nullable
+      //    bikin baris yang null kesaring keluar padahal is_active true.
       const { data: announcements, error: fetchError } = await supabase
         .from("announcement")
         .select("*")
         .eq("is_active", true)
         .or(`effective_from.is.null,effective_from.lte.${now}`)
         .or(`effective_until.is.null,effective_until.gte.${now}`)
-        .or(`target_role.eq.${userRole},target_role.eq.semua`)
+        .or(roleFilter)
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;
