@@ -17,7 +17,10 @@
 // ========================================================================
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
-import { getStudentSession, clearStudentSession } from "../utils/studentSession";
+import {
+  getStudentSession,
+  clearStudentSession,
+} from "../utils/studentSession";
 
 // Konversi kode gender dari tabel `students` ("P"/"L") ke label penuh yang
 // dipakai konsisten di UI & student_profile_details ("Perempuan"/"Laki-laki").
@@ -63,7 +66,7 @@ export default function useStudentProfile() {
       if (!authRow || !authRow.is_active) {
         console.error(
           "[useStudentProfile] Akun student_auth gak ketemu / non-aktif. session.id:",
-          session.id
+          session.id,
         );
         clearStudentSession();
         if (mountedRef.current) {
@@ -81,7 +84,12 @@ export default function useStudentProfile() {
         // student_profile_details.jenis_kelamin (isinya "Perempuan"/
         // "Laki-laki", dari dropdown form ProfileInfo). Konversi ke label
         // penuh dilakuin di bawah pas nyusun object `student`.
-        .select("id, full_name, nis, class_id, academic_year, is_active, gender")
+        // Kolom `nisn` di tabel `students` diisi dari data master resmi
+        // (lihat migrasi update_nisn.sql) — jadi ini SUMBER UTAMA buat
+        // NISN, bukan isian manual siswa di student_profile_details.
+        .select(
+          "id, full_name, nis, nisn, class_id, academic_year, is_active, gender",
+        )
         .eq("id", authRow.student_id)
         .maybeSingle();
 
@@ -103,13 +111,16 @@ export default function useStudentProfile() {
       const { data: detailRow, error: detailErr } = await supabase
         .from("student_profile_details")
         .select(
-          "jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu"
+          "jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu",
         )
         .eq("student_id", studentRow.id)
         .maybeSingle();
 
       if (detailErr) {
-        console.error("[useStudentProfile] Gagal ambil detail profil tambahan:", detailErr);
+        console.error(
+          "[useStudentProfile] Gagal ambil detail profil tambahan:",
+          detailErr,
+        );
       }
 
       if (mountedRef.current) {
@@ -140,10 +151,17 @@ export default function useStudentProfile() {
           // P/L, dikonversi ke label penuh), baru fallback ke
           // student_profile_details.jenis_kelamin (hasil form siswa
           // sendiri di ProfileInfo) kalau students.gender kosong/gak valid.
-          jenis_kelamin: genderCodeToLabel(studentRow?.gender) || detailRow?.jenis_kelamin || "",
+          jenis_kelamin:
+            genderCodeToLabel(studentRow?.gender) ||
+            detailRow?.jenis_kelamin ||
+            "",
           tempat_lahir: detailRow?.tempat_lahir || "",
           tanggal_lahir: detailRow?.tanggal_lahir || "",
-          nisn: detailRow?.nisn || "",
+          // Prioritas NISN: kolom `students.nisn` dulu (data resmi dari
+          // admin/master), baru fallback ke student_profile_details.nisn
+          // (isian lama siswa sendiri) kalau students.nisn masih kosong
+          // (contoh: 27 siswa yang belum ketemu NISN-nya di data master).
+          nisn: studentRow?.nisn || detailRow?.nisn || "",
           nama_ayah: detailRow?.nama_ayah || "",
           pekerjaan_ayah: detailRow?.pekerjaan_ayah || "",
           pendidikan_ayah: detailRow?.pendidikan_ayah || "",

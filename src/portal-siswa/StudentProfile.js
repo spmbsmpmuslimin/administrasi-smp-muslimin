@@ -102,7 +102,6 @@ export function ProfileInfo({ student, onUpdated }) {
     jenis_kelamin: "",
     tempat_lahir: "",
     tanggal_lahir: "",
-    nisn: "",
     sekolah_asal: "",
     alamat: "",
     no_hp: "",
@@ -122,7 +121,6 @@ export function ProfileInfo({ student, onUpdated }) {
       jenis_kelamin: student?.jenis_kelamin || "",
       tempat_lahir: student?.tempat_lahir || "",
       tanggal_lahir: student?.tanggal_lahir || "",
-      nisn: student?.nisn || "",
       sekolah_asal: student?.sekolah_asal || "",
       alamat: student?.alamat || "",
       no_hp: student?.no_hp || "",
@@ -148,7 +146,10 @@ export function ProfileInfo({ student, onUpdated }) {
       label: "Kelas",
       value: student?.classes?.grade || student?.homeroom_class_id || "-",
     },
-    { label: "Tempat, Tanggal Lahir", value: formatTempatTanggalLahir(student) },
+    {
+      label: "Tempat, Tanggal Lahir",
+      value: formatTempatTanggalLahir(student),
+    },
     { label: "Sekolah Asal", value: student?.sekolah_asal || "-" },
     { label: "Alamat Lengkap", value: student?.alamat || "-" },
     { label: "No. HP Siswa (Kalau Ada)", value: student?.no_hp || "-" },
@@ -157,7 +158,10 @@ export function ProfileInfo({ student, onUpdated }) {
     { section: "Data Orangtua", divider: true },
     { label: "Nama Lengkap Ayah", value: student?.nama_ayah || "-" },
     { label: "Pekerjaan Ayah", value: student?.pekerjaan_ayah || "-" },
-    { label: "Pendidikan Terakhir Ayah", value: student?.pendidikan_ayah || "-" },
+    {
+      label: "Pendidikan Terakhir Ayah",
+      value: student?.pendidikan_ayah || "-",
+    },
     { label: "Nama Lengkap Ibu", value: student?.nama_ibu || "-" },
     { label: "Pekerjaan Ibu", value: student?.pekerjaan_ibu || "-" },
     { label: "Pendidikan Terakhir Ibu", value: student?.pendidikan_ibu || "-" },
@@ -177,11 +181,15 @@ export function ProfileInfo({ student, onUpdated }) {
     // gak ada nomor asal-asalan/kepotong kesimpen. Kosongin field-nya
     // tetep boleh (opsional), jadi cuma divalidasi kalau ada isinya.
     if (form.no_hp && !isValidPhone(form.no_hp)) {
-      setFormError("No. HP Siswa tidak valid. Contoh format yang benar: 08123456789.");
+      setFormError(
+        "No. HP Siswa tidak valid. Contoh format yang benar: 08123456789.",
+      );
       return;
     }
     if (form.no_hp_ortu && !isValidPhone(form.no_hp_ortu)) {
-      setFormError("No. HP Orang Tua/Wali tidak valid. Contoh format yang benar: 08123456789.");
+      setFormError(
+        "No. HP Orang Tua/Wali tidak valid. Contoh format yang benar: 08123456789.",
+      );
       return;
     }
 
@@ -190,27 +198,33 @@ export function ProfileInfo({ student, onUpdated }) {
       // Upsert: 1 baris per siswa di student_profile_details
       // (student_id = primary key), jadi otomatis update kalau udah
       // pernah isi, atau insert kalau baru pertama kali.
-      const { error: upsertErr } = await supabase.from("student_profile_details").upsert(
-        {
-          student_id: student.id,
-          jenis_kelamin: form.jenis_kelamin || null,
-          tempat_lahir: form.tempat_lahir || null,
-          tanggal_lahir: form.tanggal_lahir || null,
-          nisn: form.nisn || null,
-          sekolah_asal: form.sekolah_asal || null,
-          alamat: form.alamat || null,
-          no_hp: form.no_hp ? normalizePhone(form.no_hp) : null,
-          nama_ayah: form.nama_ayah || null,
-          pekerjaan_ayah: form.pekerjaan_ayah || null,
-          pendidikan_ayah: form.pendidikan_ayah || null,
-          nama_ibu: form.nama_ibu || null,
-          pekerjaan_ibu: form.pekerjaan_ibu || null,
-          pendidikan_ibu: form.pendidikan_ibu || null,
-          no_hp_ortu: form.no_hp_ortu ? normalizePhone(form.no_hp_ortu) : null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "student_id" }
-      );
+      const { error: upsertErr } = await supabase
+        .from("student_profile_details")
+        .upsert(
+          {
+            student_id: student.id,
+            jenis_kelamin: form.jenis_kelamin || null,
+            tempat_lahir: form.tempat_lahir || null,
+            tanggal_lahir: form.tanggal_lahir || null,
+            // NISN SENGAJA gak dikirim dari sini lagi — sumber utamanya
+            // sekarang kolom `students.nisn` (data resmi admin), bukan
+            // isian siswa. Lihat useStudentProfile.js.
+            sekolah_asal: form.sekolah_asal || null,
+            alamat: form.alamat || null,
+            no_hp: form.no_hp ? normalizePhone(form.no_hp) : null,
+            nama_ayah: form.nama_ayah || null,
+            pekerjaan_ayah: form.pekerjaan_ayah || null,
+            pendidikan_ayah: form.pendidikan_ayah || null,
+            nama_ibu: form.nama_ibu || null,
+            pekerjaan_ibu: form.pekerjaan_ibu || null,
+            pendidikan_ibu: form.pendidikan_ibu || null,
+            no_hp_ortu: form.no_hp_ortu
+              ? normalizePhone(form.no_hp_ortu)
+              : null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "student_id" },
+        );
 
       if (upsertErr) throw upsertErr;
 
@@ -239,18 +253,24 @@ export function ProfileInfo({ student, onUpdated }) {
 
         {/* ---- Data Siswa ---- */}
         <div className="space-y-3">
-          <p className="text-sm font-extrabold uppercase tracking-wide text-theme-secondary">Data Siswa</p>
+          <p className="text-sm font-extrabold uppercase tracking-wide text-theme-secondary">
+            Data Siswa
+          </p>
           <div>
             <label className={labelClass}>Jenis Kelamin</label>
             <div className="flex gap-4 px-1 py-1">
               {["Laki-laki", "Perempuan"].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 text-sm text-theme-secondary">
+                <label
+                  key={opt}
+                  className="flex items-center gap-2 text-sm text-theme-secondary">
                   <input
                     type="radio"
                     name="jenis_kelamin"
                     value={opt}
                     checked={form.jenis_kelamin === opt}
-                    onChange={(e) => setForm((f) => ({ ...f, jenis_kelamin: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, jenis_kelamin: e.target.value }))
+                    }
                     className="accent-blue-600"
                   />
                   {opt}
@@ -265,7 +285,9 @@ export function ProfileInfo({ student, onUpdated }) {
               <input
                 type="text"
                 value={form.tempat_lahir}
-                onChange={(e) => setForm((f) => ({ ...f, tempat_lahir: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, tempat_lahir: e.target.value }))
+                }
                 placeholder="Contoh: Bandung Barat"
                 className={inputClass}
               />
@@ -275,7 +297,9 @@ export function ProfileInfo({ student, onUpdated }) {
               <input
                 type="date"
                 value={form.tanggal_lahir}
-                onChange={(e) => setForm((f) => ({ ...f, tanggal_lahir: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, tanggal_lahir: e.target.value }))
+                }
                 className={inputClass}
               />
             </div>
@@ -285,11 +309,14 @@ export function ProfileInfo({ student, onUpdated }) {
             <label className={labelClass}>NISN</label>
             <input
               type="text"
-              value={form.nisn}
-              onChange={(e) => setForm((f) => ({ ...f, nisn: e.target.value }))}
-              placeholder="Nomor Induk Siswa Nasional"
-              className={inputClass}
+              value={student?.nisn || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
             />
+            <p className="text-xs text-theme-secondary mt-1">
+              NISN diambil dari data resmi sekolah dan tidak bisa diubah
+              sendiri. Kalau ada yang salah/kosong, hubungi Tata Usaha.
+            </p>
           </div>
 
           <div>
@@ -297,7 +324,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <input
               type="text"
               value={form.sekolah_asal}
-              onChange={(e) => setForm((f) => ({ ...f, sekolah_asal: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, sekolah_asal: e.target.value }))
+              }
               placeholder="Contoh: SDN 1 Cililin"
               className={inputClass}
             />
@@ -308,7 +337,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <textarea
               rows={2}
               value={form.alamat}
-              onChange={(e) => setForm((f) => ({ ...f, alamat: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, alamat: e.target.value }))
+              }
               placeholder="Contoh: Kp. Cikadu RT 08 RW 07 Desa Bongas Kec. Cililin Kab. Bandung Barat"
               className={inputClass}
             />
@@ -319,7 +350,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <input
               type="tel"
               value={form.no_hp}
-              onChange={(e) => setForm((f) => ({ ...f, no_hp: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, no_hp: e.target.value }))
+              }
               placeholder="08xxxxxxxxxx"
               className={inputClass}
             />
@@ -336,7 +369,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <input
               type="text"
               value={form.nama_ayah}
-              onChange={(e) => setForm((f) => ({ ...f, nama_ayah: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, nama_ayah: e.target.value }))
+              }
               placeholder="Nama lengkap ayah"
               className={inputClass}
             />
@@ -346,7 +381,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <input
               type="text"
               value={form.pekerjaan_ayah}
-              onChange={(e) => setForm((f) => ({ ...f, pekerjaan_ayah: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, pekerjaan_ayah: e.target.value }))
+              }
               placeholder="Contoh: Wiraswasta"
               className={inputClass}
             />
@@ -355,9 +392,10 @@ export function ProfileInfo({ student, onUpdated }) {
             <label className={labelClass}>Pendidikan Terakhir Ayah</label>
             <select
               value={form.pendidikan_ayah}
-              onChange={(e) => setForm((f) => ({ ...f, pendidikan_ayah: e.target.value }))}
-              className={inputClass}
-            >
+              onChange={(e) =>
+                setForm((f) => ({ ...f, pendidikan_ayah: e.target.value }))
+              }
+              className={inputClass}>
               <option value="">Pilih pendidikan terakhir</option>
               {PENDIDIKAN_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
@@ -372,7 +410,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <input
               type="text"
               value={form.nama_ibu}
-              onChange={(e) => setForm((f) => ({ ...f, nama_ibu: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, nama_ibu: e.target.value }))
+              }
               placeholder="Nama lengkap ibu"
               className={inputClass}
             />
@@ -382,7 +422,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <input
               type="text"
               value={form.pekerjaan_ibu}
-              onChange={(e) => setForm((f) => ({ ...f, pekerjaan_ibu: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, pekerjaan_ibu: e.target.value }))
+              }
               placeholder="Contoh: Ibu Rumah Tangga"
               className={inputClass}
             />
@@ -391,9 +433,10 @@ export function ProfileInfo({ student, onUpdated }) {
             <label className={labelClass}>Pendidikan Terakhir Ibu</label>
             <select
               value={form.pendidikan_ibu}
-              onChange={(e) => setForm((f) => ({ ...f, pendidikan_ibu: e.target.value }))}
-              className={inputClass}
-            >
+              onChange={(e) =>
+                setForm((f) => ({ ...f, pendidikan_ibu: e.target.value }))
+              }
+              className={inputClass}>
               <option value="">Pilih pendidikan terakhir</option>
               {PENDIDIKAN_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
@@ -408,7 +451,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <input
               type="tel"
               value={form.no_hp_ortu}
-              onChange={(e) => setForm((f) => ({ ...f, no_hp_ortu: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, no_hp_ortu: e.target.value }))
+              }
               placeholder="08xxxxxxxxxx"
               className={inputClass}
             />
@@ -419,15 +464,13 @@ export function ProfileInfo({ student, onUpdated }) {
           <button
             type="button"
             onClick={() => setIsEditing(false)}
-            className="flex-1 text-sm font-semibold text-theme-secondary bg-theme-surface py-2.5 rounded-lg"
-          >
+            className="flex-1 text-sm font-semibold text-theme-secondary bg-theme-surface py-2.5 rounded-lg">
             Batal
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60"
-          >
+            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60">
             {submitting && <Loader2 size={16} className="animate-spin" />}
             {submitting ? "Menyimpan..." : "Simpan"}
           </button>
@@ -452,24 +495,31 @@ export function ProfileInfo({ student, onUpdated }) {
               <p
                 key={r.section}
                 className={`col-span-3 text-sm font-extrabold uppercase tracking-wide text-theme-secondary pb-1.5 ${
-                  isFirst ? "pt-0" : r.divider ? "mt-3 pt-4 border-t-2 border-theme" : "pt-4"
-                }`}
-              >
+                  isFirst
+                    ? "pt-0"
+                    : r.divider
+                      ? "mt-3 pt-4 border-t-2 border-theme"
+                      : "pt-4"
+                }`}>
                 {r.section}
               </p>
             );
           }
           const prev = rows[i - 1];
-          const bordered = i !== 0 && !prev?.section ? "border-t border-gray-100" : "";
+          const bordered =
+            i !== 0 && !prev?.section ? "border-t border-gray-100" : "";
           return (
             <React.Fragment key={r.label}>
               <span
-                className={`text-sm font-medium text-theme-secondary whitespace-nowrap py-3 ${bordered}`}
-              >
+                className={`text-sm font-medium text-theme-secondary whitespace-nowrap py-3 ${bordered}`}>
                 {r.label}
               </span>
-              <span className={`text-sm font-medium text-theme-secondary py-3 ${bordered}`}>:</span>
-              <span className={`text-sm font-bold text-theme break-words py-3 ${bordered}`}>
+              <span
+                className={`text-sm font-medium text-theme-secondary py-3 ${bordered}`}>
+                :
+              </span>
+              <span
+                className={`text-sm font-bold text-theme break-words py-3 ${bordered}`}>
                 {r.value}
               </span>
             </React.Fragment>
@@ -479,8 +529,7 @@ export function ProfileInfo({ student, onUpdated }) {
       <button
         type="button"
         onClick={() => setIsEditing(true)}
-        className="w-full mt-3 text-sm font-semibold text-blue-600 bg-blue-50 py-2.5 rounded-lg"
-      >
+        className="w-full mt-3 text-sm font-semibold text-blue-600 bg-blue-50 py-2.5 rounded-lg">
         Lengkapi / Edit Data
       </button>
     </div>
@@ -597,8 +646,7 @@ export function ChangePasswordForm({ student }) {
         <button
           type="button"
           onClick={() => setShowPw((v) => !v)}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
-        >
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
           {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
@@ -606,8 +654,7 @@ export function ChangePasswordForm({ student }) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60"
-      >
+        className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60">
         {submitting && <Loader2 size={16} className="animate-spin" />}
         {submitting ? "Menyimpan..." : "Simpan Password Baru"}
       </button>
@@ -630,8 +677,7 @@ export function LogoutSection() {
       <button
         type="button"
         onClick={() => setConfirmLogout(true)}
-        className="text-sm font-semibold text-red-600"
-      >
+        className="text-sm font-semibold text-red-600">
         Klik untuk konfirmasi keluar dari akun.
       </button>
     );
@@ -644,15 +690,13 @@ export function LogoutSection() {
         <button
           type="button"
           onClick={() => setConfirmLogout(false)}
-          className="flex-1 text-sm font-semibold text-theme-secondary bg-theme-surface py-2 rounded-lg"
-        >
+          className="flex-1 text-sm font-semibold text-theme-secondary bg-theme-surface py-2 rounded-lg">
           Batal
         </button>
         <button
           type="button"
           onClick={handleLogout}
-          className="flex-1 text-sm font-semibold text-white bg-red-600 py-2 rounded-lg"
-        >
+          className="flex-1 text-sm font-semibold text-white bg-red-600 py-2 rounded-lg">
           Ya, Keluar
         </button>
       </div>

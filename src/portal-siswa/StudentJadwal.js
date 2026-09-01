@@ -135,13 +135,14 @@ export default function StudentJadwal() {
         </div>
       )}
 
-      {/* Tab hari */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+      {/* Tab hari — grid 5 kolom (Senin-Jumat pas 5 hari), biar rata kiri-kanan
+          layar dan gak perlu di-scroll horizontal kayak sebelumnya. */}
+      <div className="grid grid-cols-5 gap-1.5">
         {SCHOOL_DAYS.map((day) => (
           <button
             key={day}
             onClick={() => setActiveDay(day)}
-            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold border transition ${
+            className={`w-full px-2 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition text-center ${
               activeDay === day
                 ? "bg-blue-600 border-blue-600 text-white"
                 : "bg-theme-bg border-theme text-theme-secondary"
@@ -165,11 +166,11 @@ export default function StudentJadwal() {
                     <th className="text-left font-semibold text-theme-secondary px-4 py-2 whitespace-nowrap">
                       Jam Ke
                     </th>
-                    <th className="text-left font-semibold text-theme-secondary px-4 py-2">
-                      Mapel
-                    </th>
-                    <th className="text-right font-semibold text-theme-secondary px-4 py-2 whitespace-nowrap">
+                    <th className="text-left font-semibold text-theme-secondary px-4 py-2 whitespace-nowrap">
                       Waktu
+                    </th>
+                    <th className="text-left font-semibold text-theme-secondary px-4 py-2">
+                      Mata Pelajaran
                     </th>
                   </tr>
                 </thead>
@@ -196,6 +197,11 @@ export default function StudentJadwal() {
                         <td className="text-sm font-medium text-theme px-4 py-1.5">
                           {period}
                         </td>
+                        <td className="text-base font-extrabold text-theme px-4 py-1.5 tabular-nums whitespace-nowrap">
+                          {startTime && endTime
+                            ? `${startTime.slice(0, 5)}–${endTime.slice(0, 5)}`
+                            : "-"}
+                        </td>
                         <td className="px-4 py-1.5">
                           <p className="text-sm font-medium text-theme">
                             {item.subject}
@@ -203,11 +209,6 @@ export default function StudentJadwal() {
                           <p className="text-xs text-blue-600 font-normal mt-0.5">
                             {item.teacher_name || "-"}
                           </p>
-                        </td>
-                        <td className="text-base font-extrabold text-theme text-right px-4 py-1.5 tabular-nums whitespace-nowrap">
-                          {startTime && endTime
-                            ? `${startTime.slice(0, 5)}–${endTime.slice(0, 5)}`
-                            : "-"}
                         </td>
                       </tr>
                     );

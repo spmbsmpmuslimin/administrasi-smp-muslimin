@@ -556,12 +556,38 @@ const checkDataVolume = async () => {
   const issues = [];
 
   try {
-    // Check major table sizes
+    // Check major table sizes.
+    // Diperluas per Sep 2026 supaya nyakup tabel-tabel yang secara alami
+    // TIDAK punya batas pertumbuhan (log/notifikasi/history) — sebelumnya
+    // hanya 4 tabel inti yang dipantau, sehingga tabel-tabel ini bisa
+    // membengkak tanpa pernah memicu warning apapun di sini.
     const tables = [
+      // Data inti — tumbuh sebanding jumlah siswa/tahun ajaran (predictable)
       { name: "students", info: 100, warning: 2000, critical: 5000 },
       { name: "attendances", info: 1000, warning: 20000, critical: 50000 },
       { name: "grades", info: 500, warning: 10000, critical: 30000 },
       { name: "konseling", info: 100, warning: 2000, critical: 5000 },
+      {
+        name: "attendance_eraport",
+        info: 500,
+        warning: 15000,
+        critical: 40000,
+      },
+      { name: "grades_katrol", info: 300, warning: 8000, critical: 20000 },
+      { name: "jurnal_harian", info: 500, warning: 15000, critical: 40000 },
+      { name: "teacher_attendance", info: 300, warning: 8000, critical: 20000 },
+      { name: "homevisits", info: 50, warning: 500, critical: 2000 },
+      // Log / notifikasi — TIDAK ada batas alami, wajib rutin di-cleanup
+      { name: "audit_logs", info: 1000, warning: 10000, critical: 30000 },
+      { name: "notifications", info: 500, warning: 5000, critical: 15000 },
+      { name: "system_health_logs", info: 200, warning: 2000, critical: 5000 },
+      { name: "cleanup_history", info: 100, warning: 1000, critical: 3000 },
+      {
+        name: "announcement_reads",
+        info: 1000,
+        warning: 20000,
+        critical: 50000,
+      },
     ];
 
     for (const table of tables) {

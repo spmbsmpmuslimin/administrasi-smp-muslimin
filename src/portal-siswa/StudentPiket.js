@@ -153,13 +153,14 @@ export default function StudentPiket({ student }) {
 
   return (
     <>
-      {/* Tab hari — pola sama persis kayak StudentJadwal.js */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+      {/* Tab hari — grid 5 kolom (Senin-Jumat pas 5 hari), biar rata kiri-kanan
+          layar dan gak perlu di-scroll horizontal kayak sebelumnya. */}
+      <div className="grid grid-cols-5 gap-1.5">
         {SCHOOL_DAYS.map((day) => (
           <button
             key={day}
             onClick={() => setActiveDay(day)}
-            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-semibold border transition ${
+            className={`w-full px-2 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition text-center ${
               activeDay === day
                 ? "bg-orange-600 border-orange-600 text-white"
                 : "bg-theme-bg border-theme text-theme-secondary"

@@ -25,7 +25,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   const [selectedJenjang, setSelectedJenjang] = useState("");
   const [selectedKelas, setSelectedKelas] = useState("");
   const [selectedGender, setSelectedGender] = useState("");
-  const PAGE_SIZE = 30;
+  const PAGE_SIZE = 50;
   const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE);
   const [availableJenjang, setAvailableJenjang] = useState([]);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -35,6 +35,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [editForm, setEditForm] = useState({
     nis: "",
+    nisn: "",
     full_name: "",
     gender: "L",
     class_id: "",
@@ -293,6 +294,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
     setSelectedStudent(siswa);
     setEditForm({
       nis: siswa.nis,
+      nisn: siswa.nisn || "",
       full_name: siswa.full_name,
       gender: siswa.gender,
       class_id: siswa.class_id,
@@ -309,6 +311,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
         .from("students")
         .update({
           nis: editForm.nis,
+          nisn: editForm.nisn || null,
           full_name: editForm.full_name,
           gender: editForm.gender,
           class_id: editForm.class_id,
@@ -512,6 +515,21 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
               }
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
               required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              NISN
+            </label>
+            <input
+              type="text"
+              value={editForm.nisn}
+              onChange={(e) =>
+                setEditForm({ ...editForm, nisn: e.target.value })
+              }
+              placeholder="Kosongkan jika belum ada"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
             />
           </div>
 
@@ -1178,6 +1196,18 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 dark:text-gray-400 font-medium">
+                    NISN:
+                  </span>
+                  <span className="font-mono text-gray-900 dark:text-gray-200">
+                    {siswa.nisn || (
+                      <span className="text-gray-400 dark:text-gray-500 italic font-sans">
+                        Belum ada
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">
                     Jenis Kelamin:
                   </span>
                   <span className="text-gray-900 dark:text-gray-200">
@@ -1252,6 +1282,9 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                   <th className="px-6 py-4 text-left w-2/12 text-sm uppercase tracking-wider">
                     NIS
                   </th>
+                  <th className="px-6 py-4 text-left w-2/12 text-sm uppercase tracking-wider">
+                    NISN
+                  </th>
                   <th className="px-6 py-4 text-left w-3/12 text-sm uppercase tracking-wider">
                     Nama
                   </th>
@@ -1281,6 +1314,13 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     </td>
                     <td className="px-6 py-4 font-mono text-gray-900 dark:text-white">
                       {siswa.nis}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-gray-900 dark:text-white">
+                      {siswa.nisn || (
+                        <span className="text-gray-400 dark:text-gray-500 italic font-sans">
+                          Belum ada
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
                       {siswa.full_name}

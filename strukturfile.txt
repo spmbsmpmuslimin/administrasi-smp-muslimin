@@ -1,5 +1,16 @@
-TABEL DATABASE SUPABASE :
+# Struktur File & Database — Administrasi SMP Muslimin Cililin
 
+Digenerate ulang: 01 September 2026 (menggantikan versi 29 Agustus).
+
+Ringkasan:
+- Total tabel database Supabase: 58
+- Total file source (.js/.ts, di luar node_modules/.git): 255 file, 39 folder
+
+---
+
+## Daftar Tabel Database Supabase
+
+```
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
 academic_years : id,year,semester,start_date,end_date,is_active,created_at,updated_at
 announcement : id,title,content,created_at,updated_at,effective_from,effective_until,target_role,is_active
@@ -48,7 +59,7 @@ student_devices : id,student_id,device_id,brand,model,platform,browser,last_logi
 student_profile_details : student_id,alamat,no_hp,nama_ortu,no_hp_ortu,sekolah_asal,updated_at,jenis_kelamin,tempat_lahir,tanggal_lahir,nisn,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu
 student_report_grades : id,report_id,subject,score,created_at
 student_reports : id,student_id,student_name,student_nis,class_name,academic_year,semester,attendance,homeroom_note,extracurricular,status,source_file,created_by,created_at,updated_at
-students : id,full_name,nis,gender,class_id,academic_year,is_active,created_at,updated_at,academic_year_id,user_id
+students : id,full_name,nis,gender,class_id,academic_year,is_active,created_at,updated_at,academic_year_id,user_id,nisn
 system_health_logs : id,checked_at,checked_by,total_issues,critical_count,warning_count,info_count,issues_detail,execution_time,status,created_at
 teacher_assignments : id,teacher_id,class_id,subject,academic_year,semester,created_at,academic_year_id,updated_at
 teacher_attendance : id,teacher_id,attendance_date,status,clock_in,check_in_method,notes,created_at,updated_at,gps_location,is_suspicious,full_name,admin_info
@@ -60,332 +71,295 @@ tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academi
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
 users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count 
 
-===============================================================================================================================
+```
 
+---
 
+## Struktur Folder & File Project
 
-# Struktur File — Administrasi SMP Muslimin Cililin
+```
+.
+|-- src
+|   |-- assets
+|   |   |-- Background.webp
+|   |   |-- logo_sekolah-0.png
+|   |   `-- logo_sekolah.png
+|   |-- attendance-teacher
+|   |   |-- reports
+|   |   |   |-- DailySummary.js
+|   |   |   |-- ExportExcel.js
+|   |   |   |-- ITMReport.js
+|   |   |   |-- ITMReportExcel.js
+|   |   |   `-- MonthlyView.js
+|   |   |-- AdminAttendanceView.js
+|   |   |-- AttendanceTabs.js
+|   |   |-- CustomDatePicker.js
+|   |   |-- LocationValidator.js
+|   |   |-- ManualCheckIn.js
+|   |   |-- MyAttendanceStatus.js
+|   |   |-- MyMonthlyHistory.js
+|   |   |-- QRCodeGenerator.js
+|   |   |-- QRScanner.js
+|   |   |-- TeacherAttendance.js
+|   |   |-- TodaySchedule.js
+|   |   `-- index.html
+|   |-- components
+|   |   |-- AdminDashboard.js
+|   |   |-- AdminJurnalRekap.js
+|   |   |-- AnnouncementList.js
+|   |   |-- AnnouncementPopup.js
+|   |   |-- BottomNav.js
+|   |   |-- CatatanWalikelasBk.js
+|   |   |-- ConnectedDevices.js
+|   |   |-- Dashboard.js
+|   |   |-- FeedbackGuru.js
+|   |   |-- GuruBKDashboard.js
+|   |   |-- HomeroomTeacherDashboard.js
+|   |   |-- KelengkapanDataSiswa.js
+|   |   |-- Layout.js
+|   |   |-- Login.js
+|   |   |-- Logo.js
+|   |   |-- NotifikasiBk.js
+|   |   |-- PengumumanWaliKelas.js
+|   |   |-- SaranMasukanSiswa.js
+|   |   |-- Sidebar.js
+|   |   |-- StudentLogin.js
+|   |   |-- StudentProfilePDF.js
+|   |   |-- TeacherDashboard.js
+|   |   `-- WaliKelasWidgetTab.js
+|   |-- config
+|   |   |-- menuConfig.js
+|   |   `-- sidebarConfig.js
+|   |-- e-raport
+|   |   |-- CekNilai.js
+|   |   |-- CekStatusNilai.js
+|   |   |-- CetakRaport.js
+|   |   |-- DashboardAdmin.js
+|   |   |-- DashboardHomeroomTeacher.js
+|   |   |-- DashboardTeacher.js
+|   |   |-- InputCatatan.js
+|   |   |-- InputEkstrakurikuler.js
+|   |   |-- InputKehadiran.js
+|   |   |-- InputKokurikuler.js
+|   |   |-- InputNilai.js
+|   |   |-- InputTP.js
+|   |   |-- PreviewNilai.js
+|   |   |-- PreviewRaport.js
+|   |   |-- RaportConfig.js
+|   |   `-- RaportPage.js
+|   |-- hooks
+|   |   `-- useAuth.js
+|   |-- konseling
+|   |   |-- home-visit
+|   |   |   |-- HomeVisit.js
+|   |   |   |-- HomeVisitDetail.js
+|   |   |   |-- HomeVisitExportPDF.js
+|   |   |   |-- HomeVisitFilter.js
+|   |   |   |-- HomeVisitModal.js
+|   |   |   |-- HomeVisitStats.js
+|   |   |   `-- HomeVisitTable.js
+|   |   |-- ExportPDF.js
+|   |   |-- FilterBar.js
+|   |   |-- Konseling.js
+|   |   |-- KonselingMain.js
+|   |   |-- KonselingModal.js
+|   |   |-- KonselingTable.js
+|   |   `-- StatsCards.js
+|   |-- pages
+|   |   |-- attendance
+|   |   |   |-- AdminAttendance.js
+|   |   |   |-- Attendance.js
+|   |   |   |-- AttendanceExcel.js
+|   |   |   |-- AttendanceFilters.js
+|   |   |   |-- AttendanceMain.js
+|   |   |   |-- AttendanceManagement.js
+|   |   |   |-- AttendanceModals.js
+|   |   |   |-- AttendancePDF.js
+|   |   |   |-- AttendanceStats.js
+|   |   |   `-- AttendanceTable.js
+|   |   |-- grades
+|   |   |   |-- GradeMain.js
+|   |   |   |-- Grades.js
+|   |   |   |-- GradesExcel.js
+|   |   |   |-- GradesKatrol.js
+|   |   |   |-- KatrolTable.js
+|   |   |   `-- Utils.js
+|   |   |-- CatatanSiswa.js
+|   |   |-- CatatanSiswaExport.js
+|   |   |-- Classes.js
+|   |   |-- DataExcel.js
+|   |   |-- DenahDuduk.js
+|   |   |-- JurnalHarian.js
+|   |   |-- KelolaJadwalPelajaran.js
+|   |   |-- KelolaJadwalPiket.js
+|   |   |-- Organigram.js
+|   |   |-- PortalBackButton.js
+|   |   |-- PortalSiswaGuru.js
+|   |   |-- Students.js
+|   |   |-- TeacherSchedule.js
+|   |   |-- TeacherScheduleExcel.js
+|   |   |-- Teachers.js
+|   |   `-- withPortalBack.js
+|   |-- perpustakaan
+|   |   |-- Katalog.js
+|   |   |-- Peminjaman.js
+|   |   |-- Pengembalian.js
+|   |   `-- PerpusMain.js
+|   |-- portal-siswa
+|   |   |-- belajar
+|   |   |   |-- bahasa-inggris
+|   |   |   |   |-- data
+|   |   |   |   |   `-- chapterData.js
+|   |   |   |   |-- ChapterDetail.js
+|   |   |   |   `-- ChapterList.js
+|   |   |   |-- BelajarMain.js
+|   |   |   |-- RuangBelajarCategories.js
+|   |   |   |-- RuangBelajarDetail.js
+|   |   |   `-- RuangBelajarHome.js
+|   |   |-- ruang-belajar-admin
+|   |   |   |-- RuangBelajarAdmin.js
+|   |   |   `-- RuangBelajarForm.js
+|   |   |-- StudentBottomNav.js
+|   |   |-- StudentDashboard.js
+|   |   |-- StudentDataSiswa.js
+|   |   |-- StudentDenahDuduk.js
+|   |   |-- StudentHelpers.js
+|   |   |-- StudentInfo.js
+|   |   |-- StudentJadwal.js
+|   |   |-- StudentLayout.js
+|   |   |-- StudentOrganigram.js
+|   |   |-- StudentPengumuman.js
+|   |   |-- StudentPerangkatTerhubung.js
+|   |   |-- StudentPiket.js
+|   |   |-- StudentPortal.js
+|   |   |-- StudentPresensi.js
+|   |   |-- StudentProfile.js
+|   |   |-- StudentRaport.js
+|   |   |-- StudentSaran.js
+|   |   |-- StudentSidebar.js
+|   |   `-- useStudentProfile.js
+|   |-- reports
+|   |   |-- modals
+|   |   |   |-- AcademicGradesView.js
+|   |   |   |-- AdminReportModal.js
+|   |   |   |-- BKReportModal.js
+|   |   |   |-- HomeroomReportModal.js
+|   |   |   `-- TeacherReportModal.js
+|   |   |-- AdminReports.js
+|   |   |-- BKReports.js
+|   |   |-- DailyAttendanceSection.js
+|   |   |-- HomeroomTeacherReports.js
+|   |   |-- ReportExcel.js
+|   |   |-- ReportHelpers.js
+|   |   |-- Reports.js
+|   |   `-- TeacherReports.js
+|   |-- services
+|   |   |-- academicYearService.js
+|   |   `-- semesterService.js
+|   |-- setting
+|   |   |-- academic
+|   |   |   |-- AcademicYearTab.js
+|   |   |   |-- CopyAssignmentsModal.js
+|   |   |   |-- SemesterManagement.js
+|   |   |   |-- Simulator.js
+|   |   |   `-- YearTransition.js
+|   |   |-- feedback
+|   |   |   |-- FeedbackCombinedTab.js
+|   |   |   |-- FeedbackGuruTab.js
+|   |   |   `-- FeedbackSiswaTab.js
+|   |   |-- kelola-jadwal
+|   |   |-- kelola-raport
+|   |   |   |-- DetailRaportSiswa.js
+|   |   |   |-- ImportProgress.js
+|   |   |   |-- ImportRaportForm.js
+|   |   |   |-- ManajemenRaportTable.js
+|   |   |   |-- PreviewImportTable.js
+|   |   |   |-- RaportNilaiTab.js
+|   |   |   |-- RaportTable.js
+|   |   |   |-- RekapKelulusan.js
+|   |   |   |-- RekapMultiSemester.js
+|   |   |   |-- SemesterFilterBar.js
+|   |   |   |-- StatusBadge.js
+|   |   |   |-- exportRekapExcel.js
+|   |   |   |-- parseLegerExcel.js
+|   |   |   `-- useAcademicOptions.js
+|   |   |-- portal-siswa
+|   |   |   |-- AkunSiswaTab.js
+|   |   |   `-- PortalSiswaTab.js
+|   |   |-- school-management
+|   |   |   |-- BulkImportModals.js
+|   |   |   |-- SchoolCombinedTab.js
+|   |   |   |-- SchoolManagementTab.js
+|   |   |   |-- SchoolSettingsTab.js
+|   |   |   |-- StudentManagement.js
+|   |   |   |-- StudentModals.js
+|   |   |   `-- TeacherAssignmentTab.js
+|   |   |-- ActiveUsersTab.js
+|   |   |-- AdminJadwalMassal.js
+|   |   |-- AdminKodeGuru.js
+|   |   |-- AdminPanel.js
+|   |   |-- AuditLogPanel.js
+|   |   |-- ChangePasswordSection.js
+|   |   |-- ConnectedDevicesAdminTab.js
+|   |   |-- JadwalGuruTab.js
+|   |   |-- MaintenanceModeTab.js
+|   |   |-- MaintenancePage.js
+|   |   |-- ProfileTab.js
+|   |   |-- Setting.js
+|   |   |-- StudentConnectedDevicesAdminTab.js
+|   |   |-- SystemTab.js
+|   |   |-- TeacherAssignmentExcel.js
+|   |   `-- UserManagementTab.js
+|   |-- spmb
+|   |   |-- ClassDistribution.js
+|   |   |-- ClassDivision.js
+|   |   |-- ClassOperations.js
+|   |   |-- SPMB.js
+|   |   |-- SpmbExcel.js
+|   |   |-- Statistics.js
+|   |   |-- StudentForm.js
+|   |   `-- StudentList.js
+|   |-- system
+|   |   |-- checkers
+|   |   |   |-- AppHealthChecker.js
+|   |   |   |-- BusinessLogicChecker.js
+|   |   |   |-- DataValidator.js
+|   |   |   `-- DatabaseChecker.js
+|   |   |-- DatabaseCleanupMonitor.js
+|   |   |-- HealthChecker.js
+|   |   |-- MonitorDashboard.js
+|   |   |-- MonitorHistory.js
+|   |   |-- MonitorResults.js
+|   |   |-- MonitorSistem.js
+|   |   `-- PerformanceMonitor.js
+|   |-- utils
+|   |   |-- deviceInfo.js
+|   |   |-- excelExportKit.js
+|   |   |-- jamPelajaran.js
+|   |   |-- offlineHelper.js
+|   |   |-- pdfExportKit.js
+|   |   |-- studentDevices.js
+|   |   |-- studentSession.js
+|   |   |-- systemHelpers.js
+|   |   `-- userDevices.js
+|   |-- App.js
+|   |-- constants.js
+|   |-- index.css
+|   |-- index.js
+|   |-- reportWebVitals.js
+|   `-- supabaseClient.js
+|-- supabase
+|   |-- functions
+|   |   |-- extract-raport-pdf
+|   |   |   `-- index.ts
+|   |   |-- monitoring-harian
+|   |   |   |-- deno.json
+|   |   |   `-- index.ts
+|   |   `-- rekap-presensi
+|   |       |-- deno.json
+|   |       `-- index.ts
+|   `-- config.toml
+`-- strukturfile.txt
 
-Digenerate ulang dari isi `Administrasi_SMP_Muslimin.zip` per 29 Agustus 2026 (menggantikan versi 28 Agustus yang sudah basi).
-Total: 220 file `.js`/`.jsx`, 305 item (file+folder) di luar `node_modules`/`.git` (memang tidak ikut di-zip).
-
-Administrasi_SMP_Muslimin/
-├── public
-│   ├── Background-1.JPG
-│   ├── favicon.ico
-│   ├── index.html
-│   ├── logo192.png
-│   ├── logo512.png
-│   ├── logo_sekolah1.png
-│   ├── manifest.json
-│   └── robots.txt
-├── src
-│   ├── assets
-│   │   ├── Background-0.png
-│   │   ├── Background-1.JPG
-│   │   ├── Background-5.jpg
-│   │   ├── Background.png
-│   │   ├── logo_sekolah-0.png
-│   │   └── logo_sekolah.png
-│   ├── attendance-teacher
-│   │   ├── reports
-│   │   │   ├── DailySummary.js
-│   │   │   ├── ExportExcel.js
-│   │   │   ├── ITMReport.js
-│   │   │   ├── ITMReportExcel.js
-│   │   │   └── MonthlyView.js
-│   │   ├── AdminAttendanceView.js
-│   │   ├── AttendanceTabs.js
-│   │   ├── CustomDatePicker.js
-│   │   ├── index.html
-│   │   ├── LocationValidator.js
-│   │   ├── ManualCheckIn.js
-│   │   ├── MyAttendanceStatus.js
-│   │   ├── MyMonthlyHistory.js
-│   │   ├── QRCodeGenerator.js
-│   │   ├── QRScanner.js
-│   │   ├── TeacherAttendance.js
-│   │   └── TodaySchedule.js
-│   ├── components
-│   │   ├── AdminDashboard.js
-│   │   ├── AdminFeedbackPanel.js
-│   │   ├── AdminJurnalRekap.js
-│   │   ├── AnnouncementList.js
-│   │   ├── AnnouncementPopup.js
-│   │   ├── BottomNav.js
-│   │   ├── CatatanWalikelasBk.js
-│   │   ├── ConnectedDevices.js
-│   │   ├── Dashboard.js
-│   │   ├── FeedbackGuru.js
-│   │   ├── GuruBKDashboard.js
-│   │   ├── HomeroomTeacherDashboard.js
-│   │   ├── KelengkapanDataSiswa.js
-│   │   ├── Layout.js
-│   │   ├── Login.js
-│   │   ├── Logo.js
-│   │   ├── NotifikasiBk.js
-│   │   ├── PengumumanWaliKelas.js
-│   │   ├── SaranMasukanSiswa.js
-│   │   ├── Sidebar.js
-│   │   ├── StudentLogin.js
-│   │   ├── StudentProfilePDF.js
-│   │   ├── TeacherDashboard.js
-│   │   └── WaliKelasWidgetTab.js
-│   ├── config
-│   │   ├── menuConfig.js
-│   │   └── sidebarConfig.js
-│   ├── e-raport
-│   │   ├── CekNilai.js
-│   │   ├── CekStatusNilai.js
-│   │   ├── CetakRaport.js
-│   │   ├── DashboardAdmin.js
-│   │   ├── DashboardHomeroomTeacher.js
-│   │   ├── DashboardTeacher.js
-│   │   ├── InputCatatan.js
-│   │   ├── InputEkstrakurikuler.js
-│   │   ├── InputKehadiran.js
-│   │   ├── InputKokurikuler.js
-│   │   ├── InputNilai.js
-│   │   ├── InputTP.js
-│   │   ├── PreviewNilai.js
-│   │   ├── PreviewRaport.js
-│   │   ├── RaportConfig.js
-│   │   └── RaportPage.js
-│   ├── hooks
-│   │   └── useAuth.js
-│   ├── konseling
-│   │   ├── home-visit
-│   │   │   ├── HomeVisit.js
-│   │   │   ├── HomeVisitDetail.js
-│   │   │   ├── HomeVisitExportPDF.js
-│   │   │   ├── HomeVisitFilter.js
-│   │   │   ├── HomeVisitModal.js
-│   │   │   ├── HomeVisitStats.js
-│   │   │   └── HomeVisitTable.js
-│   │   ├── ExportPDF.js
-│   │   ├── FilterBar.js
-│   │   ├── Konseling.js
-│   │   ├── KonselingMain.js
-│   │   ├── KonselingModal.js
-│   │   ├── KonselingTable.js
-│   │   └── StatsCards.js
-│   ├── pages
-│   │   ├── attendance
-│   │   │   ├── AdminAttendance.js
-│   │   │   ├── Attendance.js
-│   │   │   ├── AttendanceExcel.js
-│   │   │   ├── AttendanceFilters.js
-│   │   │   ├── AttendanceMain.js
-│   │   │   ├── AttendanceManagement.js
-│   │   │   ├── AttendanceModals.js
-│   │   │   ├── AttendancePDF.js
-│   │   │   ├── AttendanceStats.js
-│   │   │   └── AttendanceTable.js
-│   │   ├── grades
-│   │   │   ├── GradeMain.js
-│   │   │   ├── Grades.js
-│   │   │   ├── GradesExcel.js
-│   │   │   ├── GradesKatrol.js
-│   │   │   ├── KatrolTable.js
-│   │   │   └── Utils.js
-│   │   ├── CatatanSiswa.js
-│   │   ├── CatatanSiswaExport.js
-│   │   ├── Classes.js
-│   │   ├── DataExcel.js
-│   │   ├── DenahDuduk.js
-│   │   ├── JurnalHarian.js
-│   │   ├── KelolaJadwalPelajaran.js
-│   │   ├── KelolaJadwalPiket.js
-│   │   ├── Organigram.js
-│   │   ├── PortalBackButton.js
-│   │   ├── PortalSiswaGuru.js
-│   │   ├── Students.js
-│   │   ├── Teachers.js
-│   │   ├── TeacherSchedule-Backup.js
-│   │   ├── TeacherSchedule.js
-│   │   ├── TeacherScheduleExcel.js
-│   │   └── withPortalBack.js
-│   ├── perpustakaan
-│   │   ├── Katalog.js
-│   │   ├── Peminjaman.js
-│   │   ├── Pengembalian.js
-│   │   └── PerpusMain.js
-│   ├── portal-siswa
-│   │   ├── belajar
-│   │   │   ├── bahasa-inggris
-│   │   │   │   ├── data
-│   │   │   │   │   └── chapterData.js
-│   │   │   │   ├── ChapterDetail.js
-│   │   │   │   └── ChapterList.js
-│   │   │   ├── BelajarMain.js
-│   │   │   ├── RuangBelajarCategories.js
-│   │   │   ├── RuangBelajarDetail.js
-│   │   │   └── RuangBelajarHome.js
-│   │   ├── ruang-belajar-admin
-│   │   │   ├── RuangBelajarAdmin.js
-│   │   │   └── RuangBelajarForm.js
-│   │   ├── StudentBottomNav.js
-│   │   ├── StudentDashboard.js
-│   │   ├── StudentDataSiswa.js
-│   │   ├── StudentDenahDuduk.js
-│   │   ├── StudentHelpers.js
-│   │   ├── StudentInfo.js
-│   │   ├── StudentJadwal.js
-│   │   ├── StudentLayout.js
-│   │   ├── StudentOrganigram.js
-│   │   ├── StudentPengumuman.js
-│   │   ├── StudentPerangkatTerhubung.js
-│   │   ├── StudentPiket.js
-│   │   ├── StudentPortal.js
-│   │   ├── StudentPresensi.js
-│   │   ├── StudentProfile.js
-│   │   ├── StudentRaport.js
-│   │   ├── StudentSaran.js
-│   │   ├── StudentSidebar.js
-│   │   └── useStudentProfile.js
-│   ├── reports
-│   │   ├── modals
-│   │   │   ├── AcademicGradesView.js
-│   │   │   ├── AdminReportModal.js
-│   │   │   ├── BKReportModal.js
-│   │   │   ├── HomeroomReportModal.js
-│   │   │   └── TeacherReportModal.js
-│   │   ├── AdminReports.js
-│   │   ├── BKReports.js
-│   │   ├── DailyAttendanceSection.js
-│   │   ├── HomeroomTeacherReports.js
-│   │   ├── ReportExcel.js
-│   │   ├── ReportHelpers.js
-│   │   ├── Reports.js
-│   │   └── TeacherReports.js
-│   ├── services
-│   │   ├── academicYearService.js
-│   │   └── semesterService.js
-│   ├── setting
-│   │   ├── academic
-│   │   │   ├── AcademicYearTab.js
-│   │   │   ├── CopyAssignmentsModal.js
-│   │   │   ├── SemesterManagement.js
-│   │   │   ├── Simulator.js
-│   │   │   └── YearTransition.js
-│   │   ├── feedback
-│   │   │   ├── FeedbackCombinedTab.js
-│   │   │   ├── FeedbackGuruTab.js
-│   │   │   └── FeedbackSiswaTab.js
-│   │   ├── kelola-raport
-│   │   │   ├── DetailRaportSiswa.js
-│   │   │   ├── exportRekapExcel.js
-│   │   │   ├── ImportProgress.js
-│   │   │   ├── ImportRaportForm.js
-│   │   │   ├── ManajemenRaportTable.js
-│   │   │   ├── parseLegerExcel.js
-│   │   │   ├── PreviewImportTable.js
-│   │   │   ├── RaportNilaiTab.js
-│   │   │   ├── RaportTable.js
-│   │   │   ├── RekapKelulusan.js
-│   │   │   ├── RekapMultiSemester.js
-│   │   │   ├── SemesterFilterBar.js
-│   │   │   ├── StatusBadge.js
-│   │   │   └── useAcademicOptions.js
-│   │   ├── portal-siswa
-│   │   │   ├── AkunSiswaTab.js
-│   │   │   └── PortalSiswaTab.js
-│   │   ├── school-management
-│   │   │   ├── BulkImportModals.js
-│   │   │   ├── SchoolCombinedTab.js
-│   │   │   ├── SchoolManagementTab.js
-│   │   │   ├── SchoolSettingsTab.js
-│   │   │   ├── StudentManagement.js
-│   │   │   ├── StudentModals.js
-│   │   │   └── TeacherAssignmentTab.js
-│   │   ├── ActiveUsersTab.js
-│   │   ├── AdminJadwalMassal-Backup.js
-│   │   ├── AdminJadwalMassal.js
-│   │   ├── AdminKodeGuru.js
-│   │   ├── AdminPanel.js
-│   │   ├── AuditLogPanel.js
-│   │   ├── ChangePasswordSection.js
-│   │   ├── ConnectedDevicesAdminTab.js
-│   │   ├── JadwalGuruTab.js
-│   │   ├── MaintenanceModeTab.js
-│   │   ├── MaintenancePage.js
-│   │   ├── ProfileTab.js
-│   │   ├── Setting.js
-│   │   ├── StudentConnectedDevicesAdminTab.js
-│   │   ├── SystemTab.js
-│   │   ├── TeacherAssignmentExcel.js
-│   │   └── UserManagementTab.js
-│   ├── spmb
-│   │   ├── ClassDistribution.js
-│   │   ├── ClassDivision.js
-│   │   ├── ClassOperations.js
-│   │   ├── SPMB.js
-│   │   ├── SpmbExcel.js
-│   │   ├── Statistics.js
-│   │   ├── StudentForm.js
-│   │   └── StudentList.js
-│   ├── system
-│   │   ├── checkers
-│   │   │   ├── AppHealthChecker.js
-│   │   │   ├── BusinessLogicChecker.js
-│   │   │   ├── DatabaseChecker.js
-│   │   │   └── DataValidator.js
-│   │   ├── DatabaseCleanupMonitor.js
-│   │   ├── HealthChecker.js
-│   │   ├── MonitorDashboard.js
-│   │   ├── MonitorHistory.js
-│   │   ├── MonitorResults.js
-│   │   ├── MonitorSistem.js
-│   │   └── PerformanceMonitor.js
-│   ├── utils
-│   │   ├── deviceInfo.js
-│   │   ├── jamPelajaran.js
-│   │   ├── offlineHelper.js
-│   │   ├── studentDevices.js
-│   │   ├── studentSession.js
-│   │   ├── systemHelpers.js
-│   │   └── userDevices.js
-│   ├── App.js
-│   ├── constants.js
-│   ├── index.css
-│   ├── index.js
-│   ├── reportWebVitals.js
-│   └── supabaseClient.js
-├── supabase
-│   ├── .temp
-│   │   ├── cli-latest
-│   │   ├── gotrue-version
-│   │   ├── linked-project.json
-│   │   ├── pooler-url
-│   │   ├── postgres-version
-│   │   ├── project-ref
-│   │   ├── rest-version
-│   │   ├── storage-migration
-│   │   └── storage-version
-│   ├── functions
-│   │   ├── extract-raport-pdf
-│   │   │   └── index.ts
-│   │   ├── monitoring-harian
-│   │   │   ├── .npmrc
-│   │   │   ├── deno.json
-│   │   │   └── index.ts
-│   │   └── rekap-presensi
-│   │       ├── .npmrc
-│   │       ├── deno.json
-│   │       └── index.ts
-│   ├── .gitignore
-│   └── config.toml
-├── .env
-├── .env.local
-├── .gitignore
-├── .prettierrc
-├── DEPLOY-SMP-MUSLIMIN.bat
-├── deploy-smp.bat
-├── package-lock.json
-├── package.json
-├── postcss.config.js
-├── README.md
-├── start-app-smp.bat
-├── strukturfile.txt
-├── tailwind.config.js
-└── vercel.json
+39 directories, 243 files
+```
