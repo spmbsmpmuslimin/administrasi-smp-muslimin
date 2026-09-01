@@ -236,13 +236,12 @@ export default function StudentInfo({ initialMenu } = {}) {
     const Icon = menu.icon;
 
     return (
-      <div className="w-full space-y-3">
+      <div className="w-full p-4 md:p-6 space-y-3">
         <div className="flex justify-end">
           <button
             type="button"
             onClick={() => setActiveMenu(null)}
-            className="flex items-center gap-1 text-base font-bold text-theme-secondary active:text-theme-secondary"
-          >
+            className="flex items-center gap-1 text-base font-bold text-theme-secondary active:text-theme-secondary">
             <ChevronLeft size={20} />
             Kembali
           </button>
@@ -250,14 +249,12 @@ export default function StudentInfo({ initialMenu } = {}) {
 
         <section className="w-full bg-theme-bg rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div
-            className={`flex items-center gap-3 p-4 border-b border-gray-50 ${menu.cardBgClass}`}
-          >
+            className={`flex items-center gap-3 p-4 border-b border-gray-50 ${menu.cardBgClass}`}>
             <div className="w-9 h-9 bg-white/80 rounded-full flex items-center justify-center shrink-0 shadow-sm">
               <Icon size={18} className={menu.iconColorClass} />
             </div>
             <span
-              className={`text-base font-extrabold uppercase tracking-wide ${menu.titleColorClass}`}
-            >
+              className={`text-base font-extrabold uppercase tracking-wide ${menu.titleColorClass}`}>
               {menu.title}
             </span>
           </div>
@@ -269,45 +266,57 @@ export default function StudentInfo({ initialMenu } = {}) {
 
   // ---- Tampilan grid: semua menu dalam bentuk card, belum ada yang dipilih ----
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {MENUS.map(
-        ({
-          key,
-          title,
-          subtitle,
-          icon: Icon,
-          cardBgClass,
-          cardBorderClass,
-          titleColorClass,
-          subtitleColorClass,
-          iconBgClass,
-          iconColorClass,
-        }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveMenu(key)}
-            className={`flex flex-col items-start gap-2.5 p-4 rounded-2xl border shadow-sm text-left active:scale-[0.98] transition-transform ${cardBgClass} ${cardBorderClass}`}
-          >
-            <div
-              className={`w-11 h-11 ${iconBgClass} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}
-            >
-              <Icon size={20} className={iconColorClass} />
-            </div>
-            <div className="w-full">
-              <div className="flex items-center justify-between gap-1">
-                <span className={`text-base font-bold leading-tight ${titleColorClass}`}>
-                  {title}
-                </span>
-                <ChevronRight size={18} className={`shrink-0 ${titleColorClass} opacity-40`} />
+    <div className="p-4 md:p-6">
+      <div className="mb-4">
+        <h1 className="text-xl font-bold text-theme">📋 Info Lainnya</h1>
+        <p className="text-sm text-theme-secondary mt-0.5">
+          Akses cepat ke data, jadwal, dan info seputar kelasmu
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {MENUS.map(
+          ({
+            key,
+            title,
+            subtitle,
+            icon: Icon,
+            cardBgClass,
+            cardBorderClass,
+            titleColorClass,
+            subtitleColorClass,
+            iconBgClass,
+            iconColorClass,
+          }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveMenu(key)}
+              className={`flex flex-col items-start gap-2.5 p-4 rounded-2xl border shadow-sm text-left active:scale-[0.98] transition-transform ${cardBgClass} ${cardBorderClass}`}>
+              <div
+                className={`w-11 h-11 ${iconBgClass} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}>
+                <Icon size={20} className={iconColorClass} />
               </div>
-              <p className={`text-sm mt-0.5 leading-snug font-medium ${subtitleColorClass}`}>
-                {subtitle}
-              </p>
-            </div>
-          </button>
-        )
-      )}
+              <div className="w-full">
+                <div className="flex items-center justify-between gap-1">
+                  <span
+                    className={`text-base font-bold leading-tight ${titleColorClass}`}>
+                    {title}
+                  </span>
+                  <ChevronRight
+                    size={18}
+                    className={`shrink-0 ${titleColorClass} opacity-40`}
+                  />
+                </div>
+                <p
+                  className={`text-sm mt-0.5 leading-snug font-medium ${subtitleColorClass}`}>
+                  {subtitle}
+                </p>
+              </div>
+            </button>
+          ),
+        )}
+      </div>
     </div>
   );
 }
