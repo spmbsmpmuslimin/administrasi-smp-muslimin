@@ -55,6 +55,20 @@ export const sidebarGroups = [
           "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m9 5.197v1M13 7a4 4 0 11-8 0 4 4 0 018 0z",
         ],
       },
+      {
+        page: "student-profile-completion",
+        label: "Data Siswa (Induk)",
+        icon: [
+          "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+          "M9 14l2 2 4-4",
+        ],
+        // Sebelumnya cuma bisa diakses walikelas lewat hub "Portal Siswa"
+        // (portal-siswa-guru), yang show()-nya cuma isWaliKelas -- admin
+        // gak pernah nyampe kesitu walau route-nya (menuConfig.js) udah
+        // allowedRoles admin/teacher/guru_bk. Sekarang dikasih entry
+        // langsung di sidebar biar admin & guru BK gak perlu lewat hub itu.
+        show: (ctx) => ctx.isWaliKelas || ctx.isAdmin || ctx.isGuruBK,
+      },
     ],
   },
 

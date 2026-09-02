@@ -1,19 +1,30 @@
 // StudentProfilePDF.js
-// Export PDF kelengkapan data siswa (StudentProfileCompletion.js).
+// Export PDF kelengkapan data siswa (KelengkapanDataSiswa.js).
 // Beda sama AttendancePDF.js: gak query Supabase lagi -- data siswa yang
 // dikirim ke sini udah lengkap (hasil merge students + student_profile_details
-// yang udah dilakuin di StudentProfileCompletion.js), jadi tinggal dirender.
+// yang udah dilakuin di KelengkapanDataSiswa.js), jadi tinggal dirender.
 // Layout per siswa: Header sekolah -> DATA SISWA (identitas Nama/NIS/Kelas
 // digabung sama field tambahan spt Jenis Kelamin dkk dalam 1 tabel) ->
 // DATA ORANGTUA -> Catatan status & tanggal terakhir update. Tiap siswa
 // mulai di halaman baru (doc.addPage() per siswa di bawah), TAPI karena
 // jumlah field sekarang cukup banyak, 1 siswa bisa saja meluber ke >1
 // halaman -- itu ditangani otomatis sama page-break bawaan jspdf-autotable.
-import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  createPdfDocument,
+  addLetterhead,
+  addSectionLabel,
+  tableTheme,
+  checkPageBreak,
+  savePdf,
+  PDF_COLORS,
+  PDF_FONT_FAMILY,
+} from "../utils/pdfExportKit";
 
-const SCHOOL_NAME = "SMP MUSLIMIN CILILIN";
-const SCHOOL_CITY = "Cililin";
+// REFACTOR: sebelumnya file ini nulis header sekolah, warna, dan style
+// tabel sendiri (beda pattern dari AttendancePDF.js dkk). Sekarang semua
+// itu ditarik dari pdfExportKit.js biar seragam -- 1 sumber warna brand,
+// 1 sumber letterhead, 1 sumber page-break guard buat semua export PDF.
 
 const STATUS_LABEL = {
   lengkap: "Lengkap",
@@ -21,11 +32,13 @@ const STATUS_LABEL = {
   belum: "Belum Isi",
 };
 
-// Warna badge status, dipakai buat header tabel ringkasan per siswa.
+// Warna badge status -- sekarang narik dari palet resmi PDF_COLORS (kit),
+// bukan angka RGB Tailwind sendiri, biar ikut kalau warna brand diganti
+// dari pdfExportKit.js.
 const STATUS_COLOR = {
-  lengkap: [16, 185, 129], // emerald-500
-  sebagian: [245, 158, 11], // amber-500
-  belum: [244, 63, 94], // rose-500
+  lengkap: PDF_COLORS.success,
+  sebagian: PDF_COLORS.warning,
+  belum: PDF_COLORS.danger,
 };
 
 // Field-field ini disamain sama SEMUA kolom student_profile_details versi
@@ -146,7 +159,6 @@ function getRowValue(detail, row) {
 function renderStudentPage(doc, student, academicYear) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;
-  let y = 18;
 
   const statusKey = student.status || "belum";
   const statusLabel = STATUS_LABEL[statusKey] || "Belum Isi";
@@ -154,35 +166,18 @@ function renderStudentPage(doc, student, academicYear) {
   const kelasLabel = student.class_id || "-";
   const tahunLabel = academicYear ? academicYear.replace(/\//g, "-") : null;
 
-  // --- HEADER SEKOLAH (3 baris: nama sekolah, kelas, tahun ajaran) ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text(SCHOOL_NAME, pageWidth / 2, y, { align: "center" });
-  y += 6;
-  doc.setFontSize(12);
-  doc.text(`DATA KELENGKAPAN SISWA KELAS ${kelasLabel}`, pageWidth / 2, y, {
-    align: "center",
+  // --- HEADER SEKOLAH: pake addLetterhead() dari kit (nama sekolah +
+  // judul + subjudul tahun ajaran + garis pemisah), gak ditulis manual lagi ---
+  let y = addLetterhead(doc, {
+    title: `DATA KELENGKAPAN SISWA KELAS ${kelasLabel}`,
+    subtitle: tahunLabel ? `TAHUN AJARAN ${tahunLabel}` : undefined,
   });
-  y += 6;
-  if (tahunLabel) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10.5);
-    doc.text(`TAHUN AJARAN ${tahunLabel}`, pageWidth / 2, y, {
-      align: "center",
-    });
-    y += 4;
-  }
-  doc.setLineWidth(0.5);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 9;
 
   // --- DATA SISWA (identitas dasar dari tabel `students` + field
   // tambahan hasil isian form dari student_profile_details, digabung jadi
   // 1 tabel biar gak keliatan redundan sama section INFORMASI SISWA yang
   // dulu terpisah) ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("DATA SISWA", margin, y);
+  y = addSectionLabel(doc, "DATA SISWA", y, margin);
   y += 2;
   // Baris identitas (Nama/NIS/Kelas) selalu dianggap "ada isinya" -> gak
   // ikut logic warna merah "Belum diisi" kayak field form tambahan.
@@ -194,10 +189,7 @@ function renderStudentPage(doc, student, academicYear) {
   const siswaBody = DATA_SISWA_ROWS.map((row) => getRowValue(detail, row));
   const identitasCount = identitasBody.length;
   autoTable(doc, {
-    startY: y,
-    margin: { left: margin, right: margin },
-    theme: "grid",
-    styles: { fontSize: 9, cellPadding: 2.2 },
+    ...tableTheme(y, { margin: { left: margin, right: margin } }),
     head: [["Field", "Isian"]],
     body: [
       ...identitasBody,
@@ -206,11 +198,6 @@ function renderStudentPage(doc, student, academicYear) {
         siswaBody[i].display || "Belum diisi",
       ]),
     ],
-    headStyles: {
-      fillColor: [230, 230, 230],
-      textColor: 30,
-      fontStyle: "bold",
-    },
     columnStyles: {
       0: { cellWidth: 55, fontStyle: "bold" },
     },
@@ -218,7 +205,7 @@ function renderStudentPage(doc, student, academicYear) {
       if (data.section !== "body" || data.column.index !== 1) return;
       const rowIdx = data.row.index - identitasCount;
       if (rowIdx >= 0 && siswaBody[rowIdx]?.isEmpty) {
-        data.cell.styles.textColor = [244, 63, 94]; // rose-500
+        data.cell.styles.textColor = PDF_COLORS.danger;
         data.cell.styles.fontStyle = "italic";
       }
     },
@@ -226,28 +213,18 @@ function renderStudentPage(doc, student, academicYear) {
   y = doc.lastAutoTable.finalY + 7;
 
   // --- DATA ORANGTUA (Ayah, Ibu, Kontak) ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("DATA ORANGTUA", margin, y);
+  y = addSectionLabel(doc, "DATA ORANGTUA", y, margin);
   y += 3;
   const orangtuaBody = DATA_ORANGTUA_ROWS.map((row) =>
     getRowValue(detail, row),
   );
   autoTable(doc, {
-    startY: y,
-    margin: { left: margin, right: margin },
-    theme: "grid",
-    styles: { fontSize: 9, cellPadding: 2.2 },
+    ...tableTheme(y, { margin: { left: margin, right: margin } }),
     head: [["Field", "Isian"]],
     body: DATA_ORANGTUA_ROWS.map((row, i) => [
       row.label,
       orangtuaBody[i].display || "Belum diisi",
     ]),
-    headStyles: {
-      fillColor: [230, 230, 230],
-      textColor: 30,
-      fontStyle: "bold",
-    },
     columnStyles: {
       0: { cellWidth: 55, fontStyle: "bold" },
     },
@@ -257,7 +234,7 @@ function renderStudentPage(doc, student, academicYear) {
         data.column.index === 1 &&
         orangtuaBody[data.row.index]?.isEmpty
       ) {
-        data.cell.styles.textColor = [244, 63, 94]; // rose-500
+        data.cell.styles.textColor = PDF_COLORS.danger;
         data.cell.styles.fontStyle = "italic";
       }
     },
@@ -265,6 +242,11 @@ function renderStudentPage(doc, student, academicYear) {
   y = doc.lastAutoTable.finalY + 6;
 
   // --- CATATAN: status kelengkapan + field yang masih kosong + tanggal update ---
+  // Guard page-break dari kit -- kalau tabel ORANGTUA di atas udah meluber
+  // sampe y kepepet footer, blok Catatan ini pindah ke halaman baru dulu,
+  // bukan ke-cut di bawah.
+  y = checkPageBreak(doc, y);
+
   const missingLabels = ALL_DETAIL_ROWS.filter(
     (row) => getRowValue(detail, row).isEmpty,
   ).map((row) => row.label);
@@ -279,12 +261,12 @@ function renderStudentPage(doc, student, academicYear) {
   }
   const updatedLabel = formatTanggalUpdate(detail?.updated_at);
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setFontSize(9.5);
   doc.setTextColor(0);
   doc.text("Catatan:", margin, y);
   y += 5;
-  doc.setFont("helvetica", "normal");
+  doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(9);
   const catatanColor =
     statusKey === "belum"
@@ -296,7 +278,7 @@ function renderStudentPage(doc, student, academicYear) {
   const catatanLines = doc.splitTextToSize(catatanText, pageWidth - margin * 2);
   doc.text(catatanLines, margin, y);
   y += catatanLines.length * 4.2 + 2;
-  doc.setTextColor(100);
+  doc.setTextColor(...PDF_COLORS.textMuted);
   doc.setFontSize(8.5);
   if (updatedLabel) {
     doc.text(`Terakhir diperbarui: ${updatedLabel}`, margin, y);
@@ -305,9 +287,9 @@ function renderStudentPage(doc, student, academicYear) {
 
   // --- FOOTER: tanggal cetak, rata kanan bawah halaman ---
   const pageHeight = doc.internal.pageSize.getHeight();
-  doc.setFont("helvetica", "normal");
+  doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(8.5);
-  doc.setTextColor(130);
+  doc.setTextColor(...PDF_COLORS.textMuted);
   doc.text(
     `Dicetak: ${formatTanggalCetak(new Date())}`,
     pageWidth - margin,
@@ -332,7 +314,7 @@ export function exportStudentProfilePDF(students, options = {}) {
     }
 
     const { academicYear } = options;
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const doc = createPdfDocument();
 
     students.forEach((student, idx) => {
       if (idx > 0) doc.addPage();
@@ -343,7 +325,7 @@ export function exportStudentProfilePDF(students, options = {}) {
       students.length === 1
         ? `Kelengkapan_Data_${students[0].full_name.replace(/\s+/g, "_")}.pdf`
         : `Kelengkapan_Data_Siswa_${students.length}_Siswa.pdf`;
-    doc.save(fileName);
+    savePdf(doc, fileName);
 
     return { success: true };
   } catch (error) {

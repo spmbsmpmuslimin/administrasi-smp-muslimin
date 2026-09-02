@@ -28,11 +28,15 @@ import {
   AlertCircle,
   XCircle,
   Search,
-  ChevronDown,
+  X,
   Users,
   FileDown,
+  FileSpreadsheet,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import { exportStudentProfilePDF } from "./StudentProfilePDF";
+import { exportStudentProfileExcel } from "./StudentProfileExcel";
 
 // Field yang dianggap "wajib" buat status Lengkap. Samain persis sama
 // field di form ProfileInfo (StudentProfile.js).
@@ -106,20 +110,40 @@ const STATUS_META = {
 // konsisten. `nama_ortu` (generic, lama) udah gak dipake di form
 // StudentProfile.js -> diganti nama_ayah + nama_ibu.
 // `combine: "ttl"` = gabungan tempat_lahir + tanggal_lahir jadi 1 baris.
+// `keterangan` sempat sengaja di-exclude, tapi ternyata 16 siswa udah
+// keisi datanya -- ditambahin balik di baris paling bawah biar keliatan.
 const DETAIL_ROWS = [
   { key: "jenis_kelamin", label: "Jenis Kelamin" },
   { key: "ttl", label: "Tempat, Tanggal Lahir", combine: "ttl" },
   { key: "nisn", label: "NISN" },
+  { key: "nik", label: "NIK Siswa" },
+  { key: "no_kk", label: "No. Kartu Keluarga (KK)" },
+  { key: "no_akta_lahir", label: "No. Akta Lahir" },
+  { key: "agama", label: "Agama" },
+  { key: "anak_ke", label: "Anak ke-" },
   { key: "sekolah_asal", label: "Sekolah Asal" },
+  { key: "no_peserta_ujian", label: "No. Peserta Ujian" },
+  { key: "no_ijazah", label: "No. Ijazah" },
+  { key: "no_kip", label: "No. KIP" },
+  { key: "no_daftar", label: "No. Pendaftaran" },
   { key: "alamat", label: "Alamat Lengkap" },
+  { key: "dusun", label: "Dusun" },
+  { key: "kode_pos", label: "Kode Pos" },
   { key: "no_hp", label: "No. HP Siswa" },
   { key: "nama_ayah", label: "Nama Lengkap Ayah" },
+  { key: "nik_ayah", label: "NIK Ayah" },
+  { key: "tempat_tgl_lahir_ayah", label: "Tempat, Tanggal Lahir Ayah" },
   { key: "pekerjaan_ayah", label: "Pekerjaan Ayah" },
   { key: "pendidikan_ayah", label: "Pendidikan Terakhir Ayah" },
   { key: "nama_ibu", label: "Nama Lengkap Ibu" },
+  { key: "nik_ibu", label: "NIK Ibu" },
+  { key: "tempat_tgl_lahir_ibu", label: "Tempat, Tanggal Lahir Ibu" },
   { key: "pekerjaan_ibu", label: "Pekerjaan Ibu" },
   { key: "pendidikan_ibu", label: "Pendidikan Terakhir Ibu" },
   { key: "no_hp_ortu", label: "No. HP Orang Tua/Wali" },
+  // Sempat sengaja di-exclude nunggu keputusan purpose-nya -- ternyata 16
+  // siswa udah keisi datanya, jadi ditambahin balik biar keliatan.
+  { key: "keterangan", label: "Keterangan" },
 ];
 
 const MONTH_NAMES_SHORT = [
@@ -157,7 +181,7 @@ function getDetailRowValue(detail, row) {
   return detail ? detail[row.key] : null;
 }
 
-export default function StudentProfileCompletion({ currentUser }) {
+export default function KelengkapanDataSiswa({ currentUser }) {
   const isAdmin = currentUser?.role === "admin";
   const isGuruBK = currentUser?.role === "guru_bk";
   // ✅ Guru BK dikasih akses penuh kayak admin — bisa liat & filter semua
@@ -171,10 +195,14 @@ export default function StudentProfileCompletion({ currentUser }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedId, setExpandedId] = useState(null);
+  const [modalStudent, setModalStudent] = useState(null);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // all | lengkap | sebagian | belum
+  // all | verified | unverified -- filter TERPISAH dari statusFilter
+  // (kelengkapan) di atas, krn "udah lengkap" beda sama "udah diverifikasi".
+  const [verifiedFilter, setVerifiedFilter] = useState("all");
+  const [verifying, setVerifying] = useState(false);
   const [jenjangFilter, setJenjangFilter] = useState("all"); // all | "7" | "8" | "9"
   const [classOptions, setClassOptions] = useState([]); // [{ id: "7A", jenjang: "7" }, ...]
   const [classFilter, setClassFilter] = useState(
@@ -184,6 +212,7 @@ export default function StudentProfileCompletion({ currentUser }) {
   // ====== SELEKSI SISWA UNTUK EXPORT PDF ======
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [exporting, setExporting] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   // ✅ PAGINATION (biar gak lag di HP) — render maksimal PAGE_SIZE card
   // dulu, sisanya dimuat pas user klik "Muat Lebih Banyak". Data lengkap
@@ -226,12 +255,24 @@ export default function StudentProfileCompletion({ currentUser }) {
           studentQuery,
           supabase
             .from("student_profile_details")
-            // Kolom baru (jenis_kelamin dkk, ditambahin di form ProfileInfo
-            // StudentProfile.js) ikut di-select juga -- sebelumnya cuma
-            // narik kolom lama, jadi Export PDF (StudentProfilePDF.js)
-            // gak pernah nerima nilainya walau udah kesimpen di DB.
+            // Semua kolom formulir (identitas kependudukan, dokumen, alamat
+            // detail, data ortu) di-select semua sekarang -- sebelumnya cuma
+            // 16 kolom "lama" yang narik, jadi field2 kayak NIK/No KK/Dusun/
+            // NIK Ayah-Ibu dkk gak pernah nyampe ke kartu expand & Export
+            // PDF walau udah kesimpen di DB. `nama_ortu` dibuang dari sini
+            // karena udah gak dipake sama sekali (diganti nama_ayah+nama_ibu).
+            // `keterangan` sempat SENGAJA di-exclude nunggu keputusan purpose
+            // field-nya -- tapi ternyata 16 siswa udah keisi datanya, jadi
+            // ditambahin balik biar gak ke-hidden dari admin/walikelas.
+            // Purpose jangka panjangnya (admin-only? gabung CatatanSiswa.js?)
+            // masih open, tapi visibilitas data yang UDAH ADA gak boleh nunggu.
+            // `verified_at` = kolom baru buat status verifikasi admin (lihat
+            // migrasi add_verified_at_student_profile_details.sql). null =
+            // belum pernah diverifikasi / berubah lagi setelah diverifikasi
+            // (StudentProfile.js otomatis reset ini ke null tiap kali siswa
+            // save data baru -- lihat handleSubmit di sana).
             .select(
-              "student_id, jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, updated_at",
+              "student_id, jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, nik, no_kk, no_akta_lahir, agama, anak_ke, sekolah_asal, no_peserta_ujian, no_ijazah, no_kip, no_daftar, alamat, dusun, kode_pos, no_hp, no_hp_ortu, nama_ayah, nik_ayah, tempat_tgl_lahir_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, nik_ibu, tempat_tgl_lahir_ibu, pekerjaan_ibu, pendidikan_ibu, keterangan, updated_at, verified_at",
             ),
           supabase
             .from("academic_years")
@@ -280,6 +321,12 @@ export default function StudentProfileCompletion({ currentUser }) {
             // student_profile_details -- jenis_kelamin dari tabel students
             // gak termasuk REQUIRED_FIELDS, jadi gak pengaruh ke status.
             status: getCompletionStatus(rawDetail),
+            // Status verifikasi (BEDA dari status kelengkapan di atas):
+            // kelengkapan = "udah diisi apa belum", verifikasi = "udah
+            // dicek admin/TU ke dokumen fisik apa belum & masih valid".
+            // rawDetail null (belum pernah isi) otomatis gak verified.
+            isVerified: !!rawDetail?.verified_at,
+            verifiedAt: rawDetail?.verified_at || null,
           };
         });
 
@@ -298,7 +345,7 @@ export default function StudentProfileCompletion({ currentUser }) {
           );
         }
       } catch (err) {
-        console.error("[StudentProfileCompletion] Gagal memuat data:", err);
+        console.error("[KelengkapanDataSiswa] Gagal memuat data:", err);
         setError("Gagal memuat data kelengkapan siswa. Coba refresh halaman.");
       } finally {
         setLoading(false);
@@ -324,6 +371,8 @@ export default function StudentProfileCompletion({ currentUser }) {
   const filteredRows = useMemo(() => {
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (verifiedFilter === "verified" && !r.isVerified) return false;
+      if (verifiedFilter === "unverified" && r.isVerified) return false;
       if (jenjangFilter !== "all" && getJenjang(r.class_id) !== jenjangFilter)
         return false;
       if (classFilter !== "all" && r.class_id !== classFilter) return false;
@@ -355,7 +404,7 @@ export default function StudentProfileCompletion({ currentUser }) {
   // biar gak nyangkut di posisi scroll yang salah pas hasil filter beda.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [statusFilter, jenjangFilter, classFilter, search]);
+  }, [statusFilter, verifiedFilter, jenjangFilter, classFilter, search]);
 
   const paginatedRows = useMemo(
     () => filteredRows.slice(0, visibleCount),
@@ -403,6 +452,60 @@ export default function StudentProfileCompletion({ currentUser }) {
       }
     } finally {
       setExporting(false);
+    }
+  };
+
+  // Export Excel pake selectedIds yang SAMA kayak export PDF, cuma manggil
+  // fungsi & file yang beda (StudentProfileExcel.js) -- gak perlu seleksi
+  // terpisah, toolbar-nya juga digabung jadi 1 (lihat JSX toolbar di bawah).
+  const handleExportExcel = async () => {
+    const selectedRows = rows.filter((r) => selectedIds.has(r.id));
+    if (selectedRows.length === 0) return;
+
+    setExportingExcel(true);
+    try {
+      const result = await exportStudentProfileExcel(selectedRows, {
+        academicYear,
+      });
+      if (!result.success) {
+        setError(result.message || "Gagal export Excel.");
+      }
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
+  // Tandai/batalkan verifikasi 1 siswa. `verify=true` -> set verified_at =
+  // sekarang (admin udah cocokin ke dokumen fisik). `verify=false` ->
+  // batalin (verified_at = null), buat jaga-jaga kalau admin salah klik.
+  // Update langsung ke `rows` & `modalStudent` (optimistic) biar UI
+  // ke-update instan tanpa nunggu refetch penuh dari server.
+  const handleToggleVerify = async (studentId, verify) => {
+    setVerifying(true);
+    try {
+      const verifiedAt = verify ? new Date().toISOString() : null;
+      const { error: verifyErr } = await supabase
+        .from("student_profile_details")
+        .update({ verified_at: verifiedAt })
+        .eq("student_id", studentId);
+
+      if (verifyErr) throw verifyErr;
+
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === studentId ? { ...r, isVerified: verify, verifiedAt } : r,
+        ),
+      );
+      setModalStudent((prev) =>
+        prev && prev.id === studentId
+          ? { ...prev, isVerified: verify, verifiedAt }
+          : prev,
+      );
+    } catch (err) {
+      console.error("[KelengkapanDataSiswa] Gagal update verifikasi:", err);
+      setError("Gagal menyimpan status verifikasi. Coba lagi.");
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -493,111 +596,135 @@ export default function StudentProfileCompletion({ currentUser }) {
         </div>
 
         {/* ====== FILTER ====== */}
-        {/* Baris 1: Cari Siswa full-width sendirian.
-            Baris 2: Pilih Jenjang + Pilih Kelas + Reset, 1 baris (scroll
-            horizontal di HP kalau kepotong). */}
+        {/* Semua kontrol filter (Cari Siswa, Pilih Jenjang, Pilih Kelas,
+            Reset) digabung jadi 1 baris. Cari Siswa fleksibel (flex-1),
+            dropdown & tombol reset lebar tetap (shrink-0). Kalau kepotong
+            di layar sempit, baris ini scroll horizontal. */}
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-md p-3 sm:p-4 border border-slate-100 dark:border-slate-700 mb-4 flex flex-col gap-3">
-          <div>
-            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-              Cari Siswa
-            </label>
-            <div className="relative">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Nama atau NIS..."
-                className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-300"
-              />
-            </div>
-          </div>
-
-          {hasFullAccess &&
-            (jenjangOptions.length > 0 || filteredClassOptions.length > 0) && (
-              <div className="flex flex-nowrap items-end gap-2 sm:gap-3 overflow-x-auto">
-                {jenjangOptions.length > 0 && (
-                  <div className="shrink-0 min-w-[130px]">
-                    <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                      Pilih Jenjang
-                    </label>
-                    <select
-                      value={jenjangFilter}
-                      onChange={(e) => {
-                        setJenjangFilter(e.target.value);
-                        // Reset filter Kelas tiap ganti Jenjang, biar gak
-                        // nyangkut pilih kelas dari jenjang yang udah gak aktif.
-                        setClassFilter("all");
-                      }}
-                      className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900">
-                      <option value="all">Semua Jenjang</option>
-                      {jenjangOptions.map((j) => (
-                        <option key={j} value={j}>
-                          Kelas {j}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {filteredClassOptions.length > 0 && (
-                  <div className="shrink-0 min-w-[140px]">
-                    <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                      Pilih Kelas
-                    </label>
-                    <select
-                      value={classFilter}
-                      onChange={(e) => setClassFilter(e.target.value)}
-                      className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900">
-                      <option value="all">Semua Kelas</option>
-                      {filteredClassOptions.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          Kelas {c.id}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {(statusFilter !== "all" ||
-                  jenjangFilter !== "all" ||
-                  classFilter !== "all") && (
-                  <div className="shrink-0">
-                    <span className="block text-[11px] mb-1 invisible">
-                      Reset
-                    </span>
-                    <button
-                      onClick={() => {
-                        setStatusFilter("all");
-                        setJenjangFilter("all");
-                        setClassFilter(
-                          hasFullAccess
-                            ? "all"
-                            : currentUser?.homeroom_class_id || "all",
-                        );
-                      }}
-                      className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap">
-                      Reset Filter
-                    </button>
-                  </div>
-                )}
+          <div className="flex flex-nowrap items-end gap-2 sm:gap-3 overflow-x-auto">
+            <div className="flex-1 min-w-[160px]">
+              <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                Cari Siswa
+              </label>
+              <div className="relative">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Nama atau NIS..."
+                  className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-300"
+                />
               </div>
-            )}
+            </div>
+
+            <div className="shrink-0 min-w-[150px]">
+              <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                Status Verifikasi
+              </label>
+              <select
+                value={verifiedFilter}
+                onChange={(e) => setVerifiedFilter(e.target.value)}
+                className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900">
+                <option value="all">Semua</option>
+                <option value="verified">Terverifikasi</option>
+                <option value="unverified">Belum Diverifikasi</option>
+              </select>
+            </div>
+
+            {hasFullAccess &&
+              (jenjangOptions.length > 0 ||
+                filteredClassOptions.length > 0) && (
+                <>
+                  {jenjangOptions.length > 0 && (
+                    <div className="shrink-0 min-w-[130px]">
+                      <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                        Pilih Jenjang
+                      </label>
+                      <select
+                        value={jenjangFilter}
+                        onChange={(e) => {
+                          setJenjangFilter(e.target.value);
+                          // Reset filter Kelas tiap ganti Jenjang, biar gak
+                          // nyangkut pilih kelas dari jenjang yang udah gak aktif.
+                          setClassFilter("all");
+                        }}
+                        className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900">
+                        <option value="all">Semua Jenjang</option>
+                        {jenjangOptions.map((j) => (
+                          <option key={j} value={j}>
+                            Kelas {j}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {filteredClassOptions.length > 0 && (
+                    <div className="shrink-0 min-w-[140px]">
+                      <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                        Pilih Kelas
+                      </label>
+                      <select
+                        value={classFilter}
+                        onChange={(e) => setClassFilter(e.target.value)}
+                        className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900">
+                        <option value="all">Semua Kelas</option>
+                        {filteredClassOptions.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            Kelas {c.id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {(statusFilter !== "all" ||
+                    verifiedFilter !== "all" ||
+                    jenjangFilter !== "all" ||
+                    classFilter !== "all") && (
+                    <div className="shrink-0">
+                      <span className="block text-[11px] mb-1 invisible">
+                        Reset
+                      </span>
+                      <button
+                        onClick={() => {
+                          setStatusFilter("all");
+                          setVerifiedFilter("all");
+                          setJenjangFilter("all");
+                          setClassFilter(
+                            hasFullAccess
+                              ? "all"
+                              : currentUser?.homeroom_class_id || "all",
+                          );
+                        }}
+                        className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap">
+                        Reset Filter
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+          </div>
 
           {/* Wali kelas (gak hasFullAccess) tetap bisa reset status filter
               aja, taruh di baris sendiri karena gak ada dropdown Jenjang/Kelas. */}
-          {!hasFullAccess && statusFilter !== "all" && (
-            <div>
-              <button
-                onClick={() => setStatusFilter("all")}
-                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap">
-                Reset Filter Status
-              </button>
-            </div>
-          )}
+          {!hasFullAccess &&
+            (statusFilter !== "all" || verifiedFilter !== "all") && (
+              <div>
+                <button
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setVerifiedFilter("all");
+                  }}
+                  className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap">
+                  Reset Filter Status
+                </button>
+              </div>
+            )}
         </div>
 
         {/* ====== TOOLBAR SELEKSI & EXPORT PDF ====== */}
@@ -618,15 +745,29 @@ export default function StudentProfileCompletion({ currentUser }) {
               )}
             </label>
 
-            <button
-              onClick={handleExportPDF}
-              disabled={selectedIds.size === 0 || exporting}
-              className="flex items-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed px-4 py-2 rounded-lg shadow-sm transition">
-              <FileDown size={16} />
-              {exporting
-                ? "Membuat PDF..."
-                : `Export PDF${selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}`}
-            </button>
+            {/* Export PDF & Excel digabung di toolbar yang sama, pake
+                selectedIds yang sama juga -- cuma format file-nya beda. */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportPDF}
+                disabled={selectedIds.size === 0 || exporting || exportingExcel}
+                className="flex items-center gap-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed px-4 py-2 rounded-lg shadow-sm transition">
+                <FileDown size={16} />
+                {exporting
+                  ? "Membuat PDF..."
+                  : `PDF${selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}`}
+              </button>
+
+              <button
+                onClick={handleExportExcel}
+                disabled={selectedIds.size === 0 || exporting || exportingExcel}
+                className="flex items-center gap-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed px-4 py-2 rounded-lg shadow-sm transition">
+                <FileSpreadsheet size={16} />
+                {exportingExcel
+                  ? "Membuat Excel..."
+                  : `Excel${selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}`}
+              </button>
+            </div>
           </div>
         )}
 
@@ -640,7 +781,6 @@ export default function StudentProfileCompletion({ currentUser }) {
             {paginatedRows.map((r) => {
               const meta = STATUS_META[r.status];
               const StatusIcon = meta.icon;
-              const isExpanded = expandedId === r.id;
 
               return (
                 <div
@@ -658,10 +798,11 @@ export default function StudentProfileCompletion({ currentUser }) {
                       onClick={(e) => e.stopPropagation()}
                       className="w-4 h-4 shrink-0 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-400"
                     />
+                    {/* Klik nama siswa buka modal detail, bukan expand
+                        inline lagi -- biar list gak makin panjang ke bawah
+                        walau banyak yang dibuka. */}
                     <button
-                      onClick={() =>
-                        setExpandedId((id) => (id === r.id ? null : r.id))
-                      }
+                      onClick={() => setModalStudent(r)}
                       className="flex-1 min-w-0 flex items-center justify-between gap-3 text-left">
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
@@ -671,70 +812,22 @@ export default function StudentProfileCompletion({ currentUser }) {
                           NIS {r.nis || "-"} · Kelas {r.class_id || "-"}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {r.isVerified && (
+                          <span
+                            title="Terverifikasi Admin"
+                            className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                            <ShieldCheck size={13} />
+                          </span>
+                        )}
                         <span
                           className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${meta.badge}`}>
                           <StatusIcon size={13} />
                           {meta.label}
                         </span>
-                        <ChevronDown
-                          size={16}
-                          className={`text-slate-400 transition-transform ${
-                            isExpanded ? "rotate-180" : ""
-                          }`}
-                        />
                       </div>
                     </button>
                   </div>
-
-                  {isExpanded && (
-                    <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-3">
-                      {r.detail ? (
-                        <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                          {DETAIL_ROWS.map(({ key, label, combine } = {}) => {
-                            const value = getDetailRowValue(r.detail, {
-                              key,
-                              combine,
-                            });
-                            return (
-                              <div
-                                key={key}
-                                className="flex items-start justify-between py-2 gap-3">
-                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">
-                                  {label}
-                                </span>
-                                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 text-right break-words">
-                                  {value || (
-                                    <span className="text-rose-500 font-medium">
-                                      Belum diisi
-                                    </span>
-                                  )}
-                                </span>
-                              </div>
-                            );
-                          })}
-                          {r.detail.updated_at && (
-                            <p className="text-[11px] text-slate-400 dark:text-slate-500 pt-2">
-                              Terakhir diperbarui:{" "}
-                              {new Date(r.detail.updated_at).toLocaleDateString(
-                                "id-ID",
-                                {
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                },
-                              )}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-2">
-                          Siswa ini belum pernah mengisi data tambahan sama
-                          sekali.
-                        </p>
-                      )}
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -759,6 +852,152 @@ export default function StudentProfileCompletion({ currentUser }) {
           </div>
         )}
       </div>
+
+      {/* ====== MODAL DETAIL SISWA ====== */}
+      {/* Ganti expand-inline yang lama: sekarang detail siswa muncul di
+          modal terpusat, jadi list di belakang gak makin panjang walau
+          banyak siswa yang dibuka satu-satu. */}
+      {modalStudent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-sm"
+          onClick={() => setModalStudent(null)}>
+          <div
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}>
+            {/* Header modal (sticky, gak ikut scroll) */}
+            <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
+                  {modalStudent.full_name}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">
+                  NIS {modalStudent.nis || "-"} · Kelas{" "}
+                  {modalStudent.class_id || "-"}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {(() => {
+                    const meta = STATUS_META[modalStudent.status];
+                    const StatusIcon = meta.icon;
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${meta.badge}`}>
+                        <StatusIcon size={13} />
+                        {meta.label}
+                      </span>
+                    );
+                  })()}
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                      modalStudent.isVerified
+                        ? "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                        : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                    }`}>
+                    {modalStudent.isVerified ? (
+                      <ShieldCheck size={13} />
+                    ) : (
+                      <ShieldAlert size={13} />
+                    )}
+                    {modalStudent.isVerified
+                      ? "Terverifikasi Admin"
+                      : "Belum Diverifikasi"}
+                  </span>
+                </div>
+                {/* Tombol verifikasi cuma buat admin -- wali kelas/guru BK
+                    liat status ini tapi gak nge-verifikasi (cocokin ke
+                    dokumen fisik itu tugas TU/admin sekolah). */}
+                {isAdmin && modalStudent.detail && (
+                  <button
+                    onClick={() =>
+                      handleToggleVerify(
+                        modalStudent.id,
+                        !modalStudent.isVerified,
+                      )
+                    }
+                    disabled={verifying}
+                    className={`mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-60 transition ${
+                      modalStudent.isVerified
+                        ? "text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
+                        : "text-white bg-sky-600 hover:bg-sky-700"
+                    }`}>
+                    {modalStudent.isVerified ? (
+                      <>
+                        <ShieldAlert size={14} />
+                        {verifying ? "Menyimpan..." : "Batalkan Verifikasi"}
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck size={14} />
+                        {verifying ? "Menyimpan..." : "Tandai Terverifikasi"}
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setModalStudent(null)}
+                aria-label="Tutup"
+                className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Isi detail (yang ini aja yang scroll kalau kepanjangan) */}
+            <div className="p-4 overflow-y-auto">
+              {modalStudent.detail ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-700">
+                  {DETAIL_ROWS.map(({ key, label, combine } = {}) => {
+                    const value = getDetailRowValue(modalStudent.detail, {
+                      key,
+                      combine,
+                    });
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-start justify-between py-2 gap-3 border-b border-slate-100 dark:border-slate-700 sm:border-b-0 sm:py-2.5">
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">
+                          {label}
+                        </span>
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 text-right break-words">
+                          {value || (
+                            <span className="text-rose-500 font-medium">
+                              Belum diisi
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {modalStudent.detail.updated_at && (
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 pt-2 sm:col-span-2">
+                      Terakhir diperbarui:{" "}
+                      {new Date(
+                        modalStudent.detail.updated_at,
+                      ).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
+                  {modalStudent.verifiedAt && (
+                    <p className="text-[11px] text-sky-600 dark:text-sky-400 pt-0.5 sm:col-span-2">
+                      Diverifikasi oleh Admin:{" "}
+                      {new Date(modalStudent.verifiedAt).toLocaleDateString(
+                        "id-ID",
+                        { day: "numeric", month: "long", year: "numeric" },
+                      )}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4">
+                  Siswa ini belum pernah mengisi data tambahan sama sekali.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

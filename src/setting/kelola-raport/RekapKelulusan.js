@@ -24,8 +24,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { GraduationCap, Loader2 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
+import StatusBadge from "./StatusBadge";
 
 const SEMESTER_LIST = [1, 2, 3, 4, 5, 6];
+
+// Fallback kalau mapel belum diisi KKM-nya di halaman "KKM dan Kelulusan"
+// (KelolaKKM.js) -- samain angkanya sama KKM_FALLBACK di sana.
+const KKM_FALLBACK_DEFAULT = 75;
 
 // Bobot Nilai Akhir kelulusan = (BOBOT_NR x rata-rata NR) + (BOBOT_NASAJ x NASAJ)
 // PLACEHOLDER SEMENTARA -- diambil dari salah satu varian umum yang dipakai
@@ -49,6 +54,49 @@ const RekapKelulusan = ({ showToast }) => {
   // buat nyimpen NASAJ permanen. Ke-reset kalau ganti kelas / refresh
   // halaman. { [nis]: number }
   const [nasajByNis, setNasajByNis] = useState({});
+
+  // KKM per mapel & batas minimum Nilai Akhir -- diisi TU di tab "KKM dan
+  // Kelulusan" (KelolaKKM.js), dipake di sini buat nentuin status
+  // Lulus/Tidak Lulus. Fetch sekali di awal, independen dari pilihan
+  // kelas (settingan ini global, bukan per-kelas).
+  const [kkmMap, setKkmMap] = useState({}); // { [mataPelajaran]: number }
+  const [nilaiAkhirMinimum, setNilaiAkhirMinimum] = useState(null);
+
+  useEffect(() => {
+    const fetchKriteriaKelulusan = async () => {
+      try {
+        const [
+          { data: kkmRows, error: kkmErr },
+          { data: configRow, error: configErr },
+        ] = await Promise.all([
+          supabase.from("kkm_mapel").select("mata_pelajaran, kkm"),
+          supabase
+            .from("kelulusan_config")
+            .select("nilai_akhir_minimum")
+            .eq("id", 1)
+            .maybeSingle(),
+        ]);
+        if (kkmErr) throw kkmErr;
+        if (configErr) throw configErr;
+
+        const map = {};
+        (kkmRows || []).forEach((r) => {
+          map[r.mata_pelajaran] = Number(r.kkm);
+        });
+        setKkmMap(map);
+        setNilaiAkhirMinimum(
+          configRow ? Number(configRow.nilai_akhir_minimum) : null,
+        );
+      } catch (err) {
+        console.error(err);
+        showToast?.(
+          "Gagal memuat kriteria kelulusan (KKM/batas Nilai Akhir)",
+          "error",
+        );
+      }
+    };
+    fetchKriteriaKelulusan();
+  }, [showToast]);
 
   // Daftar kelas 9 yang aktif SEKARANG (bukan dari histori raport)
   useEffect(() => {
@@ -216,6 +264,44 @@ const RekapKelulusan = ({ showToast }) => {
       Math.round((BOBOT_NR * rataRataRapor + BOBOT_NASAJ * nasajNum) * 100) /
       100
     );
+  };
+
+  // Status kelulusan = gabungan AND dari 2 syarat:
+  //   1. NR tiap mapel harus di atas KKM mapel itu (dari kkmMap, fallback
+  //      KKM_FALLBACK_DEFAULT kalau mapelnya belum diisi KKM-nya)
+  //   2. Nilai Akhir harus di atas batas minimum (nilaiAkhirMinimum)
+  // Mapel yang datanya belum lengkap (NR null, belum semua semester
+  // terisi) TIDAK digugurkan sebagai "gagal KKM" -- itu beda kasus sama
+  // "gagal", makanya statusnya "belum_lengkap" bukan "tidak_lulus", biar
+  // TU gak salah baca data kosong sebagai siswa gagal.
+  const computeStatusKelulusan = (gradesBySemester, nasaj) => {
+    const alasanGagal = [];
+    const alasanBelumLengkap = [];
+
+    allSubjectsAcrossSemesters.forEach((subj) => {
+      const nr = computeNRPerMapel(gradesBySemester, subj);
+      if (nr === null) {
+        alasanBelumLengkap.push(`Nilai ${subj} belum lengkap`);
+        return;
+      }
+      const kkm = kkmMap[subj] ?? KKM_FALLBACK_DEFAULT;
+      if (nr < kkm) alasanGagal.push(`${subj}: ${nr} (KKM ${kkm})`);
+    });
+
+    const nilaiAkhir = computeNilaiAkhir(gradesBySemester, nasaj);
+    if (nilaiAkhir === null) {
+      alasanBelumLengkap.push("NASAJ belum diisi");
+    } else if (nilaiAkhirMinimum !== null && nilaiAkhir < nilaiAkhirMinimum) {
+      alasanGagal.push(
+        `Nilai Akhir ${nilaiAkhir} di bawah batas minimum ${nilaiAkhirMinimum}`,
+      );
+    }
+
+    if (alasanGagal.length > 0)
+      return { status: "tidak_lulus", alasan: alasanGagal };
+    if (alasanBelumLengkap.length > 0)
+      return { status: "belum_lengkap", alasan: alasanBelumLengkap };
+    return { status: "lulus", alasan: [] };
   };
 
   const handleScoreEdit = async (studentNis, gradeId, rawValue) => {
@@ -510,6 +596,9 @@ const RekapKelulusan = ({ showToast }) => {
                   <th className="px-3 py-2.5 font-medium text-center whitespace-nowrap bg-teal-50 dark:bg-teal-900/20">
                     Nilai Akhir
                   </th>
+                  <th className="px-3 py-2.5 font-medium text-center whitespace-nowrap">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -519,6 +608,10 @@ const RekapKelulusan = ({ showToast }) => {
                   );
                   const nasaj = nasajByNis[s.nis] ?? "";
                   const nilaiAkhir = computeNilaiAkhir(
+                    s.gradesBySemester,
+                    nasaj,
+                  );
+                  const { status, alasan } = computeStatusKelulusan(
                     s.gradesBySemester,
                     nasaj,
                   );
@@ -567,6 +660,11 @@ const RekapKelulusan = ({ showToast }) => {
                       </td>
                       <td className="px-3 py-2.5 text-center font-bold text-teal-700 dark:text-teal-300 bg-teal-50/50 dark:bg-teal-900/10">
                         {nilaiAkhir ?? "—"}
+                      </td>
+                      <td
+                        className="px-3 py-2.5 text-center"
+                        title={alasan.join(" · ") || undefined}>
+                        <StatusBadge type="kelulusan" status={status} />
                       </td>
                     </tr>
                   );

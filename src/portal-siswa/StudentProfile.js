@@ -302,6 +302,10 @@ export function ProfileInfo({ student, onUpdated }) {
             tempat_tgl_lahir_ibu: form.tempat_tgl_lahir_ibu || null,
             keterangan: form.keterangan || null,
             updated_at: new Date().toISOString(),
+            // Data berubah -> status verifikasi admin otomatis batal, harus
+            // dicek ulang. Lihat KelengkapanDataSiswa.js buat tombol
+            // "Tandai Terverifikasi"-nya.
+            verified_at: null,
           },
           { onConflict: "student_id" },
         );

@@ -267,11 +267,12 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   |-- FeedbackCombinedTab.js
 |   |   |   |-- FeedbackGuruTab.js
 |   |   |   `-- FeedbackSiswaTab.js
-|   |   |-- kelola-jadwal
+|   |   |
 |   |   |-- kelola-raport
 |   |   |   |-- DetailRaportSiswa.js
 |   |   |   |-- ImportProgress.js
 |   |   |   |-- ImportRaportForm.js
+|   |   |   |-- KelolaKKM.js
 |   |   |   |-- ManajemenRaportTable.js
 |   |   |   |-- PreviewImportTable.js
 |   |   |   |-- RaportNilaiTab.js

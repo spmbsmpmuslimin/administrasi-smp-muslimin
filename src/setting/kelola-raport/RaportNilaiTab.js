@@ -17,11 +17,18 @@
 // - RekapKelulusan.js         -> rekap nilai semester 1-6 kelas 9 (roster saat ini, bukan class_name historis) + edit nilai langsung buat proses kelulusan
 
 import React, { useState } from "react";
-import { Upload, ListChecks, BarChart3, GraduationCap } from "lucide-react";
+import {
+  Upload,
+  ListChecks,
+  BarChart3,
+  GraduationCap,
+  Settings,
+} from "lucide-react";
 import ImportRaportForm from "./ImportRaportForm";
 import ManajemenRaportTable from "./ManajemenRaportTable";
 import RekapMultiSemester from "./RekapMultiSemester";
 import RekapKelulusan from "./RekapKelulusan";
+import KelolaKKM from "./KelolaKKM";
 
 // Sub-nav internal untuk fitur Nilai Raport (Import / Manajemen / Rekap).
 // Beda dari nav utama di Setting.js (card grid + URL param) -- di sini cukup
@@ -31,6 +38,7 @@ const SUB_TABS = [
   { id: "import", label: "Import Raport", icon: Upload },
   { id: "manajemen", label: "Manajemen Nilai", icon: ListChecks },
   { id: "rekap", label: "Rekap Multi Semester", icon: BarChart3 },
+  { id: "kkm", label: "KKM dan Kelulusan", icon: Settings },
   { id: "kelulusan", label: "Rekap Kelulusan", icon: GraduationCap },
 ];
 
@@ -50,6 +58,8 @@ const RaportNilaiTab = (props) => {
         return <ManajemenRaportTable {...props} />;
       case "rekap":
         return <RekapMultiSemester {...props} />;
+      case "kkm":
+        return <KelolaKKM {...props} />;
       case "kelulusan":
         return <RekapKelulusan {...props} />;
       default:
