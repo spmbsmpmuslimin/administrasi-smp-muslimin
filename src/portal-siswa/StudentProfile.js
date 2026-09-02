@@ -59,19 +59,42 @@ function isValidPhone(raw) {
 // pas daftar dulu bisa dilanjut/dilengkapi siswa sendiri dari portal ini.
 //
 // Field identitas resmi tambahan (agama, NIK, No. KK, akta lahir, ijazah,
-// no peserta ujian, dusun, kode pos, NIK ortu, tempat/tgl lahir ortu,
-// No. KIP, anak ke-, keterangan, no daftar) udah ditambahin ke form ini
+// no peserta ujian, kode pos, NIK ortu, tempat/tgl lahir ortu,
+// No. KIP, no daftar) udah ditambahin ke form ini
 // dan ke query di useStudentProfile.js — kolomnya udah ada di tabel
 // student_profile_details (lihat DDL terbaru).
 // Field lama yang generic (nama_ortu) udah gak dipake di form ini karena
 // dipecah jadi Ayah/Ibu terpisah — kolom lamanya dibiarin aja di DB (gak
 // didrop) buat jaga-jaga data lama, tapi UI-nya udah gak nampilin/isi itu.
 //
+// ⚠️ UPDATE (kunci Kelompok B eks-SPMB, hilangkan Data Kelulusan &
+// Lainnya): sejak field siswa_baru diperkaya & auto-tersalin ke
+// student_profile_details pas transfer siswa diterima, field2 berikut
+// yang tadinya "Kelompok B" (boleh diedit mandiri) SEKARANG DIKUNCI jadi
+// read-only di sini juga, disamain kayak Kelompok A -- biar cuma ADA 1
+// sumber isian awal (SPMB) + 1 pintu koreksi (Admin/TU lewat
+// DataSiswaInduk.js), gak ada pintu ke-3 dari siswa/ortu yang bisa bikin
+// datanya beda sama yang di SPMB / kesimpen Admin:
+//   nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu,
+//   pendidikan_ibu, alamat, no_hp_ortu, kode_pos
+// Kalau ada yang salah/berubah (pindah rumah, ganti kerjaan, ganti nomor),
+// siswa/ortu HARUS lapor ke Tata Usaha, bukan ubah sendiri dari sini.
+//
+// Section "Data Kelulusan & Lainnya" (No. Ijazah, No. Peserta Ujian,
+// No. Daftar, Keterangan) DIHAPUS TOTAL dari sisi siswa (baik tampilan
+// maupun form) -- keempatnya jadi murni Admin-only, dikelola dari
+// DataSiswaInduk.js aja. `keterangan` sengaja ikut dihapus karena
+// purpose-nya emang gak pernah jelas dari awal (lihat catatan di
+// DataSiswaInduk.js) dan udah jadi pintu ganda (siswa + admin bisa nulis
+// ke kolom yang sama tanpa pembagian tanggung jawab).
+//
+// Field yang TETAP bisa diisi mandiri sama siswa/ortu (gak ada di SPMB,
+// gak ada sumber lain): no_hp (HP siswa sendiri, opsional), dusun
+// (legacy, opsional), anak_ke.
+//
 // `onUpdated` (opsional): dipanggil abis form data tambahan berhasil
 // disimpen, biasanya diisi `refetch` dari useStudentProfile() supaya
 // data yang tampil langsung ke-update tanpa reload halaman.
-
-const PENDIDIKAN_OPTIONS = ["SD", "SMP", "SMA", "D3", "S1", "S2"];
 
 function formatTanggalLahir(dateStr) {
   if (!dateStr) return null;
@@ -98,39 +121,25 @@ export function ProfileInfo({ student, onUpdated }) {
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+  // Cuma field yang BENERAN masih bisa diedit mandiri sama siswa/ortu yang
+  // masuk state `form` ini. Field eks-SPMB (nama_ayah, pekerjaan_ayah,
+  // pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, alamat,
+  // no_hp_ortu, kode_pos) udah dikunci -> dibaca LANGSUNG dari `student`
+  // prop di JSX (bukan disimpen di `form`), biar gak sengaja ke-submit
+  // ulang lewat handleSubmit.
   const [form, setForm] = useState({
-    alamat: "",
     no_hp: "",
-    nama_ayah: "",
-    pekerjaan_ayah: "",
-    pendidikan_ayah: "",
-    nama_ibu: "",
-    pekerjaan_ibu: "",
-    pendidikan_ibu: "",
-    no_hp_ortu: "",
     dusun: "",
-    kode_pos: "",
     anak_ke: "",
-    keterangan: "",
   });
 
   // Sinkronin form pas data student berubah (pertama kali load, atau
   // abis refetch sukses) — biar form gak nampilin data basi.
   useEffect(() => {
     setForm({
-      alamat: student?.alamat || "",
       no_hp: student?.no_hp || "",
-      nama_ayah: student?.nama_ayah || "",
-      pekerjaan_ayah: student?.pekerjaan_ayah || "",
-      pendidikan_ayah: student?.pendidikan_ayah || "",
-      nama_ibu: student?.nama_ibu || "",
-      pekerjaan_ibu: student?.pekerjaan_ibu || "",
-      pendidikan_ibu: student?.pendidikan_ibu || "",
-      no_hp_ortu: student?.no_hp_ortu || "",
       dusun: student?.dusun || "",
-      kode_pos: student?.kode_pos || "",
       anak_ke: student?.anak_ke ?? "",
-      keterangan: student?.keterangan || "",
     });
   }, [student]);
 
@@ -184,12 +193,11 @@ export function ProfileInfo({ student, onUpdated }) {
     { label: "Pekerjaan Ibu", value: student?.pekerjaan_ibu || "-" },
     { label: "Pendidikan Terakhir Ibu", value: student?.pendidikan_ibu || "-" },
     { label: "No. HP Orang Tua/Wali", value: student?.no_hp_ortu || "-" },
-    // divider: true -> pemisah blok Data Orangtua & Data Kelulusan/Lainnya.
-    { section: "Data Kelulusan & Lainnya", divider: true },
-    { label: "No. Ijazah", value: student?.no_ijazah || "-" },
-    { label: "No. Peserta Ujian", value: student?.no_peserta_ujian || "-" },
-    { label: "No. Daftar", value: student?.no_daftar || "-" },
-    { label: "Keterangan", value: student?.keterangan || "-" },
+    // Section "Data Kelulusan & Lainnya" (No. Ijazah, No. Peserta Ujian,
+    // No. Daftar, Keterangan) SENGAJA dihapus dari sisi siswa -- 3 field
+    // pertama emang gak pernah relevan buat siswa liat, dan `keterangan`
+    // sekarang murni Admin-only (lihat catatan panjang di atas). Kalau
+    // butuh lihat/edit ke-4 field ini, lewat DataSiswaInduk.js aja.
   ];
 
   const handleSubmit = async (e) => {
@@ -205,15 +213,7 @@ export function ProfileInfo({ student, onUpdated }) {
     // gak ada nomor asal-asalan/kepotong kesimpen. Kosongin field-nya
     // tetep boleh (opsional), jadi cuma divalidasi kalau ada isinya.
     if (form.no_hp && !isValidPhone(form.no_hp)) {
-      setFormError(
-        "No. HP Siswa tidak valid. Contoh format yang benar: 08123456789.",
-      );
-      return;
-    }
-    if (form.no_hp_ortu && !isValidPhone(form.no_hp_ortu)) {
-      setFormError(
-        "No. HP Orang Tua/Wali tidak valid. Contoh format yang benar: 08123456789.",
-      );
+      setFormError("No. HP Siswa tidak valid. Contoh format yang benar: 08123456789.");
       return;
     }
 
@@ -222,41 +222,32 @@ export function ProfileInfo({ student, onUpdated }) {
       // Upsert: 1 baris per siswa di student_profile_details
       // (student_id = primary key), jadi otomatis update kalau udah
       // pernah isi, atau insert kalau baru pertama kali.
-      // Kirim CUMA field Kelompok B (kontak & data ortu deskriptif) dari
-      // sisi siswa. Field identitas/dokumen resmi (jenis_kelamin,
+      // Kirim CUMA field yang beneran masih self-service dari sisi siswa:
+      // no_hp (HP siswa sendiri), dusun (legacy/opsional), anak_ke.
+      // SEMUA field lain -- identitas/dokumen resmi (jenis_kelamin,
       // tempat/tanggal lahir, agama, NIK, No.KK, No.Akta Lahir, sekolah
-      // asal, No.KIP/Ijazah/Peserta Ujian/Daftar, NIK & TTL ortu) SENGAJA
-      // gak dikirim dari sini lagi -- sekarang cuma admin/TU yang isi/edit
-      // field itu lewat KelengkapanDataSiswa.js, biar tervalidasi ke
-      // dokumen fisik (samain pola kayak NISN yang udah duluan begini).
-      const { error: upsertErr } = await supabase
-        .from("student_profile_details")
-        .upsert(
-          {
-            student_id: student.id,
-            alamat: form.alamat || null,
-            no_hp: form.no_hp ? normalizePhone(form.no_hp) : null,
-            nama_ayah: form.nama_ayah || null,
-            pekerjaan_ayah: form.pekerjaan_ayah || null,
-            pendidikan_ayah: form.pendidikan_ayah || null,
-            nama_ibu: form.nama_ibu || null,
-            pekerjaan_ibu: form.pekerjaan_ibu || null,
-            pendidikan_ibu: form.pendidikan_ibu || null,
-            no_hp_ortu: form.no_hp_ortu
-              ? normalizePhone(form.no_hp_ortu)
-              : null,
-            dusun: form.dusun || null,
-            kode_pos: form.kode_pos || null,
-            anak_ke: form.anak_ke === "" ? null : Number(form.anak_ke),
-            keterangan: form.keterangan || null,
-            updated_at: new Date().toISOString(),
-            // Data berubah -> status verifikasi admin otomatis batal, harus
-            // dicek ulang. Lihat KelengkapanDataSiswa.js buat tombol
-            // "Tandai Terverifikasi"-nya.
-            verified_at: null,
-          },
-          { onConflict: "student_id" },
-        );
+      // asal, No.KIP/Ijazah/Peserta Ujian/Daftar, NIK & TTL ortu) MAUPUN
+      // eks-Kelompok B yang sekarang udah dikunci (nama_ayah,
+      // pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu,
+      // pendidikan_ibu, alamat, no_hp_ortu, kode_pos) DAN `keterangan`
+      // (sekarang admin-only) -- SENGAJA gak dikirim dari sini lagi.
+      // Sumbernya cuma SPMB (isi awal) + admin/TU lewat DataSiswaInduk.js
+      // (koreksi), biar tervalidasi ke dokumen fisik & gak ada pintu
+      // ganda (samain pola kayak NISN yang udah duluan begini).
+      const { error: upsertErr } = await supabase.from("student_profile_details").upsert(
+        {
+          student_id: student.id,
+          no_hp: form.no_hp ? normalizePhone(form.no_hp) : null,
+          dusun: form.dusun || null,
+          anak_ke: form.anak_ke === "" ? null : Number(form.anak_ke),
+          updated_at: new Date().toISOString(),
+          // Data berubah -> status verifikasi admin otomatis batal, harus
+          // dicek ulang. Lihat DataSiswaInduk.js buat tombol
+          // "Tandai Terverifikasi"-nya.
+          verified_at: null,
+        },
+        { onConflict: "student_id" }
+      );
 
       if (upsertErr) throw upsertErr;
 
@@ -289,11 +280,11 @@ export function ProfileInfo({ student, onUpdated }) {
             Data Siswa
           </p>
           <p className="text-xs text-theme-secondary -mt-1">
-            Data identitas resmi (jenis kelamin, tempat/tanggal lahir, agama,
-            NIK, No. KK, No. Akta Lahir, sekolah asal, No. KIP/Ijazah/Peserta
-            Ujian/Daftar) dikelola oleh Tata Usaha berdasarkan dokumen fisik.
-            Kalau ada yang salah/kosong, hubungi Tata Usaha — bukan diisi
-            sendiri dari sini.
+            Data identitas resmi & kontak (jenis kelamin, tempat/tanggal lahir, agama, NIK, No. KK,
+            No. Akta Lahir, sekolah asal, No. KIP/Ijazah/Peserta Ujian/Daftar, alamat, kode pos)
+            dikelola oleh Tata Usaha berdasarkan dokumen fisik & data pendaftaran SPMB. Kalau ada
+            yang salah/berubah (pindah rumah dll), hubungi Tata Usaha — bukan diisi sendiri dari
+            sini.
           </p>
 
           <div>
@@ -310,12 +301,9 @@ export function ProfileInfo({ student, onUpdated }) {
             <label className={labelClass}>Alamat Lengkap</label>
             <textarea
               rows={2}
-              value={form.alamat}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, alamat: e.target.value }))
-              }
-              placeholder="Contoh: Kp. Cikadu RT 08 RW 07 Desa Bongas Kec. Cililin Kab. Bandung Barat"
-              className={inputClass}
+              value={student?.alamat || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
             />
           </div>
 
@@ -325,9 +313,7 @@ export function ProfileInfo({ student, onUpdated }) {
               <input
                 type="text"
                 value={form.dusun}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, dusun: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, dusun: e.target.value }))}
                 className={inputClass}
               />
             </div>
@@ -335,11 +321,9 @@ export function ProfileInfo({ student, onUpdated }) {
               <label className={labelClass}>Kode Pos</label>
               <input
                 type="text"
-                value={form.kode_pos}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, kode_pos: e.target.value }))
-                }
-                className={inputClass}
+                value={student?.kode_pos || "Belum tersedia, hubungi Tata Usaha"}
+                disabled
+                className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
               />
             </div>
           </div>
@@ -349,9 +333,7 @@ export function ProfileInfo({ student, onUpdated }) {
             <input
               type="tel"
               value={form.no_hp}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, no_hp: e.target.value }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, no_hp: e.target.value }))}
               placeholder="08xxxxxxxxxx"
               className={inputClass}
             />
@@ -363,9 +345,7 @@ export function ProfileInfo({ student, onUpdated }) {
               type="number"
               min="1"
               value={form.anak_ke}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, anak_ke: e.target.value }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, anak_ke: e.target.value }))}
               className={inputClass}
             />
           </div>
@@ -377,19 +357,17 @@ export function ProfileInfo({ student, onUpdated }) {
             Data Orangtua
           </p>
           <p className="text-xs text-theme-secondary -mt-1">
-            NIK & tempat/tanggal lahir ayah-ibu dikelola Tata Usaha (data
-            dokumen resmi). Bagian ini cuma buat data yang sering berubah.
+            Seluruh data orang tua (nama, pekerjaan, pendidikan, NIK, tempat/tanggal lahir, No. HP)
+            dikelola Tata Usaha berdasarkan data pendaftaran SPMB & dokumen fisik. Kalau ada yang
+            salah/berubah (ganti kerjaan, ganti nomor, dll), hubungi Tata Usaha.
           </p>
           <div>
             <label className={labelClass}>Nama Lengkap Ayah</label>
             <input
               type="text"
-              value={form.nama_ayah}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, nama_ayah: e.target.value }))
-              }
-              placeholder="Nama lengkap ayah"
-              className={inputClass}
+              value={student?.nama_ayah || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
             />
           </div>
 
@@ -397,41 +375,28 @@ export function ProfileInfo({ student, onUpdated }) {
             <label className={labelClass}>Pekerjaan Ayah</label>
             <input
               type="text"
-              value={form.pekerjaan_ayah}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, pekerjaan_ayah: e.target.value }))
-              }
-              placeholder="Contoh: Wiraswasta"
-              className={inputClass}
+              value={student?.pekerjaan_ayah || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
             />
           </div>
           <div>
             <label className={labelClass}>Pendidikan Terakhir Ayah</label>
-            <select
-              value={form.pendidikan_ayah}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, pendidikan_ayah: e.target.value }))
-              }
-              className={inputClass}>
-              <option value="">Pilih pendidikan terakhir</option>
-              {PENDIDIKAN_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+            <input
+              type="text"
+              value={student?.pendidikan_ayah || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
+            />
           </div>
 
           <div>
             <label className={labelClass}>Nama Lengkap Ibu</label>
             <input
               type="text"
-              value={form.nama_ibu}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, nama_ibu: e.target.value }))
-              }
-              placeholder="Nama lengkap ibu"
-              className={inputClass}
+              value={student?.nama_ibu || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
             />
           </div>
 
@@ -439,78 +404,49 @@ export function ProfileInfo({ student, onUpdated }) {
             <label className={labelClass}>Pekerjaan Ibu</label>
             <input
               type="text"
-              value={form.pekerjaan_ibu}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, pekerjaan_ibu: e.target.value }))
-              }
-              placeholder="Contoh: Ibu Rumah Tangga"
-              className={inputClass}
+              value={student?.pekerjaan_ibu || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
             />
           </div>
           <div>
             <label className={labelClass}>Pendidikan Terakhir Ibu</label>
-            <select
-              value={form.pendidikan_ibu}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, pendidikan_ibu: e.target.value }))
-              }
-              className={inputClass}>
-              <option value="">Pilih pendidikan terakhir</option>
-              {PENDIDIKAN_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+            <input
+              type="text"
+              value={student?.pendidikan_ibu || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
+            />
           </div>
 
           <div>
             <label className={labelClass}>No. HP Orang Tua/Wali</label>
             <input
               type="tel"
-              value={form.no_hp_ortu}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, no_hp_ortu: e.target.value }))
-              }
-              placeholder="08xxxxxxxxxx"
-              className={inputClass}
+              value={student?.no_hp_ortu || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
             />
           </div>
         </div>
 
-        {/* ---- Lainnya ---- */}
-        <div className="mt-3 pt-4 border-t-2 border-theme space-y-3">
-          <p className="text-sm font-extrabold uppercase tracking-wide text-theme-secondary">
-            Lainnya
-          </p>
-          <p className="text-xs text-theme-secondary -mt-1">
-            No. Ijazah, No. Peserta Ujian, dan No. Daftar dikelola Tata Usaha.
-          </p>
-          <div>
-            <label className={labelClass}>Keterangan</label>
-            <textarea
-              rows={2}
-              value={form.keterangan}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, keterangan: e.target.value }))
-              }
-              placeholder="Catatan tambahan (opsional)"
-              className={inputClass}
-            />
-          </div>
-        </div>
+        {/* Section "Lainnya" (Keterangan, No. Ijazah, No. Peserta Ujian,
+            No. Daftar) DIHAPUS TOTAL dari form siswa -- ke-4 nya sekarang
+            murni Admin-only, dikelola dari DataSiswaInduk.js. */}
 
         <div className="flex gap-2 pt-1">
           <button
             type="button"
             onClick={() => setIsEditing(false)}
-            className="flex-1 text-sm font-semibold text-theme-secondary bg-theme-surface py-2.5 rounded-lg">
+            className="flex-1 text-sm font-semibold text-theme-secondary bg-theme-surface py-2.5 rounded-lg"
+          >
             Batal
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60">
+            className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60"
+          >
             {submitting && <Loader2 size={16} className="animate-spin" />}
             {submitting ? "Menyimpan..." : "Simpan"}
           </button>
@@ -535,31 +471,24 @@ export function ProfileInfo({ student, onUpdated }) {
               <p
                 key={r.section}
                 className={`col-span-3 text-sm font-extrabold uppercase tracking-wide text-theme-secondary pb-1.5 ${
-                  isFirst
-                    ? "pt-0"
-                    : r.divider
-                      ? "mt-3 pt-4 border-t-2 border-theme"
-                      : "pt-4"
-                }`}>
+                  isFirst ? "pt-0" : r.divider ? "mt-3 pt-4 border-t-2 border-theme" : "pt-4"
+                }`}
+              >
                 {r.section}
               </p>
             );
           }
           const prev = rows[i - 1];
-          const bordered =
-            i !== 0 && !prev?.section ? "border-t border-gray-100" : "";
+          const bordered = i !== 0 && !prev?.section ? "border-t border-gray-100" : "";
           return (
             <React.Fragment key={r.label}>
               <span
-                className={`text-sm font-medium text-theme-secondary whitespace-nowrap py-3 ${bordered}`}>
+                className={`text-sm font-medium text-theme-secondary whitespace-nowrap py-3 ${bordered}`}
+              >
                 {r.label}
               </span>
-              <span
-                className={`text-sm font-medium text-theme-secondary py-3 ${bordered}`}>
-                :
-              </span>
-              <span
-                className={`text-sm font-bold text-theme break-words py-3 ${bordered}`}>
+              <span className={`text-sm font-medium text-theme-secondary py-3 ${bordered}`}>:</span>
+              <span className={`text-sm font-bold text-theme break-words py-3 ${bordered}`}>
                 {r.value}
               </span>
             </React.Fragment>
@@ -569,7 +498,8 @@ export function ProfileInfo({ student, onUpdated }) {
       <button
         type="button"
         onClick={() => setIsEditing(true)}
-        className="w-full mt-3 text-sm font-semibold text-blue-600 bg-blue-50 py-2.5 rounded-lg">
+        className="w-full mt-3 text-sm font-semibold text-blue-600 bg-blue-50 py-2.5 rounded-lg"
+      >
         Lengkapi / Edit Data
       </button>
     </div>
@@ -686,7 +616,8 @@ export function ChangePasswordForm({ student }) {
         <button
           type="button"
           onClick={() => setShowPw((v) => !v)}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+        >
           {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
@@ -694,7 +625,8 @@ export function ChangePasswordForm({ student }) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60">
+        className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60"
+      >
         {submitting && <Loader2 size={16} className="animate-spin" />}
         {submitting ? "Menyimpan..." : "Simpan Password Baru"}
       </button>
@@ -717,7 +649,8 @@ export function LogoutSection() {
       <button
         type="button"
         onClick={() => setConfirmLogout(true)}
-        className="text-sm font-semibold text-red-600">
+        className="text-sm font-semibold text-red-600"
+      >
         Klik untuk konfirmasi keluar dari akun.
       </button>
     );
@@ -730,13 +663,15 @@ export function LogoutSection() {
         <button
           type="button"
           onClick={() => setConfirmLogout(false)}
-          className="flex-1 text-sm font-semibold text-theme-secondary bg-theme-surface py-2 rounded-lg">
+          className="flex-1 text-sm font-semibold text-theme-secondary bg-theme-surface py-2 rounded-lg"
+        >
           Batal
         </button>
         <button
           type="button"
           onClick={handleLogout}
-          className="flex-1 text-sm font-semibold text-white bg-red-600 py-2 rounded-lg">
+          className="flex-1 text-sm font-semibold text-white bg-red-600 py-2 rounded-lg"
+        >
           Ya, Keluar
         </button>
       </div>
