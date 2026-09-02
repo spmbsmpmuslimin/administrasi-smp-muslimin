@@ -24,7 +24,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { GraduationCap, Loader2 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
-import StatusBadge from "./StatusBadge";
+import { StatusBadge } from "./RaportShared";
 
 const SEMESTER_LIST = [1, 2, 3, 4, 5, 6];
 

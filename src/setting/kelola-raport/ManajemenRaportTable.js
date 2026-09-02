@@ -2,8 +2,9 @@
 // Dipanggil sebagai sub-tab dari RaportNilaiTab.js (tab "Manajemen Nilai"
 // di menu "Nilai Raport"), bukan halaman berdiri sendiri.
 // Dua view lokal (state "view"): "list" (fetch dari tabel student_reports,
-// filter lewat SemesterFilterBar.js) dan "detail" (DetailRaportSiswa.js,
-// muncul pas admin klik satu baris).
+// filter lewat SemesterFilterBar dari RaportShared.js) dan "detail"
+// (komponen internal <DetailRaportSiswa> di bawah, muncul pas admin klik
+// satu baris).
 //
 // Fetch pakai nested select `student_report_grades(subject, score)` --
 // ini jalan otomatis karena foreign key report_id di student_report_grades
@@ -14,7 +15,7 @@
 // Publish massal: checkbox per baris + "Pilih Semua" di header tabel, lalu
 // action bar (jumlah terpilih + tombol Hapus/Draft/Publish) muncul DI ATAS,
 // nempel persis di bawah filter bar -- sebelumnya publish cuma bisa 1-1
-// lewat DetailRaportSiswa.js (tombolnya di bawah tiap halaman detail, jadi
+// lewat DetailRaportSiswa (tombolnya di bawah tiap halaman detail, jadi
 // harus buka & scroll satu-satu kalau mau publish banyak siswa sekaligus).
 // Publish 1 siswa dari halaman detail (handleTogglePublish) TETAP ada dan
 // gak berubah -- ini cuma nambahin jalur pintas buat publish banyak
@@ -29,6 +30,10 @@
 // di konfirmasinya). Lihat juga pre-check di ImportRaportForm.js
 // (handleSimpan) yang nyoba nyegah kasus kayak gini kejadian lagi dari
 // awal, bukan cuma beresin setelah kejadian.
+//
+// FILE INI GABUNGAN DARI 2 FILE SEBELUMNYA (refactor -- DetailRaportSiswa.js
+// cuma dipakai di sini doang, jadi dijadikan komponen internal
+// <DetailRaportSiswa> di bawah, bukan file terpisah lagi).
 
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -38,12 +43,19 @@ import {
   Check,
   Trash2,
   Link2,
+  ArrowLeft,
+  Save,
+  Globe,
+  FileEdit,
 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
-import SemesterFilterBar from "./SemesterFilterBar";
-import StatusBadge from "./StatusBadge";
-import DetailRaportSiswa from "./DetailRaportSiswa";
-import { useAcademicYears, useReportedClasses } from "./useAcademicOptions";
+import {
+  SemesterFilterBar,
+  StatusBadge,
+  RaportTable,
+  useAcademicYears,
+  useReportedClasses,
+} from "./RaportShared";
 
 // Sama persis kayak yang dipake di StudentRaport.js & ImportRaportForm.js --
 // SENGAJA didup, bukan di-share dari util bersama (repo ini belum punya
@@ -67,6 +79,107 @@ function nisVariants(nis) {
   return Array.from(variants);
 }
 
+// ============================================================
+// DetailRaportSiswa (sebelumnya DetailRaportSiswa.js)
+// Ditampilin pas admin klik satu baris di list (view === "detail").
+// Nampilin detail satu raport (bukan hasil extract mentah kayak
+// PreviewImportTable di ImportRaportForm.js, ini data yang UDAH tersimpan
+// di database) -- bisa edit nilai lewat RaportTable, dan toggle status
+// Draft <-> Published lewat StatusBadge + tombol publish.
+//
+// onSave & onTogglePublish dikasih dari ManajemenRaportTable (handleSaveGrades
+// & handleTogglePublish di bawah) dan udah nyambung ke Supabase beneran
+// (update student_report_grades / student_reports) -- komponen ini sendiri
+// ga tau soal Supabase, cuma manggil prop & nunggu hasilnya.
+//
+// Dokumentasi terkait bag. 7: status Draft belum bisa dilihat siswa di
+// Portal Siswa, status Published baru muncul di sana.
+//
+// siswa shape: { id, name, nis, kelas, tahunAjaran, semester, status: "draft"|"published", grades: [{subject, score}] }
+// ============================================================
+
+const DetailRaportSiswa = ({ siswa, onBack, onSave, onTogglePublish }) => {
+  const [grades, setGrades] = useState(siswa?.grades || []);
+  const [isDirty, setIsDirty] = useState(false);
+
+  if (!siswa) return null;
+
+  const handleChangeScore = (subject, newScore) => {
+    setGrades((prev) => prev.map((g) => (g.subject === subject ? { ...g, score: newScore } : g)));
+    setIsDirty(true);
+  };
+
+  const handleSave = async () => {
+    const success = await onSave?.(siswa.id, grades);
+    if (success) setIsDirty(false);
+    // Toast sukses/gagal udah ditangani parent (ManajemenRaportTable),
+    // biar single source of truth soal hasil save yang sebenernya.
+  };
+
+  const handleTogglePublish = () => {
+    const next = siswa.status === "published" ? "draft" : "published";
+    onTogglePublish?.(siswa.id, next);
+  };
+
+  return (
+    <div className="space-y-5">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+      >
+        <ArrowLeft size={16} />
+        Kembali ke daftar
+      </button>
+
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">{siswa.name}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {siswa.nis} · Kelas {siswa.kelas} · {siswa.tahunAjaran} · Semester {siswa.semester}
+          </p>
+        </div>
+        <StatusBadge type="publish" status={siswa.status} />
+      </div>
+
+      <div className="border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+        <RaportTable grades={grades} editable onChangeScore={handleChangeScore} />
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={handleSave}
+          disabled={!isDirty}
+          className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors active:scale-95"
+        >
+          <Save size={16} />
+          Simpan Perubahan
+        </button>
+
+        <button
+          onClick={handleTogglePublish}
+          className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition-colors active:scale-95"
+        >
+          {siswa.status === "published" ? (
+            <>
+              <FileEdit size={16} />
+              Set ke Draft
+            </>
+          ) : (
+            <>
+              <Globe size={16} />
+              Publish
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// ManajemenRaportTable (komponen utama, di-export default)
+// ============================================================
+
 const ManajemenRaportTable = ({ showToast }) => {
   const [view, setView] = useState("list"); // "list" | "detail"
   const [selectedSiswa, setSelectedSiswa] = useState(null);
@@ -88,7 +201,7 @@ const ManajemenRaportTable = ({ showToast }) => {
 
   const { years: tahunAjaranOptions } = useAcademicYears(showToast);
   // Kelas di sini = kode yang SUDAH PERNAH diimport (student_reports.class_name),
-  // bukan dari tabel `classes` -- lihat catatan di useAcademicOptions.js.
+  // bukan dari tabel `classes` -- lihat catatan di RaportShared.js.
   const { classes: kelasOptions } = useReportedClasses(
     filter.tahunAjaran,
     showToast,
@@ -606,7 +719,7 @@ const ManajemenRaportTable = ({ showToast }) => {
             ...prev,
             ...partial,
             // Kelas lama gak relevan lagi kalau tahun ajarannya diganti
-            // (kode rombel didaur ulang tiap tahun, lihat useAcademicOptions.js)
+            // (kode rombel didaur ulang tiap tahun, lihat RaportShared.js)
             ...(partial.tahunAjaran !== undefined &&
             partial.tahunAjaran !== prev.tahunAjaran
               ? { kelas: "" }
