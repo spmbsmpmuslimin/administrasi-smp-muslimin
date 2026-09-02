@@ -199,14 +199,25 @@ const useStudentsData = (userData, showToast, targetYear) => {
           tempat_lahir: studentData.tempat_lahir,
           tanggal_lahir: convertDateFormat(studentData.tanggal_lahir),
           asal_sekolah: studentData.asal_sekolah,
+          // --- Field identitas resmi tambahan (dokumen kependudukan) ---
+          agama: studentData.agama || null,
+          nik: studentData.nik || null,
+          no_kk: studentData.no_kk || null,
+          no_akta_lahir: studentData.no_akta_lahir || null,
+          no_kip: studentData.no_kip || null,
           nama_ayah: parentData.nama_ayah,
           pekerjaan_ayah: parentData.pekerjaan_ayah,
           pendidikan_ayah: parentData.pendidikan_ayah,
+          nik_ayah: parentData.nik_ayah || null,
+          tempat_tgl_lahir_ayah: parentData.tempat_tgl_lahir_ayah || null,
           nama_ibu: parentData.nama_ibu,
           pekerjaan_ibu: parentData.pekerjaan_ibu,
           pendidikan_ibu: parentData.pendidikan_ibu,
+          nik_ibu: parentData.nik_ibu || null,
+          tempat_tgl_lahir_ibu: parentData.tempat_tgl_lahir_ibu || null,
           no_hp: parentData.no_hp,
           alamat: parentData.alamat,
+          kode_pos: parentData.kode_pos || null,
           academic_year: targetYear,
           status: "diterima",
           is_transferred: false,
@@ -476,8 +487,8 @@ const SPMB = ({ user, onShowToast }) => {
               toast.type === "success"
                 ? "bg-green-50 dark:bg-green-900/30 border-green-500 dark:border-green-600 text-green-800 dark:text-green-200"
                 : toast.type === "error"
-                ? "bg-red-50 dark:bg-red-900/30 border-red-500 dark:border-red-600 text-red-800 dark:text-red-200"
-                : "bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 text-blue-800 dark:text-blue-200"
+                  ? "bg-red-50 dark:bg-red-900/30 border-red-500 dark:border-red-600 text-red-800 dark:text-red-200"
+                  : "bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 text-blue-800 dark:text-blue-200"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -649,10 +660,10 @@ const SPMB = ({ user, onShowToast }) => {
                 {item.key === "form"
                   ? "📝"
                   : item.key === "list"
-                  ? "👥"
-                  : item.key === "stats"
-                  ? "📊"
-                  : "🔀"}
+                    ? "👥"
+                    : item.key === "stats"
+                      ? "📊"
+                      : "🔀"}
               </span>
               <span className="text-xs font-medium">{item.label}</span>
             </button>

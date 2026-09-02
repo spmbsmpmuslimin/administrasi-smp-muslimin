@@ -117,6 +117,74 @@ export const saveClassAssignments = async (
   }
 };
 
+// Bersihin value kosong/placeholder ("-", "", null, undefined) jadi null
+// beneran -- dipake pas mapping siswa_baru -> student_profile_details,
+// biar kolom kayak NISN (yang di siswa_baru defaultnya "-" kalau kosong,
+// lihat StudentForm.js) gak ikut nyangkut jadi teks "-" di profil resmi.
+const cleanValue = (value) => {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  return trimmed === "" || trimmed === "-" ? null : trimmed;
+};
+
+// Susun payload buat student_profile_details dari 1 row siswa_baru + id
+// students yang baru di-insert. SEMUA field yang udah dikumpulin pas SPMB
+// disalin ke sini (biar siswa/ortu gak perlu isi ulang manual lewat
+// StudentProfile.js -- field2 ini emang udah dikunci read-only di sana,
+// lihat catatan panjang di StudentProfile.js).
+//
+// ⚠️ MAPPING PENTING: siswa_baru.no_hp itu SEBENARNYA nomor HP ORANG TUA
+// (lihat label "No. HP Orang Tua" di StudentForm.js), BUKAN nomor HP
+// siswa. Jadi harus dipetakan ke `no_hp_ortu`, BUKAN ke `no_hp` (yang di
+// student_profile_details artinya nomor pribadi siswa sendiri, field itu
+// sengaja dibiarin kosong -- cuma bisa diisi belakangan sama siswa lewat
+// StudentProfile.js kalau/pas udah punya HP sendiri).
+//
+// `no_daftar` diisi dari `no_pendaftaran` (nomor SPMB, contoh
+// "SPMB-26.27.07.001") -- korespondensi alami, gak perlu Admin isi ulang.
+//
+// Field yang SENGAJA dibiarin null/gak disalin dari SPMB karena emang gak
+// pernah dikumpulin di sana (murni Admin-only atau isian mandiri siswa
+// belakangan): no_hp (siswa), no_ijazah, no_peserta_ujian, no_kip*, dusun,
+// anak_ke, keterangan.
+// *no_kip TETAP disalin kalau ada -- itu udah masuk field SPMB (Step 1).
+//
+// `verified_at` SENGAJA di-set null (belum diverifikasi) walau datanya
+// dari form SPMB -- tetep perlu dicek TU ke dokumen fisik dulu, konsisten
+// sama alur verifikasi yang udah ada di DataSiswaInduk.js.
+function buildProfileDetailPayload(siswa, studentId) {
+  return {
+    student_id: studentId,
+    jenis_kelamin: cleanValue(siswa.jenis_kelamin),
+    tempat_lahir: cleanValue(siswa.tempat_lahir),
+    tanggal_lahir: siswa.tanggal_lahir || null,
+    nisn: cleanValue(siswa.nisn),
+    sekolah_asal: cleanValue(siswa.asal_sekolah),
+    agama: cleanValue(siswa.agama),
+    nik: cleanValue(siswa.nik),
+    no_kk: cleanValue(siswa.no_kk),
+    no_akta_lahir: cleanValue(siswa.no_akta_lahir),
+    no_kip: cleanValue(siswa.no_kip),
+    no_daftar: cleanValue(siswa.no_pendaftaran),
+    nama_ayah: cleanValue(siswa.nama_ayah),
+    pekerjaan_ayah: cleanValue(siswa.pekerjaan_ayah),
+    pendidikan_ayah: cleanValue(siswa.pendidikan_ayah),
+    nik_ayah: cleanValue(siswa.nik_ayah),
+    tempat_tgl_lahir_ayah: cleanValue(siswa.tempat_tgl_lahir_ayah),
+    nama_ibu: cleanValue(siswa.nama_ibu),
+    pekerjaan_ibu: cleanValue(siswa.pekerjaan_ibu),
+    pendidikan_ibu: cleanValue(siswa.pendidikan_ibu),
+    nik_ibu: cleanValue(siswa.nik_ibu),
+    tempat_tgl_lahir_ibu: cleanValue(siswa.tempat_tgl_lahir_ibu),
+    alamat: cleanValue(siswa.alamat),
+    kode_pos: cleanValue(siswa.kode_pos),
+    // ⚠️ no_hp di siswa_baru = HP ORANG TUA, dipetakan ke no_hp_ortu.
+    no_hp_ortu: cleanValue(siswa.no_hp),
+    updated_at: new Date().toISOString(),
+    verified_at: null,
+  };
+}
+
 // Transfer ke tabel students
 export const transferToStudents = async (
   allStudents,
@@ -144,18 +212,42 @@ export const transferToStudents = async (
     const currentYear = getCurrentAcademicYear();
 
     for (const siswa of studentsWithClass) {
-      const { error: insertError } = await supabase.from("students").insert([
-        {
-          full_name: siswa.nama_lengkap,
-          nis: siswa.nis, // 🔥 Gunakan NIS yang sudah digenerate
-          class_id: siswa.kelas,
-          academic_year: currentYear,
-          gender: siswa.jenis_kelamin,
-          is_active: true,
-        },
-      ]);
+      // .select() ditambahin biar dapet balik `id` yang baru di-generate --
+      // dibutuhin buat FK student_profile_details.student_id di bawah.
+      const { data: insertedRows, error: insertError } = await supabase
+        .from("students")
+        .insert([
+          {
+            full_name: siswa.nama_lengkap,
+            nis: siswa.nis, // 🔥 Gunakan NIS yang sudah digenerate
+            class_id: siswa.kelas,
+            academic_year: currentYear,
+            gender: siswa.jenis_kelamin,
+            is_active: true,
+          },
+        ])
+        .select("id");
 
       if (insertError) throw insertError;
+
+      const newStudentId = insertedRows?.[0]?.id;
+      if (!newStudentId) {
+        throw new Error(
+          `Gagal ambil ID siswa baru buat ${siswa.nama_lengkap} (insert ke students sukses tapi id gak balik)`
+        );
+      }
+
+      // Auto-isi student_profile_details dari data SPMB, biar siswa/ortu
+      // gak perlu isi ulang manual data yang udah pernah dikasih pas
+      // daftar. Upsert (bukan insert polos) buat jaga-jaga kalau baris
+      // student_id itu somehow udah ada.
+      const { error: profileError } = await supabase
+        .from("student_profile_details")
+        .upsert(buildProfileDetailPayload(siswa, newStudentId), {
+          onConflict: "student_id",
+        });
+
+      if (profileError) throw profileError;
 
       const { error: updateError } = await supabase
         .from("siswa_baru")

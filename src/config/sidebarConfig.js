@@ -22,10 +22,7 @@ export const sidebarGroups = [
       {
         page: "dashboard",
         label: "Dashboard",
-        icon: [
-          "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z",
-          "m7 7 5-5 5 5",
-        ],
+        icon: ["M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z", "m7 7 5-5 5 5"],
       },
     ],
   },
@@ -37,9 +34,7 @@ export const sidebarGroups = [
       {
         page: "teachers",
         label: "Data Guru & Staff",
-        icon: [
-          "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-        ],
+        icon: ["M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"],
       },
       {
         page: "classes",
@@ -57,7 +52,7 @@ export const sidebarGroups = [
       },
       {
         page: "student-profile-completion",
-        label: "Data Siswa (Induk)",
+        label: "Data Siswa Induk",
         icon: [
           "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
           "M9 14l2 2 4-4",
@@ -78,11 +73,8 @@ export const sidebarGroups = [
     items: [
       {
         page: "attendance-teacher",
-        label: (ctx) =>
-          ctx.isAdmin ? "Monitor Presensi Guru" : "Presensi Guru",
-        icon: [
-          "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-        ],
+        label: (ctx) => (ctx.isAdmin ? "Monitor Presensi Guru" : "Presensi Guru"),
+        icon: ["M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"],
         show: (ctx) => ctx.isAdmin || ctx.isTeacher || ctx.isGuruBK,
       },
       {
@@ -115,8 +107,7 @@ export const sidebarGroups = [
         icon: [
           "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
         ],
-        show: (ctx) =>
-          ctx.isTeacher || ctx.isGuruBK || ctx.userRole === "homeroom",
+        show: (ctx) => ctx.isTeacher || ctx.isGuruBK || ctx.userRole === "homeroom",
       },
       {
         page: "jurnal-harian",
@@ -155,8 +146,7 @@ export const sidebarGroups = [
         icon: [
           "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
         ],
-        show: (ctx) =>
-          ctx.isAdmin || ctx.isWaliKelas || ctx.isTeacher || ctx.isGuruBK,
+        show: (ctx) => ctx.isAdmin || ctx.isWaliKelas || ctx.isTeacher || ctx.isGuruBK,
       },
     ],
   },
@@ -177,16 +167,9 @@ export const sidebarGroups = [
             : ctx.isWaliKelas
               ? "era-dashboard-homeroom"
               : "era-dashboard-teacher",
-        highlightPages: [
-          "era-dashboard-admin",
-          "era-dashboard-teacher",
-          "era-dashboard-homeroom",
-        ],
+        highlightPages: ["era-dashboard-admin", "era-dashboard-teacher", "era-dashboard-homeroom"],
         label: "Dashboard",
-        icon: [
-          "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z",
-          "m7 7 5-5 5 5",
-        ],
+        icon: ["M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z", "m7 7 5-5 5 5"],
       },
       {
         page: "era-input-tp",

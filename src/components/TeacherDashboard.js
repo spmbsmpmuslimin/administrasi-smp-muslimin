@@ -101,9 +101,7 @@ const TeacherDashboard = ({ user }) => {
 
   // Dark mode detection
   useEffect(() => {
-    const darkModeMediaQuery = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    );
+    const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     setIsDarkMode(darkModeMediaQuery.matches);
 
     const handleChange = (e) => {
@@ -130,15 +128,7 @@ const TeacherDashboard = ({ user }) => {
 
   // Fungsi untuk mendapatkan nama hari
   const getDayName = (dayIndex) => {
-    const days = [
-      "Minggu",
-      "Senin",
-      "Selasa",
-      "Rabu",
-      "Kamis",
-      "Jumat",
-      "Sabtu",
-    ];
+    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     return days[dayIndex];
   };
 
@@ -293,10 +283,7 @@ const TeacherDashboard = ({ user }) => {
           .limit(1);
 
         if (journalError) {
-          console.error(
-            "❌ Error fetching jurnal_harian (materi terakhir):",
-            journalError,
-          );
+          console.error("❌ Error fetching jurnal_harian (materi terakhir):", journalError);
           continue;
         }
 
@@ -316,7 +303,7 @@ const TeacherDashboard = ({ user }) => {
     teacherCode,
     teacherUUID,
     academicYearId,
-    assignmentsForSubjectMap,
+    assignmentsForSubjectMap
   ) => {
     try {
       const todayDay = getDayName(new Date().getDay());
@@ -392,11 +379,7 @@ const TeacherDashboard = ({ user }) => {
 
         if (!current) {
           // ✅ Calculate session numbers untuk block pertama
-          const sessionNumbers = calculateSessionNumbers(
-            todayDay,
-            item.start_time,
-            item.end_time,
-          );
+          const sessionNumbers = calculateSessionNumbers(todayDay, item.start_time, item.end_time);
           current = {
             mapel,
             kelas,
@@ -411,8 +394,7 @@ const TeacherDashboard = ({ user }) => {
         } else {
           const sameClass = current.class_id === item.class_id;
           const sameSubject = current.mapel === mapel;
-          const consecutive =
-            current.jam_selesai === formatTime(item.start_time);
+          const consecutive = current.jam_selesai === formatTime(item.start_time);
 
           if (sameClass && sameSubject && consecutive) {
             // ✅ Merge dan recalculate session numbers
@@ -421,7 +403,7 @@ const TeacherDashboard = ({ user }) => {
             const newSessionNumbers = calculateSessionNumbers(
               todayDay,
               current.start_time_raw,
-              current.end_time_raw,
+              current.end_time_raw
             );
             current.sessionCount = newSessionNumbers.length;
             current.sessionNumbers = newSessionNumbers;
@@ -438,7 +420,7 @@ const TeacherDashboard = ({ user }) => {
             const sessionNumbers = calculateSessionNumbers(
               todayDay,
               item.start_time,
-              item.end_time,
+              item.end_time
             );
             current = {
               mapel,
@@ -504,7 +486,7 @@ const TeacherDashboard = ({ user }) => {
         students!inner(full_name),
         class_id,
         subject
-      `,
+      `
         )
         .eq("date", todayString)
         .in("class_id", classIds)
@@ -555,10 +537,7 @@ const TeacherDashboard = ({ user }) => {
           return a.full_name.localeCompare(b.full_name);
         });
 
-      console.log(
-        "✅ Teacher - Formatted absent students (GROUPED):",
-        formattedAbsentStudents,
-      );
+      console.log("✅ Teacher - Formatted absent students (GROUPED):", formattedAbsentStudents);
       setAbsentStudents(formattedAbsentStudents);
     } catch (err) {
       console.error("❌ Error fetching absent students:", err);
@@ -584,21 +563,14 @@ const TeacherDashboard = ({ user }) => {
       const activeSemester = activeAcademicInfo.activeSemester;
       setCurrentAcademicYearId(academicYearId);
 
-      console.log(
-        "📅 Academic Year ID:",
-        academicYearId,
-        "Year:",
-        activeAcademicInfo.year,
-      );
+      console.log("📅 Academic Year ID:", academicYearId, "Year:", activeAcademicInfo.year);
       console.log("📅 Active Semester (from DB):", activeSemester);
       console.log("🔍 Teacher Code:", teacherCode);
 
       // 2. Get teacher assignments - GUNAKAN SEMESTER DARI DB LANGSUNG
       const { data: assignments, error: assignError } = await supabase
         .from("teacher_assignments")
-        .select(
-          "id, class_id, subject, academic_year_id, semester, academic_year",
-        )
+        .select("id, class_id, subject, academic_year_id, semester, academic_year")
         .eq("teacher_id", teacherCode)
         .eq("academic_year_id", academicYearId)
         .eq("semester", activeSemester); // ✅ PAKAI SEMESTER DARI DB!
@@ -642,9 +614,7 @@ const TeacherDashboard = ({ user }) => {
 
       // 4. Gabungkan manual
       const assignmentsWithClasses = assignments.map((assignment) => {
-        const classData = classesData?.find(
-          (c) => c.id === assignment.class_id,
-        );
+        const classData = classesData?.find((c) => c.id === assignment.class_id);
         return {
           ...assignment,
           classes: classData || {
@@ -657,9 +627,7 @@ const TeacherDashboard = ({ user }) => {
       console.log("✅ Final assignments with classes:", assignmentsWithClasses);
 
       // Get unique subjects and classes
-      const subjects = [
-        ...new Set(assignmentsWithClasses.map((a) => a.subject)),
-      ];
+      const subjects = [...new Set(assignmentsWithClasses.map((a) => a.subject))];
       const classesTaught = assignmentsWithClasses.map((a) => ({
         id: a.class_id,
         className: a.classes.id,
@@ -695,12 +663,7 @@ const TeacherDashboard = ({ user }) => {
       await fetchAbsentStudents(classIds, teacherUUID);
 
       // Fetch today's schedule
-      await fetchTodaySchedule(
-        teacherCode,
-        teacherUUID,
-        academicYearId,
-        assignmentsWithClasses,
-      );
+      await fetchTodaySchedule(teacherCode, teacherUUID, academicYearId, assignmentsWithClasses);
     } catch (err) {
       console.error("❌ Error in fetchTeacherData:", err);
       setError(err.message);
@@ -717,14 +680,11 @@ const TeacherDashboard = ({ user }) => {
 
   if (loading) {
     return (
-      <div
-        className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "dark" : ""}`}>
+      <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "dark" : ""}`}>
         <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-900">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-            <p className="text-slate-600 dark:text-gray-400">
-              Memuat dashboard...
-            </p>
+            <p className="text-slate-600 dark:text-gray-400">Memuat dashboard...</p>
             {activeAcademicInfo?.displayText && (
               <p className="text-xs text-slate-500 dark:text-gray-500 mt-2">
                 {activeAcademicInfo.displayText}
@@ -738,20 +698,15 @@ const TeacherDashboard = ({ user }) => {
 
   if (error) {
     return (
-      <div
-        className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "dark" : ""}`}>
+      <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "dark" : ""}`}>
         <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 sm:p-6">
           <div className="max-w-4xl mx-auto">
             <div className="bg-gradient-to-br from-red-50 dark:from-red-900/20 to-rose-50 dark:to-rose-900/10 rounded-xl shadow-lg border border-red-200 dark:border-red-800 p-6 sm:p-8 text-center">
-              <div className="text-red-500 dark:text-red-400 text-4xl sm:text-5xl mb-4">
-                ⚠️
-              </div>
+              <div className="text-red-500 dark:text-red-400 text-4xl sm:text-5xl mb-4">⚠️</div>
               <h3 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100 mb-2">
                 Terjadi Kesalahan
               </h3>
-              <p className="text-red-600 dark:text-red-400 mb-4 text-sm sm:text-base">
-                {error}
-              </p>
+              <p className="text-red-600 dark:text-red-400 mb-4 text-sm sm:text-base">{error}</p>
               {activeAcademicInfo?.displayText && (
                 <p className="text-xs text-slate-600 dark:text-gray-400 mb-4">
                   Semester Aktif: {activeAcademicInfo.displayText}
@@ -759,7 +714,8 @@ const TeacherDashboard = ({ user }) => {
               )}
               <button
                 onClick={handleRetry}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
                 Coba Lagi
               </button>
             </div>
@@ -781,12 +737,11 @@ const TeacherDashboard = ({ user }) => {
   // Get primary subject
   const primarySubject = Object.keys(subjectBreakdown).reduce(
     (a, b) => (subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b),
-    stats.subjects[0] || "",
+    stats.subjects[0] || ""
   );
 
   return (
-    <div
-      className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "dark" : ""}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? "dark" : ""}`}>
       <div className="min-h-screen bg-slate-50 dark:bg-gray-900 p-4 sm:p-6 overflow-x-hidden">
         <div className="max-w-7xl mx-auto">
           {/* Pop-up Pengumuman */}
@@ -800,19 +755,20 @@ const TeacherDashboard = ({ user }) => {
                   Selamat Datang, {user?.full_name || user?.username}
                 </h1>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  {primarySubject && (
-                    <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                      Guru {primarySubject}
+                  {stats.subjects.length > 1 ? (
+                    <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                      Guru {stats.subjects.join(", ")}
                     </span>
-                  )}
-                  {stats.subjects.length > 1 && (
-                    <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                      {stats.subjects.length} Mata Pelajaran
-                    </span>
+                  ) : (
+                    primarySubject && (
+                      <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        Guru {primarySubject}
+                      </span>
+                    )
                   )}
                   {/* ✅ TAMBAHAN: Info Semester Aktif */}
                   {activeAcademicInfo?.displayText && (
-                    <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                    <span className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                       {activeAcademicInfo.displayText}
                     </span>
                   )}
@@ -825,57 +781,57 @@ const TeacherDashboard = ({ user }) => {
               Jurnal Harian, Laporan) sudah dipindah ke BottomNav mobile. Lihat BottomNav.js. */}
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-3 gap-2 sm:gap-6 mb-6 sm:mb-8">
             {/* Total Siswa */}
-            <div className="group bg-gradient-to-br from-blue-50 dark:from-blue-900/10 via-white dark:via-gray-800 to-indigo-50 dark:to-indigo-900/10 rounded-xl shadow-lg hover:shadow-xl border border-blue-100 dark:border-blue-800 hover:border-blue-200 dark:hover:border-blue-600 p-4 sm:p-6 transform hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 mb-1 font-medium">
-                    Total Siswa Diajar
+            <div className="group bg-gradient-to-br from-blue-50 dark:from-blue-900/10 via-white dark:via-gray-800 to-indigo-50 dark:to-indigo-900/10 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl border border-blue-100 dark:border-blue-800 hover:border-blue-200 dark:hover:border-blue-600 p-2 sm:p-6 transform hover:-translate-y-1 transition-all duration-300">
+              <div className="flex flex-col sm:flex-row items-center sm:items-center sm:justify-between gap-1.5 sm:gap-0 text-center sm:text-left">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 order-1 sm:order-2 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <span className="text-white text-base sm:text-3xl">👨‍🎓</span>
+                </div>
+                <div className="order-2 sm:order-1">
+                  <p className="text-xs leading-tight sm:text-base text-blue-600 dark:text-blue-400 mb-0.5 sm:mb-1 font-medium">
+                    Total Siswa
                   </p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
+                  <p className="text-lg sm:text-3xl font-bold text-slate-800 dark:text-gray-100 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
                     {stats.totalStudents}
                   </p>
-                </div>
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <span className="text-white text-lg sm:text-2xl">👨‍🎓</span>
                 </div>
               </div>
             </div>
 
             {/* Total Kelas */}
-            <div className="group bg-gradient-to-br from-emerald-50 dark:from-emerald-900/10 via-white dark:via-gray-800 to-green-50 dark:to-green-900/10 rounded-xl shadow-lg hover:shadow-xl border border-emerald-100 dark:border-emerald-800 hover:border-emerald-200 dark:hover:border-emerald-600 p-4 sm:p-6 transform hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 mb-1 font-medium">
-                    Total Kelas Diajar
+            <div className="group bg-gradient-to-br from-emerald-50 dark:from-emerald-900/10 via-white dark:via-gray-800 to-green-50 dark:to-green-900/10 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl border border-emerald-100 dark:border-emerald-800 hover:border-emerald-200 dark:hover:border-emerald-600 p-2 sm:p-6 transform hover:-translate-y-1 transition-all duration-300">
+              <div className="flex flex-col sm:flex-row items-center sm:items-center sm:justify-between gap-1.5 sm:gap-0 text-center sm:text-left">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 order-1 sm:order-2 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                  <span className="text-white text-base sm:text-3xl">🏫</span>
+                </div>
+                <div className="order-2 sm:order-1">
+                  <p className="text-xs leading-tight sm:text-base text-emerald-600 dark:text-emerald-400 mb-0.5 sm:mb-1 font-medium">
+                    Total Kelas
                   </p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">
+                  <p className="text-lg sm:text-3xl font-bold text-slate-800 dark:text-gray-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">
                     {stats.totalClasses}
                   </p>
-                </div>
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <span className="text-white text-lg sm:text-2xl">🏫</span>
                 </div>
               </div>
             </div>
 
             {/* Mata Pelajaran */}
-            <div className="group bg-gradient-to-br from-purple-50 dark:from-purple-900/10 via-white dark:via-gray-800 to-violet-50 dark:to-violet-900/10 rounded-xl shadow-lg hover:shadow-xl border border-purple-100 dark:border-purple-800 hover:border-purple-200 dark:hover:border-purple-600 p-4 sm:p-6 transform hover:-translate-y-1 transition-all duration-300 sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 mb-1 font-medium">
+            <div className="group bg-gradient-to-br from-purple-50 dark:from-purple-900/10 via-white dark:via-gray-800 to-violet-50 dark:to-violet-900/10 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl border border-purple-100 dark:border-purple-800 hover:border-purple-200 dark:hover:border-purple-600 p-2 sm:p-6 transform hover:-translate-y-1 transition-all duration-300">
+              <div className="flex flex-col sm:flex-row items-center sm:items-center sm:justify-between gap-1.5 sm:gap-0 text-center sm:text-left">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 order-1 sm:order-2 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg sm:ml-4">
+                  <span className="text-white text-base sm:text-3xl">📚</span>
+                </div>
+                <div className="order-2 sm:order-1 sm:flex-1">
+                  <p className="text-xs leading-tight sm:text-base text-purple-600 dark:text-purple-400 mb-0.5 sm:mb-1 font-medium">
                     Mata Pelajaran
                   </p>
-                  <p className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-gray-100 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
+                  <p className="text-lg sm:text-3xl font-bold text-slate-800 dark:text-gray-100 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
                     {stats.subjects.length}
                   </p>
-                  <p className="text-xs text-slate-600 dark:text-gray-400 mt-1 break-words">
+                  <p className="hidden sm:block text-xs text-slate-600 dark:text-gray-400 mt-1 break-words">
                     {stats.subjects.join(", ")}
                   </p>
-                </div>
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg ml-4">
-                  <span className="text-white text-lg sm:text-2xl">📚</span>
                 </div>
               </div>
             </div>
@@ -887,73 +843,64 @@ const TeacherDashboard = ({ user }) => {
             <div>
               {/* Mata Pelajaran & Kelas */}
               <div className="bg-gradient-to-br from-white dark:from-gray-800 via-slate-50/30 dark:via-gray-700/30 to-blue-50/30 dark:to-blue-900/20 rounded-xl shadow-lg border border-slate-200 dark:border-gray-700 p-4 sm:p-6 backdrop-blur-sm mb-6">
-                <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100 mb-4 flex items-center">
-                  <span className="mr-2 text-blue-600 dark:text-blue-400">
-                    📖
-                  </span>
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100 mb-4 flex items-center">
+                  <span className="mr-2 text-blue-600 dark:text-blue-400">📖</span>
                   Mata Pelajaran & Kelas
                 </h3>
                 <div className="space-y-4">
-                  {Object.entries(subjectBreakdown).map(
-                    ([subject, classes]) => {
-                      const classByGrade = {};
-                      classes.forEach((className) => {
-                        const grade = className.charAt(0);
-                        if (!classByGrade[grade]) classByGrade[grade] = [];
-                        classByGrade[grade].push(className);
-                      });
+                  {Object.entries(subjectBreakdown).map(([subject, classes]) => {
+                    const classByGrade = {};
+                    classes.forEach((className) => {
+                      const grade = className.charAt(0);
+                      if (!classByGrade[grade]) classByGrade[grade] = [];
+                      classByGrade[grade].push(className);
+                    });
 
-                      return (
-                        <div
-                          key={subject}
-                          className="bg-gradient-to-r from-slate-50 dark:from-gray-700 to-white dark:to-gray-800 border border-slate-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-slate-800 dark:text-gray-100 text-sm sm:text-base">
-                              {subject}
-                            </h4>
-                            <span className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                              {classes.length} kelas
-                            </span>
-                          </div>
-                          <div className="space-y-2">
-                            {Object.entries(classByGrade)
-                              .sort(([a], [b]) => a.localeCompare(b))
-                              .map(([grade, gradeClasses]) => (
-                                <div
-                                  key={grade}
-                                  className="flex flex-wrap gap-2">
-                                  {gradeClasses
-                                    .sort()
-                                    .map((className, index) => (
-                                      <span
-                                        key={index}
-                                        className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gradient-to-r from-blue-100 dark:from-blue-900/30 to-indigo-100 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:scale-105 transition-transform">
-                                        {className}
-                                      </span>
-                                    ))}
-                                </div>
-                              ))}
-                          </div>
+                    return (
+                      <div
+                        key={subject}
+                        className="bg-gradient-to-r from-slate-50 dark:from-gray-700 to-white dark:to-gray-800 border border-slate-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-slate-800 dark:text-gray-100 text-lg sm:text-xl">
+                            {subject}
+                          </h4>
+                          <span className="text-sm sm:text-base text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-gray-700 px-2.5 py-1 rounded-full">
+                            {classes.length} kelas
+                          </span>
                         </div>
-                      );
-                    },
-                  )}
+                        <div className="space-y-2">
+                          {Object.entries(classByGrade)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([grade, gradeClasses]) => (
+                              <div key={grade} className="flex flex-wrap gap-2">
+                                {gradeClasses.sort().map((className, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm sm:text-base font-semibold bg-gradient-to-r from-blue-100 dark:from-blue-900/30 to-indigo-100 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:scale-105 transition-transform"
+                                  >
+                                    {className}
+                                  </span>
+                                ))}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* ✅ DAFTAR SISWA TIDAK HADIR HARI INI */}
                 <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-700">
-                  <h4 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3 flex items-center">
-                    <span className="mr-2 text-red-600 dark:text-red-400">
-                      📋
-                    </span>
-                    Siswa Tidak Hadir - Mata Pelajaran{" "}
-                    {primarySubject ? `(${primarySubject})` : ""}
+                  <h4 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100 mb-3 flex items-center">
+                    <span className="mr-2 text-red-600 dark:text-red-400">📋</span>
+                    Siswa Tidak Hadir - Mata Pelajaran {primarySubject ? `(${primarySubject})` : ""}
                   </h4>
 
                   {absentStudents.length > 0 ? (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="text-xs text-slate-500 dark:text-gray-400 border-b border-slate-200 dark:border-gray-700">
+                      <table className="w-full text-sm sm:text-base">
+                        <thead className="text-sm text-slate-500 dark:text-gray-400 border-b border-slate-200 dark:border-gray-700">
                           <tr>
                             <th className="py-2 px-3 text-left w-12">No</th>
                             <th className="py-2 px-3 text-left">Nama Siswa</th>
@@ -965,7 +912,8 @@ const TeacherDashboard = ({ user }) => {
                           {absentStudents.map((student, index) => (
                             <tr
                               key={student.id}
-                              className="border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
+                              className="border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
+                            >
                               <td className="py-2 px-3 text-slate-600 dark:text-gray-400">
                                 {index + 1}
                               </td>
@@ -977,28 +925,28 @@ const TeacherDashboard = ({ user }) => {
                               </td>
                               <td className="py-2 px-3">
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(
-                                    student.status,
-                                  )}`}>
-                                  {getStatusIcon(student.status)}{" "}
-                                  {student.status}
+                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${getStatusBadgeStyle(
+                                    student.status
+                                  )}`}
+                                >
+                                  {getStatusIcon(student.status)} {student.status}
                                 </span>
                               </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
-                      <div className="mt-3 text-xs text-slate-500 dark:text-gray-400">
+                      <div className="mt-3 text-sm text-slate-500 dark:text-gray-400">
                         Total: {absentStudents.length} siswa tidak hadir
                       </div>
                     </div>
                   ) : (
                     <div className="text-center py-6 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900/30">
                       <div className="text-2xl mb-2">🎉</div>
-                      <p className="text-sm text-slate-600 dark:text-gray-400">
+                      <p className="text-base text-slate-600 dark:text-gray-400">
                         Semua siswa hadir hari ini
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-gray-500 mt-1">
+                      <p className="text-sm text-slate-500 dark:text-gray-500 mt-1">
                         Tidak ada siswa yang sakit, izin, atau alpa
                       </p>
                     </div>
@@ -1009,10 +957,8 @@ const TeacherDashboard = ({ user }) => {
 
             {/* Jadwal Hari Ini */}
             <div className="bg-gradient-to-br from-white dark:from-gray-800 via-slate-50/30 dark:via-gray-700/30 to-indigo-50/30 dark:to-indigo-900/20 rounded-xl shadow-lg border border-slate-200 dark:border-gray-700 p-4 sm:p-6 backdrop-blur-sm">
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100 mb-4 flex items-center">
-                <span className="mr-2 text-indigo-600 dark:text-indigo-400">
-                  🗓️
-                </span>
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100 mb-4 flex items-center">
+                <span className="mr-2 text-indigo-600 dark:text-indigo-400">🗓️</span>
                 Jadwal Hari Ini - {currentDay}
               </h3>
               {todaySchedule.length > 0 ? (
@@ -1020,39 +966,37 @@ const TeacherDashboard = ({ user }) => {
                   {todaySchedule.map((schedule, index) => (
                     <div
                       key={index}
-                      className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors">
+                      className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1">
-                          <div className="text-center min-w-[70px]">
+                          <div className="text-center min-w-[76px]">
                             {/* ✅ Tampilkan Session Numbers */}
                             <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                              {schedule.sessionCount}JP (
-                              {schedule.sessionNumbers.join("-")})
+                              {schedule.sessionCount}JP ({schedule.sessionNumbers.join("-")})
                             </div>
-                            <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
+                            <div className="font-semibold text-blue-700 dark:text-blue-400 text-sm sm:text-base">
                               {schedule.jam_mulai}
                             </div>
-                            <div className="text-xs text-slate-400 dark:text-gray-500">
-                              -
-                            </div>
-                            <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
+                            <div className="text-xs text-slate-400 dark:text-gray-500">-</div>
+                            <div className="font-semibold text-blue-700 dark:text-blue-400 text-sm sm:text-base">
                               {schedule.jam_selesai}
                             </div>
                           </div>
                           <div className="h-auto min-h-[60px] w-px bg-slate-200 dark:bg-gray-600"></div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between gap-2 mb-1">
-                              <div className="font-semibold text-slate-800 dark:text-gray-100 text-sm sm:text-base">
+                              <div className="font-semibold text-slate-800 dark:text-gray-100 text-base sm:text-lg">
                                 {schedule.mapel}
                               </div>
                               {/* ✅ NEW: Badge "Selesai" - di sebelah kanan Mapel biar hemat tempat */}
                               {isBlockDone(schedule.end_time_raw) && (
-                                <span className="inline-flex items-center gap-0.5 shrink-0 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded-full">
+                                <span className="inline-flex items-center gap-0.5 shrink-0 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-1.5 py-0.5 rounded-full">
                                   ✓ Selesai
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-400">
+                            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400">
                               <span className="flex items-center gap-1">
                                 <span>🏫</span>
                                 <span>{schedule.kelas}</span>
@@ -1064,23 +1008,19 @@ const TeacherDashboard = ({ user }) => {
 
                       {/* ✅ NEW: Pengingat materi terakhir sebelum masuk kelas */}
                       {(() => {
-                        const lastMateri =
-                          lastMateriMap[
-                            `${schedule.class_id}||${schedule.mapel}`
-                          ];
+                        const lastMateri = lastMateriMap[`${schedule.class_id}||${schedule.mapel}`];
                         return lastMateri ? (
                           <div className="mt-3 pt-3 border-t border-slate-200 dark:border-gray-700">
-                            <p className="text-xs text-slate-500 dark:text-gray-400">
-                              📝 Materi terakhir (
-                              {formatTanggalIndoSingkat(lastMateri.tanggal)}):
+                            <p className="text-sm text-slate-500 dark:text-gray-400">
+                              📝 Materi terakhir ({formatTanggalIndoSingkat(lastMateri.tanggal)}):
                             </p>
-                            <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-gray-200 mt-0.5 truncate">
+                            <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-gray-200 mt-0.5 truncate">
                               {lastMateri.materi || "-"}
                             </p>
                           </div>
                         ) : (
                           <div className="mt-3 pt-3 border-t border-slate-200 dark:border-gray-700">
-                            <p className="text-xs text-slate-400 dark:text-gray-500 italic">
+                            <p className="text-sm text-slate-400 dark:text-gray-500 italic">
                               Belum ada riwayat materi sebelumnya
                             </p>
                           </div>
@@ -1092,13 +1032,13 @@ const TeacherDashboard = ({ user }) => {
               ) : (
                 <div className="text-center py-12">
                   <div className="text-5xl mb-4">📅</div>
-                  <h4 className="font-semibold text-slate-800 dark:text-gray-100 mb-2 text-sm sm:text-base">
+                  <h4 className="font-semibold text-slate-800 dark:text-gray-100 mb-2 text-base sm:text-lg">
                     Tidak Ada Jadwal
                   </h4>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400">
+                  <p className="text-sm sm:text-base text-slate-600 dark:text-gray-400">
                     Anda Tidak Memiliki Jadwal Mengajar Hari Ini
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-gray-500 mt-2">
+                  <p className="text-sm text-slate-500 dark:text-gray-500 mt-2">
                     Selamat Menikmati Hari Libur ! 🎉
                   </p>
                 </div>
@@ -1108,10 +1048,8 @@ const TeacherDashboard = ({ user }) => {
 
           {/* Pengumuman */}
           <div className="bg-gradient-to-br from-white dark:from-gray-800 via-orange-50/30 dark:via-orange-900/10 to-amber-50/50 dark:to-amber-900/10 rounded-xl shadow-lg border border-orange-100 dark:border-orange-800 p-4 sm:p-6 backdrop-blur-sm">
-            <h3 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100 mb-4 flex items-center">
-              <span className="mr-2 text-orange-600 dark:text-orange-400">
-                📢
-              </span>
+            <h3 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100 mb-4 flex items-center">
+              <span className="mr-2 text-orange-600 dark:text-orange-400">📢</span>
               Pengumuman Terkini
             </h3>
             {announcements.length > 0 ? (
@@ -1119,40 +1057,36 @@ const TeacherDashboard = ({ user }) => {
                 {announcements.map((announcement) => (
                   <div
                     key={announcement.id}
-                    className="group border-l-4 border-orange-500 dark:border-orange-600 bg-gradient-to-r from-orange-50/80 dark:from-orange-900/20 to-amber-50/50 dark:to-amber-900/10 hover:from-orange-100/80 dark:hover:from-orange-900/30 hover:to-amber-100/50 dark:hover:to-amber-900/20 pl-4 py-3 rounded-r-xl transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg">
-                    <h4 className="font-semibold text-slate-800 dark:text-gray-100 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors text-sm sm:text-base flex items-start">
+                    className="group border-l-4 border-orange-500 dark:border-orange-600 bg-gradient-to-r from-orange-50/80 dark:from-orange-900/20 to-amber-50/50 dark:to-amber-900/10 hover:from-orange-100/80 dark:hover:from-orange-900/30 hover:to-amber-100/50 dark:hover:to-amber-900/20 pl-4 py-3 rounded-r-xl transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg"
+                  >
+                    <h4 className="font-semibold text-slate-800 dark:text-gray-100 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors text-base sm:text-lg flex items-start">
                       <span className="mr-2 mt-0.5">📋</span>
                       {announcement.title}
                     </h4>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 mt-2 ml-6 group-hover:text-slate-700 dark:group-hover:text-gray-300 transition-colors">
+                    <p className="text-sm sm:text-base text-slate-600 dark:text-gray-400 mt-2 ml-6 group-hover:text-slate-700 dark:group-hover:text-gray-300 transition-colors">
                       {announcement.content}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-gray-500 mt-2 ml-6 flex items-center group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                    <p className="text-sm text-slate-500 dark:text-gray-500 mt-2 ml-6 flex items-center group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                       <span className="mr-1">🕐</span>
-                      {new Date(announcement.created_at).toLocaleDateString(
-                        "id-ID",
-                        {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        },
-                      )}
+                      {new Date(announcement.created_at).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8 sm:py-12 bg-gradient-to-br from-slate-50 dark:from-gray-700 to-orange-50/30 dark:to-orange-900/10 rounded-xl border-2 border-dashed border-orange-200 dark:border-orange-800">
-                <div className="text-2xl sm:text-4xl mb-4 animate-bounce">
-                  📢
-                </div>
-                <h4 className="font-medium text-slate-800 dark:text-gray-100 mb-2 text-sm sm:text-base">
+                <div className="text-2xl sm:text-4xl mb-4 animate-bounce">📢</div>
+                <h4 className="font-medium text-slate-800 dark:text-gray-100 mb-2 text-base sm:text-lg">
                   Belum Ada Pengumuman
                 </h4>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 mb-4">
+                <p className="text-sm sm:text-base text-slate-600 dark:text-gray-400 mb-4">
                   Pengumuman terbaru akan ditampilkan di sini
                 </p>
-                <div className="inline-flex items-center px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-xs font-medium">
+                <div className="inline-flex items-center px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-sm font-medium">
                   <span className="mr-1">💡</span>
                   Tip: Cek kembali secara berkala
                 </div>

@@ -89,8 +89,10 @@ function isValidPhone(raw) {
 // ke kolom yang sama tanpa pembagian tanggung jawab).
 //
 // Field yang TETAP bisa diisi mandiri sama siswa/ortu (gak ada di SPMB,
-// gak ada sumber lain): no_hp (HP siswa sendiri, opsional), dusun
-// (legacy, opsional), anak_ke.
+// gak ada sumber lain): no_hp (HP siswa sendiri, opsional), anak_ke.
+// `dusun` DIBIARIN ADA DI DB (buat data lama), tapi SENGAJA gak
+// dimunculin di UI manapun -- purpose-nya gak jelas & isinya biasanya
+// udah nempel di teks `alamat`.
 //
 // `onUpdated` (opsional): dipanggil abis form data tambahan berhasil
 // disimpen, biasanya diisi `refetch` dari useStudentProfile() supaya
@@ -117,6 +119,46 @@ function formatTempatTanggalLahir(student) {
   return tempat || tanggal;
 }
 
+// Daftar pekerjaan standar — DISALIN PERSIS dari spmb/StudentForm.js biar
+// istilahnya seragam sama form SPMB. Cuma dipake buat nampilin <select
+// disabled>, BUKAN buat validasi/simpan (field ini udah read-only di
+// sini). ⚠️ Kalau daftar di StudentForm.js diubah, samain juga di sini
+// biar gak beda-beda antara SPMB & portal siswa.
+const PEKERJAAN_LIST_AYAH = [
+  "PNS/TNI/Polri",
+  "Karyawan Swasta",
+  "Wiraswasta/Pedagang",
+  "Petani",
+  "Buruh",
+  "Guru/Dosen",
+  "Dokter/Tenaga Kesehatan",
+  "Sopir/Driver",
+  "Pensiunan",
+  "Tidak Bekerja",
+];
+
+const PEKERJAAN_LIST_IBU = [
+  "Ibu Rumah Tangga",
+  "PNS/TNI/Polri",
+  "Karyawan Swasta",
+  "Wiraswasta/Pedagang",
+  "Petani",
+  "Buruh",
+  "Guru/Dosen",
+  "Dokter/Tenaga Kesehatan",
+  "Pensiunan",
+  "Tidak Bekerja",
+];
+
+// Susun daftar <option> yang bakal dirender di <select disabled>: daftar
+// standar + value yang lagi kesimpen di DB (kalau ternyata gak ada di
+// daftar standar, misal dulu diisi custom lewat "Lainnya" di SPMB, atau
+// data lama) ditambahin di paling atas biar tetep keliatan & kepilih.
+function pekerjaanOptionsFor(value, standardList) {
+  if (!value) return standardList;
+  return standardList.includes(value) ? standardList : [value, ...standardList];
+}
+
 export function ProfileInfo({ student, onUpdated }) {
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -129,7 +171,6 @@ export function ProfileInfo({ student, onUpdated }) {
   // ulang lewat handleSubmit.
   const [form, setForm] = useState({
     no_hp: "",
-    dusun: "",
     anak_ke: "",
   });
 
@@ -138,7 +179,6 @@ export function ProfileInfo({ student, onUpdated }) {
   useEffect(() => {
     setForm({
       no_hp: student?.no_hp || "",
-      dusun: student?.dusun || "",
       anak_ke: student?.anak_ke ?? "",
     });
   }, [student]);
@@ -161,7 +201,6 @@ export function ProfileInfo({ student, onUpdated }) {
     },
     { label: "Sekolah Asal", value: student?.sekolah_asal || "-" },
     { label: "Alamat Lengkap", value: student?.alamat || "-" },
-    { label: "Dusun", value: student?.dusun || "-" },
     { label: "Kode Pos", value: student?.kode_pos || "-" },
     { label: "No. HP Siswa (Kalau Ada)", value: student?.no_hp || "-" },
     { label: "Agama", value: student?.agama || "-" },
@@ -223,7 +262,8 @@ export function ProfileInfo({ student, onUpdated }) {
       // (student_id = primary key), jadi otomatis update kalau udah
       // pernah isi, atau insert kalau baru pertama kali.
       // Kirim CUMA field yang beneran masih self-service dari sisi siswa:
-      // no_hp (HP siswa sendiri), dusun (legacy/opsional), anak_ke.
+      // no_hp (HP siswa sendiri), anak_ke. `dusun` gak dikirim dari sini
+      // (dibiarin apa adanya di DB, gak diutak-atik lewat portal ini).
       // SEMUA field lain -- identitas/dokumen resmi (jenis_kelamin,
       // tempat/tanggal lahir, agama, NIK, No.KK, No.Akta Lahir, sekolah
       // asal, No.KIP/Ijazah/Peserta Ujian/Daftar, NIK & TTL ortu) MAUPUN
@@ -238,7 +278,6 @@ export function ProfileInfo({ student, onUpdated }) {
         {
           student_id: student.id,
           no_hp: form.no_hp ? normalizePhone(form.no_hp) : null,
-          dusun: form.dusun || null,
           anak_ke: form.anak_ke === "" ? null : Number(form.anak_ke),
           updated_at: new Date().toISOString(),
           // Data berubah -> status verifikasi admin otomatis batal, harus
@@ -307,25 +346,19 @@ export function ProfileInfo({ student, onUpdated }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Dusun</label>
-              <input
-                type="text"
-                value={form.dusun}
-                onChange={(e) => setForm((f) => ({ ...f, dusun: e.target.value }))}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Kode Pos</label>
-              <input
-                type="text"
-                value={student?.kode_pos || "Belum tersedia, hubungi Tata Usaha"}
-                disabled
-                className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-              />
-            </div>
+          {/* Kolom `dusun` SENGAJA gak dimasukin ke UI manapun (baik view
+              maupun form edit) -- purpose-nya gak jelas & datanya biasanya
+              udah nempel di teks `alamat`. Kolomnya dibiarin ada di DB
+              buat data lama, tapi gak dipake/ditampilin lagi di sini. */}
+
+          <div>
+            <label className={labelClass}>Kode Pos</label>
+            <input
+              type="text"
+              value={student?.kode_pos || "Belum tersedia, hubungi Tata Usaha"}
+              disabled
+              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
+            />
           </div>
 
           <div>
@@ -337,6 +370,9 @@ export function ProfileInfo({ student, onUpdated }) {
               placeholder="08xxxxxxxxxx"
               className={inputClass}
             />
+            <p className="text-xs text-theme-secondary mt-1">
+              Nomor pribadi siswa (opsional) — beda dengan No. HP Orang Tua/Wali di bagian bawah.
+            </p>
           </div>
 
           <div>
@@ -373,12 +409,20 @@ export function ProfileInfo({ student, onUpdated }) {
 
           <div>
             <label className={labelClass}>Pekerjaan Ayah</label>
-            <input
-              type="text"
-              value={student?.pekerjaan_ayah || "Belum tersedia, hubungi Tata Usaha"}
+            <select
+              value={student?.pekerjaan_ayah || ""}
               disabled
               className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
+            >
+              {!student?.pekerjaan_ayah && (
+                <option value="">Belum tersedia, hubungi Tata Usaha</option>
+              )}
+              {pekerjaanOptionsFor(student?.pekerjaan_ayah, PEKERJAAN_LIST_AYAH).map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className={labelClass}>Pendidikan Terakhir Ayah</label>
@@ -402,12 +446,20 @@ export function ProfileInfo({ student, onUpdated }) {
 
           <div>
             <label className={labelClass}>Pekerjaan Ibu</label>
-            <input
-              type="text"
-              value={student?.pekerjaan_ibu || "Belum tersedia, hubungi Tata Usaha"}
+            <select
+              value={student?.pekerjaan_ibu || ""}
               disabled
               className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
+            >
+              {!student?.pekerjaan_ibu && (
+                <option value="">Belum tersedia, hubungi Tata Usaha</option>
+              )}
+              {pekerjaanOptionsFor(student?.pekerjaan_ibu, PEKERJAAN_LIST_IBU).map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className={labelClass}>Pendidikan Terakhir Ibu</label>

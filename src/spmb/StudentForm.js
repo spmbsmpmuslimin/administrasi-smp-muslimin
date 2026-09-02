@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 
+// Disamain persis sama AGAMA_OPTIONS di DataSiswaInduk.js, biar dropdown
+// yang muncul di form SPMB konsisten sama yang dipake Admin/TU pas
+// koreksi data belakangan.
+const AGAMA_OPTIONS = ["Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu"];
+
 const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStudent, isLoading }) => {
   const [formSuccess, setFormSuccess] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
@@ -16,16 +21,26 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
     tanggal_lahir: "",
     asal_sekolah: "",
     nisn: "",
+    agama: "",
+    nik: "",
+    no_kk: "",
+    no_akta_lahir: "",
+    no_kip: "",
     nama_ayah: "",
     pekerjaan_ayah: "",
     pekerjaan_ayah_lainnya: "",
     pendidikan_ayah: "",
+    nik_ayah: "",
+    tempat_tgl_lahir_ayah: "",
     nama_ibu: "",
     pekerjaan_ibu: "",
     pekerjaan_ibu_lainnya: "",
     pendidikan_ibu: "",
+    nik_ibu: "",
+    tempat_tgl_lahir_ibu: "",
     no_hp: "",
     alamat: "",
+    kode_pos: "",
   });
 
   const refs = {
@@ -106,16 +121,26 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
         tanggal_lahir: convertDateToDisplay(editingStudent.tanggal_lahir) || "",
         asal_sekolah: editingStudent.asal_sekolah || "",
         nisn: editingStudent.nisn === "-" ? "" : editingStudent.nisn || "",
+        agama: editingStudent.agama || "",
+        nik: editingStudent.nik || "",
+        no_kk: editingStudent.no_kk || "",
+        no_akta_lahir: editingStudent.no_akta_lahir || "",
+        no_kip: editingStudent.no_kip || "",
         nama_ayah: editingStudent.nama_ayah || "",
         pekerjaan_ayah: isAyahStandard ? pekerjaanAyah : "Lainnya",
         pekerjaan_ayah_lainnya: isAyahStandard ? "" : pekerjaanAyah,
         pendidikan_ayah: editingStudent.pendidikan_ayah || "",
+        nik_ayah: editingStudent.nik_ayah || "",
+        tempat_tgl_lahir_ayah: editingStudent.tempat_tgl_lahir_ayah || "",
         nama_ibu: editingStudent.nama_ibu || "",
         pekerjaan_ibu: isIbuStandard ? pekerjaanIbu : "Lainnya",
         pekerjaan_ibu_lainnya: isIbuStandard ? "" : pekerjaanIbu,
         pendidikan_ibu: editingStudent.pendidikan_ibu || "",
+        nik_ibu: editingStudent.nik_ibu || "",
+        tempat_tgl_lahir_ibu: editingStudent.tempat_tgl_lahir_ibu || "",
         no_hp: editingStudent.no_hp || "",
         alamat: editingStudent.alamat || "",
+        kode_pos: editingStudent.kode_pos || "",
       });
 
       setShowPekerjaanAyahLainnya(!isAyahStandard && pekerjaanAyah !== "");
@@ -129,16 +154,26 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
         tanggal_lahir: "",
         asal_sekolah: "",
         nisn: "",
+        agama: "",
+        nik: "",
+        no_kk: "",
+        no_akta_lahir: "",
+        no_kip: "",
         nama_ayah: "",
         pekerjaan_ayah: "",
         pekerjaan_ayah_lainnya: "",
         pendidikan_ayah: "",
+        nik_ayah: "",
+        tempat_tgl_lahir_ayah: "",
         nama_ibu: "",
         pekerjaan_ibu: "",
         pekerjaan_ibu_lainnya: "",
         pendidikan_ibu: "",
+        nik_ibu: "",
+        tempat_tgl_lahir_ibu: "",
         no_hp: "",
         alamat: "",
+        kode_pos: "",
       });
       setShowPekerjaanAyahLainnya(false);
       setShowPekerjaanIbuLainnya(false);
@@ -470,6 +505,11 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
       tanggal_lahir: convertDateToISO(formData.tanggal_lahir),
       asal_sekolah: formData.asal_sekolah,
       nisn: formData.nisn || "-",
+      agama: formData.agama,
+      nik: formData.nik,
+      no_kk: formData.no_kk,
+      no_akta_lahir: formData.no_akta_lahir,
+      no_kip: formData.no_kip,
       tanggal_daftar: editingStudent
         ? convertDateToISO(editingStudent.tanggal_daftar)
         : new Date().toISOString().split("T")[0],
@@ -479,11 +519,16 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
       nama_ayah: formData.nama_ayah,
       pekerjaan_ayah: finalPekerjaanAyah,
       pendidikan_ayah: formData.pendidikan_ayah,
+      nik_ayah: formData.nik_ayah,
+      tempat_tgl_lahir_ayah: formData.tempat_tgl_lahir_ayah,
       nama_ibu: formData.nama_ibu,
       pekerjaan_ibu: finalPekerjaanIbu,
       pendidikan_ibu: formData.pendidikan_ibu,
+      nik_ibu: formData.nik_ibu,
+      tempat_tgl_lahir_ibu: formData.tempat_tgl_lahir_ibu,
       no_hp: formData.no_hp,
       alamat: formData.alamat,
+      kode_pos: formData.kode_pos,
     };
 
     const studentForValidation = {
@@ -547,16 +592,26 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
       tanggal_lahir: "",
       asal_sekolah: "",
       nisn: "",
+      agama: "",
+      nik: "",
+      no_kk: "",
+      no_akta_lahir: "",
+      no_kip: "",
       nama_ayah: "",
       pekerjaan_ayah: "",
       pekerjaan_ayah_lainnya: "",
       pendidikan_ayah: "",
+      nik_ayah: "",
+      tempat_tgl_lahir_ayah: "",
       nama_ibu: "",
       pekerjaan_ibu: "",
       pekerjaan_ibu_lainnya: "",
       pendidikan_ibu: "",
+      nik_ibu: "",
+      tempat_tgl_lahir_ibu: "",
       no_hp: "",
       alamat: "",
+      kode_pos: "",
     });
     setEditingStudent(null);
     setShowDuplicateWarning(false);
@@ -808,9 +863,9 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
 
               <div>
                 <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
-                  Asal Sekolah Dasar (SD)
+                  Asal Sekolah Dasar (SD/MI)
                   <small className="block text-gray-500 dark:text-gray-400 font-normal text-xs sm:text-sm">
-                    Nama SD asal calon siswa
+                    Nama SD/MI asal calon siswa
                   </small>
                 </label>
                 <input
@@ -819,6 +874,89 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                   onChange={(e) => updateFormData("asal_sekolah", e.target.value)}
                   className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
                   placeholder="Nama SD asal"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    Agama (Opsional)
+                  </label>
+                  <select
+                    value={formData.agama}
+                    onChange={(e) => updateFormData("agama", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none appearance-none"
+                  >
+                    <option value="" className="text-gray-400">
+                      Pilih Agama
+                    </option>
+                    {AGAMA_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    NIK Siswa (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nik}
+                    onChange={(e) => updateFormData("nik", e.target.value.replace(/\D/g, ""))}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                    placeholder="16 digit NIK sesuai KK"
+                    inputMode="numeric"
+                    maxLength="16"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    No. Kartu Keluarga (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.no_kk}
+                    onChange={(e) => updateFormData("no_kk", e.target.value.replace(/\D/g, ""))}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                    placeholder="16 digit No. KK"
+                    inputMode="numeric"
+                    maxLength="16"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    No. Akta Kelahiran (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.no_akta_lahir}
+                    onChange={(e) => updateFormData("no_akta_lahir", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                    placeholder="Nomor akta kelahiran"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                  No. KIP (Opsional)
+                  <small className="block text-gray-500 dark:text-gray-400 font-normal text-xs sm:text-sm">
+                    Kosongkan jika tidak punya Kartu Indonesia Pintar
+                  </small>
+                </label>
+                <input
+                  type="text"
+                  value={formData.no_kip}
+                  onChange={(e) => updateFormData("no_kip", e.target.value)}
+                  className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                  placeholder="Nomor KIP (kalau ada)"
                 />
               </div>
             </div>
@@ -969,6 +1107,66 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    NIK Ayah (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nik_ayah}
+                    onChange={(e) => updateFormData("nik_ayah", e.target.value.replace(/\D/g, ""))}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                    placeholder="16 digit NIK ayah"
+                    inputMode="numeric"
+                    maxLength="16"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    Tempat, Tanggal Lahir Ayah (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tempat_tgl_lahir_ayah}
+                    onChange={(e) => updateFormData("tempat_tgl_lahir_ayah", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                    placeholder="Contoh: Bandung, 29-12-1989"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    NIK Ibu (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nik_ibu}
+                    onChange={(e) => updateFormData("nik_ibu", e.target.value.replace(/\D/g, ""))}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                    placeholder="16 digit NIK ibu"
+                    inputMode="numeric"
+                    maxLength="16"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    Tempat, Tanggal Lahir Ibu (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tempat_tgl_lahir_ibu}
+                    onChange={(e) => updateFormData("tempat_tgl_lahir_ibu", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                    placeholder="Contoh: Bandung, 05-09-1993"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                   No. HP Orang Tua <span className="text-red-500">*</span>
@@ -994,6 +1192,21 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                   rows="3"
                   placeholder="Alamat lengkap tempat tinggal"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                  Kode Pos (Opsional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.kode_pos}
+                  onChange={(e) => updateFormData("kode_pos", e.target.value.replace(/\D/g, ""))}
+                  className="w-full sm:w-1/2 p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                  placeholder="Contoh: 40562"
+                  inputMode="numeric"
+                  maxLength="5"
                 />
               </div>
             </div>

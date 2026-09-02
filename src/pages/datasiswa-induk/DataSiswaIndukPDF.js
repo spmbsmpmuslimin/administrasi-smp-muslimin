@@ -67,7 +67,9 @@ const DATA_SISWA_ROWS = [
   { key: "no_kip", label: "No. KIP" },
   { key: "no_daftar", label: "No. Pendaftaran" },
   { key: "alamat", label: "Alamat Lengkap" },
-  { key: "dusun", label: "Dusun" },
+  // `dusun` SENGAJA gak dimasukin lagi -- konsisten sama DataSiswaInduk.js,
+  // StudentProfile.js & useStudentProfile.js (kolomnya dibiarin ada di DB
+  // buat data lama, tapi udah gak dimunculin di UI/export manapun).
   { key: "kode_pos", label: "Kode Pos" },
   { key: "no_hp", label: "No. HP Siswa" },
   { key: "keterangan", label: "Keterangan" },
@@ -193,10 +195,7 @@ function renderStudentPage(doc, student, academicYear) {
     head: [["Field", "Isian"]],
     body: [
       ...identitasBody,
-      ...DATA_SISWA_ROWS.map((row, i) => [
-        row.label,
-        siswaBody[i].display || "Belum diisi",
-      ]),
+      ...DATA_SISWA_ROWS.map((row, i) => [row.label, siswaBody[i].display || "Belum diisi"]),
     ],
     columnStyles: {
       0: { cellWidth: 55, fontStyle: "bold" },
@@ -215,16 +214,11 @@ function renderStudentPage(doc, student, academicYear) {
   // --- DATA ORANGTUA (Ayah, Ibu, Kontak) ---
   y = addSectionLabel(doc, "DATA ORANGTUA", y, margin);
   y += 3;
-  const orangtuaBody = DATA_ORANGTUA_ROWS.map((row) =>
-    getRowValue(detail, row),
-  );
+  const orangtuaBody = DATA_ORANGTUA_ROWS.map((row) => getRowValue(detail, row));
   autoTable(doc, {
     ...tableTheme(y, { margin: { left: margin, right: margin } }),
     head: [["Field", "Isian"]],
-    body: DATA_ORANGTUA_ROWS.map((row, i) => [
-      row.label,
-      orangtuaBody[i].display || "Belum diisi",
-    ]),
+    body: DATA_ORANGTUA_ROWS.map((row, i) => [row.label, orangtuaBody[i].display || "Belum diisi"]),
     columnStyles: {
       0: { cellWidth: 55, fontStyle: "bold" },
     },
@@ -247,9 +241,9 @@ function renderStudentPage(doc, student, academicYear) {
   // bukan ke-cut di bawah.
   y = checkPageBreak(doc, y);
 
-  const missingLabels = ALL_DETAIL_ROWS.filter(
-    (row) => getRowValue(detail, row).isEmpty,
-  ).map((row) => row.label);
+  const missingLabels = ALL_DETAIL_ROWS.filter((row) => getRowValue(detail, row).isEmpty).map(
+    (row) => row.label
+  );
 
   let catatanText;
   if (statusKey === "belum") {
@@ -290,14 +284,9 @@ function renderStudentPage(doc, student, academicYear) {
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...PDF_COLORS.textMuted);
-  doc.text(
-    `Dicetak: ${formatTanggalCetak(new Date())}`,
-    pageWidth - margin,
-    pageHeight - 12,
-    {
-      align: "right",
-    },
-  );
+  doc.text(`Dicetak: ${formatTanggalCetak(new Date())}`, pageWidth - margin, pageHeight - 12, {
+    align: "right",
+  });
   doc.setTextColor(0);
 }
 

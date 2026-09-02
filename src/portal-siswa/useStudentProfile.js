@@ -17,10 +17,7 @@
 // ========================================================================
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
-import {
-  getStudentSession,
-  clearStudentSession,
-} from "../utils/studentSession";
+import { getStudentSession, clearStudentSession } from "../utils/studentSession";
 
 // Konversi kode gender dari tabel `students` ("P"/"L") ke label penuh yang
 // dipakai konsisten di UI & student_profile_details ("Perempuan"/"Laki-laki").
@@ -66,7 +63,7 @@ export default function useStudentProfile() {
       if (!authRow || !authRow.is_active) {
         console.error(
           "[useStudentProfile] Akun student_auth gak ketemu / non-aktif. session.id:",
-          session.id,
+          session.id
         );
         clearStudentSession();
         if (mountedRef.current) {
@@ -87,9 +84,7 @@ export default function useStudentProfile() {
         // Kolom `nisn` di tabel `students` diisi dari data master resmi
         // (lihat migrasi update_nisn.sql) — jadi ini SUMBER UTAMA buat
         // NISN, bukan isian manual siswa di student_profile_details.
-        .select(
-          "id, full_name, nis, nisn, class_id, academic_year, is_active, gender",
-        )
+        .select("id, full_name, nis, nisn, class_id, academic_year, is_active, gender")
         .eq("id", authRow.student_id)
         .maybeSingle();
 
@@ -108,19 +103,21 @@ export default function useStudentProfile() {
       // 3. Data profil tambahan (alamat, no HP, dst) — boleh kosong
       // kalau siswa belum pernah isi form-nya (maybeSingle -> null,
       // bukan error).
+      // Field admin-only (no_ijazah, no_peserta_ujian, no_daftar,
+      // keterangan) SENGAJA gak di-select lagi -- StudentProfile.js udah
+      // gak nampilin ini sama sekali, jadi gak perlu dikirim ke browser
+      // siswa (sensitif & gak dipake). Kalau butuh, akses lewat
+      // DataSiswaInduk.js aja.
       const { data: detailRow, error: detailErr } = await supabase
         .from("student_profile_details")
         .select(
-          "jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, agama, no_kk, nik, no_akta_lahir, no_ijazah, no_peserta_ujian, dusun, kode_pos, nik_ayah, nik_ibu, tempat_tgl_lahir_ayah, tempat_tgl_lahir_ibu, no_kip, anak_ke, keterangan, no_daftar",
+          "jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, alamat, no_hp, nama_ortu, no_hp_ortu, sekolah_asal, nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, agama, no_kk, nik, no_akta_lahir, kode_pos, nik_ayah, nik_ibu, tempat_tgl_lahir_ayah, tempat_tgl_lahir_ibu, no_kip, anak_ke"
         )
         .eq("student_id", studentRow.id)
         .maybeSingle();
 
       if (detailErr) {
-        console.error(
-          "[useStudentProfile] Gagal ambil detail profil tambahan:",
-          detailErr,
-        );
+        console.error("[useStudentProfile] Gagal ambil detail profil tambahan:", detailErr);
       }
 
       if (mountedRef.current) {
@@ -151,10 +148,7 @@ export default function useStudentProfile() {
           // P/L, dikonversi ke label penuh), baru fallback ke
           // student_profile_details.jenis_kelamin (hasil form siswa
           // sendiri di ProfileInfo) kalau students.gender kosong/gak valid.
-          jenis_kelamin:
-            genderCodeToLabel(studentRow?.gender) ||
-            detailRow?.jenis_kelamin ||
-            "",
+          jenis_kelamin: genderCodeToLabel(studentRow?.gender) || detailRow?.jenis_kelamin || "",
           tempat_lahir: detailRow?.tempat_lahir || "",
           tanggal_lahir: detailRow?.tanggal_lahir || "",
           // Prioritas NISN: kolom `students.nisn` dulu (data resmi dari
@@ -174,9 +168,11 @@ export default function useStudentProfile() {
           no_kk: detailRow?.no_kk || "",
           nik: detailRow?.nik || "",
           no_akta_lahir: detailRow?.no_akta_lahir || "",
-          no_ijazah: detailRow?.no_ijazah || "",
-          no_peserta_ujian: detailRow?.no_peserta_ujian || "",
-          dusun: detailRow?.dusun || "",
+          // no_ijazah, no_peserta_ujian, no_daftar, keterangan SENGAJA
+          // gak dimapping lagi -- admin-only, gak di-select di atas.
+          // `dusun` juga sengaja gak di-select/mapping lagi -- kolomnya
+          // dibiarin ada di DB (data lama), tapi gak ada UI siswa
+          // manapun yang makai lagi.
           kode_pos: detailRow?.kode_pos || "",
           nik_ayah: detailRow?.nik_ayah || "",
           nik_ibu: detailRow?.nik_ibu || "",
@@ -184,8 +180,6 @@ export default function useStudentProfile() {
           tempat_tgl_lahir_ibu: detailRow?.tempat_tgl_lahir_ibu || "",
           no_kip: detailRow?.no_kip || "",
           anak_ke: detailRow?.anak_ke ?? "",
-          keterangan: detailRow?.keterangan || "",
-          no_daftar: detailRow?.no_daftar || "",
         });
         setLoading(false);
       }
