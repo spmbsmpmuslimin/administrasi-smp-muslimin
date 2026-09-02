@@ -11,13 +11,19 @@
 // ========================================================================
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { IdCard, Search, Users, UserRound } from "lucide-react";
+import { Search, Users, UserRound, X } from "lucide-react";
 
-function getInitials(name) {
-  const words = (name || "").trim().split(" ").filter(Boolean);
-  if (words.length === 0) return "S";
-  if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
-  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+// Avatar dibedain per gender: bukan inisial nama, tapi warna + gradient
+// beda buat Laki-Laki (biru) vs Perempuan (pink/rose), biar keliatan
+// bedanya sekilas pas nge-scroll daftar tanpa perlu baca teksnya.
+function getAvatarStyle(gender) {
+  if (gender === "L") {
+    return "bg-gradient-to-br from-sky-500 to-blue-700";
+  }
+  if (gender === "P") {
+    return "bg-gradient-to-br from-pink-500 to-rose-600";
+  }
+  return "bg-gradient-to-br from-gray-400 to-gray-600";
 }
 
 export default function StudentDataSiswa({ student }) {
@@ -25,6 +31,7 @@ export default function StudentDataSiswa({ student }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,7 +46,7 @@ export default function StudentDataSiswa({ student }) {
 
       const { data, error: fetchError } = await supabase
         .from("students")
-        .select("id, full_name, nis, gender, class_id, is_active")
+        .select("id, full_name, nis, nisn, gender, class_id, is_active")
         .eq("class_id", student.class_id)
         .eq("is_active", true)
         .order("full_name", { ascending: true });
@@ -64,7 +71,7 @@ export default function StudentDataSiswa({ student }) {
   const filtered = classmates.filter(
     (s) =>
       (s.full_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (s.nis || "").toLowerCase().includes(search.toLowerCase())
+      (s.nis || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   if (loading) {
@@ -84,7 +91,9 @@ export default function StudentDataSiswa({ student }) {
   }
 
   if (error) {
-    return <div className="text-center py-14 text-sm text-red-500">{error}</div>;
+    return (
+      <div className="text-center py-14 text-sm text-red-500">{error}</div>
+    );
   }
 
   const totalCount = classmates.length;
@@ -94,7 +103,9 @@ export default function StudentDataSiswa({ student }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-theme-secondary">Kelas {student.class_id}</span>
+        <span className="text-sm font-semibold text-theme-secondary">
+          Kelas {student.class_id}
+        </span>
       </div>
 
       <div className="grid grid-cols-3 gap-2.5">
@@ -136,7 +147,10 @@ export default function StudentDataSiswa({ student }) {
       </div>
 
       <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
         <input
           type="text"
           value={search}
@@ -148,19 +162,31 @@ export default function StudentDataSiswa({ student }) {
 
       {filtered.length === 0 ? (
         <div className="text-center py-10 text-sm text-theme-secondary">
-          {search ? "Siswa Tidak Ditemukan." : "Belum Ada Data Siswa Di Kelas Ini."}
+          {search
+            ? "Siswa Tidak Ditemukan."
+            : "Belum Ada Data Siswa Di Kelas Ini."}
         </div>
       ) : (
         <div className="space-y-2">
           {filtered.map((s) => (
-            <div
+            <button
               key={s.id}
-              className={`flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 ${
-                s.id === student.id ? "bg-indigo-50 dark:bg-indigo-950/30" : "bg-theme-bg"
-              }`}
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shrink-0">
-                <span className="text-white text-xs font-bold">{getInitials(s.full_name)}</span>
+              type="button"
+              onClick={() => setSelectedStudent(s)}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 text-left active:scale-[0.98] transition-transform ${
+                s.id === student.id
+                  ? "bg-indigo-50 dark:bg-indigo-950/30"
+                  : "bg-theme-bg"
+              }`}>
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${getAvatarStyle(
+                  s.gender,
+                )}`}>
+                <UserRound
+                  size={20}
+                  className="text-white"
+                  strokeWidth={2.25}
+                />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-theme truncate">
@@ -173,12 +199,93 @@ export default function StudentDataSiswa({ student }) {
                 </p>
                 <p className="text-xs text-theme-secondary truncate">
                   NIS: {s.nis || "-"} &middot;{" "}
-                  {s.gender === "L" ? "Laki-Laki" : s.gender === "P" ? "Perempuan" : "-"}
+                  {s.gender === "L"
+                    ? "Laki-Laki"
+                    : s.gender === "P"
+                      ? "Perempuan"
+                      : "-"}
                 </p>
               </div>
-              <IdCard size={16} className="text-gray-300 dark:text-gray-600 shrink-0" />
-            </div>
+            </button>
           ))}
+        </div>
+      )}
+
+      {/* ====== MODAL DETAIL SIMPEL — cuma nampilin data yang udah ke-fetch
+          (nama, NIS, gender, kelas). Bukan halaman profil lengkap kayak
+          "Profil Saya", karena ini buat liat teman sekelas doang. ====== */}
+      {selectedStudent && (
+        <div
+          className="fixed inset-0 bg-black/30 z-[60] flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setSelectedStudent(null)}>
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-xs w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="relative flex flex-col items-center gap-3 p-6 pb-6 bg-gray-50 dark:bg-gray-900/40">
+              <button
+                type="button"
+                onClick={() => setSelectedStudent(null)}
+                className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <X size={16} />
+              </button>
+              <div
+                className={`w-20 h-20 rounded-full flex items-center justify-center shrink-0 ${getAvatarStyle(
+                  selectedStudent.gender,
+                )}`}>
+                <UserRound
+                  size={36}
+                  className="text-white"
+                  strokeWidth={2.25}
+                />
+              </div>
+              <div className="text-center">
+                <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                  {selectedStudent.full_name}
+                  {selectedStudent.id === student.id && (
+                    <span className="ml-1.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 align-middle">
+                      (Kamu)
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Kelas {selectedStudent.class_id}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 space-y-3.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">NIS</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedStudent.nis || "-"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">NISN</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedStudent.nisn || "-"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Jenis Kelamin
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedStudent.gender === "L"
+                    ? "Laki-Laki"
+                    : selectedStudent.gender === "P"
+                      ? "Perempuan"
+                      : "-"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Kelas</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedStudent.class_id || "-"}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -72,14 +72,6 @@ function isValidPhone(raw) {
 // data yang tampil langsung ke-update tanpa reload halaman.
 
 const PENDIDIKAN_OPTIONS = ["SD", "SMP", "SMA", "D3", "S1", "S2"];
-const AGAMA_OPTIONS = [
-  "Islam",
-  "Kristen",
-  "Katolik",
-  "Hindu",
-  "Buddha",
-  "Konghucu",
-];
 
 function formatTanggalLahir(dateStr) {
   if (!dateStr) return null;
@@ -107,10 +99,6 @@ export function ProfileInfo({ student, onUpdated }) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [form, setForm] = useState({
-    jenis_kelamin: "",
-    tempat_lahir: "",
-    tanggal_lahir: "",
-    sekolah_asal: "",
     alamat: "",
     no_hp: "",
     nama_ayah: "",
@@ -120,21 +108,9 @@ export function ProfileInfo({ student, onUpdated }) {
     pekerjaan_ibu: "",
     pendidikan_ibu: "",
     no_hp_ortu: "",
-    agama: "",
-    nik: "",
-    no_kk: "",
-    no_akta_lahir: "",
     dusun: "",
     kode_pos: "",
     anak_ke: "",
-    no_kip: "",
-    no_ijazah: "",
-    no_peserta_ujian: "",
-    no_daftar: "",
-    nik_ayah: "",
-    tempat_tgl_lahir_ayah: "",
-    nik_ibu: "",
-    tempat_tgl_lahir_ibu: "",
     keterangan: "",
   });
 
@@ -142,10 +118,6 @@ export function ProfileInfo({ student, onUpdated }) {
   // abis refetch sukses) — biar form gak nampilin data basi.
   useEffect(() => {
     setForm({
-      jenis_kelamin: student?.jenis_kelamin || "",
-      tempat_lahir: student?.tempat_lahir || "",
-      tanggal_lahir: student?.tanggal_lahir || "",
-      sekolah_asal: student?.sekolah_asal || "",
       alamat: student?.alamat || "",
       no_hp: student?.no_hp || "",
       nama_ayah: student?.nama_ayah || "",
@@ -155,21 +127,9 @@ export function ProfileInfo({ student, onUpdated }) {
       pekerjaan_ibu: student?.pekerjaan_ibu || "",
       pendidikan_ibu: student?.pendidikan_ibu || "",
       no_hp_ortu: student?.no_hp_ortu || "",
-      agama: student?.agama || "",
-      nik: student?.nik || "",
-      no_kk: student?.no_kk || "",
-      no_akta_lahir: student?.no_akta_lahir || "",
       dusun: student?.dusun || "",
       kode_pos: student?.kode_pos || "",
       anak_ke: student?.anak_ke ?? "",
-      no_kip: student?.no_kip || "",
-      no_ijazah: student?.no_ijazah || "",
-      no_peserta_ujian: student?.no_peserta_ujian || "",
-      no_daftar: student?.no_daftar || "",
-      nik_ayah: student?.nik_ayah || "",
-      tempat_tgl_lahir_ayah: student?.tempat_tgl_lahir_ayah || "",
-      nik_ibu: student?.nik_ibu || "",
-      tempat_tgl_lahir_ibu: student?.tempat_tgl_lahir_ibu || "",
       keterangan: student?.keterangan || "",
     });
   }, [student]);
@@ -262,18 +222,18 @@ export function ProfileInfo({ student, onUpdated }) {
       // Upsert: 1 baris per siswa di student_profile_details
       // (student_id = primary key), jadi otomatis update kalau udah
       // pernah isi, atau insert kalau baru pertama kali.
+      // Kirim CUMA field Kelompok B (kontak & data ortu deskriptif) dari
+      // sisi siswa. Field identitas/dokumen resmi (jenis_kelamin,
+      // tempat/tanggal lahir, agama, NIK, No.KK, No.Akta Lahir, sekolah
+      // asal, No.KIP/Ijazah/Peserta Ujian/Daftar, NIK & TTL ortu) SENGAJA
+      // gak dikirim dari sini lagi -- sekarang cuma admin/TU yang isi/edit
+      // field itu lewat KelengkapanDataSiswa.js, biar tervalidasi ke
+      // dokumen fisik (samain pola kayak NISN yang udah duluan begini).
       const { error: upsertErr } = await supabase
         .from("student_profile_details")
         .upsert(
           {
             student_id: student.id,
-            jenis_kelamin: form.jenis_kelamin || null,
-            tempat_lahir: form.tempat_lahir || null,
-            tanggal_lahir: form.tanggal_lahir || null,
-            // NISN SENGAJA gak dikirim dari sini lagi — sumber utamanya
-            // sekarang kolom `students.nisn` (data resmi admin), bukan
-            // isian siswa. Lihat useStudentProfile.js.
-            sekolah_asal: form.sekolah_asal || null,
             alamat: form.alamat || null,
             no_hp: form.no_hp ? normalizePhone(form.no_hp) : null,
             nama_ayah: form.nama_ayah || null,
@@ -285,21 +245,9 @@ export function ProfileInfo({ student, onUpdated }) {
             no_hp_ortu: form.no_hp_ortu
               ? normalizePhone(form.no_hp_ortu)
               : null,
-            agama: form.agama || null,
-            nik: form.nik || null,
-            no_kk: form.no_kk || null,
-            no_akta_lahir: form.no_akta_lahir || null,
             dusun: form.dusun || null,
             kode_pos: form.kode_pos || null,
             anak_ke: form.anak_ke === "" ? null : Number(form.anak_ke),
-            no_kip: form.no_kip || null,
-            no_ijazah: form.no_ijazah || null,
-            no_peserta_ujian: form.no_peserta_ujian || null,
-            no_daftar: form.no_daftar || null,
-            nik_ayah: form.nik_ayah || null,
-            tempat_tgl_lahir_ayah: form.tempat_tgl_lahir_ayah || null,
-            nik_ibu: form.nik_ibu || null,
-            tempat_tgl_lahir_ibu: form.tempat_tgl_lahir_ibu || null,
             keterangan: form.keterangan || null,
             updated_at: new Date().toISOString(),
             // Data berubah -> status verifikasi admin otomatis batal, harus
@@ -340,71 +288,13 @@ export function ProfileInfo({ student, onUpdated }) {
           <p className="text-sm font-extrabold uppercase tracking-wide text-theme-secondary">
             Data Siswa
           </p>
-          <div>
-            <label className={labelClass}>Jenis Kelamin</label>
-            <div className="flex gap-4 px-1 py-1">
-              {["Laki-laki", "Perempuan"].map((opt) => (
-                <label
-                  key={opt}
-                  className="flex items-center gap-2 text-sm text-theme-secondary">
-                  <input
-                    type="radio"
-                    name="jenis_kelamin"
-                    value={opt}
-                    checked={form.jenis_kelamin === opt}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, jenis_kelamin: e.target.value }))
-                    }
-                    className="accent-blue-600"
-                  />
-                  {opt}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Agama</label>
-            <select
-              value={form.agama}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, agama: e.target.value }))
-              }
-              className={inputClass}>
-              <option value="">Pilih agama</option>
-              {AGAMA_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Tempat Lahir</label>
-              <input
-                type="text"
-                value={form.tempat_lahir}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, tempat_lahir: e.target.value }))
-                }
-                placeholder="Contoh: Bandung Barat"
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Tanggal Lahir</label>
-              <input
-                type="date"
-                value={form.tanggal_lahir}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, tanggal_lahir: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-          </div>
+          <p className="text-xs text-theme-secondary -mt-1">
+            Data identitas resmi (jenis kelamin, tempat/tanggal lahir, agama,
+            NIK, No. KK, No. Akta Lahir, sekolah asal, No. KIP/Ijazah/Peserta
+            Ujian/Daftar) dikelola oleh Tata Usaha berdasarkan dokumen fisik.
+            Kalau ada yang salah/kosong, hubungi Tata Usaha — bukan diisi
+            sendiri dari sini.
+          </p>
 
           <div>
             <label className={labelClass}>NISN</label>
@@ -413,59 +303,6 @@ export function ProfileInfo({ student, onUpdated }) {
               value={student?.nisn || "Belum tersedia, hubungi Tata Usaha"}
               disabled
               className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-            <p className="text-xs text-theme-secondary mt-1">
-              NISN diambil dari data resmi sekolah dan tidak bisa diubah
-              sendiri. Kalau ada yang salah/kosong, hubungi Tata Usaha.
-            </p>
-          </div>
-
-          <div>
-            <label className={labelClass}>NIK</label>
-            <input
-              type="text"
-              value={form.nik}
-              onChange={(e) => setForm((f) => ({ ...f, nik: e.target.value }))}
-              placeholder="16 digit NIK siswa"
-              className={inputClass}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>No. Kartu Keluarga (KK)</label>
-              <input
-                type="text"
-                value={form.no_kk}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, no_kk: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>No. Akta Lahir</label>
-              <input
-                type="text"
-                value={form.no_akta_lahir}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, no_akta_lahir: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Sekolah Asal</label>
-            <input
-              type="text"
-              value={form.sekolah_asal}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, sekolah_asal: e.target.value }))
-              }
-              placeholder="Contoh: SDN 1 Cililin"
-              className={inputClass}
             />
           </div>
 
@@ -520,30 +357,17 @@ export function ProfileInfo({ student, onUpdated }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>Anak Ke-</label>
-              <input
-                type="number"
-                min="1"
-                value={form.anak_ke}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, anak_ke: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>No. KIP (Kalau Ada)</label>
-              <input
-                type="text"
-                value={form.no_kip}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, no_kip: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
+          <div>
+            <label className={labelClass}>Anak Ke-</label>
+            <input
+              type="number"
+              min="1"
+              value={form.anak_ke}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, anak_ke: e.target.value }))
+              }
+              className={inputClass}
+            />
           </div>
         </div>
 
@@ -551,6 +375,10 @@ export function ProfileInfo({ student, onUpdated }) {
         <div className="mt-3 pt-4 border-t-2 border-theme space-y-3">
           <p className="text-sm font-extrabold uppercase tracking-wide text-theme-secondary">
             Data Orangtua
+          </p>
+          <p className="text-xs text-theme-secondary -mt-1">
+            NIK & tempat/tanggal lahir ayah-ibu dikelola Tata Usaha (data
+            dokumen resmi). Bagian ini cuma buat data yang sering berubah.
           </p>
           <div>
             <label className={labelClass}>Nama Lengkap Ayah</label>
@@ -563,34 +391,6 @@ export function ProfileInfo({ student, onUpdated }) {
               placeholder="Nama lengkap ayah"
               className={inputClass}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>NIK Ayah</label>
-              <input
-                type="text"
-                value={form.nik_ayah}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, nik_ayah: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Tempat, Tgl Lahir Ayah</label>
-              <input
-                type="text"
-                value={form.tempat_tgl_lahir_ayah}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    tempat_tgl_lahir_ayah: e.target.value,
-                  }))
-                }
-                placeholder="Contoh: BANDUNG, 29/12/1989"
-                className={inputClass}
-              />
-            </div>
           </div>
 
           <div>
@@ -633,34 +433,6 @@ export function ProfileInfo({ student, onUpdated }) {
               placeholder="Nama lengkap ibu"
               className={inputClass}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>NIK Ibu</label>
-              <input
-                type="text"
-                value={form.nik_ibu}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, nik_ibu: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Tempat, Tgl Lahir Ibu</label>
-              <input
-                type="text"
-                value={form.tempat_tgl_lahir_ibu}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    tempat_tgl_lahir_ibu: e.target.value,
-                  }))
-                }
-                placeholder="Contoh: BANDUNG, 05/09/1993"
-                className={inputClass}
-              />
-            </div>
           </div>
 
           <div>
@@ -706,46 +478,14 @@ export function ProfileInfo({ student, onUpdated }) {
           </div>
         </div>
 
-        {/* ---- Data Kelulusan & Lainnya ---- */}
+        {/* ---- Lainnya ---- */}
         <div className="mt-3 pt-4 border-t-2 border-theme space-y-3">
           <p className="text-sm font-extrabold uppercase tracking-wide text-theme-secondary">
-            Data Kelulusan & Lainnya
+            Lainnya
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>No. Ijazah</label>
-              <input
-                type="text"
-                value={form.no_ijazah}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, no_ijazah: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>No. Peserta Ujian</label>
-              <input
-                type="text"
-                value={form.no_peserta_ujian}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, no_peserta_ujian: e.target.value }))
-                }
-                className={inputClass}
-              />
-            </div>
-          </div>
-          <div>
-            <label className={labelClass}>No. Daftar</label>
-            <input
-              type="text"
-              value={form.no_daftar}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, no_daftar: e.target.value }))
-              }
-              className={inputClass}
-            />
-          </div>
+          <p className="text-xs text-theme-secondary -mt-1">
+            No. Ijazah, No. Peserta Ujian, dan No. Daftar dikelola Tata Usaha.
+          </p>
           <div>
             <label className={labelClass}>Keterangan</label>
             <textarea

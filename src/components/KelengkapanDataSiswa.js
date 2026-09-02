@@ -34,6 +34,8 @@ import {
   FileSpreadsheet,
   ShieldCheck,
   ShieldAlert,
+  Pencil,
+  Loader2,
 } from "lucide-react";
 import { exportStudentProfilePDF } from "./StudentProfilePDF";
 import { exportStudentProfileExcel } from "./StudentProfileExcel";
@@ -161,6 +163,91 @@ const MONTH_NAMES_SHORT = [
   "Desember",
 ];
 
+const AGAMA_OPTIONS = [
+  "Islam",
+  "Kristen",
+  "Katolik",
+  "Hindu",
+  "Buddha",
+  "Konghucu",
+];
+const PENDIDIKAN_OPTIONS = ["SD", "SMP", "SMA", "D3", "S1", "S2"];
+
+// Konfigurasi form edit admin -- SEMUA kolom student_profile_details bisa
+// diedit dari sini (beda dari sisi siswa di StudentProfile.js yang sekarang
+// cuma bisa isi field "Kelompok B"/kontak). "ttl" (gabungan tempat+tanggal
+// lahir) dipecah lagi jadi 2 field terpisah (tempat_lahir, tanggal_lahir)
+// buat form, karena kolom DB-nya emang 2 kolom beda.
+// ⚠️ CATATAN NISN: kolom `nisn` di sini nulis ke
+// `student_profile_details.nisn` (legacy). Sisi siswa (StudentProfile.js)
+// nampilin NISN dari `students.nisn` (sumber resmi terbaru), BUKAN dari
+// kolom ini. Jadi ngedit NISN di sini TIDAK bakal keliatan di portal siswa
+// -- kalau NISN-nya salah/kosong, benerin langsung di tabel `students`
+// (menu Data Siswa), bukan di sini.
+const ADMIN_EDIT_FIELDS = [
+  {
+    key: "jenis_kelamin",
+    label: "Jenis Kelamin",
+    type: "select",
+    options: ["Laki-laki", "Perempuan"],
+  },
+  { key: "tempat_lahir", label: "Tempat Lahir", type: "text" },
+  { key: "tanggal_lahir", label: "Tanggal Lahir", type: "date" },
+  { key: "nisn", label: "NISN (legacy, lihat catatan di atas)", type: "text" },
+  { key: "nik", label: "NIK Siswa", type: "text" },
+  { key: "no_kk", label: "No. Kartu Keluarga (KK)", type: "text" },
+  { key: "no_akta_lahir", label: "No. Akta Lahir", type: "text" },
+  { key: "agama", label: "Agama", type: "select", options: AGAMA_OPTIONS },
+  { key: "anak_ke", label: "Anak ke-", type: "number" },
+  { key: "sekolah_asal", label: "Sekolah Asal", type: "text" },
+  { key: "no_peserta_ujian", label: "No. Peserta Ujian", type: "text" },
+  { key: "no_ijazah", label: "No. Ijazah", type: "text" },
+  { key: "no_kip", label: "No. KIP", type: "text" },
+  { key: "no_daftar", label: "No. Pendaftaran", type: "text" },
+  { key: "alamat", label: "Alamat Lengkap", type: "textarea" },
+  { key: "dusun", label: "Dusun", type: "text" },
+  { key: "kode_pos", label: "Kode Pos", type: "text" },
+  { key: "no_hp", label: "No. HP Siswa", type: "text" },
+  { key: "nama_ayah", label: "Nama Lengkap Ayah", type: "text" },
+  { key: "nik_ayah", label: "NIK Ayah", type: "text" },
+  {
+    key: "tempat_tgl_lahir_ayah",
+    label: "Tempat, Tanggal Lahir Ayah",
+    type: "text",
+  },
+  { key: "pekerjaan_ayah", label: "Pekerjaan Ayah", type: "text" },
+  {
+    key: "pendidikan_ayah",
+    label: "Pendidikan Terakhir Ayah",
+    type: "select",
+    options: PENDIDIKAN_OPTIONS,
+  },
+  { key: "nama_ibu", label: "Nama Lengkap Ibu", type: "text" },
+  { key: "nik_ibu", label: "NIK Ibu", type: "text" },
+  {
+    key: "tempat_tgl_lahir_ibu",
+    label: "Tempat, Tanggal Lahir Ibu",
+    type: "text",
+  },
+  { key: "pekerjaan_ibu", label: "Pekerjaan Ibu", type: "text" },
+  {
+    key: "pendidikan_ibu",
+    label: "Pendidikan Terakhir Ibu",
+    type: "select",
+    options: PENDIDIKAN_OPTIONS,
+  },
+  { key: "no_hp_ortu", label: "No. HP Orang Tua/Wali", type: "text" },
+  { key: "keterangan", label: "Keterangan", type: "textarea" },
+];
+
+function emptyAdminForm(detail) {
+  const form = {};
+  ADMIN_EDIT_FIELDS.forEach(({ key }) => {
+    form[key] = detail?.[key] ?? "";
+  });
+  return form;
+}
+
 function formatTanggalLahirSingkat(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -203,6 +290,10 @@ export default function KelengkapanDataSiswa({ currentUser }) {
   // (kelengkapan) di atas, krn "udah lengkap" beda sama "udah diverifikasi".
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [verifying, setVerifying] = useState(false);
+  const [isEditingAdmin, setIsEditingAdmin] = useState(false);
+  const [adminForm, setAdminForm] = useState(null);
+  const [savingAdmin, setSavingAdmin] = useState(false);
+  const [adminEditError, setAdminEditError] = useState(null);
   const [jenjangFilter, setJenjangFilter] = useState("all"); // all | "7" | "8" | "9"
   const [classOptions, setClassOptions] = useState([]); // [{ id: "7A", jenjang: "7" }, ...]
   const [classFilter, setClassFilter] = useState(
@@ -509,6 +600,92 @@ export default function KelengkapanDataSiswa({ currentUser }) {
     }
   };
 
+  // Admin nyimpen SEMUA field lewat form edit di modal (beda dari
+  // handleToggleVerify yang cuma toggle 1 kolom verified_at). Upsert
+  // langsung ke student_profile_details, sama kayak upsert di
+  // StudentProfile.js sisi siswa -- bedanya field yang dikirim di sini
+  // full semua (Kelompok A + B), bukan cuma Kelompok B.
+  // verified_at otomatis di-set ke sekarang: karena yang isi/edit di sini
+  // admin sendiri, datanya dianggap udah "terverifikasi" tanpa perlu
+  // klik tombol verifikasi terpisah lagi setelahnya.
+  const handleSaveAdminEdit = async (e) => {
+    e.preventDefault();
+    if (!modalStudent) return;
+    setAdminEditError(null);
+    setSavingAdmin(true);
+    try {
+      const verifiedAt = new Date().toISOString();
+      const payload = {
+        student_id: modalStudent.id,
+        updated_at: verifiedAt,
+        verified_at: verifiedAt,
+      };
+      ADMIN_EDIT_FIELDS.forEach(({ key, type }) => {
+        const raw = adminForm[key];
+        if (type === "number") {
+          payload[key] = raw === "" ? null : Number(raw);
+        } else {
+          payload[key] = raw === "" ? null : raw;
+        }
+      });
+
+      const { error: upsertErr } = await supabase
+        .from("student_profile_details")
+        .upsert(payload, { onConflict: "student_id" });
+
+      if (upsertErr) throw upsertErr;
+
+      // Update optimistic: gabungin field baru ke detail yang lama biar
+      // kolom yang gak ada di ADMIN_EDIT_FIELDS (kalau ada) gak ke-drop.
+      const newDetail = { ...(modalStudent.detail || {}), ...payload };
+      const newStatus = getCompletionStatus(newDetail);
+
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === modalStudent.id
+            ? {
+                ...r,
+                detail: newDetail,
+                status: newStatus,
+                isVerified: true,
+                verifiedAt,
+              }
+            : r,
+        ),
+      );
+      setModalStudent((prev) =>
+        prev
+          ? {
+              ...prev,
+              detail: newDetail,
+              status: newStatus,
+              isVerified: true,
+              verifiedAt,
+            }
+          : prev,
+      );
+      setIsEditingAdmin(false);
+    } catch (err) {
+      console.error("[KelengkapanDataSiswa] Gagal simpan edit admin:", err);
+      setAdminEditError("Gagal menyimpan data. Coba lagi.");
+    } finally {
+      setSavingAdmin(false);
+    }
+  };
+
+  const closeModal = () => {
+    setModalStudent(null);
+    setIsEditingAdmin(false);
+    setAdminForm(null);
+    setAdminEditError(null);
+  };
+
+  const openAdminEdit = () => {
+    setAdminForm(emptyAdminForm(modalStudent?.detail));
+    setAdminEditError(null);
+    setIsEditingAdmin(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
@@ -802,7 +979,10 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                         inline lagi -- biar list gak makin panjang ke bawah
                         walau banyak yang dibuka. */}
                     <button
-                      onClick={() => setModalStudent(r)}
+                      onClick={() => {
+                        setModalStudent(r);
+                        setIsEditingAdmin(false);
+                      }}
                       className="flex-1 min-w-0 flex items-center justify-between gap-3 text-left">
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
@@ -860,7 +1040,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
       {modalStudent && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 dark:bg-slate-950/70 backdrop-blur-sm"
-          onClick={() => setModalStudent(null)}>
+          onClick={closeModal}>
           <div
             className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}>
@@ -932,9 +1112,20 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                     )}
                   </button>
                 )}
+                {/* Edit Semua Data: admin bisa isi/ubah langsung SEMUA
+                    kolom (Kelompok A + B), gak cuma yang wajib. Beda dari
+                    tombol verifikasi di atas yang cuma toggle 1 kolom. */}
+                {isAdmin && !isEditingAdmin && (
+                  <button
+                    onClick={openAdminEdit}
+                    className="mt-2 ml-2 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition">
+                    <Pencil size={14} />
+                    Edit Semua Data
+                  </button>
+                )}
               </div>
               <button
-                onClick={() => setModalStudent(null)}
+                onClick={closeModal}
                 aria-label="Tutup"
                 className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
                 <X size={18} />
@@ -943,7 +1134,81 @@ export default function KelengkapanDataSiswa({ currentUser }) {
 
             {/* Isi detail (yang ini aja yang scroll kalau kepanjangan) */}
             <div className="p-4 overflow-y-auto">
-              {modalStudent.detail ? (
+              {isEditingAdmin ? (
+                <form onSubmit={handleSaveAdminEdit} className="space-y-3">
+                  {adminEditError && (
+                    <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-3 py-2 rounded-lg text-sm">
+                      {adminEditError}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                    {ADMIN_EDIT_FIELDS.map(({ key, label, type, options }) => {
+                      const fieldInputClass =
+                        "w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-300";
+                      const wrapperClass =
+                        type === "textarea" ? "sm:col-span-2" : "";
+                      const value = adminForm?.[key] ?? "";
+                      const onChange = (v) =>
+                        setAdminForm((f) => ({ ...f, [key]: v }));
+
+                      return (
+                        <div key={key} className={wrapperClass}>
+                          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                            {label}
+                          </label>
+                          {type === "select" ? (
+                            <select
+                              value={value}
+                              onChange={(e) => onChange(e.target.value)}
+                              className={fieldInputClass}>
+                              <option value="">
+                                Pilih {label.toLowerCase()}
+                              </option>
+                              {options.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                          ) : type === "textarea" ? (
+                            <textarea
+                              rows={2}
+                              value={value}
+                              onChange={(e) => onChange(e.target.value)}
+                              className={fieldInputClass}
+                            />
+                          ) : (
+                            <input
+                              type={type}
+                              value={value}
+                              onChange={(e) => onChange(e.target.value)}
+                              className={fieldInputClass}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingAdmin(false)}
+                      className="flex-1 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 py-2.5 rounded-lg">
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingAdmin}
+                      className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm font-semibold py-2.5 rounded-lg disabled:opacity-60">
+                      {savingAdmin && (
+                        <Loader2 size={16} className="animate-spin" />
+                      )}
+                      {savingAdmin ? "Menyimpan..." : "Simpan"}
+                    </button>
+                  </div>
+                </form>
+              ) : modalStudent.detail ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 divide-y sm:divide-y-0 divide-slate-100 dark:divide-slate-700">
                   {DETAIL_ROWS.map(({ key, label, combine } = {}) => {
                     const value = getDetailRowValue(modalStudent.detail, {
@@ -990,9 +1255,19 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4">
-                  Siswa ini belum pernah mengisi data tambahan sama sekali.
-                </p>
+                <div className="text-center py-4 space-y-3">
+                  <p className="text-sm text-slate-400 dark:text-slate-500">
+                    Siswa ini belum pernah mengisi data tambahan sama sekali.
+                  </p>
+                  {isAdmin && (
+                    <button
+                      onClick={openAdminEdit}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition">
+                      <Pencil size={14} />
+                      Isi Data Sekarang
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>

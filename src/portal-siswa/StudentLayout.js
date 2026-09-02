@@ -81,7 +81,6 @@ function ProfileMenu({
   currentUser,
   darkMode,
   onToggleDarkMode,
-  onGoToProfile,
   onGoToPassword,
   onGoToDevices,
   onRequestLogout,
@@ -107,10 +106,14 @@ function ProfileMenu({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 rounded-full border border-violet-200/70 dark:border-gray-700 bg-gradient-to-br from-violet-100 via-purple-100 to-indigo-100 dark:bg-gray-800/70 hover:from-violet-200 hover:via-purple-200 hover:to-indigo-200 dark:hover:bg-gray-800 shadow-sm transition-all duration-200"
         aria-haspopup="true"
-        aria-expanded={open}
-      >
-        <UserCircle size={18} className="text-violet-600 dark:text-gray-300 shrink-0" />
-        <span className="text-sm font-semibold text-violet-700 dark:text-gray-100">Profil</span>
+        aria-expanded={open}>
+        <UserCircle
+          size={18}
+          className="text-violet-600 dark:text-gray-300 shrink-0"
+        />
+        <span className="text-sm font-semibold text-violet-700 dark:text-gray-100">
+          Profil
+        </span>
         <ChevronDown
           size={14}
           className={`text-violet-500 dark:text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
@@ -138,22 +141,13 @@ function ProfileMenu({
             <button
               onClick={() => {
                 setOpen(false);
-                onGoToProfile();
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700/60 transition-colors"
-            >
-              <UserCircle size={18} className="text-gray-400 dark:text-gray-500" />
-              Profil Saya
-            </button>
-
-            <button
-              onClick={() => {
-                setOpen(false);
                 onGoToPassword();
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700/60 transition-colors"
-            >
-              <KeyRound size={18} className="text-gray-400 dark:text-gray-500" />
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700/60 transition-colors">
+              <KeyRound
+                size={18}
+                className="text-gray-400 dark:text-gray-500"
+              />
               Ganti Password
             </button>
 
@@ -162,17 +156,18 @@ function ProfileMenu({
                 setOpen(false);
                 onGoToDevices();
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700/60 transition-colors"
-            >
-              <Smartphone size={18} className="text-gray-400 dark:text-gray-500" />
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700/60 transition-colors">
+              <Smartphone
+                size={18}
+                className="text-gray-400 dark:text-gray-500"
+              />
               Perangkat Terhubung
             </button>
 
             {/* Mode Gelap: toggle switch, dropdown tetap kebuka biar keliatan efeknya */}
             <button
               onClick={onToggleDarkMode}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700/60 transition-colors"
-            >
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700/60 transition-colors">
               {darkMode ? (
                 <Moon size={18} className="text-gray-400 dark:text-gray-500" />
               ) : (
@@ -182,8 +177,7 @@ function ProfileMenu({
               <span
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
                   darkMode ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-600"
-                }`}
-              >
+                }`}>
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
                     darkMode ? "translate-x-4.5 ml-0.5" : "translate-x-0.5"
@@ -199,8 +193,7 @@ function ProfileMenu({
                 setOpen(false);
                 onRequestLogout();
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:bg-rose-950/30 dark:hover:bg-rose-500/10 transition-colors"
-            >
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:bg-rose-950/30 dark:hover:bg-rose-500/10 transition-colors">
               <LogOut size={18} />
               Keluar
             </button>
@@ -274,8 +267,9 @@ export default function StudentLayout({
                 currentUser={currentUser}
                 darkMode={darkMode}
                 onToggleDarkMode={() => setDarkMode((v) => !v)}
-                onGoToProfile={() => onPageChange("student-lainnya", "profile")}
-                onGoToPassword={() => onPageChange("student-lainnya", "password")}
+                onGoToPassword={() =>
+                  onPageChange("student-lainnya", "password")
+                }
                 onGoToDevices={() => onPageChange("student-lainnya", "devices")}
                 onRequestLogout={() => setShowLogoutConfirm(true)}
               />
@@ -307,14 +301,12 @@ export default function StudentLayout({
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700 transition-colors font-medium"
-              >
+                className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:bg-gray-950/30 dark:hover:bg-gray-700 transition-colors font-medium">
                 Batal
               </button>
               <button
                 onClick={confirmLogout}
-                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
+                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                 Keluar
               </button>
             </div>

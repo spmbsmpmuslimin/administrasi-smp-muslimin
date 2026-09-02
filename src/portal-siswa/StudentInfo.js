@@ -40,6 +40,18 @@ import StudentOrganigram from "./StudentOrganigram";
 
 const MENUS = [
   {
+    key: "profile",
+    title: "Profil Saya",
+    subtitle: "Data diri & kontak",
+    icon: IdCard,
+    cardBgClass: "bg-blue-100 dark:bg-blue-900/30",
+    cardBorderClass: "border-blue-200",
+    titleColorClass: "text-blue-900 dark:text-blue-300",
+    subtitleColorClass: "text-blue-700/70 dark:text-blue-400/70",
+    iconBgClass: "bg-white/80",
+    iconColorClass: "text-blue-600",
+  },
+  {
     key: "data-siswa",
     title: "Data Siswa",
     subtitle: "Daftar teman sekelas",
@@ -125,23 +137,13 @@ const MENUS = [
   },
 ];
 
-// Menu yang aksesnya dipindah ke dropdown "Profile" di header (StudentLayout.js)
-// jadi gak perlu nongol lagi sebagai card di grid Info ini. Tapi metadata-nya
-// (icon, warna) masih dipertahankan di sini karena detail view (renderContent)
-// butuh info itu pas dibuka lewat initialMenu="devices" dari dropdown.
+// Menu yang aksesnya cuma lewat dropdown "Profile" di header (StudentLayout.js),
+// gak nongol sebagai card di grid Info. "profile" sendiri sekarang udah jadi
+// card permanen di MENUS (paling atas), jadi gak perlu didaftarin di sini lagi
+// — tapi dropdown header tetap bisa buka menu yang sama karena key-nya sama.
+// Metadata di bawah ini masih dipertahankan karena detail view (renderContent)
+// butuh info itu pas dibuka lewat initialMenu="devices"/"password" dari dropdown.
 const HIDDEN_FROM_GRID_MENUS = [
-  {
-    key: "profile",
-    title: "Profile Siswa",
-    subtitle: "Data diri & kontak",
-    icon: IdCard,
-    cardBgClass: "bg-blue-100 dark:bg-blue-900/30",
-    cardBorderClass: "border-blue-200",
-    titleColorClass: "text-blue-900 dark:text-blue-300",
-    subtitleColorClass: "text-blue-700/70 dark:text-blue-400/70",
-    iconBgClass: "bg-white/80",
-    iconColorClass: "text-blue-600",
-  },
   {
     key: "password",
     title: "Ganti Password",
