@@ -13,7 +13,7 @@ import { withPortalBackButton } from "../pages/PortalBackButton";
 import Teachers from "../pages/Teachers";
 import Classes from "../pages/Classes";
 import Students from "../pages/Students";
-import KelengkapanDataSiswa from "../components/KelengkapanDataSiswa";
+import DataSiswaInduk from "../pages/datasiswa-induk/DataSiswaInduk";
 import AttendanceMain from "../pages/attendance/AttendanceMain";
 import AttendanceManagement from "../pages/attendance/AttendanceManagement";
 import AdminAttendance from "../pages/attendance/AdminAttendance";
@@ -107,7 +107,7 @@ export const menuConfig = [
   { path: "/students", component: Students },
   {
     path: "/student-profile-completion",
-    component: withPortalBackButton(KelengkapanDataSiswa),
+    component: withPortalBackButton(DataSiswaInduk),
     allowedRoles: ["admin", "teacher", "guru_bk"],
     requireWaliKelas: false,
     getProps: (ctx) => ({ currentUser: ctx.user }),

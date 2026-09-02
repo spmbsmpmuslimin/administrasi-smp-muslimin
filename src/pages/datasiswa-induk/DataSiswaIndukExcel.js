@@ -1,8 +1,8 @@
-// StudentProfileExcel.js
-// Export Excel kelengkapan data siswa (KelengkapanDataSiswa.js).
-// Pasangan dari StudentProfilePDF.js -- data yang diterima SAMA PERSIS
+// DataSiswaIndukExcel.js
+// Export Excel kelengkapan data siswa (DataSiswaInduk.js).
+// Pasangan dari DataSiswaIndukPDF.js -- data yang diterima SAMA PERSIS
 // (hasil merge students + student_profile_details yang udah dilakuin di
-// KelengkapanDataSiswa.js), tinggal dirender ke format beda.
+// DataSiswaInduk.js), tinggal dirender ke format beda.
 //
 // Kenapa layoutnya beda dari PDF:
 // - PDF: 1 halaman per siswa (Field/Isian vertikal) -- enak buat dicetak &
@@ -12,7 +12,7 @@
 //   lain), bukan sekadar versi digital dari PDF.
 //
 // Daftar kolom (DATA_SISWA_ROWS, DATA_ORANGTUA_ROWS, STATUS_LABEL) SENGAJA
-// disamain isinya persis kayak di StudentProfilePDF.js, biar kolom yang
+// disamain isinya persis kayak di DataSiswaIndukPDF.js, biar kolom yang
 // muncul di Excel & PDF konsisten. Kalau nambah/ubah field di salah satu
 // file, field yang sama harus diupdate juga di file satunya.
 //
@@ -33,7 +33,7 @@ import {
   guardHasData,
   EXCEL_COLORS,
   EXCEL_FONT_FAMILY,
-} from "../utils/excelExportKit";
+} from "../../utils/excelExportKit";
 
 const STATUS_LABEL = {
   lengkap: "Lengkap",
@@ -63,7 +63,7 @@ const DATA_SISWA_ROWS = [
   { key: "keterangan", label: "Keterangan" },
 ];
 
-// Sama persis DATA_ORANGTUA_ROWS di StudentProfilePDF.js.
+// Sama persis DATA_ORANGTUA_ROWS di DataSiswaIndukPDF.js.
 // Catatan: field "nama_ortu" di data sumber SENGAJA nggak ditampilin di
 // sini krn udah kecover sama "nama_ayah" & "nama_ibu" (redundan).
 const DATA_ORANGTUA_ROWS = [
@@ -144,7 +144,7 @@ function formatTempatTanggalLahir(detail) {
 }
 
 // Ambil nilai 1 field detail (support field gabungan "ttl"), balikin
-// { display, isEmpty } -- sama pola kayak getRowValue() di StudentProfilePDF.js.
+// { display, isEmpty } -- sama pola kayak getRowValue() di DataSiswaIndukPDF.js.
 function getRowValue(detail, row) {
   if (row.combine === "ttl") {
     const display = formatTempatTanggalLahir(detail);

@@ -1,4 +1,4 @@
-// components/KelengkapanDataSiswa.js
+// pages/datasiswa-induk/DataSiswaInduk.js
 // ========================================================================
 // Halaman buat wali kelas/admin liat siapa aja siswa yang SUDAH dan BELUM
 // isi data tambahan (alamat, no HP, data ortu) dari StudentProfile.js
@@ -22,7 +22,7 @@
 //   lain (PengumumanWaliKelas, SaranMasukanSiswa).
 // ========================================================================
 import React, { useState, useEffect, useMemo } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 import {
   CheckCircle2,
   AlertCircle,
@@ -37,8 +37,8 @@ import {
   Pencil,
   Loader2,
 } from "lucide-react";
-import { exportStudentProfilePDF } from "./StudentProfilePDF";
-import { exportStudentProfileExcel } from "./StudentProfileExcel";
+import { exportStudentProfilePDF } from "./DataSiswaIndukPDF";
+import { exportStudentProfileExcel } from "./DataSiswaIndukExcel";
 
 // Field yang dianggap "wajib" buat status Lengkap. Samain persis sama
 // field di form ProfileInfo (StudentProfile.js).
@@ -108,7 +108,7 @@ const STATUS_META = {
 };
 
 // Samain persis sama DATA_SISWA_ROWS + DATA_ORANGTUA_ROWS di
-// StudentProfilePDF.js, biar field yang muncul di kartu expand & di PDF
+// DataSiswaIndukPDF.js, biar field yang muncul di kartu expand & di PDF
 // konsisten. `nama_ortu` (generic, lama) udah gak dipake di form
 // StudentProfile.js -> diganti nama_ayah + nama_ibu.
 // `combine: "ttl"` = gabungan tempat_lahir + tanggal_lahir jadi 1 baris.
@@ -256,7 +256,7 @@ function formatTanggalLahirSingkat(value) {
 }
 
 // Ambil nilai 1 baris detail buat kartu expand (support field gabungan
-// "ttl" kayak di StudentProfilePDF.js -> getRowValue).
+// "ttl" kayak di DataSiswaIndukPDF.js -> getRowValue).
 function getDetailRowValue(detail, row) {
   if (row.combine === "ttl") {
     const tempat = detail?.tempat_lahir;
@@ -395,7 +395,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
             genderCodeToLabel(s.gender) || rawDetail?.jenis_kelamin || "";
 
           // Suntikkan hasil resolve ke `detail` (bukan bikin field baru),
-          // biar DETAIL_ROWS (kartu expand) & StudentProfilePDF.js yang
+          // biar DETAIL_ROWS (kartu expand) & DataSiswaIndukPDF.js yang
           // sama-sama baca `detail.jenis_kelamin` otomatis dapet nilai yang
           // benar tanpa perlu diubah lagi. Kalau siswa belum pernah isi
           // form sama sekali (rawDetail null) TAPI jenis_kelamin udah ada
@@ -547,7 +547,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
   };
 
   // Export Excel pake selectedIds yang SAMA kayak export PDF, cuma manggil
-  // fungsi & file yang beda (StudentProfileExcel.js) -- gak perlu seleksi
+  // fungsi & file yang beda (DataSiswaIndukExcel.js) -- gak perlu seleksi
   // terpisah, toolbar-nya juga digabung jadi 1 (lihat JSX toolbar di bawah).
   const handleExportExcel = async () => {
     const selectedRows = rows.filter((r) => selectedIds.has(r.id));

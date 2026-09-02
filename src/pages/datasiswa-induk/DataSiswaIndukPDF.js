@@ -1,8 +1,8 @@
-// StudentProfilePDF.js
-// Export PDF kelengkapan data siswa (KelengkapanDataSiswa.js).
+// DataSiswaIndukPDF.js
+// Export PDF kelengkapan data siswa (DataSiswaInduk.js).
 // Beda sama AttendancePDF.js: gak query Supabase lagi -- data siswa yang
 // dikirim ke sini udah lengkap (hasil merge students + student_profile_details
-// yang udah dilakuin di KelengkapanDataSiswa.js), jadi tinggal dirender.
+// yang udah dilakuin di DataSiswaInduk.js), jadi tinggal dirender.
 // Layout per siswa: Header sekolah -> DATA SISWA (identitas Nama/NIS/Kelas
 // digabung sama field tambahan spt Jenis Kelamin dkk dalam 1 tabel) ->
 // DATA ORANGTUA -> Catatan status & tanggal terakhir update. Tiap siswa
@@ -19,7 +19,7 @@ import {
   savePdf,
   PDF_COLORS,
   PDF_FONT_FAMILY,
-} from "../utils/pdfExportKit";
+} from "../../utils/pdfExportKit";
 
 // REFACTOR: sebelumnya file ini nulis header sekolah, warna, dan style
 // tabel sendiri (beda pattern dari AttendancePDF.js dkk). Sekarang semua
