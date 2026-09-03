@@ -188,11 +188,11 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
 
   const validateStudentInput = useCallback((student) => {
     const errors = [];
-    const nameWords = student.nama_lengkap
-      .trim()
-      .split(" ")
-      .filter((word) => word.length > 0);
-    if (nameWords.length < 2) errors.push("Nama harus terdiri dari minimal 2 kata");
+    // Catatan: sempat ada aturan minimal 2 kata di sini, tapi banyak siswa
+    // yang namanya cuma 1 kata (mis. "Zahra", "Salsabila"), jadi dihapus.
+    // Validasi yang tersisa: nama gak boleh kosong & cuma boleh huruf/spasi.
+    if (!student.nama_lengkap || !student.nama_lengkap.trim())
+      errors.push("Nama lengkap harus diisi");
     if (!/^[a-zA-Z\s]+$/.test(student.nama_lengkap))
       errors.push("Nama hanya boleh mengandung huruf dan spasi");
     if (!/^(\+62|62|0)[0-9]{9,13}$/.test(student.no_hp.replace(/\s+/g, ""))) {

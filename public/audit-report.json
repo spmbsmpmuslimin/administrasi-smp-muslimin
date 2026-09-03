@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-02T09:56:39.743Z",
-  "executionTimeMs": 3549,
-  "filesScanned": 226,
+  "generatedAt": "2026-09-03T03:59:52.493Z",
+  "executionTimeMs": 3826,
+  "filesScanned": 229,
   "summary": {
     "status": "critical",
     "criticalCount": 1,
@@ -44,7 +44,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "4732 class warna (di 166 file) kemungkinan belum dark-mode-aware",
+          "title": "4830 class warna (di 169 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -75,9 +75,9 @@
             "src/system/DatabaseCleanupMonitor.js — 53 class belum ada dark: variant",
             "src/e-raport/CetakRaport.js — 51 class belum ada dark: variant",
             "src/setting/academic/Simulator.js — 51 class belum ada dark: variant",
+            "src/pages/attendance/AdminAttendance.js — 50 class belum ada dark: variant",
             "src/reports/modals/HomeroomReportModal.js — 50 class belum ada dark: variant",
             "src/setting/SystemTab.js — 50 class belum ada dark: variant",
-            "src/pages/attendance/AdminAttendance.js — 49 class belum ada dark: variant",
             "src/setting/kelola-raport/RekapKelulusan.js — 48 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
@@ -141,8 +141,8 @@
             "src/reports/ReportHelpers.js:481 → select(\"date, student_id, status, subject, type, class_id, students!inner(nis, full_name, class_id\")",
             "src/services/semesterService.js:54 → select(\"*, students!inner(id, full_name, nis)\")",
             "src/services/semesterService.js:240 → select(\"*, students!inner(id, full_name, nis)\")",
-            "src/setting/academic/AcademicYearTab.js:162 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
-            "src/setting/academic/AcademicYearTab.js:206 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
+            "src/setting/academic/AcademicYearTab.js:167 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
+            "src/setting/academic/AcademicYearTab.js:211 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
             "src/setting/feedback/FeedbackGuruTab.js:23 → select(\"*, guru:users!feedback_guru_guru_id_fkey ( full_name, username )\")",
             "src/setting/ProfileTab.js:160 → select(\"id, subject, class_id, academic_year, semester, classes:class_id ( id, grade, academic_yea\")",
             "src/setting/ProfileTab.js:206 → select(\"id, subject, class_id, academic_year, semester, classes:class_id ( id, grade, academic_yea\")",
@@ -160,24 +160,17 @@
       "issues": [
         {
           "severity": "critical",
-          "title": "7 query .from() nunjuk ke tabel yang gak ada di strukturfile.txt",
+          "title": "1 query .from() nunjuk ke tabel yang gak ada di strukturfile.txt",
           "description": "Kemungkinan typo nama tabel, atau tabel udah direname/dihapus tapi kodenya belum di-update, atau strukturfile.txt-nya yang basi. Query ini bakal error di runtime.",
           "details": [
-            "src/reports/modals/AcademicGradesView.js:69 → .from(\"subjects\")",
-            "src/setting/kelola-raport/KelolaKKM.js:53 → .from(\"kkm_mapel\")",
-            "src/setting/kelola-raport/KelolaKKM.js:68 → .from(\"kelulusan_config\")",
-            "src/setting/kelola-raport/KelolaKKM.js:116 → .from(\"kkm_mapel\")",
-            "src/setting/kelola-raport/KelolaKKM.js:145 → .from(\"kelulusan_config\")",
-            "src/setting/kelola-raport/RekapKelulusan.js:72 → .from(\"kkm_mapel\")",
-            "src/setting/kelola-raport/RekapKelulusan.js:74 → .from(\"kelulusan_config\")"
+            "src/reports/modals/AcademicGradesView.js:69 → .from(\"subjects\")"
           ]
         },
         {
           "severity": "info",
-          "title": "7 tabel di schema gak pernah dipanggil lewat .from() di kode",
+          "title": "6 tabel di schema gak pernah dipanggil lewat .from() di kode",
           "description": "Belum tentu masalah — bisa aja view, tabel yang diakses cuma dari Supabase function/edge function, atau memang belum dipakai. Sekedar info.",
           "details": [
-            "Ringkasan",
             "academic_events",
             "attendances_view",
             "event_categories",

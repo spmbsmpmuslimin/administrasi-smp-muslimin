@@ -106,10 +106,10 @@ export default function StudentPresensi() {
   // Riwayat Presensi langsung kebuka pas tab ini dibuka (nampilin 15
   // riwayat terbaru langsung) — tombol di bawah cuma buat nutup/expand.
   const [showHistory, setShowHistory] = useState(true);
-  // Default cuma tampilin 15 riwayat terbaru biar halamannya gak
-  // kepanjangan/sepi pas awal buka — sisanya bisa di-expand manual.
-  const [showAllHistory, setShowAllHistory] = useState(false);
-  const HISTORY_PREVIEW_COUNT = 15;
+  // Filter Riwayat: liat presensi per Bulan (dropdown) atau per Semester
+  // (Ganjil/Genap). Defaultnya diisi belakangan pas defaultMonthIdx &
+  // defaultSemester udah kehitung (lihat bawah).
+  const [historyFilterMode, setHistoryFilterMode] = useState("bulan"); // "bulan" | "semester"
 
   const academicYear = useMemo(() => getCurrentAcademicYear(), []);
   const monthOptions = useMemo(
@@ -134,6 +134,32 @@ export default function StudentPresensi() {
 
   const [selectedMonthIdx, setSelectedMonthIdx] = useState(defaultMonthIdx);
   const [selectedSemester, setSelectedSemester] = useState(defaultSemester);
+
+  // State filter buat section Riwayat (independen dari pilihan Export PDF
+  // di atas, biar browsing riwayat gak ikut ubah pilihan export & sebaliknya)
+  const [historyMonthIdx, setHistoryMonthIdx] = useState(defaultMonthIdx);
+  const [historySemester, setHistorySemester] = useState(defaultSemester);
+
+  // Riwayat yang ditampilin, difilter sesuai mode (Bulan/Semester) yang
+  // dipilih. Parsing tanggal manual (bukan `new Date(h.date)`) buat hindarin
+  // pergeseran hari gara-gara timezone UTC vs lokal.
+  const filteredHistory = useMemo(() => {
+    if (historyFilterMode === "bulan") {
+      const opt = monthOptions[historyMonthIdx];
+      if (!opt) return [];
+      return history.filter((h) => {
+        const [y, m] = (h.date || "").split("-").map(Number);
+        return m === opt.month && y === opt.year;
+      });
+    }
+    // mode "semester": kumpulin semua kombinasi bulan+tahun yang termasuk
+    // semester terpilih, terus filter history yang match salah satunya.
+    const monthsInSemester = monthOptions.filter((o) => o.semester === historySemester);
+    return history.filter((h) => {
+      const [y, m] = (h.date || "").split("-").map(Number);
+      return monthsInSemester.some((o) => o.month === m && o.year === y);
+    });
+  }, [history, historyFilterMode, historyMonthIdx, historySemester, monthOptions]);
 
   // Ringkasan cepat per status
   const summary = useMemo(
@@ -208,13 +234,20 @@ export default function StudentPresensi() {
         // yang juga tersimpan di tabel attendance yang sama).
         // Catatan: attendance.student_id itu FK ke students.id, BUKAN
         // users.id — jadi pake student.studentRecordId, bukan student.id.
+        // Scope ke tahun ajaran berjalan (Juli startYear - Juni endYear),
+        // bukan pake .limit(N) sembarangan — soalnya summary/attendanceRate/
+        // popup kehadiran rendah semua dihitung dari `history` ini, jadi
+        // harus data 1 tahun ajaran penuh biar akurat, gak kepotong.
+        const rangeStart = `${academicYear.startYear}-07-01`;
+        const rangeEnd = `${academicYear.endYear}-06-30`;
         const { data, error: err } = await supabase
           .from("attendances")
           .select("id, date, status")
           .eq("student_id", student.studentRecordId)
           .eq("type", "harian")
-          .order("date", { ascending: false })
-          .limit(60);
+          .gte("date", rangeStart)
+          .lte("date", rangeEnd)
+          .order("date", { ascending: false });
 
         if (err) throw err;
         setHistory(data || []);
@@ -227,7 +260,7 @@ export default function StudentPresensi() {
     };
 
     load();
-  }, [student]);
+  }, [student, academicYear]);
 
   if (profileLoading || (student && loading)) {
     return (
@@ -382,7 +415,9 @@ export default function StudentPresensi() {
         <div className="grid grid-cols-2 gap-2">
           <div
             className={`rounded-xl border p-3 text-center ${
-              attendanceTier ? attendanceTier.className : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 text-blue-700"
+              attendanceTier
+                ? attendanceTier.className
+                : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 text-blue-700"
             }`}
           >
             <p className="text-lg font-bold leading-none">
@@ -497,42 +532,106 @@ export default function StudentPresensi() {
             className={`text-gray-400 transition-transform ${showHistory ? "rotate-180" : ""}`}
           />
         </button>
-        {showHistory &&
-          (history.length === 0 ? (
-            <div className="bg-theme-bg rounded-2xl border border-gray-100 p-8 text-center text-gray-400 text-sm shadow-sm">
-              Belum Ada Data Presensi.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {(showAllHistory ? history : history.slice(0, HISTORY_PREVIEW_COUNT)).map((h) => {
-                const meta = getStatusMeta(h.status);
-                const Icon = meta.icon;
-                return (
-                  <div
-                    key={h.id}
-                    className="bg-theme-bg rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center justify-between"
+        {showHistory && (
+          <>
+            {history.length === 0 ? (
+              <div className="bg-theme-bg rounded-2xl border border-gray-100 p-8 text-center text-gray-400 text-sm shadow-sm">
+                Belum Ada Data Presensi.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Toggle mode filter: Bulan / Semester */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setHistoryFilterMode("bulan")}
+                    className={`flex-1 text-sm font-semibold py-2.5 rounded-full border ${
+                      historyFilterMode === "bulan"
+                        ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 text-blue-700"
+                        : "bg-theme-surface border-theme text-theme-secondary"
+                    }`}
                   >
-                    <span className="text-sm text-theme-secondary">{formatDateShort(h.date)}</span>
-                    <span
-                      className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${meta.color}`}
-                    >
-                      <Icon size={13} />
-                      {meta.label}
-                    </span>
-                  </div>
-                );
-              })}
+                    Bulan
+                  </button>
+                  <button
+                    onClick={() => setHistoryFilterMode("semester")}
+                    className={`flex-1 text-sm font-semibold py-2.5 rounded-full border ${
+                      historyFilterMode === "semester"
+                        ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 text-blue-700"
+                        : "bg-theme-surface border-theme text-theme-secondary"
+                    }`}
+                  >
+                    Semester
+                  </button>
+                </div>
 
-              {history.length > HISTORY_PREVIEW_COUNT && (
-                <button
-                  onClick={() => setShowAllHistory((v) => !v)}
-                  className="w-full text-center text-sm font-semibold text-blue-600 py-2.5"
-                >
-                  {showAllHistory ? "Tampilkan Lebih Sedikit" : `Lihat Semua (${history.length})`}
-                </button>
-              )}
-            </div>
-          ))}
+                {historyFilterMode === "bulan" ? (
+                  <select
+                    value={historyMonthIdx}
+                    onChange={(e) => setHistoryMonthIdx(Number(e.target.value))}
+                    className="w-full text-base text-theme font-medium border border-theme rounded-xl px-3 py-2.5 bg-theme-bg"
+                  >
+                    {monthOptions.map((opt, idx) => (
+                      <option key={idx} value={idx}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setHistorySemester(1)}
+                      className={`flex-1 text-sm font-semibold py-2.5 rounded-full border ${
+                        historySemester === 1
+                          ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 text-blue-700"
+                          : "bg-theme-surface border-theme text-theme-secondary"
+                      }`}
+                    >
+                      Ganjil ({academicYear.startYear})
+                    </button>
+                    <button
+                      onClick={() => setHistorySemester(2)}
+                      className={`flex-1 text-sm font-semibold py-2.5 rounded-full border ${
+                        historySemester === 2
+                          ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 text-blue-700"
+                          : "bg-theme-surface border-theme text-theme-secondary"
+                      }`}
+                    >
+                      Genap ({academicYear.endYear})
+                    </button>
+                  </div>
+                )}
+
+                {/* List hasil filter */}
+                {filteredHistory.length === 0 ? (
+                  <div className="bg-theme-bg rounded-2xl border border-gray-100 p-6 text-center text-gray-400 text-sm shadow-sm">
+                    Belum Ada Presensi Di Periode Ini.
+                  </div>
+                ) : (
+                  filteredHistory.map((h) => {
+                    const meta = getStatusMeta(h.status);
+                    const Icon = meta.icon;
+                    return (
+                      <div
+                        key={h.id}
+                        className="bg-theme-bg rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center justify-between"
+                      >
+                        <span className="text-sm text-theme-secondary">
+                          {formatDateShort(h.date)}
+                        </span>
+                        <span
+                          className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${meta.color}`}
+                        >
+                          <Icon size={13} />
+                          {meta.label}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* ====== POPUP WARNING KEHADIRAN RENDAH ====== */}

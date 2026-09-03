@@ -580,15 +580,15 @@ const AdminDashboard = ({ user }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {/* Teacher Attendance */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border-l-4 border-blue-500">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-blue-500">
+                <div className="flex items-center justify-between mb-1 sm:mb-2 gap-1">
+                  <span className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight">
                     ✅ Presensi Guru
                   </span>
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${
+                    className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap ${
                       monitoring.teacherAttendance.percentage >= 90
                         ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
                         : monitoring.teacherAttendance.percentage >= 75
@@ -599,10 +599,10 @@ const AdminDashboard = ({ user }) => {
                     {monitoring.teacherAttendance.percentage}%
                   </span>
                 </div>
-                <div className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
+                <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
                   {monitoring.teacherAttendance.hadir}/{monitoring.teacherAttendance.total}
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-500">
+                <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-500 leading-tight">
                   {monitoring.teacherAttendance.belumAbsen > 0 && (
                     <span className="text-orange-600 dark:text-orange-400">
                       {monitoring.teacherAttendance.belumAbsen} belum absen
@@ -615,13 +615,13 @@ const AdminDashboard = ({ user }) => {
               </div>
 
               {/* Student Attendance */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border-l-4 border-purple-500">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-purple-500">
+                <div className="flex items-center justify-between mb-1 sm:mb-2 gap-1">
+                  <span className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight">
                     👨‍🎓 Presensi Siswa
                   </span>
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${
+                    className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap ${
                       monitoring.studentAttendance.percentage >= 90
                         ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
                         : monitoring.studentAttendance.percentage >= 75
@@ -632,37 +632,39 @@ const AdminDashboard = ({ user }) => {
                     {monitoring.studentAttendance.percentage}%
                   </span>
                 </div>
-                <div className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
+                <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
                   {monitoring.studentAttendance.hadir}/{monitoring.studentAttendance.total}
                 </div>
-                <div className="flex gap-2 text-xs">
+                <div className="flex flex-wrap gap-1 sm:gap-2 text-[9px] sm:text-xs">
                   {monitoring.studentAttendance.terlambat > 0 && (
-                    <span className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 px-2 py-0.5 rounded">
-                      ⏰ {monitoring.studentAttendance.terlambat} terlambat
+                    <span className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 px-1.5 sm:px-2 py-0.5 rounded">
+                      ⏰ {monitoring.studentAttendance.terlambat}
+                      <span className="hidden sm:inline"> terlambat</span>
                     </span>
                   )}
                   {monitoring.studentAttendance.alpha > 0 && (
-                    <span className="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-2 py-0.5 rounded">
-                      ⚠️ {monitoring.studentAttendance.alpha} alpha
+                    <span className="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-1.5 sm:px-2 py-0.5 rounded">
+                      ⚠️ {monitoring.studentAttendance.alpha}
+                      <span className="hidden sm:inline"> alpha</span>
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Active Classes */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border-l-4 border-emerald-500">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-emerald-500">
+                <div className="flex items-center justify-between mb-1 sm:mb-2 gap-1">
+                  <span className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight">
                     🏫 Kelas Aktif
                   </span>
-                  <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 whitespace-nowrap">
                     {monitoring.activeClasses.active}/{monitoring.activeClasses.total}
                   </span>
                 </div>
-                <div className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
+                <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
                   {monitoring.activeClasses.active} Kelas
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-500">
+                <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-500 leading-tight">
                   Semester {activeAcademicInfo?.activeSemester || "1"} •{" "}
                   {activeAcademicInfo?.year || "2025/2026"}
                 </div>
@@ -770,79 +772,6 @@ const AdminDashboard = ({ user }) => {
                     ></div>
                   </span>
                   <span>Hari ini</span>
-                </div>
-              </div>
-
-              {/* Student Lateness Comparison */}
-              <div className="p-4 bg-gradient-to-r from-amber-50 to-white dark:from-amber-900/10 dark:to-transparent rounded-lg border border-amber-100 dark:border-amber-800">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex items-center justify-center">
-                      <span className="text-amber-600 dark:text-amber-400">⏰</span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-slate-800 dark:text-slate-200">
-                        Keterlambatan Siswa
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        Dibandingkan kemarin
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                      {performance.lateToday} siswa
-                    </div>
-                    <div className="text-sm">
-                      <span
-                        className={`${
-                          getTrendIcon(performance.lateYesterday, performance.lateToday).color
-                        } font-medium`}
-                      >
-                        {getTrendIcon(performance.lateYesterday, performance.lateToday).icon}{" "}
-                        {Math.abs(performance.lateToday - performance.lateYesterday)}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">
-                        ({performance.lateYesterday} kemarin)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Hari ini</span>
-                      <span>Kemarin</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
-                        <div
-                          className="bg-gradient-to-r from-amber-400 to-amber-600 h-full rounded-full"
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              (performance.lateToday /
-                                Math.max(performance.lateToday, performance.lateYesterday, 1)) *
-                                100
-                            )}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
-                        <div
-                          className="bg-gradient-to-r from-slate-400 to-slate-600 h-full rounded-full"
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              (performance.lateYesterday /
-                                Math.max(performance.lateToday, performance.lateYesterday, 1)) *
-                                100
-                            )}%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
