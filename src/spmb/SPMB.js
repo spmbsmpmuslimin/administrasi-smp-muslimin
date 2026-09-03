@@ -4,6 +4,7 @@ import StudentForm from "./StudentForm";
 import StudentList from "./StudentList";
 import Statistics from "./Statistics";
 import ClassDivision from "./ClassDivision";
+import DiagnostikPage from "./DiagnostikPage";
 
 // Custom hook untuk toast notifications
 const useToast = () => {
@@ -285,6 +286,30 @@ const useStudentsData = (userData, showToast, targetYear) => {
     [showToast]
   );
 
+  // Save skor diagnostik (akademik, baca latin, mengaji) buat 1 siswa.
+  // Dipakai dari DiagnostikPage.js -- baik pas simpan 1 baris, simpan
+  // semua baris yang diedit, maupun pas "Terapkan" hasil Import Excel.
+  // Sengaja dipisah dari saveStudent() karena cuma UPDATE 3 kolom, bukan
+  // full upsert data siswa+ortu.
+  const saveDiagnostikScore = useCallback(async (studentId, diagnostikData) => {
+    try {
+      const { error } = await supabase
+        .from("siswa_baru")
+        .update({
+          skor_akademik: diagnostikData.skor_akademik,
+          kategori_baca_latin: diagnostikData.kategori_baca_latin,
+          kategori_mengaji: diagnostikData.kategori_mengaji,
+        })
+        .eq("id", studentId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Error saving diagnostik score:", error);
+      return false;
+    }
+  }, []);
+
   return {
     students,
     allStudents,
@@ -293,6 +318,7 @@ const useStudentsData = (userData, showToast, targetYear) => {
     loadStudents,
     saveStudent,
     deleteStudent,
+    saveDiagnostikScore,
     setIsLoading,
   };
 };
@@ -318,6 +344,7 @@ const SPMB = ({ user, onShowToast }) => {
     loadStudents,
     saveStudent,
     deleteStudent,
+    saveDiagnostikScore,
   } = useStudentsData(user, onShowToast || showToast, targetYear);
 
   // Handle search input - LANGSUNG UPDATE (SMOOTH!)
@@ -468,6 +495,12 @@ const SPMB = ({ user, onShowToast }) => {
       fullLabel: "Form Pendaftaran",
     },
     { key: "list", icon: "Users", label: "Data", fullLabel: "Data Siswa" },
+    {
+      key: "diagnostik",
+      icon: "ClipboardList",
+      label: "Skor",
+      fullLabel: "Skor Diagnostik",
+    },
     { key: "stats", icon: "BarChart3", label: "Stats", fullLabel: "Statistik" },
     {
       key: "division",
@@ -551,16 +584,19 @@ const SPMB = ({ user, onShowToast }) => {
         {/* Tab Content */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6">
           {/* Loading State untuk form tab */}
-          {(isLoading || isLoadingTargetYear) && activeTab !== "form" && activeTab !== "list" && (
-            <div className="space-y-3 sm:space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="animate-pulse bg-gray-200 dark:bg-gray-700 h-16 sm:h-20 rounded-lg"
-                />
-              ))}
-            </div>
-          )}
+          {(isLoading || isLoadingTargetYear) &&
+            activeTab !== "form" &&
+            activeTab !== "list" &&
+            activeTab !== "diagnostik" && (
+              <div className="space-y-3 sm:space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="animate-pulse bg-gray-200 dark:bg-gray-700 h-16 sm:h-20 rounded-lg"
+                  />
+                ))}
+              </div>
+            )}
 
           {/* Content */}
           {!isLoadingTargetYear && (
@@ -618,6 +654,16 @@ const SPMB = ({ user, onShowToast }) => {
                 </>
               )}
 
+              {activeTab === "diagnostik" && (
+                <DiagnostikPage
+                  allStudents={allStudents}
+                  onSaveDiagnostik={saveDiagnostikScore}
+                  onRefreshData={handleRefreshData}
+                  showToast={showToast}
+                  isLoading={isLoading}
+                />
+              )}
+
               {activeTab === "stats" && (
                 <Statistics
                   students={allStudents}
@@ -661,9 +707,11 @@ const SPMB = ({ user, onShowToast }) => {
                   ? "📝"
                   : item.key === "list"
                     ? "👥"
-                    : item.key === "stats"
-                      ? "📊"
-                      : "🔀"}
+                    : item.key === "diagnostik"
+                      ? "📈"
+                      : item.key === "stats"
+                        ? "📊"
+                        : "🔀"}
               </span>
               <span className="text-xs font-medium">{item.label}</span>
             </button>

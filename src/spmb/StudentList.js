@@ -258,8 +258,8 @@ const StudentList = ({
                 <td class="label">Tempat, Tanggal Lahir</td>
                 <td class="colon">:</td>
                 <td class="value">${student.tempat_lahir || ""}, ${
-        formatDateToDDMMYYYY(student.tanggal_lahir) || ""
-      }</td>
+                  formatDateToDDMMYYYY(student.tanggal_lahir) || ""
+                }</td>
             </tr>
             <tr>
                 <td class="label">Asal Sekolah (SD)</td>

@@ -25,6 +25,8 @@ const YearTransition = ({
     inProgress: false,
   });
   const [localAcademicInfo, setLocalAcademicInfo] = useState(academicInfo);
+  // ✅ Simpan hasil analisis simulator — dipakai buat "gerbang" sebelum tombol eksekusi aktif
+  const [simulationResult, setSimulationResult] = useState(null);
 
   // Config dari schoolConfig
   const config = {
@@ -162,6 +164,9 @@ const YearTransition = ({
           newStudentDistribution[kelasAsli].push(siswa);
         }
       });
+
+      // Reset hasil analisis lama — preview baru = wajib jalanin analisis lagi
+      setSimulationResult(null);
 
       // Set preview state
       setYearTransition({
@@ -607,14 +612,14 @@ const YearTransition = ({
             </div>
           )}
 
-          {/* Simulator Preview */}
+          {/* Simulator — sekarang manual: admin WAJIB klik "Jalankan Analisis" dulu
+              sebelum tombol "Mulai Tahun Ajaran Baru" di bawah bisa diklik. */}
           <Simulator
-            mode="preview"
             preview={yearTransition.preview}
             schoolStats={schoolStats}
             config={config}
             loading={loading}
-            onSimulate={() => {}}
+            onSimulate={(result) => setSimulationResult(result)}
             academicInfo={localAcademicInfo} // ← Pass academic info ke Simulator
           />
 
@@ -646,11 +651,22 @@ const YearTransition = ({
                   </li>
                 </ul>
 
+                {!simulationResult && (
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400 mb-3 flex items-center gap-1.5">
+                    <Info size={14} />
+                    Jalankan analisis simulator di atas dulu sebelum bisa memulai tahun ajaran baru.
+                  </p>
+                )}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={executeYearTransition}
-                    disabled={loading || yearTransition.inProgress}
-                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-50 font-bold transition min-h-[44px]"
+                    disabled={loading || yearTransition.inProgress || !simulationResult}
+                    title={
+                      !simulationResult
+                        ? "Jalankan analisis simulator dulu sebelum eksekusi"
+                        : undefined
+                    }
+                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-bold transition min-h-[44px]"
                   >
                     {yearTransition.inProgress ? (
                       <>
@@ -672,6 +688,7 @@ const YearTransition = ({
                         newYear: "",
                         inProgress: false,
                       });
+                      setSimulationResult(null);
                     }}
                     disabled={yearTransition.inProgress}
                     className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg disabled:opacity-50 font-medium transition min-h-[44px]"
