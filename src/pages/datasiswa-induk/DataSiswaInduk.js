@@ -21,7 +21,8 @@
 //   dropdown, cuma liat kelasnya sendiri) — samain kayak fitur wali kelas
 //   lain (PengumumanWaliKelas, SaranMasukanSiswa).
 // ========================================================================
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import {
   CheckCircle2,
@@ -36,6 +37,7 @@ import {
   ShieldAlert,
   Pencil,
   Loader2,
+  ArrowUpRight,
 } from "lucide-react";
 import { exportStudentProfilePDF } from "./DataSiswaIndukPDF";
 import { exportStudentProfileExcel } from "./DataSiswaIndukExcel";
@@ -379,6 +381,9 @@ export default function KelengkapanDataSiswa({ currentUser }) {
   // Wali kelas (role "teacher" yang punya homeroom_class_id) tetap
   // ter-scope otomatis ke kelasnya sendiri, gak berubah dari sebelumnya.
   const isWaliKelas = currentUser?.role === "teacher" && !!currentUser?.homeroom_class_id;
+
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -801,6 +806,35 @@ export default function KelengkapanDataSiswa({ currentUser }) {
     setAdminFormDirty(false);
     setSaveSuccessVisible(false);
     setActivePageTab(isAdmin ? "isi" : "preview");
+  };
+
+  // ===== Deep-link dari halaman "Data Siswa" (?student=<id>) =====
+  // Begitu `rows` selesai kemuat, cek apakah halaman ini dibuka lewat link
+  // dari Students.js. Kalau iya & siswanya ketemu, langsung buka detailnya
+  // (tanpa TU harus cari manual lagi). Cuma jalan sekali per kunjungan.
+  const appliedDeepLinkRef = useRef(false);
+  useEffect(() => {
+    if (appliedDeepLinkRef.current) return;
+    if (!rows.length) return;
+    const studentIdParam = searchParams.get("student");
+    if (!studentIdParam) return;
+
+    const match = rows.find((r) => String(r.id) === String(studentIdParam));
+    appliedDeepLinkRef.current = true;
+    setSearchParams({}, { replace: true });
+    if (match) {
+      openStudent(match);
+    }
+  }, [rows, searchParams, setSearchParams]);
+
+  // Balik ke halaman "Data Siswa" (Students.js) buat siswa yang lagi
+  // dibuka -- BEDA dari backToList (yang cuma balik ke tab list internal
+  // halaman ini). Kirim NIS lewat query param biar Students.js otomatis
+  // filter ke siswa yang sama.
+  const goToDataSiswa = () => {
+    if (!confirmDiscardIfDirty()) return;
+    const nis = selectedStudent?.nis;
+    navigate(nis ? `/students?search=${encodeURIComponent(nis)}` : "/students");
   };
 
   // Balik ke tab "Data Siswa" (list). Kalau lagi di tab Isi Data & ada
@@ -1300,13 +1334,22 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                 )}
               </div>
             </div>
-            <button
-              onClick={backToList}
-              className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-2 rounded-lg transition"
-            >
-              <X size={15} />
-              Kembali ke Data Siswa
-            </button>
+            <div className="shrink-0 flex flex-wrap items-center gap-2">
+              <button
+                onClick={goToDataSiswa}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-3 py-2 rounded-lg transition"
+              >
+                <ArrowUpRight size={15} />
+                Buka di Data Siswa
+              </button>
+              <button
+                onClick={backToList}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-2 rounded-lg transition"
+              >
+                <X size={15} />
+                Kembali ke Data Siswa
+              </button>
+            </div>
           </div>
         </div>
       )}

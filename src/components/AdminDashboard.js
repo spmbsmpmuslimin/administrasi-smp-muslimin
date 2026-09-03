@@ -583,69 +583,63 @@ const AdminDashboard = ({ user }) => {
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {/* Teacher Attendance */}
               <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-blue-500">
-                <div className="flex items-center justify-between mb-1 sm:mb-2 gap-1">
-                  <span className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight">
-                    ✅ Presensi Guru
-                  </span>
-                  <span
-                    className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap ${
-                      monitoring.teacherAttendance.percentage >= 90
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                        : monitoring.teacherAttendance.percentage >= 75
-                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-                          : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                    }`}
-                  >
-                    {monitoring.teacherAttendance.percentage}%
-                  </span>
+                <div className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight mb-1 sm:mb-2 truncate">
+                  ✅ <span className="hidden sm:inline">Presensi </span>Guru
                 </div>
                 <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
                   {monitoring.teacherAttendance.hadir}/{monitoring.teacherAttendance.total}
                 </div>
-                <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-500 leading-tight">
+                <span
+                  className={`inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${
+                    monitoring.teacherAttendance.percentage >= 90
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                      : monitoring.teacherAttendance.percentage >= 75
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                  }`}
+                >
+                  {monitoring.teacherAttendance.percentage}%
+                </span>
+                <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">
                   {monitoring.teacherAttendance.belumAbsen > 0 && (
                     <span className="text-orange-600 dark:text-orange-400">
                       {monitoring.teacherAttendance.belumAbsen} belum absen
                     </span>
                   )}
                   {monitoring.teacherAttendance.belumAbsen === 0 && (
-                    <span className="text-green-600 dark:text-green-400">Semua sudah absen ✓</span>
+                    <span className="text-green-600 dark:text-green-400">Semua absen ✓</span>
                   )}
                 </div>
               </div>
 
               {/* Student Attendance */}
               <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-purple-500">
-                <div className="flex items-center justify-between mb-1 sm:mb-2 gap-1">
-                  <span className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight">
-                    👨‍🎓 Presensi Siswa
-                  </span>
-                  <span
-                    className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap ${
-                      monitoring.studentAttendance.percentage >= 90
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                        : monitoring.studentAttendance.percentage >= 75
-                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-                          : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                    }`}
-                  >
-                    {monitoring.studentAttendance.percentage}%
-                  </span>
+                <div className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight mb-1 sm:mb-2 truncate">
+                  🎓 <span className="hidden sm:inline">Presensi </span>Siswa
                 </div>
                 <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
                   {monitoring.studentAttendance.hadir}/{monitoring.studentAttendance.total}
                 </div>
-                <div className="flex flex-wrap gap-1 sm:gap-2 text-[9px] sm:text-xs">
+                <span
+                  className={`inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${
+                    monitoring.studentAttendance.percentage >= 90
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                      : monitoring.studentAttendance.percentage >= 75
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+                        : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                  }`}
+                >
+                  {monitoring.studentAttendance.percentage}%
+                </span>
+                <div className="flex flex-wrap gap-1 text-[9px] sm:text-xs mt-1">
                   {monitoring.studentAttendance.terlambat > 0 && (
-                    <span className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 px-1.5 sm:px-2 py-0.5 rounded">
+                    <span className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 px-1.5 py-0.5 rounded">
                       ⏰ {monitoring.studentAttendance.terlambat}
-                      <span className="hidden sm:inline"> terlambat</span>
                     </span>
                   )}
                   {monitoring.studentAttendance.alpha > 0 && (
-                    <span className="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-1.5 sm:px-2 py-0.5 rounded">
+                    <span className="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-1.5 py-0.5 rounded">
                       ⚠️ {monitoring.studentAttendance.alpha}
-                      <span className="hidden sm:inline"> alpha</span>
                     </span>
                   )}
                 </div>
@@ -653,19 +647,17 @@ const AdminDashboard = ({ user }) => {
 
               {/* Active Classes */}
               <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-emerald-500">
-                <div className="flex items-center justify-between mb-1 sm:mb-2 gap-1">
-                  <span className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight">
-                    🏫 Kelas Aktif
-                  </span>
-                  <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 whitespace-nowrap">
-                    {monitoring.activeClasses.active}/{monitoring.activeClasses.total}
-                  </span>
+                <div className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight mb-1 sm:mb-2 truncate">
+                  🏫 Kelas
                 </div>
                 <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
                   {monitoring.activeClasses.active} Kelas
                 </div>
-                <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-500 leading-tight">
-                  Semester {activeAcademicInfo?.activeSemester || "1"} •{" "}
+                <span className="inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  {monitoring.activeClasses.active}/{monitoring.activeClasses.total}
+                </span>
+                <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">
+                  Sem {activeAcademicInfo?.activeSemester || "1"} •{" "}
                   {activeAcademicInfo?.year || "2025/2026"}
                 </div>
               </div>
