@@ -1,5 +1,17 @@
 // src/pages/DataExcel.js
 import ExcelJS from "exceljs";
+import {
+  SCHOOL_NAME,
+  EXCEL_COLORS,
+  EXCEL_FONT_FAMILY,
+  STANDARD_CELL_BORDER,
+  addLetterhead,
+  styleTableHeaderRow,
+  styleTableDataRow,
+  downloadWorkbook,
+  setupPrintOptions,
+  guardHasData,
+} from "../utils/excelExportKit";
 
 export class DataExcel {
   // Helper untuk mendapatkan tahun ajaran aktif
@@ -15,107 +27,44 @@ export class DataExcel {
     }
   }
 
-  // Style untuk header (PUTIH POLOS - NO BORDER)
-  static getHeaderStyle() {
-    return {
-      font: {
-        name: "Arial",
-        size: 16,
-        bold: true,
-        color: { argb: "FF000000" },
-      },
-      alignment: {
-        vertical: "middle",
-        horizontal: "center",
-      },
-      // ✅ TIDAK ADA BORDER & BACKGROUND
-    };
+  // Setup page A4 portrait + print options standar (pakai kit), lalu tempel
+  // properti tambahan yang belum disediakan kit (paperSize A4, center
+  // horizontal khusus buat sheet tertentu).
+  static _setupPage(worksheet, { horizontalCentered = false, freezeHeaderRow = 6 } = {}) {
+    setupPrintOptions(worksheet, { orientation: "portrait", freezeHeaderRow });
+    worksheet.pageSetup.paperSize = 9; // A4
+    if (horizontalCentered) worksheet.pageSetup.horizontalCentered = true;
   }
 
-  // Style untuk subheader (PUTIH POLOS - NO BORDER)
-  static getSubHeaderStyle() {
-    return {
-      font: {
-        name: "Arial",
-        size: 12,
-        bold: true,
-        color: { argb: "FF000000" },
-      },
-      alignment: {
-        vertical: "middle",
-        horizontal: "center",
-      },
-      // ✅ TIDAK ADA BORDER & BACKGROUND
-    };
-  }
+  // Tulis letterhead + table header standar, return baris pertama yang
+  // siap dipakai buat data (baris setelah table header).
+  static _writeLetterhead(worksheet, { title, mergeCols, headers }) {
+    const tableHeaderRowNumber = addLetterhead(worksheet, {
+      title,
+      mergeCols,
+      metaLines: [`TAHUN AJARAN ${this.getTahunAjaranAktif()}`],
+    });
 
-  // Style untuk table header (DENGAN BACKGROUND)
-  static getTableHeaderStyle() {
-    return {
-      font: {
-        name: "Arial",
-        size: 10,
-        bold: true,
-        color: { argb: "FFFFFFFF" },
-      },
-      alignment: {
-        vertical: "middle",
-        horizontal: "center",
-      },
-      fill: {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF2E86AB" },
-      },
-      border: {
-        top: { style: "medium", color: { argb: "FF000000" } },
-        left: { style: "medium", color: { argb: "FF000000" } },
-        bottom: { style: "medium", color: { argb: "FF000000" } },
-        right: { style: "medium", color: { argb: "FF000000" } },
-      },
-    };
-  }
+    const tableHeaderRow = worksheet.getRow(tableHeaderRowNumber);
+    tableHeaderRow.height = 22;
+    headers.forEach((header, index) => {
+      tableHeaderRow.getCell(index + 1).value = header;
+    });
+    styleTableHeaderRow(tableHeaderRow);
 
-  // Style untuk data cells (BORDER JELAS)
-  static getDataCellStyle() {
-    return {
-      font: {
-        name: "Arial",
-        size: 9,
-      },
-      alignment: {
-        vertical: "middle",
-      },
-      border: {
-        top: { style: "thin", color: { argb: "FF000000" } },
-        left: { style: "thin", color: { argb: "FF000000" } },
-        bottom: { style: "thin", color: { argb: "FF000000" } },
-        right: { style: "thin", color: { argb: "FF000000" } },
-      },
-    };
+    return tableHeaderRowNumber + 1; // baris pertama buat data
   }
 
   // ==================== FUNGSI EXPORT KELAS ====================
 
   static async exportClasses(classesData) {
+    if (!guardHasData(classesData)) return;
+
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Data Kelas");
 
-      // ✅ A4 PORTRAIT dengan CENTER HORIZONTAL
-      worksheet.pageSetup = {
-        paperSize: 9,
-        orientation: "portrait",
-        horizontalCentered: true,
-        margins: {
-          left: 0.7,
-          right: 0.7,
-          top: 0.8,
-          bottom: 0.8,
-          header: 0.5,
-          footer: 0.5,
-        },
-      };
+      this._setupPage(worksheet, { horizontalCentered: true });
 
       // ✅ COLUMN WIDTHS UNTUK PORTRAIT
       worksheet.columns = [
@@ -128,38 +77,6 @@ export class DataExcel {
         { width: 12 }, // Perempuan
       ];
 
-      // HEADER UTAMA - Baris 1
-      worksheet.mergeCells("A1:G1");
-      const headerCell = worksheet.getCell("A1");
-      headerCell.value = "SMP MUSLIMIN CILILIN";
-      headerCell.style = this.getHeaderStyle();
-      worksheet.getRow(1).height = 25;
-
-      // SUBHEADER - Baris 2
-      worksheet.mergeCells("A2:G2");
-      const subHeaderCell = worksheet.getCell("A2");
-      subHeaderCell.value = "DATA KELAS";
-      subHeaderCell.style = this.getSubHeaderStyle();
-      worksheet.getRow(2).height = 20;
-
-      // TAHUN AJARAN - Baris 3
-      worksheet.mergeCells("A3:G3");
-      const infoCell = worksheet.getCell("A3");
-      infoCell.value = `TAHUN AJARAN ${this.getTahunAjaranAktif()}`;
-      infoCell.style = {
-        font: { name: "Arial", size: 10, bold: true },
-        alignment: { vertical: "middle", horizontal: "center" },
-      };
-      worksheet.getRow(3).height = 18;
-
-      // ✅ 2 BARIS KOSONG YANG BENER
-      worksheet.getRow(4).height = 15;
-      worksheet.getRow(5).height = 15;
-
-      // TABLE HEADER - Baris 6
-      const tableHeaderRow = worksheet.getRow(6);
-      tableHeaderRow.height = 22;
-
       const headers = [
         "No.",
         "Kelas",
@@ -169,15 +86,15 @@ export class DataExcel {
         "Laki-laki",
         "Perempuan",
       ];
-      headers.forEach((header, index) => {
-        const cell = tableHeaderRow.getCell(index + 1);
-        cell.value = header;
-        cell.style = this.getTableHeaderStyle();
+      const firstDataRow = this._writeLetterhead(worksheet, {
+        title: "DATA KELAS",
+        mergeCols: headers.length,
+        headers,
       });
 
-      // DATA KELAS - Mulai Baris 7
+      // DATA KELAS
       classesData.forEach((kelas, index) => {
-        const dataRow = worksheet.getRow(7 + index);
+        const dataRow = worksheet.getRow(firstDataRow + index);
         dataRow.height = 18;
 
         const cells = [
@@ -189,28 +106,46 @@ export class DataExcel {
           kelas["Laki-laki"] || 0,
           kelas["Perempuan"] || 0,
         ];
-
         cells.forEach((value, cellIndex) => {
-          const cell = dataRow.getCell(cellIndex + 1);
-          cell.value = value;
-          cell.style = this.getDataCellStyle();
-
-          // ✅ KELAS: Center semua kolom
-          cell.style.alignment = { ...cell.style.alignment, horizontal: "center" };
+          dataRow.getCell(cellIndex + 1).value = value;
         });
+
+        // ✅ KELAS: Center semua kolom
+        styleTableDataRow(dataRow, index, [1, 2, 3, 4, 5, 6, 7]);
       });
 
-      // Simpan file
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      // ✅ BARIS TOTAL SISWA - paling bawah
+      const totalSiswa = classesData.reduce((sum, k) => sum + (Number(k["Jumlah Siswa"]) || 0), 0);
+      const totalLaki = classesData.reduce((sum, k) => sum + (Number(k["Laki-laki"]) || 0), 0);
+      const totalPerempuan = classesData.reduce((sum, k) => sum + (Number(k["Perempuan"]) || 0), 0);
+
+      const totalRowNumber = firstDataRow + classesData.length;
+      const totalRow = worksheet.getRow(totalRowNumber);
+      totalRow.height = 20;
+      worksheet.mergeCells(`A${totalRowNumber}:D${totalRowNumber}`);
+      totalRow.getCell(1).value = "TOTAL SISWA";
+      totalRow.getCell(5).value = totalSiswa;
+      totalRow.getCell(6).value = totalLaki;
+      totalRow.getCell(7).value = totalPerempuan;
+
+      totalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        cell.font = { name: EXCEL_FONT_FAMILY, bold: true, size: 10 };
+        cell.border = STANDARD_CELL_BORDER;
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: EXCEL_COLORS.primaryLight },
+        };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: colNumber === 1 ? "left" : "center",
+        };
       });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Data_Kelas_SMP_Muslimin_${this.getTahunAjaranAktif()}.xlsx`;
-      link.click();
-      URL.revokeObjectURL(url);
+
+      await downloadWorkbook(
+        workbook,
+        `Data_Kelas_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+      );
     } catch (error) {
       console.error("Error exporting Kelas Excel:", error);
       throw new Error("Gagal mengexport data kelas ke Excel");
@@ -219,111 +154,67 @@ export class DataExcel {
 
   // ==================== FUNGSI EXPORT SISWA ====================
 
+  // Helper generik buat semua varian export siswa (semua/jenjang/kelas/filter)
+  // -- struktur tabelnya sama persis, cuma judul, data, dan nama file yang beda.
+  static _studentsHeaders() {
+    return ["No.", "NIS", "Nama", "Kelas", "Jenis Kelamin", "Status"];
+  }
+
+  static _writeStudentsSheet(worksheet, { title, studentsData }) {
+    this._setupPage(worksheet);
+
+    // ✅ COLUMN WIDTHS UNTUK PORTRAIT
+    worksheet.columns = [
+      { width: 6 }, // No.
+      { width: 18 }, // NIS
+      { width: 55 }, // Nama
+      { width: 10 }, // Kelas
+      { width: 20 }, // Jenis Kelamin
+      { width: 10 }, // Status
+    ];
+
+    const headers = this._studentsHeaders();
+    const firstDataRow = this._writeLetterhead(worksheet, {
+      title,
+      mergeCols: headers.length,
+      headers,
+    });
+
+    studentsData.forEach((student, index) => {
+      const dataRow = worksheet.getRow(firstDataRow + index);
+      dataRow.height = 18;
+
+      const cells = [
+        index + 1,
+        student.nis || "-",
+        student.full_name || "-",
+        student.class_id || "-",
+        student.gender === "L" ? "Laki-laki" : "Perempuan",
+        student.is_active ? "Aktif" : "Non-Aktif",
+      ];
+      cells.forEach((value, cellIndex) => {
+        dataRow.getCell(cellIndex + 1).value = value;
+      });
+
+      // ✅ SISWA: Center semua kecuali Nama (kolom 3); NIS dipaksa text
+      // biar angka nol di depan nggak hilang.
+      styleTableDataRow(dataRow, index, [1, 2, 4, 5, 6], [2]);
+    });
+  }
+
   static async exportAllStudents(studentsData) {
+    if (!guardHasData(studentsData)) return;
+
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Data Siswa");
 
-      // ✅ A4 PORTRAIT
-      worksheet.pageSetup = {
-        paperSize: 9,
-        orientation: "portrait",
-        margins: {
-          left: 0.7,
-          right: 0.7,
-          top: 0.8,
-          bottom: 0.8,
-          header: 0.5,
-          footer: 0.5,
-        },
-      };
+      this._writeStudentsSheet(worksheet, { title: "DATA SISWA", studentsData });
 
-      // ✅ COLUMN WIDTHS UNTUK PORTRAIT
-      worksheet.columns = [
-        { width: 6 }, // No.
-        { width: 18 }, // NIS
-        { width: 40 }, // Nama
-        { width: 10 }, // Kelas
-        { width: 20 }, // Jenis Kelamin
-        { width: 10 }, // Status
-      ];
-
-      // HEADER UTAMA - Baris 1
-      worksheet.mergeCells("A1:F1");
-      const headerCell = worksheet.getCell("A1");
-      headerCell.value = "SMP MUSLIMIN CILILIN";
-      headerCell.style = this.getHeaderStyle();
-      worksheet.getRow(1).height = 25;
-
-      // SUBHEADER - Baris 2
-      worksheet.mergeCells("A2:F2");
-      const subHeaderCell = worksheet.getCell("A2");
-      subHeaderCell.value = "DATA SISWA";
-      subHeaderCell.style = this.getSubHeaderStyle();
-      worksheet.getRow(2).height = 20;
-
-      // TAHUN AJARAN - Baris 3
-      worksheet.mergeCells("A3:F3");
-      const infoCell = worksheet.getCell("A3");
-      infoCell.value = `TAHUN AJARAN ${this.getTahunAjaranAktif()}`;
-      infoCell.style = {
-        font: { name: "Arial", size: 10, bold: true },
-        alignment: { vertical: "middle", horizontal: "center" },
-      };
-      worksheet.getRow(3).height = 18;
-
-      // ✅ 2 BARIS KOSONG YANG BENER
-      worksheet.getRow(4).height = 15;
-      worksheet.getRow(5).height = 15;
-
-      // TABLE HEADER - Baris 6
-      const tableHeaderRow = worksheet.getRow(6);
-      tableHeaderRow.height = 22;
-
-      const headers = ["No.", "NIS", "Nama", "Kelas", "Jenis Kelamin", "Status"];
-      headers.forEach((header, index) => {
-        const cell = tableHeaderRow.getCell(index + 1);
-        cell.value = header;
-        cell.style = this.getTableHeaderStyle();
-      });
-
-      // DATA SISWA - Mulai Baris 7
-      studentsData.forEach((student, index) => {
-        const dataRow = worksheet.getRow(7 + index);
-        dataRow.height = 18;
-
-        const cells = [
-          index + 1,
-          student.nis || "-",
-          student.full_name || "-",
-          student.class_id || "-",
-          student.gender === "L" ? "Laki-laki" : "Perempuan",
-          student.is_active ? "Aktif" : "Non-Aktif",
-        ];
-
-        cells.forEach((value, cellIndex) => {
-          const cell = dataRow.getCell(cellIndex + 1);
-          cell.value = value;
-          cell.style = this.getDataCellStyle();
-
-          // ✅ SISWA: Center semua kecuali Nama (index 2)
-          if (cellIndex !== 2) {
-            cell.style.alignment = { ...cell.style.alignment, horizontal: "center" };
-          }
-        });
-      });
-
-      // Simpan file
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Data_Siswa_SMP_Muslimin_${this.getTahunAjaranAktif()}.xlsx`;
-      link.click();
-      URL.revokeObjectURL(url);
+      await downloadWorkbook(
+        workbook,
+        `Data_Siswa_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+      );
     } catch (error) {
       console.error("Error exporting Excel:", error);
       throw new Error("Gagal mengexport data ke Excel");
@@ -332,201 +223,44 @@ export class DataExcel {
 
   static async exportByJenjang(studentsData, jenjang) {
     const filteredData = studentsData.filter((student) => student.class_id?.startsWith(jenjang));
+    if (!guardHasData(filteredData)) return;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(`Kelas ${jenjang}`);
 
-    // ✅ A4 PORTRAIT
-    worksheet.pageSetup = {
-      paperSize: 9,
-      orientation: "portrait",
-      margins: { left: 0.7, right: 0.7, top: 0.8, bottom: 0.8, header: 0.5, footer: 0.5 },
-    };
-
-    // ✅ COLUMN WIDTHS UNTUK PORTRAIT
-    worksheet.columns = [
-      { width: 6 },
-      { width: 12 },
-      { width: 28 },
-      { width: 10 },
-      { width: 14 },
-      { width: 10 },
-    ];
-
-    // HEADER
-    worksheet.mergeCells("A1:F1");
-    worksheet.getCell("A1").value = "SMP MUSLIMIN CILILIN";
-    worksheet.getCell("A1").style = this.getHeaderStyle();
-    worksheet.getRow(1).height = 25;
-
-    // SUBHEADER
-    worksheet.mergeCells("A2:F2");
-    worksheet.getCell("A2").value = `DATA SISWA KELAS ${jenjang}`;
-    worksheet.getCell("A2").style = this.getSubHeaderStyle();
-    worksheet.getRow(2).height = 20;
-
-    // TAHUN AJARAN
-    worksheet.mergeCells("A3:F3");
-    worksheet.getCell("A3").value = `TAHUN AJARAN ${this.getTahunAjaranAktif()}`;
-    worksheet.getCell("A3").style = {
-      font: { name: "Arial", size: 10, bold: true },
-      alignment: { vertical: "middle", horizontal: "center" },
-    };
-    worksheet.getRow(3).height = 18;
-
-    // ✅ 2 BARIS KOSONG YANG BENER
-    worksheet.getRow(4).height = 15;
-    worksheet.getRow(5).height = 15;
-
-    // TABLE HEADER
-    const tableHeaderRow = worksheet.getRow(6);
-    tableHeaderRow.height = 22;
-    const headers = ["No.", "NIS", "Nama", "Kelas", "Jenis Kelamin", "Status"];
-    headers.forEach((header, index) => {
-      const cell = tableHeaderRow.getCell(index + 1);
-      cell.value = header;
-      cell.style = this.getTableHeaderStyle();
+    this._writeStudentsSheet(worksheet, {
+      title: `DATA SISWA KELAS ${jenjang}`,
+      studentsData: filteredData,
     });
 
-    // DATA
-    filteredData.forEach((student, index) => {
-      const dataRow = worksheet.getRow(7 + index);
-      dataRow.height = 18;
-
-      const cells = [
-        index + 1,
-        student.nis || "-",
-        student.full_name || "-",
-        student.class_id || "-",
-        student.gender === "L" ? "Laki-laki" : "Perempuan",
-        student.is_active ? "Aktif" : "Non-Aktif",
-      ];
-
-      cells.forEach((value, cellIndex) => {
-        const cell = dataRow.getCell(cellIndex + 1);
-        cell.value = value;
-        cell.style = this.getDataCellStyle();
-
-        // ✅ SISWA: Center semua kecuali Nama (index 2)
-        if (cellIndex !== 2) {
-          cell.style.alignment = { ...cell.style.alignment, horizontal: "center" };
-        }
-      });
-    });
-
-    // Simpan file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Data_Siswa_Kelas_${jenjang}_SMP_Muslimin_${this.getTahunAjaranAktif()}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
+    await downloadWorkbook(
+      workbook,
+      `Data_Siswa_Kelas_${jenjang}_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+    );
   }
 
   static async exportByKelas(studentsData, kelas) {
     const filteredData = studentsData.filter((student) => student.class_id === kelas);
+    if (!guardHasData(filteredData)) return;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(kelas);
 
-    // ✅ A4 PORTRAIT
-    worksheet.pageSetup = {
-      paperSize: 9,
-      orientation: "portrait",
-      margins: { left: 0.7, right: 0.7, top: 0.8, bottom: 0.8, header: 0.5, footer: 0.5 },
-    };
-
-    // ✅ COLUMN WIDTHS UNTUK PORTRAIT
-    worksheet.columns = [
-      { width: 6 },
-      { width: 12 },
-      { width: 28 },
-      { width: 10 },
-      { width: 14 },
-      { width: 10 },
-    ];
-
-    // HEADER
-    worksheet.mergeCells("A1:F1");
-    worksheet.getCell("A1").value = "SMP MUSLIMIN CILILIN";
-    worksheet.getCell("A1").style = this.getHeaderStyle();
-    worksheet.getRow(1).height = 25;
-
-    // SUBHEADER
-    worksheet.mergeCells("A2:F2");
-    worksheet.getCell("A2").value = `DATA SISWA KELAS ${kelas}`;
-    worksheet.getCell("A2").style = this.getSubHeaderStyle();
-    worksheet.getRow(2).height = 20;
-
-    // TAHUN AJARAN
-    worksheet.mergeCells("A3:F3");
-    worksheet.getCell("A3").value = `TAHUN AJARAN ${this.getTahunAjaranAktif()}`;
-    worksheet.getCell("A3").style = {
-      font: { name: "Arial", size: 10, bold: true },
-      alignment: { vertical: "middle", horizontal: "center" },
-    };
-    worksheet.getRow(3).height = 18;
-
-    // ✅ 2 BARIS KOSONG YANG BENER
-    worksheet.getRow(4).height = 15;
-    worksheet.getRow(5).height = 15;
-
-    // TABLE HEADER
-    const tableHeaderRow = worksheet.getRow(6);
-    tableHeaderRow.height = 22;
-    const headers = ["No.", "NIS", "Nama", "Kelas", "Jenis Kelamin", "Status"];
-    headers.forEach((header, index) => {
-      const cell = tableHeaderRow.getCell(index + 1);
-      cell.value = header;
-      cell.style = this.getTableHeaderStyle();
+    this._writeStudentsSheet(worksheet, {
+      title: `DATA SISWA KELAS ${kelas}`,
+      studentsData: filteredData,
     });
 
-    // DATA
-    filteredData.forEach((student, index) => {
-      const dataRow = worksheet.getRow(7 + index);
-      dataRow.height = 18;
-
-      const cells = [
-        index + 1,
-        student.nis || "-",
-        student.full_name || "-",
-        student.class_id || "-",
-        student.gender === "L" ? "Laki-laki" : "Perempuan",
-        student.is_active ? "Aktif" : "Non-Aktif",
-      ];
-
-      cells.forEach((value, cellIndex) => {
-        const cell = dataRow.getCell(cellIndex + 1);
-        cell.value = value;
-        cell.style = this.getDataCellStyle();
-
-        // ✅ SISWA: Center semua kecuali Nama (index 2)
-        if (cellIndex !== 2) {
-          cell.style.alignment = { ...cell.style.alignment, horizontal: "center" };
-        }
-      });
-    });
-
-    // Simpan file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Data_Siswa_${kelas}_SMP_Muslimin_${this.getTahunAjaranAktif()}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
+    await downloadWorkbook(
+      workbook,
+      `Data_Siswa_${kelas}_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+    );
   }
 
   static async exportByFilter(filteredData, selectedKelas, selectedJenjang, selectedGender) {
-    let title = "DATA SISWA";
+    if (!guardHasData(filteredData)) return;
 
+    let title = "DATA SISWA";
     if (selectedKelas) {
       title = `DATA SISWA KELAS ${selectedKelas}`;
     } else if (selectedJenjang) {
@@ -536,117 +270,24 @@ export class DataExcel {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data Siswa");
 
-    // ✅ A4 PORTRAIT
-    worksheet.pageSetup = {
-      paperSize: 9,
-      orientation: "portrait",
-      margins: { left: 0.7, right: 0.7, top: 0.8, bottom: 0.8, header: 0.5, footer: 0.5 },
-    };
+    this._writeStudentsSheet(worksheet, { title, studentsData: filteredData });
 
-    // ✅ COLUMN WIDTHS UNTUK PORTRAIT
-    worksheet.columns = [
-      { width: 6 },
-      { width: 12 },
-      { width: 28 },
-      { width: 10 },
-      { width: 14 },
-      { width: 10 },
-    ];
-
-    // HEADER
-    worksheet.mergeCells("A1:F1");
-    worksheet.getCell("A1").value = "SMP MUSLIMIN CILILIN";
-    worksheet.getCell("A1").style = this.getHeaderStyle();
-    worksheet.getRow(1).height = 25;
-
-    // SUBHEADER
-    worksheet.mergeCells("A2:F2");
-    worksheet.getCell("A2").value = title;
-    worksheet.getCell("A2").style = this.getSubHeaderStyle();
-    worksheet.getRow(2).height = 20;
-
-    // TAHUN AJARAN
-    worksheet.mergeCells("A3:F3");
-    worksheet.getCell("A3").value = `TAHUN AJARAN ${this.getTahunAjaranAktif()}`;
-    worksheet.getCell("A3").style = {
-      font: { name: "Arial", size: 10, bold: true },
-      alignment: { vertical: "middle", horizontal: "center" },
-    };
-    worksheet.getRow(3).height = 18;
-
-    // ✅ 2 BARIS KOSONG YANG BENER
-    worksheet.getRow(4).height = 15;
-    worksheet.getRow(5).height = 15;
-
-    // TABLE HEADER
-    const tableHeaderRow = worksheet.getRow(6);
-    tableHeaderRow.height = 22;
-    const headers = ["No.", "NIS", "Nama", "Kelas", "Jenis Kelamin", "Status"];
-    headers.forEach((header, index) => {
-      const cell = tableHeaderRow.getCell(index + 1);
-      cell.value = header;
-      cell.style = this.getTableHeaderStyle();
-    });
-
-    // DATA
-    filteredData.forEach((student, index) => {
-      const dataRow = worksheet.getRow(7 + index);
-      dataRow.height = 18;
-
-      const cells = [
-        index + 1,
-        student.nis || "-",
-        student.full_name || "-",
-        student.class_id || "-",
-        student.gender === "L" ? "Laki-laki" : "Perempuan",
-        student.is_active ? "Aktif" : "Non-Aktif",
-      ];
-
-      cells.forEach((value, cellIndex) => {
-        const cell = dataRow.getCell(cellIndex + 1);
-        cell.value = value;
-        cell.style = this.getDataCellStyle();
-
-        // ✅ SISWA: Center semua kecuali Nama (index 2)
-        if (cellIndex !== 2) {
-          cell.style.alignment = { ...cell.style.alignment, horizontal: "center" };
-        }
-      });
-    });
-
-    // Simpan file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Data_Siswa_Filter_SMP_Muslimin_${this.getTahunAjaranAktif()}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
+    await downloadWorkbook(
+      workbook,
+      `Data_Siswa_Filter_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+    );
   }
 
   // ==================== FUNGSI EXPORT GURU ====================
 
   static async exportTeachers(teachersData) {
+    if (!guardHasData(teachersData)) return;
+
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Data Guru");
 
-      // ✅ A4 PORTRAIT
-      worksheet.pageSetup = {
-        paperSize: 9,
-        orientation: "portrait",
-        margins: {
-          left: 0.7,
-          right: 0.7,
-          top: 0.8,
-          bottom: 0.8,
-          header: 0.5,
-          footer: 0.5,
-        },
-      };
+      this._setupPage(worksheet);
 
       // ✅ COLUMN WIDTHS UNTUK PORTRAIT
       worksheet.columns = [
@@ -658,48 +299,15 @@ export class DataExcel {
         { width: 10 }, // Status
       ];
 
-      // HEADER UTAMA - Baris 1
-      worksheet.mergeCells("A1:F1");
-      const headerCell = worksheet.getCell("A1");
-      headerCell.value = "SMP MUSLIMIN CILILIN";
-      headerCell.style = this.getHeaderStyle();
-      worksheet.getRow(1).height = 25;
-
-      // SUBHEADER - Baris 2
-      worksheet.mergeCells("A2:F2");
-      const subHeaderCell = worksheet.getCell("A2");
-      subHeaderCell.value = "DATA GURU";
-      subHeaderCell.style = this.getSubHeaderStyle();
-      worksheet.getRow(2).height = 20;
-
-      // TAHUN AJARAN - Baris 3
-      worksheet.mergeCells("A3:F3");
-      const infoCell = worksheet.getCell("A3");
-      infoCell.value = `TAHUN AJARAN ${this.getTahunAjaranAktif()}`;
-      infoCell.style = {
-        font: { name: "Arial", size: 10, bold: true },
-        alignment: { vertical: "middle", horizontal: "center" },
-      };
-      worksheet.getRow(3).height = 18;
-
-      // ✅ 2 BARIS KOSONG YANG BENER
-      worksheet.getRow(4).height = 15;
-      worksheet.getRow(5).height = 15;
-
-      // TABLE HEADER - Baris 6
-      const tableHeaderRow = worksheet.getRow(6);
-      tableHeaderRow.height = 22;
-
       const headers = ["No.", "Kode Guru", "Nama Guru", "Tugas/Mapel", "Wali Kelas", "Status"];
-      headers.forEach((header, index) => {
-        const cell = tableHeaderRow.getCell(index + 1);
-        cell.value = header;
-        cell.style = this.getTableHeaderStyle();
+      const firstDataRow = this._writeLetterhead(worksheet, {
+        title: "DATA GURU",
+        mergeCols: headers.length,
+        headers,
       });
 
-      // DATA GURU - Mulai Baris 7
       teachersData.forEach((guru, index) => {
-        const dataRow = worksheet.getRow(7 + index);
+        const dataRow = worksheet.getRow(firstDataRow + index);
         dataRow.height = 18;
 
         const cells = [
@@ -710,31 +318,19 @@ export class DataExcel {
           guru.walikelas !== "-" ? `KELAS ${guru.walikelas}` : "-",
           guru.is_active ? "Aktif" : "Nonaktif",
         ];
-
         cells.forEach((value, cellIndex) => {
-          const cell = dataRow.getCell(cellIndex + 1);
-          cell.value = value;
-          cell.style = this.getDataCellStyle();
-
-          // ✅ GURU: Center untuk No.(0), Kode Guru(1), Wali Kelas(4), Status(5)
-          if (cellIndex === 0 || cellIndex === 1 || cellIndex === 4 || cellIndex === 5) {
-            cell.style.alignment = { ...cell.style.alignment, horizontal: "center" };
-          }
-          // Nama Guru(2) dan Tugas/Mapel(3) tetap LEFT
+          dataRow.getCell(cellIndex + 1).value = value;
         });
+
+        // ✅ GURU: Center No.(1), Kode Guru(2), Wali Kelas(5), Status(6).
+        // Nama Guru(3) & Tugas/Mapel(4) tetap left. Kode Guru dipaksa text.
+        styleTableDataRow(dataRow, index, [1, 2, 5, 6], [2]);
       });
 
-      // Simpan file
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Data_Guru_SMP_Muslimin_${this.getTahunAjaranAktif()}.xlsx`;
-      link.click();
-      URL.revokeObjectURL(url);
+      await downloadWorkbook(
+        workbook,
+        `Data_Guru_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+      );
     } catch (error) {
       console.error("Error exporting Guru Excel:", error);
       throw new Error("Gagal mengexport data guru ke Excel");

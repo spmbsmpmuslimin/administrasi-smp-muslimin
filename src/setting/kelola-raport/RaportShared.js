@@ -20,15 +20,7 @@
 //   - useReportedClasses   : hook daftar kelas yang SUDAH PERNAH diimport
 
 import React, { useState, useEffect } from "react";
-import {
-  Check,
-  AlertTriangle,
-  X,
-  FileEdit,
-  Globe,
-  AlertCircle,
-  Search,
-} from "lucide-react";
+import { Check, AlertTriangle, X, FileEdit, Globe, AlertCircle, Search } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 
 // ============================================================
@@ -120,7 +112,8 @@ export const StatusBadge = ({ type = "import", status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${config.className}`}>
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${config.className}`}
+    >
       <Icon size={12} />
       {config.label}
     </span>
@@ -152,9 +145,7 @@ export const StatusBadge = ({ type = "import", status }) => {
 export const RaportTable = ({ grades = [], editable = false, onChangeScore }) => {
   if (!grades.length) {
     return (
-      <p className="text-sm text-gray-400 dark:text-gray-500 italic py-4">
-        Belum ada data nilai.
-      </p>
+      <p className="text-sm text-gray-400 dark:text-gray-500 italic py-4">Belum ada data nilai.</p>
     );
   }
 
@@ -172,10 +163,9 @@ export const RaportTable = ({ grades = [], editable = false, onChangeScore }) =>
           return (
             <tr
               key={g.subject}
-              className="border-b border-gray-50 dark:border-gray-800 last:border-0">
-              <td className="py-2 text-gray-700 dark:text-gray-200">
-                {g.subject}
-              </td>
+              className="border-b border-gray-50 dark:border-gray-800 last:border-0"
+            >
+              <td className="py-2 text-gray-700 dark:text-gray-200">{g.subject}</td>
               <td className="py-2 text-right">
                 {editable ? (
                   <input
@@ -187,7 +177,7 @@ export const RaportTable = ({ grades = [], editable = false, onChangeScore }) =>
                     onChange={(e) =>
                       onChangeScore?.(
                         g.subject,
-                        e.target.value === "" ? null : Number(e.target.value),
+                        e.target.value === "" ? null : Number(e.target.value)
                       )
                     }
                     className={`w-16 text-right px-2 py-1 rounded border bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder:text-amber-500 dark:placeholder:text-amber-400 ${
@@ -197,13 +187,9 @@ export const RaportTable = ({ grades = [], editable = false, onChangeScore }) =>
                     }`}
                   />
                 ) : isEmpty ? (
-                  <span className="text-amber-600 dark:text-amber-400 italic">
-                    kosong
-                  </span>
+                  <span className="text-amber-600 dark:text-amber-400 italic">kosong</span>
                 ) : (
-                  <span className="font-medium text-gray-800 dark:text-gray-100">
-                    {g.score}
-                  </span>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">{g.score}</span>
                 )}
               </td>
             </tr>

@@ -61,8 +61,8 @@ export const sidebarGroups = [
         // (portal-siswa-guru), yang show()-nya cuma isWaliKelas -- admin
         // gak pernah nyampe kesitu walau route-nya (menuConfig.js) udah
         // allowedRoles admin/teacher/guru_bk. Sekarang dikasih entry
-        // langsung di sidebar biar admin & guru BK gak perlu lewat hub itu.
-        show: (ctx) => ctx.isWaliKelas || ctx.isAdmin || ctx.isGuruBK,
+        // langsung di sidebar, tapi dibatasi cuma buat Admin.
+        show: (ctx) => ctx.isAdmin,
       },
     ],
   },

@@ -5,6 +5,11 @@ import { supabase } from "../supabaseClient";
 import { getActiveAcademicYear } from "../services/academicYearService";
 import { DataExcel } from "./DataExcel";
 import {
+  resolveCompletion,
+  COMPLETION_STATUS_META,
+  REQUIRED_FIELDS,
+} from "../utils/studentProfileCompletion";
+import {
   Edit2,
   Trash2,
   X,
@@ -15,9 +20,21 @@ import {
   UserCheck,
   Eye,
   ClipboardList,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
 } from "lucide-react";
 
 export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
+  // Ikon per status kelengkapan (label & warna badge ambil dari
+  // COMPLETION_STATUS_META di util bersama, biar konsisten sama
+  // DataSiswaInduk.js).
+  const COMPLETION_STATUS_ICON = {
+    lengkap: CheckCircle2,
+    sebagian: AlertCircle,
+    belum: XCircle,
+  };
+
   const [siswaData, setSiswaData] = useState([]);
   const [allSiswaData, setAllSiswaData] = useState([]);
   const [kelasOptions, setKelasOptions] = useState([]);
@@ -152,7 +169,28 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      setAllSiswaData(data || []);
+
+      // Narik data student_profile_details buat dihitung status
+      // kelengkapannya (badge kolom "Kelengkapan"). Cuma select
+      // student_id + REQUIRED_FIELDS -- gak perlu semua kolom karena di
+      // sini cuma butuh status-nya, bukan detail lengkapnya (detail
+      // lengkap tetep di halaman Data Siswa Induk).
+      const { data: details, error: detailErr } = await supabase
+        .from("student_profile_details")
+        .select(["student_id", ...REQUIRED_FIELDS].join(","));
+      if (detailErr) throw detailErr;
+
+      const detailMap = {};
+      (details || []).forEach((d) => {
+        detailMap[d.student_id] = d;
+      });
+
+      const merged = (data || []).map((s) => {
+        const { status } = resolveCompletion(s.gender, detailMap[s.id] || null);
+        return { ...s, completionStatus: status };
+      });
+
+      setAllSiswaData(merged);
     } catch (error) {
       console.error("Error fetching siswa data:", error);
     } finally {
@@ -1152,7 +1190,26 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                  Kelengkapan Data Induk
+                </span>
+                {(() => {
+                  const meta =
+                    COMPLETION_STATUS_META[siswa.completionStatus] || COMPLETION_STATUS_META.belum;
+                  const Icon = COMPLETION_STATUS_ICON[siswa.completionStatus] || XCircle;
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}
+                    >
+                      <Icon size={12} />
+                      {meta.label}
+                    </span>
+                  );
+                })()}
+              </div>
+
+              <div className="mt-2">
                 <button
                   onClick={() => handleOpenDataInduk(siswa)}
                   className="w-full px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 border border-indigo-200 dark:border-indigo-800 transition-colors"
@@ -1246,6 +1303,9 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     Status
                   </th>
                   <th className="px-6 py-4 text-center w-1/12 text-sm uppercase tracking-wider">
+                    Kelengkapan
+                  </th>
+                  <th className="px-6 py-4 text-center w-1/12 text-sm uppercase tracking-wider">
                     Data Induk
                   </th>
                   {canEditDelete && (
@@ -1293,6 +1353,22 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                       >
                         {siswa.is_active ? "Aktif" : "Non-Aktif"}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {(() => {
+                        const meta =
+                          COMPLETION_STATUS_META[siswa.completionStatus] ||
+                          COMPLETION_STATUS_META.belum;
+                        const Icon = COMPLETION_STATUS_ICON[siswa.completionStatus] || XCircle;
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}
+                          >
+                            <Icon size={12} />
+                            {meta.label}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button

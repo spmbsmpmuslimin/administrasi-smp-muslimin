@@ -58,6 +58,83 @@ const ENTRY_POINT_ALLOWLIST = new Set([
 const ORPHAN_IGNORE_PATTERNS = [/\.test\.jsx?$/, /\.spec\.jsx?$/, /\.d\.ts$/];
 
 // ---------------------------------------------------------------------
+// CONFIG buat check #7 (academicYearService usage) — SESUAIN INI kalau
+// nama field / nama service / lokasi file di project lo beda. Heuristik
+// regex, jadi kalau kebanyakan false positive, longgarin pattern-nya.
+// ---------------------------------------------------------------------
+
+// Substring path import yang dianggap "udah pake academicYearService".
+// Case-insensitive. Cocok buat `from "../services/academicYearService"`,
+// `from "services/academicYearService"`, dst.
+const ACADEMIC_YEAR_SERVICE_IMPORT_HINT = /academicYearService/i;
+
+// File service itu sendiri — jangan di-flag ke diri sendiri.
+const ACADEMIC_YEAR_SERVICE_FILE_HINT = /academicYearService\.[jt]sx?$/i;
+
+// Query LANGSUNG ke tabel academic_years — ini sinyal PALING KUAT.
+// File yang query tabel ini sendiri (biasanya buat ambil daftar tahun
+// ajaran dan/atau nentuin mana yang aktif) tapi gak lewat service berarti
+// dia REIMPLEMENT logic yang harusnya dipusatkan di academicYearService.
+const ACADEMIC_YEARS_TABLE_RE = /\.from\(\s*["'`]academic_years["'`]\s*\)/;
+
+// Pola "nentuin tahun aktif sendiri" — misal `.find(y => y.is_active)`
+// atau sejenisnya, dibarengin query academic_years di atas. Ini
+// memperkuat (bukan syarat wajib) bahwa file itu reimplement logic
+// service, bukan cuma baca 1-2 kolom buat keperluan lain.
+const IS_ACTIVE_LOGIC_RE = /is_active/;
+
+// Nama kolom FK tahun ajaran di tabel LAIN (bukan academic_years).
+// Sekadar filter tabel lain pake academic_year_id itu WAJAR kalau ID-nya
+// emang dikasih dari luar (parameter/prop) — makanya field ini SENDIRIAN
+// bukan bukti kuat. Dipakai cuma buat sinyal sekunder yang levelnya "info",
+// bukan "warning", biar gak berisik kayak kasus AttendancePDF.js kemarin
+// (nerima academicYearId sebagai parameter, cuma filter, itu sah-sah aja).
+const ACADEMIC_YEAR_FIELD_RE =
+  /["'`](academic_year_id|academicYearId|tahun_ajaran_id|tahunAjaranId)["'`]/;
+
+const SUPABASE_CALL_RE = /\.from\(\s*["'`]/;
+
+// Sinyal buat hardcode-kalender: fungsi yang ngitung tahun ajaran sendiri
+// dari `new Date()` / `.getMonth()`, bukan dari database atau service sama
+// sekali. Biasanya nongol sebagai template literal kayak
+// `${currentYear}/${currentYear + 1}` — dua interpolasi yang sama-sama
+// ngandung kata "year", dipisah "/". Ini POLA, bukan syarat pasti-benar;
+// perlu dibarengin `.getMonth()` di file yang sama biar lebih yakin ini
+// beneran ngitung dari kalender, bukan cuma nampilin string tahun ajaran
+// yang udah didapat dari tempat lain (misal `selectedYear.year`).
+const GET_MONTH_CALL_RE = /\.getMonth\(\)/;
+const HARDCODED_YEAR_TEMPLATE_RE = /`\$\{[^`]*?[Yy]ear[^`]*?\}\s*\/\s*\$\{[^`]*?[Yy]ear[^`]*?\}`/;
+
+// Pattern backup/restore: query academic_years yang muncul cuma sebagai
+// bagian dari operasi bulk multi-tabel (backup/restore/cleanup seluruh
+// database), BUKAN usaha nentuin "tahun ajaran aktif". Dua tanda:
+//  a) baris .from("academic_years") diikuti .delete(/.insert( dalam 2
+//     baris berikutnya (restore: hapus semua lalu insert ulang dari file
+//     backup) — ini query tabel sebagai OBJEK backup, bukan buat dibaca
+//     nilainya.
+//  b) match ada di dalem blok Promise.all([...]) yang isinya banyak
+//     .from(tabel_lain) lain juga (pattern "backup semua tabel sekaligus").
+const DELETE_OR_INSERT_RE = /\.delete\(|\.insert\(/;
+const PROMISE_ALL_RE = /Promise\.all\(/;
+const BACKUP_WINDOW = 6; // baris sebelum/sesudah yang dicek buat konteks bulk backup/restore
+
+function isLikelyBulkBackupRestore(lines, matchIdx) {
+  const start = Math.max(0, matchIdx - BACKUP_WINDOW);
+  const end = Math.min(lines.length, matchIdx + BACKUP_WINDOW + 1);
+  const window = lines.slice(start, end).join("\n");
+  // 2 baris setelah match langsung .delete(/.insert( -> restore tabel ini
+  const nextFew = lines.slice(matchIdx, matchIdx + 3).join("\n");
+  if (DELETE_OR_INSERT_RE.test(nextFew)) return true;
+  // Promise.all() di sekitar match, DAN ada >=3 .from( lain di window yang
+  // sama -> pattern "fetch semua tabel sekaligus buat backup/dashboard"
+  if (PROMISE_ALL_RE.test(window)) {
+    const fromCount = (window.match(/\.from\(\s*["'`]/g) || []).length;
+    if (fromCount >= 4) return true;
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------
 // UTIL
 // ---------------------------------------------------------------------
 
@@ -89,9 +166,7 @@ function readFileLines(filePath) {
 // tetap dijaga biar nomor baris gak geser), line comment // dihapus
 // kecuali nempel langsung setelah ':' (biar gak ke-mutilasi "https://").
 function stripComments(content) {
-  let out = content.replace(/\/\*[\s\S]*?\*\//g, (block) =>
-    block.replace(/[^\n]/g, " "),
-  );
+  let out = content.replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, " "));
   out = out
     .split(/\r?\n/)
     .map((line) => {
@@ -154,9 +229,7 @@ function checkImportsAndOrphans(allFiles) {
         // cari nomor baris approx
         const upTo = content.slice(0, match.index);
         const lineNo = upTo.split(/\r?\n/).length;
-        brokenDetails.push(
-          `${toRel(file)}:${lineNo} → import "${importPath}" (target gak ketemu)`,
-        );
+        brokenDetails.push(`${toRel(file)}:${lineNo} → import "${importPath}" (target gak ketemu)`);
       }
     }
   }
@@ -167,7 +240,7 @@ function checkImportsAndOrphans(allFiles) {
       "critical",
       `${brokenCount} broken import ditemukan`,
       "Import nunjuk ke file yang gak ada di disk. Ini bakal bikin build gagal atau blank screen kalau route-nya diakses.",
-      brokenDetails.slice(0, 50),
+      brokenDetails.slice(0, 50)
     );
   }
 
@@ -188,7 +261,7 @@ function checkImportsAndOrphans(allFiles) {
       "info",
       `${orphans.length} file gak pernah di-import di mana pun (dead file candidate)`,
       "File-file ini gak ketemu di-import statis dari file lain. Kemungkinan sisa refactor / fitur lama. Cek manual dulu sebelum dihapus — bisa aja dipake lewat dynamic import atau string reference yang gak kebaca regex.",
-      orphans.slice(0, 80),
+      orphans.slice(0, 80)
     );
   }
 
@@ -210,7 +283,7 @@ function checkMenuSidebarConsistency() {
       "warning",
       "menuConfig.js atau sidebarConfig.js gak ketemu",
       "Skip pengecekan konsistensi menu/sidebar.",
-      [],
+      []
     );
     return { issues };
   }
@@ -219,18 +292,14 @@ function checkMenuSidebarConsistency() {
   const sidebarContent = fs.readFileSync(sidebarConfigPath, "utf8");
 
   const menuKeys = new Set(
-    [...menuContent.matchAll(/path:\s*["'`]\/([a-zA-Z0-9_-]*)["'`]/g)].map(
-      (m) => m[1],
-    ),
+    [...menuContent.matchAll(/path:\s*["'`]\/([a-zA-Z0-9_-]*)["'`]/g)].map((m) => m[1])
   );
 
-  const sidebarPages = [
-    ...sidebarContent.matchAll(/page:\s*["'`]([a-zA-Z0-9_-]+)["'`]/g),
-  ].map((m) => m[1]);
-
-  const brokenLinks = [...new Set(sidebarPages)].filter(
-    (page) => !menuKeys.has(page),
+  const sidebarPages = [...sidebarContent.matchAll(/page:\s*["'`]([a-zA-Z0-9_-]+)["'`]/g)].map(
+    (m) => m[1]
   );
+
+  const brokenLinks = [...new Set(sidebarPages)].filter((page) => !menuKeys.has(page));
 
   if (brokenLinks.length > 0) {
     pushIssue(
@@ -238,7 +307,7 @@ function checkMenuSidebarConsistency() {
       "critical",
       `${brokenLinks.length} item sidebar nunjuk ke page yang gak ada di menuConfig`,
       "Item sidebar ini bakal ke-klik tapi gak nyambung ke route mana pun (atau nyasar ke halaman lain / 404). Cek sidebarConfig.js dan pastiin 'page' cocok sama 'path' (tanpa leading slash) di menuConfig.js.",
-      brokenLinks,
+      brokenLinks
     );
   }
 
@@ -305,16 +374,14 @@ function checkDarkModeRegression(allFiles) {
     const sorted = [...perFileCount.entries()].sort((a, b) => b[1] - a[1]);
     const details = sorted
       .slice(0, 40)
-      .map(
-        ([file, count]) => `${file} — ${count} class belum ada dark: variant`,
-      );
+      .map(([file, count]) => `${file} — ${count} class belum ada dark: variant`);
 
     pushIssue(
       issues,
       "info",
       `${totalFlagged} class warna (di ${perFileCount.size} file) kemungkinan belum dark-mode-aware`,
       "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
-      details,
+      details
     );
   }
 
@@ -374,7 +441,7 @@ function checkEmbeddedJoins(allFiles) {
       "warning",
       `${nakedDetails.length} embedded join TANPA disambiguation hint`,
       "Query ini pake relational select (`select('*, table(...)')`) tanpa hint kayak `!inner`, `!nama_fk`, atau `alias:table`. Ini yang paling rawan kena PGRST200 kalau ada lebih dari satu foreign key antar 2 tabel itu. Worth di-cek satu-satu.",
-      nakedDetails.slice(0, 50),
+      nakedDetails.slice(0, 50)
     );
   }
 
@@ -384,7 +451,7 @@ function checkEmbeddedJoins(allFiles) {
       "info",
       `${hintedDetails.length} embedded join yang UDAH pake disambiguation hint`,
       "FYI aja — ternyata di banyak file (CetakRaport, ReportHelpers, AdminReports, dll) project ini sebenernya pake embedded join Supabase, bukan resolve manual semua di JS. Yang ini kelihatannya udah aman karena udah ada hint (`!inner`, `!nama_fk`, atau `alias:table`) yang secara eksplisit nunjuk relasi mana yang dimaksud — itu emang cara resmi Supabase buat ngehindarin PGRST200. Kalau ternyata ini emang pattern yang lo pake sengaja, gue bakal update catatan gue soal ini.",
-      hintedDetails.slice(0, 50),
+      hintedDetails.slice(0, 50)
     );
   }
 
@@ -421,7 +488,7 @@ function checkTableDrift(allFiles) {
       "info",
       "strukturfile.txt gak ketemu / gak ada daftar tabel",
       "Skip pengecekan table name drift.",
-      [],
+      []
     );
     return { issues };
   }
@@ -452,7 +519,7 @@ function checkTableDrift(allFiles) {
       "critical",
       `${unknownDetails.length} query .from() nunjuk ke tabel yang gak ada di strukturfile.txt`,
       "Kemungkinan typo nama tabel, atau tabel udah direname/dihapus tapi kodenya belum di-update, atau strukturfile.txt-nya yang basi. Query ini bakal error di runtime.",
-      unknownDetails.slice(0, 50),
+      unknownDetails.slice(0, 50)
     );
   }
 
@@ -463,11 +530,131 @@ function checkTableDrift(allFiles) {
       "info",
       `${neverUsed.length} tabel di schema gak pernah dipanggil lewat .from() di kode`,
       "Belum tentu masalah — bisa aja view, tabel yang diakses cuma dari Supabase function/edge function, atau memang belum dipakai. Sekedar info.",
-      neverUsed.slice(0, 50),
+      neverUsed.slice(0, 50)
     );
   }
 
   return { issues };
+}
+
+// ---------------------------------------------------------------------
+// 7: FILE YANG HARUSNYA PAKE academicYearService TAPI BELUM
+// ---------------------------------------------------------------------
+
+function checkAcademicYearServiceUsage(allFiles) {
+  const issues = [];
+  // Sinyal KUAT: file query tabel academic_years langsung (reimplement
+  // "ambil daftar / tentuin tahun aktif" yang harusnya di service).
+  const reimplementDetails = [];
+  // Sinyal LEMAH: file cuma filter tabel lain pake academic_year_id.
+  // Bisa jadi ID-nya emang dikasih dari luar (parameter/prop) — itu sah.
+  // Ditaruh di "info" biar gak berisik, tapi tetep kelihatan buat di-scan manual.
+  const fieldUsageDetails = [];
+  // Sinyal KUAT #2: hardcode tahun ajaran dari kalender (`.getMonth()` +
+  // template literal `${year}/${year+1}`) — sama sekali gak nyentuh DB
+  // atau service, jadi kalau tahun aktif di-override manual di database,
+  // file ini gak bakal pernah ikutan sinkron.
+  const hardcodedCalendarDetails = [];
+  let bulkBackupExcludedCount = 0;
+
+  for (const file of allFiles) {
+    const rel = toRel(file);
+    if (ACADEMIC_YEAR_SERVICE_FILE_HINT.test(rel)) continue;
+    // Checker tools di system/checkers/ SENGAJA query database mentah buat
+    // validasi independen dari layer aplikasi — bukan bug, exclude.
+    if (rel.includes("/system/") && rel.includes("checkers/")) continue;
+
+    const raw = fs.readFileSync(file, "utf8");
+    const content = stripComments(raw);
+
+    // Udah import service-nya? Skip semua sinyal, aman.
+    if (ACADEMIC_YEAR_SERVICE_IMPORT_HINT.test(content)) continue;
+
+    const lines = content.split(/\r?\n/);
+
+    // --- Sinyal kuat #1: query academic_years langsung ---
+    let matchedStrongTableSignal = false;
+    if (ACADEMIC_YEARS_TABLE_RE.test(content)) {
+      lines.forEach((line, idx) => {
+        if (ACADEMIC_YEARS_TABLE_RE.test(line)) {
+          if (isLikelyBulkBackupRestore(lines, idx)) {
+            bulkBackupExcludedCount++;
+            return; // bagian backup/restore/dashboard multi-tabel, bukan "nentuin tahun aktif"
+          }
+          matchedStrongTableSignal = true;
+          const extra = IS_ACTIVE_LOGIC_RE.test(content)
+            ? " (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)"
+            : "";
+          reimplementDetails.push(
+            `${rel}:${idx + 1} → query tabel academic_years langsung${extra}`
+          );
+        }
+      });
+    }
+
+    // --- Sinyal kuat #2: hardcode tahun ajaran dari kalender ---
+    if (GET_MONTH_CALL_RE.test(content) && HARDCODED_YEAR_TEMPLATE_RE.test(content)) {
+      lines.forEach((line, idx) => {
+        if (HARDCODED_YEAR_TEMPLATE_RE.test(line)) {
+          hardcodedCalendarDetails.push(
+            `${rel}:${idx + 1} → hardcode tahun ajaran dari kalender (pola \`\${...year...}/\${...year...}\`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual`
+          );
+        }
+      });
+    }
+
+    // --- Sinyal lemah: cuma filter tabel lain pake academic_year_id ---
+    // Skip kalau file udah kena sinyal kuat #1 (biar gak dobel-flag hal
+    // yang sama), tapi tetep jalan meski kena sinyal kuat #2, karena itu
+    // isu yang beda (hardcode kalender vs filter-by-id).
+    if (!matchedStrongTableSignal) {
+      lines.forEach((line, idx) => {
+        if (ACADEMIC_YEAR_FIELD_RE.test(line) && SUPABASE_CALL_RE.test(content)) {
+          fieldUsageDetails.push(
+            `${rel}:${idx + 1} → filter pakai academic_year_id (cek: ID-nya didapat dari mana — kalau dikasih via parameter/prop, ini WAJAR & gak perlu import service)`
+          );
+        }
+      });
+    }
+  }
+
+  if (reimplementDetails.length > 0) {
+    pushIssue(
+      issues,
+      "warning",
+      `${reimplementDetails.length} lokasi query tabel academic_years langsung tanpa academicYearService`,
+      "File ini query tabel academic_years sendiri (biasanya buat ambil daftar tahun ajaran dan/atau nentuin mana yang aktif) tanpa lewat academicYearService. Kalau logic 'tahun ajaran aktif itu yang mana' berubah di masa depan, tempat ini gampang kelewat sinkron. Worth dipertimbangkan buat dipindah ke service.",
+      reimplementDetails.slice(0, 50)
+    );
+  }
+
+  if (hardcodedCalendarDetails.length > 0) {
+    pushIssue(
+      issues,
+      "warning",
+      `${hardcodedCalendarDetails.length} lokasi kemungkinan hardcode tahun ajaran dari kalender, bukan dari DB/service`,
+      "File ini ngitung tahun ajaran sendiri dari tanggal hari ini (pola `.getMonth()` + template literal semacam `${currentYear}/${currentYear + 1}`), gak pernah nyentuh tabel academic_years atau academicYearService sama sekali. Ini lebih riskan daripada sekadar 'belum pake service' — kalau tahun ajaran aktif di database di-override manual (misal kalender akademik meleset dari asumsi kode), nilai di file ini gak bakal pernah ikut berubah. Cek manual apakah ini emang disengaja (misal fallback pas query gagal) atau beneran jadi sumber utama.",
+      hardcodedCalendarDetails.slice(0, 50)
+    );
+  }
+
+  if (fieldUsageDetails.length > 0) {
+    pushIssue(
+      issues,
+      "info",
+      `${fieldUsageDetails.length} lokasi filter pakai academic_year_id tanpa import academicYearService`,
+      "Sekadar FYI, BUKAN otomatis berarti salah. File ini filter query pakai academic_year_id tapi gak import academicYearService — ini sah-sah aja kalau ID-nya emang diterima dari luar (parameter fungsi / prop komponen) dan file ini cuma 'consumer', bukan yang nentuin tahun aktif. Cek manual satu-satu.",
+      fieldUsageDetails.slice(0, 50)
+    );
+  }
+
+  return {
+    issues,
+    reimplementCount: reimplementDetails.length,
+    hardcodedCalendarCount: hardcodedCalendarDetails.length,
+    fieldUsageCount: fieldUsageDetails.length,
+    bulkBackupExcludedCount,
+  };
 }
 
 // ---------------------------------------------------------------------
@@ -479,9 +666,7 @@ function main() {
   const startTime = Date.now();
 
   if (!fs.existsSync(SRC_DIR)) {
-    console.error(
-      "❌ Folder src/ gak ketemu. Jalankan script ini dari root project.",
-    );
+    console.error("❌ Folder src/ gak ketemu. Jalankan script ini dari root project.");
     process.exit(1);
   }
 
@@ -490,24 +675,27 @@ function main() {
 
   const importResult = checkImportsAndOrphans(allFiles);
   console.log(
-    `   → import & orphan check selesai (${importResult.brokenCount} broken import, ${importResult.orphanCount} orphan file)`,
+    `   → import & orphan check selesai (${importResult.brokenCount} broken import, ${importResult.orphanCount} orphan file)`
   );
 
   const menuResult = checkMenuSidebarConsistency();
   console.log(`   → menu/sidebar consistency check selesai`);
 
   const darkModeResult = checkDarkModeRegression(allFiles);
-  console.log(
-    `   → dark mode heuristic selesai (${darkModeResult.flaggedCount} flagged)`,
-  );
+  console.log(`   → dark mode heuristic selesai (${darkModeResult.flaggedCount} flagged)`);
 
   const joinResult = checkEmbeddedJoins(allFiles);
   console.log(
-    `   → embedded join check selesai (${joinResult.nakedCount} tanpa hint, ${joinResult.hintedCount} udah ada hint)`,
+    `   → embedded join check selesai (${joinResult.nakedCount} tanpa hint, ${joinResult.hintedCount} udah ada hint)`
   );
 
   const tableResult = checkTableDrift(allFiles);
   console.log(`   → table name drift check selesai`);
+
+  const academicYearResult = checkAcademicYearServiceUsage(allFiles);
+  console.log(
+    `   → academicYearService usage check selesai (${academicYearResult.reimplementCount} reimplement langsung, ${academicYearResult.hardcodedCalendarCount} hardcode kalender, ${academicYearResult.fieldUsageCount} sekadar filter field, ${academicYearResult.bulkBackupExcludedCount} di-exclude karena bulk backup/restore)`
+  );
 
   const categories = [
     {
@@ -531,6 +719,11 @@ function main() {
       issues: joinResult.issues,
     },
     { id: "tableDrift", label: "Table Name Drift", issues: tableResult.issues },
+    {
+      id: "academicYearService",
+      label: "Academic Year Service Usage",
+      issues: academicYearResult.issues,
+    },
   ];
 
   let critical = 0,
@@ -541,11 +734,10 @@ function main() {
       if (issue.severity === "critical") critical++;
       else if (issue.severity === "warning") warning++;
       else info++;
-    }),
+    })
   );
 
-  const overallStatus =
-    critical > 0 ? "critical" : warning > 0 ? "warning" : "healthy";
+  const overallStatus = critical > 0 ? "critical" : warning > 0 ? "warning" : "healthy";
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -567,12 +759,10 @@ function main() {
 
   console.log(`\n✅ Selesai dalam ${report.executionTimeMs}ms`);
   console.log(
-    `   Status: ${overallStatus.toUpperCase()} | Critical: ${critical} | Warning: ${warning} | Info: ${info}`,
+    `   Status: ${overallStatus.toUpperCase()} | Critical: ${critical} | Warning: ${warning} | Info: ${info}`
   );
   console.log(`   Laporan disimpan ke: ${toRel(OUTPUT_FILE)}`);
-  console.log(
-    `   Buka app -> Monitor Sistem -> tab "Code Audit" buat liat hasilnya.\n`,
-  );
+  console.log(`   Buka app -> Monitor Sistem -> tab "Code Audit" buat liat hasilnya.\n`);
 }
 
 main();

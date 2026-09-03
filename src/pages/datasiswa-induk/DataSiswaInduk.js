@@ -38,69 +38,21 @@ import {
   Pencil,
   Loader2,
   ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { exportStudentProfilePDF } from "./DataSiswaIndukPDF";
 import { exportStudentProfileExcel } from "./DataSiswaIndukExcel";
+import {
+  REQUIRED_FIELDS,
+  getCompletionStatus,
+  resolveCompletion,
+} from "../../utils/studentProfileCompletion";
 
-// Field yang dianggap "wajib" buat status Lengkap. Samain persis sama
-// field di form ProfileInfo (StudentProfile.js).
-// ⚠️ UPDATE: `nama_ortu` udah gak dipake lagi di form (diganti nama_ayah +
-// nama_ibu) dan emang gak pernah keisi lagi di DB -- sebelumnya bikin
-// status siswa gak pernah bisa "Lengkap" walau udah isi semua data.
-// ⚠️ UPDATE 2: sebelumnya cuma 5 field (alamat, no_hp, nama_ayah,
-// nama_ibu, no_hp_ortu) -- terlalu sempit, jadi siswa yang baru keisi
-// data kontak dasar doang (misal abis bulk import) udah kecap "Lengkap"
-// walau NIK/NISN/No KK/Akta/agama/data lengkap ortu masih kosong.
-// Diperluas jadi 20 field data penting (data kependudukan + identitas
-// lengkap ortu). Field yang SENGAJA gak dimasukin karena kondisional /
-// gak semua siswa punya / baru keisi belakangan: no_hp (siswa), no_kip
-// (cuma penerima KIP), no_peserta_ujian/no_ijazah/no_daftar (baru keisi
-// pas lulus), kode_pos (sering nempel di teks alamat), keterangan (cuma
-// catatan tambahan), anak_ke, sekolah_asal.
-const REQUIRED_FIELDS = [
-  "jenis_kelamin",
-  "tempat_lahir",
-  "tanggal_lahir",
-  "nisn",
-  "nik",
-  "no_kk",
-  "no_akta_lahir",
-  "agama",
-  "alamat",
-  "nama_ayah",
-  "nik_ayah",
-  "pekerjaan_ayah",
-  "pendidikan_ayah",
-  "tempat_tgl_lahir_ayah",
-  "nama_ibu",
-  "nik_ibu",
-  "pekerjaan_ibu",
-  "pendidikan_ibu",
-  "tempat_tgl_lahir_ibu",
-  "no_hp_ortu",
-];
-
-// Tentuin status kelengkapan 1 siswa berdasarkan row student_profile_details
-// (bisa null kalau belum pernah isi sama sekali).
-function getCompletionStatus(detail) {
-  if (!detail) return "belum";
-  const filledCount = REQUIRED_FIELDS.filter(
-    (f) => detail[f] && String(detail[f]).trim() !== ""
-  ).length;
-  if (filledCount === 0) return "belum";
-  if (filledCount === REQUIRED_FIELDS.length) return "lengkap";
-  return "sebagian";
-}
-
-// Konversi kode gender dari tabel `students` ("P"/"L") ke label penuh yang
-// dipakai konsisten di UI & student_profile_details ("Perempuan"/"Laki-laki").
-function genderCodeToLabel(code) {
-  if (!code) return "";
-  const normalized = String(code).trim().toUpperCase();
-  if (normalized === "P") return "Perempuan";
-  if (normalized === "L") return "Laki-laki";
-  return "";
-}
+// REQUIRED_FIELDS, getCompletionStatus, genderCodeToLabel (lewat
+// resolveCompletion) sekarang diimport dari utils/studentProfileCompletion.js
+// -- dipake bareng sama halaman Data Siswa (badge kelengkapan) biar status
+// kelengkapan SELALU sama persis di kedua halaman.
 
 // Ekstrak jenjang (7/8/9) dari class_id, asumsi format "7A", "8B", "9C"
 // (angka di depan = jenjang). Kalau format class_id di project ini beda
@@ -500,35 +452,20 @@ export default function KelengkapanDataSiswa({ currentUser }) {
           // students.id di project ini (bukan users.id).
           const rawDetail = detailMap[s.id] || null;
 
-          // Prioritas jenis_kelamin: students.gender (kode P/L dari
-          // admin/SQL, dikonversi ke label penuh) dulu, fallback ke
+          // resolveCompletion: prioritas jenis_kelamin dari students.gender
+          // (kode P/L, dikonversi ke label penuh) dulu, fallback ke
           // student_profile_details.jenis_kelamin (form siswa) kalau
-          // students.gender kosong/gak valid.
-          const resolvedJenisKelamin =
-            genderCodeToLabel(s.gender) || rawDetail?.jenis_kelamin || "";
-
-          // Suntikkan hasil resolve ke `detail` (bukan bikin field baru),
-          // biar DETAIL_ROWS (kartu expand) & DataSiswaIndukPDF.js yang
-          // sama-sama baca `detail.jenis_kelamin` otomatis dapet nilai yang
-          // benar tanpa perlu diubah lagi. Kalau siswa belum pernah isi
-          // form sama sekali (rawDetail null) TAPI jenis_kelamin udah ada
-          // di students, tetep bikin object detail minimal biar muncul di
-          // UI (bukan dianggap "belum isi apa-apa").
-          const detail = resolvedJenisKelamin
-            ? { ...(rawDetail || {}), jenis_kelamin: resolvedJenisKelamin }
-            : rawDetail;
+          // students.gender kosong/gak valid -- hasil gabungannya dipake
+          // buat DETAIL_ROWS (kartu expand), DataSiswaIndukPDF.js, DAN
+          // status kelengkapan sekaligus (jenis_kelamin ada di
+          // REQUIRED_FIELDS, jadi siswa yang gender-nya udah keisi lewat
+          // students.gender tetep ke-anggep "keisi" buat field ini).
+          const { detail, status } = resolveCompletion(s.gender, rawDetail);
 
           return {
             ...s,
             detail,
-            // ⚠️ UPDATE: dulu dihitung dari `rawDetail` doang (data asli
-            // student_profile_details), karena jenis_kelamin gak termasuk
-            // REQUIRED_FIELDS jadi gak masalah. Sekarang jenis_kelamin ADA
-            // di REQUIRED_FIELDS, jadi harus dihitung dari `detail` (versi
-            // merged) biar siswa yang gender-nya udah keisi lewat
-            // students.gender (bukan lewat form siswa) tetep ke-anggep
-            // "keisi" buat field ini, bukan dianggap kosong.
-            status: getCompletionStatus(detail),
+            status,
             // Status verifikasi (BEDA dari status kelengkapan di atas):
             // kelengkapan = "udah diisi apa belum", verifikasi = "udah
             // dicek admin/TU ke dokumen fisik apa belum & masih valid".
@@ -808,6 +745,41 @@ export default function KelengkapanDataSiswa({ currentUser }) {
     setActivePageTab(isAdmin ? "isi" : "preview");
   };
 
+  // ===== NAVIGASI ANAK PANAH (Sebelumnya / Berikutnya) =====
+  // Posisi siswa yang lagi dibuka di dalam `filteredRows` (list HASIL
+  // FILTER/SEARCH yang lagi aktif, bukan cuma yang ke-render/paginatedRows)
+  // -- biar panah kiri-kanan konsisten sama urutan yang keliatan TU pas
+  // terakhir di tab "Data Siswa" (misal lagi difilter 1 kelas doang).
+  const currentStudentIndex = useMemo(() => {
+    if (!selectedStudent) return -1;
+    return filteredRows.findIndex((r) => r.id === selectedStudent.id);
+  }, [filteredRows, selectedStudent]);
+
+  const hasPrevStudent = currentStudentIndex > 0;
+  const hasNextStudent = currentStudentIndex >= 0 && currentStudentIndex < filteredRows.length - 1;
+
+  // direction: -1 = sebelumnya, +1 = berikutnya. Sengaja TIDAK manggil
+  // openStudent() biar activePageTab ("isi" / "preview") gak ke-reset --
+  // TU yang lagi di tab Preview pindah siswa ya tetep di Preview, yang lagi
+  // di tab Isi Data ya tetep di Isi Data (form-nya otomatis kereset ke
+  // data siswa baru lewat emptyAdminForm).
+  const goToAdjacentStudent = (direction) => {
+    if (currentStudentIndex === -1) return;
+    if (!confirmDiscardIfDirty()) return;
+    const nextIndex = currentStudentIndex + direction;
+    if (nextIndex < 0 || nextIndex >= filteredRows.length) return;
+    const nextStudent = filteredRows[nextIndex];
+    setSelectedStudent(nextStudent);
+    setAdminForm(emptyAdminForm(nextStudent.detail));
+    setAdminEditError(null);
+    setAdminFormDirty(false);
+    setSaveSuccessVisible(false);
+    // Jaga-jaga: kalau TU geser ke siswa yang posisinya di luar halaman
+    // yang lagi ke-render di list (visibleCount), lebarin dulu biar pas
+    // balik ke tab "Data Siswa" siswa itu udah keliatan di list juga.
+    setVisibleCount((v) => Math.max(v, nextIndex + 1));
+  };
+
   // ===== Deep-link dari halaman "Data Siswa" (?student=<id>) =====
   // Begitu `rows` selesai kemuat, cek apakah halaman ini dibuka lewat link
   // dari Students.js. Kalau iya & siswanya ketemu, langsung buka detailnya
@@ -924,7 +896,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                 disabled={disabled}
                 onClick={() => goToTab(tab.key)}
                 title={disabled ? "Pilih siswa dulu dari tab Data Siswa" : undefined}
-                className={`shrink-0 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition ${
+                className={`shrink-0 px-4 py-2.5 text-base sm:text-lg font-bold border-b-2 -mb-px transition ${
                   active
                     ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
                     : disabled
@@ -1335,6 +1307,36 @@ export default function KelengkapanDataSiswa({ currentUser }) {
               </div>
             </div>
             <div className="shrink-0 flex flex-wrap items-center gap-2">
+              {/* ====== NAVIGASI SEBELUMNYA / BERIKUTNYA ====== */}
+              {/* Geser ke siswa sebelum/sesudahnya di daftar hasil filter
+                  yang lagi aktif, tanpa harus balik dulu ke tab "Data
+                  Siswa". Disable otomatis kalau udah di ujung list
+                  (siswa pertama/terakhir hasil filter). */}
+              {currentStudentIndex !== -1 && (
+                <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                  <button
+                    type="button"
+                    onClick={() => goToAdjacentStudent(-1)}
+                    disabled={!hasPrevStudent}
+                    title="Siswa sebelumnya"
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 px-1 whitespace-nowrap tabular-nums">
+                    {currentStudentIndex + 1} / {filteredRows.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => goToAdjacentStudent(1)}
+                    disabled={!hasNextStudent}
+                    title="Siswa berikutnya"
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              )}
               <button
                 onClick={goToDataSiswa}
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-3 py-2 rounded-lg transition"
@@ -1510,10 +1512,10 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                   { label: "Nama", value: selectedStudent.full_name },
                   { label: "NIS", value: selectedStudent.nis },
                   { label: "Kelas", value: selectedStudent.class_id },
-                  {
-                    label: "Status Kelengkapan",
-                    value: STATUS_META[selectedStudent.status]?.label,
-                  },
+                  // "Status Kelengkapan" SENGAJA gak dimasukin lagi ke sini --
+                  // udah keliatan jelas di badge (STATUS_META) pada header
+                  // "Siswa Terpilih" di atas tabel ini, jadi baris ini dobel
+                  // & gak perlu.
                   ...DETAIL_ROWS.map(({ key, label, combine }) => ({
                     label,
                     value: getDetailRowValue(adminForm, { key, combine }),
