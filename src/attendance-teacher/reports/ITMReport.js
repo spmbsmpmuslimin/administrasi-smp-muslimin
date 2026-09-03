@@ -10,65 +10,15 @@ import {
 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import { exportITMReportToExcel } from "./ITMReportExcel";
-
-// Jam schedule
-const JAM_SCHEDULE = {
-  Senin: {
-    1: { start: "07:00", end: "08:00" },
-    2: { start: "08:00", end: "08:40" },
-    3: { start: "08:40", end: "09:20" },
-    4: { start: "09:20", end: "10:00" },
-    5: { start: "10:30", end: "11:05" },
-    6: { start: "11:05", end: "11:40" },
-    7: { start: "11:40", end: "12:15" },
-    8: { start: "13:00", end: "13:35" },
-    9: { start: "13:35", end: "14:10" },
-  },
-  Selasa: {
-    1: { start: "07:00", end: "07:40" },
-    2: { start: "07:40", end: "08:20" },
-    3: { start: "08:20", end: "09:00" },
-    4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
-    8: { start: "13:00", end: "13:35" },
-    9: { start: "13:35", end: "14:10" },
-  },
-  Rabu: {
-    1: { start: "07:00", end: "07:40" },
-    2: { start: "07:40", end: "08:20" },
-    3: { start: "08:20", end: "09:00" },
-    4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
-    8: { start: "13:00", end: "13:35" },
-    9: { start: "13:35", end: "14:10" },
-  },
-  Kamis: {
-    1: { start: "07:00", end: "07:40" },
-    2: { start: "07:40", end: "08:20" },
-    3: { start: "08:20", end: "09:00" },
-    4: { start: "09:00", end: "09:40" },
-    5: { start: "10:10", end: "10:50" },
-    6: { start: "10:50", end: "11:30" },
-    7: { start: "11:30", end: "12:10" },
-    8: { start: "13:00", end: "13:35" },
-    9: { start: "13:35", end: "14:10" },
-  },
-  Jumat: {
-    1: { start: "07:00", end: "07:30" },
-    2: { start: "07:30", end: "08:00" },
-    3: { start: "08:00", end: "08:30" },
-    4: { start: "08:30", end: "09:00" },
-    5: { start: "09:30", end: "10:00" },
-    6: { start: "10:00", end: "10:30" },
-    7: { start: "", end: "" },
-    8: { start: "", end: "" },
-    9: { start: "", end: "" },
-  },
-};
+// ✅ FIX: JAM_SCHEDULE & getJamKe() sebelumnya di-hardcode lokal di file
+// ini, terpisah dari "../../utils/jamPelajaran" yang jadi single source
+// of truth (dipake KelolaJadwalPelajaran.js & AdminJadwalMassal.js).
+// Definisi lokal itu udah usang -- Senin & Jumat beda 20-30 menit dari
+// jam yang sekarang berlaku, dan Jumat jam 7 sama sekali gak ke-mapping
+// (mapping lama cuma sampe jam 6). Akibatnya laporan tatap muka gak
+// sesuai jadwal terbaru. Sekarang pake findPeriod() dari sumber yang
+// sama biar konsisten satu aplikasi.
+import { findPeriod } from "../../utils/jamPelajaran";
 
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 const FULL_DAY_NAMES = ["Senin", "Selasa", "Rabu", "Kamis", "Jum'at"];
@@ -124,66 +74,6 @@ const ITMReport = () => {
 
     fetchTeachers();
   }, []);
-
-  // Helper: Mapping start_time ke jam ke-berapa
-  const getJamKe = (day, startTime) => {
-    const mapping = {
-      Senin: {
-        "07:00:00": 1,
-        "08:00:00": 2,
-        "08:40:00": 3,
-        "09:20:00": 4,
-        "10:30:00": 5,
-        "11:05:00": 6,
-        "11:40:00": 7,
-        "13:00:00": 8,
-        "13:35:00": 9,
-      },
-      Selasa: {
-        "07:00:00": 1,
-        "07:40:00": 2,
-        "08:20:00": 3,
-        "09:00:00": 4,
-        "10:10:00": 5,
-        "10:50:00": 6,
-        "11:30:00": 7,
-        "13:00:00": 8,
-        "13:35:00": 9,
-      },
-      Rabu: {
-        "07:00:00": 1,
-        "07:40:00": 2,
-        "08:20:00": 3,
-        "09:00:00": 4,
-        "10:10:00": 5,
-        "10:50:00": 6,
-        "11:30:00": 7,
-        "13:00:00": 8,
-        "13:35:00": 9,
-      },
-      Kamis: {
-        "07:00:00": 1,
-        "07:40:00": 2,
-        "08:20:00": 3,
-        "09:00:00": 4,
-        "10:10:00": 5,
-        "10:50:00": 6,
-        "11:30:00": 7,
-        "13:00:00": 8,
-        "13:35:00": 9,
-      },
-      Jumat: {
-        "07:00:00": 1,
-        "07:30:00": 2,
-        "08:00:00": 3,
-        "08:30:00": 4,
-        "09:30:00": 5,
-        "10:00:00": 6,
-      },
-    };
-
-    return mapping[day]?.[startTime] || null;
-  };
 
   // Helper: Get dates for each week in month
   const getWeeksInMonth = (year, month) => {
@@ -299,15 +189,20 @@ const ITMReport = () => {
       const weeks = getWeeksInMonth(selectedYear, selectedMonth);
 
       const formattedSchedules =
-        schedules?.map((schedule) => ({
-          id: schedule.id,
-          day: schedule.day,
-          start_time: schedule.start_time,
-          end_time: schedule.end_time,
-          class_id: schedule.class_id,
-          className: schedule.class_id,
-          jamKe: getJamKe(schedule.day, schedule.start_time),
-        })) || [];
+        schedules?.map((schedule) => {
+          const period = findPeriod(schedule.day, schedule.start_time, schedule.end_time);
+          return {
+            id: schedule.id,
+            day: schedule.day,
+            start_time: schedule.start_time,
+            end_time: schedule.end_time,
+            class_id: schedule.class_id,
+            className: schedule.class_id,
+            // findPeriod balikin string ("1".."9") atau null, sedangkan
+            // jamKe di-loop sebagai number 1-9 -- Number() biar match
+            jamKe: period ? Number(period) : null,
+          };
+        }) || [];
 
       const formattedAttendance = {};
       attendance?.forEach((record) => {

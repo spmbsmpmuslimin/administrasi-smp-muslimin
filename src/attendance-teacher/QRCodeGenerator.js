@@ -28,7 +28,7 @@ const QRCodeGenerator = () => {
     const ctx = canvas.getContext("2d");
     const qrSize = 600;
     const padding = 40;
-    const bottomSpace = 150; // Space for logo and text
+    const bottomSpace = 190; // Space for logo and text (2 baris)
     const width = qrSize + padding * 2;
     const height = qrSize + padding * 2 + bottomSpace;
 
@@ -85,6 +85,11 @@ const QRCodeGenerator = () => {
         const textY = logoY + logoSize + 8;
         ctx.fillText("SMP MUSLIMIN CILILIN", width / 2, textY);
 
+        // Baris kedua: PRESENSI GURU
+        ctx.fillStyle = "#3b82f6";
+        ctx.font = `bold ${fontSize - 2}px Arial`;
+        ctx.fillText("PRESENSI GURU", width / 2, textY + fontSize + 6);
+
         // Convert canvas to data URL
         setFinalQrUrl(canvas.toDataURL("image/png"));
       };
@@ -101,6 +106,10 @@ const QRCodeGenerator = () => {
 
         const textY = lineY + 40;
         ctx.fillText("SMP MUSLIMIN CILILIN", width / 2, textY);
+
+        ctx.fillStyle = "#3b82f6";
+        ctx.font = `bold ${fontSize - 4}px Arial`;
+        ctx.fillText("PRESENSI GURU", width / 2, textY + fontSize + 6);
 
         setFinalQrUrl(canvas.toDataURL("image/png"));
       };
