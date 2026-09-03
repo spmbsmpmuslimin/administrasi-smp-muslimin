@@ -671,7 +671,9 @@ const CekStatusNilai = ({ user, darkMode, onShowToast }) => {
                     Semester Sistem Aktif
                   </span>
                   <span className={`font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    {academicInfo.semester === 1 ? "Semester 1 (Ganjil)" : "Semester 2 (Genap)"}
+                    {academicInfo.activeSemester === 1
+                      ? "Semester 1 (Ganjil)"
+                      : "Semester 2 (Genap)"}
                   </span>
                 </div>
                 <div className="flex flex-col">
@@ -689,8 +691,8 @@ const CekStatusNilai = ({ user, darkMode, onShowToast }) => {
                           ? "bg-green-900/30 text-green-300"
                           : "bg-green-100 text-green-700"
                         : darkMode
-                        ? "bg-red-900/30 text-red-300"
-                        : "bg-red-100 text-red-700"
+                          ? "bg-red-900/30 text-red-300"
+                          : "bg-red-100 text-red-700"
                     }`}
                   >
                     {academicInfo.isActive ? "Aktif" : "Nonaktif"}
@@ -705,7 +707,7 @@ const CekStatusNilai = ({ user, darkMode, onShowToast }) => {
                     <div>Active Semester ID: {activeSemesterId}</div>
                     <div>Selected Semester ID: {selectedSemesterId}</div>
                     <div>Active Year: {activeYear}</div>
-                    <div>Semester Aktif: {academicInfo.semester}</div>
+                    <div>Semester Aktif: {academicInfo.activeSemester}</div>
                     <div>Available Semesters: {availableSemesters.length}</div>
                   </div>
                 </div>
@@ -957,8 +959,8 @@ const CekStatusNilai = ({ user, darkMode, onShowToast }) => {
                                 ? "bg-gray-800/50 border-gray-700"
                                 : "bg-gray-800 border-gray-700"
                               : index % 2 === 0
-                              ? "bg-blue-50 border-blue-100"
-                              : "bg-white border-blue-100"
+                                ? "bg-blue-50 border-blue-100"
+                                : "bg-white border-blue-100"
                           }`}
                         >
                           <td

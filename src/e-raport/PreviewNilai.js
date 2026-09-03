@@ -203,7 +203,7 @@ function PreviewNilai({ classId, semester, setSemester, academicYear }) {
       const workbook = new ExcelJS.Workbook();
       const semesterLabel =
         academicInfo.semesterText ||
-        (academicInfo.semester === 1 ? "Semester 1 (Ganjil)" : "Semester 2 (Genap)");
+        (academicInfo.activeSemester === 1 ? "Semester 1 (Ganjil)" : "Semester 2 (Genap)");
       const tahunAjaran = academicInfo.year || "Tahun Ajaran";
 
       // ========== SHEET 1: LEGER NILAI (Urut Nama) ==========

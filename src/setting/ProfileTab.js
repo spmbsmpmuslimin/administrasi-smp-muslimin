@@ -117,7 +117,7 @@ const ProfileTab = ({
         await loadTeachingAssignments(
           userData.teacher_id,
           academicInfo.year,
-          academicInfo.semester,
+          academicInfo.activeSemester,
           false
         );
       }
@@ -279,12 +279,12 @@ const ProfileTab = ({
       !isInitialLoad.current &&
       profileData?.teacher_id &&
       activeAcademicInfo?.year &&
-      activeAcademicInfo?.semester // ✅ TAMBAH CHECK INI!
+      activeAcademicInfo?.activeSemester // ✅ TAMBAH CHECK INI!
     ) {
       loadTeachingAssignments(
         profileData.teacher_id,
         activeAcademicInfo.year,
-        activeAcademicInfo.semester, // ✅ PASS SEMESTER!
+        activeAcademicInfo.activeSemester, // ✅ PASS SEMESTER!
         showHistory
       );
     }
@@ -292,7 +292,7 @@ const ProfileTab = ({
     showHistory,
     profileData?.teacher_id,
     activeAcademicInfo?.year, // ✅ GANTI
-    activeAcademicInfo?.semester, // ✅ TAMBAH!
+    activeAcademicInfo?.activeSemester, // ✅ TAMBAH!
     loadTeachingAssignments,
   ]);
 

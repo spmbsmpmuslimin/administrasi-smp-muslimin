@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-01T00:55:28.135Z",
-  "executionTimeMs": 331,
-  "filesScanned": 232,
+  "generatedAt": "2026-09-02T09:56:39.743Z",
+  "executionTimeMs": 3549,
+  "filesScanned": 226,
   "summary": {
     "status": "critical",
     "criticalCount": 1,
@@ -16,12 +16,10 @@
       "issues": [
         {
           "severity": "info",
-          "title": "12 file gak pernah di-import di mana pun (dead file candidate)",
+          "title": "10 file gak pernah di-import di mana pun (dead file candidate)",
           "description": "File-file ini gak ketemu di-import statis dari file lain. Kemungkinan sisa refactor / fitur lama. Cek manual dulu sebelum dihapus — bisa aja dipake lewat dynamic import atau string reference yang gak kebaca regex.",
           "details": [
             "src/components/ConnectedDevices.js",
-            "src/hooks/useAuth.js",
-            "src/pages/withPortalBack.js",
             "src/portal-siswa/belajar/bahasa-inggris/ChapterDetail.js",
             "src/portal-siswa/belajar/bahasa-inggris/ChapterList.js",
             "src/reports/modals/AcademicGradesView.js",
@@ -46,21 +44,22 @@
       "issues": [
         {
           "severity": "info",
-          "title": "4625 class warna (di 169 file) kemungkinan belum dark-mode-aware",
+          "title": "4732 class warna (di 166 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
+            "src/spmb/StudentForm.js — 120 class belum ada dark: variant",
             "src/pages/CatatanSiswa.js — 118 class belum ada dark: variant",
             "src/pages/grades/Grades.js — 108 class belum ada dark: variant",
             "src/spmb/ClassDivision.js — 94 class belum ada dark: variant",
             "src/components/AdminDashboard.js — 93 class belum ada dark: variant",
+            "src/pages/Students.js — 93 class belum ada dark: variant",
             "src/pages/grades/GradesKatrol.js — 88 class belum ada dark: variant",
             "src/setting/UserManagementTab.js — 86 class belum ada dark: variant",
-            "src/pages/Students.js — 84 class belum ada dark: variant",
             "src/pages/TeacherSchedule.js — 82 class belum ada dark: variant",
             "src/pages/attendance/AttendanceManagement.js — 78 class belum ada dark: variant",
-            "src/spmb/StudentForm.js — 78 class belum ada dark: variant",
             "src/setting/school-management/SchoolSettingsTab.js — 76 class belum ada dark: variant",
+            "src/pages/datasiswa-induk/DataSiswaInduk.js — 74 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
             "src/components/HomeroomTeacherDashboard.js — 67 class belum ada dark: variant",
             "src/reports/modals/AdminReportModal.js — 66 class belum ada dark: variant",
@@ -80,15 +79,14 @@
             "src/setting/SystemTab.js — 50 class belum ada dark: variant",
             "src/pages/attendance/AdminAttendance.js — 49 class belum ada dark: variant",
             "src/setting/kelola-raport/RekapKelulusan.js — 48 class belum ada dark: variant",
-            "src/components/KelengkapanDataSiswa.js — 47 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
             "src/pages/Classes.js — 47 class belum ada dark: variant",
+            "src/setting/kelola-raport/ImportRaportForm.js — 47 class belum ada dark: variant",
             "src/setting/ProfileTab.js — 47 class belum ada dark: variant",
             "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant",
             "src/pages/DenahDuduk.js — 45 class belum ada dark: variant",
-            "src/system/MonitorResults.js — 44 class belum ada dark: variant",
-            "src/perpustakaan/Pengembalian.js — 42 class belum ada dark: variant"
+            "src/system/MonitorResults.js — 44 class belum ada dark: variant"
           ]
         }
       ]
@@ -113,9 +111,9 @@
             "src/portal-siswa/StudentRaport.js:137 → select(\"id, academic_year, semester, status, student_report_grades(subject, score)\")",
             "src/reports/AdminReports.js:481 → select(\"*, students(nis, full_name, class_id)\")",
             "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
-            "src/setting/kelola-raport/ManajemenRaportTable.js:102 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
-            "src/setting/kelola-raport/RekapKelulusan.js:105 → select(\"student_nis, semester, student_report_grades(id, subject, score)\")",
-            "src/setting/kelola-raport/RekapMultiSemester.js:52 → select(\"student_name, student_nis, semester, student_report_grades(subject, score)\")"
+            "src/setting/kelola-raport/ManajemenRaportTable.js:215 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
+            "src/setting/kelola-raport/RekapKelulusan.js:153 → select(\"student_nis, semester, student_report_grades(id, subject, score)\")",
+            "src/setting/kelola-raport/RekapMultiSemester.js:400 → select(\"student_name, student_nis, semester, student_report_grades(subject, score)\")"
           ]
         },
         {
@@ -162,17 +160,24 @@
       "issues": [
         {
           "severity": "critical",
-          "title": "1 query .from() nunjuk ke tabel yang gak ada di strukturfile.txt",
+          "title": "7 query .from() nunjuk ke tabel yang gak ada di strukturfile.txt",
           "description": "Kemungkinan typo nama tabel, atau tabel udah direname/dihapus tapi kodenya belum di-update, atau strukturfile.txt-nya yang basi. Query ini bakal error di runtime.",
           "details": [
-            "src/reports/modals/AcademicGradesView.js:69 → .from(\"subjects\")"
+            "src/reports/modals/AcademicGradesView.js:69 → .from(\"subjects\")",
+            "src/setting/kelola-raport/KelolaKKM.js:53 → .from(\"kkm_mapel\")",
+            "src/setting/kelola-raport/KelolaKKM.js:68 → .from(\"kelulusan_config\")",
+            "src/setting/kelola-raport/KelolaKKM.js:116 → .from(\"kkm_mapel\")",
+            "src/setting/kelola-raport/KelolaKKM.js:145 → .from(\"kelulusan_config\")",
+            "src/setting/kelola-raport/RekapKelulusan.js:72 → .from(\"kkm_mapel\")",
+            "src/setting/kelola-raport/RekapKelulusan.js:74 → .from(\"kelulusan_config\")"
           ]
         },
         {
           "severity": "info",
-          "title": "6 tabel di schema gak pernah dipanggil lewat .from() di kode",
+          "title": "7 tabel di schema gak pernah dipanggil lewat .from() di kode",
           "description": "Belum tentu masalah — bisa aja view, tabel yang diakses cuma dari Supabase function/edge function, atau memang belum dipakai. Sekedar info.",
           "details": [
+            "Ringkasan",
             "academic_events",
             "attendances_view",
             "event_categories",

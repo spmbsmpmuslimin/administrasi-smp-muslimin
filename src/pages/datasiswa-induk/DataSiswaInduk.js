@@ -45,7 +45,38 @@ import { exportStudentProfileExcel } from "./DataSiswaIndukExcel";
 // ⚠️ UPDATE: `nama_ortu` udah gak dipake lagi di form (diganti nama_ayah +
 // nama_ibu) dan emang gak pernah keisi lagi di DB -- sebelumnya bikin
 // status siswa gak pernah bisa "Lengkap" walau udah isi semua data.
-const REQUIRED_FIELDS = ["alamat", "no_hp", "nama_ayah", "nama_ibu", "no_hp_ortu"];
+// ⚠️ UPDATE 2: sebelumnya cuma 5 field (alamat, no_hp, nama_ayah,
+// nama_ibu, no_hp_ortu) -- terlalu sempit, jadi siswa yang baru keisi
+// data kontak dasar doang (misal abis bulk import) udah kecap "Lengkap"
+// walau NIK/NISN/No KK/Akta/agama/data lengkap ortu masih kosong.
+// Diperluas jadi 20 field data penting (data kependudukan + identitas
+// lengkap ortu). Field yang SENGAJA gak dimasukin karena kondisional /
+// gak semua siswa punya / baru keisi belakangan: no_hp (siswa), no_kip
+// (cuma penerima KIP), no_peserta_ujian/no_ijazah/no_daftar (baru keisi
+// pas lulus), kode_pos (sering nempel di teks alamat), keterangan (cuma
+// catatan tambahan), anak_ke, sekolah_asal.
+const REQUIRED_FIELDS = [
+  "jenis_kelamin",
+  "tempat_lahir",
+  "tanggal_lahir",
+  "nisn",
+  "nik",
+  "no_kk",
+  "no_akta_lahir",
+  "agama",
+  "alamat",
+  "nama_ayah",
+  "nik_ayah",
+  "pekerjaan_ayah",
+  "pendidikan_ayah",
+  "tempat_tgl_lahir_ayah",
+  "nama_ibu",
+  "nik_ibu",
+  "pekerjaan_ibu",
+  "pendidikan_ibu",
+  "tempat_tgl_lahir_ibu",
+  "no_hp_ortu",
+];
 
 // Tentuin status kelengkapan 1 siswa berdasarkan row student_profile_details
 // (bisa null kalau belum pernah isi sama sekali).
@@ -158,7 +189,7 @@ const MONTH_NAMES_SHORT = [
   "Desember",
 ];
 
-const AGAMA_OPTIONS = ["Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu"];
+const AGAMA_OPTIONS = ["ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU"];
 const PENDIDIKAN_OPTIONS = ["SD", "SMP", "SMA", "D3", "S1", "S2"];
 
 // Daftar pekerjaan standar -- SENGAJA disamain persis sama
@@ -171,30 +202,30 @@ const PENDIDIKAN_OPTIONS = ["SD", "SMP", "SMA", "D3", "S1", "S2"];
 // bagian atas, jadi datanya TETAP KELIATAN & gak ke-reset ke kosong tanpa
 // sengaja pas dibuka (lihat pemakaian `hasLegacyValue` di form Isi Data).
 const PEKERJAAN_AYAH_OPTIONS = [
-  "PNS/TNI/Polri",
-  "Karyawan Swasta",
-  "Wiraswasta/Pedagang",
-  "Petani",
-  "Buruh",
-  "Guru/Dosen",
-  "Dokter/Tenaga Kesehatan",
-  "Sopir/Driver",
-  "Pensiunan",
-  "Tidak Bekerja",
-  "Lainnya",
+  "PNS/TNI/POLRI",
+  "KARYAWAN SWASTA",
+  "WIRASWASTA/PEDAGANG",
+  "PETANI",
+  "BURUH HARIAN",
+  "GURU/DOSEN",
+  "DOKTER/TENAGA KESEHATAN",
+  "SOPIR/DRIVER",
+  "PENSIUNAN",
+  "TIDAK BEKERJA",
+  "LAINNYA",
 ];
 const PEKERJAAN_IBU_OPTIONS = [
-  "Ibu Rumah Tangga",
-  "PNS/TNI/Polri",
-  "Karyawan Swasta",
-  "Wiraswasta/Pedagang",
-  "Petani",
-  "Buruh",
-  "Guru/Dosen",
-  "Dokter/Tenaga Kesehatan",
-  "Pensiunan",
-  "Tidak Bekerja",
-  "Lainnya",
+  "IBU RUMAH TANGGA",
+  "PNS/TNI/POLRI",
+  "KARYAWAN SWASTA",
+  "WIRASWASTA/PEDAGANG",
+  "PETANI",
+  "BURUH",
+  "GURU/DOSEN",
+  "DOKTER/TENAGA KESEHATAN",
+  "PENSIUNAN",
+  "TIDAK BEKERJA",
+  "LAINNYA",
 ];
 
 // Konfigurasi form edit admin -- SEMUA kolom student_profile_details bisa
@@ -244,7 +275,7 @@ const ADMIN_EDIT_FIELDS = [
     options: AGAMA_OPTIONS,
     section: "siswa",
   },
-  { key: "anak_ke", label: "Anak ke-", type: "number", section: "siswa" },
+  { key: "anak_ke", label: "Anak Ke Berapa dalam Keluarga", type: "number", section: "siswa" },
   { key: "sekolah_asal", label: "Sekolah Asal", type: "text", section: "siswa" },
   {
     key: "no_peserta_ujian",
@@ -485,10 +516,14 @@ export default function KelengkapanDataSiswa({ currentUser }) {
           return {
             ...s,
             detail,
-            // Status kelengkapan tetap dihitung dari data asli
-            // student_profile_details -- jenis_kelamin dari tabel students
-            // gak termasuk REQUIRED_FIELDS, jadi gak pengaruh ke status.
-            status: getCompletionStatus(rawDetail),
+            // ⚠️ UPDATE: dulu dihitung dari `rawDetail` doang (data asli
+            // student_profile_details), karena jenis_kelamin gak termasuk
+            // REQUIRED_FIELDS jadi gak masalah. Sekarang jenis_kelamin ADA
+            // di REQUIRED_FIELDS, jadi harus dihitung dari `detail` (versi
+            // merged) biar siswa yang gender-nya udah keisi lewat
+            // students.gender (bukan lewat form siswa) tetep ke-anggep
+            // "keisi" buat field ini, bukan dianggap kosong.
+            status: getCompletionStatus(detail),
             // Status verifikasi (BEDA dari status kelengkapan di atas):
             // kelengkapan = "udah diisi apa belum", verifikasi = "udah
             // dicek admin/TU ke dokumen fisik apa belum & masih valid".

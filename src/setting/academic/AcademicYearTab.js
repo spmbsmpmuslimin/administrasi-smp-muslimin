@@ -3,7 +3,7 @@
 // 🔧 REVISI: Sesuai dengan academicYearService.js + Fix semua masalah
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
-import { Calendar, RefreshCw } from "lucide-react";
+import { Calendar, RefreshCw, ListChecks, ArrowRightLeft, ShieldCheck, Rocket } from "lucide-react";
 
 // ✅ Import NEW academic year service
 import {
@@ -18,8 +18,13 @@ import {
 import SemesterManagement from "./SemesterManagement";
 import YearTransition from "./YearTransition";
 import CopyAssignmentsModal from "./CopyAssignmentsModal";
+import PreflightCheck from "./PreflightCheck";
+import TransitionReadiness from "./TransitionReadiness";
 
 const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig }) => {
+  // ✅ NEW: Tab navigation state (Kelola Semester / Transisi / Cek Kesinambungan)
+  const [activeTab, setActiveTab] = useState("kelola");
+
   // ✅ NEW: Semester selection states
   const [availableSemesters, setAvailableSemesters] = useState([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState(null);
@@ -358,158 +363,204 @@ const AcademicYearTab = ({ user, loading, setLoading, showToast, schoolConfig })
         </div>
       </div>
 
-      {/* ✅ NEW: Semester Selector */}
-      {availableSemesters.length > 0 ? (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-fit">
-              Pilih Semester untuk Melihat Data:
-            </label>
-            <select
-              value={selectedSemesterId || ""}
-              onChange={(e) => handleSemesterChange(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={!hasAcademicYearColumn}
-            >
-              {availableSemesters.map((semester) => (
-                <option key={semester.id} value={semester.id}>
-                  Semester {semester.semester} ({semester.semester === 1 ? "Ganjil" : "Genap"})
-                  {semester.is_active ? " ★ Aktif" : ""}
-                </option>
-              ))}
-            </select>
-
-            {/* Status Badge */}
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                isActiveSemester
-                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-              }`}
-            >
-              {isActiveSemester ? "📍 Semester Aktif" : "👁️ Mode Lihat"}
-            </span>
-          </div>
-
-          {/* Info Text */}
-          <div className="space-y-2 mt-3">
-            {!isActiveSemester && (
-              <p className="text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
-                ℹ️ Anda sedang melihat data semester yang tidak aktif. Data ini hanya untuk
-                referensi.
-              </p>
-            )}
-
-            {!hasAcademicYearColumn && (
-              <p className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
-                ⚠️ Filter semester tidak aktif karena kolom academic_year_id tidak ditemukan di
-                tabel students.
-              </p>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mb-6">
-          <p className="text-sm text-yellow-700 dark:text-yellow-400">
-            ⚠️ Tidak ada semester tersedia. Silakan buat tahun ajaran baru terlebih dahulu.
-          </p>
-        </div>
-      )}
-
-      {/* Current Academic Year Card */}
-      <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-4 sm:p-5 md:p-6 rounded-xl mb-6 sm:mb-8 border border-blue-200 dark:border-blue-700 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="text-blue-600 dark:text-blue-400" size={18} />
-              <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
-                Tahun Ajaran Aktif
-              </h3>
-            </div>
-            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-900 dark:text-blue-200 mb-2">
-              {schoolStats.academic_year}
-            </p>
-
-            {/* ✅ Show selected semester info */}
-            <div className="space-y-1">
-              <p className="text-blue-700 dark:text-blue-400 text-sm">
-                <span className="font-semibold">{schoolStats.total_students}</span> siswa aktif
-                dalam <span className="font-semibold">{Object.keys(studentsByClass).length}</span>{" "}
-                kelas
-              </p>
-              {selectedSemesterName && (
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                  📅 {selectedSemesterName}
-                  {!hasAcademicYearColumn && " (Semua Semester)"}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-blue-200 dark:border-blue-600 w-full sm:w-auto">
-            <div className="text-center">
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Total Kelas
-              </p>
-              <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {Object.keys(studentsByClass).length}
-              </p>
-            </div>
-          </div>
+      {/* ✅ NEW: Tab Navigation */}
+      <div className="flex mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto scrollbar-hide">
+        <div className="flex min-w-max space-x-1">
+          {[
+            { id: "kesiapan", label: "Kesiapan Transisi", icon: Rocket },
+            { id: "preflight", label: "Cek Kesinambungan", icon: ShieldCheck },
+            { id: "kelola", label: "Kelola Semester", icon: ListChecks },
+            { id: "transisi", label: "Transisi Tahun Ajaran", icon: ArrowRightLeft },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap
+                  border-b-2 transition-all duration-200 min-h-[48px]
+                  ${
+                    isActive
+                      ? "border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
+                      : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }
+                `}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* ✅ Semester Management Component */}
-      <SemesterManagement
-        schoolConfig={schoolConfig}
-        loading={loading}
-        setLoading={setLoading}
-        showToast={showToast}
-        onSemesterChange={handleSemesterUpdate}
-        onOpenCopyModal={() => setShowCopyModal(true)}
-        academicInfo={academicInfo}
-        selectedSemesterId={selectedSemesterId}
-        availableSemesters={availableSemesters}
-      />
+      {activeTab === "kesiapan" && <TransitionReadiness schoolConfig={config} />}
 
-      {/* Students by Grade Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {["7", "8", "9"].map((grade) => {
-          const totalStudents = studentsByGrade[grade] || 0;
+      {activeTab === "preflight" && <PreflightCheck />}
 
-          return (
-            <div
-              key={grade}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-bold text-gray-800 dark:text-gray-100">Kelas {grade}</h4>
-                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {totalStudents}
+      {activeTab === "kelola" && (
+        <>
+          {/* ✅ NEW: Semester Selector */}
+          {availableSemesters.length > 0 ? (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-fit">
+                  Pilih Semester untuk Melihat Data:
+                </label>
+                <select
+                  value={selectedSemesterId || ""}
+                  onChange={(e) => handleSemesterChange(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={!hasAcademicYearColumn}
+                >
+                  {availableSemesters.map((semester) => (
+                    <option key={semester.id} value={semester.id}>
+                      Semester {semester.semester} ({semester.semester === 1 ? "Ganjil" : "Genap"})
+                      {semester.is_active ? " ★ Aktif" : ""}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Status Badge */}
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                    isActiveSemester
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                      : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                  }`}
+                >
+                  {isActiveSemester ? "📍 Semester Aktif" : "👁️ Mode Lihat"}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {totalStudents === 0 ? "Belum ada siswa" : `${totalStudents} siswa aktif`}
+
+              {/* Info Text */}
+              <div className="space-y-2 mt-3">
+                {!isActiveSemester && (
+                  <p className="text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                    ℹ️ Anda sedang melihat data semester yang tidak aktif. Data ini hanya untuk
+                    referensi.
+                  </p>
+                )}
+
+                {!hasAcademicYearColumn && (
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                    ⚠️ Filter semester tidak aktif karena kolom academic_year_id tidak ditemukan di
+                    tabel students.
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mb-6">
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                ⚠️ Tidak ada semester tersedia. Silakan buat tahun ajaran baru terlebih dahulu.
               </p>
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      {/* ✅ Year Transition Component */}
-      <YearTransition
-        schoolStats={schoolStats}
-        schoolConfig={schoolConfig}
-        studentsByClass={studentsByClass}
-        loading={loading}
-        setLoading={setLoading}
-        showToast={showToast}
-        user={user}
-        onTransitionComplete={handleSemesterUpdate}
-        academicInfo={academicInfo}
-        selectedSemesterId={selectedSemesterId}
-      />
+          {/* Current Academic Year Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-4 sm:p-5 md:p-6 rounded-xl mb-6 sm:mb-8 border border-blue-200 dark:border-blue-700 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="text-blue-600 dark:text-blue-400" size={18} />
+                  <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                    Tahun Ajaran Aktif
+                  </h3>
+                </div>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-900 dark:text-blue-200 mb-2">
+                  {schoolStats.academic_year}
+                </p>
 
-      {/* ✅ Copy Assignments Modal */}
+                {/* ✅ Show selected semester info */}
+                <div className="space-y-1">
+                  <p className="text-blue-700 dark:text-blue-400 text-sm">
+                    <span className="font-semibold">{schoolStats.total_students}</span> siswa aktif
+                    dalam{" "}
+                    <span className="font-semibold">{Object.keys(studentsByClass).length}</span>{" "}
+                    kelas
+                  </p>
+                  {selectedSemesterName && (
+                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                      📅 {selectedSemesterName}
+                      {!hasAcademicYearColumn && " (Semua Semester)"}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg p-4 sm:p-5 border border-blue-200 dark:border-blue-600 w-full sm:w-auto">
+                <div className="text-center">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Total Kelas
+                  </p>
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {Object.keys(studentsByClass).length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ✅ Semester Management Component */}
+          <SemesterManagement
+            schoolConfig={schoolConfig}
+            loading={loading}
+            setLoading={setLoading}
+            showToast={showToast}
+            onSemesterChange={handleSemesterUpdate}
+            onOpenCopyModal={() => setShowCopyModal(true)}
+            academicInfo={academicInfo}
+            selectedSemesterId={selectedSemesterId}
+            availableSemesters={availableSemesters}
+          />
+
+          {/* Students by Grade Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {["7", "8", "9"].map((grade) => {
+              const totalStudents = studentsByGrade[grade] || 0;
+
+              return (
+                <div
+                  key={grade}
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold text-gray-800 dark:text-gray-100">Kelas {grade}</h4>
+                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {totalStudents}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {totalStudents === 0 ? "Belum ada siswa" : `${totalStudents} siswa aktif`}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {activeTab === "transisi" && (
+        <>
+          {/* ✅ Year Transition Component */}
+          <YearTransition
+            schoolStats={schoolStats}
+            schoolConfig={schoolConfig}
+            studentsByClass={studentsByClass}
+            loading={loading}
+            setLoading={setLoading}
+            showToast={showToast}
+            user={user}
+            onTransitionComplete={handleSemesterUpdate}
+            academicInfo={academicInfo}
+            selectedSemesterId={selectedSemesterId}
+          />
+        </>
+      )}
+
+      {/* ✅ Copy Assignments Modal - di luar tab, ini overlay bukan konten tab */}
       <CopyAssignmentsModal
         show={showCopyModal}
         onClose={() => setShowCopyModal(false)}

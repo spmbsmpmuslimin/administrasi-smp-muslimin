@@ -77,7 +77,7 @@ const AdminDashboard = ({ user }) => {
       setLoading(true);
       const today = new Date().toISOString().split("T")[0];
       const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-      const currentYear = activeAcademicInfo?.academicYear || "2025/2026";
+      const currentYear = activeAcademicInfo?.year || "2025/2026";
 
       // 1. Teacher Attendance Today
       const { data: teachersToday } = await supabase
@@ -663,8 +663,8 @@ const AdminDashboard = ({ user }) => {
                   {monitoring.activeClasses.active} Kelas
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-500">
-                  Semester {activeAcademicInfo?.semester || "1"} •{" "}
-                  {activeAcademicInfo?.academicYear || "2025/2026"}
+                  Semester {activeAcademicInfo?.activeSemester || "1"} •{" "}
+                  {activeAcademicInfo?.year || "2025/2026"}
                 </div>
               </div>
             </div>

@@ -33,6 +33,7 @@ import autoTable from "jspdf-autotable";
 
 // ⚠️ ASUMSI PATH: sesuaikan kalau lokasi supabaseClient beda
 import { supabase } from "../../supabaseClient";
+import { getActiveYearString } from "../../services/academicYearService";
 
 const PAGE_BOTTOM_LIMIT = 275; // batas aman sebelum ganti halaman (mm, A4)
 
@@ -47,15 +48,12 @@ const getSchoolName = async () => {
   return data?.setting_value || "";
 };
 
-// ---------- Helper: ambil tahun ajaran yang sedang aktif dari `academic_year` ----------
+// ---------- Helper: ambil tahun ajaran yang sedang aktif (dari service -
+// sebelumnya query manual .maybeSingle() sendiri di sini, punya kerentanan
+// yang sama kalau ada 2 tahun ajaran ke-mark aktif bersamaan) ----------
 const getActiveAcademicYear = async () => {
-  const { data, error } = await supabase
-    .from("academic_years")
-    .select("year")
-    .eq("is_active", true)
-    .maybeSingle();
-  if (error) console.error("[HomeVisitExportPDF] Gagal ambil academic_years:", error.message);
-  return data?.year ? data.year.replace("/", "-") : "";
+  const year = await getActiveYearString();
+  return year ? year.replace("/", "-") : "";
 };
 
 // ---------- Helper: ambil banyak `student_profile_details` sekaligus (1 query pakai .in()) ----------

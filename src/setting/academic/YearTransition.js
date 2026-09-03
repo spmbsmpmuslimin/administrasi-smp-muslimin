@@ -168,7 +168,7 @@ const YearTransition = ({
         preview: {
           currentYear,
           newYear,
-          currentSemester: localAcademicInfo.semester,
+          currentSemester: localAcademicInfo.activeSemester,
           promotions: promotionPlan,
           graduating: graduatingStudents,
           newStudents: validNewStudents,
@@ -229,7 +229,7 @@ const YearTransition = ({
       `⚠️ PERINGATAN: TRANSISI TAHUN AJARAN\n\n` +
         `Anda akan melakukan transisi tahun ajaran dari:\n` +
         `${preview.currentYear} (Semester ${
-          preview.currentSemester || localAcademicInfo?.semester || "?"
+          preview.currentSemester || localAcademicInfo?.activeSemester || "?"
         }) → ${preview.newYear} (Semester 1)\n\n` +
         `Proses yang akan dilakukan:\n` +
         `• Membuat 18 kelas baru\n` +
@@ -539,7 +539,8 @@ const YearTransition = ({
           </p>
           {localAcademicInfo && (
             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-              Tahun Ajaran Aktif: {localAcademicInfo.year} - Semester {localAcademicInfo.semester}
+              Tahun Ajaran Aktif: {localAcademicInfo.year} - Semester{" "}
+              {localAcademicInfo.activeSemester}
             </p>
           )}
         </div>
@@ -569,8 +570,8 @@ const YearTransition = ({
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {yearTransition.preview.currentYear} (Semester{" "}
-                {yearTransition.preview.currentSemester || localAcademicInfo?.semester || "?"}) →{" "}
-                {yearTransition.preview.newYear} (Semester 1)
+                {yearTransition.preview.currentSemester || localAcademicInfo?.activeSemester || "?"}
+                ) → {yearTransition.preview.newYear} (Semester 1)
               </p>
             </div>
           </div>

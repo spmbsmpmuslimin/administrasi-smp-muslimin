@@ -59,7 +59,7 @@ const CopyAssignmentsModal = ({
           setCopyConfig((prev) => ({
             ...prev,
             sourceYear: academicInfo.year,
-            sourceSemester: academicInfo.semester || 1,
+            sourceSemester: academicInfo.activeSemester || 1,
           }));
         }
       } else {
@@ -70,7 +70,7 @@ const CopyAssignmentsModal = ({
           setCopyConfig((prev) => ({
             ...prev,
             sourceYear: info.year,
-            sourceSemester: info.semester || 1,
+            sourceSemester: info.activeSemester || 1,
           }));
         }
       }

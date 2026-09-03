@@ -252,19 +252,20 @@ const GradesKatrol = ({
 
   // ✅ FUNGSI HELPER UNTUK MENDAPATKAN ACADEMIC_YEAR_ID DENGAN FALLBACK
   const getValidAcademicYearId = () => {
-    // Jika ada academicInfo dan yearId, gunakan itu
-    if (academicInfo?.yearId) {
-      return academicInfo.yearId;
+    // Jika ada academicInfo dan activeSemesterId, gunakan itu
+    // (sebelumnya cek academicInfo?.yearId - field ini gak pernah ada di
+    // objek yang dibalikin service, jadi selalu null dan selalu jatuh ke
+    // UUID hardcode di bawah, gak pernah beneran ngikut tahun ajaran aktif)
+    if (academicInfo?.activeSemesterId) {
+      return academicInfo.activeSemesterId;
     }
 
-    // Jika tidak ada, coba dapatkan dari service langsung
-    // atau return null untuk menggunakan fallback query
     return null;
   };
 
   // ✅ FUNGSI UNTUK MENDAPATKAN FALLBACK QUERY JIKA TIDAK ADA academic_year_id
   const getFallbackQuery = (baseQuery, tableName) => {
-    const academicYearId = getValidAcademicYearId() || "ae60df26-f11b-412a-985f-ad12065f6d0f";
+    const academicYearId = getValidAcademicYearId();
 
     // Jika tidak ada academic_year_id, gunakan kombinasi academic_year + semester
     if (!academicYearId && selectedAcademicYear && selectedSemester) {
@@ -517,7 +518,7 @@ const GradesKatrol = ({
         .eq("mata_pelajaran_id", selectedSubjectState)
         .eq("kelas_id", selectedClassId);
 
-      const academicYearId = getValidAcademicYearId() || "ae60df26-f11b-412a-985f-ad12065f6d0f";
+      const academicYearId = getValidAcademicYearId();
       if (academicYearId) {
         // Jika ada yearId, filter juga berdasarkan itu untuk akurasi
         query = query.eq("academic_year_id", academicYearId);
@@ -592,8 +593,8 @@ const GradesKatrol = ({
       // ✅ TAMBAH ACADEMIC YEAR INFO
       if (academicInfo) {
         settingsData.academic_year = academicInfo.year;
-        settingsData.semester = academicInfo.semester;
-        const academicYearId = getValidAcademicYearId() || "ae60df26-f11b-412a-985f-ad12065f6d0f";
+        settingsData.semester = academicInfo.activeSemester;
+        const academicYearId = getValidAcademicYearId();
         if (academicYearId) {
           settingsData.academic_year_id = academicYearId;
         }
@@ -644,9 +645,8 @@ const GradesKatrol = ({
 
           if (academicInfo) {
             upsertData.academic_year = academicInfo.year;
-            upsertData.semester = academicInfo.semester;
-            const academicYearId =
-              getValidAcademicYearId() || "ae60df26-f11b-412a-985f-ad12065f6d0f";
+            upsertData.semester = academicInfo.activeSemester;
+            const academicYearId = getValidAcademicYearId();
             if (academicYearId) {
               upsertData.academic_year_id = academicYearId;
             }
@@ -720,7 +720,7 @@ const GradesKatrol = ({
     try {
       // 1️⃣ CEK DULU: Ada data di grades_katrol?
       // ✅ FIX 1: Query grades_katrol dengan fallback jika academic_year_id tidak tersedia
-      const academicYearId = getValidAcademicYearId() || "ae60df26-f11b-412a-985f-ad12065f6d0f";
+      const academicYearId = getValidAcademicYearId();
 
       let katrolQuery = supabase
         .from("grades_katrol")
@@ -907,7 +907,7 @@ const GradesKatrol = ({
       if (studentsError) throw studentsError;
 
       // ✅ Query grades
-      const academicYearId = getValidAcademicYearId() || "ae60df26-f11b-412a-985f-ad12065f6d0f";
+      const academicYearId = getValidAcademicYearId();
       let gradesQuery = supabase
         .from("grades")
         .select("*")
@@ -1074,7 +1074,7 @@ const GradesKatrol = ({
 
     try {
       // ✅ Query check existing data dengan fallback jika academic_year_id tidak tersedia
-      const academicYearId = getValidAcademicYearId() || "ae60df26-f11b-412a-985f-ad12065f6d0f";
+      const academicYearId = getValidAcademicYearId();
 
       let checkQuery = supabase
         .from("grades_katrol")
@@ -1127,7 +1127,7 @@ const GradesKatrol = ({
 
     try {
       // ✅ Hapus data lama
-      const academicYearId = getValidAcademicYearId() || "ae60df26-f11b-412a-985f-ad12065f6d0f";
+      const academicYearId = getValidAcademicYearId();
 
       let deleteQuery = supabase
         .from("grades_katrol")

@@ -157,10 +157,13 @@ function getRowValue(detail, row) {
   return { display: isEmpty ? null : raw, isEmpty };
 }
 
-// Kolom tetap: No, Nama, NIS, NISN, Kelas, Status. NISN sengaja ditaruh
-// persis setelah NIS (lihat catatan di atas). Field DATA_SISWA_ROWS &
+// Kolom tetap: No, Nama, NIS, NISN, Kelas. NISN sengaja ditaruh persis
+// setelah NIS (lihat catatan di atas). Field DATA_SISWA_ROWS &
 // DATA_ORANGTUA_ROWS nyusul setelahnya (lihat buildHeaderLabels).
-const FIXED_COLS = ["No", "Nama", "NIS", "NISN", "Kelas", "Status Kelengkapan"];
+// ⚠️ "Status Kelengkapan" SENGAJA dikeluarin dari sini -- dipindah ke
+// paling akhir (setelah "Terakhir Diperbarui"), difungsikan lebih kayak
+// keterangan penutup per baris daripada kolom identitas di depan.
+const FIXED_COLS = ["No", "Nama", "NIS", "NISN", "Kelas"];
 
 function buildHeaderLabels() {
   return [
@@ -168,6 +171,7 @@ function buildHeaderLabels() {
     ...DATA_SISWA_ROWS.map((r) => r.label),
     ...DATA_ORANGTUA_ROWS.map((r) => r.label),
     "Terakhir Diperbarui",
+    "Status Kelengkapan",
   ];
 }
 
@@ -199,14 +203,19 @@ const MANUAL_COLUMN_WIDTHS = {
   3: 14, // NIS
   4: 14, // NISN
   5: 10, // Kelas
-  6: 16, // Status Kelengkapan
 };
 
-function applyManualColumnWidths(worksheet) {
+// "Status Kelengkapan" sekarang di kolom TERAKHIR (posisinya dinamis,
+// ngikutin jumlah field DATA_SISWA_ROWS + DATA_ORANGTUA_ROWS), jadi lebar
+// manualnya dihitung di sini, bukan di-hardcode ke MANUAL_COLUMN_WIDTHS
+// kayak kolom tetap lainnya.
+function applyManualColumnWidths(worksheet, totalCols) {
   Object.entries(MANUAL_COLUMN_WIDTHS).forEach(([colNumber, width]) => {
     const column = worksheet.getColumn(Number(colNumber));
     if (column) column.width = width;
   });
+  const statusColumn = worksheet.getColumn(totalCols);
+  if (statusColumn) statusColumn.width = 16;
 }
 
 /**
@@ -276,16 +285,18 @@ export async function exportStudentProfileExcel(students, options = {}) {
         student.nis || "-",
         nisnValue.display || "Belum diisi",
         student.class_id || "-",
-        STATUS_LABEL[statusKey] || "Belum Isi",
         ...siswaValues.map((v) => v.display || "Belum diisi"),
         ...ortuValues.map((v) => v.display || "Belum diisi"),
         updatedLabel || "-",
+        STATUS_LABEL[statusKey] || "Belum Isi",
       ];
 
       const dataRow = worksheet.getRow(rowNum);
       dataRow.values = rowValues;
-      // Kolom "No" (1) & "Status Kelengkapan" (6) di-center, sisanya rata kiri.
-      styleTableDataRow(dataRow, idx, [1, 6], textColNumbers);
+      // Kolom "No" (1) & "Status Kelengkapan" (kolom terakhir, posisinya
+      // sekarang dinamis mengikuti totalCols karena udah dipindah ke
+      // paling belakang) di-center, sisanya rata kiri.
+      styleTableDataRow(dataRow, idx, [1, totalCols], textColNumbers);
 
       // Field yang masih kosong ditandain merah-italic, sama kayak di PDF
       // (didParseCell -> PDF_COLORS.danger), biar konsisten visualnya.
@@ -320,7 +331,7 @@ export async function exportStudentProfileExcel(students, options = {}) {
     });
 
     autoFitColumns(worksheet, { minWidth: 8, maxWidth: 40 });
-    applyManualColumnWidths(worksheet);
+    applyManualColumnWidths(worksheet, totalCols);
     setupPrintOptions(worksheet, {
       orientation: "landscape",
       freezeHeaderRow: headerRowNumber,

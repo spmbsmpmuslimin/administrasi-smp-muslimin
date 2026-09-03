@@ -16,10 +16,7 @@ import {
   Save,
 } from "lucide-react";
 import TeacherScheduleExcel from "./TeacherScheduleExcel";
-import {
-  getActiveAcademicInfo,
-  applyAcademicFilters,
-} from "../services/academicYearService";
+import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academicYearService";
 // ✅ FIX: sebelumnya JAM_SCHEDULE didefinisiin ULANG di file ini secara
 // lokal, terpisah dari "../utils/jamPelajaran" yang jadi single source
 // of truth. Definisi lokal itu udah usang -- period 3-5 hari Jumat
@@ -158,10 +155,7 @@ const TeacherSchedule = ({ user }) => {
     // Check existing schedule
     const existing = schedules.find(
       (s) =>
-        s.day === day &&
-        findPeriodsByTimeRange(s.day, s.start_time, s.end_time).includes(
-          period,
-        ),
+        s.day === day && findPeriodsByTimeRange(s.day, s.start_time, s.end_time).includes(period)
     );
 
     // Slot yang diisi otomatis dari jadwal massal Admin gak boleh diubah
@@ -170,7 +164,7 @@ const TeacherSchedule = ({ user }) => {
     // pas publish massal berikutnya jalan.
     if (existing && existing.source === "admin") {
       setError(
-        "Jadwal ini otomatis dari Admin (jadwal pelajaran massal) dan tidak bisa diedit manual di sini. Hubungi Admin kalau ada perubahan.",
+        "Jadwal ini otomatis dari Admin (jadwal pelajaran massal) dan tidak bisa diedit manual di sini. Hubungi Admin kalau ada perubahan."
       );
       setTimeout(() => setError(null), 4000);
       return;
@@ -191,20 +185,14 @@ const TeacherSchedule = ({ user }) => {
     // Check if schedule exists
     const existing = schedules.find(
       (s) =>
-        s.day === day &&
-        findPeriodsByTimeRange(s.day, s.start_time, s.end_time).includes(
-          period,
-        ),
+        s.day === day && findPeriodsByTimeRange(s.day, s.start_time, s.end_time).includes(period)
     );
 
     try {
       if (selectedClass === "") {
         // DELETE - hapus jadwal
         if (existing) {
-          const { error } = await supabase
-            .from("teacher_schedules")
-            .delete()
-            .eq("id", existing.id);
+          const { error } = await supabase.from("teacher_schedules").delete().eq("id", existing.id);
           if (error) throw error;
           setSuccess("Jadwal berhasil dihapus");
         }
@@ -229,9 +217,7 @@ const TeacherSchedule = ({ user }) => {
           setSuccess("Jadwal berhasil diperbarui");
         } else {
           // INSERT new
-          const { error } = await supabase
-            .from("teacher_schedules")
-            .insert(scheduleData);
+          const { error } = await supabase.from("teacher_schedules").insert(scheduleData);
           if (error) throw error;
           setSuccess("Jadwal berhasil ditambahkan");
         }
@@ -254,12 +240,7 @@ const TeacherSchedule = ({ user }) => {
 
   const handleExportToExcel = async () => {
     try {
-      const result = await TeacherScheduleExcel.exportToExcel(
-        schedules,
-        user,
-        days,
-        academicInfo,
-      );
+      const result = await TeacherScheduleExcel.exportToExcel(schedules, user, days, academicInfo);
       if (result.success) {
         setSuccess(result.message);
         setTimeout(() => setSuccess(null), 3000);
@@ -282,11 +263,7 @@ const TeacherSchedule = ({ user }) => {
       schedules
         .filter((schedule) => schedule.day === day)
         .forEach((schedule) => {
-          const periods = findPeriodsByTimeRange(
-            day,
-            schedule.start_time,
-            schedule.end_time,
-          );
+          const periods = findPeriodsByTimeRange(day, schedule.start_time, schedule.end_time);
           periods.forEach((period) => {
             grid[day][period] = schedule;
           });
@@ -332,7 +309,7 @@ const TeacherSchedule = ({ user }) => {
       const { startPeriod, endPeriod } = getPeriodFromTime(
         schedule.day,
         schedule.start_time,
-        schedule.end_time,
+        schedule.end_time
       );
       setFormData({
         day: schedule.day,
@@ -393,9 +370,7 @@ const TeacherSchedule = ({ user }) => {
       if (editingId) {
         const targetSchedule = schedules.find((s) => s.id === editingId);
         if (targetSchedule && targetSchedule.source === "admin") {
-          setError(
-            "Jadwal ini otomatis dari Admin dan tidak bisa diedit manual di sini.",
-          );
+          setError("Jadwal ini otomatis dari Admin dan tidak bisa diedit manual di sini.");
           setLoading(false);
           return;
         }
@@ -418,9 +393,7 @@ const TeacherSchedule = ({ user }) => {
         if (error) throw error;
         setSuccess("Jadwal berhasil diperbarui");
       } else {
-        const { error } = await supabase
-          .from("teacher_schedules")
-          .insert(scheduleData);
+        const { error } = await supabase.from("teacher_schedules").insert(scheduleData);
         if (error) throw error;
         setSuccess("Jadwal berhasil ditambahkan");
       }
@@ -440,9 +413,7 @@ const TeacherSchedule = ({ user }) => {
     // gak boleh kehapus manual dari sini.
     const targetSchedule = schedules.find((s) => s.id === id);
     if (targetSchedule && targetSchedule.source === "admin") {
-      setError(
-        "Jadwal ini otomatis dari Admin dan tidak bisa dihapus manual di sini.",
-      );
+      setError("Jadwal ini otomatis dari Admin dan tidak bisa dihapus manual di sini.");
       setTimeout(() => setError(null), 4000);
       return;
     }
@@ -451,10 +422,7 @@ const TeacherSchedule = ({ user }) => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("teacher_schedules")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("teacher_schedules").delete().eq("id", id);
       if (error) throw error;
       setSuccess("Jadwal berhasil dihapus");
       fetchSchedules();
@@ -475,9 +443,7 @@ const TeacherSchedule = ({ user }) => {
     const todaySchedules = getTodaySchedules();
     if (todaySchedules.length === 0) return [];
 
-    const sorted = [...todaySchedules].sort((a, b) =>
-      a.start_time.localeCompare(b.start_time),
-    );
+    const sorted = [...todaySchedules].sort((a, b) => a.start_time.localeCompare(b.start_time));
 
     const groups = [];
     let currentGroup = [sorted[0]];
@@ -489,8 +455,7 @@ const TeacherSchedule = ({ user }) => {
       const isSameClass = current.class_id === last.class_id;
       const lastEndMinutes = timeToMinutes(last.end_time);
       const currentStartMinutes = timeToMinutes(current.start_time);
-      const isConsecutive =
-        Math.abs(currentStartMinutes - lastEndMinutes) <= 30;
+      const isConsecutive = Math.abs(currentStartMinutes - lastEndMinutes) <= 30;
 
       if (isSameClass && isConsecutive) {
         currentGroup.push(current);
@@ -539,10 +504,7 @@ const TeacherSchedule = ({ user }) => {
             <AlertCircle className="w-5 h-5" />
             <h3 className="font-bold">Gagal Memuat Data</h3>
           </div>
-          <p>
-            Informasi tahun ajaran tidak tersedia. Silakan hubungi
-            administrator.
-          </p>
+          <p>Informasi tahun ajaran tidak tersedia. Silakan hubungi administrator.</p>
         </div>
       </div>
     );
@@ -563,9 +525,7 @@ const TeacherSchedule = ({ user }) => {
               </h1>
               <p className="text-sm sm:text-base text-slate-600 dark:text-gray-400 font-semibold">
                 TAHUN AJARAN {academicInfo.year}{" "}
-                {academicInfo.semester === 1
-                  ? "SEMESTER GANJIL"
-                  : "SEMESTER GENAP"}
+                {academicInfo.activeSemester === 1 ? "SEMESTER GANJIL" : "SEMESTER GENAP"}
               </p>
             </div>
           </div>
@@ -579,7 +539,8 @@ const TeacherSchedule = ({ user }) => {
             <div className="flex gap-2">
               <button
                 onClick={() => handleOpenModal()}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center transition-all">
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center transition-all"
+              >
                 <Plus className="w-4 h-4" />
                 Tambah
               </button>
@@ -587,7 +548,8 @@ const TeacherSchedule = ({ user }) => {
               <button
                 onClick={handleExportToExcel}
                 disabled={schedules.length === 0}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:bg-gray-100 disabled:text-gray-400 text-slate-700 dark:text-gray-300 dark:bg-gray-700 px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center border border-slate-300 dark:border-gray-600">
+                className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:bg-gray-100 disabled:text-gray-400 text-slate-700 dark:text-gray-300 dark:bg-gray-700 px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center border border-slate-300 dark:border-gray-600"
+              >
                 <Download className="w-4 h-4" />
                 Export
               </button>
@@ -601,7 +563,8 @@ const TeacherSchedule = ({ user }) => {
                   viewMode === "grid"
                     ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300"
                     : "bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 border-slate-300"
-                }`}>
+                }`}
+              >
                 <LayoutGrid className="w-4 h-4" />
                 Grid
               </button>
@@ -612,7 +575,8 @@ const TeacherSchedule = ({ user }) => {
                   viewMode === "list"
                     ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300"
                     : "bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 border-slate-300"
-                }`}>
+                }`}
+              >
                 <List className="w-4 h-4" />
                 List
               </button>
@@ -627,7 +591,8 @@ const TeacherSchedule = ({ user }) => {
                 viewMode === "grid"
                   ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300"
                   : "bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 border-slate-300 hover:bg-slate-200"
-              }`}>
+              }`}
+            >
               <LayoutGrid className="w-5 h-5" />
               Tampilan Grid
             </button>
@@ -638,7 +603,8 @@ const TeacherSchedule = ({ user }) => {
                 viewMode === "list"
                   ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-300"
                   : "bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 border-slate-300 hover:bg-slate-200"
-              }`}>
+              }`}
+            >
               <List className="w-5 h-5" />
               Tampilan List
             </button>
@@ -646,7 +612,8 @@ const TeacherSchedule = ({ user }) => {
             <button
               onClick={() => handleOpenModal()}
               className="flex-1 min-w-[120px] sm:min-w-[140px] bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/40 text-green-700 dark:text-green-300 px-3 py-2.5 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border border-green-300 dark:border-green-700 transition-all"
-              title="Untuk jadwal 2+ jam berturut-turut (misal: Jam 2-4)">
+              title="Untuk jadwal 2+ jam berturut-turut (misal: Jam 2-4)"
+            >
               <Plus className="w-5 h-5" />
               <span className="hidden sm:inline">Tambah Multi-Jam</span>
               <span className="sm:hidden">Multi-Jam</span>
@@ -655,7 +622,8 @@ const TeacherSchedule = ({ user }) => {
             <button
               onClick={handleExportToExcel}
               disabled={schedules.length === 0}
-              className="flex-1 min-w-[120px] sm:min-w-[140px] bg-slate-100 hover:bg-slate-200 disabled:bg-gray-100 disabled:text-gray-400 text-slate-700 px-3 py-2.5 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border border-slate-300">
+              className="flex-1 min-w-[120px] sm:min-w-[140px] bg-slate-100 hover:bg-slate-200 disabled:bg-gray-100 disabled:text-gray-400 text-slate-700 px-3 py-2.5 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border border-slate-300"
+            >
               <Download className="w-5 h-5" />
               Export Jadwal
             </button>
@@ -697,236 +665,217 @@ const TeacherSchedule = ({ user }) => {
                     {days.map((day) => (
                       <th
                         key={day}
-                        className="p-3 border border-slate-600 text-center font-semibold">
+                        className="p-3 border border-slate-600 text-center font-semibold"
+                      >
                         {day.toUpperCase()}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(JAM_SCHEDULE.Selasa || {}).map(
-                    ([period, time]) => (
-                      <React.Fragment key={period}>
-                        <tr className="hover:bg-slate-50 dark:hover:bg-gray-700/50 text-sm">
-                          <td className="p-2 border border-slate-300 dark:border-gray-600 text-center font-semibold bg-slate-100 dark:bg-gray-700 dark:text-gray-200">
-                            {period}
-                          </td>
-                          <td
-                            className={`p-2 border border-slate-300 dark:border-gray-600 text-center text-xs ${
-                              period === "1"
-                                ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
-                                : "bg-slate-100 dark:bg-gray-700 dark:text-gray-200"
-                            }`}>
-                            {time.start} - {time.end}
-                            {period === "1" && (
-                              <div className="text-[10px] mt-1 text-yellow-600">
-                                Senin: {JAM_SCHEDULE.Senin[1].start}-
-                                {JAM_SCHEDULE.Senin[1].end}
-                              </div>
-                            )}
-                          </td>
-                          {days.map((day) => {
-                            // Check if this period exists for this day
-                            const periodExists =
-                              JAM_SCHEDULE[day] && JAM_SCHEDULE[day][period];
+                  {Object.entries(JAM_SCHEDULE.Selasa || {}).map(([period, time]) => (
+                    <React.Fragment key={period}>
+                      <tr className="hover:bg-slate-50 dark:hover:bg-gray-700/50 text-sm">
+                        <td className="p-2 border border-slate-300 dark:border-gray-600 text-center font-semibold bg-slate-100 dark:bg-gray-700 dark:text-gray-200">
+                          {period}
+                        </td>
+                        <td
+                          className={`p-2 border border-slate-300 dark:border-gray-600 text-center text-xs ${
+                            period === "1"
+                              ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
+                              : "bg-slate-100 dark:bg-gray-700 dark:text-gray-200"
+                          }`}
+                        >
+                          {time.start} - {time.end}
+                          {period === "1" && (
+                            <div className="text-[10px] mt-1 text-yellow-600">
+                              Senin: {JAM_SCHEDULE.Senin[1].start}-{JAM_SCHEDULE.Senin[1].end}
+                            </div>
+                          )}
+                        </td>
+                        {days.map((day) => {
+                          // Check if this period exists for this day
+                          const periodExists = JAM_SCHEDULE[day] && JAM_SCHEDULE[day][period];
 
-                            return (
-                              <td
-                                key={day}
-                                className={`p-2 border border-slate-300 text-center ${
-                                  periodExists
-                                    ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                                    : "bg-gray-100 dark:bg-gray-800"
-                                }`}
-                                onClick={() =>
-                                  periodExists && handleCellClick(day, period)
-                                }>
-                                {!periodExists ? (
-                                  <span className="text-gray-400 dark:text-gray-600 text-xs">
-                                    -
-                                  </span>
-                                ) : editingCell &&
-                                  editingCell.day === day &&
-                                  editingCell.period === period ? (
-                                  // ✅ INLINE EDIT MODE
-                                  <div
-                                    className="flex flex-col gap-1"
-                                    onClick={(e) => e.stopPropagation()}>
-                                    <select
-                                      value={selectedClass}
-                                      onChange={(e) =>
-                                        setSelectedClass(e.target.value)
-                                      }
-                                      className="w-full px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      autoFocus>
-                                      <option value="">-- Kosongkan --</option>
-                                      {classes.map((cls) => (
-                                        <option key={cls.id} value={cls.id}>
-                                          {cls.id}
-                                        </option>
-                                      ))}
-                                    </select>
-                                    <div className="flex gap-1">
-                                      <button
-                                        onClick={handleInlineSave}
-                                        className="flex-1 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs flex items-center justify-center gap-1">
-                                        <Save className="w-3 h-3" />
-                                        Simpan
-                                      </button>
-                                      <button
-                                        onClick={handleInlineCancel}
-                                        className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs">
-                                        Batal
-                                      </button>
-                                    </div>
+                          return (
+                            <td
+                              key={day}
+                              className={`p-2 border border-slate-300 text-center ${
+                                periodExists
+                                  ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                  : "bg-gray-100 dark:bg-gray-800"
+                              }`}
+                              onClick={() => periodExists && handleCellClick(day, period)}
+                            >
+                              {!periodExists ? (
+                                <span className="text-gray-400 dark:text-gray-600 text-xs">-</span>
+                              ) : editingCell &&
+                                editingCell.day === day &&
+                                editingCell.period === period ? (
+                                // ✅ INLINE EDIT MODE
+                                <div
+                                  className="flex flex-col gap-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <select
+                                    value={selectedClass}
+                                    onChange={(e) => setSelectedClass(e.target.value)}
+                                    className="w-full px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    autoFocus
+                                  >
+                                    <option value="">-- Kosongkan --</option>
+                                    {classes.map((cls) => (
+                                      <option key={cls.id} value={cls.id}>
+                                        {cls.id}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={handleInlineSave}
+                                      className="flex-1 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs flex items-center justify-center gap-1"
+                                    >
+                                      <Save className="w-3 h-3" />
+                                      Simpan
+                                    </button>
+                                    <button
+                                      onClick={handleInlineCancel}
+                                      className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                                    >
+                                      Batal
+                                    </button>
                                   </div>
-                                ) : (
-                                  // ✅ DISPLAY MODE
-                                  <>
-                                    {day === "Jumat" ? (
-                                      <div className="flex flex-col items-center">
-                                        {scheduleGrid[day] &&
-                                        scheduleGrid[day][period] ? (
-                                          <>
-                                            <div className="flex items-center gap-1">
-                                              <span className="font-bold text-slate-800 dark:text-gray-100 text-base sm:text-xl">
-                                                {
-                                                  scheduleGrid[day][period]
-                                                    .class_id
-                                                }
-                                              </span>
-                                            </div>
-                                            <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
-                                              {
-                                                JAM_SCHEDULE.Jumat[period]
-                                                  ?.start
-                                              }
-                                              -{JAM_SCHEDULE.Jumat[period]?.end}
-                                            </div>
-                                            {period === "5" && (
-                                              <div className="text-[10px] mt-1 text-orange-600 dark:text-orange-400 font-bold">
-                                                🕛 ISTIRAHAT{" "}
-                                                {JAM_SCHEDULE.Jumat[5]?.end}-
-                                                {JAM_SCHEDULE.Jumat[6]?.start}
-                                              </div>
-                                            )}
-                                          </>
-                                        ) : (
-                                          <>
-                                            <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
-                                              -
+                                </div>
+                              ) : (
+                                // ✅ DISPLAY MODE
+                                <>
+                                  {day === "Jumat" ? (
+                                    <div className="flex flex-col items-center">
+                                      {scheduleGrid[day] && scheduleGrid[day][period] ? (
+                                        <>
+                                          <div className="flex items-center gap-1">
+                                            <span className="font-bold text-slate-800 dark:text-gray-100 text-base sm:text-xl">
+                                              {scheduleGrid[day][period].class_id}
                                             </span>
-                                            <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
-                                              {
-                                                JAM_SCHEDULE.Jumat[period]
-                                                  ?.start
-                                              }
-                                              -{JAM_SCHEDULE.Jumat[period]?.end}
+                                          </div>
+                                          <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                                            {JAM_SCHEDULE.Jumat[period]?.start}-
+                                            {JAM_SCHEDULE.Jumat[period]?.end}
+                                          </div>
+                                          {period === "5" && (
+                                            <div className="text-[10px] mt-1 text-orange-600 dark:text-orange-400 font-bold">
+                                              🕛 ISTIRAHAT {JAM_SCHEDULE.Jumat[5]?.end}-
+                                              {JAM_SCHEDULE.Jumat[6]?.start}
                                             </div>
-                                            {period === "5" && (
-                                              <div className="text-[10px] mt-1 text-orange-600 dark:text-orange-400 font-bold">
-                                                🕛 ISTIRAHAT{" "}
-                                                {JAM_SCHEDULE.Jumat[5]?.end}-
-                                                {JAM_SCHEDULE.Jumat[6]?.start}
-                                              </div>
-                                            )}
-                                          </>
-                                        )}
-                                      </div>
-                                    ) : scheduleGrid[day] &&
-                                      scheduleGrid[day][period] ? (
-                                      <div className="flex flex-col items-center">
-                                        <div className="flex items-center gap-1">
-                                          <span className="font-bold text-slate-800 dark:text-gray-100 text-base sm:text-xl">
-                                            {scheduleGrid[day][period].class_id}
+                                          )}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
+                                            -
                                           </span>
-                                        </div>
+                                          <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                                            {JAM_SCHEDULE.Jumat[period]?.start}-
+                                            {JAM_SCHEDULE.Jumat[period]?.end}
+                                          </div>
+                                          {period === "5" && (
+                                            <div className="text-[10px] mt-1 text-orange-600 dark:text-orange-400 font-bold">
+                                              🕛 ISTIRAHAT {JAM_SCHEDULE.Jumat[5]?.end}-
+                                              {JAM_SCHEDULE.Jumat[6]?.start}
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  ) : scheduleGrid[day] && scheduleGrid[day][period] ? (
+                                    <div className="flex flex-col items-center">
+                                      <div className="flex items-center gap-1">
+                                        <span className="font-bold text-slate-800 dark:text-gray-100 text-base sm:text-xl">
+                                          {scheduleGrid[day][period].class_id}
+                                        </span>
                                       </div>
-                                    ) : day === "Senin" && period === "1" ? (
-                                      <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
-                                        UPACARA
-                                      </span>
-                                    ) : day === "Kamis" && period === "4" ? (
-                                      <span className="font-bold text-slate-800 dark:text-gray-100 text-xs sm:text-base text-center">
-                                        SHOLAT DHUHA
-                                      </span>
-                                    ) : (
-                                      <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
-                                        -
-                                      </span>
-                                    )}
-                                  </>
-                                )}
-                              </td>
-                            );
-                          })}
+                                    </div>
+                                  ) : day === "Senin" && period === "1" ? (
+                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
+                                      UPACARA
+                                    </span>
+                                  ) : day === "Kamis" && period === "4" ? (
+                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-xs sm:text-base text-center">
+                                      SHOLAT DHUHA
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
+                                      -
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+
+                      {/* ISTIRAHAT */}
+                      {/* Istirahat setelah Jam 4 - KECUALI JUMAT */}
+                      {period === "4" && (
+                        <tr>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            ISTIRAHAT
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            {time.end} - {JAM_SCHEDULE.Senin[5]?.start || "10:30"}
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-center text-slate-500 dark:text-gray-500 font-semibold text-xs sm:text-sm">
+                            -
+                          </td>
                         </tr>
+                      )}
 
-                        {/* ISTIRAHAT */}
-                        {/* Istirahat setelah Jam 4 - KECUALI JUMAT */}
-                        {period === "4" && (
-                          <tr>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              ISTIRAHAT
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              {time.end} -{" "}
-                              {JAM_SCHEDULE.Senin[5]?.start || "10:30"}
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              🕛
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              🕛
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              🕛
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              🕛
-                            </td>
-                            <td className="p-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-center text-slate-500 dark:text-gray-500 font-semibold text-xs sm:text-sm">
-                              -
-                            </td>
-                          </tr>
-                        )}
-
-                        {/* Istirahat setelah Jam 7 - KECUALI JUMAT */}
-                        {period === "7" && (
-                          <tr>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              ISTIRAHAT
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              {time.end} -{" "}
-                              {JAM_SCHEDULE.Senin[8]?.start || "13:00"}
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              🕛
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              🕛
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              🕛
-                            </td>
-                            <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                              🕛
-                            </td>
-                            <td className="p-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-center text-slate-500 dark:text-gray-500 font-semibold text-xs sm:text-sm">
-                              -
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    ),
-                  )}
+                      {/* Istirahat setelah Jam 7 - KECUALI JUMAT */}
+                      {period === "7" && (
+                        <tr>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            ISTIRAHAT
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            {time.end} - {JAM_SCHEDULE.Senin[8]?.start || "13:00"}
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                            🕛
+                          </td>
+                          <td className="p-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-center text-slate-500 dark:text-gray-500 font-semibold text-xs sm:text-sm">
+                            -
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
                 </tbody>
               </table>
               <div className="p-3 bg-slate-50 dark:bg-gray-800 border-t border-slate-200 dark:border-gray-700">
                 <p className="text-xs md:text-sm text-slate-600 dark:text-gray-400 text-center font-bold italic">
-                  *Waktu Mengikuti Jadwal Masing-Masing Hari. Senin & Jumat
-                  Memiliki Waktu Khusus.
+                  *Waktu Mengikuti Jadwal Masing-Masing Hari. Senin & Jumat Memiliki Waktu Khusus.
                 </p>
               </div>
             </div>
@@ -950,60 +899,46 @@ const TeacherSchedule = ({ user }) => {
               <div className="p-8 text-center text-slate-500 dark:text-gray-500">
                 <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-400 dark:text-gray-600" />
                 <p className="mb-2 dark:text-gray-400">Belum ada jadwal</p>
-                <p className="text-sm dark:text-gray-500">
-                  Klik "Tambah Jadwal" untuk memulai
-                </p>
+                <p className="text-sm dark:text-gray-500">Klik "Tambah Jadwal" untuk memulai</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-max">
                   <thead className="bg-blue-800 dark:bg-blue-900 text-white text-xs sm:text-sm">
                     <tr>
-                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
-                        Hari
-                      </th>
-                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
-                        Jam Ke
-                      </th>
-                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
-                        Waktu
-                      </th>
-                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
-                        Kelas
-                      </th>
-                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">
-                        Aksi
-                      </th>
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">Hari</th>
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">Jam Ke</th>
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">Waktu</th>
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">Kelas</th>
+                      <th className="px-3 py-3 sm:px-6 text-left font-semibold">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {days.map((day) => {
-                      const daySchedules = schedules.filter(
-                        (s) => s.day === day,
-                      );
+                      const daySchedules = schedules.filter((s) => s.day === day);
                       return daySchedules.map((schedule, idx) => {
                         const periods = findPeriodsByTimeRange(
                           day,
                           schedule.start_time,
-                          schedule.end_time,
+                          schedule.end_time
                         );
                         const jamKe =
                           periods.length > 0
                             ? `${periods[0]}${
-                                periods.length > 1
-                                  ? `-${periods[periods.length - 1]}`
-                                  : ""
+                                periods.length > 1 ? `-${periods[periods.length - 1]}` : ""
                               }`
                             : "?";
 
                         return (
                           <tr
                             key={schedule.id}
-                            className="border-b border-slate-200 dark:border-gray-700 transition-colors duration-300 hover:bg-slate-50 dark:hover:bg-gray-700/50 text-sm">
+                            className="border-b border-slate-200 dark:border-gray-700 transition-colors duration-300 hover:bg-slate-50 dark:hover:bg-gray-700/50 text-sm"
+                          >
                             {idx === 0 && (
                               <td
                                 className="px-3 py-3 sm:px-6 font-semibold text-slate-800 dark:text-gray-100"
-                                rowSpan={daySchedules.length}>
+                                rowSpan={daySchedules.length}
+                              >
                                 {day}
                               </td>
                             )}
@@ -1025,13 +960,15 @@ const TeacherSchedule = ({ user }) => {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleOpenModal(schedule)}
-                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 text-xs sm:text-sm">
+                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 text-xs sm:text-sm"
+                                  >
                                     <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                                     Edit
                                   </button>
                                   <button
                                     onClick={() => handleDelete(schedule.id)}
-                                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center gap-1 text-xs sm:text-sm">
+                                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center gap-1 text-xs sm:text-sm"
+                                  >
                                     <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                     Hapus
                                   </button>
@@ -1056,13 +993,12 @@ const TeacherSchedule = ({ user }) => {
           <div className="bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 flex flex-col">
             <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-gray-100">
-                {editingId
-                  ? "Edit Jadwal Multi-Jam"
-                  : "Tambah Jadwal Multi-Jam"}
+                {editingId ? "Edit Jadwal Multi-Jam" : "Tambah Jadwal Multi-Jam"}
               </h2>
               <button
                 onClick={handleCloseModal}
-                className="text-slate-400 hover:text-slate-600 p-1">
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -1070,15 +1006,12 @@ const TeacherSchedule = ({ user }) => {
             {/* Info di Modal */}
             <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex-shrink-0">
               <p className="text-xs text-blue-800 dark:text-blue-300">
-                💡 Gunakan form ini untuk jadwal{" "}
-                <strong>2+ jam berturut-turut</strong> (contoh: Jam 2-4 atau Jam
-                5-7)
+                💡 Gunakan form ini untuk jadwal <strong>2+ jam berturut-turut</strong> (contoh: Jam
+                2-4 atau Jam 5-7)
               </p>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="flex-1 flex flex-col min-h-0">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
               <div className="space-y-4 flex-1 overflow-y-auto pr-1 pb-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
@@ -1088,7 +1021,8 @@ const TeacherSchedule = ({ user }) => {
                     name="day"
                     value={formData.day}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[44px]">
+                    className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[44px]"
+                  >
                     {days.map((day) => (
                       <option key={day} value={day}>
                         {day}
@@ -1106,7 +1040,8 @@ const TeacherSchedule = ({ user }) => {
                       name="start_period"
                       value={formData.start_period}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[44px]">
+                      className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[44px]"
+                    >
                       {getAvailablePeriods().map((jam) => (
                         <option key={jam} value={jam}>
                           Jam {jam}
@@ -1122,14 +1057,14 @@ const TeacherSchedule = ({ user }) => {
                       name="end_period"
                       value={formData.end_period}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[44px]">
+                      className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[44px]"
+                    >
                       {getAvailablePeriods().map((jam) => (
                         <option
                           key={jam}
                           value={jam}
-                          disabled={
-                            parseInt(jam) < parseInt(formData.start_period)
-                          }>
+                          disabled={parseInt(jam) < parseInt(formData.start_period)}
+                        >
                           Jam {jam}
                         </option>
                       ))}
@@ -1145,7 +1080,8 @@ const TeacherSchedule = ({ user }) => {
                     name="class_id"
                     value={formData.class_id}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[44px]">
+                    className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[44px]"
+                  >
                     <option value="">Pilih Kelas</option>
                     {classes.map((cls) => (
                       <option key={cls.id} value={cls.id}>
@@ -1160,13 +1096,15 @@ const TeacherSchedule = ({ user }) => {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="flex-1 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm sm:text-base">
+                  className="flex-1 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium text-sm sm:text-base"
+                >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:bg-indigo-400 font-medium text-sm sm:text-base">
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:bg-indigo-400 font-medium text-sm sm:text-base"
+                >
                   {loading ? "Menyimpan..." : "Simpan"}
                 </button>
               </div>

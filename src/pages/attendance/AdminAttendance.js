@@ -9,6 +9,10 @@
 // Akibatnya dashboard ini sebelumnya selalu menampilkan "Belum Presensi" walau data ada.
 // Filter sekarang pakai `.eq("subject", "Harian")` — konsisten dengan AttendanceModals.js,
 // AttendancePDF.js, dan AttendanceExcel.js yang semuanya memakai value yang sama.
+// ✅ FIX #1b: semua query presensi harian di file ini sekarang juga filter
+// `.eq("type", "harian")`, menyamakan dengan AttendancePDF.js & AttendanceExcel.js
+// (sebelumnya cuma filter subject, jadi berpotensi beda hasil kalau ada data
+// presensi harian dengan kolom `type` yang bukan "harian").
 //
 // ✅ FIX #2: kolom `status` di database tersimpan sebagai "Alpha" (lihat Attendance.js,
 // confirm-overwrite modal: `d.status === "Alpha"`), bukan "Alpa". Counter sebelumnya
@@ -48,15 +52,7 @@ import { exportStudentAttendancePDF } from "./AttendancePDF";
 // Urutan bulan mengikuti tahun ajaran: Juli (awal Semester Ganjil) s/d Juni (akhir Semester Genap)
 const ACADEMIC_MONTH_ORDER = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
 
-const DAY_NAMES = [
-  "Minggu",
-  "Senin",
-  "Selasa",
-  "Rabu",
-  "Kamis",
-  "Jumat",
-  "Sabtu",
-];
+const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const MONTH_NAMES = [
   "Januari",
   "Februari",
@@ -74,9 +70,7 @@ const MONTH_NAMES = [
 
 const getTodayWIB = () => {
   const now = new Date();
-  const wib = new Date(
-    now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
-  );
+  const wib = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
   const yyyy = wib.getFullYear();
   const mm = String(wib.getMonth() + 1).padStart(2, "0");
   const dd = String(wib.getDate()).padStart(2, "0");
@@ -119,9 +113,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
   const [exportMode, setExportMode] = useState("bulanan"); // "bulanan" | "semester"
   const [exportClasses, setExportClasses] = useState([]); // daftar semua kelas aktif
   const [exportClassId, setExportClassId] = useState(""); // "" = semua kelas
-  const [exportMonthNumber, setExportMonthNumber] = useState(
-    Number(getTodayWIB().split("-")[1]),
-  ); // 1-12
+  const [exportMonthNumber, setExportMonthNumber] = useState(Number(getTodayWIB().split("-")[1])); // 1-12
   const [exportYearsList, setExportYearsList] = useState([]);
   const [exportYear, setExportYear] = useState("");
   const [exportSemesters, setExportSemesters] = useState([]);
@@ -139,19 +131,24 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
     classId: null,
     className: "",
   });
-  const [pdfExportMode, setPdfExportMode] = useState("bulanan"); // "bulanan" | "semester"
   const [detailStudents, setDetailStudents] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
   // ===== EXPORT STATE =====
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdfId, setExportingPdfId] = useState(null);
+  // Export PDF per siswa — berdiri sendiri, terpisah dari modal monitoring harian.
+  // Periode (bulanan/semester) ikut toggle `exportMode` yang sama dengan Export Excel di atas.
+  const [pdfClassId, setPdfClassId] = useState("");
+  const [pdfClassStudents, setPdfClassStudents] = useState([]);
+  const [loadingPdfStudents, setLoadingPdfStudents] = useState(false);
+  const [pdfSelectedStudentId, setPdfSelectedStudentId] = useState("");
 
   const showToast = useCallback(
     (message, type = "info") => {
       if (onShowToast) onShowToast(message, type);
     },
-    [onShowToast],
+    [onShowToast]
   );
 
   // ===== Tentukan tahun ajaran & semester berdasarkan TANGGAL yang dipilih =====
@@ -183,10 +180,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           }
         }
       } catch (error) {
-        console.error(
-          "❌ Gagal menentukan tahun ajaran untuk tanggal ini:",
-          error,
-        );
+        console.error("❌ Gagal menentukan tahun ajaran untuk tanggal ini:", error);
       }
     };
 
@@ -233,10 +227,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           setExportYear(uniqueYears[0]);
         }
       } catch (error) {
-        console.error(
-          "❌ Gagal memuat daftar tahun ajaran untuk export:",
-          error,
-        );
+        console.error("❌ Gagal memuat daftar tahun ajaran untuk export:", error);
       }
     };
     initExportPeriod();
@@ -287,15 +278,40 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear]);
 
+  // ===== EXPORT TAB: muat daftar siswa saat kelas untuk export PDF dipilih =====
+  useEffect(() => {
+    setPdfSelectedStudentId("");
+    if (!pdfClassId) {
+      setPdfClassStudents([]);
+      return;
+    }
+
+    const loadPdfClassStudents = async () => {
+      setLoadingPdfStudents(true);
+      try {
+        const { data, error } = await supabase
+          .from("students")
+          .select("id, full_name, nis")
+          .eq("class_id", pdfClassId)
+          .eq("is_active", true)
+          .order("full_name");
+        if (error) throw error;
+        setPdfClassStudents(data || []);
+      } catch (error) {
+        console.error("❌ Gagal memuat siswa untuk export PDF:", error);
+        showToast("Gagal memuat daftar siswa", "error");
+      } finally {
+        setLoadingPdfStudents(false);
+      }
+    };
+    loadPdfClassStudents();
+  }, [pdfClassId, showToast]);
+
   // ===== Muat daftar kelas (tergantung jenjang) =====
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        let query = supabase
-          .from("classes")
-          .select("id, grade")
-          .eq("is_active", true)
-          .order("id");
+        let query = supabase.from("classes").select("id, grade").eq("is_active", true).order("id");
 
         if (selectedJenjang) {
           query = query.eq("grade", Number(selectedJenjang));
@@ -306,10 +322,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
 
         setClasses(data || []);
 
-        if (
-          selectedClassId &&
-          !(data || []).some((c) => c.id === selectedClassId)
-        ) {
+        if (selectedClassId && !(data || []).some((c) => c.id === selectedClassId)) {
           setSelectedClassId("");
         }
       } catch (error) {
@@ -364,7 +377,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .select("id, student_id, class_id, status, subject, notes, created_at")
         .eq("date", selectedDate)
         .in("class_id", classIds)
-        .eq("subject", "Harian");
+        .eq("subject", "Harian")
+        .eq("type", "harian");
 
       if (attendanceError) throw attendanceError;
 
@@ -406,9 +420,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         };
       });
 
-      summaries.sort(
-        (a, b) => a.grade - b.grade || a.classId.localeCompare(b.classId),
-      );
+      summaries.sort((a, b) => a.grade - b.grade || a.classId.localeCompare(b.classId));
       setClassSummaries(summaries);
     } catch (error) {
       console.error("❌ Gagal memuat ringkasan presensi:", error);
@@ -429,7 +441,6 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
       classId: kelas.classId,
       className: kelas.classId,
     });
-    setPdfExportMode("bulanan");
     setDetailLoading(true);
     try {
       const { data: students, error: studentsError } = await supabase
@@ -446,7 +457,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .select("student_id, status, notes, created_at")
         .eq("date", selectedDate)
         .eq("class_id", kelas.classId)
-        .eq("subject", "Harian");
+        .eq("subject", "Harian")
+        .eq("type", "harian");
       if (attendanceError) throw attendanceError;
 
       const attendanceByStudent = {};
@@ -461,9 +473,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           nis: s.nis,
           name: s.full_name,
           // ✅ FIX: tampilkan label yang sudah dinormalisasi ("Alpha" -> "Alpa")
-          status: record
-            ? normalizeStatusKey(record.status) || record.status
-            : "Belum Presensi",
+          status: record ? normalizeStatusKey(record.status) || record.status : "Belum Presensi",
           waktu: record?.created_at
             ? new Date(record.created_at).toLocaleTimeString("id-ID", {
                 hour: "2-digit",
@@ -488,6 +498,14 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
     setDetailStudents([]);
   };
 
+  // Siswa yang tidak hadir apapun alasannya = status Sakit / Izin / Alpa
+  // (bukan "Hadir" dan bukan "Belum Presensi").
+  const ABSENT_STATUSES = ["Sakit", "Izin", "Alpa"];
+  const absentStudentsInModal = useMemo(
+    () => detailStudents.filter((s) => ABSENT_STATUSES.includes(s.status)),
+    [detailStudents]
+  );
+
   // ===== Ringkasan global (dihitung dari classSummaries yang sudah difilter status) =====
   const filteredSummaries = useMemo(() => {
     if (!selectedStatusFilter) return classSummaries;
@@ -504,7 +522,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         alpa: acc.alpa + c.alpa,
         belum: acc.belum + c.belum,
       }),
-      { total: 0, hadir: 0, sakit: 0, izin: 0, alpa: 0, belum: 0 },
+      { total: 0, hadir: 0, sakit: 0, izin: 0, alpa: 0, belum: 0 }
     );
   }, [classSummaries]);
 
@@ -598,8 +616,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
       }
       // Tahun kalender: Juli-Desember pakai tahun awal, Januari-Juni pakai tahun akhir
       const [startYearStr, endYearStr] = exportYear.split("/");
-      const year =
-        exportMonthNumber >= 7 ? Number(startYearStr) : Number(endYearStr);
+      const year = exportMonthNumber >= 7 ? Number(startYearStr) : Number(endYearStr);
       const month = exportMonthNumber;
       const monthStr = String(month).padStart(2, "0");
       const yearStr = String(year);
@@ -621,6 +638,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .select("student_id, class_id, status, date")
         .in("class_id", classIds)
         .eq("subject", "Harian")
+        .eq("type", "harian")
         .gte("date", startDate)
         .lte("date", endDate)
         .order("date", { ascending: true });
@@ -653,17 +671,13 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .sort()
         .forEach((classId) => {
           const classStudents = grouped[classId];
-          const classAttendance = (attendanceData || []).filter(
-            (a) => a.class_id === classId,
-          );
+          const classAttendance = (attendanceData || []).filter((a) => a.class_id === classId);
 
           // Tanggal unik yang benar-benar ada presensinya, di kelas ini
-          const uniqueDates = [...new Set(classAttendance.map((a) => a.date))]
-            .sort()
-            .map((d) => {
-              const [, mm, dd] = d.split("-");
-              return { original: d, display: `${dd}-${mm}` };
-            });
+          const uniqueDates = [...new Set(classAttendance.map((a) => a.date))].sort().map((d) => {
+            const [, mm, dd] = d.split("-");
+            return { original: d, display: `${dd}-${mm}` };
+          });
 
           // Matrix per siswa: kode H/S/I/A per tanggal + ringkasan
           const matrix = {};
@@ -678,14 +692,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
             if (!m) return;
             const key = normalizeStatusKey(a.status);
             if (!key) return;
-            const code =
-              key === "Hadir"
-                ? "H"
-                : key === "Sakit"
-                  ? "S"
-                  : key === "Izin"
-                    ? "I"
-                    : "A";
+            const code = key === "Hadir" ? "H" : key === "Sakit" ? "S" : key === "Izin" ? "I" : "A";
             m.dates[a.date] = code;
             m.summary[key]++;
           });
@@ -896,6 +903,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .select("student_id, class_id, status, date")
         .in("class_id", classIds)
         .eq("subject", "Harian")
+        .eq("type", "harian")
         .gte("date", startDate)
         .lte("date", endDate);
       if (attErr) throw attErr;
@@ -924,9 +932,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
       workbook.creator = "Sistem Presensi";
       workbook.created = new Date();
       const semesterPeriodText =
-        semRow.semester === 1
-          ? "Ganjil (Juli-Desember)"
-          : "Genap (Januari-Juni)";
+        semRow.semester === 1 ? "Ganjil (Juli-Desember)" : "Genap (Januari-Juni)";
 
       const getCategory = (pct) => {
         if (pct >= 90) return "Sangat Baik";
@@ -945,9 +951,13 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .sort()
         .forEach((classId) => {
           const classStudents = grouped[classId];
-          const sheet = workbook.addWorksheet(
-            `Sem ${semesterLabel} ${classId}`.substring(0, 31),
-          );
+          const classAttendance = (attendanceData || []).filter((a) => a.class_id === classId);
+          // ✅ FIX: "Total" per siswa harus sama = jumlah hari presensi yang
+          // benar-benar diinput untuk kelas ini (bukan sekadar jumlah status
+          // yang tercatat per siswa — kalau ada 1 hari siswa tsb kelewat
+          // diinput, totalnya jadi lebih kecil dari teman sekelasnya).
+          const effectiveDaysCount = new Set(classAttendance.map((a) => a.date)).size;
+          const sheet = workbook.addWorksheet(`Sem ${semesterLabel} ${classId}`.substring(0, 31));
           const totalCols = 10;
 
           sheet.mergeCells(1, 1, 1, totalCols);
@@ -960,8 +970,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           sheet.getRow(1).height = 25;
 
           sheet.mergeCells(2, 1, 2, totalCols);
-          sheet.getCell(2, 1).value =
-            `REKAP PRESENSI - KELAS ${classId} | ${semRow.year}`;
+          sheet.getCell(2, 1).value = `REKAP PRESENSI - KELAS ${classId} | ${semRow.year}`;
           sheet.getCell(2, 1).font = { name: "Arial", size: 12, bold: true };
           sheet.getCell(2, 1).alignment = {
             horizontal: "center",
@@ -1023,7 +1032,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               Izin: 0,
               Alpa: 0,
             };
-            const total = stats.Hadir + stats.Sakit + stats.Izin + stats.Alpa;
+            const total = effectiveDaysCount;
             const pct = total > 0 ? Math.round((stats.Hadir / total) * 100) : 0;
             const category = getCategory(pct);
 
@@ -1099,40 +1108,46 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
     }
   };
 
-  // ===== EXPORT: PDF presensi per siswa (dari modal detail) =====
-  const handleExportPdfStudent = async (student) => {
+  // ===== EXPORT: PDF presensi per siswa (berdiri sendiri, tab Export) =====
+  const handleExportPdfStudent = async () => {
+    const student = pdfClassStudents.find((s) => s.id === pdfSelectedStudentId);
+    if (!student) {
+      showToast("Pilih siswa terlebih dahulu", "error");
+      return;
+    }
+    if (!exportMode) return;
+
     setExportingPdfId(student.id);
     try {
-      const selectedSemesterObj = semesters.find(
-        (s) => s.id === selectedSemesterId,
-      );
-      const semesterNumber = selectedSemesterObj?.semester;
+      const semesterObj =
+        exportMode === "bulanan" ? null : exportSemesters.find((s) => s.id === exportSemesterId);
+      const semesterNumber = semesterObj?.semester;
 
       let pdfParams = {
-        student: { id: student.id, nis: student.nis, full_name: student.name },
+        student: { id: student.id, nis: student.nis, full_name: student.full_name },
         attendanceType: "harian",
-        homeroomClass: detailModal.classId,
-        academicYear: selectedYear,
-        academicYearId: selectedSemesterId,
+        homeroomClass: pdfClassId,
+        academicYear: exportYear,
+        academicYearId: exportSemesterId,
         semester: semesterNumber,
         // ✅ Export dari monitoring admin gak perlu blok tanda tangan wali kelas/guru mapel
         includeSignature: false,
       };
 
-      if (pdfExportMode === "bulanan") {
-        const [yearStr, monthStr] = selectedDate.split("-");
+      if (exportMode === "bulanan") {
+        // Tahun kalender: Juli-Desember pakai tahun awal, Januari-Juni pakai tahun akhir
+        const [startYearStr, endYearStr] = (exportYear || "").split("/");
+        const calendarYear = exportMonthNumber >= 7 ? Number(startYearStr) : Number(endYearStr);
         pdfParams = {
           ...pdfParams,
           mode: "bulanan",
-          month: Number(monthStr),
-          year: Number(yearStr),
+          month: exportMonthNumber,
+          year: calendarYear,
         };
       } else {
         // Mode "semester": tahun kalender ditentukan dari string "2025/2026"
         // — semester ganjil pakai tahun awal, semester genap pakai tahun akhir.
-        const [startYear, endYear] = (selectedYear || "")
-          .split("/")
-          .map(Number);
+        const [startYear, endYear] = (exportYear || "").split("/").map(Number);
         const calendarYear = semesterNumber === 1 ? startYear : endYear;
         pdfParams = {
           ...pdfParams,
@@ -1167,10 +1182,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <ClipboardList
-                  className="text-blue-600 dark:text-blue-400"
-                  size={28}
-                />
+                <ClipboardList className="text-blue-600 dark:text-blue-400" size={28} />
                 Monitoring Presensi Siswa
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
@@ -1187,9 +1199,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     {user.full_name}
                   </p>
                   <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded font-medium">
-                    {user.role === "guru_bk"
-                      ? "🧑‍⚕️ Guru BK/BP"
-                      : "Administrator"}
+                    {user.role === "guru_bk" ? "🧑‍⚕️ Guru BK/BP" : "Administrator"}
                   </span>
                 </div>
               </div>
@@ -1207,7 +1217,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               activeTab === "monitor"
                 ? "bg-blue-600 text-white"
                 : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-            }`}>
+            }`}
+          >
             <ClipboardList size={16} /> Monitor Presensi
           </button>
           <button
@@ -1216,7 +1227,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               activeTab === "export"
                 ? "bg-blue-600 text-white"
                 : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-            }`}>
+            }`}
+          >
             <FileSpreadsheet size={16} /> Export Presensi
           </button>
         </div>
@@ -1228,12 +1240,9 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               {selectedYear && (
                 <div className="mb-3 text-xs font-medium text-slate-500 dark:text-slate-400">
                   Tahun Ajaran{" "}
-                  <span className="text-slate-700 dark:text-slate-200">
-                    {selectedYear}
-                  </span>
+                  <span className="text-slate-700 dark:text-slate-200">{selectedYear}</span>
                   {" · "}
-                  {semesters.find((s) => s.id === selectedSemesterId)
-                    ?.semester === 1
+                  {semesters.find((s) => s.id === selectedSemesterId)?.semester === 1
                     ? "Semester Ganjil"
                     : "Semester Genap"}
                 </div>
@@ -1258,7 +1267,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={selectedJenjang}
-                    onChange={(e) => setSelectedJenjang(e.target.value)}>
+                    onChange={(e) => setSelectedJenjang(e.target.value)}
+                  >
                     <option value="">Semua Jenjang</option>
                     <option value="7">Kelas 7</option>
                     <option value="8">Kelas 8</option>
@@ -1273,7 +1283,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}>
+                    onChange={(e) => setSelectedClassId(e.target.value)}
+                  >
                     <option value="">Semua Kelas</option>
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1290,7 +1301,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={selectedStatusFilter}
-                    onChange={(e) => setSelectedStatusFilter(e.target.value)}>
+                    onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                  >
                     <option value="">Semua Status</option>
                     <option value="selesai">Selesai</option>
                     <option value="sebagian">Sebagian</option>
@@ -1307,16 +1319,13 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                 return (
                   <div
                     key={card.label}
-                    className={`rounded-lg border p-3 sm:p-4 shadow-sm ${colorClasses[card.color]}`}>
+                    className={`rounded-lg border p-3 sm:p-4 shadow-sm ${colorClasses[card.color]}`}
+                  >
                     <div className="flex items-center justify-between mb-1">
                       <Icon size={18} />
-                      <span className="text-xl sm:text-2xl font-bold">
-                        {card.value}
-                      </span>
+                      <span className="text-xl sm:text-2xl font-bold">{card.value}</span>
                     </div>
-                    <div className="text-xs sm:text-sm font-medium">
-                      {card.label}
-                    </div>
+                    <div className="text-xs sm:text-sm font-medium">{card.label}</div>
                   </div>
                 );
               })}
@@ -1332,7 +1341,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={fetchAttendanceSummary}
-                    className="px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800/40 dark:hover:bg-blue-800/60 text-blue-700 dark:text-blue-300 rounded-lg font-medium flex items-center gap-2 text-sm min-h-[38px]">
+                    className="px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800/40 dark:hover:bg-blue-800/60 text-blue-700 dark:text-blue-300 rounded-lg font-medium flex items-center gap-2 text-sm min-h-[38px]"
+                  >
                     <RefreshCw size={15} />
                     <span>Refresh</span>
                   </button>
@@ -1358,9 +1368,7 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                         <th className="px-1 py-2 sm:px-3 text-center">Sakit</th>
                         <th className="px-1 py-2 sm:px-3 text-center">Izin</th>
                         <th className="px-1 py-2 sm:px-3 text-center">Alpa</th>
-                        <th className="px-1 py-2 sm:px-3 text-center">
-                          Status
-                        </th>
+                        <th className="px-1 py-2 sm:px-3 text-center">Status</th>
                         <th className="px-1 py-2 sm:px-3 text-center">Aksi</th>
                       </tr>
                     </thead>
@@ -1368,7 +1376,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                       {filteredSummaries.map((k) => (
                         <tr
                           key={k.classId}
-                          className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                          className="hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                        >
                           <td className="px-1.5 py-2 sm:px-4 font-semibold text-slate-800 dark:text-slate-200">
                             {k.classId}
                           </td>
@@ -1387,13 +1396,12 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                           <td className="px-1 py-2 sm:px-3 text-center font-bold text-rose-600 dark:text-rose-400">
                             {k.alpa}
                           </td>
-                          <td className="px-1 py-2 sm:px-3 text-center">
-                            {statusBadge(k.status)}
-                          </td>
+                          <td className="px-1 py-2 sm:px-3 text-center">{statusBadge(k.status)}</td>
                           <td className="px-1 py-2 sm:px-3 text-center">
                             <button
                               onClick={() => openDetail(k)}
-                              className="px-1.5 py-1 sm:px-2 rounded-md text-[10px] sm:text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50">
+                              className="px-1.5 py-1 sm:px-2 rounded-md text-[10px] sm:text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                            >
                               Detail
                             </button>
                           </td>
@@ -1419,7 +1427,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     exportMode === "bulanan"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                  }`}>
+                  }`}
+                >
                   Bulanan
                 </button>
                 <button
@@ -1428,7 +1437,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     exportMode === "semester"
                       ? "bg-blue-600 text-white"
                       : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                  }`}>
+                  }`}
+                >
                   Semester
                 </button>
               </div>
@@ -1441,7 +1451,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={exportClassId}
-                    onChange={(e) => setExportClassId(e.target.value)}>
+                    onChange={(e) => setExportClassId(e.target.value)}
+                  >
                     <option value="">Semua Kelas</option>
                     {exportClasses.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1458,7 +1469,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <select
                     className={inputClass}
                     value={exportYear}
-                    onChange={(e) => setExportYear(e.target.value)}>
+                    onChange={(e) => setExportYear(e.target.value)}
+                  >
                     {exportYearsList.map((y) => (
                       <option key={y} value={y}>
                         {y}
@@ -1475,9 +1487,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     <select
                       className={inputClass}
                       value={exportMonthNumber}
-                      onChange={(e) =>
-                        setExportMonthNumber(Number(e.target.value))
-                      }>
+                      onChange={(e) => setExportMonthNumber(Number(e.target.value))}
+                    >
                       {ACADEMIC_MONTH_ORDER.map((m) => (
                         <option key={m} value={m}>
                           {MONTH_NAMES[m - 1]}
@@ -1493,7 +1504,8 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                     <select
                       className={inputClass}
                       value={exportSemesterId}
-                      onChange={(e) => setExportSemesterId(e.target.value)}>
+                      onChange={(e) => setExportSemesterId(e.target.value)}
+                    >
                       {exportSemesters.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.semester === 1 ? "Ganjil" : "Genap"}
@@ -1505,21 +1517,12 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
 
                 <button
                   onClick={
-                    exportMode === "bulanan"
-                      ? handleExportExcelBulanan
-                      : handleExportExcelSemester
+                    exportMode === "bulanan" ? handleExportExcelBulanan : handleExportExcelSemester
                   }
-                  disabled={
-                    exportMode === "bulanan"
-                      ? exportingExcel
-                      : exportingExcelSemester
-                  }
-                  className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 text-sm disabled:opacity-60">
-                  {(
-                    exportMode === "bulanan"
-                      ? exportingExcel
-                      : exportingExcelSemester
-                  ) ? (
+                  disabled={exportMode === "bulanan" ? exportingExcel : exportingExcelSemester}
+                  className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+                >
+                  {(exportMode === "bulanan" ? exportingExcel : exportingExcelSemester) ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <FileSpreadsheet size={16} />
@@ -1529,10 +1532,72 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
               </div>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-3 sm:p-4 text-xs sm:text-sm text-blue-700 dark:text-blue-300">
-              💡 Untuk export PDF presensi per siswa, buka tab{" "}
-              <strong>Monitor Presensi</strong> → klik <strong>Detail</strong>{" "}
-              pada kelas yang dituju → pilih siswa.
+            {/* Export PDF per Siswa — terpisah dari modal monitoring harian */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">
+                Export PDF Presensi per Siswa
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                Periode mengikuti pilihan Bulanan/Semester, Tahun Ajaran, dan Bulan/Semester di
+                atas.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    Kelas
+                  </label>
+                  <select
+                    className={inputClass}
+                    value={pdfClassId}
+                    onChange={(e) => setPdfClassId(e.target.value)}
+                  >
+                    <option value="">Pilih kelas</option>
+                    {exportClasses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    Siswa
+                  </label>
+                  <select
+                    className={inputClass}
+                    value={pdfSelectedStudentId}
+                    disabled={!pdfClassId || loadingPdfStudents}
+                    onChange={(e) => setPdfSelectedStudentId(e.target.value)}
+                  >
+                    <option value="">
+                      {loadingPdfStudents
+                        ? "Memuat..."
+                        : pdfClassStudents.length === 0
+                          ? "Pilih kelas dulu"
+                          : "Pilih siswa"}
+                    </option>
+                    {pdfClassStudents.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.full_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleExportPdfStudent}
+                  disabled={!pdfSelectedStudentId || !!exportingPdfId}
+                  className="w-full px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+                >
+                  {exportingPdfId ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <FileDown size={16} />
+                  )}
+                  <span>Export PDF</span>
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -1542,42 +1607,27 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-4 py-3 sm:px-6 sm:py-4 rounded-t-2xl flex items-center justify-between">
-                <h2 className="text-base sm:text-lg font-bold text-white">
-                  Detail Presensi — {detailModal.className}
-                </h2>
-                <button
-                  onClick={closeDetail}
-                  className="text-white/80 hover:text-white">
+                <div>
+                  <h2 className="font-bold text-white">
+                    Siswa Tidak Hadir — {detailModal.className}
+                  </h2>
+                  <p className="text-xs text-white/80">{formatDateIndo(selectedDate)}</p>
+                </div>
+                <button onClick={closeDetail} className="text-white/80 hover:text-white">
                   <X size={20} />
                 </button>
               </div>
 
               <div className="overflow-y-auto p-4 sm:p-6">
                 {!detailLoading && detailStudents.length > 0 && (
-                  <div className="flex items-center gap-2 mb-4 text-xs sm:text-sm">
-                    <span className="text-slate-500 dark:text-slate-400 font-medium">
-                      Export PDF:
-                    </span>
-                    <div className="flex gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-                      <button
-                        onClick={() => setPdfExportMode("bulanan")}
-                        className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
-                          pdfExportMode === "bulanan"
-                            ? "bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-400 shadow-sm"
-                            : "text-slate-500 dark:text-slate-400"
-                        }`}>
-                        Bulanan
-                      </button>
-                      <button
-                        onClick={() => setPdfExportMode("semester")}
-                        className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
-                          pdfExportMode === "semester"
-                            ? "bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-400 shadow-sm"
-                            : "text-slate-500 dark:text-slate-400"
-                        }`}>
-                        Semester
-                      </button>
-                    </div>
+                  <div className="mb-4 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    {detailStudents.length - absentStudentsInModal.length} dari{" "}
+                    {detailStudents.length} siswa hadir.{" "}
+                    {absentStudentsInModal.length > 0 && (
+                      <span className="font-semibold text-rose-600 dark:text-rose-400">
+                        {absentStudentsInModal.length} siswa tidak hadir.
+                      </span>
+                    )}
                   </div>
                 )}
                 {detailLoading ? (
@@ -1588,6 +1638,10 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                   <div className="text-center text-sm text-slate-500 dark:text-slate-400 py-6">
                     Tidak ada siswa aktif di kelas ini.
                   </div>
+                ) : absentStudentsInModal.length === 0 ? (
+                  <div className="text-center text-sm text-slate-500 dark:text-slate-400 py-6">
+                    🎉 Semua siswa hadir hari ini.
+                  </div>
                 ) : (
                   <table className="w-full text-sm">
                     <thead className="text-slate-500 dark:text-slate-400 text-xs uppercase border-b border-slate-200 dark:border-slate-700">
@@ -1596,36 +1650,30 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
                         <th className="py-2 text-center">Status</th>
                         <th className="py-2 text-center">Waktu</th>
                         <th className="py-2 text-left">Keterangan</th>
-                        <th className="py-2 text-center">PDF</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                      {detailStudents.map((s) => (
+                      {absentStudentsInModal.map((s) => (
                         <tr key={s.id}>
-                          <td className="py-2 text-slate-800 dark:text-slate-200">
-                            {s.name}
-                          </td>
-                          <td className="py-2 text-center text-slate-600 dark:text-slate-300">
-                            {s.status}
+                          <td className="py-2 text-slate-800 dark:text-slate-200">{s.name}</td>
+                          <td className="py-2 text-center">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                s.status === "Alpa"
+                                  ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+                                  : s.status === "Sakit"
+                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                    : "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                              }`}
+                            >
+                              {s.status}
+                            </span>
                           </td>
                           <td className="py-2 text-center text-slate-600 dark:text-slate-300">
                             {s.waktu}
                           </td>
                           <td className="py-2 text-slate-600 dark:text-slate-300">
                             {s.keterangan}
-                          </td>
-                          <td className="py-2 text-center">
-                            <button
-                              onClick={() => handleExportPdfStudent(s)}
-                              disabled={exportingPdfId === s.id}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 disabled:opacity-60"
-                              title="Export PDF presensi bulanan siswa ini">
-                              {exportingPdfId === s.id ? (
-                                <Loader2 size={13} className="animate-spin" />
-                              ) : (
-                                <FileDown size={13} />
-                              )}
-                            </button>
                           </td>
                         </tr>
                       ))}

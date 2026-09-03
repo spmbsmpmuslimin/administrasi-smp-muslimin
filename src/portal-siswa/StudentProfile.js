@@ -204,7 +204,7 @@ export function ProfileInfo({ student, onUpdated }) {
     { label: "Kode Pos", value: student?.kode_pos || "-" },
     { label: "No. HP Siswa (Kalau Ada)", value: student?.no_hp || "-" },
     { label: "Agama", value: student?.agama || "-" },
-    { label: "Anak Ke-", value: student?.anak_ke || "-" },
+    { label: "Anak Ke Berapa Dalam Keluarga", value: student?.anak_ke || "-" },
     { label: "NIK", value: student?.nik || "-" },
     { label: "No. Kartu Keluarga (KK)", value: student?.no_kk || "-" },
     { label: "No. Akta Lahir", value: student?.no_akta_lahir || "-" },
@@ -376,7 +376,7 @@ export function ProfileInfo({ student, onUpdated }) {
           </div>
 
           <div>
-            <label className={labelClass}>Anak Ke-</label>
+            <label className={labelClass}>Anak Ke Berapa Dalam Keluarga</label>
             <input
               type="number"
               min="1"

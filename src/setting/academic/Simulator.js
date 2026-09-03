@@ -107,12 +107,12 @@ export const processSimulation = (preview, schoolStats, config, academicInfo = n
           studentCount === 0
             ? "empty"
             : studentCount < SCHOOL_CONFIG.capacityRange.minimum
-            ? "low"
-            : studentCount > SCHOOL_CONFIG.capacityRange.maximum
-            ? "high"
-            : studentCount > SCHOOL_CONFIG.capacityRange.high
-            ? "full"
-            : "optimal",
+              ? "low"
+              : studentCount > SCHOOL_CONFIG.capacityRange.maximum
+                ? "high"
+                : studentCount > SCHOOL_CONFIG.capacityRange.high
+                  ? "full"
+                  : "optimal",
       });
 
       // Warnings
@@ -149,10 +149,10 @@ export const processSimulation = (preview, schoolStats, config, academicInfo = n
           studentCount === 0
             ? "empty"
             : studentCount > SCHOOL_CONFIG.capacityRange.maximum
-            ? "high"
-            : studentCount > SCHOOL_CONFIG.capacityRange.high
-            ? "full"
-            : "optimal",
+              ? "high"
+              : studentCount > SCHOOL_CONFIG.capacityRange.high
+                ? "full"
+                : "optimal",
       });
 
       if (studentCount > SCHOOL_CONFIG.capacityRange.maximum) {
@@ -176,10 +176,10 @@ export const processSimulation = (preview, schoolStats, config, academicInfo = n
           studentCount === 0
             ? "empty"
             : studentCount > SCHOOL_CONFIG.capacityRange.maximum
-            ? "high"
-            : studentCount > SCHOOL_CONFIG.capacityRange.high
-            ? "full"
-            : "optimal",
+              ? "high"
+              : studentCount > SCHOOL_CONFIG.capacityRange.high
+                ? "full"
+                : "optimal",
       });
     });
 
@@ -242,8 +242,8 @@ export const processSimulation = (preview, schoolStats, config, academicInfo = n
             avgGrade7 < SCHOOL_CONFIG.capacityRange.minimum
               ? "low"
               : avgGrade7 > SCHOOL_CONFIG.capacityRange.maximum
-              ? "high"
-              : "optimal",
+                ? "high"
+                : "optimal",
         },
         grade8: {
           classes: grade8ClassCount,
@@ -253,8 +253,8 @@ export const processSimulation = (preview, schoolStats, config, academicInfo = n
             avgGrade8 > SCHOOL_CONFIG.capacityRange.maximum
               ? "high"
               : avgGrade8 > SCHOOL_CONFIG.capacityRange.high
-              ? "full"
-              : "optimal",
+                ? "full"
+                : "optimal",
         },
         grade9: {
           classes: grade9ClassCount,
@@ -264,8 +264,8 @@ export const processSimulation = (preview, schoolStats, config, academicInfo = n
             avgGrade9 > SCHOOL_CONFIG.capacityRange.maximum
               ? "high"
               : avgGrade9 > SCHOOL_CONFIG.capacityRange.high
-              ? "full"
-              : "optimal",
+                ? "full"
+                : "optimal",
         },
       },
       classDistribution: finalClassDistribution.sort((a, b) => {
@@ -474,17 +474,17 @@ export const SimulationResults = ({
                         gradeData.status === "high"
                           ? "text-orange-600 dark:text-orange-400"
                           : gradeData.status === "low"
-                          ? "text-yellow-600 dark:text-yellow-400"
-                          : "text-emerald-600 dark:text-emerald-400"
+                            ? "text-yellow-600 dark:text-yellow-400"
+                            : "text-emerald-600 dark:text-emerald-400"
                       }`}
                     >
                       {gradeData.status === "high"
                         ? "Padat"
                         : gradeData.status === "low"
-                        ? "Sedikit"
-                        : gradeData.status === "full"
-                        ? "Penuh"
-                        : "Optimal"}
+                          ? "Sedikit"
+                          : gradeData.status === "full"
+                            ? "Penuh"
+                            : "Optimal"}
                     </span>
                   </div>
                 </div>
@@ -550,10 +550,10 @@ export const SimulationResults = ({
                         cls.status === "high"
                           ? "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300"
                           : cls.status === "low"
-                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
-                          : cls.status === "empty"
-                          ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
-                          : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
+                            ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
+                            : cls.status === "empty"
+                              ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                              : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
                       }`}
                     >
                       {statusText[cls.status]}
@@ -905,7 +905,7 @@ const Simulator = ({ mode = "analysis", preview, schoolStats, config, loading, o
               {/* ✅ 11. TAMBAHKAN INFO SEMESTER JIKA ADA */}
               {academicInfo && (
                 <span className="block text-xs text-gray-500">
-                  Semester {academicInfo.semester}
+                  Semester {academicInfo.activeSemester}
                 </span>
               )}
             </p>

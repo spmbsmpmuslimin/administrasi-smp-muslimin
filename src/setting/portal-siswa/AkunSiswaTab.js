@@ -15,7 +15,7 @@
 //
 // Username tetap = NIS siswa (disanitize), is_active = true pas dibuat.
 // Siswa yang udah punya akun otomatis di-skip pas generate (gak bakal dobel).
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -55,6 +55,20 @@ const extractJenjang = (classId) => {
 // atau enggak.
 const sanitizeUsername = (nis) => String(nis ?? "").replace(/[^0-9A-Za-z]/g, "");
 
+// Pecah array jadi beberapa batch kecil. Dipake buat query `.in(...)` yang
+// potensial nerima ratusan ID sekaligus (mis. pas filter "Semua Kelas" narik
+// siswa dari banyak kelas) -- kalau dikirim sekaligus dalam 1 request GET,
+// URL-nya bisa kepanjangan dan ditolak server (400 Bad Request). Batch 150
+// item (UUID ~36 char) masih aman jauh di bawah limit URL umum.
+const CHUNK_SIZE = 150;
+const chunkArray = (arr, size = CHUNK_SIZE) => {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+};
+
 // Huruf buat suffix password acak -- sengaja exclude i/l/o (gampang keketuker
 // sama 1 dan 0) biar ortu/siswa gak salah ketik pas login dari HP.
 const PASSWORD_LETTERS = "abcdefghjkmnpqrstuvwxyz";
@@ -84,6 +98,14 @@ export default function AkunSiswaTab({ showToast }) {
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingList, setLoadingList] = useState(false);
   const [generating, setGenerating] = useState(false);
+
+  // ✅ Sengaja gak auto-load siswa pas tab ini pertama kali dibuka -- default
+  // filter-nya "Semua Jenjang" + "Semua Kelas", jadi kalau langsung ditarik
+  // pas mount bisa narik SEMUA siswa aktif di sekolah tanpa admin minta.
+  // `hasFiltered` ini baru jadi `true` begitu admin ganti Jenjang atau Kelas
+  // (apa pun pilihannya, termasuk balik ke "Semua") -- baru dari situ data
+  // boleh di-fetch.
+  const [hasFiltered, setHasFiltered] = useState(false);
 
   // State khusus buat fitur "Generate Semua Kelas Sekaligus". Dipisah dari
   // state per-kelas di atas biar gak saling ganggu -- summary di-load dulu
@@ -120,11 +142,8 @@ export default function AkunSiswaTab({ showToast }) {
 
         const unique = [...new Set((data || []).map((s) => s.class_id).filter(Boolean))].sort();
         setClassList(unique);
-
-        const jenjangUnique = [...new Set(unique.map(extractJenjang).filter(Boolean))].sort(
-          (a, b) => Number(a) - Number(b)
-        );
-        setSelectedJenjang((prev) => prev || jenjangUnique[0] || "");
+        // ✅ Sengaja gak auto-pilih jenjang pertama lagi -- biar defaultnya
+        // tetep "Semua Jenjang" pas tab ini pertama kali dibuka.
       } catch (err) {
         console.error("[AkunSiswaTab] Gagal load daftar kelas:", err);
         showToast && showToast("Gagal memuat daftar kelas", "error");
@@ -135,31 +154,83 @@ export default function AkunSiswaTab({ showToast }) {
     loadClasses();
   }, [showToast]);
 
+  const jenjangList = [...new Set(classList.map(extractJenjang).filter(Boolean))].sort(
+    (a, b) => Number(a) - Number(b)
+  );
+  // selectedJenjang === "" => "Semua Jenjang", jadi semua kelas ikut masuk.
+  const classesInJenjang = useMemo(
+    () =>
+      selectedJenjang ? classList.filter((c) => extractJenjang(c) === selectedJenjang) : classList,
+    [classList, selectedJenjang]
+  );
+
+  // ✅ Setiap kali JENJANG diganti manual (termasuk balik ke "Semua
+  // Jenjang"), kelas yang lagi dipilih SELALU direset ke "Semua Kelas" --
+  // gak dicek dulu valid apa nggak. Soalnya kalau cuma dicek validity,
+  // pas balik dari "Kelas 7 > 7B" ke "Semua Jenjang", 7B tetep dianggap
+  // "valid" (karena masuk juga ke classesInJenjang pas Semua Jenjang) jadi
+  // gak ke-reset -- padahal harusnya balik ke "Semua Kelas".
+  // prevJenjangRef dipake buat bedain "jenjang beneran diganti" vs efek ini
+  // ke-trigger ulang gara-gara classesInJenjang berubah referensi doang
+  // (misal abis reload data kelas tapi jenjangnya sama).
+  const prevJenjangRef = useRef(selectedJenjang);
+  useEffect(() => {
+    const jenjangBerubah = prevJenjangRef.current !== selectedJenjang;
+    prevJenjangRef.current = selectedJenjang;
+
+    if (jenjangBerubah) {
+      setSelectedClass("");
+      return;
+    }
+    // Jenjang-nya sama, tapi daftar kelas kesedia (mis. abis reload) --
+    // pastiin kelas yang lagi kepilih masih ada di jenjang ini.
+    if (selectedClass && !classesInJenjang.includes(selectedClass)) {
+      setSelectedClass("");
+    }
+  }, [selectedJenjang, classesInJenjang]);
+
   // Siswa + status akun (punya/belum) buat kelas yang lagi dipilih.
+  // ✅ selectedClass === "" ("Semua Kelas") -> tarik siswa dari SEMUA kelas
+  // yang ada di jenjang yang lagi aktif (classesInJenjang), bukan cuma 1
+  // kelas doang. Kalau jenjang-nya juga "Semua Jenjang", classesInJenjang
+  // otomatis udah berisi semua kelas yang ada.
   const loadStudents = useCallback(async () => {
-    if (!selectedClass) {
+    if (!hasFiltered) {
+      setStudents([]);
+      return;
+    }
+    if (!selectedClass && classesInJenjang.length === 0) {
       setStudents([]);
       return;
     }
     setLoadingList(true);
     try {
-      const { data: studentRows, error: studentErr } = await supabase
+      let query = supabase
         .from("students")
         .select("id, full_name, nis, class_id")
-        .eq("class_id", selectedClass)
         .eq("is_active", true)
         .order("full_name", { ascending: true });
+      query = selectedClass
+        ? query.eq("class_id", selectedClass)
+        : query.in("class_id", classesInJenjang);
+
+      const { data: studentRows, error: studentErr } = await query;
       if (studentErr) throw studentErr;
 
       const ids = (studentRows || []).map((s) => s.id);
       let authRows = [];
       if (ids.length > 0) {
-        const { data: authData, error: authErr } = await supabase
-          .from("student_auth")
-          .select("student_id, username, password, is_active")
-          .in("student_id", ids);
-        if (authErr) throw authErr;
-        authRows = authData || [];
+        const results = await Promise.all(
+          chunkArray(ids).map((batch) =>
+            supabase
+              .from("student_auth")
+              .select("student_id, username, password, is_active")
+              .in("student_id", batch)
+          )
+        );
+        const firstErr = results.find((r) => r.error)?.error;
+        if (firstErr) throw firstErr;
+        authRows = results.flatMap((r) => r.data || []);
       }
       const authMap = {};
       authRows.forEach((a) => {
@@ -181,30 +252,11 @@ export default function AkunSiswaTab({ showToast }) {
     } finally {
       setLoadingList(false);
     }
-  }, [selectedClass, showToast]);
+  }, [hasFiltered, selectedClass, classesInJenjang, showToast]);
 
   useEffect(() => {
     loadStudents();
   }, [loadStudents]);
-
-  const jenjangList = [...new Set(classList.map(extractJenjang).filter(Boolean))].sort(
-    (a, b) => Number(a) - Number(b)
-  );
-  const classesInJenjang = classList.filter((c) => extractJenjang(c) === selectedJenjang);
-
-  // Begitu jenjang diganti (atau daftar kelas kesedia), pastiin kelas yang
-  // lagi dipilih emang bagian dari jenjang itu -- kalau nggak, otomatis
-  // pindah ke kelas pertama di jenjang yang baru.
-  useEffect(() => {
-    if (classesInJenjang.length === 0) {
-      setSelectedClass("");
-      return;
-    }
-    if (!classesInJenjang.includes(selectedClass)) {
-      setSelectedClass(classesInJenjang[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedJenjang, classList]);
 
   const belumPunyaAkun = students.filter((s) => !s.hasAccount);
   const nisKosong = belumPunyaAkun.filter((s) => !s.nis);
@@ -821,13 +873,14 @@ export default function AkunSiswaTab({ showToast }) {
           </label>
           <select
             value={selectedJenjang}
-            onChange={(e) => setSelectedJenjang(e.target.value)}
+            onChange={(e) => {
+              setSelectedJenjang(e.target.value);
+              setHasFiltered(true);
+            }}
             disabled={loadingClasses}
             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {jenjangList.length === 0 && (
-              <option value="">{loadingClasses ? "Memuat..." : "Tidak ada jenjang"}</option>
-            )}
+            <option value="">{loadingClasses ? "Memuat..." : "Semua Jenjang"}</option>
             {jenjangList.map((j) => (
               <option key={j} value={j}>
                 Kelas {j}
@@ -841,11 +894,14 @@ export default function AkunSiswaTab({ showToast }) {
           </label>
           <select
             value={selectedClass}
-            onChange={(e) => setSelectedClass(e.target.value)}
-            disabled={loadingClasses || classesInJenjang.length === 0}
+            onChange={(e) => {
+              setSelectedClass(e.target.value);
+              setHasFiltered(true);
+            }}
+            disabled={loadingClasses}
             className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {classesInJenjang.length === 0 && <option value="">Tidak ada kelas</option>}
+            <option value="">Semua Kelas</option>
             {classesInJenjang.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -855,7 +911,7 @@ export default function AkunSiswaTab({ showToast }) {
         </div>
         <button
           onClick={loadStudents}
-          disabled={loadingList || !selectedClass}
+          disabled={loadingList || !hasFiltered}
           className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50 shrink-0"
         >
           <RefreshCw size={16} className={loadingList ? "animate-spin" : ""} />
@@ -950,13 +1006,21 @@ export default function AkunSiswaTab({ showToast }) {
       )}
 
       {/* Daftar Siswa */}
-      {loadingList ? (
+      {!hasFiltered ? (
+        <div className="text-center py-12 px-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 text-sm">
+          Silakan pilih Jenjang dan Kelas terlebih dahulu.
+        </div>
+      ) : loadingList ? (
         <div className="flex items-center justify-center gap-2 py-12 text-gray-400 dark:text-gray-500 text-sm">
           <Loader2 size={18} className="animate-spin" /> Memuat siswa...
         </div>
       ) : students.length === 0 ? (
         <div className="text-center py-12 text-gray-400 dark:text-gray-500 text-sm">
-          {selectedClass ? "Gak ada siswa aktif di kelas ini." : "Pilih kelas dulu."}
+          {classesInJenjang.length === 0
+            ? "Tidak ada kelas untuk jenjang ini."
+            : selectedClass
+              ? "Gak ada siswa aktif di kelas ini."
+              : "Gak ada siswa aktif untuk filter ini."}
         </div>
       ) : (
         <div className="border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">

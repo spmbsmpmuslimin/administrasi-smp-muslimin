@@ -96,30 +96,26 @@ export default function TeachingJournal({ user }) {
     setLoading(true);
     setError(null);
     try {
-      const { data: activeYear, error: yearError } = await supabase
-        .from("academic_years")
-        .select("id, year")
-        .eq("is_active", true)
-        .single();
-
-      if (yearError) throw yearError;
-      setAcademicYear(activeYear.year);
-      setAcademicYearId(activeYear.id);
-
-      // ✅ NEW: Ambil semester aktif otomatis (gak lagi di-input manual di form)
-      try {
-        const academicInfo = await getActiveAcademicInfo();
-        setCurrentSemester(academicInfo?.semester || 1);
-      } catch (semErr) {
-        console.error("Error loading current semester:", semErr);
-        setCurrentSemester(1);
+      // Ambil tahun ajaran & semester aktif dalam satu panggilan service
+      // (sebelumnya ada 2 fetch terpisah: query manual .single() ke
+      // academic_years yang bisa error kalau ada 2 tahun ke-mark aktif
+      // bersamaan, plus getActiveAcademicInfo() lagi cuma buat semester -
+      // sekarang cukup satu, dan field semester-nya dibaca dengan nama yang
+      // benar (activeSemester, bukan semester) - sebelumnya jurnal selalu
+      // ke-tag semester 1 walau lagi semester 2)
+      const academicInfo = await getActiveAcademicInfo();
+      if (!academicInfo || !academicInfo.activeSemesterId) {
+        throw new Error("Tahun ajaran aktif tidak ditemukan.");
       }
+      setAcademicYear(academicInfo.year);
+      setAcademicYearId(academicInfo.activeSemesterId);
+      setCurrentSemester(academicInfo.activeSemester || 1);
 
       const { data, error: assignError } = await supabase
         .from("teacher_assignments")
         .select("id, class_id, subject")
         .eq("teacher_id", teacherId)
-        .eq("academic_year_id", activeYear.id);
+        .eq("academic_year_id", academicInfo.activeSemesterId);
 
       if (assignError) throw assignError;
 
@@ -415,7 +411,9 @@ export default function TeachingJournal({ user }) {
                       size={11}
                       className={isActive ? "text-blue-600 shrink-0" : "shrink-0"}
                     />
-                    <span className="text-[10px] font-medium text-theme-secondary truncate">Kelas</span>
+                    <span className="text-[10px] font-medium text-theme-secondary truncate">
+                      Kelas
+                    </span>
                   </div>
                   <p className="text-xs sm:text-sm font-semibold text-theme truncate">
                     {a.class_id}
@@ -453,7 +451,9 @@ export default function TeachingJournal({ user }) {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-theme-secondary mb-1">Tanggal</label>
+                  <label className="block text-xs font-medium text-theme-secondary mb-1">
+                    Tanggal
+                  </label>
                   <input
                     type="date"
                     value={form.tanggal}
@@ -462,7 +462,9 @@ export default function TeachingJournal({ user }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-theme-secondary mb-1">Jam Ke</label>
+                  <label className="block text-xs font-medium text-theme-secondary mb-1">
+                    Jam Ke
+                  </label>
                   <input
                     type="text"
                     value={form.jam_ke}
@@ -474,7 +476,9 @@ export default function TeachingJournal({ user }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-theme-secondary mb-1">Materi *</label>
+                <label className="block text-xs font-medium text-theme-secondary mb-1">
+                  Materi *
+                </label>
                 <textarea
                   value={form.materi}
                   onChange={(e) => handleFormChange("materi", e.target.value)}
@@ -498,7 +502,9 @@ export default function TeachingJournal({ user }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-theme-secondary mb-1">Kegiatan</label>
+                <label className="block text-xs font-medium text-theme-secondary mb-1">
+                  Kegiatan
+                </label>
                 <textarea
                   value={form.kegiatan_pembelajaran}
                   onChange={(e) => handleFormChange("kegiatan_pembelajaran", e.target.value)}
@@ -509,7 +515,9 @@ export default function TeachingJournal({ user }) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-theme-secondary mb-1">Catatan</label>
+                <label className="block text-xs font-medium text-theme-secondary mb-1">
+                  Catatan
+                </label>
                 <textarea
                   value={form.kendala_catatan}
                   onChange={(e) => handleFormChange("kendala_catatan", e.target.value)}
@@ -559,7 +567,10 @@ export default function TeachingJournal({ user }) {
             ) : (
               <div className="space-y-2 max-h-[360px] sm:max-h-[600px] overflow-y-auto -mx-1 px-1">
                 {entries.map((entry) => (
-                  <div key={entry.id} className="bg-theme-bg text-theme border border-theme rounded-lg p-3 bg-theme-surface">
+                  <div
+                    key={entry.id}
+                    className="bg-theme-bg text-theme border border-theme rounded-lg p-3 bg-theme-surface"
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
                       <div className="flex items-center gap-1.5 text-xs text-theme-secondary min-w-0">
                         <Calendar size={12} className="shrink-0" />

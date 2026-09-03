@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 // Disamain persis sama AGAMA_OPTIONS di DataSiswaInduk.js, biar dropdown
 // yang muncul di form SPMB konsisten sama yang dipake Admin/TU pas
 // koreksi data belakangan.
-const AGAMA_OPTIONS = ["Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu"];
+const AGAMA_OPTIONS = ["ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU"];
 
 const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStudent, isLoading }) => {
   const [formSuccess, setFormSuccess] = useState(false);
@@ -78,31 +78,31 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
 
   // Daftar pekerjaan standar
   const pekerjaanListAyah = [
-    "PNS/TNI/Polri",
-    "Karyawan Swasta",
-    "Wiraswasta/Pedagang",
-    "Petani",
-    "Buruh",
-    "Guru/Dosen",
-    "Dokter/Tenaga Kesehatan",
-    "Sopir/Driver",
-    "Pensiunan",
-    "Tidak Bekerja",
-    "Lainnya",
+    "PNS/TNI/POLRI",
+    "KARYAWAN SWASTA",
+    "WIRASWASTA/PEDAGANG",
+    "PETANI",
+    "BURUH HARIAN",
+    "GURU/DOSEN",
+    "DOKTER/TENAGA KESEHATAN",
+    "SOPIR/DRIVER",
+    "PENSIUNAN",
+    "TIDAK BEKERJA",
+    "LAINNYA",
   ];
 
   const pekerjaanListIbu = [
-    "Ibu Rumah Tangga",
-    "PNS/TNI/Polri",
-    "Karyawan Swasta",
-    "Wiraswasta/Pedagang",
-    "Petani",
-    "Buruh",
-    "Guru/Dosen",
-    "Dokter/Tenaga Kesehatan",
-    "Pensiunan",
-    "Tidak Bekerja",
-    "Lainnya",
+    "IBU RUMAH TANGGA",
+    "PNS/TNI/POLRI",
+    "KARYAWAN SWASTA",
+    "WIRASWASTA/PEDAGANG",
+    "PETANI",
+    "BURUH",
+    "GURU/DOSEN",
+    "DOKTER/TENAGA KESEHATAN",
+    "PENSIUNAN",
+    "TIDAK BEKERJA",
+    "LAINNYA",
   ];
 
   useEffect(() => {

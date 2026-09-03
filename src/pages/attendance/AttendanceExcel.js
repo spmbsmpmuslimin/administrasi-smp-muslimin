@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
 import { supabase } from "../../supabaseClient";
 // ✅ TAMBAH IMPORT FILTER BY SEMESTER
-import { filterBySemester } from "../../services/academicYearService";
+import { filterBySemester, getSemesterById } from "../../services/academicYearService";
 
 /**
  * Modal component for export selection
@@ -138,8 +138,8 @@ const ExportModal = ({ type = "monthly", show, onClose, onExport, loading }) => 
                     selectedSemester === "1"
                       ? "bg-blue-500 text-white border-blue-600"
                       : darkMode
-                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                      : "bg-theme-surface text-theme-secondary hover:bg-gray-200"
+                        ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                        : "bg-theme-surface text-theme-secondary hover:bg-gray-200"
                   }`}
                 >
                   Semester 1 (Ganjil)
@@ -153,8 +153,8 @@ const ExportModal = ({ type = "monthly", show, onClose, onExport, loading }) => 
                     selectedSemester === "2"
                       ? "bg-blue-500 text-white border-blue-600"
                       : darkMode
-                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                      : "bg-theme-surface text-theme-secondary hover:bg-gray-200"
+                        ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                        : "bg-theme-surface text-theme-secondary hover:bg-gray-200"
                   }`}
                 >
                   Semester 2 (Genap)
@@ -532,12 +532,12 @@ export const exportAttendanceToExcel = async (
           normalizedStatus === "alpa"
             ? "Alpha"
             : normalizedStatus === "hadir"
-            ? "Hadir"
-            : normalizedStatus === "sakit"
-            ? "Sakit"
-            : normalizedStatus === "izin"
-            ? "Izin"
-            : null;
+              ? "Hadir"
+              : normalizedStatus === "sakit"
+                ? "Sakit"
+                : normalizedStatus === "izin"
+                  ? "Izin"
+                  : null;
 
         if (status && studentMatrix[record.student_id].summary[status] !== undefined) {
           studentMatrix[record.student_id].summary[status]++;
@@ -1281,16 +1281,30 @@ export const exportSemesterRecapFromComponent = async (
       semesterId,
     });
 
-    // Date range
-    const [startYear, endYear] = academicYearForQuery.split("/").map(Number);
+    // ✅ FIX: Rentang tanggal semester diambil dari data ASLI tabel `semesters`
+    // (start_date/end_date), sama seperti di AdminAttendance.js — sebelumnya
+    // di-hardcode tebakan "Juli 1 - Desember 31" / "Januari 1 - Juni 30" yang
+    // bisa beda dari tanggal semester yang sebenarnya diset admin, sehingga
+    // hasil rekap walikelas beda dengan hasil rekap admin untuk periode yang sama.
     let startDate, endDate;
-
-    if (semesterType === "Ganjil") {
-      startDate = `${startYear}-07-01`;
-      endDate = `${startYear}-12-31`;
+    const semRow = await getSemesterById(semesterId);
+    if (semRow?.start_date && semRow?.end_date) {
+      startDate = semRow.start_date;
+      endDate = semRow.end_date;
     } else {
-      startDate = `${endYear}-01-01`;
-      endDate = `${endYear}-06-30`;
+      // Fallback ke tebakan generik cuma kalau data semester gagal diambil
+      console.warn(
+        "⚠️ getSemesterById gagal/kosong, fallback ke tanggal generik. Cek semesterId:",
+        semesterId
+      );
+      const [startYear, endYear] = academicYearForQuery.split("/").map(Number);
+      if (semesterType === "Ganjil") {
+        startDate = `${startYear}-07-01`;
+        endDate = `${startYear}-12-31`;
+      } else {
+        startDate = `${endYear}-01-01`;
+        endDate = `${endYear}-06-30`;
+      }
     }
 
     console.log("📅 Date range:", { startDate, endDate });
@@ -1349,22 +1363,12 @@ export const exportSemesterRecapFromComponent = async (
       };
     }
 
-    // Filter by month
-    const filteredData = allRecords.filter((r) => {
-      const parts = r.date.split("-");
-      const month = parseInt(parts[1], 10);
-      return months.includes(month);
-    });
-
-    console.log("Data setelah filter:", filteredData.length);
-
-    if (filteredData.length === 0) {
-      onShowToast?.("Tidak ada data kehadiran untuk semester yang dipilih", "error");
-      return {
-        success: false,
-        message: "Tidak ada data kehadiran untuk semester yang dipilih",
-      };
-    }
+    // ✅ FIX: gak perlu filter ulang per-bulan di sini lagi — query di atas sudah
+    // pakai rentang tanggal ASLI semester (startDate/endDate dari tabel `semesters`),
+    // jadi allRecords sudah tepat. Filter bulan generik yang lama dihapus karena
+    // riskan exclude data valid kalau tanggal semester asli melenceng dari
+    // asumsi "Juli-Desember"/"Januari-Juni" standar.
+    const filteredData = allRecords;
 
     // Get teacher name
     let namaGuru = "";

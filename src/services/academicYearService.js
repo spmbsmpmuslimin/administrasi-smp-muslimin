@@ -23,13 +23,41 @@ export const getActiveAcademicYear = async () => {
     }
 
     if (data.length > 1) {
-      console.error("Multiple active semesters detected!");
+      // ⚠️ Kondisi ini gak seharusnya kejadian - berarti ada 2+ baris
+      // academic_years ke-mark is_active=true bersamaan (biasanya kejadian
+      // pas ada masalah di tengah proses transisi tahun ajaran). Auto-fix
+      // di bawah ini bakal nulis ke DB buat beresin, dan sengaja dibikin
+      // console.error yang mencolok (bukan console.warn biasa) biar
+      // ketauan kalau ini kejadian - jangan didiemin walau app tetep jalan.
+      console.error(
+        "🚨 [academicYearService] DATA INTEGRITY ISSUE: ditemukan",
+        data.length,
+        "tahun ajaran ke-mark aktif bersamaan:",
+        data.map((d) => `${d.year} sem ${d.semester} (id: ${d.id})`),
+        "- auto-fix akan mengaktifkan yang paling baru & menonaktifkan sisanya."
+      );
+
       const sorted = data.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
       const correctActive = sorted[0];
 
       const otherIds = sorted.slice(1).map((s) => s.id);
       if (otherIds.length > 0) {
-        await supabase.from("academic_years").update({ is_active: false }).in("id", otherIds);
+        const { error: fixError } = await supabase
+          .from("academic_years")
+          .update({ is_active: false })
+          .in("id", otherIds);
+
+        if (fixError) {
+          console.error(
+            "🚨 [academicYearService] Auto-fix GAGAL menonaktifkan duplikat:",
+            fixError
+          );
+        } else {
+          console.error(
+            "✅ [academicYearService] Auto-fix selesai. Aktif sekarang:",
+            `${correctActive.year} semester ${correctActive.semester}`
+          );
+        }
       }
 
       data[0] = correctActive;
@@ -203,6 +231,18 @@ export const getActiveAcademicInfo = async () => {
 
   const fallbackYear = getCurrentAcademicYearFallback();
   const fallbackSemester = getCurrentSemesterFallback();
+
+  // ⚠️ Ini artinya TIDAK ADA tahun ajaran yang ke-mark aktif di DB sama
+  // sekali (bukan cuma dobel-aktif kayak kasus di atas). Tahun & semester
+  // di bawah ini cuma TEBAKAN dari tanggal hari ini, BUKAN data asli.
+  // File yang manggil getActiveAcademicInfo() harus ngecek `isActive`
+  // sebelum percaya nilai ini - kalau `isActive: false`, jangan dipakai
+  // buat nyimpen data, cukup buat tampilan warning ke admin.
+  console.error(
+    "🚨 [academicYearService] TIDAK ADA tahun ajaran aktif di database!",
+    `Menebak "${fallbackYear} semester ${fallbackSemester}" dari tanggal hari ini.`,
+    "Admin perlu segera aktifkan salah satu tahun ajaran di menu Setting > Akademik."
+  );
 
   return {
     year: fallbackYear,
@@ -409,17 +449,33 @@ export const createNewAcademicYear = async (year, dates = {}) => {
       };
     }
 
-    // Cek apakah tahun sudah ada
+    // Cek apakah tahun sudah ada - dicek PER SEMESTER, bukan per tahun.
+    // Sebelumnya kalau nemu SATU baris aja dengan tahun yang sama, langsung
+    // nolak total ("YEAR_ALREADY_EXISTS") walau semester yang laen belum
+    // ada. Ini bikin masalah kalau state-nya kepotong di tengah (misal
+    // semester 1 kebuat tapi semester 2 gagal & rollback-nya sendiri gagal
+    // karena koneksi putus) - jadi gak bisa dilanjutin, harus hapus manual
+    // dulu baru bisa coba lagi. Sekarang: kalau kedua semester udah ada,
+    // baru ditolak. Kalau cuma sebagian, lanjutin bikin yang belum ada aja.
     const { data: existing } = await supabase.from("academic_years").select("*").eq("year", year);
 
-    if (existing && existing.length > 0) {
-      console.warn(`⚠️ Year ${year} already exists`);
+    const existingSem1 = existing?.find((s) => s.semester === 1) || null;
+    const existingSem2 = existing?.find((s) => s.semester === 2) || null;
+
+    if (existingSem1 && existingSem2) {
+      console.warn(`⚠️ Year ${year} already exists (both semesters)`);
       return {
         success: false,
         message: `Tahun ajaran ${year} sudah ada di database`,
         error: "YEAR_ALREADY_EXISTS",
         data: existing,
       };
+    }
+
+    if (existingSem1 || existingSem2) {
+      console.warn(
+        `⚠️ Year ${year} sudah ada sebagian (semester ${existingSem1 ? 1 : 2} aja) - melanjutkan bikin semester yang belum ada.`
+      );
     }
 
     // Default dates kalau gak dikasih
@@ -475,46 +531,62 @@ export const createNewAcademicYear = async (year, dates = {}) => {
       };
     }
 
-    console.log("📅 Inserting Semester 1...");
+    console.log("📅 Menyiapkan Semester 1...");
 
-    // Insert Semester 1
-    const { data: sem1, error: err1 } = await supabase
-      .from("academic_years")
-      .insert({
-        year: year,
-        semester: 1,
-        start_date: defaultDates.sem1Start,
-        end_date: defaultDates.sem1End,
-        is_active: false,
-      })
-      .select()
-      .single();
+    // Insert Semester 1 (skip kalau udah ada dari percobaan sebelumnya)
+    let sem1 = existingSem1;
+    if (!sem1) {
+      const { data: newSem1, error: err1 } = await supabase
+        .from("academic_years")
+        .insert({
+          year: year,
+          semester: 1,
+          start_date: defaultDates.sem1Start,
+          end_date: defaultDates.sem1End,
+          is_active: false,
+        })
+        .select()
+        .single();
 
-    if (err1) {
-      console.error("❌ Error creating semester 1:", err1);
-      throw err1;
+      if (err1) {
+        console.error("❌ Error creating semester 1:", err1);
+        throw err1;
+      }
+      sem1 = newSem1;
+    } else {
+      console.log("   Semester 1 sudah ada, dipakai yang ini.");
     }
 
-    console.log("📅 Inserting Semester 2...");
+    console.log("📅 Menyiapkan Semester 2...");
 
-    // Insert Semester 2
-    const { data: sem2, error: err2 } = await supabase
-      .from("academic_years")
-      .insert({
-        year: year,
-        semester: 2,
-        start_date: defaultDates.sem2Start,
-        end_date: defaultDates.sem2End,
-        is_active: false,
-      })
-      .select()
-      .single();
+    // Insert Semester 2 (skip kalau udah ada dari percobaan sebelumnya)
+    let sem2 = existingSem2;
+    if (!sem2) {
+      const { data: newSem2, error: err2 } = await supabase
+        .from("academic_years")
+        .insert({
+          year: year,
+          semester: 2,
+          start_date: defaultDates.sem2Start,
+          end_date: defaultDates.sem2End,
+          is_active: false,
+        })
+        .select()
+        .single();
 
-    if (err2) {
-      console.error("❌ Error creating semester 2:", err2);
-      // Rollback: hapus semester 1 yang udah ke-insert
-      await supabase.from("academic_years").delete().eq("id", sem1.id);
-      throw err2;
+      if (err2) {
+        console.error("❌ Error creating semester 2:", err2);
+        // Rollback HANYA kalau semester 1 baru aja dibuat di panggilan ini
+        // (bukan yang udah ada dari sebelumnya - jangan hapus data lama
+        // orang lain gara-gara semester 2 gagal dibuat)
+        if (!existingSem1) {
+          await supabase.from("academic_years").delete().eq("id", sem1.id);
+        }
+        throw err2;
+      }
+      sem2 = newSem2;
+    } else {
+      console.log("   Semester 2 sudah ada, dipakai yang ini.");
     }
 
     console.log(`✅ Created new academic year: ${year}`);
@@ -782,6 +854,521 @@ export const autoFixDataIntegrity = async () => {
     return {
       success: false,
       error: error.message,
+    };
+  }
+};
+
+// ========================================
+// 🛡️ PREFLIGHT CHECK (Cek Kesinambungan)
+// ========================================
+// Daftar semua tabel yang punya kolom academic_year_id (FK ke academic_years).
+// textColumn diisi kalau tabel itu JUGA punya kolom teks "academic_year" yang
+// perlu disinkronkan manual (legacy column) - kalau null berarti tabel itu
+// cuma pakai academic_year_id doang, gak ada kolom teks yang bisa mismatch.
+const TABLES_WITH_ACADEMIC_YEAR_ID = [
+  { table: "attendance_eraport", label: "Absensi E-Rapor", textColumn: null },
+  { table: "attendances", label: "Absensi Harian", textColumn: null },
+  { table: "catatan_eraport", label: "Catatan E-Rapor", textColumn: null },
+  { table: "classes", label: "Kelas", textColumn: "academic_year" },
+  { table: "ekstrakurikuler_eraport", label: "Ekstrakurikuler E-Rapor", textColumn: null },
+  { table: "grades", label: "Nilai", textColumn: "academic_year" },
+  { table: "grades_katrol", label: "Nilai Katrol", textColumn: "academic_year" },
+  { table: "grades_katrol_settings", label: "Setting Nilai Katrol", textColumn: "academic_year" },
+  { table: "jurnal_harian", label: "Jurnal Harian", textColumn: null },
+  { table: "konseling", label: "Konseling", textColumn: "academic_year" },
+  { table: "nilai_eraport", label: "Nilai E-Rapor", textColumn: null },
+  { table: "raport_config", label: "Konfigurasi Rapor", textColumn: null },
+  { table: "raport_metadata", label: "Metadata Rapor", textColumn: null },
+  {
+    table: "student_development_notes",
+    label: "Catatan Perkembangan Siswa",
+    textColumn: "academic_year",
+  },
+  { table: "students", label: "Data Siswa", textColumn: "academic_year" },
+  { table: "teacher_assignments", label: "Penugasan Guru", textColumn: "academic_year" },
+  { table: "teacher_schedules", label: "Jadwal Guru", textColumn: null },
+  { table: "tujuan_pembelajaran", label: "Tujuan Pembelajaran", textColumn: null },
+];
+
+export const runPreflightCheck = async () => {
+  try {
+    const activeInfo = await getActiveAcademicInfo();
+    const academicYearsValidation = await validateAcademicYearData();
+
+    // Peta id -> year string, buat cek orphan & mismatch
+    const { data: allYears, error: yearsError } = await supabase
+      .from("academic_years")
+      .select("id, year");
+
+    if (yearsError) throw yearsError;
+
+    const yearMap = new Map((allYears || []).map((y) => [y.id, y.year]));
+    const validIds = new Set(yearMap.keys());
+
+    const tableChecks = [];
+
+    for (const t of TABLES_WITH_ACADEMIC_YEAR_ID) {
+      try {
+        const columns = t.textColumn
+          ? `id, academic_year_id, ${t.textColumn}`
+          : "id, academic_year_id";
+        const { data, error } = await supabase.from(t.table).select(columns);
+
+        if (error) throw error;
+
+        const rows = data || [];
+        let orphanCount = 0;
+        let mismatchCount = 0;
+        let activeYearRowCount = 0;
+        const orphanSample = [];
+        const mismatchSample = [];
+
+        for (const row of rows) {
+          const yid = row.academic_year_id;
+
+          if (yid && activeInfo.activeSemesterId && yid === activeInfo.activeSemesterId) {
+            activeYearRowCount++;
+          }
+
+          // academic_year_id kosong (null) gak dihitung orphan - biasanya
+          // data lama sebelum kolom ini ada, bukan data nyasar.
+          if (!yid) continue;
+
+          if (!validIds.has(yid)) {
+            orphanCount++;
+            if (orphanSample.length < 5) orphanSample.push(row.id);
+            continue;
+          }
+
+          if (t.textColumn) {
+            const expectedYear = yearMap.get(yid);
+            const actualYear = row[t.textColumn];
+            if (actualYear && expectedYear && actualYear !== expectedYear) {
+              mismatchCount++;
+              if (mismatchSample.length < 5) mismatchSample.push(row.id);
+            }
+          }
+        }
+
+        tableChecks.push({
+          table: t.table,
+          label: t.label,
+          orphanCount,
+          mismatchCount,
+          orphanSample,
+          mismatchSample,
+          activeYearRowCount,
+        });
+      } catch (err) {
+        tableChecks.push({
+          table: t.table,
+          label: t.label,
+          error: err.message,
+        });
+      }
+    }
+
+    const criticalCount = tableChecks.filter((c) => !c.error && c.orphanCount > 0).length;
+    const warningCount = tableChecks.filter(
+      (c) => !c.error && c.orphanCount === 0 && c.mismatchCount > 0
+    ).length;
+    const infoCount = tableChecks.filter(
+      (c) => !c.error && c.orphanCount === 0 && c.mismatchCount === 0
+    ).length;
+    const errorTablesCount = tableChecks.filter((c) => c.error).length;
+
+    const academicYearsTable = {
+      isHealthy: academicYearsValidation.isHealthy,
+      issues: academicYearsValidation.issues || [],
+      warnings: academicYearsValidation.warnings || [],
+    };
+
+    const isHealthy =
+      academicYearsTable.isHealthy &&
+      errorTablesCount === 0 &&
+      tableChecks.every((c) => !c.error && c.orphanCount === 0 && c.mismatchCount === 0);
+
+    return {
+      isHealthy,
+      activeInfo,
+      academicYearsTable,
+      summary: {
+        tablesChecked: tableChecks.length,
+        criticalCount,
+        warningCount,
+        infoCount,
+      },
+      tableChecks,
+    };
+  } catch (error) {
+    console.error("Error in runPreflightCheck:", error);
+    return {
+      isHealthy: false,
+      error: error.message,
+      tableChecks: [],
+      summary: {},
+    };
+  }
+};
+
+// ========================================
+// 🚦 TRANSITION READINESS CHECK
+// ========================================
+// Beda sama runPreflightCheck (yang cuma cek sinkronisasi academic_year_id).
+// Ini cek KESIAPAN DATA sebelum executeYearTransition() di YearTransition.js
+// dijalankan - ngikutin persis logika di sana (kenaikan kelas, siswa baru
+// dari SPMB, kelulusan) biar ketauan apa yang bakal salah/gagal/kelewat
+// SEBELUM tombol "Mulai Tahun Ajaran Baru" ditekan.
+const summarizeReadinessItems = (items) => ({
+  critical: items.filter((i) => i.status === "critical").length,
+  warning: items.filter((i) => i.status === "warning").length,
+  ok: items.filter((i) => i.status === "ok").length,
+  info: items.filter((i) => i.status === "info").length,
+});
+
+export const runTransitionReadinessCheck = async (schoolConfig = {}) => {
+  const grades = schoolConfig.grades || ["7", "8", "9"];
+  const classesPerGrade = schoolConfig.classesPerGrade || ["A", "B", "C", "D", "E", "F"];
+
+  const items = [];
+
+  try {
+    const activeInfo = await getActiveAcademicInfo();
+
+    if (!activeInfo.isActive) {
+      items.push({
+        id: "active_semester",
+        label: "Semester aktif",
+        status: "critical",
+        message:
+          "Gak ada tahun ajaran/semester yang ke-mark aktif di database. Aktifkan dulu sebelum lanjut transisi.",
+      });
+
+      return {
+        currentYear: activeInfo.year,
+        newYear: null,
+        activeInfo,
+        items,
+        summary: summarizeReadinessItems(items),
+      };
+    }
+
+    const currentYear = activeInfo.year;
+    const [startYear] = currentYear.split("/");
+    const newYear = `${parseInt(startYear) + 1}/${parseInt(startYear) + 2}`;
+
+    items.push({
+      id: "active_semester",
+      label: "Semester aktif",
+      status: "ok",
+      message: `${currentYear} - Semester ${activeInfo.activeSemester} aktif.`,
+    });
+
+    // 1. spmb_settings.target_academic_year harus cocok sama tahun baru,
+    // kalau enggak, siswa baru TIDAK akan kedeteksi sama sekali di preview.
+    const { data: spmbSettings, error: spmbError } = await supabase
+      .from("spmb_settings")
+      .select("*")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    let targetYear = newYear;
+
+    if (spmbError) {
+      items.push({
+        id: "spmb_target",
+        label: "Target tahun ajaran SPMB",
+        status: "critical",
+        message: `Gagal cek spmb_settings: ${spmbError.message}`,
+      });
+    } else if (!spmbSettings) {
+      items.push({
+        id: "spmb_target",
+        label: "Target tahun ajaran SPMB",
+        status: "critical",
+        message:
+          "Gak ada baris spmb_settings yang aktif. Siswa baru TIDAK akan terdeteksi saat transisi.",
+      });
+    } else if (spmbSettings.target_academic_year !== newYear) {
+      targetYear = spmbSettings.target_academic_year || newYear;
+      items.push({
+        id: "spmb_target",
+        label: "Target tahun ajaran SPMB",
+        status: "critical",
+        message: `spmb_settings.target_academic_year = "${spmbSettings.target_academic_year}", harusnya "${newYear}". Betulin dulu, kalau enggak siswa baru gak bakal kedeteksi.`,
+      });
+    } else {
+      items.push({
+        id: "spmb_target",
+        label: "Target tahun ajaran SPMB",
+        status: "ok",
+        message: `Target sudah benar: ${newYear}.`,
+      });
+    }
+
+    // 2. Siswa baru dari SPMB yang siap ditransfer
+    const { data: siswaBaruAll, error: siswaBaruError } = await supabase
+      .from("siswa_baru")
+      .select("id, nama_lengkap, nisn, kelas")
+      .eq("academic_year", targetYear)
+      .eq("is_transferred", false);
+
+    let siapMasuk = [];
+
+    if (siswaBaruError) {
+      items.push({
+        id: "siswa_baru_kelas",
+        label: "Kelas siswa baru",
+        status: "critical",
+        message: `Gagal cek siswa_baru: ${siswaBaruError.message}`,
+      });
+    } else {
+      const belumKelas = (siswaBaruAll || []).filter((s) => !s.kelas);
+      siapMasuk = (siswaBaruAll || []).filter((s) => !!s.kelas);
+
+      items.push({
+        id: "siswa_baru_kelas",
+        label: "Kelas siswa baru",
+        status: belumKelas.length > 0 ? "critical" : "ok",
+        message:
+          belumKelas.length > 0
+            ? `${belumKelas.length} siswa baru belum punya kelas - bakal KELEWAT pas transisi (gak ke-assign kemana pun).`
+            : `${siapMasuk.length} siswa baru semua sudah punya kelas.`,
+        details: belumKelas.slice(0, 10).map((s) => s.nama_lengkap),
+      });
+
+      // 3. Konflik NIS/NISN siswa baru vs siswa aktif
+      const { data: existingStudents, error: existingError } = await supabase
+        .from("students")
+        .select("nis")
+        .eq("is_active", true);
+
+      if (existingError) {
+        items.push({
+          id: "nis_conflict",
+          label: "Konflik NIS siswa baru",
+          status: "critical",
+          message: `Gagal cek NIS siswa aktif: ${existingError.message}`,
+        });
+      } else {
+        const existingNIS = new Set((existingStudents || []).map((s) => s.nis).filter(Boolean));
+        const conflicts = siapMasuk.filter((s) => s.nisn && existingNIS.has(s.nisn));
+
+        items.push({
+          id: "nis_conflict",
+          label: "Konflik NIS siswa baru",
+          status: conflicts.length > 0 ? "critical" : "ok",
+          message:
+            conflicts.length > 0
+              ? `${conflicts.length} siswa baru punya NIS yang udah kepake siswa aktif - bakal DILEWATIN otomatis, betulin manual dulu di SPMB.`
+              : "Gak ada konflik NIS.",
+          details: conflicts.slice(0, 10).map((s) => `${s.nama_lengkap} (NIS: ${s.nisn})`),
+        });
+      }
+    }
+
+    // 4. Format class_id siswa aktif - kalau gak sesuai pola grade+huruf
+    // (mis. "7A"), logika naik kelas (classId.replace(/[0-9]/g,"")) bisa
+    // salah ngelompokin ke kelas baru.
+    const validClassPattern = new RegExp(`^(${grades.join("|")})(${classesPerGrade.join("|")})$`);
+    const { data: activeStudents, error: activeStudentsError } = await supabase
+      .from("students")
+      .select("id, full_name, class_id")
+      .eq("is_active", true);
+
+    if (activeStudentsError) {
+      items.push({
+        id: "class_format",
+        label: "Format kelas siswa aktif",
+        status: "critical",
+        message: `Gagal cek students: ${activeStudentsError.message}`,
+      });
+    } else {
+      const invalidFormat = (activeStudents || []).filter(
+        (s) => !s.class_id || !validClassPattern.test(s.class_id)
+      );
+
+      items.push({
+        id: "class_format",
+        label: "Format kelas siswa aktif",
+        status: invalidFormat.length > 0 ? "warning" : "ok",
+        message:
+          invalidFormat.length > 0
+            ? `${invalidFormat.length} siswa aktif punya class_id yang formatnya gak sesuai pola (contoh: 7A, 8B) - bisa salah kelompok pas naik kelas.`
+            : "Semua siswa aktif punya format class_id yang sesuai.",
+        details: invalidFormat
+          .slice(0, 10)
+          .map((s) => `${s.full_name} (${s.class_id || "kosong"})`),
+      });
+    }
+
+    // 5. Kelas tahun baru jangan sampe udah ada duluan (bakal gagal
+    // duplicate key kalau createNewClasses() dijalanin ulang)
+    const expectedNewClasses = [];
+    grades.forEach((g) => classesPerGrade.forEach((l) => expectedNewClasses.push(`${g}${l}`)));
+
+    const { data: existingNewClasses, error: newClassesError } = await supabase
+      .from("classes")
+      .select("id")
+      .eq("academic_year", newYear);
+
+    if (newClassesError) {
+      items.push({
+        id: "duplicate_classes",
+        label: "Kelas tahun baru",
+        status: "warning",
+        message: `Gagal cek classes: ${newClassesError.message}`,
+      });
+    } else {
+      const existingIds = new Set((existingNewClasses || []).map((c) => c.id));
+      const alreadyExists = expectedNewClasses.filter((id) => existingIds.has(id));
+
+      items.push({
+        id: "duplicate_classes",
+        label: "Kelas tahun baru",
+        status: alreadyExists.length > 0 ? "critical" : "ok",
+        message:
+          alreadyExists.length > 0
+            ? `${alreadyExists.length} dari ${expectedNewClasses.length} kelas buat ${newYear} udah ada di database - transisi bakal GAGAL (duplicate key) kalau dijalanin sekarang.`
+            : `Belum ada kelas ${newYear} yang dibuat, aman.`,
+        details: alreadyExists,
+      });
+    }
+
+    // 6. Semester 1 tahun baru (info doang, kode udah handle exist-or-create)
+    const { data: newSemester, error: newSemesterError } = await supabase
+      .from("academic_years")
+      .select("id, is_active")
+      .eq("year", newYear)
+      .eq("semester", 1)
+      .maybeSingle();
+
+    if (newSemesterError) {
+      items.push({
+        id: "new_semester",
+        label: "Semester 1 tahun baru",
+        status: "warning",
+        message: `Gagal cek academic_years: ${newSemesterError.message}`,
+      });
+    } else {
+      items.push({
+        id: "new_semester",
+        label: "Semester 1 tahun baru",
+        status: "ok",
+        message: newSemester
+          ? `Semester 1 ${newYear} sudah ada (${newSemester.is_active ? "aktif" : "belum aktif"}) - sistem bakal pakai yang ini.`
+          : `Semester 1 ${newYear} belum ada - sistem bakal bikin otomatis pas transisi.`,
+      });
+    }
+
+    // 7. Kelengkapan nilai semester berjalan (advisory - gak blocking,
+    // transisi tetep jalan biar gimana pun, tapi baiknya dicek dulu)
+    const { data: assignments, error: assignmentsError } = await supabase
+      .from("teacher_assignments")
+      .select("class_id, subject")
+      .eq("academic_year", currentYear)
+      .eq("semester", activeInfo.activeSemester);
+
+    if (assignmentsError) {
+      items.push({
+        id: "grades_completeness",
+        label: "Kelengkapan nilai",
+        status: "warning",
+        message: `Gagal cek teacher_assignments: ${assignmentsError.message}`,
+      });
+    } else if (!assignments || assignments.length === 0) {
+      items.push({
+        id: "grades_completeness",
+        label: "Kelengkapan nilai",
+        status: "warning",
+        message:
+          "Gak ada data teacher_assignments buat semester ini, gak bisa cek kelengkapan nilai.",
+      });
+    } else {
+      const { data: gradeRows, error: gradesError } = await supabase
+        .from("grades")
+        .select("student_id, class_id, subject")
+        .eq("academic_year", currentYear)
+        .eq("semester", activeInfo.activeSemester);
+
+      const { data: studentsForCheck, error: studentsForCheckError } = await supabase
+        .from("students")
+        .select("id, class_id")
+        .eq("is_active", true);
+
+      if (gradesError || studentsForCheckError) {
+        items.push({
+          id: "grades_completeness",
+          label: "Kelengkapan nilai",
+          status: "warning",
+          message: `Gagal cek grades/students: ${(gradesError || studentsForCheckError).message}`,
+        });
+      } else {
+        const gradedSet = new Set(
+          (gradeRows || []).map((g) => `${g.class_id}|${g.subject}|${g.student_id}`)
+        );
+
+        const studentsByClass = {};
+        (studentsForCheck || []).forEach((s) => {
+          if (!studentsByClass[s.class_id]) studentsByClass[s.class_id] = [];
+          studentsByClass[s.class_id].push(s.id);
+        });
+
+        let missingCount = 0;
+        const missingSample = [];
+
+        assignments.forEach(({ class_id, subject }) => {
+          const studentIds = studentsByClass[class_id] || [];
+          studentIds.forEach((sid) => {
+            if (!gradedSet.has(`${class_id}|${subject}|${sid}`)) {
+              missingCount++;
+              if (missingSample.length < 5) missingSample.push(`Kelas ${class_id} - ${subject}`);
+            }
+          });
+        });
+
+        items.push({
+          id: "grades_completeness",
+          label: "Kelengkapan nilai",
+          status: missingCount > 0 ? "warning" : "ok",
+          message:
+            missingCount > 0
+              ? `${missingCount} kombinasi siswa-mapel belum punya nilai di semester ${activeInfo.activeSemester} - gak blocking, tapi sebaiknya dibereskan sebelum tutup semester.`
+              : "Semua siswa udah punya nilai buat semua mapel yang diajarkan di kelasnya.",
+          details: missingSample,
+        });
+      }
+    }
+
+    // 8. Assignment guru bakal direset (dihapus) pas transisi - info doang
+    const { count: assignmentCount, error: countError } = await supabase
+      .from("teacher_assignments")
+      .select("id", { count: "exact", head: true })
+      .eq("academic_year", currentYear);
+
+    items.push({
+      id: "teacher_assignments_reset",
+      label: "Assignment guru",
+      status: "info",
+      message: countError
+        ? `Gagal cek jumlah teacher_assignments: ${countError.message}`
+        : `${assignmentCount || 0} assignment guru buat ${currentYear} bakal DIHAPUS otomatis pas transisi. Pastiin data ini udah gak dibutuhkan (backup/export dulu kalau perlu).`,
+    });
+
+    return {
+      currentYear,
+      newYear,
+      activeInfo,
+      items,
+      summary: summarizeReadinessItems(items),
+    };
+  } catch (error) {
+    console.error("Error in runTransitionReadinessCheck:", error);
+    return {
+      currentYear: null,
+      newYear: null,
+      items: [{ id: "fatal_error", label: "Error", status: "critical", message: error.message }],
+      summary: { critical: 1, warning: 0, ok: 0, info: 0 },
     };
   }
 };
@@ -1105,6 +1692,8 @@ export default {
   // Data integrity
   validateAcademicYearData,
   autoFixDataIntegrity,
+  runPreflightCheck,
+  runTransitionReadinessCheck,
 
   // Formatting
   formatSemesterDisplay,
