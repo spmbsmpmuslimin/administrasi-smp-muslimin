@@ -511,7 +511,7 @@ const SPMB = ({ user, onShowToast }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 pb-24 sm:pb-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Toast Notification */}
         {toast.show && (
@@ -562,20 +562,22 @@ const SPMB = ({ user, onShowToast }) => {
           </div>
         </div>
 
-        {/* Desktop Navigation Tabs */}
-        <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="flex">
+        {/* Navigation Tabs - tampil di semua ukuran layar (termasuk HP), scroll horizontal kalau sempit */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex overflow-x-auto">
             {navItems.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setActiveTab(item.key)}
-                className={`flex-1 p-4 font-medium transition-all duration-200 flex items-center justify-center gap-2 min-h-[60px] ${
+                className={`flex-1 p-3 sm:p-4 font-medium transition-all duration-200 flex items-center justify-center gap-2 min-h-[56px] sm:min-h-[60px] whitespace-nowrap flex-shrink-0 ${
                   activeTab === item.key
                     ? "bg-blue-600 dark:bg-blue-700 text-white shadow-sm"
                     : "text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700"
                 }`}
+                style={{ minWidth: "33%" }}
               >
-                <span className="text-sm sm:text-base">{item.fullLabel}</span>
+                <span className="text-xs sm:hidden">{item.label}</span>
+                <span className="hidden sm:inline text-sm sm:text-base">{item.fullLabel}</span>
               </button>
             ))}
           </div>
@@ -686,36 +688,6 @@ const SPMB = ({ user, onShowToast }) => {
               )}
             </>
           )}
-        </div>
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 sm:hidden z-40 shadow-lg">
-        <div className="flex">
-          {navItems.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => setActiveTab(item.key)}
-              className={`flex-1 p-3 font-medium transition-all duration-200 flex flex-col items-center justify-center gap-1 min-h-[70px] touch-manipulation ${
-                activeTab === item.key
-                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-gray-700/50"
-                  : "text-gray-600 dark:text-gray-400"
-              }`}
-            >
-              <span className="text-xl">
-                {item.key === "form"
-                  ? "📝"
-                  : item.key === "list"
-                    ? "👥"
-                    : item.key === "diagnostik"
-                      ? "📈"
-                      : item.key === "stats"
-                        ? "📊"
-                        : "🔀"}
-              </span>
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
         </div>
       </div>
     </div>

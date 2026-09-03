@@ -806,8 +806,8 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                     <option value="" className="text-gray-400">
                       Pilih Jenis Kelamin
                     </option>
-                    <option value="Laki-laki">Laki-laki</option>
-                    <option value="Perempuan">Perempuan</option>
+                    <option value="Laki-laki">LAKI-LAKI</option>
+                    <option value="Perempuan">PEREMPUAN</option>
                   </select>
                 </div>
 

@@ -632,17 +632,34 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .order("full_name");
       if (studentsErr) throw studentsErr;
 
-      // ✅ Pakai filter yang sudah diperbaiki: exact match "Harian"
-      const { data: attendanceData, error: attErr } = await supabase
-        .from("attendances")
-        .select("student_id, class_id, status, date")
-        .in("class_id", classIds)
-        .eq("subject", "Harian")
-        .eq("type", "harian")
-        .gte("date", startDate)
-        .lte("date", endDate)
-        .order("date", { ascending: true });
-      if (attErr) throw attErr;
+      // ✅ FIX: pagination — sama seperti di handleExportExcelSemester, buat jaga-jaga
+      // kalau "Semua Kelas" dipilih (bisa lewat 1000 baris walau cuma 1 bulan).
+      let attendanceData = [];
+      {
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from("attendances")
+            .select("student_id, class_id, status, date")
+            .in("class_id", classIds)
+            .eq("subject", "Harian")
+            .eq("type", "harian")
+            .gte("date", startDate)
+            .lte("date", endDate)
+            .order("date", { ascending: true })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+          if (error) throw error;
+          if (data && data.length > 0) {
+            attendanceData = attendanceData.concat(data);
+            hasMore = data.length === pageSize;
+            page++;
+          } else {
+            hasMore = false;
+          }
+        }
+      }
 
       if (!studentsData || studentsData.length === 0) {
         showToast("Tidak ada data siswa untuk diexport", "error");
@@ -898,15 +915,36 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
         .order("full_name");
       if (studentsErr) throw studentsErr;
 
-      const { data: attendanceData, error: attErr } = await supabase
-        .from("attendances")
-        .select("student_id, class_id, status, date")
-        .in("class_id", classIds)
-        .eq("subject", "Harian")
-        .eq("type", "harian")
-        .gte("date", startDate)
-        .lte("date", endDate);
-      if (attErr) throw attErr;
+      // ✅ FIX: fetch dengan pagination — query tanpa .range() diam-diam
+      // kepotong di 1000 baris (default limit Supabase/PostgREST). 1 kelas
+      // isi 36 siswa × ~32 hari aja udah > 1000 baris, jadi WAJIB paginate.
+      // Pola sama persis dengan exportSemesterRecapFromComponent di AttendanceExcel.js.
+      let attendanceData = [];
+      {
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from("attendances")
+            .select("student_id, class_id, status, date")
+            .in("class_id", classIds)
+            .eq("subject", "Harian")
+            .eq("type", "harian")
+            .gte("date", startDate)
+            .lte("date", endDate)
+            .order("date", { ascending: true })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+          if (error) throw error;
+          if (data && data.length > 0) {
+            attendanceData = attendanceData.concat(data);
+            hasMore = data.length === pageSize;
+            page++;
+          } else {
+            hasMore = false;
+          }
+        }
+      }
 
       const byStudent = {};
       (attendanceData || []).forEach((a) => {
@@ -1078,14 +1116,14 @@ const AdminAttendance = ({ user, onShowToast, darkMode }) => {
 
           sheet.getColumn(1).width = 5;
           sheet.getColumn(2).width = 15;
-          sheet.getColumn(3).width = 30;
-          sheet.getColumn(4).width = 9;
-          sheet.getColumn(5).width = 9;
-          sheet.getColumn(6).width = 9;
-          sheet.getColumn(7).width = 9;
-          sheet.getColumn(8).width = 9;
+          sheet.getColumn(3).width = 35;
+          sheet.getColumn(4).width = 10;
+          sheet.getColumn(5).width = 10;
+          sheet.getColumn(6).width = 10;
+          sheet.getColumn(7).width = 10;
+          sheet.getColumn(8).width = 10;
           sheet.getColumn(9).width = 8;
-          sheet.getColumn(10).width = 14;
+          sheet.getColumn(10).width = 15;
         });
 
       const buffer = await workbook.xlsx.writeBuffer();
