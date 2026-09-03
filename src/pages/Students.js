@@ -568,8 +568,8 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
               required
             >
-              <option value="L">Laki-laki</option>
-              <option value="P">Perempuan</option>
+              <option value="L">LAKI-LAKI</option>
+              <option value="P">PEREMPUAN</option>
             </select>
           </div>
 
@@ -731,7 +731,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                   ` • ${selectedJenjang ? `Kelas ${selectedJenjang}` : ""} ${
                     selectedKelas ? selectedKelas : ""
                   } ${
-                    selectedGender ? `• ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}` : ""
+                    selectedGender ? `• ${selectedGender === "L" ? "LAKI-LAKI" : "PEREMPUAN"}` : ""
                   }`}
               </div>
             </div>
@@ -939,7 +939,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[10px] sm:text-xs font-semibold text-blue-800/70 dark:text-blue-300/70 truncate">
-                    Laki-laki
+                    LAKI-LAKI
                   </div>
                   <div className="text-sm sm:text-lg font-bold text-blue-700 dark:text-blue-300 truncate">
                     {
@@ -959,7 +959,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[10px] sm:text-xs font-semibold text-rose-800/70 dark:text-rose-300/70 truncate">
-                    Perempuan
+                    PEREMPUAN
                   </div>
                   <div className="text-sm sm:text-lg font-bold text-rose-700 dark:text-rose-300 truncate">
                     {
@@ -1090,8 +1090,8 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">Semua Gender</option>
-              <option value="L">Laki-laki</option>
-              <option value="P">Perempuan</option>
+              <option value="L">LAKI-LAKI</option>
+              <option value="P">PEREMPUAN</option>
             </select>
           </div>
 
@@ -1129,7 +1129,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
           {isDefaultView && " (semua kelas, belum difilter)"}
           {searchTerm && ` dengan kata kunci "${searchTerm}"`}
           {selectedKelas && ` Di Kelas ${selectedKelas}`}
-          {selectedGender && ` ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}`}
+          {selectedGender && ` ${selectedGender === "L" ? "LAKI-LAKI" : "PEREMPUAN"}`}
         </div>
       )}
 
@@ -1185,7 +1185,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     Jenis Kelamin:
                   </span>
                   <span className="text-gray-900 dark:text-gray-200">
-                    {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
+                    {siswa.gender === "L" ? "LAKI-LAKI" : "PEREMPUAN"}
                   </span>
                 </div>
               </div>
@@ -1341,7 +1341,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                       {siswa.class_id}
                     </td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">
-                      {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
+                      {siswa.gender === "L" ? "LAKI-LAKI" : "PEREMPUAN"}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span
