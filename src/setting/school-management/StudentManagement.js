@@ -330,7 +330,7 @@ export const useStudentManagement = ({
   }, [studentForm, studentModal.data, setLoading, showToast, loadSchoolData]);
 
   const handleDeleteStudent = useCallback(
-    async (studentId) => {
+    async (studentId, mutationData = {}) => {
       try {
         setLoading(true);
 
@@ -345,11 +345,7 @@ export const useStudentManagement = ({
 
         if (error) throw error;
 
-        // ✅ Nonaktifin akun login siswa juga -- sebelumnya ini KELEWAT di
-        // sini (baru ada di Students.js "Tandai Keluar/Pindah"), akibatnya
-        // siswa yang dinonaktifin dari tab ini akun student_auth-nya tetap
-        // aktif & masih bisa dipakai login. Disamain sekarang biar konsisten
-        // dari mana pun siswa dinonaktifin.
+        // ✅ Nonaktifin akun login siswa juga.
         const { error: authError } = await supabase
           .from("student_auth")
           .update({
@@ -358,6 +354,30 @@ export const useStudentManagement = ({
           })
           .eq("student_id", studentId);
         if (authError) throw authError;
+
+        // ✅ Catat riwayat mutasi (type "keluar") -- ini yang sebelumnya
+        // KELEWAT di sini (cuma ada di Students.js "Tandai Keluar/Pindah"
+        // versi lama). Sekarang disamain, satu-satunya jalur nonaktifin
+        // siswa (dari sini) selalu ninggalin jejak di student_mutations.
+        // Soft-fail: siswa & akun udah kesimpen bener di atas, jangan
+        // sampe gagal cuma gara-gara pencatatan riwayat ini.
+        const { error: mutationError } = await supabase.from("student_mutations").insert({
+          student_id: studentId,
+          type: "keluar",
+          mutation_date: mutationData.mutation_date || new Date().toISOString().slice(0, 10),
+          sekolah_tujuan: mutationData.sekolah_tujuan || null,
+          keterangan: mutationData.keterangan || null,
+          class_id: mutationData.class_id || null,
+          created_by: mutationData.created_by || null,
+        });
+        if (mutationError) {
+          console.error("Error recording student_mutations:", mutationError);
+          showToast(
+            "⚠️ Siswa & akun dinonaktifkan, tapi riwayat mutasi gagal dicatat: " +
+              mutationError.message,
+            "error"
+          );
+        }
 
         showToast("Siswa & akun login berhasil dinonaktifkan!", "success");
         setDeleteConfirm({ show: false, type: "", data: null });

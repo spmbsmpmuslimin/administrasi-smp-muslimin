@@ -1,5 +1,5 @@
 // StudentModals.js
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { X, Users } from "lucide-react";
 
 // ✅ FUNGSI MODAL SISWA (FIX DELAY)
@@ -206,53 +206,118 @@ const StudentModal = ({
   );
 };
 
-const DeleteConfirmModal = ({ confirm, onConfirm, onCancel, loading }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4 transition-colors duration-200">
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transition-colors duration-200 border border-gray-200 dark:border-gray-700">
-      <div className="bg-gradient-to-r from-red-100 to-red-50 dark:from-red-900/20 dark:to-red-900/10 border-b border-red-200 dark:border-red-800 p-5 sm:p-6 rounded-t-2xl">
-        <div className="flex items-center gap-3">
-          <X className="text-red-600 dark:text-red-400" size={24} />
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-300">
-              Konfirmasi Hapus
-            </h2>
-            <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
-              Data siswa akan dihapus permanen
-            </p>
+const DeleteConfirmModal = ({ confirm, onConfirm, onCancel, loading }) => {
+  const [mutationDate, setMutationDate] = useState(new Date().toISOString().slice(0, 10));
+  const [sekolahTujuan, setSekolahTujuan] = useState("");
+  const [keterangan, setKeterangan] = useState("");
+
+  // Reset form tiap kali modal dibuka buat siswa yang beda, biar gak
+  // kebawa data siswa sebelumnya.
+  useEffect(() => {
+    if (confirm.show) {
+      setMutationDate(new Date().toISOString().slice(0, 10));
+      setSekolahTujuan("");
+      setKeterangan("");
+    }
+  }, [confirm.show, confirm.data?.id]);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4 transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transition-colors duration-200 border border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-red-100 to-red-50 dark:from-red-900/20 dark:to-red-900/10 border-b border-red-200 dark:border-red-800 p-5 sm:p-6 rounded-t-2xl">
+          <div className="flex items-center gap-3">
+            <X className="text-red-600 dark:text-red-400" size={24} />
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-red-800 dark:text-red-300">
+                Tandai Keluar / Pindah
+              </h2>
+              <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
+                Siswa & akun login-nya akan dinonaktifkan
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-6">
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
+            Siswa{" "}
+            <strong className="text-red-600 dark:text-red-400">{confirm.data?.full_name}</strong>{" "}
+            (NIS {confirm.data?.nis}) akan ditandai keluar/pindah.
+          </p>
+
+          <div className="space-y-3 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Tanggal Keluar <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={mutationDate}
+                onChange={(e) => setMutationDate(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Sekolah Tujuan{" "}
+                <span className="text-gray-400 font-normal">
+                  (opsional, isi kalau pindah sekolah)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={sekolahTujuan}
+                onChange={(e) => setSekolahTujuan(e.target.value)}
+                placeholder="Misal: SMPN 1 Cililin"
+                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Keterangan / Alasan
+              </label>
+              <textarea
+                value={keterangan}
+                onChange={(e) => setKeterangan(e.target.value)}
+                rows={2}
+                placeholder="Misal: pindah karena orang tua tugas"
+                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+              />
+            </div>
+          </div>
+
+          <p className="text-sm text-red-600 dark:text-red-400 mb-6 font-medium">
+            ⚠️ Siswa gak akan muncul di daftar aktif lagi & akun login-nya otomatis dinonaktifkan.
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                onConfirm({
+                  mutation_date: mutationDate,
+                  sekolah_tujuan: sekolahTujuan,
+                  keterangan,
+                })
+              }
+              disabled={loading || !mutationDate}
+              className="flex-1 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:from-red-700 dark:hover:from-red-800 dark:hover:to-red-900 text-white rounded-xl disabled:opacity-50 font-semibold transition-all active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg"
+            >
+              {loading ? "Menyimpan..." : "Ya, Tandai Keluar/Pindah"}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className="px-5 py-3 bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:from-gray-400 hover:to-gray-500 dark:hover:from-gray-700 dark:hover:to-gray-800 disabled:opacity-50 transition-all active:scale-[0.98] min-h-[44px] shadow-md font-semibold"
+            >
+              Batal
+            </button>
           </div>
         </div>
       </div>
-
-      <div className="p-5 sm:p-6">
-        <p className="text-gray-700 dark:text-gray-300 mb-4">
-          Apakah Anda yakin ingin menghapus siswa{" "}
-          <strong className="text-red-600 dark:text-red-400">{confirm.data?.full_name}</strong>?
-        </p>
-        <p className="text-sm text-red-600 dark:text-red-400 mb-6 font-medium">
-          ⚠️ Tindakan ini tidak dapat dibatalkan!
-        </p>
-
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={loading}
-            className="flex-1 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 dark:from-red-700 dark:hover:from-red-800 dark:hover:to-red-900 text-white rounded-xl disabled:opacity-50 font-semibold transition-all active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg"
-          >
-            {loading ? "Menghapus..." : "Ya, Hapus"}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="px-5 py-3 bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:from-gray-400 hover:to-gray-500 dark:hover:from-gray-700 dark:hover:to-gray-800 disabled:opacity-50 transition-all active:scale-[0.98] min-h-[44px] shadow-md font-semibold"
-          >
-            Batal
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export { StudentModal, DeleteConfirmModal };

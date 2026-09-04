@@ -10,10 +10,6 @@ import {
   REQUIRED_FIELDS,
 } from "../utils/studentProfileCompletion";
 import {
-  Edit2,
-  Trash2,
-  X,
-  Save,
   Users,
   GraduationCap,
   User,
@@ -23,133 +19,8 @@ import {
   CheckCircle2,
   AlertCircle,
   XCircle,
+  History,
 } from "lucide-react";
-
-// Didefinisiin DI LUAR komponen Students (bukan di dalam) -- ini SENGAJA,
-// biar reference-nya stabil antar render. Kalau didefinisiin di dalam
-// (kayak modal-modal lain di file ini), tiap parent re-render bakal
-// bikin "komponen baru" & React remount ulang seluruh modal (termasuk
-// input di dalamnya), efeknya fokus ketik kelempar tiap 1 huruf.
-const DeleteModal = React.memo(
-  ({ selectedStudent, mutationForm, setMutationForm, actionLoading, onConfirm, onCancel }) => (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
-        <div className="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 px-6 py-5 rounded-t-xl">
-          <div className="flex items-center gap-3">
-            <Trash2 size={24} className="text-white" />
-            <div>
-              <h2 className="text-xl font-bold text-white">Tandai Keluar / Pindah</h2>
-              <p className="text-red-100 dark:text-red-200 text-sm">
-                Siswa & akun login-nya akan dinonaktifkan
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800 mb-4">
-            <p className="font-bold text-red-800 dark:text-red-300 text-lg">
-              {selectedStudent?.full_name}
-            </p>
-            <div className="flex flex-wrap gap-2 mt-2 text-sm">
-              <span className="text-red-600 dark:text-red-400">NIS: {selectedStudent?.nis}</span>
-              <span className="text-red-600 dark:text-red-400">
-                Kelas: {selectedStudent?.class_id}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-3 mb-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                Tanggal Keluar <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={mutationForm.mutation_date}
-                onChange={(e) =>
-                  setMutationForm((prev) => ({
-                    ...prev,
-                    mutation_date: e.target.value,
-                  }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                Sekolah Tujuan{" "}
-                <span className="text-gray-400 font-normal">
-                  (opsional, isi kalau pindah sekolah)
-                </span>
-              </label>
-              <input
-                type="text"
-                value={mutationForm.sekolah_tujuan}
-                onChange={(e) =>
-                  setMutationForm((prev) => ({
-                    ...prev,
-                    sekolah_tujuan: e.target.value,
-                  }))
-                }
-                placeholder="Misal: SMPN 1 Cililin"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                Keterangan / Alasan
-              </label>
-              <textarea
-                value={mutationForm.keterangan}
-                onChange={(e) =>
-                  setMutationForm((prev) => ({
-                    ...prev,
-                    keterangan: e.target.value,
-                  }))
-                }
-                rows={2}
-                placeholder="Misal: pindah karena orang tua tugas"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-              />
-            </div>
-          </div>
-
-          <p className="text-sm text-red-600 dark:text-red-400 mb-6 font-medium">
-            ⚠️ Siswa gak akan muncul di daftar aktif lagi & akun login-nya otomatis dinonaktifkan.
-          </p>
-
-          <div className="flex gap-3">
-            <button
-              onClick={onConfirm}
-              disabled={actionLoading}
-              className="flex-1 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition-all shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {actionLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Menyimpan...</span>
-                </>
-              ) : (
-                <>
-                  <Trash2 size={18} />
-                  <span>Ya, Tandai Keluar/Pindah</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={onCancel}
-              disabled={actionLoading}
-              className="px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-semibold transition-all shadow disabled:opacity-50"
-            >
-              Batal
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-);
 
 export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   // Ikon per status kelengkapan (label & warna badge ambil dari
@@ -176,22 +47,6 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   const [availableJenjang, setAvailableJenjang] = useState([]);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [mutationForm, setMutationForm] = useState({
-    mutation_date: new Date().toISOString().slice(0, 10),
-    sekolah_tujuan: "",
-    keterangan: "",
-  });
-  const [editForm, setEditForm] = useState({
-    nis: "",
-    nisn: "",
-    full_name: "",
-    gender: "L",
-    class_id: "",
-  });
-  const [actionLoading, setActionLoading] = useState(false);
 
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -265,6 +120,14 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
 
   const handleOpenDataInduk = (siswa) => {
     navigate(`/student-profile-completion?student=${siswa.id}`);
+  };
+
+  // CRUD siswa (edit, tandai keluar/pindah) sekarang dipusatkan di
+  // Settings -> Manajemen Sekolah -> Data Sekolah -> Data Siswa. Halaman
+  // ini murni read-only buat semua role, tombol ini cuma nganterin ke
+  // riwayat mutasi siswa yang bersangkutan (tab "Riwayat Mutasi").
+  const handleOpenRiwayat = (siswa) => {
+    navigate(`/settings?tab=school&schooltab=mutasi&student=${siswa.id}`);
   };
 
   useEffect(() => {
@@ -457,110 +320,6 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
     }
   }, [teacherClasses, allSiswaData, allKelasOptions]);
 
-  const handleEditClick = (siswa) => {
-    setSelectedStudent(siswa);
-    setEditForm({
-      nis: siswa.nis,
-      nisn: siswa.nisn || "",
-      full_name: siswa.full_name,
-      gender: siswa.gender,
-      class_id: siswa.class_id,
-    });
-    setShowEditModal(true);
-  };
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    setActionLoading(true);
-
-    try {
-      const { error } = await supabase
-        .from("students")
-        .update({
-          nis: editForm.nis,
-          nisn: editForm.nisn || null,
-          full_name: editForm.full_name,
-          gender: editForm.gender,
-          class_id: editForm.class_id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", selectedStudent.id);
-
-      if (error) throw error;
-
-      alert("✅ Data siswa berhasil diupdate!");
-      setShowEditModal(false);
-      fetchStudents();
-    } catch (error) {
-      console.error("Error updating student:", error);
-      alert("❌ Gagal mengupdate data siswa: " + error.message);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleDeleteClick = (siswa) => {
-    setSelectedStudent(siswa);
-    setMutationForm({
-      mutation_date: new Date().toISOString().slice(0, 10),
-      sekolah_tujuan: "",
-      keterangan: "",
-    });
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!mutationForm.mutation_date) {
-      alert("⚠️ Tanggal keluar wajib diisi.");
-      return;
-    }
-
-    setActionLoading(true);
-
-    try {
-      // 1) Catat riwayat mutasi (sumber kebenaran "kapan" & "kenapa").
-      const { error: mutationError } = await supabase.from("student_mutations").insert({
-        student_id: selectedStudent.id,
-        type: "keluar",
-        mutation_date: mutationForm.mutation_date,
-        sekolah_tujuan: mutationForm.sekolah_tujuan || null,
-        keterangan: mutationForm.keterangan || null,
-        created_by: currentUser?.id || null,
-      });
-      if (mutationError) throw mutationError;
-
-      // 2) Nonaktifin data siswa (soft-delete, konsisten sama behavior lama).
-      const { error: studentError } = await supabase
-        .from("students")
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", selectedStudent.id);
-      if (studentError) throw studentError;
-
-      // 3) Nonaktifin akun login siswa juga -- ini yang sebelumnya belum
-      // kejadian, sekalian ditutup di sini.
-      const { error: authError } = await supabase
-        .from("student_auth")
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("student_id", selectedStudent.id);
-      if (authError) throw authError;
-
-      alert("✅ Siswa berhasil ditandai keluar/pindah!");
-      setShowDeleteModal(false);
-      fetchStudents();
-    } catch (error) {
-      console.error("Error marking student as keluar/pindah:", error);
-      alert("❌ Gagal menandai siswa keluar/pindah: " + error.message);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   const handleExportAll = async () => {
     setExportLoading(true);
     try {
@@ -656,136 +415,6 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
     setSelectedJenjang(e.target.value);
     setSelectedKelas("");
   };
-
-  const EditModal = React.memo(() => (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 px-6 py-5 rounded-t-xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Edit2 size={24} className="text-white" />
-              <div>
-                <h2 className="text-xl font-bold text-white">Edit Data Siswa</h2>
-                <p className="text-blue-100 dark:text-blue-200 text-sm">
-                  Kelas {selectedStudent?.class_id}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowEditModal(false)}
-              disabled={actionLoading}
-              className="p-2 hover:bg-blue-700/50 rounded-lg transition-colors"
-            >
-              <X size={20} className="text-white" />
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={handleEditSubmit} className="p-6 space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              NIS *
-            </label>
-            <input
-              type="text"
-              value={editForm.nis}
-              onChange={(e) => setEditForm({ ...editForm, nis: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              NISN
-            </label>
-            <input
-              type="text"
-              value={editForm.nisn}
-              onChange={(e) => setEditForm({ ...editForm, nisn: e.target.value })}
-              placeholder="Kosongkan jika belum ada"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nama Lengkap *
-            </label>
-            <input
-              type="text"
-              value={editForm.full_name}
-              onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Jenis Kelamin *
-            </label>
-            <select
-              value={editForm.gender}
-              onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
-              required
-            >
-              <option value="L">Laki-laki</option>
-              <option value="P">Perempuan</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Kelas *
-            </label>
-            <select
-              value={editForm.class_id}
-              onChange={(e) => setEditForm({ ...editForm, class_id: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
-              required
-            >
-              <option value="">Pilih Kelas</option>
-              {allKelasOptions.map((kelas) => (
-                <option key={kelas} value={kelas}>
-                  {kelas}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={actionLoading}
-              className="flex-1 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition-all shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {actionLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Menyimpan...</span>
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  <span>Simpan Perubahan</span>
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowEditModal(false)}
-              disabled={actionLoading}
-              className="px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-semibold transition-all shadow disabled:opacity-50"
-            >
-              Batal
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  ));
 
   const ExportModal = React.memo(() => (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
@@ -927,17 +556,6 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   return (
     <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {showExportModal && <ExportModal />}
-      {showEditModal && <EditModal />}
-      {showDeleteModal && (
-        <DeleteModal
-          selectedStudent={selectedStudent}
-          mutationForm={mutationForm}
-          setMutationForm={setMutationForm}
-          actionLoading={actionLoading}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setShowDeleteModal(false)}
-        />
-      )}
 
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center justify-between mb-2">
@@ -981,14 +599,15 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
         <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200 dark:border-purple-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-600 dark:bg-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Edit2 className="text-white" size={20} />
+              <Eye className="text-white" size={20} />
             </div>
             <div>
               <p className="text-sm font-bold text-purple-800 dark:text-purple-300">
                 👑 Mode Admin Aktif
               </p>
               <p className="text-xs text-purple-700 dark:text-purple-400">
-                Anda dapat mengedit dan menonaktifkan data siswa di semua kelas
+                Halaman ini khusus lihat data & rekap kelengkapan. Buat tambah/edit/tandai
+                keluar-pindah siswa, buka Settings → Manajemen Sekolah → Data Sekolah.
               </p>
             </div>
           </div>
@@ -1334,20 +953,13 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
               )}
 
               {canEditDelete && (
-                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
                   <button
-                    onClick={() => handleEditClick(siswa)}
-                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-1"
+                    onClick={() => handleOpenRiwayat(siswa)}
+                    className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5"
                   >
-                    <Edit2 size={16} />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(siswa)}
-                    className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-1"
-                  >
-                    <Trash2 size={16} />
-                    <span>Tandai Keluar</span>
+                    <History size={16} />
+                    <span>Lihat Riwayat</span>
                   </button>
                 </div>
               )}
@@ -1427,8 +1039,8 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     </>
                   )}
                   {canEditDelete && (
-                    <th className="px-6 py-4 text-left w-2/12 text-sm uppercase tracking-wider text-center">
-                      Aksi
+                    <th className="px-6 py-4 text-left w-1/12 text-sm uppercase tracking-wider text-center">
+                      Riwayat
                     </th>
                   )}
                 </tr>
@@ -1503,22 +1115,13 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     )}
                     {canEditDelete && (
                       <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleEditClick(siswa)}
-                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                            title="Edit Siswa"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(siswa)}
-                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                            title="Tandai Keluar/Pindah"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleOpenRiwayat(siswa)}
+                          className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Lihat Riwayat Mutasi"
+                        >
+                          <History size={18} />
+                        </button>
                       </td>
                     )}
                   </tr>

@@ -1,5 +1,6 @@
 // SchoolManagementTab.js - REFACTORED VERSION
 import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import { getActiveAcademicYear } from "../../services/academicYearService";
 import {
@@ -12,10 +13,12 @@ import {
   ArrowRight,
   Search,
   X, // ✅ TAMBAH INI
+  History,
 } from "lucide-react";
 
 import { StudentModal, DeleteConfirmModal } from "./StudentModals";
 import { useStudentManagement } from "./StudentManagement";
+import RiwayatMutasiTab from "./RiwayatMutasiTab";
 
 // SMP Config - DI LUAR COMPONENT BIAR GA DUPLIKAT
 const SMP_CONFIG = {
@@ -34,8 +37,21 @@ const SchoolManagementTab = ({
 }) => {
   console.log("🔄 SchoolManagementTab RE-RENDER");
 
-  // Tab switcher: Guru & Staf | Data Siswa
+  const [searchParams] = useSearchParams();
+
+  // Tab switcher: Guru & Staf | Data Siswa | Riwayat Mutasi
   const [activeSchoolTab, setActiveSchoolTab] = useState("guru");
+
+  // Deep-link dari Data Siswa (tombol "Lihat Riwayat") ->
+  // ?tab=school&schooltab=mutasi&student=<id> -- otomatis pindah ke tab
+  // Riwayat Mutasi. Query param "student"-nya sendiri dibaca langsung
+  // oleh RiwayatMutasiTab, di sini cuma perlu mindahin tab-nya.
+  useEffect(() => {
+    const schoolTabParam = searchParams.get("schooltab");
+    if (schoolTabParam === "mutasi") {
+      setActiveSchoolTab("mutasi");
+    }
+  }, [searchParams]);
 
   // State untuk data sekolah
   const [teachers, setTeachers] = useState([]);
@@ -599,7 +615,21 @@ const SchoolManagementTab = ({
           <Users size={18} />
           <span>Data Siswa</span>
         </button>
+        <button
+          onClick={() => setActiveSchoolTab("mutasi")}
+          className={`flex items-center gap-2 px-4 sm:px-5 py-3 text-sm sm:text-base font-semibold border-b-2 transition-colors ${
+            activeSchoolTab === "mutasi"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
+              : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          }`}
+        >
+          <History size={18} />
+          <span>Riwayat Mutasi</span>
+        </button>
       </div>
+
+      {/* RIWAYAT MUTASI (masuk/keluar/lulus) */}
+      {activeSchoolTab === "mutasi" && <RiwayatMutasiTab />}
 
       {/* READ-ONLY: DAFTAR GURU SECTION */}
       {activeSchoolTab === "guru" && (
@@ -1041,8 +1071,12 @@ const SchoolManagementTab = ({
         <DeleteConfirmModal
           confirm={deleteConfirm}
           loading={loading}
-          onConfirm={() => {
-            handleDeleteStudent(deleteConfirm.data.id);
+          onConfirm={(mutationForm) => {
+            handleDeleteStudent(deleteConfirm.data.id, {
+              ...mutationForm,
+              class_id: deleteConfirm.data?.class_id || null,
+              created_by: user?.id || null,
+            });
           }}
           onCancel={() => setDeleteConfirm({ show: false, type: "", data: null })}
         />
