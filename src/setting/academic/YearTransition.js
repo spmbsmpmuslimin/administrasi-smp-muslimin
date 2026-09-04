@@ -179,6 +179,17 @@ const YearTransition = ({
           newStudents: validNewStudents,
           newStudentDistribution: newStudentDistribution,
           conflictedNIS: conflictedNIS,
+          // ⚠️ PENTING: simpen targetYear (sumber: spmb_settings.target_academic_year)
+          // di sini juga, JANGAN cuma pakai `newYear`. STEP 5 di executeYearTransition
+          // WAJIB filter ulang siswa_baru pakai targetYear yang SAMA PERSIS kayak
+          // yang dipakai buat generate preview ini -- bukan hitung ulang dari
+          // currentYear+1. Dua-duanya KEBETULAN sama nilainya selama target SPMB
+          // = tahun ajaran berikutnya yang wajar, tapi begitu admin set
+          // target_academic_year beda dari currentYear+1 (misal lupa update pas
+          // ganti tahun ajaran), preview & execute bakal filter tahun ajaran yang
+          // BEDA tanpa error apapun -- siswa yang ditampilkan di preview bisa
+          // gak ke-insert sama sekali pas eksekusi (silent mismatch).
+          spmbTargetYear: targetYear,
         },
         newYear,
         inProgress: false,
@@ -397,12 +408,22 @@ const YearTransition = ({
 
       // STEP 5: Masukkan siswa baru dari SPMB
       if (preview.newStudents.length > 0) {
+        // ⚠️ FIX: filter pakai preview.spmbTargetYear (SAMA PERSIS kayak yang
+        // dipakai buat generate preview di atas), BUKAN yearTransition.newYear.
+        // newYear itu selalu hasil hitung otomatis currentYear+1 -- kalau admin
+        // pernah set spmb_settings.target_academic_year beda dari currentYear+1,
+        // dua nilai ini bisa mismatch dan query di bawah bisa dapet 0 hasil
+        // padahal preview-nya tadi nunjukin siswa ada (silent fail, tanpa
+        // error). Fallback ke newYear cuma buat jaga-jaga kalau preview lama
+        // (sebelum fix ini) masih kesimpen di state tanpa field spmbTargetYear.
+        const fetchTargetYear = preview.spmbTargetYear || yearTransition.newYear;
+
         // Ambil data terbaru dari SPMB untuk memastikan data fresh
         const { data: latestSiswaBaruData, error: fetchError } = await supabase
           .from("siswa_baru")
           .select("*")
           .eq("is_transferred", false)
-          .eq("academic_year", yearTransition.newYear)
+          .eq("academic_year", fetchTargetYear)
           .not("kelas", "is", null);
 
         if (fetchError) throw fetchError;

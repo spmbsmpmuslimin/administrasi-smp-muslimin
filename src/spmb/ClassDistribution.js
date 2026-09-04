@@ -66,8 +66,6 @@ export const generateClassDistribution = (
   setIsLoading(true);
 
   try {
-    const tahunAjaran = getTahunAjaran(); // AUTO-DETECT TAHUN AJARAN
-
     // STEP 0: SANITIZE ALL STUDENT DATA
     const sanitizedStudents = unassignedStudents.map((student) => ({
       ...student,
@@ -133,11 +131,25 @@ export const generateClassDistribution = (
       distribution[className] = [];
     });
 
-    // STEP 2: Distribute Males - Round Robin
+    // 🔥 FIX: sisa pembagian (remainder) laki-laki & perempuan HARUS
+    // ditaro di kelas yang BEDA sebisa mungkin. Kalau dua-duanya ditaro
+    // di kelas awal (index 0, 1, dst) kayak sebelumnya, ada resiko
+    // numpuk: 1 kelas kebagian sisa laki-laki DAN sisa perempuan
+    // sekaligus (+2), sementara kelas lain gak dapet sisa sama sekali.
+    // Contoh nyata: 26 siswa / 6 kelas = 4 sisa 2 -> harusnya jadi
+    // 5,5,4,4,4,4 (sisa nyebar 2 kelas), BUKAN 6,4,4,4,4,4 (numpuk 1
+    // kelas). Makanya sisa laki-laki ditaro dari kelas AWAL, sisa
+    // perempuan dari kelas AKHIR -- biar dua sisa itu jatuh di kelas
+    // yang beda (kecuali sisanya emang banyak sampe ketemu di tengah,
+    // itu pun otomatis nyebar rata karena saling silang).
+    const maleRemainder = males.length % numClasses;
+    const femaleRemainder = females.length % numClasses;
+
+    // STEP 2: Distribute Males - Round Robin (sisa di kelas AWAL)
     let maleIndex = 0;
     classNames.forEach((className, classIdx) => {
       const targetMales =
-        Math.floor(males.length / numClasses) + (classIdx < males.length % numClasses ? 1 : 0);
+        Math.floor(males.length / numClasses) + (classIdx < maleRemainder ? 1 : 0);
 
       for (let i = 0; i < targetMales && maleIndex < distributedMales.length; i++) {
         distribution[className].push(distributedMales[maleIndex]);
@@ -145,11 +157,11 @@ export const generateClassDistribution = (
       }
     });
 
-    // STEP 3: Distribute Females - Round Robin
+    // STEP 3: Distribute Females - Round Robin (sisa di kelas AKHIR)
     let femaleIndex = 0;
     classNames.forEach((className, classIdx) => {
-      const targetFemales =
-        Math.floor(females.length / numClasses) + (classIdx < females.length % numClasses ? 1 : 0);
+      const isExtraClass = classIdx >= numClasses - femaleRemainder;
+      const targetFemales = Math.floor(females.length / numClasses) + (isExtraClass ? 1 : 0);
 
       for (let i = 0; i < targetFemales && femaleIndex < distributedFemales.length; i++) {
         distribution[className].push(distributedFemales[femaleIndex]);
@@ -510,21 +522,116 @@ export const generateClassDistribution = (
 
     console.log(`✅ Phase 4 (Force spread dominant): ${phase4Swaps} swaps`);
 
+    // PHASE 5: Rebalance rata-rata skor akademik diagnostik antar kelas.
+    // Ini PERTIMBANGAN PALING RENDAH prioritasnya -- di bawah gender & asal
+    // sekolah. Banyak siswa gak punya skor ini (data dari sekolah asal
+    // sering gak lengkap/gak jelas kata TU), jadi itu NORMAL: siswa yang
+    // skornya kosong (null) tetap dibiarkan di posisinya, cuma siswa yang
+    // PUNYA skor yang dipertimbangkan buat nyeimbangin rata-rata per
+    // kelas. Kalau kelas yang mau dibandingin sama-sama gak punya data
+    // skor, proses ini otomatis berhenti tanpa error -- pembagian kelas
+    // TETAP jalan normal berdasarkan gender + sekolah aja.
+    let phase5Swaps = 0;
+
+    const getAvgSkor = (className) => {
+      const scored = distribution[className].filter((s) => typeof s.skor_akademik === "number");
+      if (scored.length === 0) return null; // gak ada data -- skip, bukan error
+      return scored.reduce((sum, s) => sum + s.skor_akademik, 0) / scored.length;
+    };
+
+    for (let iteration = 0; iteration < 100; iteration++) {
+      const classAverages = classNames
+        .map((className) => ({ className, avg: getAvgSkor(className) }))
+        .filter((c) => c.avg !== null);
+
+      // Kurang dari 2 kelas yang punya data skor -> gak ada yang bisa
+      // dibandingkan, stop (skor kosong semua/hampir semua = wajar, lanjut
+      // aja pakai hasil gender+sekolah yang udah ada).
+      if (classAverages.length < 2) break;
+
+      classAverages.sort((a, b) => b.avg - a.avg);
+      const highest = classAverages[0];
+      const lowest = classAverages[classAverages.length - 1];
+
+      // Selisih rata-rata udah kecil (<5 poin dari skala 0-100) -> anggap
+      // cukup seimbang, gak usah dipaksa terus-terusan.
+      if (highest.avg - lowest.avg < 5) break;
+
+      // Cari kandidat tuker: skor tinggi di kelas `highest` <-> skor
+      // rendah di kelas `lowest`. WAJIB gender sama (biar balance gender
+      // yang udah dicapai Phase 2-3 gak keganggu), dan swap gak boleh
+      // bikin sebaran sekolah numpuk ngelewatin `maxSchoolPerClass` yang
+      // udah ditetapkan di Phase 1.
+      const highClassStudents = distribution[highest.className]
+        .filter((s) => typeof s.skor_akademik === "number")
+        .sort((a, b) => b.skor_akademik - a.skor_akademik);
+      const lowClassStudents = distribution[lowest.className]
+        .filter((s) => typeof s.skor_akademik === "number")
+        .sort((a, b) => a.skor_akademik - b.skor_akademik);
+
+      let didSwap = false;
+      for (const highStudent of highClassStudents) {
+        for (const lowStudent of lowClassStudents) {
+          if (highStudent.jenis_kelamin !== lowStudent.jenis_kelamin) continue;
+          if (highStudent.skor_akademik <= lowStudent.skor_akademik) continue;
+
+          const highSchool = sanitizeSchoolName(highStudent.asal_sekolah);
+          const lowSchool = sanitizeSchoolName(lowStudent.asal_sekolah);
+
+          if (highSchool !== lowSchool) {
+            const highSchoolCountInLowClass =
+              schoolCountPerClass[lowest.className][highSchool] || 0;
+            const lowSchoolCountInHighClass =
+              schoolCountPerClass[highest.className][lowSchool] || 0;
+
+            if (highSchoolCountInLowClass + 1 > maxSchoolPerClass) continue;
+            if (lowSchoolCountInHighClass + 1 > maxSchoolPerClass) continue;
+          }
+
+          // Lakukan swap
+          distribution[highest.className] = distribution[highest.className].filter(
+            (s) => s.id !== highStudent.id
+          );
+          distribution[lowest.className] = distribution[lowest.className].filter(
+            (s) => s.id !== lowStudent.id
+          );
+          distribution[highest.className].push(lowStudent);
+          distribution[lowest.className].push(highStudent);
+
+          // Update tracking sebaran sekolah
+          if (highSchool !== lowSchool) {
+            schoolCountPerClass[highest.className][highSchool]--;
+            schoolCountPerClass[highest.className][lowSchool] =
+              (schoolCountPerClass[highest.className][lowSchool] || 0) + 1;
+            schoolCountPerClass[lowest.className][lowSchool]--;
+            schoolCountPerClass[lowest.className][highSchool] =
+              (schoolCountPerClass[lowest.className][highSchool] || 0) + 1;
+          }
+
+          phase5Swaps++;
+          didSwap = true;
+          break;
+        }
+        if (didSwap) break;
+      }
+
+      // Gak ada kandidat swap yang valid (misal kehalang batas sekolah
+      // terus) -> stop, jangan infinite loop.
+      if (!didSwap) break;
+    }
+
+    console.log(`✅ Phase 5 (Rebalance skor diagnostik): ${phase5Swaps} swaps`);
+
     // STEP 6: SORT setiap kelas by NAMA (A-Z)
+    // ⚠️ NIS SENGAJA TIDAK di-generate di sini. NIS baru dikasih sekolah
+    // belakangan setelah siswa BENER-BENER fixed diterima & penempatan
+    // kelasnya final (proses terpisah, bukan bagian dari pembagian kelas
+    // ini). `generateNIS`/`getTahunAjaran` di atas dibiarin ada buat
+    // dipakai nanti di tahap NIS assignment yang terpisah itu.
     Object.keys(distribution).forEach((className) => {
       distribution[className].sort((a, b) =>
         (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "")
       );
-    });
-
-    // STEP 7: ASSIGN NIS berurutan per kelas
-    let nisCounter = 1;
-    classNames.forEach((className) => {
-      distribution[className] = distribution[className].map((student) => {
-        const nis = generateNIS(tahunAjaran, 7, nisCounter);
-        nisCounter++;
-        return { ...student, nis };
-      });
     });
 
     // Log final distribution dengan detail
@@ -558,7 +665,7 @@ export const generateClassDistribution = (
     setHistory([JSON.parse(JSON.stringify(distribution))]);
     setHistoryIndex(0);
 
-    const totalSwaps = phase1Swaps + phase2Swaps + phase3Swaps;
+    const totalSwaps = phase1Swaps + phase2Swaps + phase3Swaps + phase4Swaps + phase5Swaps;
     showToast(
       `✅ Generate ${numClasses} kelas seimbang (${sanitizedStudents.length} siswa, ${totalSwaps} optimizations)!`,
       "success"

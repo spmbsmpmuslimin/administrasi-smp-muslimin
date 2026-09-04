@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import {
   EXCEL_COLORS,
+  EXCEL_FONT_FAMILY,
   addLetterhead,
   styleTableHeaderRow,
   styleTableDataRow,
@@ -191,8 +192,10 @@ export const exportAllStudents = async (allStudents, totalStudents, showToast) =
 
 /**
  * 🎓 Export Class Division (Multi-Sheet)
- * Export pembagian kelas dengan NIS TERISI
- * Format: No | NIS | Nama | Kelas | Jenis Kelamin
+ * ⚠️ TIDAK termasuk NIS -- NIS dikasih sekolah belakangan setelah siswa
+ * BENER-BENER fixed diterima & penempatan kelasnya final (proses
+ * terpisah dari pembagian kelas ini).
+ * Format: No | No. Pendaftaran | Nama Lengkap | Jenis Kelamin | Kelas | Asal Sekolah
  */
 export const exportClassDivision = async (classDistribution, showToast) => {
   if (
@@ -216,6 +219,89 @@ export const exportClassDivision = async (classDistribution, showToast) => {
     // Urutkan kelas berdasarkan nama (7A, 7B, 7C, dst)
     const sortedClasses = Object.keys(classDistribution).sort();
 
+    // 📊 Sheet Rekapitulasi -- dibuat PERTAMA (sebelum sheet per-kelas) biar
+    // pas file dibuka, yang kebuka duluan itu overview-nya, bukan langsung
+    // detail kelas 7A. Ringkasan per kelas, BUKAN per siswa.
+    const rekapSheet = workbook.addWorksheet("Rekapitulasi Pembagian Kelas");
+
+    rekapSheet.columns = [
+      { width: 5 }, // No
+      { width: 12 }, // Kelas
+      { width: 12 }, // Laki-laki
+      { width: 12 }, // Perempuan
+      { width: 12 }, // Jumlah (per kelas)
+    ];
+
+    const rekapNextRow = addLetterhead(rekapSheet, {
+      title: `REKAPITULASI PEMBAGIAN KELAS - TAHUN AJARAN ${academicYear}`,
+      mergeCols: 5,
+      metaLines: [`Tanggal Export: ${currentDate}`, `Total Kelas: ${sortedClasses.length} kelas`],
+    });
+
+    const rekapHeaders = ["No.", "Kelas", "Laki-laki", "Perempuan", "Jumlah"];
+    const rekapHeaderRow = rekapSheet.getRow(rekapNextRow);
+    rekapHeaderRow.values = rekapHeaders;
+    styleTableHeaderRow(rekapHeaderRow);
+
+    setupPrintOptions(rekapSheet, {
+      orientation: "portrait",
+      freezeHeaderRow: rekapNextRow,
+    });
+
+    let rekapTotalLaki = 0;
+    let rekapTotalPerempuan = 0;
+
+    sortedClasses.forEach((className, index) => {
+      const students = classDistribution[className];
+      const totalLaki = students.filter((s) => s.jenis_kelamin === "L").length;
+      const totalPerempuan = students.filter((s) => s.jenis_kelamin === "P").length;
+      rekapTotalLaki += totalLaki;
+      rekapTotalPerempuan += totalPerempuan;
+
+      const row = rekapSheet.getRow(rekapNextRow + 1 + index);
+      row.values = [
+        index + 1,
+        className,
+        totalLaki,
+        totalPerempuan,
+        students.length, // Jumlah siswa di kelas ini
+      ];
+
+      styleTableDataRow(row, index, [1, 2, 3, 4, 5]);
+    });
+
+    // Catatan ringkasan di bawah tabel: 1 baris kosong dulu, baru catatan.
+    // Label + titik dua diletakkan di kolom terpisah (B = label rata kanan,
+    // C = ":" rata tengah, D = nilai rata kiri) biar titik duanya rata rapi
+    // walau panjang label beda-beda ("Total" vs "Laki-laki" vs "Perempuan").
+    const rekapTotalSiswa = rekapTotalLaki + rekapTotalPerempuan;
+    const catatanStartRow = rekapNextRow + sortedClasses.length + 2; // +1 data terakhir, +1 baris kosong
+
+    const catatanLines = [
+      ["Total", `${rekapTotalSiswa} Siswa`],
+      ["Laki-laki", `${rekapTotalLaki} Siswa`],
+      ["Perempuan", `${rekapTotalPerempuan} Siswa`],
+    ];
+
+    catatanLines.forEach(([label, value], i) => {
+      const r = catatanStartRow + i;
+
+      const labelCell = rekapSheet.getCell(`B${r}`);
+      labelCell.value = label;
+      labelCell.font = { name: EXCEL_FONT_FAMILY, bold: true, size: 10 };
+      labelCell.alignment = { horizontal: "right", vertical: "middle" };
+
+      const colonCell = rekapSheet.getCell(`C${r}`);
+      colonCell.value = ":";
+      colonCell.font = { name: EXCEL_FONT_FAMILY, bold: true, size: 10 };
+      colonCell.alignment = { horizontal: "center", vertical: "middle" };
+
+      const valueCell = rekapSheet.getCell(`D${r}`);
+      valueCell.value = value;
+      valueCell.font = { name: EXCEL_FONT_FAMILY, size: 10 };
+      valueCell.alignment = { horizontal: "left", vertical: "middle" };
+    });
+
     // Buat sheet untuk setiap kelas
     sortedClasses.forEach((className) => {
       const students = classDistribution[className];
@@ -224,10 +310,11 @@ export const exportClassDivision = async (classDistribution, showToast) => {
       // Set column widths
       worksheet.columns = [
         { width: 5 }, // No
-        { width: 18 }, // NIS 🔥 TERISI
+        { width: 20 }, // No. Pendaftaran
         { width: 35 }, // Nama
-        { width: 12 }, // Kelas
         { width: 15 }, // Jenis Kelamin
+        { width: 12 }, // Kelas
+        { width: 28 }, // Asal Sekolah
       ];
 
       // Calculate statistics
@@ -237,7 +324,7 @@ export const exportClassDivision = async (classDistribution, showToast) => {
       // Letterhead standar via kit
       const nextRow = addLetterhead(worksheet, {
         title: `DAFTAR SISWA KELAS ${className} - TAHUN AJARAN ${academicYear}`,
-        mergeCols: 5,
+        mergeCols: 6,
         metaLines: [
           `Tanggal Export: ${currentDate}`,
           `Total Siswa: ${students.length} siswa`,
@@ -248,53 +335,59 @@ export const exportClassDivision = async (classDistribution, showToast) => {
 
       // Header tabel -- pakai accentPurple biar beda dari sheet data utama,
       // sesuai konvensi warna di excelExportKit
-      const headers = ["No.", "NIS", "Nama Lengkap", "Kelas", "Jenis Kelamin"];
+      const headers = [
+        "No.",
+        "No. Pendaftaran",
+        "Nama Lengkap",
+        "Jenis Kelamin",
+        "Kelas",
+        "Asal Sekolah",
+      ];
       const headerRow = worksheet.getRow(nextRow);
       headerRow.values = headers;
       styleTableHeaderRow(headerRow, { fillColor: EXCEL_COLORS.accentPurple });
 
-      // Print setup: portrait cukup (cuma 5 kolom), freeze header tabel
+      // Print setup: portrait cukup (6 kolom masih muat), freeze header tabel
       setupPrintOptions(worksheet, {
         orientation: "portrait",
         freezeHeaderRow: nextRow,
       });
 
-      // Data rows - Sort berdasarkan NIS dulu, kalau sama baru nama
-      const sortedStudents = [...students].sort((a, b) => {
-        const nisA = a.nis || "";
-        const nisB = b.nis || "";
-
-        if (nisA !== nisB) {
-          return nisA.localeCompare(nisB, undefined, { numeric: true });
-        }
-
-        return (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "");
-      });
+      // Data rows - Sort berdasarkan nama (A-Z)
+      const sortedStudents = [...students].sort((a, b) =>
+        (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "")
+      );
 
       sortedStudents.forEach((student, index) => {
         const row = worksheet.getRow(nextRow + 1 + index);
         row.values = [
           index + 1,
-          student.nis || "-", // 🔥 NIS TERISI DARI DATA SISWA
+          student.no_pendaftaran || "-",
           student.nama_lengkap || "-",
-          className,
           student.jenis_kelamin || "-",
+          className,
+          student.asal_sekolah || "-",
         ];
 
-        styleTableDataRow(row, index, [1, 2, 4, 5], [2]); // NIS (kolom 2) dipaksa text
+        // No.Pendaftaran (kolom 2) dipaksa text -- formatnya "SPMB-26.27.07.024",
+        // ada titik & strip, aman-aman aja tapi dipaksa text biar konsisten &
+        // gak ada risiko Excel salah nebak format.
+        styleTableDataRow(row, index, [1, 4, 5], [2]);
       });
 
-      // Tambahkan baris kosong untuk tanda tangan
+      // Tambahkan baris kosong untuk tanda tangan (di 2 kolom paling kanan:
+      // Kelas & Asal Sekolah, biar posisinya tetap di sisi kanan walau
+      // sekarang total kolomnya 6)
       const signatureLabelRowNum = nextRow + sortedStudents.length + 3;
-      worksheet.mergeCells(`D${signatureLabelRowNum}:E${signatureLabelRowNum}`);
-      const signCell = worksheet.getCell(`D${signatureLabelRowNum}`);
+      worksheet.mergeCells(`E${signatureLabelRowNum}:F${signatureLabelRowNum}`);
+      const signCell = worksheet.getCell(`E${signatureLabelRowNum}`);
       signCell.value = "Wali Kelas";
       signCell.alignment = { horizontal: "center", vertical: "middle" };
       signCell.font = { bold: true, size: 11 };
 
       const signatureNameRowNum = nextRow + sortedStudents.length + 8;
-      worksheet.mergeCells(`D${signatureNameRowNum}:E${signatureNameRowNum}`);
-      const signNameCell = worksheet.getCell(`D${signatureNameRowNum}`);
+      worksheet.mergeCells(`E${signatureNameRowNum}:F${signatureNameRowNum}`);
+      const signNameCell = worksheet.getCell(`E${signatureNameRowNum}`);
       signNameCell.value = "(............................)";
       signNameCell.alignment = { horizontal: "center", vertical: "middle" };
       signNameCell.font = { size: 11 };
@@ -307,10 +400,7 @@ export const exportClassDivision = async (classDistribution, showToast) => {
     await downloadWorkbook(workbook, fileName);
 
     if (showToast) {
-      showToast(
-        `✅ Berhasil export ${sortedClasses.length} kelas dengan NIS: ${fileName}`,
-        "success"
-      );
+      showToast(`✅ Berhasil export ${sortedClasses.length} kelas: ${fileName}`, "success");
     }
 
     return true;

@@ -562,22 +562,23 @@ const SPMB = ({ user, onShowToast }) => {
           </div>
         </div>
 
-        {/* Navigation Tabs - tampil di semua ukuran layar (termasuk HP), scroll horizontal kalau sempit */}
+        {/* Navigation Tabs - 5 tab dibagi rata (flex-1) dalam 1 baris, semua ukuran layar termasuk HP, gak perlu scroll/geser */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="flex overflow-x-auto">
+          <div className="flex">
             {navItems.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setActiveTab(item.key)}
-                className={`flex-1 p-3 sm:p-4 font-medium transition-all duration-200 flex items-center justify-center gap-2 min-h-[56px] sm:min-h-[60px] whitespace-nowrap flex-shrink-0 ${
+                className={`flex-1 min-w-0 p-2 sm:p-4 font-medium transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 min-h-[56px] sm:min-h-[60px] ${
                   activeTab === item.key
                     ? "bg-blue-600 dark:bg-blue-700 text-white shadow-sm"
                     : "text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700"
                 }`}
-                style={{ minWidth: "33%" }}
               >
-                <span className="text-xs sm:hidden">{item.label}</span>
-                <span className="hidden sm:inline text-sm sm:text-base">{item.fullLabel}</span>
+                <span className="text-[11px] sm:hidden truncate">{item.label}</span>
+                <span className="hidden sm:inline text-sm sm:text-base truncate">
+                  {item.fullLabel}
+                </span>
               </button>
             ))}
           </div>

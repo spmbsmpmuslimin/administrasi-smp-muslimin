@@ -1,53 +1,17 @@
 // ClassOperations.js - Operations & Utilities untuk kelas management
-// 🔥 FIX: NIS akan di-generate HANYA saat pembagian kelas, bukan saat pendaftaran
+// ⚠️ NIS TIDAK dilibatkan di proses pembagian kelas ini sama sekali --
+// NIS dikasih sekolah belakangan setelah siswa fixed diterima & kelasnya
+// final (proses terpisah).
 
 import { exportClassDivision } from "./SpmbExcel";
 
-// 🔥 FUNGSI BARU: Generate NIS berurutan berdasarkan kelas
-// 🔥 FIXED: Generate NIS berurutan berdasarkan kelas
-// 🔥 ROBUST: Handle berbagai format no_pendaftaran
-// 🔥 ROBUST VERSION - RECOMMENDED!
-// 🔥 FINAL: NIS terpisah dari No. Pendaftaran
-const generateSequentialNIS = (classDistribution, academicYear) => {
-  const [tahun1, tahun2] = academicYear.split("/");
-  const yearPrefix = `${tahun1.slice(-2)}.${tahun2.slice(-2)}`;
-  const gradePrefix = "07";
+// ⚠️ NIS SENGAJA TIDAK di-generate/disimpan di sini. NIS dikasih sekolah
+// belakangan setelah siswa BENER-BENER fixed diterima & penempatan
+// kelasnya final -- itu proses terpisah, bukan bagian dari pembagian
+// kelas ini.
 
-  const nisMapping = {};
-  let globalCounter = 1;
-
-  // Sort kelas (7A, 7B, 7C, dst)
-  const sortedClasses = Object.keys(classDistribution).sort();
-
-  console.log("🎯 Generating NIS...");
-
-  sortedClasses.forEach((className) => {
-    const students = classDistribution[className];
-
-    // 🔥 JANGAN SORT! Biarkan urutan siswa TETAP seperti saat generate!
-    // students.sort(...) ← HAPUS INI
-
-    console.log(`\n📚 ${className} (${students.length} siswa):`);
-
-    students.forEach((student) => {
-      const nisNumber = globalCounter.toString().padStart(3, "0");
-      nisMapping[student.id] = `${yearPrefix}.${gradePrefix}.${nisNumber}`;
-
-      console.log(
-        `  ✅ ${globalCounter}. ${student.jenis_kelamin} - ${student.nama_lengkap}: ${
-          nisMapping[student.id]
-        }`
-      );
-
-      globalCounter++;
-    });
-  });
-
-  console.log(`\n🎉 Total ${globalCounter - 1} NIS berhasil di-generate!`);
-  return nisMapping;
-};
-
-// Simpan pembagian ke database (WITH NIS BERURUTAN)
+// Simpan pembagian ke database (kelas SAJA, NIS diisi belakangan di
+// proses terpisah)
 export const saveClassAssignments = async (
   classDistribution,
   supabase,
@@ -58,20 +22,14 @@ export const saveClassAssignments = async (
   setClassDistribution,
   setEditMode,
   setHistory,
-  setHistoryIndex,
-  academicYear // 🔥 WAJIB pass dari ClassDivision.js
+  setHistoryIndex
 ) => {
-  if (
-    !window.confirm("Simpan pembagian kelas ini? NIS akan digenerate otomatis berurutan per kelas.")
-  ) {
+  if (!window.confirm("Simpan pembagian kelas ini?")) {
     return;
   }
 
   setIsLoading(true);
   try {
-    // 🔥 Generate NIS berurutan
-    const nisMapping = generateSequentialNIS(classDistribution, academicYear);
-
     const updates = [];
 
     Object.entries(classDistribution).forEach(([className, students]) => {
@@ -79,7 +37,6 @@ export const saveClassAssignments = async (
         updates.push({
           id: student.id,
           kelas: className,
-          nis: nisMapping[student.id], // 🔥 NIS BERURUTAN
         });
       });
     });
@@ -89,17 +46,13 @@ export const saveClassAssignments = async (
         .from("siswa_baru")
         .update({
           kelas: update.kelas,
-          nis: update.nis,
         })
         .eq("id", update.id);
 
       if (error) throw error;
     }
 
-    showToast(
-      `✅ Berhasil menyimpan pembagian ${updates.length} siswa dengan NIS berurutan!`,
-      "success"
-    );
+    showToast(`✅ Berhasil menyimpan pembagian ${updates.length} siswa!`, "success");
     setShowPreview(false);
     setClassDistribution({});
     setEditMode(false);
@@ -219,7 +172,7 @@ export const transferToStudents = async (
         .insert([
           {
             full_name: siswa.nama_lengkap,
-            nis: siswa.nis, // 🔥 Gunakan NIS yang sudah digenerate
+            nis: null, // NIS diisi belakangan di proses assignment NIS terpisah (bukan di sini)
             class_id: siswa.kelas,
             academic_year: currentYear,
             gender: siswa.jenis_kelamin,
@@ -273,7 +226,7 @@ export const transferToStudents = async (
   }
 };
 
-// Reset class assignments + NIS
+// Reset class assignments
 export const resetClassAssignments = async (
   allStudents,
   supabase,
@@ -291,9 +244,7 @@ export const resetClassAssignments = async (
   }
 
   if (
-    !window.confirm(
-      `Reset pembagian ${studentsWithClass.length} siswa? Semua kelas dan NIS akan direset.`
-    )
+    !window.confirm(`Reset pembagian ${studentsWithClass.length} siswa? Semua kelas akan direset.`)
   ) {
     return;
   }
@@ -305,7 +256,6 @@ export const resetClassAssignments = async (
         .from("siswa_baru")
         .update({
           kelas: null,
-          nis: null, // 🔥 Reset NIS
           updated_at: new Date().toISOString(),
         })
         .eq("id", siswa.id);
@@ -313,7 +263,7 @@ export const resetClassAssignments = async (
       if (error) throw error;
     }
 
-    showToast(`✅ Berhasil reset ${studentsWithClass.length} siswa (kelas + NIS)!`, "success");
+    showToast(`✅ Berhasil reset pembagian ${studentsWithClass.length} siswa!`, "success");
 
     if (onRefreshData) {
       await onRefreshData();
