@@ -28,7 +28,6 @@ import {
   styleTableHeaderRow,
   styleTableDataRow,
   downloadWorkbook,
-  autoFitColumns,
   setupPrintOptions,
   guardHasData,
   EXCEL_COLORS,
@@ -194,16 +193,52 @@ function buildTextColumnNumbers() {
 }
 
 // Lebar kolom manual per kolom pendek yang isinya selalu singkat (angka
-// urut, kode, status). Dipasang SETELAH autoFitColumns supaya nggak
-// ketimpa lebar dari teks judul letterhead yang di-merge lintas semua
-// kolom (autoFitColumns kadang ngukur teks judul itu ke kolom pertama,
-// makanya kolom "No" jadi lebar banget kalau dibiarin apa adanya).
+// urut, kode, status). Dipasang SETELAH computeColumnWidths supaya nggak
+// ketimpa -- kolom2 ini maunya konsisten sempit walaupun ada isi yang
+// kebetulan panjang (mis. "Belum diisi" di kolom NISN).
 const MANUAL_COLUMN_WIDTHS = {
   1: 6, // No
   3: 14, // NIS
   4: 14, // NISN
   5: 10, // Kelas
 };
+
+// Kolom teks bebas yang isinya emang cenderung panjang (alamat) butuh cap
+// lebih lega dari kolom lain -- kalau dipaksa ikut maxWidth umum (40),
+// alamat kepotong padahal kolom lain (jenis kelamin, agama, dst) udah pas.
+const COLUMN_MAX_WIDTH_OVERRIDES = {
+  "Alamat Lengkap": 70,
+};
+
+// Hitung lebar tiap kolom PERSIS dari panjang teks header & isi baris data
+// yang beneran ditulis ke worksheet -- bukan pake autoFitColumns dari
+// excelExportKit.js (itu yang bikin banyak kolom kelewat lebar, salah
+// satunya karena suka ikut ngukur teks judul letterhead yang di-merge
+// lintas semua kolom). rowsDisplayValues = array of array, urutannya harus
+// SAMA persis kayak headerLabels (index kolom ke index kolom).
+function computeColumnWidths(
+  headerLabels,
+  rowsDisplayValues,
+  { minWidth = 8, maxWidth = 40, padding = 2 } = {}
+) {
+  return headerLabels.map((label, colIdx) => {
+    let maxLen = String(label ?? "").length;
+    rowsDisplayValues.forEach((row) => {
+      const cellText = row[colIdx];
+      const len = cellText == null ? 0 : String(cellText).length;
+      if (len > maxLen) maxLen = len;
+    });
+    const colMaxWidth = COLUMN_MAX_WIDTH_OVERRIDES[label] ?? maxWidth;
+    return Math.min(colMaxWidth, Math.max(minWidth, maxLen + padding));
+  });
+}
+
+function applyColumnWidths(worksheet, widths) {
+  widths.forEach((width, idx) => {
+    const column = worksheet.getColumn(idx + 1);
+    if (column) column.width = width;
+  });
+}
 
 // "Status Kelengkapan" sekarang di kolom TERAKHIR (posisinya dinamis,
 // ngikutin jumlah field DATA_SISWA_ROWS + DATA_ORANGTUA_ROWS), jadi lebar
@@ -222,11 +257,11 @@ function applyManualColumnWidths(worksheet, totalCols) {
  * Export Excel kelengkapan data untuk sekumpulan siswa, 1 baris per siswa,
  * field jadi kolom (beda dari PDF yang 1 halaman per siswa).
  * @param {Array<{id:string,full_name:string,nis:string,class_id:string,status:string,detail:Object|null}>} students
- * @param {{academicYear?:string, showToast?:Function}} [options] - academicYear format "2026/2027"
+ * @param {{academicYear?:string, className?:string, showToast?:Function}} [options] - academicYear format "2026/2027" (dari tabel academic_years, kolom "year"); className format "7B" (dari tabel classes, kolom "id" -- id classes emang udah berformat grade+section, mis. "7A")
  * @returns {Promise<{success:boolean,message?:string}>}
  */
 export async function exportStudentProfileExcel(students, options = {}) {
-  const { academicYear, showToast } = options;
+  const { academicYear, className, showToast } = options;
 
   if (
     !guardHasData(students, {
@@ -245,19 +280,39 @@ export async function exportStudentProfileExcel(students, options = {}) {
     const totalCols = headerLabels.length;
     const textColNumbers = buildTextColumnNumbers();
 
-    // Lebar kolom sementara (bakal ditimpa autoFitColumns di akhir) --
-    // wajib diisi duluan biar worksheet.columns punya entry yang bisa
-    // di-iterate pas autoFitColumns jalan.
+    // Lebar kolom sementara (bakal ditimpa computeColumnWidths di akhir,
+    // setelah semua baris data ditulis) -- wajib diisi duluan biar
+    // worksheet.columns punya entry yang bisa di-iterate ExcelJS.
     worksheet.columns = headerLabels.map(() => ({ width: 16 }));
 
     let rowNum = addLetterhead(worksheet, {
-      title: "DATA KELENGKAPAN DATA SISWA",
+      // Judul ikut nampilin kelas kalau className dikirim (mis. dari
+      // classes.id "7B") -- "KELENGKAPAN DATA SISWA KELAS 7B". Kalau
+      // className gak dikirim (mis. export gabungan lintas kelas), fallback
+      // ke judul umum kayak sebelumnya.
+      title: className
+        ? `KELENGKAPAN DATA SISWA KELAS ${className}`
+        : "DATA KELENGKAPAN DATA SISWA",
       mergeCols: totalCols,
       metaLines: [
         ...(academicYear ? [`TAHUN AJARAN ${academicYear}`] : []),
         `Total: ${students.length} siswa`,
       ],
     });
+
+    // addLetterhead (di excelExportKit.js) ngerender nama sekolah, judul, &
+    // meta lines rata TENGAH secara default. Request-nya rata KIRI, tapi
+    // karena file excelExportKit.js gak ada di sini buat diubah source-nya,
+    // dipaksa rata kiri lewat override sesudah addLetterhead jalan --
+    // row 1 s/d (rowNum-1) itu baris-baris letterhead (sebelum baris header
+    // tabel). Kalau nanti excelExportKit.js dapet parameter align bawaan,
+    // override manual ini bisa dicabut.
+    for (let r = 1; r < rowNum; r++) {
+      const letterheadRow = worksheet.getRow(r);
+      letterheadRow.eachCell({ includeEmpty: true }, (cell) => {
+        cell.alignment = { ...(cell.alignment || {}), horizontal: "left" };
+      });
+    }
 
     // --- Baris header tabel ---
     const headerRow = worksheet.getRow(rowNum);
@@ -270,6 +325,9 @@ export async function exportStudentProfileExcel(students, options = {}) {
     const siswaOffset = FIXED_COLS.length; // kolom field siswa mulai dari sini + 1
     const ortuOffset = siswaOffset + DATA_SISWA_ROWS.length;
     const NISN_COL = 4; // posisi kolom NISN di FIXED_COLS (setelah NIS)
+    // Nampung rowValues tiap siswa (teks persis yang ditulis ke cell) buat
+    // dipakai ngitung lebar kolom di computeColumnWidths setelah loop ini.
+    const allRowsDisplayValues = [];
 
     students.forEach((student, idx) => {
       const detail = student.detail || null;
@@ -293,6 +351,7 @@ export async function exportStudentProfileExcel(students, options = {}) {
 
       const dataRow = worksheet.getRow(rowNum);
       dataRow.values = rowValues;
+      allRowsDisplayValues.push(rowValues);
       // Kolom "No" (1) & "Status Kelengkapan" (kolom terakhir, posisinya
       // sekarang dinamis mengikuti totalCols karena udah dipindah ke
       // paling belakang) di-center, sisanya rata kiri.
@@ -330,7 +389,12 @@ export async function exportStudentProfileExcel(students, options = {}) {
       rowNum++;
     });
 
-    autoFitColumns(worksheet, { minWidth: 8, maxWidth: 40 });
+    const columnWidths = computeColumnWidths(headerLabels, allRowsDisplayValues, {
+      minWidth: 8,
+      maxWidth: 40,
+      padding: 2,
+    });
+    applyColumnWidths(worksheet, columnWidths);
     applyManualColumnWidths(worksheet, totalCols);
     setupPrintOptions(worksheet, {
       orientation: "landscape",

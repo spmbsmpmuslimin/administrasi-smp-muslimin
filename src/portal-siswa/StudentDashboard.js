@@ -4,6 +4,12 @@ import useStudentProfile from "./useStudentProfile";
 import { DAY_NAMES, getDayName, getStatusMeta, isOngoing } from "./StudentHelpers";
 import { ANNOUNCEMENTS_TABLE } from "../constants";
 import {
+  BirthdayModal,
+  BirthdayBanner,
+  ClassmateBirthdayModal,
+  ClassmateBirthdayBanner,
+} from "./BirthdayCelebration";
+import {
   Clock,
   CheckCircle,
   Bell,
@@ -106,6 +112,18 @@ export default function StudentDashboard({ onPageChange }) {
   const [announcements, setAnnouncements] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState(null);
+  // ====== ULANG TAHUN (BirthdayCelebration.js) ======
+  // isMyBirthday: siswa yang login lagi ultah hari ini.
+  // classmatesBirthdayToday: temen sekelas (bukan diri sendiri) yang ultah
+  // hari ini, buat banner. Cek cuma bulan+tanggal, tahun diabaikan.
+  const [isMyBirthday, setIsMyBirthday] = useState(false);
+  const [classmatesBirthdayToday, setClassmatesBirthdayToday] = useState([]);
+  // Modal ultah default kebuka -- ke-reset tiap kali komponen ini di-mount
+  // ulang (reload/buka app lagi), jadi kalau masih tanggal ultahnya bakal
+  // muncul lagi walau tadi sempet ditutup, sama kayak behaviour FB/Google.
+  const [birthdayModalOpen, setBirthdayModalOpen] = useState(true);
+  // Sama kayak birthdayModalOpen, tapi buat popup ultah TEMEN sekelas.
+  const [classmateModalOpen, setClassmateModalOpen] = useState(true);
 
   useEffect(() => {
     // Tunggu profil siswa siap dulu (dari useStudentProfile) sebelum ambil
@@ -141,6 +159,7 @@ export default function StudentDashboard({ onPageChange }) {
           { data: piketData, error: piketErr },
           { data: annData, error: annErr },
           { data: monthAttData, error: monthAttErr },
+          { data: birthdayData, error: birthdayErr },
         ] = await Promise.all([
           // Presensi hari ini — status sendiri (khusus row "harian" /
           // bukan row "mapel" dari absensi Bahasa Inggris yang gak dipake
@@ -235,6 +254,40 @@ export default function StudentDashboard({ onPageChange }) {
             .eq("type", "harian")
             .gte("date", firstOfMonthStr)
             .lte("date", todayStr),
+
+          // Ulang tahun (diri sendiri + temen sekelas) hari ini, buat
+          // BirthdayModal & ClassmateBirthdayBanner. 2 tahap (students ->
+          // student_profile_details), jadi dibungkus IIFE async sama kayak
+          // query piket di atas biar tetep jalan paralel di Promise.all.
+          // Fitur ini non-kritis (cuma "bonus"), jadi gagal query di sini
+          // GAK dimasukin ke errors[] / setDataError -- biar kalau
+          // gagal, dashboard utama tetep jalan normal, cuma ucapan
+          // ultahnya yang gak muncul (di-log ke console aja).
+          (async () => {
+            try {
+              const { data: classmates, error: classErr } = await supabase
+                .from("students")
+                .select("id, full_name")
+                .eq("class_id", student.homeroom_class_id)
+                .eq("is_active", true);
+              if (classErr) return { data: null, error: classErr };
+
+              const classmateIds = (classmates || []).map((c) => c.id);
+              if (classmateIds.length === 0) {
+                return { data: { classmates: [], details: [] }, error: null };
+              }
+
+              const { data: details, error: detailErr } = await supabase
+                .from("student_profile_details")
+                .select("student_id, tanggal_lahir")
+                .in("student_id", classmateIds);
+              if (detailErr) return { data: null, error: detailErr };
+
+              return { data: { classmates, details: details || [] }, error: null };
+            } catch (err) {
+              return { data: null, error: err };
+            }
+          })(),
         ]);
 
         // Kumpulin semua error query (kalau ada) biar keliatan di UI,
@@ -258,10 +311,53 @@ export default function StudentDashboard({ onPageChange }) {
           setDataError(`Gagal memuat data: ${errors.join(", ")}.`);
         }
 
+        // Fitur ulang tahun sengaja dipisah dari errors[] di atas (lihat
+        // catatan di query-nya) -- gagal di sini cuma di-log, gak nge-block
+        // dashboard utama.
+        if (birthdayErr) {
+          console.error("Gagal cek ulang tahun:", birthdayErr);
+        }
+
         setTodayStatus(myAtt?.status || null);
         setTodaySchedule(schedData || []);
         setPiketToday(piketData || []);
         setAnnouncements(annData || []);
+
+        // Cocokin tanggal_lahir (format "YYYY-MM-DD") ke bulan+tanggal hari
+        // ini, tahun diabaikan. Sengaja di-split manual dari string, BUKAN
+        // di-parse pake `new Date(tanggal_lahir)` -- date-only string kalau
+        // di-parse ke Date() bisa geser mundur 1 hari gara-gara di-anggep
+        // UTC lalu di-convert ke timezone lokal (WIB, UTC+7).
+        if (birthdayData?.details) {
+          const todayD = new Date();
+          const todayMonth = todayD.getMonth() + 1;
+          const todayDate = todayD.getDate();
+          const nameById = Object.fromEntries(
+            (birthdayData.classmates || []).map((c) => [c.id, c.full_name])
+          );
+
+          let myBirthday = false;
+          const others = [];
+          birthdayData.details.forEach((d) => {
+            if (!d.tanggal_lahir) return;
+            const parts = d.tanggal_lahir.split("-");
+            const bMonth = Number(parts[1]);
+            const bDate = Number(parts[2]);
+            if (bMonth !== todayMonth || bDate !== todayDate) return;
+
+            if (d.student_id === student.studentRecordId) {
+              myBirthday = true;
+            } else {
+              const name = nameById[d.student_id];
+              if (name) others.push({ id: d.student_id, name });
+            }
+          });
+          setIsMyBirthday(myBirthday);
+          setClassmatesBirthdayToday(others);
+        } else {
+          setIsMyBirthday(false);
+          setClassmatesBirthdayToday([]);
+        }
 
         // CATATAN: nilai kolom `status` yang berarti "hadir" itu string
         // "Hadir" (H besar) — samain persis kayak yang dipake di
@@ -393,6 +489,22 @@ export default function StudentDashboard({ onPageChange }) {
   return (
     <div className="space-y-4 lg:space-y-5">
       {" "}
+      {/* Modal ultah -- nge-block layar, muncul di atas semua konten
+          dashboard selama masih tanggal ultahnya (lihat catatan
+          birthdayModalOpen/classmateModalOpen di atas).
+          Prioritas ke modal diri sendiri kalau kebetulan hari itu ADA juga
+          temen sekelas lain yang bareng ultah -- biar gak numpuk 2 modal
+          sekaligus. Banner temen (di bawah, dekat greeting) TETEP muncul
+          di kedua kasus. */}
+      {isMyBirthday && birthdayModalOpen && (
+        <BirthdayModal name={student?.full_name} onClose={() => setBirthdayModalOpen(false)} />
+      )}
+      {!isMyBirthday && classmatesBirthdayToday.length > 0 && classmateModalOpen && (
+        <ClassmateBirthdayModal
+          names={classmatesBirthdayToday.map((c) => c.name)}
+          onClose={() => setClassmateModalOpen(false)}
+        />
+      )}
       {dataError && (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
           ⚠️ {dataError}
@@ -420,6 +532,15 @@ export default function StudentDashboard({ onPageChange }) {
           </div>
         </div>
       </section>
+      {/* ====== ULANG TAHUN (BANNER NEMPEL) ====== */}
+      {/* Non-blocking, nempel selama hari itu (gak ada dismiss-state yang
+          disimpen -- muncul lagi tiap reload selama masih tanggal
+          ultahnya). Prioritas sama kayak modal di atas: kalau dia sendiri
+          yang ultah, banner-nya banner ultah dia (bukan banner temen). */}
+      {isMyBirthday && <BirthdayBanner name={student?.full_name} />}
+      {!isMyBirthday && (
+        <ClassmateBirthdayBanner names={classmatesBirthdayToday.map((c) => c.name)} />
+      )}
       {/* ====== STATISTIK KEHADIRAN BULAN INI ====== */}
       <section>
         <div className="flex items-center gap-2 mb-2">

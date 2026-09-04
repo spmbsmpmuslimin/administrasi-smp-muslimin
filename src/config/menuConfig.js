@@ -106,7 +106,7 @@ export const menuConfig = [
   { path: "/classes", component: Classes },
   { path: "/students", component: Students },
   {
-    path: "/student-profile-completion",
+    path: "/data-induk-siswa",
     component: withPortalBackButton(DataSiswaInduk),
     allowedRoles: ["admin", "teacher", "guru_bk"],
     requireWaliKelas: false,

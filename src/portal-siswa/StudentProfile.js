@@ -190,7 +190,15 @@ export function ProfileInfo({ student, onUpdated }) {
     { label: "Username", value: `@${student?.username || "-"}` },
     { label: "NIS", value: student?.nis || "-" },
     { label: "NISN", value: student?.nisn || "-" },
-    { label: "Jenis Kelamin", value: student?.jenis_kelamin || "-" },
+    {
+      label: "Jenis Kelamin",
+      // Cuma diubah tampilannya (UPPERCASE) biar konsisten sama panel
+      // admin -- data asli di `student` (dari useStudentProfile.js)
+      // TETAP Title Case ("Perempuan"), gak diubah, karena field ini
+      // read-only doang di sini (gak pernah disimpen ulang ke DB dari
+      // form siswa, lihat handleSubmit di bawah).
+      value: student?.jenis_kelamin ? student.jenis_kelamin.toUpperCase() : "-",
+    },
     {
       label: "Kelas",
       value: student?.classes?.grade || student?.homeroom_class_id || "-",

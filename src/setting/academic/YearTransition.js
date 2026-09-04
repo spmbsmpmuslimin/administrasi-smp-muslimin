@@ -344,6 +344,24 @@ const YearTransition = ({
           .in("id", graduatingIds);
 
         if (graduateError) throw graduateError;
+
+        // Nonaktifin akun login siswa yang baru lulus juga -- alumni gak
+        // perlu lagi akses portal siswa. Sengaja gak throw kalau ini
+        // gagal (soft-fail): data kelulusan udah kesimpen bener di atas,
+        // jangan sampe seluruh transisi batal cuma gara-gara ini. Cukup
+        // dicatat & di-toast biar admin tau perlu cek manual belakangan.
+        const { error: graduateAuthError } = await supabase
+          .from("student_auth")
+          .update({ is_active: false })
+          .in("student_id", graduatingIds);
+
+        if (graduateAuthError) {
+          console.warn("Gagal nonaktifin akun student_auth siswa yang lulus:", graduateAuthError);
+          showToast(
+            "⚠️ Sebagian akun siswa yang lulus gagal dinonaktifkan otomatis, cek manual nanti.",
+            "error"
+          );
+        }
       }
 
       // STEP 4: Naikkan siswa (7→8, 8→9) dengan academic_year_id yang benar
@@ -365,27 +383,16 @@ const YearTransition = ({
 
         if (promoteError) throw promoteError;
 
-        // Sinkronin password default di student_auth biar ikut kelas baru
-        // juga (mis. siswa 7A -> 8A, password "kelas7a" jadi "kelas8a").
-        // Sengaja gak throw kalau ini gagal -- data inti (kelas siswa)
-        // udah kesimpen bener di atas, jadi jangan sampe seluruh proses
-        // transisi batal cuma gara-gara sync password. Cukup dicatat &
-        // di-toast biar admin tau perlu cek manual belakangan.
-        const { error: passwordSyncError } = await supabase
-          .from("student_auth")
-          .update({ password: `kelas${newClassId.toLowerCase()}` })
-          .in("student_id", studentIds);
-
-        if (passwordSyncError) {
-          console.warn(
-            `Gagal sync password student_auth untuk kelas ${newClassId}:`,
-            passwordSyncError
-          );
-          showToast(
-            `⚠️ Password akun untuk kelas ${newClassId} gagal disinkronkan otomatis, cek manual nanti.`,
-            "error"
-          );
-        }
+        // ⚠️ CATATAN (4 Sep 2026): dulu di sini ada sync password
+        // student_auth ke format lama per-kelas ("kelas7a" -> "kelas8a").
+        // SENGAJA DIHAPUS -- sejak skema password unik-per-NIS berjalan
+        // (lihat StudentManagement.js/AkunSiswaTab.js), password gak lagi
+        // terikat nama kelas sama sekali, jadi siswa naik kelas TIDAK
+        // PERLU sync password apapun. Kalau blok ini dikembalikan lagi,
+        // itu bakal nge-overwrite password unik siswa balik ke skema
+        // lama tiap tahun ajaran -- itu persis bug yang bikin kasus
+        // "Azka" kemarin, dan bakal kejadian lagi ke SEMUA siswa yang
+        // naik kelas kalau blok ini hidup lagi.
       }
 
       // STEP 5: Masukkan siswa baru dari SPMB
