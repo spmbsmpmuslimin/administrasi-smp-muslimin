@@ -67,6 +67,14 @@ const Dashboard = ({ user }) => {
       return <AdminDashboard user={memoizedUser} darkMode={darkMode} />;
     }
 
+    // 1b. TU (TATA USAHA) - ✅ BARU DITAMBAHKAN
+    // Role di database sengaja tetap "tu" (bukan "admin") supaya staf TU
+    // tetap kehitung sebagai bagian dari "Data Guru & Staff", tapi dari
+    // sisi akses dashboard & sidebar diperlakukan PERSIS sama kayak Admin.
+    if (userRole === "tu") {
+      return <AdminDashboard user={memoizedUser} darkMode={darkMode} />;
+    }
+
     // 2. GURU BK/BP - ✅ BARU DITAMBAHKAN
     if (userRole === "guru_bk") {
       return <GuruBKDashboard user={memoizedUser} darkMode={darkMode} />;
@@ -248,7 +256,7 @@ const UnknownRoleView = ({ user, darkMode, setDarkMode }) => (
               Hubungi administrator sistem untuk menyesuaikan role dashboard
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              Role yang didukung: admin, teacher, guru_bk, petugas_perpus
+              Role yang didukung: admin, tu, teacher, guru_bk, petugas_perpus
             </p>
           </div>
         </div>

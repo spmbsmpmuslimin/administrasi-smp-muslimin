@@ -43,11 +43,12 @@ ruang_belajar : id,title,category,description,content,resource_type,thumbnail,ur
 saran_masukan : id,student_id,class_id,message,status,created_at
 school_settings : id,setting_key,setting_value,created_at,updated_at
 seating_charts : id,class_id,academic_year,semester,rows,cols,seats_per_desk,layout,updated_at
-siswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos
+siswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos,skor_akademik,kategori_baca_latin,kategori_mengaji
 spmb_settings : id,target_academic_year,is_active,registration_start_date,registration_end_date,created_at,updated_at
 student_auth : id,student_id,username,password,is_active,last_login,created_at,updated_at
 student_development_notes : id,student_id,teacher_id,class_id,academic_year,semester,category,label,note_content,action_taken,created_at,updated_at,academic_year_id
 student_devices : id,student_id,device_id,brand,model,platform,browser,last_login_at,created_at
+student_mutations : id,student_id,type,mutation_date,sekolah_asal,sekolah_tujuan,keterangan,created_by,created_at,class_id
 student_profile_details : student_id,alamat,no_hp,nama_ortu,no_hp_ortu,sekolah_asal,updated_at,jenis_kelamin,tempat_lahir,tanggal_lahir,nisn,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,agama,no_kk,nik,no_akta_lahir,no_ijazah,no_peserta_ujian,dusun,kode_pos,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,anak_ke,keterangan,no_daftar,verified_at
 student_report_grades : id,report_id,subject,score,created_at
 student_reports : id,student_id,student_name,student_nis,class_name,academic_year,semester,attendance,homeroom_note,extracurricular,status,source_file,created_by,created_at,updated_at

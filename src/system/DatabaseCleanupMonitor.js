@@ -31,15 +31,28 @@ const DatabaseCleanupMonitor = () => {
       // ada tabel baru ditambahkan ke database, totalnya otomatis ikut update
       // tanpa perlu edit array ini.
       const tables = [
+        // Transaksional / harian — paling cepat gede karena nambah tiap hari
+        "attendances", // presensi harian siswa
+        "teacher_attendance", // presensi harian guru
+        "jurnal_harian", // jurnal mengajar per jam pelajaran
+        "grades", // nilai per assignment/ulangan
+        "grades_katrol", // hasil kalkulasi nilai katrol per siswa
+        "notifications", // notifikasi sistem ke user
+        "audit_logs", // log aktivitas semua user
+        "system_health_logs", // log health check (target auto-cleanup)
+
+        // Master data yang terus nambah tiap tahun ajaran
         "students",
-        "attendances",
-        "grades",
-        "student_development_notes",
         "siswa_baru",
         "konseling",
+        "student_development_notes",
+        "nilai_eraport",
+        "teacher_assignments",
+        "announcement_reads",
+        "peminjaman", // transaksi peminjaman buku perpustakaan
+        "student_auth",
+
         "users",
-        "system_health_logs",
-        "teacher_schedules",
       ];
 
       const tableStats = {};
@@ -76,7 +89,7 @@ const DatabaseCleanupMonitor = () => {
             estimatedSizeMB,
             "MB /",
             totalRecords,
-            "rows",
+            "rows"
           );
         } else {
           throw new Error("RPC function not available");
@@ -85,13 +98,8 @@ const DatabaseCleanupMonitor = () => {
         // Fallback ke estimasi dari 9 tabel yang di-track manual di atas
         // (kurang akurat karena tidak mencakup semua tabel, tapi lebih baik
         // daripada tidak ada angka sama sekali kalau RPC belum ter-deploy)
-        console.warn(
-          "⚠️ RPC function not available, using estimation from tracked tables only",
-        );
-        totalRecords = Object.values(tableStats).reduce(
-          (sum, count) => sum + count,
-          0,
-        );
+        console.warn("⚠️ RPC function not available, using estimation from tracked tables only");
+        totalRecords = Object.values(tableStats).reduce((sum, count) => sum + count, 0);
         estimatedSizeMB = totalRecords * 0.00433;
         percentUsed = ((estimatedSizeMB / 500) * 100).toFixed(1);
         isRealSize = false;
@@ -163,11 +171,7 @@ const DatabaseCleanupMonitor = () => {
 
   // Run manual cleanup
   const runManualCleanup = async () => {
-    if (
-      !window.confirm(
-        "Yakin mau jalankan cleanup? Data lama akan dihapus permanent!",
-      )
-    ) {
+    if (!window.confirm("Yakin mau jalankan cleanup? Data lama akan dihapus permanent!")) {
       return;
     }
 
@@ -176,15 +180,11 @@ const DatabaseCleanupMonitor = () => {
 
     try {
       // Cleanup health logs
-      const healthResult = await cleanupHealthLogs(
-        autoCleanup.healthLogsRetention,
-      );
+      const healthResult = await cleanupHealthLogs(autoCleanup.healthLogsRetention);
       results.push(healthResult);
 
       // Cleanup attendances
-      const attendanceResult = await cleanupOldAttendances(
-        autoCleanup.attendanceRetention,
-      );
+      const attendanceResult = await cleanupOldAttendances(autoCleanup.attendanceRetention);
       results.push(attendanceResult);
 
       // Save to history
@@ -230,8 +230,7 @@ const DatabaseCleanupMonitor = () => {
   }, []);
 
   const getStatusColor = (percent) => {
-    if (percent < 50)
-      return "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30";
+    if (percent < 50) return "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30";
     if (percent < 80)
       return "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30";
     return "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30";
@@ -289,7 +288,8 @@ const DatabaseCleanupMonitor = () => {
             transition-colors
             min-h-[44px]
             font-medium text-sm
-          ">
+          "
+        >
           <Play className="w-4 h-4 sm:w-5 sm:h-5" />
           {loading ? "Running..." : "Run Cleanup"}
         </button>
@@ -300,9 +300,7 @@ const DatabaseCleanupMonitor = () => {
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md dark:shadow-none border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                Total Records
-              </p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Records</p>
               <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1 truncate">
                 {stats.totalRecords?.toLocaleString() || 0}
               </p>
@@ -342,13 +340,12 @@ const DatabaseCleanupMonitor = () => {
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md dark:shadow-none border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                Storage Used
-              </p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Storage Used</p>
               <p
                 className={`text-xl sm:text-2xl md:text-3xl font-bold mt-1 truncate ${
                   getStatusColor(stats.percentUsed).split(" ")[0]
-                }`}>
+                }`}
+              >
                 {stats.percentUsed || 0}%
               </p>
             </div>
@@ -363,9 +360,7 @@ const DatabaseCleanupMonitor = () => {
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md dark:shadow-none border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="min-w-0">
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                Free Tier Limit
-              </p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Free Tier Limit</p>
               <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mt-1 truncate">
                 500 MB
               </p>
@@ -396,7 +391,8 @@ const DatabaseCleanupMonitor = () => {
             }`}
             style={{
               width: `${Math.min(stats.percentUsed || 0, 100)}%`,
-            }}></div>
+            }}
+          ></div>
         </div>
       </div>
 
@@ -407,18 +403,21 @@ const DatabaseCleanupMonitor = () => {
           Records Per Table
         </h3>
         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Object.entries(stats.tables || {}).map(([table, count]) => (
-            <div
-              key={table}
-              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
-                {table}
-              </span>
-              <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 ml-2">
-                {count.toLocaleString()}
-              </span>
-            </div>
-          ))}
+          {Object.entries(stats.tables || {})
+            .sort(([, countA], [, countB]) => countB - countA)
+            .map(([table, count]) => (
+              <div
+                key={table}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                  {table}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 ml-2">
+                  {count.toLocaleString()}
+                </span>
+              </div>
+            ))}
         </div>
       </div>
 
@@ -529,7 +528,8 @@ const DatabaseCleanupMonitor = () => {
                   return (
                     <tr
                       key={idx}
-                      className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                      className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
                       <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                         {new Date(item.timestamp).toLocaleDateString("id-ID")}
                         <br className="sm:hidden" />
@@ -544,14 +544,10 @@ const DatabaseCleanupMonitor = () => {
                       </td>
                       <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         {results.length === 0 ? (
-                          <span className="text-gray-400 dark:text-gray-500">
-                            No results
-                          </span>
+                          <span className="text-gray-400 dark:text-gray-500">No results</span>
                         ) : (
                           results.map((r, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                            <div key={i} className="flex items-center gap-1.5 sm:gap-2 mb-1">
                               {r.success ? (
                                 <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 dark:text-green-400" />
                               ) : (
@@ -582,16 +578,13 @@ const DatabaseCleanupMonitor = () => {
               Recommendations:
             </h4>
             <ul className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
-              <li>
-                Jalankan cleanup manual setiap minggu atau setup auto-cleanup
-              </li>
+              <li>Jalankan cleanup manual setiap minggu atau setup auto-cleanup</li>
               <li>Keep health logs max 7-14 hari (cukup untuk debugging)</li>
               <li>Keep attendances 2-3 tahun (untuk keperluan historis)</li>
               <li>Backup data ke Excel sebelum cleanup permanent</li>
               {parseFloat(stats.percentUsed) > 60 && (
                 <li className="text-red-600 dark:text-red-400 font-semibold">
-                  ⚠️ Storage usage tinggi! Consider upgrade atau aggressive
-                  cleanup
+                  ⚠️ Storage usage tinggi! Consider upgrade atau aggressive cleanup
                 </li>
               )}
             </ul>

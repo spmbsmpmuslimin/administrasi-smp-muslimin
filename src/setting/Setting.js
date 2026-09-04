@@ -259,34 +259,22 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
     window.history.replaceState(null, "", `/setting?tab=${tabId}`);
   };
 
-  // Menu cards configuration - URUTAN BARU: Profile, Active Users, Feedback Guru di baris 1
+  // Menu cards configuration - URUTAN sesuai frekuensi pemakaian sehari-hari
+  // (Sep 2026): Manajemen Data Sekolah, Tahun Ajaran, Jadwal Pelajaran,
+  // Nilai Raport, Portal Siswa, Profile, Active User, Manajemen User,
+  // Manajemen System, Manajemen E-Raport, Maintenance, Feedback Guru & Siswa.
+  // NOTE: cuma "title" & urutan array yang berubah -- "id" tetap sama
+  // persis, jadi routing (?tab=id) & switch-case di renderActiveTab() gak
+  // kepengaruh sama sekali.
   const menuCards = [
-    // BARIS 1: Profile - Active Users - Feedback Guru
     {
-      id: "profile",
-      title: "Profile",
-      description: "Kelola informasi profil pribadi Anda",
-      icon: User,
-      color: "sky",
-      available: true,
+      id: "school",
+      title: "Manajemen Data Sekolah",
+      description: "Kelola data siswa, kelas, penugasan guru, dan pengaturan umum sekolah",
+      icon: School,
+      color: "emerald",
+      available: user?.role === "admin" || user?.role === "guru_bk",
     },
-    {
-      id: "active-users",
-      title: "Active Users",
-      description: "Pantau aktivitas login dan engagement guru",
-      icon: UserCheck,
-      color: "teal",
-      available: user?.role === "admin",
-    },
-    {
-      id: "feedback-guru",
-      title: "Feedback Guru & Siswa",
-      description: "Kelola masukan, saran, dan laporan bug dari guru & siswa",
-      icon: MessageSquare,
-      color: "violet",
-      available: user?.role === "admin",
-    },
-    // BARIS 2: Manajemen Tahun Ajaran - Manajemen Sekolah - Penugasan Guru
     {
       id: "academic",
       title: "Manajemen Tahun Ajaran",
@@ -296,22 +284,45 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       available: user?.role === "admin",
     },
     {
-      id: "school",
-      title: "Manajemen Sekolah",
-      description: "Kelola data siswa, kelas, penugasan guru, dan pengaturan umum sekolah",
-      icon: School,
-      color: "emerald",
-      available: user?.role === "admin" || user?.role === "guru_bk",
-    },
-    {
       id: "jadwal-guru",
-      title: "Kelola Jadwal Pelajaran",
+      title: "Manajemen Jadwal Pelajaran",
       description: "Import jadwal massal & master kode guru",
       icon: CalendarClock,
       color: "amber",
       available: user?.role === "admin",
     },
-    // BARIS 3: User Management - Settings - System
+    {
+      id: "kelola-raport",
+      title: "Manajemen Nilai Raport",
+      description: "Import nilai raport dari PDF & kelola raport digital siswa",
+      icon: FileSpreadsheet,
+      color: "teal",
+      available: user?.role === "admin",
+    },
+    {
+      id: "portal-siswa",
+      title: "Manajemen Portal Siswa",
+      description: "Kelola akun, password, dan akses login portal siswa",
+      icon: UserPlus,
+      color: "rose",
+      available: user?.role === "admin",
+    },
+    {
+      id: "profile",
+      title: "Manajemen Profile",
+      description: "Kelola informasi profil pribadi Anda",
+      icon: User,
+      color: "sky",
+      available: true,
+    },
+    {
+      id: "active-users",
+      title: "Manajemen Aktive User",
+      description: "Pantau aktivitas login dan engagement guru",
+      icon: UserCheck,
+      color: "teal",
+      available: user?.role === "admin",
+    },
     {
       id: "user-management",
       title: "Manajemen User",
@@ -328,29 +339,12 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       color: "slate",
       available: user?.role === "admin",
     },
-    // BARIS 4: Raport - Maintenance
     {
       id: "raport",
-      title: "Konfigurasi E-Raport",
+      title: "Manajemen E-Raport",
       description: "Setup template dan format raport",
       icon: FileBarChart,
       color: "cyan",
-      available: user?.role === "admin",
-    },
-    {
-      id: "kelola-raport",
-      title: "Kelola Nilai Raport",
-      description: "Import nilai raport dari PDF & kelola raport digital siswa",
-      icon: FileSpreadsheet,
-      color: "teal",
-      available: user?.role === "admin",
-    },
-    {
-      id: "portal-siswa",
-      title: "Portal Siswa",
-      description: "Kelola akun, password, dan akses login portal siswa",
-      icon: UserPlus,
-      color: "rose",
       available: user?.role === "admin",
     },
     {
@@ -359,6 +353,14 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Mode pemeliharaan dan backup",
       icon: Wrench,
       color: "red",
+      available: user?.role === "admin",
+    },
+    {
+      id: "feedback-guru",
+      title: "Feedback Guru & Siswa",
+      description: "Kelola masukan, saran, dan laporan bug dari guru & siswa",
+      icon: MessageSquare,
+      color: "violet",
       available: user?.role === "admin",
     },
   ];

@@ -2,7 +2,7 @@
 // Single source of truth untuk struktur menu di Sidebar.js
 //
 // ctx yang dikirim ke setiap show()/label()/page() function:
-// { isAdmin, isTeacher, isGuruBK, isWaliKelas, userRole, eraportActive }
+// { isAdmin, isTeacher, isGuruBK, isTU, isWaliKelas, userRole, eraportActive }
 //
 // Tiap item:
 //   page            : string, ATAU function(ctx) => string (buat target dinamis)
@@ -62,7 +62,7 @@ export const sidebarGroups = [
         // gak pernah nyampe kesitu walau route-nya (menuConfig.js) udah
         // allowedRoles admin/teacher/guru_bk. Sekarang dikasih entry
         // langsung di sidebar, tapi dibatasi cuma buat Admin.
-        show: (ctx) => ctx.isAdmin,
+        show: (ctx) => ctx.isAdmin || ctx.isTU,
       },
     ],
   },
@@ -73,9 +73,9 @@ export const sidebarGroups = [
     items: [
       {
         page: "attendance-teacher",
-        label: (ctx) => (ctx.isAdmin ? "Monitor Presensi Guru" : "Presensi Guru"),
+        label: (ctx) => (ctx.isAdmin || ctx.isTU ? "Monitor Presensi Guru" : "Presensi Guru"),
         icon: ["M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"],
-        show: (ctx) => ctx.isAdmin || ctx.isTeacher || ctx.isGuruBK,
+        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isTeacher || ctx.isGuruBK,
       },
       {
         page: "attendance",
@@ -91,7 +91,7 @@ export const sidebarGroups = [
         icon: [
           "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
         ],
-        show: (ctx) => ctx.isAdmin || ctx.isGuruBK,
+        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isGuruBK,
       },
       {
         page: "nilai-siswa",
@@ -99,7 +99,7 @@ export const sidebarGroups = [
         icon: [
           "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
         ],
-        show: (ctx) => ctx.isAdmin || ctx.isTeacher || ctx.isGuruBK,
+        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isTeacher || ctx.isGuruBK,
       },
       {
         page: "jadwal-saya",
@@ -107,7 +107,10 @@ export const sidebarGroups = [
         icon: [
           "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
         ],
-        show: (ctx) => ctx.isTeacher || ctx.isGuruBK || ctx.userRole === "homeroom",
+        // ✅ FIX: Guru BK/BP dihilangkan dari menu ini -- Guru BK gak
+        // punya jam mengajar reguler kayak guru mapel/wali kelas, jadi
+        // menu "Jadwal Mengajar" gak relevan buat role ini.
+        show: (ctx) => ctx.isTeacher || ctx.userRole === "homeroom",
       },
       {
         page: "jurnal-harian",
@@ -115,7 +118,9 @@ export const sidebarGroups = [
         icon: [
           "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
         ],
-        show: (ctx) => ctx.isTeacher || ctx.isGuruBK,
+        // ✅ FIX: Guru BK/BP dihilangkan dari menu ini -- jurnal mengajar
+        // harian cuma relevan buat guru yang punya jam KBM reguler.
+        show: (ctx) => ctx.isTeacher,
       },
       {
         page: "portal-siswa-guru",
@@ -146,7 +151,7 @@ export const sidebarGroups = [
         icon: [
           "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
         ],
-        show: (ctx) => ctx.isAdmin || ctx.isWaliKelas || ctx.isTeacher || ctx.isGuruBK,
+        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isWaliKelas || ctx.isTeacher || ctx.isGuruBK,
       },
     ],
   },
@@ -156,8 +161,8 @@ export const sidebarGroups = [
     title: "E-RAPORT",
     // ⚠️ Perilaku asli: seluruh grup E-RAPORT disembunyikan dari Admin di sidebar
     // (walaupun Admin tetap punya akses route era-dashboard-admin dkk via App.js).
-    // Gue pertahankan persis seperti behavior lama.
-    show: (ctx) => ctx.eraportActive && !ctx.isAdmin,
+    // TU disamain kayak Admin -> ikut disembunyikan juga.
+    show: (ctx) => ctx.eraportActive && !ctx.isAdmin && !ctx.isTU,
     items: [
       {
         // Target dinamis tergantung role yang login
@@ -278,7 +283,7 @@ export const sidebarGroups = [
   {
     id: "sistem",
     title: "SISTEM",
-    show: (ctx) => ctx.userRole === "admin",
+    show: (ctx) => ctx.isAdmin || ctx.isTU,
     items: [
       {
         page: "spmb",
