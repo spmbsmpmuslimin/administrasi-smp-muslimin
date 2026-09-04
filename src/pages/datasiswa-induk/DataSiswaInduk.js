@@ -38,8 +38,6 @@ import {
   Pencil,
   Loader2,
   ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { exportStudentProfilePDF } from "./DataSiswaIndukPDF";
 import { exportStudentProfileExcel } from "./DataSiswaIndukExcel";
@@ -341,6 +339,8 @@ export default function KelengkapanDataSiswa({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [mutationHistory, setMutationHistory] = useState([]);
+  const [mutationHistoryLoading, setMutationHistoryLoading] = useState(false);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // all | lengkap | sebagian | belum
@@ -745,40 +745,37 @@ export default function KelengkapanDataSiswa({ currentUser }) {
     setActivePageTab(isAdmin ? "isi" : "preview");
   };
 
-  // ===== NAVIGASI ANAK PANAH (Sebelumnya / Berikutnya) =====
-  // Posisi siswa yang lagi dibuka di dalam `filteredRows` (list HASIL
-  // FILTER/SEARCH yang lagi aktif, bukan cuma yang ke-render/paginatedRows)
-  // -- biar panah kiri-kanan konsisten sama urutan yang keliatan TU pas
-  // terakhir di tab "Data Siswa" (misal lagi difilter 1 kelas doang).
-  const currentStudentIndex = useMemo(() => {
-    if (!selectedStudent) return -1;
-    return filteredRows.findIndex((r) => r.id === selectedStudent.id);
-  }, [filteredRows, selectedStudent]);
-
-  const hasPrevStudent = currentStudentIndex > 0;
-  const hasNextStudent = currentStudentIndex >= 0 && currentStudentIndex < filteredRows.length - 1;
-
-  // direction: -1 = sebelumnya, +1 = berikutnya. Sengaja TIDAK manggil
-  // openStudent() biar activePageTab ("isi" / "preview") gak ke-reset --
-  // TU yang lagi di tab Preview pindah siswa ya tetep di Preview, yang lagi
-  // di tab Isi Data ya tetep di Isi Data (form-nya otomatis kereset ke
-  // data siswa baru lewat emptyAdminForm).
-  const goToAdjacentStudent = (direction) => {
-    if (currentStudentIndex === -1) return;
-    if (!confirmDiscardIfDirty()) return;
-    const nextIndex = currentStudentIndex + direction;
-    if (nextIndex < 0 || nextIndex >= filteredRows.length) return;
-    const nextStudent = filteredRows[nextIndex];
-    setSelectedStudent(nextStudent);
-    setAdminForm(emptyAdminForm(nextStudent.detail));
-    setAdminEditError(null);
-    setAdminFormDirty(false);
-    setSaveSuccessVisible(false);
-    // Jaga-jaga: kalau TU geser ke siswa yang posisinya di luar halaman
-    // yang lagi ke-render di list (visibleCount), lebarin dulu biar pas
-    // balik ke tab "Data Siswa" siswa itu udah keliatan di list juga.
-    setVisibleCount((v) => Math.max(v, nextIndex + 1));
-  };
+  // Riwayat mutasi (masuk/keluar) siswa yang lagi dibuka -- cuma info,
+  // gak bisa diedit dari sini. Reset dulu tiap ganti siswa biar gak
+  // sempet numpuk data siswa sebelumnya pas fetch masih jalan.
+  useEffect(() => {
+    if (!selectedStudent?.id) {
+      setMutationHistory([]);
+      return;
+    }
+    let cancelled = false;
+    setMutationHistory([]);
+    setMutationHistoryLoading(true);
+    supabase
+      .from("student_mutations")
+      .select("*")
+      .eq("student_id", selectedStudent.id)
+      .order("mutation_date", { ascending: false })
+      .then(({ data, error: fetchError }) => {
+        if (cancelled) return;
+        if (fetchError) {
+          console.error("Error fetching student_mutations:", fetchError);
+          return;
+        }
+        setMutationHistory(data || []);
+      })
+      .finally(() => {
+        if (!cancelled) setMutationHistoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStudent?.id]);
 
   // ===== Deep-link dari halaman "Data Siswa" (?student=<id>) =====
   // Begitu `rows` selesai kemuat, cek apakah halaman ini dibuka lewat link
@@ -896,7 +893,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                 disabled={disabled}
                 onClick={() => goToTab(tab.key)}
                 title={disabled ? "Pilih siswa dulu dari tab Data Siswa" : undefined}
-                className={`shrink-0 px-4 py-2.5 text-base sm:text-lg font-bold border-b-2 -mb-px transition ${
+                className={`shrink-0 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition ${
                   active
                     ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
                     : disabled
@@ -1307,36 +1304,6 @@ export default function KelengkapanDataSiswa({ currentUser }) {
               </div>
             </div>
             <div className="shrink-0 flex flex-wrap items-center gap-2">
-              {/* ====== NAVIGASI SEBELUMNYA / BERIKUTNYA ====== */}
-              {/* Geser ke siswa sebelum/sesudahnya di daftar hasil filter
-                  yang lagi aktif, tanpa harus balik dulu ke tab "Data
-                  Siswa". Disable otomatis kalau udah di ujung list
-                  (siswa pertama/terakhir hasil filter). */}
-              {currentStudentIndex !== -1 && (
-                <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-                  <button
-                    type="button"
-                    onClick={() => goToAdjacentStudent(-1)}
-                    disabled={!hasPrevStudent}
-                    title="Siswa sebelumnya"
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 px-1 whitespace-nowrap tabular-nums">
-                    {currentStudentIndex + 1} / {filteredRows.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => goToAdjacentStudent(1)}
-                    disabled={!hasNextStudent}
-                    title="Siswa berikutnya"
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 disabled:opacity-30 disabled:hover:bg-transparent transition"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              )}
               <button
                 onClick={goToDataSiswa}
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-3 py-2 rounded-lg transition"
@@ -1355,6 +1322,59 @@ export default function KelengkapanDataSiswa({ currentUser }) {
           </div>
         </div>
       )}
+
+      {/* Riwayat mutasi (masuk/keluar) -- cuma nongol kalau siswa ini
+          emang punya catatan mutasi. Siswa reguler yang gak pernah
+          keluar/pindah gak bakal liat card ini sama sekali. */}
+      {selectedStudent &&
+        (activePageTab === "isi" || activePageTab === "preview") &&
+        (mutationHistoryLoading || mutationHistory.length > 0) && (
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-md p-4 border border-slate-100 dark:border-slate-700 mb-4">
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+              Riwayat Mutasi
+            </p>
+            {mutationHistoryLoading ? (
+              <p className="text-sm text-slate-400 dark:text-slate-500">Memuat...</p>
+            ) : (
+              <div className="space-y-2">
+                {mutationHistory.map((m) => (
+                  <div
+                    key={m.id}
+                    className="flex items-start gap-2 text-sm p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700/40"
+                  >
+                    <span
+                      className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        m.type === "masuk"
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                          : "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+                      }`}
+                    >
+                      {m.type === "masuk" ? "Masuk" : "Keluar"}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-slate-700 dark:text-slate-200">
+                        {m.mutation_date
+                          ? new Date(m.mutation_date).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            })
+                          : "-"}
+                        {m.type === "masuk" && m.sekolah_asal && <> · dari {m.sekolah_asal}</>}
+                        {m.type === "keluar" && m.sekolah_tujuan && <> · ke {m.sekolah_tujuan}</>}
+                      </p>
+                      {m.keterangan && (
+                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                          {m.keterangan}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
       {/* ====== TAB "ISI DATA" (admin only) ====== */}
       {activePageTab === "isi" && selectedStudent && isAdmin && (
@@ -1512,10 +1532,10 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                   { label: "Nama", value: selectedStudent.full_name },
                   { label: "NIS", value: selectedStudent.nis },
                   { label: "Kelas", value: selectedStudent.class_id },
-                  // "Status Kelengkapan" SENGAJA gak dimasukin lagi ke sini --
-                  // udah keliatan jelas di badge (STATUS_META) pada header
-                  // "Siswa Terpilih" di atas tabel ini, jadi baris ini dobel
-                  // & gak perlu.
+                  {
+                    label: "Status Kelengkapan",
+                    value: STATUS_META[selectedStudent.status]?.label,
+                  },
                   ...DETAIL_ROWS.map(({ key, label, combine }) => ({
                     label,
                     value: getDetailRowValue(adminForm, { key, combine }),

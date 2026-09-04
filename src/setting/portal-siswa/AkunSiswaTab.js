@@ -34,6 +34,8 @@ import {
   Copy,
   KeyRound,
   Ban,
+  Pencil,
+  Save,
 } from "lucide-react";
 
 // URL portal siswa yang dicantumin di PDF akun login buat orang tua/wali
@@ -127,6 +129,15 @@ export default function AkunSiswaTab({ showToast }) {
   const [togglingId, setTogglingId] = useState(null);
   const [revealedIds, setRevealedIds] = useState(() => new Set());
 
+  // ✅ State buat fitur edit password manual (ketik sendiri, bukan
+  // digenerate acak). `editingId` = student.id yang barisnya lagi mode
+  // edit (cuma boleh 1 pada satu waktu), `editValue` = isi input yang lagi
+  // diketik. Dipisah dari `resettingId` karena "Reset" (acak) & "Edit"
+  // (manual) ini dua aksi beda meski sama-sama ubah kolom password.
+  const [editingId, setEditingId] = useState(null);
+  const [editValue, setEditValue] = useState("");
+  const [savingEditId, setSavingEditId] = useState(null);
+
   // Daftar kelas diambil dari class_id unik yang ada di tabel `students`
   // (bukan hardcode) — jadi kelas baru otomatis muncul begitu siswanya
   // ke-import, gak perlu edit kode di sini.
@@ -204,6 +215,11 @@ export default function AkunSiswaTab({ showToast }) {
       return;
     }
     setLoadingList(true);
+    // Batalin mode edit password yang lagi jalan (kalau ada) -- daftar
+    // siswa mau diganti, jadi baris yang lagi diedit bisa aja ilang dari
+    // tampilan (ganti kelas/refresh).
+    setEditingId(null);
+    setEditValue("");
     try {
       let query = supabase
         .from("students")
@@ -672,6 +688,56 @@ export default function AkunSiswaTab({ showToast }) {
     }
   };
 
+  // ==== Edit Password Manual (ketik sendiri) ====
+  // Beda sama Reset (generate acak) -- ini buat admin yang mau nentuin
+  // sendiri isi passwordnya, bebas apa aja asal gak kosong. Dipake misalnya
+  // pas mau nyamain manual ke pola tertentu, atau permintaan khusus dari
+  // ortu/wali.
+  const handleStartEdit = (student) => {
+    setEditingId(student.id);
+    setEditValue(student.password || "");
+    // Password langsung kebuka begitu mode edit aktif -- gak ada gunanya
+    // ngetik password baru sambil isinya masih ke-mask.
+    setRevealedIds((prev) => new Set(prev).add(student.id));
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditValue("");
+  };
+
+  const handleSaveEdit = async (student) => {
+    const trimmed = editValue.trim();
+    if (!trimmed) {
+      showToast && showToast("Password gak boleh kosong.", "error");
+      return;
+    }
+    // Gak ada perubahan -- gak perlu nembak request ke DB, langsung keluar
+    // dari mode edit aja.
+    if (trimmed === student.password) {
+      handleCancelEdit();
+      return;
+    }
+    setSavingEditId(student.id);
+    try {
+      const { error } = await supabase
+        .from("student_auth")
+        .update({ password: trimmed })
+        .eq("student_id", student.id);
+      if (error) throw error;
+
+      showToast && showToast(`Password ${student.full_name} berhasil diubah.`, "success");
+      setEditingId(null);
+      setEditValue("");
+      await loadStudents();
+    } catch (err) {
+      console.error("[AkunSiswaTab] Gagal ubah password manual:", err);
+      showToast && showToast("Gagal ubah password. Cek console buat detail error.", "error");
+    } finally {
+      setSavingEditId(null);
+    }
+  };
+
   // ==== Reset Password Semua Siswa di Kelas Ini ====
   // Buat kebutuhan kayak awal tahun ajaran -- mau nyeragamin semua akun di
   // 1 kelas ke format password unik yang baru sekaligus, tanpa reset 1-1.
@@ -1028,6 +1094,8 @@ export default function AkunSiswaTab({ showToast }) {
             {students.map((s) => {
               const isRevealed = revealedIds.has(s.id);
               const isInactive = s.hasAccount && s.isActive === false;
+              const isEditing = editingId === s.id;
+              const isSavingEdit = savingEditId === s.id;
 
               return (
                 <div
@@ -1036,7 +1104,7 @@ export default function AkunSiswaTab({ showToast }) {
                     isInactive ? "bg-gray-50/80 dark:bg-gray-900/30" : ""
                   }`}
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-800 dark:text-gray-100 truncate">
                       {s.full_name}
                       {isInactive && (
@@ -1045,76 +1113,133 @@ export default function AkunSiswaTab({ showToast }) {
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 flex-wrap">
-                      <span>NIS: {s.nis || <span className="text-rose-500">Kosong</span>}</span>
-                      {s.hasAccount && (
-                        <>
-                          <span>•</span>
-                          <span>
-                            Password:{" "}
-                            <span className="font-mono">
-                              {isRevealed ? s.password || "-" : "••••••"}
+                    {isEditing ? (
+                      // Mode edit: password diganti input teks bebas ketik
+                      // (bukan lagi cuma teks tampilan). Enter = simpan,
+                      // Esc = batal, biar cepet buat yang biasa pake keyboard.
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+                          NIS: {s.nis || "-"} •
+                        </span>
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveEdit(s);
+                            if (e.key === "Escape") handleCancelEdit();
+                          }}
+                          autoFocus
+                          disabled={isSavingEdit}
+                          placeholder="Ketik password baru..."
+                          className="min-w-0 flex-1 px-2 py-1 rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-gray-800 text-xs font-mono text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 flex-wrap">
+                        <span>NIS: {s.nis || <span className="text-rose-500">Kosong</span>}</span>
+                        {s.hasAccount && (
+                          <>
+                            <span>•</span>
+                            <span>
+                              Password:{" "}
+                              <span className="font-mono">
+                                {isRevealed ? s.password || "-" : "••••••"}
+                              </span>
                             </span>
-                          </span>
-                        </>
-                      )}
-                    </p>
+                          </>
+                        )}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
                     {s.hasAccount ? (
-                      <>
-                        <button
-                          onClick={() => toggleReveal(s.id)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                          title={isRevealed ? "Sembunyikan password" : "Lihat password"}
-                        >
-                          {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                        {isRevealed && (
+                      isEditing ? (
+                        <>
                           <button
-                            onClick={() => copyPassword(s.password)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                            title="Salin password"
+                            onClick={() => handleSaveEdit(s)}
+                            disabled={isSavingEdit}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Simpan password baru"
                           >
-                            <Copy size={14} />
+                            {isSavingEdit ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <Save size={13} />
+                            )}
+                            Simpan
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleResetPassword(s)}
-                          disabled={resettingId === s.id || !s.nis}
-                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Reset password siswa ini"
-                        >
-                          {resettingId === s.id ? (
-                            <Loader2 size={13} className="animate-spin" />
-                          ) : (
-                            <KeyRound size={13} />
+                          <button
+                            onClick={handleCancelEdit}
+                            disabled={isSavingEdit}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition disabled:opacity-50"
+                            title="Batal"
+                          >
+                            <X size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => toggleReveal(s.id)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            title={isRevealed ? "Sembunyikan password" : "Lihat password"}
+                          >
+                            {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          {isRevealed && (
+                            <button
+                              onClick={() => copyPassword(s.password)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                              title="Salin password"
+                            >
+                              <Copy size={14} />
+                            </button>
                           )}
-                          Reset
-                        </button>
-                        <button
-                          onClick={() => handleToggleActive(s)}
-                          disabled={togglingId === s.id}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isInactive
-                              ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                              : "text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20"
-                          }`}
-                          title={
-                            isInactive ? "Aktifkan akun" : "Nonaktifkan akun (siswa lulus/pindah)"
-                          }
-                        >
-                          {togglingId === s.id ? (
-                            <Loader2 size={13} className="animate-spin" />
-                          ) : isInactive ? (
-                            <CheckCircle2 size={13} />
-                          ) : (
-                            <Ban size={13} />
-                          )}
-                          {isInactive ? "Aktifkan" : "Nonaktifkan"}
-                        </button>
-                      </>
+                          <button
+                            onClick={() => handleStartEdit(s)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            title="Ubah password manual (ketik sendiri)"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleResetPassword(s)}
+                            disabled={resettingId === s.id || !s.nis}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Reset ke password acak baru"
+                          >
+                            {resettingId === s.id ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : (
+                              <KeyRound size={13} />
+                            )}
+                            Reset
+                          </button>
+                          <button
+                            onClick={() => handleToggleActive(s)}
+                            disabled={togglingId === s.id}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                              isInactive
+                                ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                : "text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                            }`}
+                            title={
+                              isInactive ? "Aktifkan akun" : "Nonaktifkan akun (siswa lulus/pindah)"
+                            }
+                          >
+                            {togglingId === s.id ? (
+                              <Loader2 size={13} className="animate-spin" />
+                            ) : isInactive ? (
+                              <CheckCircle2 size={13} />
+                            ) : (
+                              <Ban size={13} />
+                            )}
+                            {isInactive ? "Aktifkan" : "Nonaktifkan"}
+                          </button>
+                        </>
+                      )
                     ) : (
                       <span className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
                         <XCircle size={14} /> Belum Ada

@@ -323,6 +323,7 @@ const SchoolManagementTab = ({
     setLoading,
     showToast,
     loadSchoolData,
+    currentUserId: user?.id,
   });
 
   // Load meta (ringan) sekali di awal — TIDAK fetch siswa
@@ -1028,6 +1029,9 @@ const SchoolManagementTab = ({
               gender: "L",
               class_id: "",
               is_active: true,
+              is_pindahan: false,
+              sekolah_asal: "",
+              tanggal_masuk: new Date().toISOString().slice(0, 10),
             });
           }}
         />

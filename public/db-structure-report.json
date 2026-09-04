@@ -1,0 +1,6583 @@
+{
+  "generatedAt": "2026-09-04T02:16:18.293Z",
+  "executionTimeMs": 2298,
+  "totalTables": 62,
+  "tables": [
+    {
+      "name": "academic_events",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "title",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "category_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "event_categories",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "start_date",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "end_date",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "category_id",
+          "refTable": "event_categories",
+          "refColumn": "id"
+        },
+        {
+          "column": "created_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "academic_years",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "year",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "start_date",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "end_date",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "announcement",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "title",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "effective_from",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "effective_until",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "(now() + '7 days'::interval)"
+        },
+        {
+          "name": "target_role",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "semua"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "true"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "announcement_reads",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "announcement_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "announcement",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "read_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "announcement_id",
+          "refTable": "announcement",
+          "refColumn": "id"
+        },
+        {
+          "column": "user_id",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "app_config",
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "1"
+        },
+        {
+          "name": "is_maintenance",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "maintenance_message",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "Aplikasi sedang dalam perbaikan sistem. Mohon ditunggu ya! 🔧"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "attendance_eraport",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "classes",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "sakit",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "izin",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "alpa",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "catatan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_locked",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "class_id",
+          "refTable": "classes",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        },
+        {
+          "column": "created_by",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "updated_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "attendances",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "teacher_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "type",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "regular"
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "teacher_id",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "attendances_view",
+      "columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "type",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "audit_logs",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "target_user_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "target_user_name",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "details",
+          "type": "jsonb",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "buku",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "judul",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "penulis",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "penerbit",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tahun",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "isbn",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kategori",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "Non-Fiksi"
+        },
+        {
+          "name": "rak",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "total_eksemplar",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "1"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "buku_dengan_stok",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "judul",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "penulis",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "penerbit",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tahun",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "isbn",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kategori",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "rak",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "total_eksemplar",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "dipinjam",
+          "type": "bigint",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tersedia",
+          "type": "bigint",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "buku_stats",
+      "columns": [
+        {
+          "name": "total_judul",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "total_eksemplar",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "total_dipinjam",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "total_tersedia",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "catatan_eraport",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "classes",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "catatan_wali_kelas",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "catatan_ekskul",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "catatan_prestasi",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "saran",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "sakit",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "ijin",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "tanpa_keterangan",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "total_hadir",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "120"
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "class_id",
+          "refTable": "classes",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "class_organization",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "position",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "position_order",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "position_level",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "class_schedules",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "day",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "start_time",
+          "type": "time without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "end_time",
+          "type": "time without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "teacher_name",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "classes",
+      "columns": [
+        {
+          "name": "id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "grade",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "cleanup_history",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "timestamp",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "triggered_by",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "results",
+          "type": "jsonb",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "duty_schedules",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "layout",
+          "type": "jsonb",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "ekstrakurikuler_eraport",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_ekskul",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "predikat",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "keterangan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "eraport_settings",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "active_period",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "updated_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "event_categories",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "color",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "feedback_guru",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "guru_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "kategori",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pesan",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "halaman",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "pending"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "timezone('utc'::text, now())"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "guru_id",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "grades",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "classes",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "teacher_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "assignment_type",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "score",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "class_id",
+          "refTable": "classes",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "grades_katrol",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "teacher_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nh1",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nh2",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nh3",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "psts",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "psas",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "rata_nh",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nilai_akhir",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nilai_akhir_k",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kkm",
+          "type": "numeric",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "75"
+        },
+        {
+          "name": "nilai_min_kelas",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nilai_max_kelas",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "target_min",
+          "type": "numeric",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "75"
+        },
+        {
+          "name": "target_max",
+          "type": "numeric",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "100"
+        },
+        {
+          "name": "jumlah_siswa_kelas",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "formula_used",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "linear_scaling"
+        },
+        {
+          "name": "processed_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "student_name",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "student_nis",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        },
+        {
+          "column": "processed_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "grades_katrol_settings",
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "mata_pelajaran_id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kelas_id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kkm",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nilai_maksimal",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "homevisits",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "nama_siswa",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kelas",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nis",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tanggal_kunjungan",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "jenis_kunjungan",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kategori_permasalahan",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "alasan",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "alamat_kunjungan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_pihak_ditemui",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "hubungan_pihak_ditemui",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "hasil_kondisi_info",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "hasil_diskusi",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "Terjadwal"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "jurnal_harian",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "teacher_id",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "assignment_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "teacher_assignments",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "smallint",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tanggal",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "CURRENT_DATE"
+        },
+        {
+          "name": "jam_ke",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "materi",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kegiatan_pembelajaran",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kendala_catatan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "terkirim"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "tujuan_pembelajaran",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "user_id",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "assignment_id",
+          "refTable": "teacher_assignments",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "kaldik_documents",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "title",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "file_url",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "uploaded_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "uploaded_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "kelulusan_config",
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "1"
+        },
+        {
+          "name": "nilai_akhir_minimum",
+          "type": "numeric",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "70"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "kkm_mapel",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "mata_pelajaran",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kkm",
+          "type": "numeric",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "75"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "konseling",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "nis",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "gender",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tanggal",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "jenis_layanan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "bidang_bimbingan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "permasalahan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kronologi",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tindakan_layanan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "hasil_layanan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "rencana_tindak_lanjut",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status_layanan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "Dalam Proses"
+        },
+        {
+          "name": "guru_bk_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "guru_bk_name",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "tingkat_urgensi",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "Sedang"
+        },
+        {
+          "name": "kategori_masalah",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "perlu_followup",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "tanggal_followup",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "guru_bk_id",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "nilai_eraport",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "classes",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "mata_pelajaran",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "guru_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nilai_akhir",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "deskripsi_capaian",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kkm",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "class_id",
+          "refTable": "classes",
+          "refColumn": "id"
+        },
+        {
+          "column": "guru_id",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        },
+        {
+          "column": "created_by",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "updated_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "nilai_eraport_detail",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "nilai_eraport_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "nilai_eraport",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "tujuan_pembelajaran_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "tujuan_pembelajaran",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "status_tercapai",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "nilai_eraport_id",
+          "refTable": "nilai_eraport",
+          "refColumn": "id"
+        },
+        {
+          "column": "tujuan_pembelajaran_id",
+          "refTable": "tujuan_pembelajaran",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "notifications",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "recipient_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "catatan_perhatian"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "note_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "student_development_notes",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "created_by_name",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_read",
+          "type": "boolean",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "student_name",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "note_content",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "action_taken",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "recipient_id",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "note_id",
+          "refTable": "student_development_notes",
+          "refColumn": "id"
+        },
+        {
+          "column": "created_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "peminjaman",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "buku_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "buku",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "judul_buku_snapshot",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_peminjam",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_anggota",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tanggal_pinjam",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "CURRENT_DATE"
+        },
+        {
+          "name": "tanggal_jatuh_tempo",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tanggal_kembali",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "dipinjam"
+        },
+        {
+          "name": "denda",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "kondisi_buku",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "catatan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "petugas_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "peminjam_student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "buku_id",
+          "refTable": "buku",
+          "refColumn": "id"
+        },
+        {
+          "column": "petugas_id",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "peminjam_student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "pengumuman_siswa",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "target_class",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_pinned",
+          "type": "boolean",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "raport_config",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "classes",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "mata_pelajaran",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "kkm",
+          "type": "numeric",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "jenjang",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_jenjang_default",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "true"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "class_id",
+          "refTable": "classes",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "raport_metadata",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tanggal_raport",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tempat",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_kepala_sekolah",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nip_kepala_sekolah",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "ttd_kepala_sekolah",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "ruang_belajar",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "resource_type",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "article"
+        },
+        {
+          "name": "thumbnail",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "url",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "estimated_minutes",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_featured",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "true"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "created_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "saran_masukan",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "pending"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "school_settings",
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "setting_key",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "setting_value",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "seating_charts",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "rows",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "cols",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "seats_per_desk",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "layout",
+          "type": "jsonb",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "siswa_baru",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "extensions.uuid_generate_v4()"
+        },
+        {
+          "name": "no_pendaftaran",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_lengkap",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nisn",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "jenis_kelamin",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tempat_lahir",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tanggal_lahir",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "asal_sekolah",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_ayah",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pekerjaan_ayah",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pendidikan_ayah",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_ibu",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pekerjaan_ibu",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pendidikan_ibu",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_hp",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "alamat",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "diterima"
+        },
+        {
+          "name": "is_transferred",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "tanggal_daftar",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "transferred_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "transferred_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kelas",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nis",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "agama",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nik",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_kk",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_akta_lahir",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nik_ayah",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nik_ibu",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tempat_tgl_lahir_ayah",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tempat_tgl_lahir_ibu",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_kip",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kode_pos",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "skor_akademik",
+          "type": "numeric",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kategori_baca_latin",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kategori_mengaji",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "spmb_settings",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "extensions.uuid_generate_v4()"
+        },
+        {
+          "name": "target_academic_year",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "true"
+        },
+        {
+          "name": "registration_start_date",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "registration_end_date",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "student_auth",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "username",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "password",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "true"
+        },
+        {
+          "name": "last_login",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "student_development_notes",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "extensions.uuid_generate_v4()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "teacher_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "note_content",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "action_taken",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        },
+        {
+          "column": "teacher_id",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "student_devices",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "device_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "brand",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "model",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "platform",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "browser",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "last_login_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "student_mutations",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "mutation_date",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "CURRENT_DATE"
+        },
+        {
+          "name": "sekolah_asal",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "sekolah_tujuan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "keterangan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_by",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "student_profile_details",
+      "columns": [
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "alamat",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_hp",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_ortu",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_hp_ortu",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "sekolah_asal",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "jenis_kelamin",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tempat_lahir",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tanggal_lahir",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nisn",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_ayah",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pekerjaan_ayah",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pendidikan_ayah",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nama_ibu",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pekerjaan_ibu",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "pendidikan_ibu",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "agama",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_kk",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nik",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_akta_lahir",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_ijazah",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_peserta_ujian",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "dusun",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "kode_pos",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nik_ayah",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nik_ibu",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tempat_tgl_lahir_ayah",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tempat_tgl_lahir_ibu",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_kip",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "anak_ke",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "keterangan",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "no_daftar",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "verified_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "student_id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "student_report_grades",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "report_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "student_reports",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "score",
+          "type": "numeric",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "report_id",
+          "refTable": "student_reports",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "student_reports",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "student_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "students",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "student_name",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "student_nis",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "class_name",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "smallint",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "attendance",
+          "type": "jsonb",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "homeroom_note",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "extracurricular",
+          "type": "jsonb",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "draft"
+        },
+        {
+          "name": "source_file",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "student_id",
+          "refTable": "students",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "students",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "full_name",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "nis",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "gender",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "classes",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "nisn",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "class_id",
+          "refTable": "classes",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        },
+        {
+          "column": "user_id",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "system_health_logs",
+      "columns": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "checked_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "checked_by",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "total_issues",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "critical_count",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "warning_count",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "info_count",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        },
+        {
+          "name": "issues_detail",
+          "type": "jsonb",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "execution_time",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "checked_by",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "teacher_assignments",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "teacher_id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "classes",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "class_id",
+          "refTable": "classes",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "teacher_attendance",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "teacher_id",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "teacher_id"
+          },
+          "default": null
+        },
+        {
+          "name": "attendance_date",
+          "type": "date",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "CURRENT_DATE"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "clock_in",
+          "type": "time without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "check_in_method",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "manual"
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "gps_location",
+          "type": "jsonb",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_suspicious",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "false"
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "admin_info",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "teacher_id",
+          "refTable": "users",
+          "refColumn": "teacher_id"
+        }
+      ]
+    },
+    {
+      "name": "teacher_attendance_view",
+      "columns": [
+        {
+          "name": "teacher_id",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "teacher_id"
+          },
+          "default": null
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "attendance_date",
+          "type": "date",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "clock_in",
+          "type": "time without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "check_in_method",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [],
+      "foreignKeys": [
+        {
+          "column": "teacher_id",
+          "refTable": "users",
+          "refColumn": "teacher_id"
+        }
+      ]
+    },
+    {
+      "name": "teacher_codes",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "academic_year",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "teacher_name",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "note",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "teacher_id",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "weekly_hours",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "teacher_schedules",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "teacher_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "day",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "start_time",
+          "type": "time without time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "end_time",
+          "type": "time without time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "class_id",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "room_number",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "manual"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "teacher_id",
+          "refTable": "users",
+          "refColumn": "id"
+        },
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "tindaklanjut_homevisits",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "home_visit_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "homevisits",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "jenis",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "Belum Dilakukan"
+        },
+        {
+          "name": "catatan",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "home_visit_id",
+          "refTable": "homevisits",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "tujuan_pembelajaran",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "mata_pelajaran",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "tingkat",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "fase",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "deskripsi_tp",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "urutan",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "academic_year_id",
+          "type": "uuid",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "academic_years",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "semester",
+          "type": "text",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "true"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "academic_year_id",
+          "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "user_devices",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": {
+            "table": "users",
+            "column": "id"
+          },
+          "default": null
+        },
+        {
+          "name": "device_id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "brand",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "model",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "platform",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "browser",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "last_login_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "column": "user_id",
+          "refTable": "users",
+          "refColumn": "id"
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "foreignKey": null,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "username",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "password",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "full_name",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "teacher_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "role",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "homeroom_class_id",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "now()"
+        },
+        {
+          "name": "no_hp",
+          "type": "character varying",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "last_login",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "last_activity",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": null
+        },
+        {
+          "name": "login_count",
+          "type": "integer",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "foreignKey": null,
+          "default": "0"
+        }
+      ],
+      "primaryKeys": [
+        "id"
+      ],
+      "foreignKeys": []
+    }
+  ],
+  "plainList": "## Daftar Tabel Database Supabase\nacademic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at\nacademic_years : id,year,semester,start_date,end_date,is_active,created_at,updated_at\nannouncement : id,title,content,created_at,updated_at,effective_from,effective_until,target_role,is_active\nannouncement_reads : id,announcement_id,user_id,read_at,created_at\napp_config : id,is_maintenance,maintenance_message,updated_at\nattendance_eraport : id,student_id,class_id,academic_year_id,semester,sakit,izin,alpa,catatan,is_locked,created_at,updated_at,created_by,updated_by\nattendances : id,student_id,teacher_id,date,subject,status,created_at,notes,class_id,type,academic_year_id,semester\nattendances_view : date,class_id,subject,status,notes,type\naudit_logs : id,user_id,action,target_user_id,target_user_name,details,created_at\nbuku : id,judul,penulis,penerbit,tahun,isbn,kategori,rak,total_eksemplar,created_at,updated_at\nbuku_dengan_stok : id,judul,penulis,penerbit,tahun,isbn,kategori,rak,total_eksemplar,created_at,updated_at,dipinjam,tersedia\nbuku_stats : total_judul,total_eksemplar,total_dipinjam,total_tersedia\ncatatan_eraport : id,student_id,class_id,academic_year_id,semester,catatan_wali_kelas,catatan_ekskul,catatan_prestasi,saran,created_at,updated_at,created_by,sakit,ijin,tanpa_keterangan,total_hadir,updated_by\nclass_organization : id,class_id,academic_year,position,position_order,position_level,student_id,created_at,updated_at\nclass_schedules : id,class_id,day,subject,start_time,end_time,teacher_name,created_at\nclasses : id,grade,academic_year,created_at,updated_at,is_active,academic_year_id\ncleanup_history : id,timestamp,triggered_by,results,created_at\nduty_schedules : id,class_id,academic_year,semester,layout,updated_at\nekstrakurikuler_eraport : id,student_id,academic_year_id,semester,nama_ekskul,predikat,keterangan,created_at,updated_at\neraport_settings : id,is_active,active_period,message,updated_at,updated_by\nevent_categories : id,name,color,created_at\nfeedback_guru : id,guru_id,kategori,pesan,halaman,status,created_at\ngrades : id,student_id,class_id,teacher_id,subject,assignment_type,score,semester,academic_year,created_at,academic_year_id\ngrades_katrol : id,student_id,class_id,teacher_id,academic_year_id,subject,academic_year,semester,nh1,nh2,nh3,psts,psas,rata_nh,nilai_akhir,nilai_akhir_k,kkm,nilai_min_kelas,nilai_max_kelas,target_min,target_max,jumlah_siswa_kelas,formula_used,processed_by,created_at,updated_at,student_name,student_nis\ngrades_katrol_settings : id,mata_pelajaran_id,kelas_id,kkm,nilai_maksimal,created_at,updated_at,updated_by,academic_year,semester,academic_year_id\nhomevisits : id,student_id,nama_siswa,kelas,nis,tanggal_kunjungan,jenis_kunjungan,kategori_permasalahan,alasan,alamat_kunjungan,nama_pihak_ditemui,hubungan_pihak_ditemui,hasil_kondisi_info,hasil_diskusi,status,created_at,updated_at\njurnal_harian : id,user_id,teacher_id,assignment_id,class_id,subject,academic_year_id,semester,tanggal,jam_ke,materi,kegiatan_pembelajaran,kendala_catatan,status,created_at,updated_at,tujuan_pembelajaran\nkaldik_documents : id,academic_year,title,file_url,uploaded_by,created_at\nkelulusan_config : id,nilai_akhir_minimum,updated_at\nkkm_mapel : id,mata_pelajaran,kkm,updated_at\nkonseling : id,student_id,nis,full_name,gender,class_id,tanggal,jenis_layanan,bidang_bimbingan,permasalahan,kronologi,tindakan_layanan,hasil_layanan,rencana_tindak_lanjut,status_layanan,guru_bk_id,guru_bk_name,academic_year,semester,created_at,updated_at,tingkat_urgensi,kategori_masalah,perlu_followup,tanggal_followup,academic_year_id\nnilai_eraport : id,student_id,class_id,mata_pelajaran,guru_id,academic_year_id,semester,nilai_akhir,deskripsi_capaian,kkm,created_at,updated_at,created_by,updated_by\nnilai_eraport_detail : id,nilai_eraport_id,tujuan_pembelajaran_id,status_tercapai,created_at,updated_at\nnotifications : id,recipient_id,type,title,message,student_id,note_id,class_id,created_by,created_by_name,is_read,read_at,created_at,student_name,category,label,note_content,action_taken\npeminjaman : id,buku_id,judul_buku_snapshot,nama_peminjam,no_anggota,tanggal_pinjam,tanggal_jatuh_tempo,tanggal_kembali,status,denda,kondisi_buku,catatan,petugas_id,created_at,updated_at,peminjam_student_id\npengumuman_siswa : id,title,content,target_class,created_by,is_pinned,created_at,updated_at\nraport_config : id,class_id,mata_pelajaran,academic_year_id,kkm,created_at,updated_at,jenjang,semester,is_jenjang_default\nraport_metadata : id,academic_year_id,semester,tanggal_raport,tempat,nama_kepala_sekolah,nip_kepala_sekolah,ttd_kepala_sekolah,created_at,updated_at\nruang_belajar : id,title,category,description,content,resource_type,thumbnail,url,estimated_minutes,is_featured,is_active,created_by,created_at,updated_at\nsaran_masukan : id,student_id,class_id,message,status,created_at\nschool_settings : id,setting_key,setting_value,created_at,updated_at\nseating_charts : id,class_id,academic_year,semester,rows,cols,seats_per_desk,layout,updated_at\nsiswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos,skor_akademik,kategori_baca_latin,kategori_mengaji\nspmb_settings : id,target_academic_year,is_active,registration_start_date,registration_end_date,created_at,updated_at\nstudent_auth : id,student_id,username,password,is_active,last_login,created_at,updated_at\nstudent_development_notes : id,student_id,teacher_id,class_id,academic_year,semester,category,label,note_content,action_taken,created_at,updated_at,academic_year_id\nstudent_devices : id,student_id,device_id,brand,model,platform,browser,last_login_at,created_at\nstudent_mutations : id,student_id,type,mutation_date,sekolah_asal,sekolah_tujuan,keterangan,created_by,created_at\nstudent_profile_details : student_id,alamat,no_hp,nama_ortu,no_hp_ortu,sekolah_asal,updated_at,jenis_kelamin,tempat_lahir,tanggal_lahir,nisn,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,agama,no_kk,nik,no_akta_lahir,no_ijazah,no_peserta_ujian,dusun,kode_pos,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,anak_ke,keterangan,no_daftar,verified_at\nstudent_report_grades : id,report_id,subject,score,created_at\nstudent_reports : id,student_id,student_name,student_nis,class_name,academic_year,semester,attendance,homeroom_note,extracurricular,status,source_file,created_by,created_at,updated_at\nstudents : id,full_name,nis,gender,class_id,academic_year,is_active,created_at,updated_at,academic_year_id,user_id,nisn\nsystem_health_logs : id,checked_at,checked_by,total_issues,critical_count,warning_count,info_count,issues_detail,execution_time,status,created_at\nteacher_assignments : id,teacher_id,class_id,subject,academic_year,semester,created_at,academic_year_id,updated_at\nteacher_attendance : id,teacher_id,attendance_date,status,clock_in,check_in_method,notes,created_at,updated_at,gps_location,is_suspicious,full_name,admin_info\nteacher_attendance_view : teacher_id,full_name,status,attendance_date,clock_in,check_in_method\nteacher_codes : id,academic_year,code,teacher_name,subject,note,created_at,updated_at,teacher_id,weekly_hours\nteacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,created_at,updated_at,academic_year_id,subject,source\ntindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at\ntujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active\nuser_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at\nusers : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count"
+}

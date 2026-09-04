@@ -2,12 +2,37 @@
 import { useState, useCallback } from "react";
 import { supabase } from "../../supabaseClient"; // INI 100% BENAR
 
+// ==== Helper buat auto-generate akun student_auth pas siswa baru ditambah ====
+// Disalin dari AkunSiswaTab.js biar formatnya PERSIS SAMA kayak akun yang
+// dibuat manual lewat tab "Portal Siswa > Akun Siswa" -- username = NIS
+// (disanitize), password = 3 digit terakhir NIS + 3 huruf acak (unik per
+// siswa, gak lagi 1 password buat 1 kelas).
+// ⚠️ Kalau nanti formatnya diubah di AkunSiswaTab.js, inget buat samain juga
+// di sini -- idealnya dipindah ke 1 file util bersama, tapi sengaja belum
+// dilakuin sekarang biar scope perubahan ini kecil & gak nyentuh file lain.
+const sanitizeUsername = (nis) => String(nis ?? "").replace(/[^0-9A-Za-z]/g, "");
+
+const PASSWORD_LETTERS = "abcdefghjkmnpqrstuvwxyz";
+const randomLetters = (length) => {
+  let result = "";
+  for (let i = 0; i < length; i += 1) {
+    result += PASSWORD_LETTERS[Math.floor(Math.random() * PASSWORD_LETTERS.length)];
+  }
+  return result;
+};
+const generateUniquePassword = (nis) => {
+  const digits = String(nis ?? "").replace(/[^0-9]/g, "");
+  const lastThree = digits.slice(-3).padStart(3, "0");
+  return `${lastThree}-${randomLetters(3)}`;
+};
+
 export const useStudentManagement = ({
   activeAcademicYear,
   availableClasses,
   setLoading,
   showToast,
   loadSchoolData,
+  currentUserId,
 }) => {
   const [studentModal, setStudentModal] = useState({
     show: false,
@@ -27,6 +52,12 @@ export const useStudentManagement = ({
     gender: "L",
     class_id: "",
     is_active: true,
+    // Penanda siswa pindahan dari sekolah lain -- kalau dicentang, abis
+    // insert siswa baru bakal ikut nyatet 1 baris ke student_mutations
+    // (type "masuk") biar ke-log rapi.
+    is_pindahan: false,
+    sekolah_asal: "",
+    tanggal_masuk: new Date().toISOString().slice(0, 10),
   });
 
   const openStudentModal = useCallback((mode = "add", studentData = null) => {
@@ -37,6 +68,9 @@ export const useStudentManagement = ({
         gender: studentData.gender,
         class_id: studentData.class_id || "",
         is_active: studentData.is_active,
+        is_pindahan: false,
+        sekolah_asal: "",
+        tanggal_masuk: new Date().toISOString().slice(0, 10),
       });
     } else {
       setStudentForm({
@@ -45,6 +79,9 @@ export const useStudentManagement = ({
         gender: "L",
         class_id: "",
         is_active: true,
+        is_pindahan: false,
+        sekolah_asal: "",
+        tanggal_masuk: new Date().toISOString().slice(0, 10),
       });
     }
 
@@ -79,6 +116,18 @@ export const useStudentManagement = ({
         return;
       }
 
+      // ✅ Validasi khusus siswa pindahan
+      if (studentForm.is_pindahan) {
+        if (!studentForm.sekolah_asal.trim()) {
+          showToast("Asal sekolah wajib diisi untuk siswa pindahan!", "error");
+          return;
+        }
+        if (!studentForm.tanggal_masuk) {
+          showToast("Tanggal masuk wajib diisi untuk siswa pindahan!", "error");
+          return;
+        }
+      }
+
       // ✅ CEK NIS DUPLIKAT SEBELUM INSERT
       const { data: existingStudent, error: checkError } = await supabase
         .from("students")
@@ -101,23 +150,79 @@ export const useStudentManagement = ({
       }
 
       // ✅ INSERT dengan BOTH fields
-      const { error } = await supabase.from("students").insert([
-        {
-          nis: studentForm.nis.trim(),
-          full_name: studentForm.full_name.trim(),
-          gender: studentForm.gender,
-          class_id: studentForm.class_id,
-          is_active: studentForm.is_active,
-          academic_year: activeAcademicYear.year,
-          academic_year_id: activeAcademicYear.id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ]);
+      const { data: newStudent, error } = await supabase
+        .from("students")
+        .insert([
+          {
+            nis: studentForm.nis.trim(),
+            full_name: studentForm.full_name.trim(),
+            gender: studentForm.gender,
+            class_id: studentForm.class_id,
+            is_active: studentForm.is_active,
+            academic_year: activeAcademicYear.year,
+            academic_year_id: activeAcademicYear.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ])
+        .select("id")
+        .single();
 
       if (error) throw error;
 
-      showToast("Siswa berhasil ditambahkan!", "success");
+      // ✅ Kalau ditandai sebagai siswa pindahan, catat riwayatnya ke
+      // student_mutations (type "masuk"). Kalau ini gagal, siswanya TETEP
+      // udah kesimpen -- gak di-throw biar gak bikin TU bingung "siswa
+      // ke-insert apa nggak", cukup dikasih tau lewat toast terpisah.
+      if (studentForm.is_pindahan && newStudent?.id) {
+        const { error: mutationError } = await supabase.from("student_mutations").insert({
+          student_id: newStudent.id,
+          type: "masuk",
+          mutation_date: studentForm.tanggal_masuk,
+          sekolah_asal: studentForm.sekolah_asal.trim(),
+          created_by: currentUserId || null,
+        });
+        if (mutationError) {
+          console.error("Error recording student mutation:", mutationError);
+          showToast(
+            "⚠️ Siswa tersimpan, tapi riwayat pindahan gagal dicatat: " + mutationError.message,
+            "error"
+          );
+        }
+      }
+
+      // ✅ Auto-generate akun login (student_auth) buat siswa baru ini.
+      // Sengaja soft-fail (gak throw) kayak logic student_mutations di
+      // atas -- kalau ini gagal, siswanya TETEP udah kesimpen di
+      // `students`, admin masih bisa bikinin akunnya manual lewat tab
+      // "Portal Siswa > Akun Siswa". NIS udah dipastiin gak kosong &
+      // gak duplikat dari validasi di atas, jadi aman dipakai jadi
+      // username tanpa cek ulang.
+      let authCreated = false;
+      if (newStudent?.id) {
+        const { error: authError } = await supabase.from("student_auth").insert({
+          student_id: newStudent.id,
+          username: sanitizeUsername(studentForm.nis),
+          password: generateUniquePassword(studentForm.nis),
+          is_active: studentForm.is_active,
+        });
+        if (authError) {
+          console.error("Error creating student_auth:", authError);
+          showToast(
+            "⚠️ Siswa tersimpan, tapi akun login gagal dibuat otomatis: " +
+              authError.message +
+              ". Bisa dibuat manual lewat tab Akun Siswa.",
+            "error"
+          );
+        } else {
+          authCreated = true;
+        }
+      }
+
+      showToast(
+        authCreated ? "Siswa & akun login berhasil dibuat!" : "Siswa berhasil ditambahkan!",
+        "success"
+      );
       setStudentModal({ show: false, mode: "add", data: null });
       setStudentForm({
         nis: "",
@@ -125,6 +230,9 @@ export const useStudentManagement = ({
         gender: "L",
         class_id: "",
         is_active: true,
+        is_pindahan: false,
+        sekolah_asal: "",
+        tanggal_masuk: new Date().toISOString().slice(0, 10),
       });
       await loadSchoolData();
     } catch (error) {
@@ -142,7 +250,7 @@ export const useStudentManagement = ({
     } finally {
       setLoading(false);
     }
-  }, [studentForm, activeAcademicYear, setLoading, showToast, loadSchoolData]);
+  }, [studentForm, activeAcademicYear, setLoading, showToast, loadSchoolData, currentUserId]);
 
   const handleEditStudent = useCallback(async () => {
     try {
@@ -237,7 +345,21 @@ export const useStudentManagement = ({
 
         if (error) throw error;
 
-        showToast("Siswa berhasil dinonaktifkan!", "success");
+        // ✅ Nonaktifin akun login siswa juga -- sebelumnya ini KELEWAT di
+        // sini (baru ada di Students.js "Tandai Keluar/Pindah"), akibatnya
+        // siswa yang dinonaktifin dari tab ini akun student_auth-nya tetap
+        // aktif & masih bisa dipakai login. Disamain sekarang biar konsisten
+        // dari mana pun siswa dinonaktifin.
+        const { error: authError } = await supabase
+          .from("student_auth")
+          .update({
+            is_active: false,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("student_id", studentId);
+        if (authError) throw authError;
+
+        showToast("Siswa & akun login berhasil dinonaktifkan!", "success");
         setDeleteConfirm({ show: false, type: "", data: null });
         await loadSchoolData();
       } catch (error) {

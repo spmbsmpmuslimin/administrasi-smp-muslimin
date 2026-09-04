@@ -40,6 +40,7 @@ const ROOT = path.resolve(__dirname, "..");
 const SRC_DIR = path.join(ROOT, "src");
 const STRUKTUR_FILE = path.join(ROOT, "strukturfile.txt");
 const OUTPUT_FILE = path.join(ROOT, "public", "audit-report.json");
+const STRUCTURE_OUTPUT_FILE = path.join(ROOT, "public", "structure-report.json");
 
 const CODE_EXT = [".js", ".jsx", ".ts", ".tsx"];
 
@@ -150,6 +151,75 @@ function walk(dir, fileList = []) {
     }
   }
   return fileList;
+}
+
+// Sama kayak walk(), tapi TANPA filter ekstensi — dipake khusus buat
+// render tree text polos (semua file: .js, .png, .webp, .html, dst),
+// bukan buat analisis import/fungsi (yang emang cuma masuk akal untuk
+// file kode).
+function walkAllFiles(dir, fileList = []) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      walkAllFiles(full, fileList);
+    } else {
+      fileList.push(full);
+    }
+  }
+  return fileList;
+}
+
+// Render ASCII tree text klasik (format `|--` / `` ` -- ``), mirip output
+// command `tree --charset=ascii`. Folder duluan baru file, alfabetis —
+// biar konsisten sama urutan di tab interaktif.
+function buildAsciiTree(allFiles, rootDir) {
+  const root = { name: path.basename(rootDir), children: {} };
+  for (const file of allFiles) {
+    const parts = path.relative(rootDir, file).split(path.sep);
+    let cursor = root;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const isFile = i === parts.length - 1;
+      if (!cursor.children) cursor.children = {};
+      if (isFile) {
+        cursor.children[part] = { name: part, type: "file" };
+      } else {
+        if (!cursor.children[part]) {
+          cursor.children[part] = { name: part, type: "folder", children: {} };
+        }
+        cursor = cursor.children[part];
+      }
+    }
+  }
+
+  function sortedChildren(node) {
+    return Object.values(node.children || {}).sort((a, b) => {
+      const aIsFolder = a.type === "folder";
+      const bIsFolder = b.type === "folder";
+      if (aIsFolder !== bIsFolder) return aIsFolder ? -1 : 1;
+      // Case-sensitive (bukan localeCompare) biar urutannya sama kayak
+      // command `tree` bawaan OS: huruf besar duluan, baru huruf kecil.
+      return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+    });
+  }
+
+  const lines = [`|-- ${root.name}`];
+  function render(node, prefix) {
+    const children = sortedChildren(node);
+    children.forEach((child, idx) => {
+      const isLast = idx === children.length - 1;
+      const connector = isLast ? "`-- " : "|-- ";
+      lines.push(prefix + connector + child.name);
+      if (child.type === "folder") {
+        render(child, prefix + (isLast ? "    " : "|   "));
+      }
+    });
+  }
+  render(root, "|   ");
+
+  return lines.join("\n");
 }
 
 function toRel(p) {
@@ -658,6 +728,158 @@ function checkAcademicYearServiceUsage(allFiles) {
 }
 
 // ---------------------------------------------------------------------
+// PROJECT STRUCTURE ANALYZER
+// -----------------------------------------------------------------------
+// Bangun peta lengkap src/: tree folder, fungsi/component tiap file,
+// siapa-import-siapa (importsMap) dan siapa-diimport-oleh-siapa
+// (importedByMap). Ini dipisah dari checkImportsAndOrphans supaya reusable
+// buat 2 keperluan sekaligus (structure viewer + calon dependency map),
+// tapi tetep pakai IMPORT_RE/resolveImport/stripComments yang sama biar
+// hasilnya konsisten sama broken-import & orphan check di atas.
+// -----------------------------------------------------------------------
+
+const IMPORT_RE_STRUCT =
+  /(?:import\s+(?:[\w*\s{},]+from\s+)?|export\s+(?:[\w*\s{},]+from\s+)?|require\()\s*["'`](\.[^"'`]+)["'`]\)?/g;
+
+// Regex buat nangkep nama fungsi/component yang di-export dari sebuah
+// file. Heuristik (bukan full AST parser), tapi cukup buat konvensi kode
+// project ini (function declaration, arrow function assignment, class,
+// default export).
+const FUNCTION_PATTERNS = [
+  /export\s+default\s+function\s+([A-Za-z_$][\w$]*)/g,
+  /export\s+function\s+([A-Za-z_$][\w$]*)/g,
+  /export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(/g,
+  /export\s+const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?[A-Za-z_$]/g,
+  /export\s+class\s+([A-Za-z_$][\w$]*)/g,
+  /^function\s+([A-Za-z_$][\w$]*)/gm,
+  /^const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\(/gm,
+];
+
+function extractFunctionNames(content) {
+  const names = new Set();
+  for (const re of FUNCTION_PATTERNS) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(content)) !== null) {
+      names.add(m[1]);
+    }
+  }
+  return Array.from(names);
+}
+
+// Klasifikasi kasar tipe file berdasarkan lokasi folder — cuma buat
+// pengelompokan visual di UI, bukan sumber kebenaran teknis.
+function classifyFileType(rel) {
+  if (/\/pages\//i.test(rel) || rel.includes("Page")) return "page";
+  if (/\/components\//i.test(rel)) return "component";
+  if (/\/hooks\//i.test(rel) || /\/use[A-Z]/.test(rel)) return "hook";
+  if (/\/services\//i.test(rel)) return "service";
+  if (/\/system\/checkers\//i.test(rel)) return "checker";
+  if (/\/system\//i.test(rel)) return "system";
+  if (/\/lib\//i.test(rel) || /\/utils\//i.test(rel)) return "util";
+  if (/\/config\//i.test(rel) || /Config\.[jt]sx?$/.test(rel)) return "config";
+  return "other";
+}
+
+function buildProjectStructure(allFiles) {
+  const nodes = {}; // rel path -> node metadata
+  const importsMap = {}; // rel -> [rel]
+  const importedByMap = {}; // rel -> [rel]
+
+  // Pass 1: baca tiap file, ekstrak imports + functions
+  for (const file of allFiles) {
+    const rel = toRel(file);
+    const raw = fs.readFileSync(file, "utf8");
+    const content = stripComments(raw);
+    const lines = content.split(/\r?\n/);
+
+    const imports = [];
+    IMPORT_RE_STRUCT.lastIndex = 0;
+    let match;
+    while ((match = IMPORT_RE_STRUCT.exec(content)) !== null) {
+      const resolved = resolveImport(file, match[1]);
+      if (resolved) imports.push(toRel(resolved));
+    }
+
+    nodes[rel] = {
+      path: rel,
+      type: classifyFileType(rel),
+      lines: lines.length,
+      functions: extractFunctionNames(content),
+      imports,
+      importedBy: [], // diisi di pass 2
+    };
+    importsMap[rel] = imports;
+  }
+
+  // Pass 2: balik importsMap jadi importedByMap
+  for (const rel of Object.keys(importsMap)) {
+    for (const target of importsMap[rel]) {
+      if (!importedByMap[target]) importedByMap[target] = [];
+      importedByMap[target].push(rel);
+    }
+  }
+  for (const rel of Object.keys(nodes)) {
+    nodes[rel].importedBy = importedByMap[rel] || [];
+    nodes[rel].isOrphan =
+      nodes[rel].importedBy.length === 0 &&
+      !ENTRY_POINT_ALLOWLIST.has(rel) &&
+      !ORPHAN_IGNORE_PATTERNS.some((re) => re.test(rel));
+  }
+
+  // Bangun tree folder dari flat node list, biar UI bisa render collapsible.
+  const tree = { name: "src", path: "src", type: "folder", children: {} };
+  for (const rel of Object.keys(nodes).sort()) {
+    const parts = rel.split("/").slice(1); // buang "src" di depan
+    let cursor = tree;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const isFile = i === parts.length - 1;
+      if (isFile) {
+        if (!cursor.children) cursor.children = {};
+        cursor.children[part] = { name: part, type: "file", file: nodes[rel] };
+      } else {
+        if (!cursor.children) cursor.children = {};
+        if (!cursor.children[part]) {
+          cursor.children[part] = {
+            name: part,
+            path: cursor.path ? `${cursor.path}/${part}` : part,
+            type: "folder",
+            children: {},
+          };
+        }
+        cursor = cursor.children[part];
+      }
+    }
+  }
+
+  // children dari object -> array (lebih gampang di-render di React,
+  // dan urutannya folder dulu baru file, alfabetis).
+  function toArrayTree(node) {
+    if (node.type === "file") return node;
+    const childArr = Object.values(node.children || {})
+      .map(toArrayTree)
+      .sort((a, b) => {
+        if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+    return { name: node.name, path: node.path, type: "folder", children: childArr };
+  }
+
+  return {
+    tree: toArrayTree(tree),
+    totalFiles: Object.keys(nodes).length,
+    totalFunctions: Object.values(nodes).reduce((sum, n) => sum + n.functions.length, 0),
+    orphanCount: Object.values(nodes).filter((n) => n.isOrphan).length,
+    byType: Object.values(nodes).reduce((acc, n) => {
+      acc[n.type] = (acc[n.type] || 0) + 1;
+      return acc;
+    }, {}),
+    nodes, // flat map, dipakai UI buat detail panel per file tanpa jalan-jalan di tree
+  };
+}
+
+// ---------------------------------------------------------------------
 // MAIN
 // ---------------------------------------------------------------------
 
@@ -763,6 +985,27 @@ function main() {
   );
   console.log(`   Laporan disimpan ke: ${toRel(OUTPUT_FILE)}`);
   console.log(`   Buka app -> Monitor Sistem -> tab "Code Audit" buat liat hasilnya.\n`);
+
+  // --- Project Structure Analyzer (file terpisah, ditampilin di tab
+  // "Struktur Project") ---
+  console.log("🗂️  Membangun peta struktur project...");
+  const structureStart = Date.now();
+  const structure = buildProjectStructure(allFiles);
+  const allFilesUnfiltered = walkAllFiles(SRC_DIR);
+  const asciiTree = buildAsciiTree(allFilesUnfiltered, SRC_DIR);
+  const structureReport = {
+    generatedAt: new Date().toISOString(),
+    executionTimeMs: Date.now() - structureStart,
+    ...structure,
+    asciiTree,
+    totalAllFiles: allFilesUnfiltered.length, // termasuk asset non-kode (gambar, html, dll)
+  };
+  fs.writeFileSync(STRUCTURE_OUTPUT_FILE, JSON.stringify(structureReport, null, 2), "utf8");
+  console.log(
+    `   → ${structure.totalFiles} file kode, ${allFilesUnfiltered.length} total file (termasuk asset), ${structure.totalFunctions} fungsi/component, ${structure.orphanCount} kemungkinan orphan`
+  );
+  console.log(`   Laporan struktur disimpan ke: ${toRel(STRUCTURE_OUTPUT_FILE)}`);
+  console.log(`   Buka app -> Monitor Sistem -> tab "Struktur Project" buat liat hasilnya.\n`);
 }
 
 main();

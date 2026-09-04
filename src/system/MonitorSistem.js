@@ -3,7 +3,9 @@ import MonitorDashboard from "./MonitorDashboard";
 import DatabaseCleanupMonitor from "./DatabaseCleanupMonitor";
 import PerformanceMonitor from "./PerformanceMonitor";
 import CodeAudit from "./CodeAudit";
-import { Activity, Database, Gauge, Menu, X, FileCode2 } from "lucide-react";
+import ProjectStructure from "./ProjectStructure";
+import DatabaseStructure from "./DatabaseStructure";
+import { Activity, Database, Gauge, Menu, X, FileCode2, FolderTree, Table2 } from "lucide-react";
 
 function MonitorSistem({ user, onShowToast }) {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -34,6 +36,18 @@ function MonitorSistem({ user, onShowToast }) {
       icon: FileCode2,
       component: CodeAudit,
     },
+    {
+      id: "structure",
+      label: "Struktur Project",
+      icon: FolderTree,
+      component: ProjectStructure,
+    },
+    {
+      id: "dbStructure",
+      label: "Struktur Database",
+      icon: Table2,
+      component: DatabaseStructure,
+    },
   ];
 
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component;
@@ -57,7 +71,8 @@ function MonitorSistem({ user, onShowToast }) {
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label={showMobileMenu ? "Tutup menu" : "Buka menu"}>
+              aria-label={showMobileMenu ? "Tutup menu" : "Buka menu"}
+            >
               {showMobileMenu ? (
                 <X size={24} className="text-gray-600 dark:text-gray-300" />
               ) : (
@@ -86,7 +101,8 @@ function MonitorSistem({ user, onShowToast }) {
                         ? "border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
                         : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                     }
-                  `}>
+                  `}
+                >
                   <Icon className="w-5 h-5" />
                   {tab.label}
                 </button>
@@ -118,7 +134,8 @@ function MonitorSistem({ user, onShowToast }) {
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                       }
                       min-h-[48px]
-                    `}>
+                    `}
+                  >
                     <Icon
                       size={18}
                       className={
@@ -157,7 +174,8 @@ function MonitorSistem({ user, onShowToast }) {
                         : "text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                     }
                     min-h-[44px] flex-shrink-0
-                  `}>
+                  `}
+                >
                   <Icon size={16} className={isActive ? "animate-pulse" : ""} />
                   <span className="hidden sm:inline">{tab.label}</span>
                   <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
@@ -189,13 +207,24 @@ function MonitorSistem({ user, onShowToast }) {
               <CodeAudit />
             </div>
           )}
+          {activeTab === "structure" && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900/30 overflow-hidden">
+              <ProjectStructure />
+            </div>
+          )}
+          {activeTab === "dbStructure" && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900/30 overflow-hidden">
+              <DatabaseStructure />
+            </div>
+          )}
         </div>
 
         {/* Overlay for mobile menu */}
         {showMobileMenu && (
           <div
             className="lg:hidden fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-40"
-            onClick={() => setShowMobileMenu(false)}></div>
+            onClick={() => setShowMobileMenu(false)}
+          ></div>
         )}
       </div>
     </div>

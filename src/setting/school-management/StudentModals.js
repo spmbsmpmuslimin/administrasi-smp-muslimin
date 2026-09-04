@@ -127,11 +127,66 @@ const StudentModal = ({
             </span>
           </div>
 
+          {/* ✅ SISWA PINDAHAN -- cuma muncul pas mode "add" */}
+          {modal.mode === "add" && (
+            <div className="rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
+              <label className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.is_pindahan}
+                  onChange={(e) => setForm((prev) => ({ ...prev, is_pindahan: e.target.checked }))}
+                  className="rounded border-gray-300 dark:border-gray-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400 transition-colors size-5"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Siswa Pindahan dari sekolah lain
+                </span>
+              </label>
+
+              {form.is_pindahan && (
+                <div className="p-3 space-y-3 bg-white dark:bg-gray-800">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Asal Sekolah *
+                    </label>
+                    <input
+                      type="text"
+                      value={form.sekolah_asal}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, sekolah_asal: e.target.value }))
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-green-500/50 focus:border-green-500 dark:focus:ring-green-400/50 focus:outline-none transition-all bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white"
+                      placeholder="Misal: SDN 1 Cililin"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Tanggal Masuk *
+                    </label>
+                    <input
+                      type="date"
+                      value={form.tanggal_masuk}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, tanggal_masuk: e.target.value }))
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-green-500/50 focus:border-green-500 dark:focus:ring-green-400/50 focus:outline-none transition-all bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onSubmit}
-              disabled={loading || !form.nis || !form.full_name || !form.class_id}
+              disabled={
+                loading ||
+                !form.nis ||
+                !form.full_name ||
+                !form.class_id ||
+                (form.is_pindahan && (!form.sekolah_asal || !form.tanggal_masuk))
+              }
               className="flex-1 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 dark:from-green-700 dark:hover:from-green-800 dark:hover:to-emerald-800 text-white rounded-xl disabled:opacity-50 font-semibold transition-all active:scale-[0.98] min-h-[44px] shadow-md hover:shadow-lg"
             >
               {loading ? "Menyimpan..." : modal.mode === "add" ? "Tambah Siswa" : "Update Siswa"}

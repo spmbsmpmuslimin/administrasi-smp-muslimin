@@ -25,6 +25,132 @@ import {
   XCircle,
 } from "lucide-react";
 
+// Didefinisiin DI LUAR komponen Students (bukan di dalam) -- ini SENGAJA,
+// biar reference-nya stabil antar render. Kalau didefinisiin di dalam
+// (kayak modal-modal lain di file ini), tiap parent re-render bakal
+// bikin "komponen baru" & React remount ulang seluruh modal (termasuk
+// input di dalamnya), efeknya fokus ketik kelempar tiap 1 huruf.
+const DeleteModal = React.memo(
+  ({ selectedStudent, mutationForm, setMutationForm, actionLoading, onConfirm, onCancel }) => (
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 px-6 py-5 rounded-t-xl">
+          <div className="flex items-center gap-3">
+            <Trash2 size={24} className="text-white" />
+            <div>
+              <h2 className="text-xl font-bold text-white">Tandai Keluar / Pindah</h2>
+              <p className="text-red-100 dark:text-red-200 text-sm">
+                Siswa & akun login-nya akan dinonaktifkan
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800 mb-4">
+            <p className="font-bold text-red-800 dark:text-red-300 text-lg">
+              {selectedStudent?.full_name}
+            </p>
+            <div className="flex flex-wrap gap-2 mt-2 text-sm">
+              <span className="text-red-600 dark:text-red-400">NIS: {selectedStudent?.nis}</span>
+              <span className="text-red-600 dark:text-red-400">
+                Kelas: {selectedStudent?.class_id}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-3 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Tanggal Keluar <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={mutationForm.mutation_date}
+                onChange={(e) =>
+                  setMutationForm((prev) => ({
+                    ...prev,
+                    mutation_date: e.target.value,
+                  }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Sekolah Tujuan{" "}
+                <span className="text-gray-400 font-normal">
+                  (opsional, isi kalau pindah sekolah)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={mutationForm.sekolah_tujuan}
+                onChange={(e) =>
+                  setMutationForm((prev) => ({
+                    ...prev,
+                    sekolah_tujuan: e.target.value,
+                  }))
+                }
+                placeholder="Misal: SMPN 1 Cililin"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Keterangan / Alasan
+              </label>
+              <textarea
+                value={mutationForm.keterangan}
+                onChange={(e) =>
+                  setMutationForm((prev) => ({
+                    ...prev,
+                    keterangan: e.target.value,
+                  }))
+                }
+                rows={2}
+                placeholder="Misal: pindah karena orang tua tugas"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+              />
+            </div>
+          </div>
+
+          <p className="text-sm text-red-600 dark:text-red-400 mb-6 font-medium">
+            ⚠️ Siswa gak akan muncul di daftar aktif lagi & akun login-nya otomatis dinonaktifkan.
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onConfirm}
+              disabled={actionLoading}
+              className="flex-1 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition-all shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {actionLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 size={18} />
+                  <span>Ya, Tandai Keluar/Pindah</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={onCancel}
+              disabled={actionLoading}
+              className="px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-semibold transition-all shadow disabled:opacity-50"
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+);
+
 export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   // Ikon per status kelengkapan (label & warna badge ambil dari
   // COMPLETION_STATUS_META di util bersama, biar konsisten sama
@@ -53,6 +179,11 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [mutationForm, setMutationForm] = useState({
+    mutation_date: new Date().toISOString().slice(0, 10),
+    sekolah_tujuan: "",
+    keterangan: "",
+  });
   const [editForm, setEditForm] = useState({
     nis: "",
     nisn: "",
@@ -370,29 +501,61 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
 
   const handleDeleteClick = (siswa) => {
     setSelectedStudent(siswa);
+    setMutationForm({
+      mutation_date: new Date().toISOString().slice(0, 10),
+      sekolah_tujuan: "",
+      keterangan: "",
+    });
     setShowDeleteModal(true);
   };
 
   const handleDeleteConfirm = async () => {
+    if (!mutationForm.mutation_date) {
+      alert("⚠️ Tanggal keluar wajib diisi.");
+      return;
+    }
+
     setActionLoading(true);
 
     try {
-      const { error } = await supabase
+      // 1) Catat riwayat mutasi (sumber kebenaran "kapan" & "kenapa").
+      const { error: mutationError } = await supabase.from("student_mutations").insert({
+        student_id: selectedStudent.id,
+        type: "keluar",
+        mutation_date: mutationForm.mutation_date,
+        sekolah_tujuan: mutationForm.sekolah_tujuan || null,
+        keterangan: mutationForm.keterangan || null,
+        created_by: currentUser?.id || null,
+      });
+      if (mutationError) throw mutationError;
+
+      // 2) Nonaktifin data siswa (soft-delete, konsisten sama behavior lama).
+      const { error: studentError } = await supabase
         .from("students")
         .update({
           is_active: false,
           updated_at: new Date().toISOString(),
         })
         .eq("id", selectedStudent.id);
+      if (studentError) throw studentError;
 
-      if (error) throw error;
+      // 3) Nonaktifin akun login siswa juga -- ini yang sebelumnya belum
+      // kejadian, sekalian ditutup di sini.
+      const { error: authError } = await supabase
+        .from("student_auth")
+        .update({
+          is_active: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("student_id", selectedStudent.id);
+      if (authError) throw authError;
 
-      alert("✅ Data siswa berhasil dinonaktifkan!");
+      alert("✅ Siswa berhasil ditandai keluar/pindah!");
       setShowDeleteModal(false);
       fetchStudents();
     } catch (error) {
-      console.error("Error deactivating student:", error);
-      alert("❌ Gagal menonaktifkan data siswa: " + error.message);
+      console.error("Error marking student as keluar/pindah:", error);
+      alert("❌ Gagal menandai siswa keluar/pindah: " + error.message);
     } finally {
       setActionLoading(false);
     }
@@ -568,8 +731,8 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition"
               required
             >
-              <option value="L">LAKI-LAKI</option>
-              <option value="P">PEREMPUAN</option>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
             </select>
           </div>
 
@@ -624,69 +787,6 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
     </div>
   ));
 
-  const DeleteModal = React.memo(() => (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
-        <div className="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 px-6 py-5 rounded-t-xl">
-          <div className="flex items-center gap-3">
-            <Trash2 size={24} className="text-white" />
-            <div>
-              <h2 className="text-xl font-bold text-white">Konfirmasi Nonaktifkan</h2>
-              <p className="text-red-100 dark:text-red-200 text-sm">Data akan dinonaktifkan</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6">
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Apakah Anda yakin ingin menonaktifkan siswa ini?
-          </p>
-          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800 mb-6">
-            <p className="font-bold text-red-800 dark:text-red-300 text-lg">
-              {selectedStudent?.full_name}
-            </p>
-            <div className="flex flex-wrap gap-2 mt-2 text-sm">
-              <span className="text-red-600 dark:text-red-400">NIS: {selectedStudent?.nis}</span>
-              <span className="text-red-600 dark:text-red-400">
-                Kelas: {selectedStudent?.class_id}
-              </span>
-            </div>
-          </div>
-          <p className="text-sm text-red-600 dark:text-red-400 mb-6 font-medium">
-            ⚠️ Siswa akan dinonaktifkan dan tidak muncul dalam daftar aktif.
-          </p>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleDeleteConfirm}
-              disabled={actionLoading}
-              className="flex-1 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition-all shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {actionLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Menghapus...</span>
-                </>
-              ) : (
-                <>
-                  <Trash2 size={18} />
-                  <span>Ya, Nonaktifkan</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setShowDeleteModal(false)}
-              disabled={actionLoading}
-              className="px-5 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-semibold transition-all shadow disabled:opacity-50"
-            >
-              Batal
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  ));
-
   const ExportModal = React.memo(() => (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
@@ -731,7 +831,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                   ` • ${selectedJenjang ? `Kelas ${selectedJenjang}` : ""} ${
                     selectedKelas ? selectedKelas : ""
                   } ${
-                    selectedGender ? `• ${selectedGender === "L" ? "LAKI-LAKI" : "PEREMPUAN"}` : ""
+                    selectedGender ? `• ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}` : ""
                   }`}
               </div>
             </div>
@@ -828,7 +928,16 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
     <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {showExportModal && <ExportModal />}
       {showEditModal && <EditModal />}
-      {showDeleteModal && <DeleteModal />}
+      {showDeleteModal && (
+        <DeleteModal
+          selectedStudent={selectedStudent}
+          mutationForm={mutationForm}
+          setMutationForm={setMutationForm}
+          actionLoading={actionLoading}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setShowDeleteModal(false)}
+        />
+      )}
 
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center justify-between mb-2">
@@ -939,7 +1048,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[10px] sm:text-xs font-semibold text-blue-800/70 dark:text-blue-300/70 truncate">
-                    LAKI-LAKI
+                    Laki-laki
                   </div>
                   <div className="text-sm sm:text-lg font-bold text-blue-700 dark:text-blue-300 truncate">
                     {
@@ -959,7 +1068,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[10px] sm:text-xs font-semibold text-rose-800/70 dark:text-rose-300/70 truncate">
-                    PEREMPUAN
+                    Perempuan
                   </div>
                   <div className="text-sm sm:text-lg font-bold text-rose-700 dark:text-rose-300 truncate">
                     {
@@ -1090,8 +1199,8 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
               className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">Semua Gender</option>
-              <option value="L">LAKI-LAKI</option>
-              <option value="P">PEREMPUAN</option>
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
             </select>
           </div>
 
@@ -1129,7 +1238,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
           {isDefaultView && " (semua kelas, belum difilter)"}
           {searchTerm && ` dengan kata kunci "${searchTerm}"`}
           {selectedKelas && ` Di Kelas ${selectedKelas}`}
-          {selectedGender && ` ${selectedGender === "L" ? "LAKI-LAKI" : "PEREMPUAN"}`}
+          {selectedGender && ` ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}`}
         </div>
       )}
 
@@ -1185,39 +1294,44 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     Jenis Kelamin:
                   </span>
                   <span className="text-gray-900 dark:text-gray-200">
-                    {siswa.gender === "L" ? "LAKI-LAKI" : "PEREMPUAN"}
+                    {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
                   </span>
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  Kelengkapan Data Induk
-                </span>
-                {(() => {
-                  const meta =
-                    COMPLETION_STATUS_META[siswa.completionStatus] || COMPLETION_STATUS_META.belum;
-                  const Icon = COMPLETION_STATUS_ICON[siswa.completionStatus] || XCircle;
-                  return (
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}
-                    >
-                      <Icon size={12} />
-                      {meta.label}
+              {canEditDelete && (
+                <>
+                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      Kelengkapan Data Induk
                     </span>
-                  );
-                })()}
-              </div>
+                    {(() => {
+                      const meta =
+                        COMPLETION_STATUS_META[siswa.completionStatus] ||
+                        COMPLETION_STATUS_META.belum;
+                      const Icon = COMPLETION_STATUS_ICON[siswa.completionStatus] || XCircle;
+                      return (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}
+                        >
+                          <Icon size={12} />
+                          {meta.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
 
-              <div className="mt-2">
-                <button
-                  onClick={() => handleOpenDataInduk(siswa)}
-                  className="w-full px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 border border-indigo-200 dark:border-indigo-800 transition-colors"
-                >
-                  <ClipboardList size={16} />
-                  <span>Lihat Data Siswa Induk</span>
-                </button>
-              </div>
+                  <div className="mt-2">
+                    <button
+                      onClick={() => handleOpenDataInduk(siswa)}
+                      className="w-full px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 border border-indigo-200 dark:border-indigo-800 transition-colors"
+                    >
+                      <ClipboardList size={16} />
+                      <span>Lihat Data Siswa Induk</span>
+                    </button>
+                  </div>
+                </>
+              )}
 
               {canEditDelete && (
                 <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
@@ -1233,7 +1347,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-1"
                   >
                     <Trash2 size={16} />
-                    <span>Hapus</span>
+                    <span>Tandai Keluar</span>
                   </button>
                 </div>
               )}
@@ -1302,12 +1416,16 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                   <th className="px-6 py-4 text-left w-1/12 text-sm uppercase tracking-wider text-center">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-center w-1/12 text-sm uppercase tracking-wider">
-                    Kelengkapan
-                  </th>
-                  <th className="px-6 py-4 text-center w-1/12 text-sm uppercase tracking-wider">
-                    Data Induk
-                  </th>
+                  {canEditDelete && (
+                    <>
+                      <th className="px-6 py-4 text-center w-1/12 text-sm uppercase tracking-wider">
+                        Kelengkapan
+                      </th>
+                      <th className="px-6 py-4 text-center w-1/12 text-sm uppercase tracking-wider">
+                        Data Induk
+                      </th>
+                    </>
+                  )}
                   {canEditDelete && (
                     <th className="px-6 py-4 text-left w-2/12 text-sm uppercase tracking-wider text-center">
                       Aksi
@@ -1341,7 +1459,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                       {siswa.class_id}
                     </td>
                     <td className="px-6 py-4 text-gray-700 dark:text-gray-300">
-                      {siswa.gender === "L" ? "LAKI-LAKI" : "PEREMPUAN"}
+                      {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span
@@ -1354,31 +1472,35 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                         {siswa.is_active ? "Aktif" : "Non-Aktif"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      {(() => {
-                        const meta =
-                          COMPLETION_STATUS_META[siswa.completionStatus] ||
-                          COMPLETION_STATUS_META.belum;
-                        const Icon = COMPLETION_STATUS_ICON[siswa.completionStatus] || XCircle;
-                        return (
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}
+                    {canEditDelete && (
+                      <>
+                        <td className="px-6 py-4 text-center">
+                          {(() => {
+                            const meta =
+                              COMPLETION_STATUS_META[siswa.completionStatus] ||
+                              COMPLETION_STATUS_META.belum;
+                            const Icon = COMPLETION_STATUS_ICON[siswa.completionStatus] || XCircle;
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}
+                              >
+                                <Icon size={12} />
+                                {meta.label}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button
+                            onClick={() => handleOpenDataInduk(siswa)}
+                            className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                            title="Lihat Data Siswa Induk"
                           >
-                            <Icon size={12} />
-                            {meta.label}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleOpenDataInduk(siswa)}
-                        className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
-                        title="Lihat Data Siswa Induk"
-                      >
-                        <ClipboardList size={18} />
-                      </button>
-                    </td>
+                            <ClipboardList size={18} />
+                          </button>
+                        </td>
+                      </>
+                    )}
                     {canEditDelete && (
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
@@ -1392,7 +1514,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                           <button
                             onClick={() => handleDeleteClick(siswa)}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                            title="Hapus Siswa"
+                            title="Tandai Keluar/Pindah"
                           >
                             <Trash2 size={18} />
                           </button>
