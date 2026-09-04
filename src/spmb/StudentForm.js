@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 // Disamain persis sama AGAMA_OPTIONS di DataSiswaInduk.js, biar dropdown
 // yang muncul di form SPMB konsisten sama yang dipake Admin/TU pas
@@ -75,6 +75,69 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
     }
     return isoDateString;
   }, []);
+
+  // Format timestamp update terakhir (mendukung beberapa kemungkinan nama field
+  // dari backend: updated_at, tanggal_update, last_updated, dsb) jadi format
+  // tanggal & jam yang enak dibaca dalam Bahasa Indonesia.
+  const NAMA_BULAN = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
+
+  const formatLastUpdated = useCallback((value) => {
+    if (!value) return "";
+    // Timestamp dari Postgres formatnya "YYYY-MM-DD HH:mm:ss.ffffff" dan
+    // disimpan sebagai waktu lokal (WIB) apa adanya, tanpa info timezone.
+    // Diparsing manual dari string-nya (bukan lewat objek Date) supaya
+    // jam yang ditampilkan dijamin PERSIS sama dengan yang ada di database,
+    // ndak ada resiko digeser oleh konversi timezone browser.
+    const match = String(value)
+      .trim()
+      .match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+    if (!match) return String(value);
+    const [, year, month, day, hour, minute] = match;
+    const namaBulan = NAMA_BULAN[parseInt(month, 10) - 1] || month;
+    return `${parseInt(day, 10)} ${namaBulan} ${year}, ${hour}:${minute} WIB`;
+  }, []);
+
+  const lastUpdatedValue =
+    editingStudent &&
+    (editingStudent.updated_at ||
+      editingStudent.updatedAt ||
+      editingStudent.tanggal_update ||
+      editingStudent.last_updated ||
+      editingStudent.modified_at);
+
+  // Buat mode "Tambah Data Baru": cari data siswa yang PALING TERAKHIR
+  // berhasil diinput (berdasarkan created_at) dari daftar students yang
+  // sudah ada. Berguna buat rekam jejak pas input 200+ data secara
+  // nyicil/beberapa sesi - biar keliatan sampai mana progress terakhir.
+  const lastEnteredStudent = useMemo(() => {
+    if (!students || students.length === 0) return null;
+    return students.reduce((latest, current) => {
+      const currentTime = current.created_at || current.updated_at || current.tanggal_daftar;
+      const latestTime = latest.created_at || latest.updated_at || latest.tanggal_daftar;
+      if (!currentTime) return latest;
+      if (!latestTime) return current;
+      return String(currentTime) > String(latestTime) ? current : latest;
+    }, students[0]);
+  }, [students]);
+
+  const lastEnteredValue =
+    lastEnteredStudent &&
+    (lastEnteredStudent.created_at ||
+      lastEnteredStudent.updated_at ||
+      lastEnteredStudent.tanggal_daftar);
 
   // Daftar pekerjaan standar
   const pekerjaanListAyah = [
@@ -740,6 +803,30 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
         <i className={`fas ${editingStudent ? "fa-edit" : "fa-plus"} mr-2`}></i>
         Mode: {editingStudent ? `Edit Data - ${editingStudent.nama_lengkap}` : "Tambah Data Baru"}
       </div>
+
+      {editingStudent && lastUpdatedValue && (
+        <div className="flex items-center justify-center gap-2 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 rounded-lg py-2 px-3 mb-3 sm:mb-4">
+          <i className="fas fa-history text-gray-400 dark:text-gray-500"></i>
+          <span>
+            Terakhir diperbarui:{" "}
+            <span className="font-semibold">{formatLastUpdated(lastUpdatedValue)}</span>
+          </span>
+        </div>
+      )}
+
+      {!editingStudent && lastEnteredStudent && lastEnteredValue && (
+        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1 sm:gap-2 text-center sm:text-left text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 rounded-lg py-2 px-3 mb-3 sm:mb-4">
+          <span className="flex items-center gap-2">
+            <i className="fas fa-history text-gray-400 dark:text-gray-500"></i>
+            Data terakhir diinput:{" "}
+            <span className="font-semibold">{lastEnteredStudent.nama_lengkap}</span> -{" "}
+            {formatLastUpdated(lastEnteredValue)}
+          </span>
+          <span className="text-gray-400 dark:text-gray-500">
+            Total tersimpan: <span className="font-semibold">{students.length}</span>
+          </span>
+        </div>
+      )}
 
       <div className="sm:hidden bg-white dark:bg-gray-800 rounded-lg p-3 mb-4 border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center mb-3">

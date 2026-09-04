@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-04T02:11:21.595Z",
-  "executionTimeMs": 421,
-  "filesScanned": 232,
+  "generatedAt": "2026-09-04T12:06:35.527Z",
+  "executionTimeMs": 850,
+  "filesScanned": 234,
   "summary": {
     "status": "critical",
     "criticalCount": 1,
@@ -45,24 +45,24 @@
       "issues": [
         {
           "severity": "info",
-          "title": "4964 class warna (di 170 file) kemungkinan belum dark-mode-aware",
+          "title": "5011 class warna (di 172 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
             "src/spmb/StudentForm.js — 120 class belum ada dark: variant",
             "src/pages/CatatanSiswa.js — 118 class belum ada dark: variant",
             "src/pages/grades/Grades.js — 108 class belum ada dark: variant",
-            "src/pages/Students.js — 107 class belum ada dark: variant",
-            "src/spmb/ClassDivision.js — 94 class belum ada dark: variant",
+            "src/spmb/ClassDivision.js — 96 class belum ada dark: variant",
+            "src/pages/datasiswa-induk/DataSiswaInduk.js — 89 class belum ada dark: variant",
             "src/pages/grades/GradesKatrol.js — 88 class belum ada dark: variant",
             "src/components/AdminDashboard.js — 86 class belum ada dark: variant",
             "src/setting/UserManagementTab.js — 86 class belum ada dark: variant",
             "src/pages/TeacherSchedule.js — 82 class belum ada dark: variant",
-            "src/pages/datasiswa-induk/DataSiswaInduk.js — 81 class belum ada dark: variant",
             "src/pages/attendance/AttendanceManagement.js — 78 class belum ada dark: variant",
             "src/setting/school-management/SchoolSettingsTab.js — 76 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
             "src/components/HomeroomTeacherDashboard.js — 67 class belum ada dark: variant",
+            "src/pages/Students.js — 67 class belum ada dark: variant",
             "src/reports/modals/AdminReportModal.js — 66 class belum ada dark: variant",
             "src/attendance-teacher/reports/ITMReport.js — 65 class belum ada dark: variant",
             "src/system/PerformanceMonitor.js — 65 class belum ada dark: variant",
@@ -74,20 +74,20 @@
             "src/spmb/StudentList.js — 59 class belum ada dark: variant",
             "src/system/MonitorDashboard.js — 55 class belum ada dark: variant",
             "src/reports/AdminReports.js — 54 class belum ada dark: variant",
+            "src/setting/school-management/StudentModals.js — 54 class belum ada dark: variant",
             "src/system/DatabaseCleanupMonitor.js — 53 class belum ada dark: variant",
             "src/e-raport/CetakRaport.js — 51 class belum ada dark: variant",
             "src/setting/academic/Simulator.js — 51 class belum ada dark: variant",
+            "src/system/DatabaseStructure.js — 51 class belum ada dark: variant",
             "src/pages/attendance/AdminAttendance.js — 50 class belum ada dark: variant",
             "src/reports/modals/HomeroomReportModal.js — 50 class belum ada dark: variant",
+            "src/setting/portal-siswa/AkunSiswaTab.js — 50 class belum ada dark: variant",
             "src/setting/SystemTab.js — 50 class belum ada dark: variant",
             "src/setting/kelola-raport/RekapKelulusan.js — 48 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
             "src/pages/Classes.js — 47 class belum ada dark: variant",
-            "src/setting/kelola-raport/ImportRaportForm.js — 47 class belum ada dark: variant",
-            "src/setting/ProfileTab.js — 47 class belum ada dark: variant",
-            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant",
-            "src/pages/DenahDuduk.js — 45 class belum ada dark: variant"
+            "src/setting/kelola-raport/ImportRaportForm.js — 47 class belum ada dark: variant"
           ]
         }
       ]
@@ -161,13 +161,10 @@
       "issues": [
         {
           "severity": "critical",
-          "title": "4 query .from() nunjuk ke tabel yang gak ada di strukturfile.txt",
+          "title": "1 query .from() nunjuk ke tabel yang gak ada di strukturfile.txt",
           "description": "Kemungkinan typo nama tabel, atau tabel udah direname/dihapus tapi kodenya belum di-update, atau strukturfile.txt-nya yang basi. Query ini bakal error di runtime.",
           "details": [
-            "src/pages/datasiswa-induk/DataSiswaInduk.js:760 → .from(\"student_mutations\")",
-            "src/pages/Students.js:522 → .from(\"student_mutations\")",
-            "src/reports/modals/AcademicGradesView.js:69 → .from(\"subjects\")",
-            "src/setting/school-management/StudentManagement.js:154 → .from(\"student_mutations\")"
+            "src/reports/modals/AcademicGradesView.js:69 → .from(\"subjects\")"
           ]
         },
         {
@@ -203,11 +200,11 @@
             "src/pages/attendance/AttendanceManagement.js:111 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/attendance/AttendanceManagement.js:128 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/CatatanSiswa.js:891 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
-            "src/pages/datasiswa-induk/DataSiswaInduk.js:437 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
+            "src/pages/datasiswa-induk/DataSiswaInduk.js:445 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/DenahDuduk.js:83 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/KelolaJadwalPiket.js:91 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/Organigram.js:75 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
-            "src/portal-siswa/StudentDashboard.js:180 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
+            "src/portal-siswa/StudentDashboard.js:199 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/portal-siswa/StudentDenahDuduk.js:54 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/portal-siswa/StudentOrganigram.js:50 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/portal-siswa/StudentPiket.js:66 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
@@ -233,8 +230,8 @@
             "src/spmb/SPMB.js:55 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/spmb/SPMB.js:76 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/spmb/SPMB.js:78 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/spmb/SpmbExcel.js:45 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/spmb/SpmbExcel.js:47 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
+            "src/spmb/SpmbExcel.js:46 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
+            "src/spmb/SpmbExcel.js:48 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/utils/systemHelpers.js:16 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/utils/systemHelpers.js:18 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual"
           ]

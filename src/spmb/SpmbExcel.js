@@ -302,6 +302,91 @@ export const exportClassDivision = async (classDistribution, showToast) => {
       valueCell.alignment = { horizontal: "left", vertical: "middle" };
     });
 
+    // 📊 Sheet Sebaran Asal SD -- pivot: baris = asal sekolah, kolom = kelas
+    // (7A, 7B, dst sesuai sortedClasses), isi = jumlah siswa dari sekolah itu
+    // di kelas tersebut. Hanya sekolah dengan TOTAL pendaftar >= 3 (gabungan
+    // semua kelas) yang ditampilkan, diurutkan dari yang paling banyak.
+    const sebaranSheet = workbook.addWorksheet("Sebaran Asal SD");
+
+    // Hitung jumlah siswa per (asal sekolah x kelas)
+    const schoolClassCounts = {}; // { [asalSekolah]: { [className]: count } }
+    sortedClasses.forEach((className) => {
+      (classDistribution[className] || []).forEach((student) => {
+        const asalSekolah = student.asal_sekolah || "-";
+        if (!schoolClassCounts[asalSekolah]) schoolClassCounts[asalSekolah] = {};
+        schoolClassCounts[asalSekolah][className] =
+          (schoolClassCounts[asalSekolah][className] || 0) + 1;
+      });
+    });
+
+    // Total per sekolah (gabungan semua kelas), urutkan dari yang paling
+    // banyak. Semua sekolah ditampilkan (tanpa filter) biar total di sheet
+    // ini tetap sinkron sama total di sheet Rekapitulasi.
+    const schoolRows = Object.entries(schoolClassCounts)
+      .map(([asalSekolah, perClass]) => {
+        const total = sortedClasses.reduce((sum, c) => sum + (perClass[c] || 0), 0);
+        return { asalSekolah, perClass, total };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    // Kolom: Asal Sekolah + tiap kelas + Jumlah
+    sebaranSheet.columns = [
+      { width: 35 }, // Asal Sekolah
+      ...sortedClasses.map(() => ({ width: 10 })), // per kelas
+      { width: 12 }, // Jumlah
+    ];
+
+    const sebaranMergeCols = sortedClasses.length + 2;
+    const sebaranNextRow = addLetterhead(sebaranSheet, {
+      title: `SEBARAN ASAL SEKOLAH DASAR - TAHUN AJARAN ${academicYear}`,
+      mergeCols: sebaranMergeCols,
+      metaLines: [
+        `Tanggal Export: ${currentDate}`,
+        `Total Sekolah Asal: ${schoolRows.length} sekolah`,
+      ],
+    });
+
+    const sebaranHeaders = ["Asal Sekolah", ...sortedClasses, "Jumlah"];
+    const sebaranHeaderRow = sebaranSheet.getRow(sebaranNextRow);
+    sebaranHeaderRow.values = sebaranHeaders;
+    styleTableHeaderRow(sebaranHeaderRow);
+
+    setupPrintOptions(sebaranSheet, {
+      orientation: "portrait",
+      freezeHeaderRow: sebaranNextRow,
+    });
+
+    // Baris data per sekolah
+    schoolRows.forEach((row, index) => {
+      const excelRow = sebaranSheet.getRow(sebaranNextRow + 1 + index);
+      excelRow.values = [
+        row.asalSekolah,
+        ...sortedClasses.map((c) => row.perClass[c] || 0),
+        row.total,
+      ];
+
+      // Semua kolom angka (kelas + jumlah) di-center-in; kolom nama sekolah rata kiri default
+      const numericColIndexes = sortedClasses.map((_, i) => i + 2).concat([sebaranHeaders.length]);
+      styleTableDataRow(excelRow, index, numericColIndexes);
+    });
+
+    // Baris Total per kolom kelas + total keseluruhan
+    const sebaranTotalRowNum = sebaranNextRow + schoolRows.length + 1;
+    const sebaranTotalRow = sebaranSheet.getRow(sebaranTotalRowNum);
+    const grandTotalPerClass = sortedClasses.map((c) =>
+      schoolRows.reduce((sum, row) => sum + (row.perClass[c] || 0), 0)
+    );
+    const grandTotal = grandTotalPerClass.reduce((sum, v) => sum + v, 0);
+    sebaranTotalRow.values = ["Total", ...grandTotalPerClass, grandTotal];
+    sebaranTotalRow.font = { name: EXCEL_FONT_FAMILY, bold: true, size: 10 };
+    sebaranTotalRow.eachCell((cell, colNumber) => {
+      if (colNumber > 1) cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+      };
+    });
+
     // Buat sheet untuk setiap kelas
     sortedClasses.forEach((className) => {
       const students = classDistribution[className];
