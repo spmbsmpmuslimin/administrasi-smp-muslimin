@@ -82,7 +82,7 @@ const findJamKe = (day, timeValue, field) => {
   const target = normalizeJamTime(timeValue);
   if (!target) return null;
   const found = Object.entries(daySchedule).find(
-    ([, jam]) => normalizeJamTime(jam[field]) === target,
+    ([, jam]) => normalizeJamTime(jam[field]) === target
   );
   return found ? found[0] : null;
 };
@@ -108,13 +108,7 @@ const StatusJadwalBadge = ({ startTime, endTime }) => {
 
   const [sh, sm] = startTime.substring(0, 5).split(":").map(Number);
   const [eh, em] = endTime.substring(0, 5).split(":").map(Number);
-  if (
-    Number.isNaN(sh) ||
-    Number.isNaN(sm) ||
-    Number.isNaN(eh) ||
-    Number.isNaN(em)
-  )
-    return null;
+  if (Number.isNaN(sh) || Number.isNaN(sm) || Number.isNaN(eh) || Number.isNaN(em)) return null;
 
   const startDate = new Date(now);
   startDate.setHours(sh, sm, 0, 0);
@@ -178,7 +172,24 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
   // ✅ TAMBAH 2 STATE BARU UNTUK 2 KATEGORI ABSENT
   const [absentStudentsHomeroom, setAbsentStudentsHomeroom] = useState([]); // Kelas walian
-  const [absentStudentsMapel, setAbsentStudentsMapel] = useState([]); // Mapel hari ini
+  const [absentStudentsMapel, setAbsentStudentsMapel] = useState([]); // Mapel hari ini (yang SUDAH diinput sendiri)
+
+  // ✅ NEW: Referensi presensi HARIAN (diinput walikelas lain) untuk kelas-
+  // kelas yang guru ini ajar mapel-nya hari ini. Ini BEDA sama
+  // absentStudentsMapel di atas -- ini bukan hasil input guru mapel sendiri,
+  // tapi "contekan" dari data walikelas kelas tsb, biar pas masuk kelas guru
+  // mapel udah tau siapa yang gak hadir TANPA perlu nanya siswa dulu.
+  // Grouped per class_id: { "7F": [{full_name, status}, ...], "7A": [...] }
+  const [harianReferenceByClass, setHarianReferenceByClass] = useState({});
+
+  // ✅ NEW: Alasan kenapa harianReferenceByClass kosong, biar guru tau itu
+  // normal (bukan error/data ilang). Kemungkinan nilai:
+  // - "no_schedule"    : gak ada jadwal ngajar hari ini (weekend/libur)
+  // - "only_homeroom"  : ada jadwal, tapi cuma di kelas walian sendiri
+  // - "no_data_yet"    : ada jadwal ngajar di kelas lain, tapi walikelas
+  //                      kelas tsb belum input presensi harian hari ini
+  // - "has_data"        : ada datanya, section normal ditampilkan
+  const [harianReferenceStatus, setHarianReferenceStatus] = useState("no_schedule");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -220,15 +231,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
   // Fungsi untuk mendapatkan nama hari dalam Bahasa Indonesia
   const getDayName = (dayIndex) => {
-    const days = [
-      "Minggu",
-      "Senin",
-      "Selasa",
-      "Rabu",
-      "Kamis",
-      "Jumat",
-      "Sabtu",
-    ];
+    const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     return days[dayIndex];
   };
 
@@ -317,7 +320,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
             dayName,
             currentBlock.start_time,
             currentBlock.end_time,
-            blockCount,
+            blockCount
           );
           merged.push(currentBlock);
           currentBlock = { ...schedule };
@@ -331,7 +334,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         dayName,
         currentBlock.start_time,
         currentBlock.end_time,
-        blockCount,
+        blockCount
       );
       merged.push(currentBlock);
     }
@@ -378,9 +381,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         .in("class_id", classIds);
 
       const enrichedSchedules = schedules.map((schedule) => {
-        const assignment = assignments?.find(
-          (a) => a.class_id === schedule.class_id,
-        );
+        const assignment = assignments?.find((a) => a.class_id === schedule.class_id);
         return {
           ...schedule,
           subject: assignment?.subject || "N/A",
@@ -389,10 +390,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         };
       });
 
-      const mergedSchedule = mergeConsecutiveSchedules(
-        enrichedSchedules,
-        dayName,
-      );
+      const mergedSchedule = mergeConsecutiveSchedules(enrichedSchedules, dayName);
       setTodaySchedule(mergedSchedule);
       return mergedSchedule;
     } catch (err) {
@@ -449,17 +447,14 @@ const HomeroomTeacherDashboard = ({ user }) => {
               .lt("tanggal", todayString)
               .order("tanggal", { ascending: false })
               .limit(1)
-              .then((res) => ({ pair, ...res })),
-          ),
+              .then((res) => ({ pair, ...res }))
+          )
         );
 
         const materiMap = {};
         results.forEach(({ pair, data: journalRows, error: journalError }) => {
           if (journalError) {
-            console.error(
-              "❌ Error fetching jurnal_harian (materi terakhir):",
-              journalError,
-            );
+            console.error("❌ Error fetching jurnal_harian (materi terakhir):", journalError);
             return;
           }
           if (journalRows && journalRows.length > 0) {
@@ -473,7 +468,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         setLastMateriMap({});
       }
     },
-    [teacherId],
+    [teacherId]
   );
 
   // ✅ FUNCTION 1: Fetch absent dari kelas walian (presensi harian)
@@ -516,7 +511,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         status,
         students!inner(full_name),
         class_id
-      `,
+      `
         )
         .eq("date", todayString)
         .eq("class_id", homeroomClassId)
@@ -541,7 +536,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
       });
 
       const formatted = Array.from(studentMap.values()).sort((a, b) =>
-        a.full_name.localeCompare(b.full_name),
+        a.full_name.localeCompare(b.full_name)
       );
 
       console.log("✅ Homeroom absent students:", formatted.length);
@@ -569,16 +564,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
         const classIdsToday = [
           ...new Set(
-            todaySchedule
-              .map((s) => s.class_id)
-              .filter((classId) => classId !== homeroomClassId),
+            todaySchedule.map((s) => s.class_id).filter((classId) => classId !== homeroomClassId)
           ),
         ];
 
-        console.log(
-          "📚 Classes taught today (excluding homeroom):",
-          classIdsToday,
-        );
+        console.log("📚 Classes taught today (excluding homeroom):", classIdsToday);
 
         if (classIdsToday.length === 0) {
           console.log("ℹ️ Teacher only teaches homeroom class today");
@@ -615,7 +605,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
           students!inner(full_name),
           class_id,
           subject
-        `,
+        `
           )
           .eq("date", todayString)
           .in("class_id", classIdsToday)
@@ -654,7 +644,110 @@ const HomeroomTeacherDashboard = ({ user }) => {
         setAbsentStudentsMapel([]);
       }
     },
-    [homeroomClassId],
+    [homeroomClassId]
+  );
+
+  // ✅ NEW FUNCTION: Fetch presensi HARIAN (punya walikelas kelas lain) untuk
+  // semua kelas yang guru ini ajar mapel-nya hari ini (exclude kelas walian
+  // sendiri, karena itu udah dihandle fetchAbsentStudentsHomeroom).
+  // TIDAK difilter by teacher_id, karena data ini punya WALIKELAS kelas
+  // tsb, bukan punya guru mapel yang lagi login.
+  const fetchHarianReferenceForMapelClasses = useCallback(
+    async (todaySchedule) => {
+      if (!todaySchedule || todaySchedule.length === 0) {
+        setHarianReferenceByClass({});
+        setHarianReferenceStatus("no_schedule");
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const offset = 7 * 60 * 60 * 1000;
+        const todayIndonesia = new Date(now.getTime() + offset);
+        const todayString = todayIndonesia.toISOString().split("T")[0];
+
+        const classIdsToday = [
+          ...new Set(
+            todaySchedule.map((s) => s.class_id).filter((classId) => classId !== homeroomClassId)
+          ),
+        ];
+
+        if (classIdsToday.length === 0) {
+          setHarianReferenceByClass({});
+          setHarianReferenceStatus("only_homeroom");
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("attendances")
+          .select(
+            `
+          student_id,
+          status,
+          students!inner(full_name),
+          class_id
+        `
+          )
+          .eq("date", todayString)
+          .in("class_id", classIdsToday)
+          .eq("type", "harian")
+          .in("status", ["Sakit", "Izin", "Alpa"])
+          .order("students(full_name)", { ascending: true });
+
+        if (error) throw error;
+
+        // ✅ NEW: Cek juga apa walikelas kelas-kelas ini SUDAH presensi hari
+        // ini sama sekali (walau hasilnya semua Hadir) -- biar bisa bedain
+        // "belum presensi" vs "udah presensi, semua hadir".
+        const { data: anyHarianToday, error: anyError } = await supabase
+          .from("attendances")
+          .select("class_id")
+          .eq("date", todayString)
+          .in("class_id", classIdsToday)
+          .eq("type", "harian")
+          .limit(1);
+
+        if (anyError) throw anyError;
+
+        // Group by class_id, dedup per student
+        const byClass = {};
+        (data || []).forEach((item) => {
+          const classId = item.class_id;
+          if (!byClass[classId]) byClass[classId] = new Map();
+          if (!byClass[classId].has(item.student_id)) {
+            byClass[classId].set(item.student_id, {
+              id: item.student_id,
+              full_name: item.students?.full_name || "Nama tidak tersedia",
+              status: item.status,
+            });
+          }
+        });
+
+        const result = {};
+        Object.entries(byClass).forEach(([classId, studentMap]) => {
+          result[classId] = Array.from(studentMap.values()).sort((a, b) =>
+            a.full_name.localeCompare(b.full_name)
+          );
+        });
+
+        console.log("✅ Harian reference for mapel classes:", Object.keys(result));
+        setHarianReferenceByClass(result);
+
+        if (Object.keys(result).length > 0) {
+          setHarianReferenceStatus("has_data");
+        } else if (anyHarianToday && anyHarianToday.length > 0) {
+          // Walikelas kelas lain udah presensi, tapi semua siswa Hadir
+          setHarianReferenceStatus("has_data");
+        } else {
+          setHarianReferenceStatus("no_data_yet");
+        }
+      } catch (err) {
+        console.error("❌ Error fetching harian reference:", err);
+        setHarianReferenceByClass({});
+        setHarianReferenceStatus("no_data_yet");
+      }
+    },
+    [homeroomClassId]
   );
 
   // Memoize fetchHomeroomDashboardData
@@ -663,7 +756,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
       setError(
         `Guru ${
           fullName || username || "ini"
-        } bukan wali kelas. Dashboard ini khusus untuk wali kelas.`,
+        } bukan wali kelas. Dashboard ini khusus untuk wali kelas.`
       );
       setLoading(false);
       return;
@@ -684,10 +777,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         .single();
 
       if (classError || !classInfo) {
-        throw new Error(
-          "Kelas homeroom tidak ditemukan: " +
-            (classError?.message || "No data"),
-        );
+        throw new Error("Kelas homeroom tidak ditemukan: " + (classError?.message || "No data"));
       }
 
       const currentYear = classInfo.academic_year;
@@ -702,28 +792,27 @@ const HomeroomTeacherDashboard = ({ user }) => {
         console.log("📅 Today (WIB):", todayString);
       }
 
-      const [studentsResult, attendanceResult, teachingResult] =
-        await Promise.all([
-          supabase
-            .from("students")
-            .select("id, full_name, gender")
-            .eq("class_id", homeroomClassId)
-            .eq("academic_year", classInfo.academic_year)
-            .eq("is_active", true),
+      const [studentsResult, attendanceResult, teachingResult] = await Promise.all([
+        supabase
+          .from("students")
+          .select("id, full_name, gender")
+          .eq("class_id", homeroomClassId)
+          .eq("academic_year", classInfo.academic_year)
+          .eq("is_active", true),
 
-          supabase
-            .from("attendances")
-            .select("id, student_id, date, status, type, class_id")
-            .eq("date", todayString) // ← GANTI JADI 'todayString'
-            .eq("class_id", homeroomClassId),
+        supabase
+          .from("attendances")
+          .select("id, student_id, date, status, type, class_id")
+          .eq("date", todayString) // ← GANTI JADI 'todayString'
+          .eq("class_id", homeroomClassId),
 
-          supabase
-            .from("teacher_assignments")
-            .select("id, class_id, subject, academic_year, semester")
-            .eq("teacher_id", teacherId)
-            .eq("academic_year", currentYear)
-            .eq("semester", activeSemester),
-        ]);
+        supabase
+          .from("teacher_assignments")
+          .select("id, class_id, subject, academic_year, semester")
+          .eq("teacher_id", teacherId)
+          .eq("academic_year", currentYear)
+          .eq("semester", activeSemester),
+      ]);
 
       const students = studentsResult.data || [];
       const attendances = attendanceResult.data || [];
@@ -814,7 +903,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
       await Promise.all([
         fetchLastMateri(schedule), // Pengingat materi terakhir
         fetchAbsentStudentsHomeroom(), // Absen kelas walian
-        fetchAbsentStudentsMapel(userId, schedule), // Absen mapel hari ini
+        fetchAbsentStudentsMapel(userId, schedule), // Absen mapel hari ini (yg sudah diinput sendiri)
+        fetchHarianReferenceForMapelClasses(schedule), // ✅ NEW: referensi presensi harian dari walikelas lain
       ]);
 
       setError(null);
@@ -834,6 +924,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
     fetchLastMateri,
     fetchAbsentStudentsHomeroom,
     fetchAbsentStudentsMapel,
+    fetchHarianReferenceForMapelClasses,
     activeAcademicInfo,
   ]);
 
@@ -913,9 +1004,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
   const primarySubject = useMemo(() => {
     if (Object.keys(subjectBreakdown).length === 0) return "";
     return Object.keys(subjectBreakdown).reduce(
-      (a, b) =>
-        subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b,
-      teachingData.subjects[0] || "",
+      (a, b) => (subjectBreakdown[a].length > subjectBreakdown[b].length ? a : b),
+      teachingData.subjects[0] || ""
     );
   }, [subjectBreakdown, teachingData.subjects]);
 
@@ -945,15 +1035,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-amber-200 dark:border-amber-700 p-6 sm:p-8 text-center">
-            <div className="text-amber-500 dark:text-amber-400 text-4xl sm:text-5xl mb-4">
-              ⚠️
-            </div>
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
-              Info
-            </h3>
-            <p className="text-amber-600 dark:text-amber-400 mb-4 text-sm sm:text-base">
-              {error}
-            </p>
+            <div className="text-amber-500 dark:text-amber-400 text-4xl sm:text-5xl mb-4">⚠️</div>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">Info</h3>
+            <p className="text-amber-600 dark:text-amber-400 mb-4 text-sm sm:text-base">{error}</p>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">
               Username: {username}
               <br />
@@ -970,7 +1054,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
             </p>
             <button
               onClick={handleRetry}
-              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+            >
               Coba Lagi
             </button>
           </div>
@@ -1022,9 +1107,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 </p>
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-base sm:text-lg md:text-2xl">
-                  👨‍🎓
-                </span>
+                <span className="text-white text-base sm:text-lg md:text-2xl">👨‍🎓</span>
               </div>
             </div>
           </div>
@@ -1040,18 +1123,14 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   <p className="text-base sm:text-lg md:text-xl font-bold text-blue-700 dark:text-blue-300">
                     {stats.maleStudents}
                   </p>
-                  <p className="text-xs text-violet-700/70 dark:text-violet-400">
-                    L
-                  </p>
+                  <p className="text-xs text-violet-700/70 dark:text-violet-400">L</p>
                 </div>
                 <div className="text-violet-400 dark:text-violet-600">/</div>
                 <div className="text-center">
                   <p className="text-base sm:text-lg md:text-xl font-bold text-pink-600 dark:text-pink-300">
                     {stats.femaleStudents}
                   </p>
-                  <p className="text-xs text-violet-700/70 dark:text-violet-400">
-                    P
-                  </p>
+                  <p className="text-xs text-violet-700/70 dark:text-violet-400">P</p>
                 </div>
               </div>
             </div>
@@ -1069,9 +1148,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 </p>
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-base sm:text-lg md:text-2xl">
-                  ✅
-                </span>
+                <span className="text-white text-base sm:text-lg md:text-2xl">✅</span>
               </div>
             </div>
           </div>
@@ -1090,25 +1167,19 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   <div className="space-y-0.5 text-xs text-rose-700/80 dark:text-rose-300">
                     {stats.sakitToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-orange-600 dark:text-orange-400">
-                          🏥
-                        </span>
+                        <span className="text-orange-600 dark:text-orange-400">🏥</span>
                         <span>Sakit: {stats.sakitToday}</span>
                       </div>
                     )}
                     {stats.izinToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-blue-600 dark:text-blue-400">
-                          📋
-                        </span>
+                        <span className="text-blue-600 dark:text-blue-400">📋</span>
                         <span>Izin: {stats.izinToday}</span>
                       </div>
                     )}
                     {stats.alpaToday > 0 && (
                       <div className="flex items-center gap-1">
-                        <span className="text-red-600 dark:text-red-400">
-                          ✖
-                        </span>
+                        <span className="text-red-600 dark:text-red-400">✖</span>
                         <span>Alpa: {stats.alpaToday}</span>
                       </div>
                     )}
@@ -1116,9 +1187,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 )}
               </div>
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center ml-2 shadow-lg">
-                <span className="text-white text-base sm:text-lg md:text-2xl">
-                  📊
-                </span>
+                <span className="text-white text-base sm:text-lg md:text-2xl">📊</span>
               </div>
             </div>
           </div>
@@ -1137,83 +1206,75 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 </h3>
 
                 <div className="space-y-4">
-                  {Object.entries(subjectBreakdown).map(
-                    ([subject, classes]) => {
-                      const classByGrade = {};
-                      classes.forEach((className) => {
-                        const grade = className.charAt(0);
-                        if (!classByGrade[grade]) {
-                          classByGrade[grade] = [];
-                        }
-                        classByGrade[grade].push(className);
-                      });
+                  {Object.entries(subjectBreakdown).map(([subject, classes]) => {
+                    const classByGrade = {};
+                    classes.forEach((className) => {
+                      const grade = className.charAt(0);
+                      if (!classByGrade[grade]) {
+                        classByGrade[grade] = [];
+                      }
+                      classByGrade[grade].push(className);
+                    });
 
-                      return (
-                        <div
-                          key={subject}
-                          className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
-                              {subject}
-                            </h4>
-                            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                              {classes.length} kelas
-                            </span>
-                          </div>
-
-                          <div className="space-y-2">
-                            {Object.entries(classByGrade)
-                              .sort(([a], [b]) => a.localeCompare(b))
-                              .map(([grade, gradeClasses]) => (
-                                <div
-                                  key={grade}
-                                  className="flex flex-wrap gap-2">
-                                  {gradeClasses
-                                    .sort()
-                                    .map((className, index) => (
-                                      <span
-                                        key={index}
-                                        className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm sm:text-base font-bold ${
-                                          className === stats.className
-                                            ? "bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
-                                            : "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                                        }`}>
-                                        {className}
-                                        {className === stats.className && (
-                                          <span className="ml-1 text-green-600 dark:text-green-400">
-                                            👑
-                                          </span>
-                                        )}
-                                      </span>
-                                    ))}
-                                </div>
-                              ))}
-                          </div>
+                    return (
+                      <div
+                        key={subject}
+                        className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
+                            {subject}
+                          </h4>
+                          <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                            {classes.length} kelas
+                          </span>
                         </div>
-                      );
-                    },
-                  )}
+
+                        <div className="space-y-2">
+                          {Object.entries(classByGrade)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([grade, gradeClasses]) => (
+                              <div key={grade} className="flex flex-wrap gap-2">
+                                {gradeClasses.sort().map((className, index) => (
+                                  <span
+                                    key={index}
+                                    className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm sm:text-base font-bold ${
+                                      className === stats.className
+                                        ? "bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+                                        : "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                                    }`}
+                                  >
+                                    {className}
+                                    {className === stats.className && (
+                                      <span className="ml-1 text-green-600 dark:text-green-400">
+                                        👑
+                                      </span>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* ✅ SECTION 1: SISWA TIDAK HADIR - KELAS WALIAN */}
                 <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-700">
                   <h4 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3 flex items-center">
-                    <span className="mr-2 text-blue-600 dark:text-blue-400">
-                      🏫
-                    </span>
+                    <span className="mr-2 text-blue-600 dark:text-blue-400">🏫</span>
                     Siswa Tidak Hadir - Kelas {homeroomClassId}
                   </h4>
 
-                  {absentStudentsHomeroom.length > 0 &&
-                  absentStudentsHomeroom[0]?.no_data ? (
+                  {absentStudentsHomeroom.length > 0 && absentStudentsHomeroom[0]?.no_data ? (
                     <div className="text-center py-4 border border-amber-200 dark:border-amber-700 rounded-lg bg-amber-50 dark:bg-amber-900/30 mb-6">
                       <div className="text-xl mb-2">⚠️</div>
                       <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
                         Anda belum melakukan presensi hari ini
                       </p>
                       <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
-                        Silakan lakukan presensi harian untuk kelas{" "}
-                        {homeroomClassId}
+                        Silakan lakukan presensi harian untuk kelas {homeroomClassId}
                       </p>
                     </div>
                   ) : absentStudentsHomeroom.length > 0 ? (
@@ -1231,7 +1292,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
                           {absentStudentsHomeroom.map((student, index) => (
                             <tr
                               key={student.id}
-                              className="border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
+                              className="border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
+                            >
                               <td className="py-2 px-3 text-slate-600 dark:text-gray-400">
                                 {index + 1}
                               </td>
@@ -1244,10 +1306,10 @@ const HomeroomTeacherDashboard = ({ user }) => {
                               <td className="py-2 px-3">
                                 <span
                                   className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(
-                                    student.status,
-                                  )}`}>
-                                  {getStatusIcon(student.status)}{" "}
-                                  {student.status}
+                                    student.status
+                                  )}`}
+                                >
+                                  {getStatusIcon(student.status)} {student.status}
                                 </span>
                               </td>
                             </tr>
@@ -1271,15 +1333,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 {/* ✅ SECTION 2: SISWA TIDAK HADIR - MATA PELAJARAN */}
                 <div className="pt-6 border-t border-slate-200 dark:border-gray-700">
                   <h4 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-3 flex items-center">
-                    <span className="mr-2 text-purple-600 dark:text-purple-400">
-                      📚
-                    </span>
-                    Siswa Tidak Hadir - Mata Pelajaran{" "}
-                    {primarySubject ? `(${primarySubject})` : ""}
+                    <span className="mr-2 text-purple-600 dark:text-purple-400">📚</span>
+                    Siswa Tidak Hadir - Mata Pelajaran {primarySubject ? `(${primarySubject})` : ""}
                   </h4>
 
-                  {absentStudentsMapel.length > 0 &&
-                  absentStudentsMapel[0]?.no_data ? (
+                  {absentStudentsMapel.length > 0 && absentStudentsMapel[0]?.no_data ? (
                     <div className="text-center py-4 border border-amber-200 dark:border-amber-700 rounded-lg bg-amber-50 dark:bg-amber-900/30">
                       <div className="text-xl mb-2">⚠️</div>
                       <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
@@ -1304,7 +1362,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
                           {absentStudentsMapel.map((student, index) => (
                             <tr
                               key={student.id}
-                              className="border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
+                              className="border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
+                            >
                               <td className="py-2 px-3 text-slate-600 dark:text-gray-400">
                                 {index + 1}
                               </td>
@@ -1317,10 +1376,10 @@ const HomeroomTeacherDashboard = ({ user }) => {
                               <td className="py-2 px-3">
                                 <span
                                   className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(
-                                    student.status,
-                                  )}`}>
-                                  {getStatusIcon(student.status)}{" "}
-                                  {student.status}
+                                    student.status
+                                  )}`}
+                                >
+                                  {getStatusIcon(student.status)} {student.status}
                                 </span>
                               </td>
                             </tr>
@@ -1341,6 +1400,111 @@ const HomeroomTeacherDashboard = ({ user }) => {
                       </p>
                     </div>
                   )}
+                </div>
+
+                {/* ✅ NEW SECTION: REFERENSI PRESENSI HARIAN DARI WALI KELAS LAIN
+                    Ini "contekan" sebelum guru mapel input presensi mapel-nya
+                    sendiri -- diambil dari presensi harian yg sudah diinput
+                    walikelas kelas tsb (BUKAN input guru mapel ini).
+                    ✅ UPDATE: sekarang section ini SELALU muncul (bukan cuma
+                    pas ada data absen), dengan pesan kondisi yang beda-beda,
+                    biar guru tau kondisi "kosong"-nya itu normal atau bukan.
+                    ✅ UPDATE 2: dipindah ke bawah Section 2 (Mata Pelajaran)
+                    sesuai permintaan -- urutannya sekarang Kelas Walian →
+                    Mata Pelajaran → Referensi Presensi Harian. */}
+                <div className="pt-6 border-t border-slate-200 dark:border-gray-700">
+                  <h4 className="text-sm font-semibold text-slate-800 dark:text-gray-100 mb-1 flex items-center">
+                    <span className="mr-2 text-indigo-600 dark:text-indigo-400">📋</span>
+                    Referensi Presensi Harian (dari Wali Kelas)
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mb-3">
+                    Data ini dari presensi harian yang sudah diinput wali kelas masing-masing.
+                    Gunakan sebagai gambaran awal sebelum mengisi presensi mapel Anda sendiri.
+                  </p>
+
+                  {harianReferenceStatus === "no_schedule" && (
+                    <div className="text-center py-4 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900/30">
+                      <div className="text-xl mb-2">📅</div>
+                      <p className="text-sm text-slate-600 dark:text-gray-400">
+                        Tidak ada jadwal mengajar hari ini
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-gray-500 mt-1">
+                        Referensi presensi harian akan muncul di sini pada hari Anda memiliki jadwal
+                        mengajar mapel.
+                      </p>
+                    </div>
+                  )}
+
+                  {harianReferenceStatus === "only_homeroom" && (
+                    <div className="text-center py-4 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900/30">
+                      <div className="text-xl mb-2">🏫</div>
+                      <p className="text-sm text-slate-600 dark:text-gray-400">
+                        Hari ini Anda hanya mengajar di kelas walian sendiri
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-gray-500 mt-1">
+                        Referensi ini khusus untuk kelas mapel di luar kelas walian Anda.
+                      </p>
+                    </div>
+                  )}
+
+                  {harianReferenceStatus === "no_data_yet" && (
+                    <div className="text-center py-4 border border-amber-200 dark:border-amber-700 rounded-lg bg-amber-50 dark:bg-amber-900/30">
+                      <div className="text-xl mb-2">⏳</div>
+                      <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                        Wali kelas dari kelas yang Anda ajar hari ini belum menginput presensi
+                        harian
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                        Coba cek lagi beberapa saat lagi, atau hubungi wali kelas terkait.
+                      </p>
+                    </div>
+                  )}
+
+                  {harianReferenceStatus === "has_data" &&
+                    Object.keys(harianReferenceByClass).length === 0 && (
+                      <div className="text-center py-4 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900/30">
+                        <div className="text-xl mb-2">🎉</div>
+                        <p className="text-sm text-slate-600 dark:text-gray-400">
+                          Semua siswa hadir di kelas yang Anda ajar hari ini (berdasarkan presensi
+                          harian wali kelas)
+                        </p>
+                      </div>
+                    )}
+
+                  {harianReferenceStatus === "has_data" &&
+                    Object.keys(harianReferenceByClass).length > 0 && (
+                      <div className="space-y-4">
+                        {Object.entries(harianReferenceByClass)
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([classId, studentsInClass]) => (
+                            <div
+                              key={classId}
+                              className="border border-indigo-100 dark:border-indigo-900/50 rounded-lg p-3 bg-indigo-50/40 dark:bg-indigo-900/10"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                                  🏫 Kelas {classId}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-gray-400">
+                                  {studentsInClass.length} siswa tidak hadir
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {studentsInClass.map((student) => (
+                                  <span
+                                    key={student.id}
+                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(
+                                      student.status
+                                    )}`}
+                                  >
+                                    {getStatusIcon(student.status)} {student.full_name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                 </div>
               </div>
             )}
@@ -1375,7 +1539,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
                   {todaySchedule.map((schedule) => (
                     <div
                       key={schedule.id}
-                      className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                      className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1">
                           <div className="text-center min-w-[70px]">
@@ -1385,9 +1550,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                             <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
                               {formatTime(schedule.start_time)}
                             </div>
-                            <div className="text-xs text-slate-400 dark:text-slate-600">
-                              -
-                            </div>
+                            <div className="text-xs text-slate-400 dark:text-slate-600">-</div>
                             <div className="font-semibold text-blue-700 dark:text-blue-400 text-xs sm:text-sm">
                               {formatTime(schedule.end_time)}
                             </div>
@@ -1407,16 +1570,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
                             <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                               <span className="flex items-center gap-1">
                                 <span>🏫</span>
-                                <span>
-                                  Kelas{" "}
-                                  {schedule.classes?.id || schedule.class_id}
-                                </span>
+                                <span>Kelas {schedule.classes?.id || schedule.class_id}</span>
                               </span>
                               {schedule.room_number && (
                                 <>
-                                  <span className="text-slate-400 dark:text-slate-600">
-                                    •
-                                  </span>
+                                  <span className="text-slate-400 dark:text-slate-600">•</span>
                                   <span className="flex items-center gap-1">
                                     <span>📍</span>
                                     <span>R.{schedule.room_number}</span>
@@ -1437,14 +1595,11 @@ const HomeroomTeacherDashboard = ({ user }) => {
                       {/* ✅ NEW: Pengingat materi terakhir sebelum masuk kelas */}
                       {(() => {
                         const lastMateri =
-                          lastMateriMap[
-                            `${schedule.class_id}||${schedule.subject}`
-                          ];
+                          lastMateriMap[`${schedule.class_id}||${schedule.subject}`];
                         return lastMateri ? (
                           <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                              📝 Materi terakhir (
-                              {formatTanggalIndoSingkat(lastMateri.tanggal)}):
+                              📝 Materi terakhir ({formatTanggalIndoSingkat(lastMateri.tanggal)}):
                             </p>
                             <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 mt-0.5 truncate">
                               {lastMateri.materi || "-"}
@@ -1463,9 +1618,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
                 </div>
               ) : (
                 <div className="text-center py-8 sm:py-10 md:py-12">
-                  <div className="text-4xl sm:text-5xl md:text-5xl mb-4">
-                    📅
-                  </div>
+                  <div className="text-4xl sm:text-5xl md:text-5xl mb-4">📅</div>
                   <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2 text-sm sm:text-base">
                     Tidak Ada Jadwal
                   </h4>
@@ -1484,11 +1637,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
         {/* 📢💬 Pengumuman Kelas & Saran/Masukan Siswa — digabung 1 card
             2 tab biar gak numpuk 2 widget panjang berturut-turut */}
         <div className="mt-6">
-          <WaliKelasWidgetTab
-            classId={homeroomClassId}
-            teacherId={userId}
-            currentUser={user}
-          />
+          <WaliKelasWidgetTab classId={homeroomClassId} teacherId={userId} currentUser={user} />
         </div>
       </div>
     </div>

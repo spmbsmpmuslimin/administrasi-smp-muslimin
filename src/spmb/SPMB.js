@@ -223,6 +223,17 @@ const useStudentsData = (userData, showToast, targetYear) => {
           status: "diterima",
           is_transferred: false,
           tanggal_daftar: new Date().toISOString(),
+          // --- Rekam jejak admin yang input/ubah data ---
+          // input_by cuma diisi pas data BARU dibuat (insert), biar nama
+          // admin pertama yang input ndak ketimpa tiap kali data ini
+          // diedit belakangan. updated_by selalu diisi tiap kali simpan
+          // (insert maupun edit), buat tau siapa terakhir megang data ini.
+          ...(!isEdit && {
+            input_by: userData?.full_name || userData?.username || null,
+            input_by_id: userData?.id || null,
+          }),
+          updated_by: userData?.full_name || userData?.username || null,
+          updated_by_id: userData?.id || null,
         };
 
         let result;
@@ -257,7 +268,7 @@ const useStudentsData = (userData, showToast, targetYear) => {
         setIsLoading(false);
       }
     },
-    [convertDateFormat, targetYear, showToast]
+    [convertDateFormat, targetYear, showToast, userData]
   );
 
   // Delete student

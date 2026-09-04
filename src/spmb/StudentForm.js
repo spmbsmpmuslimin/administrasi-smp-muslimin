@@ -79,35 +79,33 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
   // Format timestamp update terakhir (mendukung beberapa kemungkinan nama field
   // dari backend: updated_at, tanggal_update, last_updated, dsb) jadi format
   // tanggal & jam yang enak dibaca dalam Bahasa Indonesia.
-  const NAMA_BULAN = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
-  ];
-
   const formatLastUpdated = useCallback((value) => {
     if (!value) return "";
-    // Timestamp dari Postgres formatnya "YYYY-MM-DD HH:mm:ss.ffffff" dan
-    // disimpan sebagai waktu lokal (WIB) apa adanya, tanpa info timezone.
-    // Diparsing manual dari string-nya (bukan lewat objek Date) supaya
-    // jam yang ditampilkan dijamin PERSIS sama dengan yang ada di database,
-    // ndak ada resiko digeser oleh konversi timezone browser.
-    const match = String(value)
-      .trim()
-      .match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
-    if (!match) return String(value);
-    const [, year, month, day, hour, minute] = match;
-    const namaBulan = NAMA_BULAN[parseInt(month, 10) - 1] || month;
-    return `${parseInt(day, 10)} ${namaBulan} ${year}, ${hour}:${minute} WIB`;
+    // Kolom timestamp di Supabase/Postgres disimpan dalam UTC (standar
+    // timestamptz), BUKAN langsung WIB. Jadi harus dikonversi +7 jam dulu
+    // pakai timeZone "Asia/Jakarta" - bukan dibaca mentah-mentah.
+    let raw = String(value).trim();
+    const hasTimezoneInfo = /Z$|[+-]\d{2}:?\d{2}$/.test(raw);
+    let isoString = raw.replace(" ", "T");
+    // Kalau string belum ada info timezone eksplisit, anggap UTC (ini
+    // perilaku default kolom timestamptz Supabase saat difetch).
+    if (!hasTimezoneInfo) {
+      isoString += "Z";
+    }
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return raw;
+    const tanggal = date.toLocaleDateString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+    const jam = date.toLocaleTimeString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${tanggal}, ${jam} WIB`;
   }, []);
 
   const lastUpdatedValue =
@@ -805,24 +803,40 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
       </div>
 
       {editingStudent && lastUpdatedValue && (
-        <div className="flex items-center justify-center gap-2 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 rounded-lg py-2 px-3 mb-3 sm:mb-4">
-          <i className="fas fa-history text-gray-400 dark:text-gray-500"></i>
+        <div className="flex items-center justify-center gap-2 flex-wrap text-center text-xs sm:text-sm text-sky-800 dark:text-sky-200 bg-sky-50 dark:bg-sky-900/20 border border-sky-300 dark:border-sky-700/50 rounded-lg py-2 px-3 mb-3 sm:mb-4">
+          <i className="fas fa-clock-rotate-left text-sky-500 dark:text-sky-400"></i>
           <span>
             Terakhir diperbarui:{" "}
             <span className="font-semibold">{formatLastUpdated(lastUpdatedValue)}</span>
+            {(editingStudent.updated_by || editingStudent.input_by) && (
+              <>
+                {" "}
+                oleh{" "}
+                <span className="font-semibold">
+                  {editingStudent.updated_by || editingStudent.input_by}
+                </span>
+              </>
+            )}
           </span>
         </div>
       )}
 
       {!editingStudent && lastEnteredStudent && lastEnteredValue && (
-        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1 sm:gap-2 text-center sm:text-left text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 rounded-lg py-2 px-3 mb-3 sm:mb-4">
-          <span className="flex items-center gap-2">
-            <i className="fas fa-history text-gray-400 dark:text-gray-500"></i>
-            Data terakhir diinput:{" "}
-            <span className="font-semibold">{lastEnteredStudent.nama_lengkap}</span> -{" "}
-            {formatLastUpdated(lastEnteredValue)}
+        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1 sm:gap-2 text-center sm:text-left text-xs sm:text-sm text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/50 rounded-lg py-2 px-3 mb-3 sm:mb-4">
+          <span className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+            <i className="fas fa-clock-rotate-left text-amber-500 dark:text-amber-400"></i>
+            Terakhir diinput oleh:{" "}
+            <span className="font-semibold">
+              {lastEnteredStudent.input_by ||
+                lastEnteredStudent.updated_by ||
+                "Admin (belum tercatat)"}
+            </span>{" "}
+            <span className="text-amber-600/80 dark:text-amber-300/70">
+              (Siswa: {lastEnteredStudent.nama_lengkap})
+            </span>{" "}
+            - {formatLastUpdated(lastEnteredValue)}
           </span>
-          <span className="text-gray-400 dark:text-gray-500">
+          <span className="text-amber-600/80 dark:text-amber-300/70">
             Total tersimpan: <span className="font-semibold">{students.length}</span>
           </span>
         </div>
@@ -871,7 +885,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                   value={formData.nama_lengkap}
                   onChange={(e) => updateFormData("nama_lengkap", e.target.value)}
                   className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
-                  placeholder="Masukkan nama lengkap sesuai akta kelahiran"
+                  placeholder="Contoh: Ahmad Fauzan Ramadhan (sesuai akta kelahiran)"
                   required
                 />
               </div>
@@ -926,7 +940,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                     value={formData.tempat_lahir}
                     onChange={(e) => updateFormData("tempat_lahir", e.target.value)}
                     className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
-                    placeholder="Kota kelahiran"
+                    placeholder="Contoh: Cililin"
                     required
                   />
                 </div>
@@ -960,7 +974,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                   value={formData.asal_sekolah}
                   onChange={(e) => updateFormData("asal_sekolah", e.target.value)}
                   className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
-                  placeholder="Nama SD asal"
+                  placeholder="Contoh: SDN Pasir Panjang"
                 />
               </div>
 
@@ -1026,7 +1040,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                     value={formData.no_akta_lahir}
                     onChange={(e) => updateFormData("no_akta_lahir", e.target.value)}
                     className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
-                    placeholder="Nomor akta kelahiran"
+                    placeholder="Contoh: 3216-LT-01012013-0001"
                   />
                 </div>
               </div>
@@ -1043,7 +1057,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                   value={formData.no_kip}
                   onChange={(e) => updateFormData("no_kip", e.target.value)}
                   className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
-                  placeholder="Nomor KIP (kalau ada)"
+                  placeholder="Contoh: 1234567890 (kalau ada)"
                 />
               </div>
             </div>
@@ -1068,7 +1082,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                     value={formData.nama_ayah}
                     onChange={(e) => updateFormData("nama_ayah", e.target.value)}
                     className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
-                    placeholder="Nama lengkap ayah"
+                    placeholder="Contoh: Ujang Ruhiyat"
                   />
                 </div>
 
@@ -1081,7 +1095,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                     value={formData.nama_ibu}
                     onChange={(e) => updateFormData("nama_ibu", e.target.value)}
                     className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
-                    placeholder="Nama lengkap ibu"
+                    placeholder="Contoh: Yeti Kusmiati"
                   />
                 </div>
               </div>
@@ -1277,7 +1291,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                   onChange={(e) => updateFormData("alamat", e.target.value)}
                   className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none resize-none"
                   rows="3"
-                  placeholder="Alamat lengkap tempat tinggal"
+                  placeholder="Contoh: Kp. Pasir Panjang RT 01/05, Cililin"
                   required
                 />
               </div>

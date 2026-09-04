@@ -136,6 +136,13 @@ const Attendance = ({ user, onShowToast }) => {
   const [studentsLoaded, setStudentsLoaded] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
 
+  // ✅ NEW: Nandain kalau attendanceStatus yg lagi ditampilin itu HASIL
+  // PRE-FILL dari presensi harian walikelas (bukan input guru mapel sendiri).
+  // Dipakai buat nampilin banner + tombol konfirmasi eksplisit, dan biar
+  // hasUserInteracted TETAP false sampai guru mapel benar-benar konfirmasi
+  // (jadi ga bisa ke-submit tanpa sadar/tanpa dicek dulu).
+  const [isPrefilledFromHomeroom, setIsPrefilledFromHomeroom] = useState(false);
+
   // ✅ STATE UNTUK EXPORT EXCEL
   const [teacherAssignment, setTeacherAssignment] = useState(null);
 
@@ -934,6 +941,7 @@ const Attendance = ({ user, onShowToast }) => {
         setAttendanceStatus({});
         setAttendanceNotes({});
         setHasUserInteracted(false);
+        setIsPrefilledFromHomeroom(false);
 
         // ✅ Cache for offline use
         await offlineHelper.cacheData(cacheKey, studentsData, "students");
@@ -945,6 +953,7 @@ const Attendance = ({ user, onShowToast }) => {
           setAttendanceStatus({});
           setAttendanceNotes({});
           setHasUserInteracted(false);
+          setIsPrefilledFromHomeroom(false);
           if (onShowToast) onShowToast("📦 Menggunakan data cache", "info");
         } else {
           setMessage("Tidak ada cache. Hubungkan internet.");
@@ -1033,14 +1042,64 @@ const Attendance = ({ user, onShowToast }) => {
         setAttendanceStatus(statusMap);
         setAttendanceNotes(notesMap);
         setHasUserInteracted(true);
+        setIsPrefilledFromHomeroom(false);
 
         console.log("✅ Loaded existing attendance data:", attendanceData.length, "records");
-      } else {
-        setAttendanceStatus({});
-        setAttendanceNotes({});
-        setHasUserInteracted(false);
-        console.log("ℹ️ No existing attendance - waiting for user input");
+        return;
       }
+
+      // ✅ NEW: Kalau lagi mode MAPEL dan guru ini BELUM PERNAH input
+      // presensi mapel-nya sendiri untuk kelas+tanggal ini, coba ambil
+      // presensi HARIAN (punya walikelas kelas tsb) sebagai referensi/
+      // pre-fill. Guru mapel tetap harus konfirmasi eksplisit sebelum bisa
+      // Simpan (lihat banner + tombol "Gunakan Data Ini" di bawah tabel).
+      if (!isHomeroomDaily()) {
+        let harianQuery = supabase
+          .from("attendances")
+          .select("student_id, status, notes")
+          .eq("date", date)
+          .eq("type", "harian")
+          .eq("class_id", selectedClass);
+        // ✅ Sengaja TIDAK difilter by teacher_id -- data harian ini
+        // punya walikelas kelas tsb, bukan guru mapel yang lagi login.
+
+        harianQuery = filterBySemester(harianQuery, selectedSemesterId);
+
+        const { data: harianData, error: harianError } = await harianQuery;
+
+        if (harianError) {
+          console.error("Error fetching harian reference:", harianError);
+        } else if (harianData && harianData.length > 0) {
+          const statusMap = {};
+          const notesMap = {};
+
+          harianData.forEach((record) => {
+            statusMap[record.student_id] = record.status;
+            if (record.notes) {
+              notesMap[record.student_id] = record.notes;
+            }
+          });
+
+          setAttendanceStatus(statusMap);
+          setAttendanceNotes(notesMap);
+          setHasUserInteracted(false); // ✅ Masih harus dikonfirmasi manual
+          setIsPrefilledFromHomeroom(true);
+
+          console.log(
+            "📋 Pre-filled from homeroom (harian) attendance:",
+            harianData.length,
+            "records"
+          );
+          return;
+        }
+      }
+
+      // Ga ada presensi mapel sendiri MAUPUN referensi harian
+      setAttendanceStatus({});
+      setAttendanceNotes({});
+      setHasUserInteracted(false);
+      setIsPrefilledFromHomeroom(false);
+      console.log("ℹ️ No existing attendance - waiting for user input");
     } catch (error) {
       console.error("Error in fetchExistingAttendance:", error);
     } finally {
@@ -1052,6 +1111,7 @@ const Attendance = ({ user, onShowToast }) => {
   const handleStatusChange = (studentId, status) => {
     setAttendanceStatus((prev) => ({ ...prev, [studentId]: status }));
     setHasUserInteracted(true);
+    setIsPrefilledFromHomeroom(false); // ✅ Sudah diedit manual, bukan pre-fill murni lagi
   };
 
   const handleNotesChange = (studentId, notes) => {
@@ -1525,6 +1585,46 @@ const Attendance = ({ user, onShowToast }) => {
           {/* ✅ ATTENDANCE STATS - Summary Cards */}
           <AttendanceStats attendanceStatus={attendanceStatus} students={students} />
 
+          {/* ✅ NEW: BANNER REFERENSI PRESENSI HARIAN DARI WALI KELAS
+              Muncul kalau data yang ditampilkan di bawah ini adalah HASIL
+              PRE-FILL dari presensi harian, belum diinput/dikonfirmasi guru
+              mapel sendiri. Tombol Simpan tetap terkunci sampai guru
+              menekan "Gunakan Data Ini" atau mengedit manual. */}
+          {isPrefilledFromHomeroom && (
+            <div className="mb-6 bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-900/10 border-2 border-indigo-200 dark:border-indigo-700 rounded-2xl p-5 shadow-sm transition-colors duration-200">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center">
+                  <span className="text-2xl">📋</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg text-indigo-800 dark:text-indigo-300 mb-1">
+                    Data Referensi dari Presensi Harian Wali Kelas
+                  </h3>
+                  <p className="text-indigo-700 dark:text-indigo-400 leading-relaxed text-sm">
+                    Status di bawah ini otomatis terisi dari presensi harian yang sudah diinput wali
+                    kelas {selectedClass}. Silakan periksa dulu, ubah kalau ada yang beda (misal
+                    siswa izin mendadak di jam pelajaran ini), lalu konfirmasi atau simpan.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setHasUserInteracted(true);
+                      if (onShowToast) {
+                        onShowToast(
+                          "Data referensi dikonfirmasi. Silakan Simpan Presensi.",
+                          "success"
+                        );
+                      }
+                    }}
+                    disabled={isReadOnlyMode}
+                    className="mt-3 px-4 py-2.5 text-sm font-semibold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ✅ Sesuai, Gunakan Data Ini
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons & Search */}
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6 lg:mb-8">
             <div className="relative flex-grow">
@@ -1604,6 +1704,7 @@ const Attendance = ({ user, onShowToast }) => {
             handleStatusChange={handleStatusChange}
             handleNotesChange={handleNotesChange}
             teacherAssignment={teacherAssignment}
+            isPrefilledFromHomeroom={isPrefilledFromHomeroom}
           />
         </>
       )}

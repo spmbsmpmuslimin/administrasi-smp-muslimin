@@ -15,6 +15,10 @@ const AttendanceTable = ({
   onNextPage,
   onPrevPage,
   isReadOnlyMode = false,
+  // ✅ NEW: Nandain kalau status kehadiran yg lagi ditampilin itu hasil
+  // pre-fill dari presensi harian walikelas (belum dikonfirmasi/diedit guru
+  // mapel). Dipakai buat nampilin badge kecil di tiap baris siswa.
+  isPrefilledFromHomeroom = false,
 }) => {
   const getInitials = (name) => {
     if (!name) return "??";
@@ -139,8 +143,16 @@ const AttendanceTable = ({
                         {getInitials(student.full_name)}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5">
                           {student.full_name}
+                          {isPrefilledFromHomeroom && (
+                            <span
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 whitespace-nowrap"
+                              title="Status ini otomatis dari presensi harian wali kelas"
+                            >
+                              📋 dari harian
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">
                           {student.gender === "L" ? "Laki-laki" : "Perempuan"} •{" "}
@@ -218,8 +230,18 @@ const AttendanceTable = ({
                     {getInitials(student.full_name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-slate-900 dark:text-slate-100 mb-1 truncate">
-                      {index + 1}. {student.full_name}
+                    <div className="font-semibold text-slate-900 dark:text-slate-100 mb-1 truncate flex items-center gap-1.5">
+                      <span className="truncate">
+                        {index + 1}. {student.full_name}
+                      </span>
+                      {isPrefilledFromHomeroom && (
+                        <span
+                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 whitespace-nowrap shrink-0"
+                          title="Status ini otomatis dari presensi harian wali kelas"
+                        >
+                          📋 harian
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400">
                       NIS: {student.nis}

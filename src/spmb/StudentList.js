@@ -19,7 +19,16 @@ const StudentList = ({
   allStudents,
 }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [viewMode, setViewMode] = useState("table");
+  // Default tampilan otomatis: Kartu di HP (layar sempit, tabel 8 kolom bakal
+  // harus di-scroll horizontal), Tabel di laptop/desktop. Ini cuma nentuin
+  // NILAI AWAL sekali pas komponen pertama dimuat - abis itu user tetap bebas
+  // ganti manual pakai toggle, dan pilihannya ndak akan ketimpa otomatis lagi.
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      return "cards";
+    }
+    return "table";
+  });
   const [isExporting, setIsExporting] = useState(false);
 
   const effectiveTotalPages = totalPages > 0 ? totalPages : Math.ceil(totalStudents / rowsPerPage);
@@ -521,7 +530,7 @@ const StudentList = ({
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl transition-all duration-300">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base">
+          <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base">
             {getDisplayNumber(index)}
           </div>
           <div>
@@ -542,39 +551,38 @@ const StudentList = ({
         <div className="flex gap-2 w-full sm:w-auto justify-end">
           <button
             onClick={() => handleDownloadFormulir(student)}
-            className="bg-gradient-to-r from-green-600 to-green-400 dark:from-green-700 dark:to-green-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
+            className="text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
             title="Download Formulir PDF"
           >
             <i className="fas fa-file-pdf"></i>
-            <span className="hidden sm:inline">PDF</span>
+            <span>PDF</span>
           </button>
           <button
             onClick={() => handleEdit(student)}
-            className="bg-gradient-to-r from-yellow-600 to-yellow-400 dark:from-yellow-700 dark:to-yellow-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
+            className="text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
             title="Edit Data"
           >
-            <i className="fas fa-edit"></i>
-            <span className="hidden sm:inline">Edit</span>
+            <i className="fas fa-pen"></i>
+            <span>Edit</span>
           </button>
           <button
             onClick={() => handleDelete(student.id)}
-            className="bg-gradient-to-r from-red-600 to-red-400 dark:from-red-700 dark:to-red-500 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
+            className="text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1 flex-1 sm:flex-none justify-center min-h-[44px]"
             title="Hapus Data"
           >
             <i className="fas fa-trash"></i>
-            <span className="hidden sm:inline">Hapus</span>
+            <span>Hapus</span>
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-sm">
-        {/* 🔥 NIS - BARU DITAMBAHKAN */}
         <div>
-          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">🆔 NIS</div>
-          <div className="font-medium text-blue-700 dark:text-blue-300 font-mono text-sm sm:text-base break-words">
-            {student.nis || (
-              <span className="text-gray-400 dark:text-gray-500 italic">Belum ada</span>
-            )}
+          <div className="text-gray-500 dark:text-gray-400 mb-1 text-xs sm:text-sm">
+            No. Pendaftaran
+          </div>
+          <div className="font-medium text-slate-700 dark:text-slate-300 font-mono text-sm sm:text-base break-words">
+            {student.no_pendaftaran || "-"}
           </div>
         </div>
 
@@ -632,42 +640,42 @@ const StudentList = ({
       </h2>
 
       {/* Search and Controls */}
-      <div className="flex flex-col md:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex-1 relative">
           <input
             type="text"
             value={searchTerm}
             onChange={onSearch}
-            className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none focus:-translate-y-1 pl-10 sm:pl-12 min-h-[48px]"
+            className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-sm sm:text-base transition-colors bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none pl-10 sm:pl-12 min-h-[48px]"
             placeholder="Cari nama siswa, asal SD, atau nama orang tua..."
           />
           <i className="fas fa-search absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm sm:text-base"></i>
         </div>
 
-        <div className="flex gap-2 sm:gap-3 flex-col xs:flex-row">
+        <div className="grid grid-cols-3 gap-2 w-full">
           {/* View Mode Toggle */}
-          <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl flex overflow-hidden w-full xs:w-auto">
+          <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl flex overflow-hidden">
             <button
               onClick={() => setViewMode("table")}
-              className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 flex-1 justify-center min-h-[48px] ${
+              className={`px-2 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-sm font-semibold transition-colors flex items-center gap-1 sm:gap-2 justify-center min-h-[44px] sm:min-h-[48px] flex-1 min-w-0 ${
                 viewMode === "table"
-                  ? "bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white"
+                  ? "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >
-              <i className="fas fa-table text-xs sm:text-sm"></i>
-              <span className="hidden sm:inline">Tabel</span>
+              <i className="fas fa-table text-xs sm:text-sm shrink-0"></i>
+              <span className="truncate">Tabel</span>
             </button>
             <button
               onClick={() => setViewMode("cards")}
-              className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 flex-1 justify-center min-h-[48px] ${
+              className={`px-2 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-sm font-semibold transition-colors flex items-center gap-1 sm:gap-2 justify-center min-h-[44px] sm:min-h-[48px] flex-1 min-w-0 ${
                 viewMode === "cards"
-                  ? "bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white"
+                  ? "bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >
-              <i className="fas fa-th-large text-xs sm:text-sm"></i>
-              <span className="hidden sm:inline">Kartu</span>
+              <i className="fas fa-th-large text-xs sm:text-sm shrink-0"></i>
+              <span className="truncate">Kartu</span>
             </button>
           </div>
 
@@ -675,44 +683,51 @@ const StudentList = ({
           <button
             onClick={handleExportData}
             disabled={isExporting || !allStudents || allStudents.length === 0}
-            className="bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none"
+            className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-2 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-[11px] sm:text-sm transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 justify-center min-h-[44px] sm:min-h-[48px] min-w-0"
           >
-            <i className="fas fa-file-export text-sm sm:text-base"></i>
-            <span className="hidden sm:inline">{isExporting ? "Exporting..." : "Export Data"}</span>
+            <i className="fas fa-file-export text-xs sm:text-sm shrink-0"></i>
+            <span className="hidden sm:inline truncate">
+              {isExporting ? "Exporting..." : "Export Excel"}
+            </span>
+            <span className="sm:hidden truncate">{isExporting ? "Exporting..." : "Export"}</span>
           </button>
 
           <button
             onClick={onLoadStudents}
             disabled={isLoading}
-            className="bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-600 dark:to-blue-400 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-400 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none"
+            className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-[11px] sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 justify-center min-h-[44px] sm:min-h-[48px] min-w-0"
           >
-            <i className="fas fa-sync-alt text-sm sm:text-base"></i>
-            <span className="hidden sm:inline">{isLoading ? "Memuat..." : "Refresh"}</span>
+            <i className="fas fa-sync-alt text-xs sm:text-sm shrink-0"></i>
+            <span className="truncate">{isLoading ? "Memuat..." : "Refresh"}</span>
           </button>
         </div>
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <div className="bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-900/20 dark:to-blue-800/10 border-2 border-blue-200 dark:border-blue-800/30 rounded-xl p-3 sm:p-4 text-center">
-          <div className="text-xl sm:text-2xl font-bold text-blue-800 dark:text-blue-300">
+      <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-xl p-2 sm:p-4 text-center">
+          <div className="text-base sm:text-2xl font-bold text-blue-800 dark:text-blue-300">
             {totalStudents}
           </div>
-          <div className="text-blue-600 dark:text-blue-400 text-xs sm:text-sm">Total Pendaftar</div>
+          <div className="text-blue-600 dark:text-blue-400 text-[10px] sm:text-sm leading-tight">
+            Total Pendaftar
+          </div>
         </div>
-        <div className="bg-gradient-to-r from-green-100 to-green-50 dark:from-green-900/20 dark:to-green-800/10 border-2 border-green-200 dark:border-green-800/30 rounded-xl p-3 sm:p-4 text-center">
-          <div className="text-xl sm:text-2xl font-bold text-green-800 dark:text-green-300">
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-2 sm:p-4 text-center">
+          <div className="text-base sm:text-2xl font-bold text-emerald-800 dark:text-emerald-300">
             {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "L").length : 0}
           </div>
-          <div className="text-green-600 dark:text-green-400 text-xs sm:text-sm">
-            Siswa Laki-laki
+          <div className="text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-sm leading-tight">
+            Laki-laki
           </div>
         </div>
-        <div className="bg-gradient-to-r from-pink-100 to-pink-50 dark:from-pink-900/20 dark:to-pink-800/10 border-2 border-pink-200 dark:border-pink-800/30 rounded-xl p-3 sm:p-4 text-center">
-          <div className="text-xl sm:text-2xl font-bold text-pink-800 dark:text-pink-300">
+        <div className="bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800/40 rounded-xl p-2 sm:p-4 text-center">
+          <div className="text-base sm:text-2xl font-bold text-pink-800 dark:text-pink-300">
             {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "P").length : 0}
           </div>
-          <div className="text-pink-600 dark:text-pink-400 text-xs sm:text-sm">Siswa Perempuan</div>
+          <div className="text-pink-600 dark:text-pink-400 text-[10px] sm:text-sm leading-tight">
+            Perempuan
+          </div>
         </div>
       </div>
 
@@ -740,19 +755,18 @@ const StudentList = ({
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px]">
-              <thead className="bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-white">
+              <thead className="bg-slate-800 dark:bg-slate-900 text-white">
                 <tr>
-                  <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[60px]">
+                  <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[50px]">
                     No
                   </th>
 
-                  {/* 🔥 KOLOM BARU: NIS */}
-                  <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[120px] sm:min-w-[140px]">
-                    NIS
+                  <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[130px] sm:min-w-[150px]">
+                    No. Pendaftaran
                   </th>
 
                   <th
-                    className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-xs sm:text-sm min-w-[130px] sm:min-w-[150px]"
+                    className="p-3 text-left font-semibold cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-800 transition-colors text-xs sm:text-sm min-w-[130px] sm:min-w-[150px]"
                     onClick={() => handleSort("nama_lengkap")}
                   >
                     <div className="flex items-center gap-1 sm:gap-2">
@@ -761,7 +775,7 @@ const StudentList = ({
                     </div>
                   </th>
                   <th
-                    className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-xs sm:text-sm min-w-[60px]"
+                    className="p-3 text-left font-semibold cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-800 transition-colors text-xs sm:text-sm min-w-[60px]"
                     onClick={() => handleSort("jenis_kelamin")}
                   >
                     <div className="flex items-center gap-1 sm:gap-2">
@@ -776,7 +790,7 @@ const StudentList = ({
                     Orang Tua
                   </th>
                   <th
-                    className="p-3 text-left font-semibold cursor-pointer hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors text-xs sm:text-sm min-w-[130px] sm:min-w-[150px]"
+                    className="p-3 text-left font-semibold cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-800 transition-colors text-xs sm:text-sm min-w-[130px] sm:min-w-[150px]"
                     onClick={() => handleSort("asal_sekolah")}
                   >
                     <div className="flex items-center gap-1 sm:gap-2">
@@ -784,7 +798,7 @@ const StudentList = ({
                       <i className={getSortIcon("asal_sekolah")}></i>
                     </div>
                   </th>
-                  <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[140px] sm:min-w-[180px]">
+                  <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[220px]">
                     Aksi
                   </th>
                 </tr>
@@ -814,17 +828,10 @@ const StudentList = ({
                         {getDisplayNumber(index)}
                       </td>
 
-                      {/* 🔥 CELL BARU: NIS */}
                       <td className="p-3">
-                        {student.nis ? (
-                          <div className="text-xs sm:text-sm font-mono font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded inline-block break-words">
-                            {student.nis}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                            Belum ada
-                          </span>
-                        )}
+                        <div className="text-xs sm:text-sm font-mono font-medium text-slate-700 dark:text-slate-300 break-words">
+                          {student.no_pendaftaran || "-"}
+                        </div>
                       </td>
 
                       <td className="p-3">
@@ -874,31 +881,31 @@ const StudentList = ({
                           {student.asal_sekolah || "-"}
                         </div>
                       </td>
-                      <td className="p-3">
-                        <div className="flex gap-1 sm:gap-2 flex-wrap">
+                      <td className="p-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => handleDownloadFormulir(student)}
-                            className="bg-gradient-to-r from-green-600 to-green-400 dark:from-green-700 dark:to-green-500 text-white px-2 sm:px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 justify-center min-h-[36px] min-w-[60px] sm:min-w-[80px]"
+                            className="h-9 px-2.5 flex items-center gap-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                             title="Download Formulir PDF"
                           >
                             <i className="fas fa-file-pdf text-xs"></i>
-                            <span className="hidden xs:inline">PDF</span>
+                            <span>PDF</span>
                           </button>
                           <button
                             onClick={() => handleEdit(student)}
-                            className="bg-gradient-to-r from-yellow-600 to-yellow-400 dark:from-yellow-700 dark:to-yellow-500 text-white px-2 sm:px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 justify-center min-h-[36px] min-w-[60px] sm:min-w-[80px]"
+                            className="h-9 px-2.5 flex items-center gap-1.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                             title="Edit Data"
                           >
-                            <i className="fas fa-edit text-xs"></i>
-                            <span className="hidden xs:inline">Edit</span>
+                            <i className="fas fa-pen text-xs"></i>
+                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDelete(student.id)}
-                            className="bg-gradient-to-r from-red-600 to-red-400 dark:from-red-700 dark:to-red-500 text-white px-2 sm:px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex items-center gap-1 justify-center min-h-[36px] min-w-[60px] sm:min-w-[80px]"
+                            className="h-9 px-2.5 flex items-center gap-1.5 rounded-lg text-xs font-semibold text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                             title="Hapus Data"
                           >
                             <i className="fas fa-trash text-xs"></i>
-                            <span className="hidden xs:inline">Hapus</span>
+                            <span>Hapus</span>
                           </button>
                         </div>
                       </td>
@@ -951,7 +958,7 @@ const StudentList = ({
                       onClick={() => onPageChange(pageNum)}
                       className={`min-w-[36px] sm:min-w-[44px] h-10 sm:h-12 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center justify-center ${
                         currentPageNum === pageNum
-                          ? "bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white shadow-lg"
+                          ? "bg-blue-600 dark:bg-blue-500 text-white shadow-sm"
                           : "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                       }`}
                     >
