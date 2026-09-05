@@ -1,9 +1,28 @@
-// components/Classes.js
-import React, { useState, useEffect, useMemo } from "react";
+// pages/Classes.js
+// Dirender lewat menuConfig.js DI DALAM Layout.js -- sidebar, header, dan
+// background halaman udah disediain Layout.js. Komponen ini pakai
+// PageContainer & Card standar dari components/ui, bukan bikin
+// min-h-screen/background sendiri.
+import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { DataExcel } from "../pages/DataExcel";
+import { AlertTriangle, Users, FileSpreadsheet } from "lucide-react";
+import PageContainer from "../components/ui/PageContainer";
+import Card from "../components/ui/Card";
+import { PageTitle, SectionTitle, Text, Muted, Subtitle } from "../components/ui/Typography";
 
-export const Classes = ({ user, onShowToast }) => {
+// State kosong dipakai bareng oleh versi mobile (card) & versi tablet/desktop (table)
+const EmptyState = ({ darkMode }) => (
+  <div className="py-10 sm:py-12 text-center">
+    <Users className={`mx-auto mb-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`} size={40} />
+    <SectionTitle darkMode={darkMode} className="mb-1">
+      Tidak ada data kelas
+    </SectionTitle>
+    <Muted darkMode={darkMode}>Tidak ada data kelas yang tersedia saat ini.</Muted>
+  </div>
+);
+
+export const Classes = ({ user, onShowToast, darkMode }) => {
   const [kelasData, setKelasData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -110,347 +129,326 @@ export const Classes = ({ user, onShowToast }) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-4 sm:mb-6 md:mb-8">
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
-              Data Kelas
-            </h1>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 transition-colors duration-300">
-              Memuat data kelas...
-            </p>
-          </div>
-          <div className="flex justify-center items-center h-48 sm:h-64">
-            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 border-t-3 border-b-3 border-blue-500 dark:border-blue-400 transition-colors duration-300"></div>
-          </div>
+      <PageContainer darkMode={darkMode}>
+        <div>
+          <PageTitle darkMode={darkMode}>Data Kelas</PageTitle>
+          <Subtitle darkMode={darkMode}>Memuat data kelas...</Subtitle>
         </div>
-      </div>
+        <div className="flex justify-center items-center h-48 sm:h-64">
+          <div
+            className={`animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 ${
+              darkMode ? "border-blue-400" : "border-blue-600"
+            }`}
+          />
+        </div>
+      </PageContainer>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-4 sm:mb-6 md:mb-8">
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
-              Data Kelas
-            </h1>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 transition-colors duration-300">
-              Manajemen Data Kelas SMP Muslimin Cililin
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 md:p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex flex-col items-center justify-center py-6 sm:py-8 md:py-12 text-center">
-              <div className="bg-red-100 dark:bg-red-900/30 p-2 sm:p-3 rounded-full mb-3 sm:mb-4">
-                <svg
-                  className="w-6 h-6 sm:w-8 sm:h-8 text-red-600 dark:text-red-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  ></path>
-                </svg>
-              </div>
-              <h3 className="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-white mb-1 transition-colors duration-300">
-                Terjadi Kesalahan
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 transition-colors duration-300">
-                {error}
-              </p>
-              <button
-                onClick={fetchDataKelas}
-                className="px-3 sm:px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 text-xs sm:text-sm touch-manipulation min-h-[44px]"
-              >
-                Coba Lagi
-              </button>
+      <PageContainer
+        darkMode={darkMode}
+        title="Data Kelas"
+        subtitle="Manajemen Data Kelas SMP Muslimin Cililin"
+      >
+        <Card darkMode={darkMode}>
+          <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center">
+            <div
+              className={`p-3 rounded-full mb-3 sm:mb-4 ${
+                darkMode ? "bg-red-900/30" : "bg-red-100"
+              }`}
+            >
+              <AlertTriangle className={darkMode ? "text-red-400" : "text-red-600"} size={28} />
             </div>
+            <SectionTitle darkMode={darkMode} className="mb-1">
+              Terjadi Kesalahan
+            </SectionTitle>
+            <Text darkMode={darkMode} className="mb-4">
+              {error}
+            </Text>
+            <button
+              onClick={fetchDataKelas}
+              className={`px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors touch-manipulation min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                darkMode
+                  ? "bg-blue-500 hover:bg-blue-600 focus:ring-offset-gray-800"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              Coba Lagi
+            </button>
           </div>
-        </div>
-      </div>
+        </Card>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto">
-        {/* Header dengan tombol Export */}
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 sm:mb-6 md:mb-8 gap-2 sm:gap-3">
-          <div>
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
-              Data Kelas
-            </h1>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-300 transition-colors duration-300">
-              Manajemen Data Kelas SMP Muslimin Cililin
-            </p>
-          </div>
-
-          {/* Tombol Export Excel */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {kelasData.length > 0 && (
-              <button
-                onClick={handleExportExcel}
-                className="bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center justify-center gap-1 sm:gap-2 transition-all duration-300 text-xs sm:text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg touch-manipulation min-h-[44px]"
-              >
-                <svg
-                  className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Export Excel
-              </button>
-            )}
-          </div>
+    <PageContainer darkMode={darkMode}>
+      {/* Header: judul halaman + tombol export */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <PageTitle darkMode={darkMode}>Data Kelas</PageTitle>
+          <Subtitle darkMode={darkMode}>Manajemen Data Kelas SMP Muslimin Cililin</Subtitle>
         </div>
 
-        {/* ---------------------------------------------------- */}
-        {/* 🚀 LAYOUT MOBILE-FIRST (Card View) - Default/HP/Kecil */}
-        {/* ---------------------------------------------------- */}
-        <div className="sm:hidden space-y-3">
-          {kelasData.length > 0 ? (
-            kelasData.map((kelas, index) => (
+        {kelasData.length > 0 && (
+          <button
+            onClick={handleExportExcel}
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-white shadow-sm transition-colors touch-manipulation min-h-[44px] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+              darkMode
+                ? "bg-green-600 hover:bg-green-500 focus:ring-offset-gray-900"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            <FileSpreadsheet size={16} />
+            Export Excel
+          </button>
+        )}
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* Mobile (di bawah sm): daftar Card, satu kelas = satu Card */}
+      {/* ---------------------------------------------------- */}
+      <div className="sm:hidden space-y-3">
+        {kelasData.length > 0 ? (
+          kelasData.map((kelas, index) => (
+            <Card key={kelas.id} darkMode={darkMode} className="touch-manipulation">
               <div
-                key={kelas.id}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-md dark:shadow-gray-900/50 p-3 sm:p-4 border border-gray-100 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900 transition-all duration-300 touch-manipulation"
+                className={`flex justify-between items-start border-b pb-3 mb-3 ${
+                  darkMode ? "border-gray-700" : "border-gray-100"
+                }`}
               >
-                {/* Header Card: Kelas & Tahun Ajaran */}
-                <div className="flex justify-between items-start border-b border-gray-100 dark:border-gray-700 pb-2 sm:pb-3 mb-2 sm:mb-3">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      No. {index + 1}
-                    </p>
-                    <p className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {kelas.id}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {kelas.academic_year}
-                    </p>
-                  </div>
-                  {/* Wali Kelas */}
-                  <div className="text-right">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Wali Kelas
-                    </p>
-                    {kelas.wali_kelas ? (
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {kelas.wali_kelas.full_name}
-                      </span>
-                    ) : (
-                      <span className="text-sm font-medium text-gray-400 dark:text-gray-500 italic">
-                        Belum ditentukan
-                      </span>
-                    )}
-                  </div>
+                <div>
+                  <Muted darkMode={darkMode} className="block mb-1">
+                    No. {index + 1}
+                  </Muted>
+                  <p
+                    className={`text-lg font-bold ${darkMode ? "text-blue-400" : "text-blue-600"}`}
+                  >
+                    {kelas.id}
+                  </p>
+                  <Muted darkMode={darkMode}>{kelas.academic_year}</Muted>
                 </div>
-
-                {/* Body Card: Statistik Siswa */}
-                <div className="flex justify-between items-center text-center">
-                  <div className="flex-1 border-r border-gray-100 dark:border-gray-700 pr-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Total Siswa</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
-                      {kelas.jumlah_siswa}
-                    </p>
-                  </div>
-                  <div className="flex-1 border-r border-gray-100 dark:border-gray-700 px-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Laki-laki</p>
-                    <p className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {kelas.laki_laki}
-                    </p>
-                  </div>
-                  <div className="flex-1 pl-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Perempuan</p>
-                    <p className="text-base sm:text-lg font-bold text-pink-500 dark:text-pink-400">
-                      {kelas.perempuan}
-                    </p>
-                  </div>
+                <div className="text-right">
+                  <Muted darkMode={darkMode} className="block mb-1">
+                    Wali Kelas
+                  </Muted>
+                  {kelas.wali_kelas ? (
+                    <Text darkMode={darkMode} className="font-semibold">
+                      {kelas.wali_kelas.full_name}
+                    </Text>
+                  ) : (
+                    <Text darkMode={darkMode} className="italic opacity-70">
+                      Belum ditentukan
+                    </Text>
+                  )}
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-              <div className="py-6 sm:py-8 text-center">
-                <svg
-                  className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Tidak ada data kelas
-                </h3>
-                <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Tidak ada data kelas yang tersedia saat ini.
-                </p>
-              </div>
-            </div>
-          )}
 
-          {/* Card Total untuk Mobile */}
-          {kelasData.length > 0 && (
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white rounded-xl shadow-xl p-3 sm:p-4 mt-3">
-              <h4 className="text-sm sm:text-base md:text-lg font-bold mb-2 sm:mb-3 border-b border-blue-400 dark:border-blue-500 pb-1 sm:pb-2">
-                TOTAL KESELURUHAN
-              </h4>
               <div className="flex justify-between items-center text-center">
-                <div className="flex-1 border-r border-blue-400 dark:border-blue-500 pr-2">
-                  <p className="text-xs font-medium">Siswa Total</p>
-                  <p className="text-xl sm:text-2xl md:text-3xl font-extrabold">{totalSiswa}</p>
+                <div
+                  className={`flex-1 border-r pr-2 ${
+                    darkMode ? "border-gray-700" : "border-gray-100"
+                  }`}
+                >
+                  <Muted darkMode={darkMode}>Total Siswa</Muted>
+                  <p className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                    {kelas.jumlah_siswa}
+                  </p>
                 </div>
-                <div className="flex-1 border-r border-blue-400 dark:border-blue-500 px-2">
-                  <p className="text-xs font-medium">Laki-laki</p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold">{totalLaki}</p>
+                <div
+                  className={`flex-1 border-r px-2 ${
+                    darkMode ? "border-gray-700" : "border-gray-100"
+                  }`}
+                >
+                  <Muted darkMode={darkMode}>Laki-laki</Muted>
+                  <p
+                    className={`text-base font-bold ${darkMode ? "text-blue-400" : "text-blue-600"}`}
+                  >
+                    {kelas.laki_laki}
+                  </p>
                 </div>
                 <div className="flex-1 pl-2">
-                  <p className="text-xs font-medium">Perempuan</p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold">{totalPerempuan}</p>
+                  <Muted darkMode={darkMode}>Perempuan</Muted>
+                  <p
+                    className={`text-base font-bold ${darkMode ? "text-pink-400" : "text-pink-500"}`}
+                  >
+                    {kelas.perempuan}
+                  </p>
                 </div>
               </div>
+            </Card>
+          ))
+        ) : (
+          <Card darkMode={darkMode}>
+            <EmptyState darkMode={darkMode} />
+          </Card>
+        )}
+
+        {/* Ringkasan total -- cuma tampil di mobile, versi desktop ada di baris TOTAL tabel */}
+        {kelasData.length > 0 && (
+          <div
+            className={`rounded-xl shadow-md p-4 text-white bg-gradient-to-r ${
+              darkMode ? "from-blue-700 to-blue-800" : "from-blue-600 to-blue-700"
+            }`}
+          >
+            <h4
+              className={`text-base font-bold mb-3 border-b pb-2 ${
+                darkMode ? "border-blue-500" : "border-blue-400"
+              }`}
+            >
+              Total Keseluruhan
+            </h4>
+            <div className="flex justify-between items-center text-center">
+              <div className="flex-1 border-r border-blue-400/60 pr-2">
+                <p className="text-xs font-medium opacity-90">Siswa Total</p>
+                <p className="text-xl font-extrabold">{totalSiswa}</p>
+              </div>
+              <div className="flex-1 border-r border-blue-400/60 px-2">
+                <p className="text-xs font-medium opacity-90">Laki-laki</p>
+                <p className="text-lg font-bold">{totalLaki}</p>
+              </div>
+              <div className="flex-1 pl-2">
+                <p className="text-xs font-medium opacity-90">Perempuan</p>
+                <p className="text-lg font-bold">{totalPerempuan}</p>
+              </div>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* Tablet & desktop (sm ke atas): tabel penuh di dalam Card */}
+      {/* ---------------------------------------------------- */}
+      <Card darkMode={darkMode} noPadding className="hidden sm:block overflow-hidden">
+        <div className="overflow-x-auto">
+          {kelasData.length > 0 ? (
+            <table className="w-full">
+              <thead>
+                <tr
+                  className={`text-white bg-gradient-to-r ${
+                    darkMode ? "from-gray-700 to-gray-800" : "from-blue-600 to-blue-700"
+                  }`}
+                >
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-12">
+                    No.
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-1/5">
+                    Kelas
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-1/4">
+                    Wali Kelas
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                    Jumlah Siswa
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                    Laki-laki
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                    Perempuan
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${darkMode ? "divide-gray-700" : "divide-gray-200"}`}>
+                {kelasData.map((kelas, index) => (
+                  <tr
+                    key={kelas.id}
+                    className={`transition-colors ${
+                      darkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <td
+                      className={`px-4 py-3 whitespace-nowrap text-sm ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {index + 1}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className={`font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                        {kelas.id}
+                      </div>
+                      <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                        {kelas.academic_year}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {kelas.wali_kelas ? (
+                        <span className={`text-sm ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
+                          {kelas.wali_kelas.full_name}
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-sm italic ${
+                            darkMode ? "text-gray-500" : "text-gray-400"
+                          }`}
+                        >
+                          Belum ditentukan
+                        </span>
+                      )}
+                    </td>
+                    <td
+                      className={`px-4 py-3 whitespace-nowrap text-sm font-semibold ${
+                        darkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {kelas.jumlah_siswa}
+                    </td>
+                    <td
+                      className={`px-4 py-3 whitespace-nowrap text-sm ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {kelas.laki_laki}
+                    </td>
+                    <td
+                      className={`px-4 py-3 whitespace-nowrap text-sm ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {kelas.perempuan}
+                    </td>
+                  </tr>
+                ))}
+
+                {/* Baris Total */}
+                <tr
+                  className={`font-semibold border-t-2 ${
+                    darkMode ? "bg-blue-900/30 border-blue-700" : "bg-blue-50 border-blue-200"
+                  }`}
+                >
+                  <td
+                    className={`px-4 py-3 text-sm ${darkMode ? "text-white" : "text-gray-900"}`}
+                    colSpan="3"
+                  >
+                    TOTAL
+                  </td>
+                  <td
+                    className={`px-4 py-3 text-sm ${darkMode ? "text-blue-300" : "text-blue-700"}`}
+                  >
+                    {totalSiswa}
+                  </td>
+                  <td
+                    className={`px-4 py-3 text-sm ${darkMode ? "text-blue-300" : "text-blue-700"}`}
+                  >
+                    {totalLaki}
+                  </td>
+                  <td
+                    className={`px-4 py-3 text-sm ${darkMode ? "text-blue-300" : "text-blue-700"}`}
+                  >
+                    {totalPerempuan}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            <EmptyState darkMode={darkMode} />
           )}
         </div>
-
-        {/* ---------------------------------------------------- */}
-        {/* 💻 LAYOUT TABLE - Tablet (sm: ke atas) & Laptop */}
-        {/* ---------------------------------------------------- */}
-        <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-          {/* Table Data Kelas */}
-          <div className="overflow-x-auto">
-            {kelasData.length > 0 ? (
-              <table className="w-full">
-                <thead>
-                  {/* ✅ PERUBAHAN DI SINI: Ganti bg-blue-600 jadi gradient */}
-                  <tr className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-gray-700 dark:to-gray-800 text-white">
-                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider w-12">
-                      No.
-                    </th>
-                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider w-1/5">
-                      Kelas
-                    </th>
-                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider w-1/4">
-                      Wali Kelas
-                    </th>
-                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider">
-                      Jumlah Siswa
-                    </th>
-                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider">
-                      Laki-laki
-                    </th>
-                    <th className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm font-semibold uppercase tracking-wider">
-                      Perempuan
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {kelasData.map((kelas, index) => (
-                    <tr
-                      key={kelas.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-xs md:text-sm text-gray-700 dark:text-gray-300 text-left">
-                        {index + 1}
-                      </td>
-                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-left">
-                        <div className="font-semibold text-gray-900 dark:text-white">
-                          {kelas.id}
-                        </div>
-                        <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                          {kelas.academic_year}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-left">
-                        {kelas.wali_kelas ? (
-                          <span className="text-gray-900 dark:text-gray-200 text-xs md:text-sm">
-                            {kelas.wali_kelas.full_name}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500 italic text-xs md:text-sm">
-                            Belum ditentukan
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-left font-semibold text-gray-900 dark:text-white text-xs md:text-sm">
-                        {kelas.jumlah_siswa}
-                      </td>
-                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 text-left text-xs md:text-sm">
-                        {kelas.laki_laki}
-                      </td>
-                      <td className="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 text-left text-xs md:text-sm">
-                        {kelas.perempuan}
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* Baris Total */}
-                  <tr className="bg-blue-50 dark:bg-blue-900/30 font-semibold border-t-2 border-blue-200 dark:border-blue-700">
-                    <td
-                      className="px-3 sm:px-4 md:px-6 py-3 text-left text-xs md:text-sm dark:text-white"
-                      colSpan="3"
-                    >
-                      TOTAL
-                    </td>
-                    <td className="px-3 sm:px-4 md:px-6 py-3 text-left text-blue-700 dark:text-blue-300 text-xs md:text-sm">
-                      {totalSiswa}
-                    </td>
-                    <td className="px-3 sm:px-4 md:px-6 py-3 text-left text-blue-700 dark:text-blue-300 text-xs md:text-sm">
-                      {totalLaki}
-                    </td>
-                    <td className="px-3 sm:px-4 md:px-6 py-3 text-left text-blue-700 dark:text-blue-300 text-xs md:text-sm">
-                      {totalPerempuan}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            ) : (
-              /* Empty State untuk Tablet/Laptop */
-              <div className="py-8 sm:py-12 text-center">
-                <svg
-                  className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Tidak ada data kelas
-                </h3>
-                <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Tidak ada data kelas yang tersedia saat ini.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      </Card>
+    </PageContainer>
   );
 };
 
