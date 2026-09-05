@@ -71,33 +71,33 @@ const Statistics = ({
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-purple-100 dark:border-purple-800">
-            <div className="text-xs sm:text-sm text-purple-600 dark:text-purple-400 font-semibold mb-2">
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-blue-200 dark:border-blue-800/40">
+            <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2">
               Total Pendaftar
             </div>
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-purple-700 dark:text-purple-300">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-300">
               {totalStudents}
             </div>
           </div>
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-blue-100 dark:border-blue-800">
-            <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2">
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-emerald-200 dark:border-emerald-800/40">
+            <div className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-semibold mb-2">
               Siswa Laki-laki
             </div>
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-300">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-700 dark:text-emerald-300">
               {maleStudents}
             </div>
-            <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium mt-1">
+            <div className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-medium mt-1">
               {malePercentage.toFixed(1)}%
             </div>
           </div>
-          <div className="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-rose-100 dark:border-rose-800">
-            <div className="text-xs sm:text-sm text-rose-600 dark:text-rose-400 font-semibold mb-2">
+          <div className="bg-pink-50 dark:bg-pink-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-pink-200 dark:border-pink-800/40">
+            <div className="text-xs sm:text-sm text-pink-600 dark:text-pink-400 font-semibold mb-2">
               Siswa Perempuan
             </div>
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-rose-700 dark:text-rose-300">
+            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-pink-700 dark:text-pink-300">
               {femaleStudents}
             </div>
-            <div className="text-xs sm:text-sm text-rose-600 dark:text-rose-400 font-medium mt-1">
+            <div className="text-xs sm:text-sm text-pink-600 dark:text-pink-400 font-medium mt-1">
               {femalePercentage.toFixed(1)}%
             </div>
           </div>
@@ -146,8 +146,8 @@ const Statistics = ({
                   cy="140"
                   r="100"
                   fill="none"
-                  stroke="#f43f5e"
-                  className="dark:stroke-rose-500"
+                  stroke="#ec4899"
+                  className="dark:stroke-pink-500"
                   strokeWidth="40"
                   strokeDasharray={`${(femalePercentage / 100) * 628} 628`}
                   strokeDashoffset={`-${(malePercentage / 100) * 628}`}
@@ -181,7 +181,7 @@ const Statistics = ({
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-rose-600 dark:bg-rose-500"></div>
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-pink-600 dark:bg-pink-500"></div>
                 <div className="flex-1">
                   <div className="text-xs sm:text-sm text-gray-600 dark:text-slate-400">
                     Perempuan
@@ -223,7 +223,7 @@ const Statistics = ({
                       </div>
                       <div className="h-5 sm:h-6 md:h-7 lg:h-8 bg-gray-100 dark:bg-slate-700 rounded-lg overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-lg transition-all duration-1000 flex items-center px-2 sm:px-3"
+                          className="h-full bg-blue-600 dark:bg-blue-500 rounded-lg transition-all duration-1000 flex items-center px-2 sm:px-3"
                           style={{ width: `${barWidth}%` }}
                         >
                           {barWidth > 15 && (
@@ -306,7 +306,7 @@ const Statistics = ({
                           </span>
                         </td>
                         <td className="py-2 sm:py-3 md:py-4 px-2 sm:px-3 md:px-4 text-center">
-                          <span className="inline-flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 text-xs sm:text-sm font-semibold rounded-lg min-w-[2rem]">
+                          <span className="inline-flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 text-xs sm:text-sm font-semibold rounded-lg min-w-[2rem]">
                             {school.female}
                           </span>
                         </td>
@@ -340,7 +340,7 @@ const Statistics = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-rose-600 dark:bg-rose-500"></div>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-pink-600 dark:bg-pink-500"></div>
                     <span>
                       <span className="font-semibold text-gray-900 dark:text-slate-200">
                         {femaleStudents}

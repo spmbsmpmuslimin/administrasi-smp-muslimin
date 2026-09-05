@@ -4,8 +4,6 @@ import {
   ClipboardCheck,
   UserCheck,
   BookOpenText,
-  Settings,
-  Activity,
   LogOut,
   MessageCircle,
   FileBarChart,
@@ -13,6 +11,8 @@ import {
   User,
   Sun,
   Moon,
+  BookUp,
+  BookDown,
 } from "lucide-react";
 
 // ✅ NEW: Bottom navbar khusus mobile (lg:hidden) untuk app ini.
@@ -41,15 +41,20 @@ export default function BottomNav({
   onProfileClick,
 }) {
   const isAdmin = userRole === "admin";
+  // ✅ FIX: TU sebelumnya ga ke-cover sama sekali di sini -- jatuh ke
+  // fallback teacherItems (nav bar guru: Presensi Siswa, Jurnal, dst yang
+  // ga relevan buat TU) dan roleLabel fallback "User".
+  const isTU = userRole === "tu";
+  // ✅ FIX: Petugas Perpustakaan sebelumnya ga ke-cover di sini -- jatuh ke
+  // fallback teacherItems (nav bar guru: Presensi Siswa, Jurnal, dst yang
+  // ga relevan buat mereka) dan roleLabel fallback "User".
+  const isPetugasPerpus = userRole === "petugas_perpus";
   const [accountOpen, setAccountOpen] = useState(false);
   const accountDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        accountDropdownRef.current &&
-        !accountDropdownRef.current.contains(event.target)
-      ) {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target)) {
         setAccountOpen(false);
       }
     };
@@ -60,13 +65,17 @@ export default function BottomNav({
   const roleLabel =
     userRole === "admin"
       ? "Administrator"
-      : userRole === "guru_bk"
-        ? "Guru BK/BP"
-        : userRole === "teacher" && user?.homeroom_class_id
-          ? `Wali Kelas ${user.homeroom_class_id}`
-          : userRole === "teacher"
-            ? "Guru Mata Pelajaran"
-            : "User";
+      : userRole === "tu"
+        ? "Tata Usaha"
+        : userRole === "guru_bk"
+          ? "Guru BK/BP"
+          : userRole === "petugas_perpus"
+            ? "Petugas Perpustakaan"
+            : userRole === "teacher" && user?.homeroom_class_id
+              ? `Wali Kelas ${user.homeroom_class_id}`
+              : userRole === "teacher"
+                ? "Guru Mata Pelajaran"
+                : "User";
 
   const teacherItems = [
     {
@@ -103,6 +112,10 @@ export default function BottomNav({
     },
   ];
 
+  // ✅ REVISI: adminItems disederhanain jadi 4 (termasuk Akun) sesuai yang
+  // paling sering dipakai Admin & TU sehari-hari -- "Pengaturan" & "Monitor
+  // Sistem" dibuang dari bottom nav (masih bisa diakses lewat sidebar/menu
+  // lain), diganti "Monitor Presensi Guru" & "Monitor Presensi Siswa".
   const adminItems = [
     {
       id: "dashboard",
@@ -113,20 +126,20 @@ export default function BottomNav({
       activeBg: "bg-indigo-500",
     },
     {
-      id: "settings",
-      label: "Pengaturan",
-      icon: Settings,
-      bg: darkMode ? "bg-amber-900/50" : "bg-amber-100",
-      iconColor: darkMode ? "text-amber-300" : "text-amber-600",
-      activeBg: "bg-amber-500",
+      id: "attendance-teacher",
+      label: "Presensi Guru",
+      icon: UserCheck,
+      bg: darkMode ? "bg-blue-900/50" : "bg-blue-100",
+      iconColor: darkMode ? "text-blue-300" : "text-blue-600",
+      activeBg: "bg-blue-500",
     },
     {
-      id: "monitor-sistem",
-      label: "Monitor",
-      icon: Activity,
-      bg: darkMode ? "bg-violet-900/50" : "bg-violet-100",
-      iconColor: darkMode ? "text-violet-300" : "text-violet-600",
-      activeBg: "bg-violet-500",
+      id: "admin-attendance",
+      label: "Presensi Siswa",
+      icon: ClipboardCheck,
+      bg: darkMode ? "bg-emerald-900/50" : "bg-emerald-100",
+      iconColor: darkMode ? "text-emerald-300" : "text-emerald-600",
+      activeBg: "bg-emerald-500",
     },
   ];
 
@@ -165,18 +178,49 @@ export default function BottomNav({
     },
   ];
 
-  const navItems = isAdmin
-    ? adminItems
-    : userRole === "guru_bk"
-      ? guruBkItems
-      : teacherItems;
+  const petugasPerpusItems = [
+    {
+      id: "dashboard",
+      label: "Home",
+      icon: Home,
+      bg: darkMode ? "bg-indigo-900/50" : "bg-indigo-100",
+      iconColor: darkMode ? "text-indigo-300" : "text-indigo-600",
+      activeBg: "bg-indigo-500",
+    },
+    {
+      id: "peminjaman",
+      label: "Peminjaman",
+      icon: BookUp,
+      bg: darkMode ? "bg-amber-900/50" : "bg-amber-100",
+      iconColor: darkMode ? "text-amber-300" : "text-amber-600",
+      activeBg: "bg-amber-500",
+    },
+    {
+      id: "pengembalian",
+      label: "Pengembalian",
+      icon: BookDown,
+      bg: darkMode ? "bg-teal-900/50" : "bg-teal-100",
+      iconColor: darkMode ? "text-teal-300" : "text-teal-600",
+      activeBg: "bg-teal-500",
+    },
+  ];
+
+  const navItems =
+    isAdmin || isTU
+      ? adminItems
+      : userRole === "guru_bk"
+        ? guruBkItems
+        : isPetugasPerpus
+          ? petugasPerpusItems
+          : teacherItems;
 
   return (
     <nav
       className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t shadow-[0_-4px_20px_rgba(0,0,0,0.08)] transition-colors ${
         darkMode ? "bg-gray-800 border-theme" : "bg-theme-bg border-theme"
       }`}
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       <div className="flex items-center justify-around px-1.5 pt-2 pb-2.5">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -185,19 +229,22 @@ export default function BottomNav({
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className="flex flex-col items-center justify-center flex-1 min-w-0 py-0.5 gap-1">
+              className="flex flex-col items-center justify-center flex-1 min-w-0 py-0.5 gap-1"
+            >
               <div
                 className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm transition-all ${
                   isActive
                     ? `${item.activeBg} text-white shadow-md scale-105`
                     : `${item.bg} ${item.iconColor}`
-                }`}>
+                }`}
+              >
                 <Icon size={20} strokeWidth={2.2} />
               </div>
               <span
                 className={`text-[11px] font-bold truncate max-w-full ${
                   darkMode ? "text-gray-200" : "text-slate-700"
-                }`}>
+                }`}
+              >
                 {item.label}
               </span>
             </button>
@@ -208,7 +255,8 @@ export default function BottomNav({
         <div className="relative flex-1 min-w-0" ref={accountDropdownRef}>
           <button
             onClick={() => setAccountOpen((prev) => !prev)}
-            className="flex flex-col items-center justify-center w-full py-0.5 gap-1">
+            className="flex flex-col items-center justify-center w-full py-0.5 gap-1"
+          >
             <div
               className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm transition-all ${
                 accountOpen
@@ -216,13 +264,15 @@ export default function BottomNav({
                   : darkMode
                     ? "bg-slate-700/50 text-slate-300"
                     : "bg-slate-100 text-slate-600"
-              }`}>
+              }`}
+            >
               <User size={20} strokeWidth={2.2} />
             </div>
             <span
               className={`text-[11px] font-bold truncate max-w-full ${
                 darkMode ? "text-gray-200" : "text-slate-700"
-              }`}>
+              }`}
+            >
               Akun
             </span>
           </button>
@@ -236,33 +286,36 @@ export default function BottomNav({
               />
               <div
                 className={`absolute right-0 bottom-full mb-2 w-64 rounded-xl shadow-2xl border-2 z-50 transition-colors ${
-                  darkMode
-                    ? "bg-slate-800 border-blue-800/60"
-                    : "bg-blue-50 border-blue-200"
-                }`}>
+                  darkMode ? "bg-slate-800 border-blue-800/60" : "bg-blue-50 border-blue-200"
+                }`}
+              >
                 <div
                   className={`px-4 py-3 border-b rounded-t-xl transition-colors ${
                     darkMode
                       ? "border-blue-800/60 bg-gradient-to-r from-slate-700 to-slate-800"
                       : "border-blue-200 bg-gradient-to-r from-blue-100 to-blue-50"
-                  }`}>
+                  }`}
+                >
                   <p
                     className={`font-bold text-sm truncate transition-colors ${
                       darkMode ? "text-white" : "text-slate-900"
-                    }`}>
+                    }`}
+                  >
                     {user?.full_name || user?.username || "User"}
                   </p>
                   <p
                     className={`text-xs capitalize font-semibold transition-colors ${
                       darkMode ? "text-blue-300" : "text-blue-700"
-                    }`}>
+                    }`}
+                  >
                     {roleLabel}
                   </p>
                   {user?.teacher_id && (
                     <p
                       className={`text-xs font-semibold transition-colors ${
                         darkMode ? "text-gray-300" : "text-slate-600"
-                      }`}>
+                      }`}
+                    >
                       ID: {user.teacher_id}
                     </p>
                   )}
@@ -278,7 +331,8 @@ export default function BottomNav({
                       darkMode
                         ? "text-gray-100 hover:bg-slate-700 hover:text-blue-300"
                         : "text-slate-700 hover:bg-blue-100 hover:text-blue-700"
-                    }`}>
+                    }`}
+                  >
                     <User size={16} className="flex-shrink-0" />
                     <span>Profile</span>
                   </button>
@@ -289,14 +343,11 @@ export default function BottomNav({
                       darkMode
                         ? "text-gray-100 hover:bg-slate-700 hover:text-blue-300"
                         : "text-slate-700 hover:bg-blue-100 hover:text-blue-700"
-                    }`}>
+                    }`}
+                  >
                     <span className="flex items-center gap-3">
                       {darkMode ? (
-                        <Moon
-                          size={16}
-                          className="flex-shrink-0"
-                          fill="currentColor"
-                        />
+                        <Moon size={16} className="flex-shrink-0" fill="currentColor" />
                       ) : (
                         <Sun size={16} className="flex-shrink-0" />
                       )}
@@ -305,7 +356,8 @@ export default function BottomNav({
                     <span
                       className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors duration-300 ${
                         darkMode ? "bg-blue-600" : "bg-gray-300"
-                      }`}>
+                      }`}
+                    >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
                           darkMode ? "translate-x-4" : "translate-x-1"
@@ -323,7 +375,8 @@ export default function BottomNav({
                       darkMode
                         ? "text-red-400 hover:bg-red-900/30"
                         : "text-red-600 hover:bg-red-100 hover:text-red-700"
-                    }`}>
+                    }`}
+                  >
                     <LogOut size={16} className="flex-shrink-0" />
                     <span>Logout</span>
                   </button>

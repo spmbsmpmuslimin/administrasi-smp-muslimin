@@ -31,7 +31,11 @@ const Reports = ({ user, onShowToast }) => {
   }
 
   // Render untuk Admin
-  if (user.role === "admin") {
+  // ✅ FIX: TU ditambahin -- TU disamain kayak Admin (lihat sidebarConfig.js,
+  // grup "akademik" > "Laporan" show()-nya isAdmin||isTU), tapi role check
+  // manual di file ini sebelumnya cuma cek "admin" doang, jadi TU jatuh ke
+  // fallback "Role Tidak Dikenali" di paling bawah.
+  if (user.role === "admin" || user.role === "tu") {
     return <AdminReports user={user} onShowToast={onShowToast} />;
   }
 

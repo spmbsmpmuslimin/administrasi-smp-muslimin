@@ -223,17 +223,6 @@ const useStudentsData = (userData, showToast, targetYear) => {
           status: "diterima",
           is_transferred: false,
           tanggal_daftar: new Date().toISOString(),
-          // --- Rekam jejak admin yang input/ubah data ---
-          // input_by cuma diisi pas data BARU dibuat (insert), biar nama
-          // admin pertama yang input ndak ketimpa tiap kali data ini
-          // diedit belakangan. updated_by selalu diisi tiap kali simpan
-          // (insert maupun edit), buat tau siapa terakhir megang data ini.
-          ...(!isEdit && {
-            input_by: userData?.full_name || userData?.username || null,
-            input_by_id: userData?.id || null,
-          }),
-          updated_by: userData?.full_name || userData?.username || null,
-          updated_by_id: userData?.id || null,
         };
 
         let result;
@@ -268,7 +257,7 @@ const useStudentsData = (userData, showToast, targetYear) => {
         setIsLoading(false);
       }
     },
-    [convertDateFormat, targetYear, showToast, userData]
+    [convertDateFormat, targetYear, showToast]
   );
 
   // Delete student
@@ -522,7 +511,7 @@ const SPMB = ({ user, onShowToast }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Toast Notification */}
         {toast.show && (
@@ -557,16 +546,16 @@ const SPMB = ({ user, onShowToast }) => {
         )}
 
         {/* PAGE HEADER */}
-        <div className="bg-gradient-to-br from-blue-900 via-blue-700 to-blue-600 dark:from-gray-800 dark:via-gray-700 dark:to-gray-600 rounded-xl p-6 sm:p-8 md:p-10 shadow-lg">
-          <div className="text-center space-y-2">
-            <h2 className="text-sm sm:text-base md:text-lg text-blue-200 dark:text-blue-100 font-semibold uppercase tracking-widest">
+        <div className="bg-blue-700 dark:bg-gray-800 rounded-xl px-4 py-3 sm:px-6 sm:py-4 shadow-sm">
+          <div className="text-center space-y-0.5">
+            <h2 className="text-[11px] sm:text-xs text-blue-200 dark:text-blue-100 font-semibold uppercase tracking-widest">
               Sekolah Menengah Pertama Muslimin Cililin
             </h2>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+            <h1 className="text-base sm:text-lg font-bold text-white">
               Sistem Penerimaan Murid Baru (SPMB)
             </h1>
             {targetYear && (
-              <p className="text-blue-100 dark:text-blue-200 text-base sm:text-lg md:text-xl font-medium pt-1">
+              <p className="text-blue-100 dark:text-blue-200 text-xs sm:text-sm font-medium">
                 Penerimaan Tahun Ajaran {targetYear}
               </p>
             )}

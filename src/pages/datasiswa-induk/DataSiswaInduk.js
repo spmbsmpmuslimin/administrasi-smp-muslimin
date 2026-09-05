@@ -26,8 +26,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import {
   CheckCircle2,
-  AlertCircle,
-  XCircle,
   Search,
   X,
   Users,
@@ -48,297 +46,40 @@ import {
   getCompletionStatus,
   resolveCompletion,
 } from "../../utils/studentProfileCompletion";
+// ✅ SPLIT (lihat DataSiswaIndukConfig.js): semua konstanta & helper murni
+// (STATUS_META, DETAIL_ROWS, opsi dropdown, ADMIN_EDIT_FIELDS, dll) udah
+// dipindah ke file terpisah supaya bisa di-share juga sama
+// DataSiswaIndukPDF.js/Excel export -- JANGAN disalin ulang manual ke sini,
+// import dari sana.
+import {
+  getJenjang,
+  STATUS_META,
+  DETAIL_ROWS,
+  ADMIN_EDIT_SECTIONS,
+  ADMIN_EDIT_FIELDS,
+  emptyAdminForm,
+  getDetailRowValue,
+} from "./DataSiswaIndukConfig";
 
 // REQUIRED_FIELDS, getCompletionStatus, genderCodeToLabel (lewat
 // resolveCompletion) sekarang diimport dari utils/studentProfileCompletion.js
 // -- dipake bareng sama halaman Data Siswa (badge kelengkapan) biar status
 // kelengkapan SELALU sama persis di kedua halaman.
 
-// Ekstrak jenjang (7/8/9) dari class_id, asumsi format "7A", "8B", "9C"
-// (angka di depan = jenjang). Kalau format class_id di project ini beda
-// (misal romawi "VII-A"), sesuaikan regex ini.
-function getJenjang(classId) {
-  if (!classId) return null;
-  const match = String(classId).match(/^(\d+)/);
-  return match ? match[1] : null;
-}
-
-const STATUS_META = {
-  lengkap: {
-    label: "Lengkap",
-    icon: CheckCircle2,
-    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-    dot: "bg-emerald-500",
-  },
-  sebagian: {
-    label: "Sebagian",
-    icon: AlertCircle,
-    badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    dot: "bg-amber-500",
-  },
-  belum: {
-    label: "Belum Isi",
-    icon: XCircle,
-    badge: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
-    dot: "bg-rose-500",
-  },
-};
-
-// Samain persis sama DATA_SISWA_ROWS + DATA_ORANGTUA_ROWS di
-// DataSiswaIndukPDF.js, biar field yang muncul di kartu expand & di PDF
-// konsisten. `nama_ortu` (generic, lama) udah gak dipake di form
-// StudentProfile.js -> diganti nama_ayah + nama_ibu.
-// `combine: "ttl"` = gabungan tempat_lahir + tanggal_lahir jadi 1 baris.
-// `keterangan` sempat sengaja di-exclude, tapi ternyata 16 siswa udah
-// keisi datanya -- ditambahin balik di baris paling bawah biar keliatan.
-const DETAIL_ROWS = [
-  { key: "jenis_kelamin", label: "Jenis Kelamin" },
-  { key: "ttl", label: "Tempat, Tanggal Lahir", combine: "ttl" },
-  { key: "nisn", label: "NISN" },
-  { key: "nik", label: "NIK Siswa" },
-  { key: "no_kk", label: "No. Kartu Keluarga (KK)" },
-  { key: "no_akta_lahir", label: "No. Akta Lahir" },
-  { key: "agama", label: "Agama" },
-  { key: "anak_ke", label: "Anak ke-" },
-  { key: "sekolah_asal", label: "Sekolah Asal" },
-  { key: "no_peserta_ujian", label: "No. Peserta Ujian" },
-  { key: "no_ijazah", label: "No. Ijazah" },
-  { key: "no_kip", label: "No. KIP" },
-  { key: "no_daftar", label: "No. Pendaftaran" },
-  { key: "alamat", label: "Alamat Lengkap" },
-  // `dusun` SENGAJA gak dimasukin lagi -- kolomnya dibiarin ada di DB
-  // (data lama), tapi udah gak dimunculin di UI manapun (konsisten sama
-  // StudentProfile.js & useStudentProfile.js sisi siswa) karena
-  // purpose-nya gak jelas & isinya biasanya udah nempel di teks `alamat`.
-  { key: "kode_pos", label: "Kode Pos" },
-  { key: "no_hp", label: "No. HP Siswa" },
-  { key: "nama_ayah", label: "Nama Lengkap Ayah" },
-  { key: "nik_ayah", label: "NIK Ayah" },
-  { key: "tempat_tgl_lahir_ayah", label: "Tempat, Tanggal Lahir Ayah" },
-  { key: "pekerjaan_ayah", label: "Pekerjaan Ayah" },
-  { key: "pendidikan_ayah", label: "Pendidikan Terakhir Ayah" },
-  { key: "nama_ibu", label: "Nama Lengkap Ibu" },
-  { key: "nik_ibu", label: "NIK Ibu" },
-  { key: "tempat_tgl_lahir_ibu", label: "Tempat, Tanggal Lahir Ibu" },
-  { key: "pekerjaan_ibu", label: "Pekerjaan Ibu" },
-  { key: "pendidikan_ibu", label: "Pendidikan Terakhir Ibu" },
-  { key: "no_hp_ortu", label: "No. HP Orang Tua/Wali" },
-  // Sempat sengaja di-exclude nunggu keputusan purpose-nya -- ternyata 16
-  // siswa udah keisi datanya, jadi ditambahin balik biar keliatan.
-  { key: "keterangan", label: "Keterangan" },
-];
-
-const MONTH_NAMES_SHORT = [
-  "Januari",
-  "Februari",
-  "Maret",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
-  "September",
-  "Oktober",
-  "November",
-  "Desember",
-];
-
-const AGAMA_OPTIONS = ["ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU"];
-const PENDIDIKAN_OPTIONS = ["SD", "SMP", "SMA", "D3", "S1", "S2"];
-
-// Daftar pekerjaan standar -- SENGAJA disamain persis sama
-// pekerjaanListAyah/pekerjaanListIbu di StudentForm.js (form pendaftaran
-// siswa baru), biar pilihan yang muncul di admin sini konsisten sama yang
-// dipilih ortu pas awal daftar. Bedanya di sini gak ada input "Lainnya"
-// terpisah (StudentForm.js punya field _lainnya sendiri) -- kalau isian
-// lama gak ada di daftar (misal ketikan bebas dari sebelum ada dropdown),
-// field select otomatis nambahin isian lama itu jadi 1 opsi ekstra di
-// bagian atas, jadi datanya TETAP KELIATAN & gak ke-reset ke kosong tanpa
-// sengaja pas dibuka (lihat pemakaian `hasLegacyValue` di form Isi Data).
-const PEKERJAAN_AYAH_OPTIONS = [
-  "PNS/TNI/POLRI",
-  "KARYAWAN SWASTA",
-  "WIRASWASTA/PEDAGANG",
-  "PETANI",
-  "BURUH HARIAN",
-  "GURU/DOSEN",
-  "DOKTER/TENAGA KESEHATAN",
-  "SOPIR/DRIVER",
-  "PENSIUNAN",
-  "TIDAK BEKERJA",
-  "LAINNYA",
-];
-const PEKERJAAN_IBU_OPTIONS = [
-  "IBU RUMAH TANGGA",
-  "PNS/TNI/POLRI",
-  "KARYAWAN SWASTA",
-  "WIRASWASTA/PEDAGANG",
-  "PETANI",
-  "BURUH",
-  "GURU/DOSEN",
-  "DOKTER/TENAGA KESEHATAN",
-  "PENSIUNAN",
-  "TIDAK BEKERJA",
-  "LAINNYA",
-];
-
-// Konfigurasi form edit admin -- SEMUA kolom student_profile_details bisa
-// diedit dari sini (beda dari sisi siswa di StudentProfile.js yang sekarang
-// cuma bisa isi field "Kelompok B"/kontak). "ttl" (gabungan tempat+tanggal
-// lahir) dipecah lagi jadi 2 field terpisah (tempat_lahir, tanggal_lahir)
-// buat form, karena kolom DB-nya emang 2 kolom beda.
-// ⚠️ CATATAN NISN: kolom `nisn` di sini nulis ke
-// `student_profile_details.nisn` (legacy). Sisi siswa (StudentProfile.js)
-// nampilin NISN dari `students.nisn` (sumber resmi terbaru), BUKAN dari
-// kolom ini. Jadi ngedit NISN di sini TIDAK bakal keliatan di portal siswa
-// -- kalau NISN-nya salah/kosong, benerin langsung di tabel `students`
-// (menu Data Siswa), bukan di sini.
-// Label section dipakai buat heading pengelompokan di tab "Isi Data" &
-// urutan section di tab "Preview". Urutan object ini yang nentuin urutan
-// section muncul (siswa -> ayah -> ibu -> lainnya).
-const ADMIN_EDIT_SECTIONS = {
-  siswa: "Data Siswa",
-  ayah: "Data Ayah",
-  ibu: "Data Ibu",
-  lainnya: "Kontak Orang Tua & Lainnya",
-};
-
-const ADMIN_EDIT_FIELDS = [
-  {
-    key: "jenis_kelamin",
-    label: "Jenis Kelamin",
-    type: "select",
-    // ⚠️ HARUS UPPERCASE -- samain persis sama check constraint DB
-    // "student_profile_details_jenis_kelamin_check" yang cuma izinin
-    // ARRAY['LAKI-LAKI','PEREMPUAN']. Sebelumnya opsi di sini "Laki-laki"/
-    // "Perempuan" (mixed-case) -> ditolak Postgres pas admin save edit
-    // (error code 23514). Kalau constraint DB-nya diubah lagi nanti,
-    // samain juga di sini.
-    options: ["LAKI-LAKI", "PEREMPUAN"],
-    section: "siswa",
-  },
-  { key: "tempat_lahir", label: "Tempat Lahir", type: "text", section: "siswa" },
-  { key: "tanggal_lahir", label: "Tanggal Lahir", type: "date", section: "siswa" },
-  {
-    key: "nisn",
-    label: "NISN (legacy, lihat catatan di atas)",
-    type: "text",
-    section: "siswa",
-  },
-  { key: "nik", label: "NIK Siswa", type: "text", section: "siswa" },
-  { key: "no_kk", label: "No. Kartu Keluarga (KK)", type: "text", section: "siswa" },
-  { key: "no_akta_lahir", label: "No. Akta Lahir", type: "text", section: "siswa" },
-  {
-    key: "agama",
-    label: "Agama",
-    type: "select",
-    options: AGAMA_OPTIONS,
-    section: "siswa",
-  },
-  { key: "anak_ke", label: "Anak Ke Berapa dalam Keluarga", type: "number", section: "siswa" },
-  { key: "sekolah_asal", label: "Sekolah Asal", type: "text", section: "siswa" },
-  {
-    key: "no_peserta_ujian",
-    label: "No. Peserta Ujian",
-    type: "text",
-    section: "siswa",
-  },
-  { key: "no_ijazah", label: "No. Ijazah", type: "text", section: "siswa" },
-  { key: "no_kip", label: "No. KIP", type: "text", section: "siswa" },
-  { key: "no_daftar", label: "No. Pendaftaran", type: "text", section: "siswa" },
-  { key: "alamat", label: "Alamat Lengkap", type: "textarea", section: "siswa" },
-  { key: "kode_pos", label: "Kode Pos", type: "text", section: "siswa" },
-  { key: "no_hp", label: "No. HP Siswa", type: "text", section: "siswa" },
-  { key: "nama_ayah", label: "Nama Lengkap Ayah", type: "text", section: "ayah" },
-  { key: "nik_ayah", label: "NIK Ayah", type: "text", section: "ayah" },
-  {
-    key: "tempat_tgl_lahir_ayah",
-    label: "Tempat, Tanggal Lahir Ayah",
-    type: "text",
-    section: "ayah",
-  },
-  {
-    key: "pekerjaan_ayah",
-    label: "Pekerjaan Ayah",
-    type: "select",
-    options: PEKERJAAN_AYAH_OPTIONS,
-    section: "ayah",
-  },
-  {
-    key: "pendidikan_ayah",
-    label: "Pendidikan Terakhir Ayah",
-    type: "select",
-    options: PENDIDIKAN_OPTIONS,
-    section: "ayah",
-  },
-  { key: "nama_ibu", label: "Nama Lengkap Ibu", type: "text", section: "ibu" },
-  { key: "nik_ibu", label: "NIK Ibu", type: "text", section: "ibu" },
-  {
-    key: "tempat_tgl_lahir_ibu",
-    label: "Tempat, Tanggal Lahir Ibu",
-    type: "text",
-    section: "ibu",
-  },
-  {
-    key: "pekerjaan_ibu",
-    label: "Pekerjaan Ibu",
-    type: "select",
-    options: PEKERJAAN_IBU_OPTIONS,
-    section: "ibu",
-  },
-  {
-    key: "pendidikan_ibu",
-    label: "Pendidikan Terakhir Ibu",
-    type: "select",
-    options: PENDIDIKAN_OPTIONS,
-    section: "ibu",
-  },
-  {
-    key: "no_hp_ortu",
-    label: "No. HP Orang Tua/Wali",
-    type: "text",
-    section: "lainnya",
-  },
-  { key: "keterangan", label: "Keterangan", type: "textarea", section: "lainnya" },
-];
-
-function emptyAdminForm(detail) {
-  const form = {};
-  ADMIN_EDIT_FIELDS.forEach(({ key }) => {
-    form[key] = detail?.[key] ?? "";
-  });
-  return form;
-}
-
-function formatTanggalLahirSingkat(value) {
-  if (!value) return null;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return `${d.getDate()} ${MONTH_NAMES_SHORT[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-// Ambil nilai 1 baris detail buat kartu expand (support field gabungan
-// "ttl" kayak di DataSiswaIndukPDF.js -> getRowValue).
-function getDetailRowValue(detail, row) {
-  if (row.combine === "ttl") {
-    const tempat = detail?.tempat_lahir;
-    const tanggal = formatTanggalLahirSingkat(detail?.tanggal_lahir);
-    if (!tempat && !tanggal) return null;
-    if (tempat && tanggal) return `${tempat}, ${tanggal}`;
-    return tempat || tanggal;
-  }
-  return detail ? detail[row.key] : null;
-}
-
+// ✅ CLEANUP: halaman ini FINAL cuma buat Admin & TU (lihat dokumentasi
+// menu sidebar per role -- /data-induk-siswa cuma ✓ di Admin & TU, wali
+// kelas & Guru BK diarahkan ke /students yang read-only). Sebelumnya ada
+// sisa logic `isGuruBK`/`isWaliKelas`/`hasFullAccess` yang nganggep guru
+// BK & wali kelas juga bisa buka halaman ini (auto-scope ke
+// homeroom_class_id, dll) -- itu semua DEAD CODE karena role tsb emang
+// gak pernah nyampe render komponen ini (distop duluan di sidebar/routing).
+// Udah dibuang biar gak nyesatin maintenance ke depannya. Kalau suatu
+// saat keputusan produk ini berubah lagi (wali kelas/BK dikasih akses),
+// tinggal balikin pattern isAdmin/isTU/isGuruBK/isWaliKelas + hasFullAccess
+// dari riwayat git, jangan re-invent dari nol.
 export default function KelengkapanDataSiswa({ currentUser }) {
   const isAdmin = currentUser?.role === "admin";
-  const isGuruBK = currentUser?.role === "guru_bk";
-  // ✅ Guru BK dikasih akses penuh kayak admin — bisa liat & filter semua
-  // kelas/jenjang, karena guru BK gak terikat 1 kelas walian aja.
-  const hasFullAccess = isAdmin || isGuruBK;
-  // Wali kelas (role "teacher" yang punya homeroom_class_id) tetap
-  // ter-scope otomatis ke kelasnya sendiri, gak berubah dari sebelumnya.
-  const isWaliKelas = currentUser?.role === "teacher" && !!currentUser?.homeroom_class_id;
+  const isTU = currentUser?.role === "tu";
 
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -351,6 +92,17 @@ export default function KelengkapanDataSiswa({ currentUser }) {
   const [mutationHistoryLoading, setMutationHistoryLoading] = useState(false);
 
   const [search, setSearch] = useState("");
+  // ✅ NEW: search lokal buat picker "Pilih Siswa" di dalam tab Isi
+  // Data/Preview -- kepake pas user masuk tab itu TANPA milih siswa dulu
+  // dari list. Terpisah dari `search` (filter di tab Data Siswa) biar gak
+  // saling ganggu state-nya.
+  const [pickerQuery, setPickerQuery] = useState("");
+  // ✅ NEW: filter Jenjang/Kelas KHUSUS buat picker "Pilih Siswa" (dalam
+  // tab Isi Data/Preview) -- state TERPISAH dari jenjangFilter/classFilter
+  // di tab "Data Siswa", biar ganti filter di picker gak ikut ngubah
+  // filter yang lagi dipakai di tab list pas balik ke sana.
+  const [pickerJenjang, setPickerJenjang] = useState("all");
+  const [pickerClass, setPickerClass] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all"); // all | lengkap | sebagian | belum
   // all | verified | unverified -- filter TERPISAH dari statusFilter
   // (kelengkapan) di atas, krn "udah lengkap" beda sama "udah diverifikasi".
@@ -358,7 +110,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
   const [verifying, setVerifying] = useState(false);
   // ====== TAB HALAMAN UTAMA ======
   // "list"    = list/filter siswa (tampilan default)
-  // "isi"     = form edit (admin only) buat selectedStudent
+  // "isi"     = form edit (admin & TU) buat selectedStudent
   // "preview" = ringkasan read-only buat selectedStudent (semua role bisa
   //             liat, isinya dari `adminForm` yang sama dipakai tab "isi",
   //             jadi utk non-admin otomatis nampilin data tersimpan apa
@@ -376,9 +128,9 @@ export default function KelengkapanDataSiswa({ currentUser }) {
   const [saveSuccessVisible, setSaveSuccessVisible] = useState(false);
   const [jenjangFilter, setJenjangFilter] = useState("all"); // all | "7" | "8" | "9"
   const [classOptions, setClassOptions] = useState([]); // [{ id: "7A", jenjang: "7" }, ...]
-  const [classFilter, setClassFilter] = useState(
-    hasFullAccess ? "all" : currentUser?.homeroom_class_id || "all"
-  );
+  // Admin & TU (satu-satunya role yang bisa buka halaman ini) selalu liat
+  // semua kelas -- gak ada lagi auto-scope ke 1 kelas kayak wali kelas dulu.
+  const [classFilter, setClassFilter] = useState("all");
 
   // ====== SELEKSI SISWA UNTUK EXPORT PDF ======
   const [selectedIds, setSelectedIds] = useState(() => new Set());
@@ -408,13 +160,9 @@ export default function KelengkapanDataSiswa({ currentUser }) {
           .eq("is_active", true)
           .order("full_name", { ascending: true });
 
-        // Wali kelas (bukan admin/guru BK): otomatis di-scope ke kelasnya
-        // sendiri. Admin & Guru BK (hasFullAccess) gak di-filter, bisa
-        // liat semua kelas/jenjang.
-        if (isWaliKelas) {
-          studentQuery = studentQuery.eq("class_id", currentUser.homeroom_class_id);
-        }
-
+        // Admin & TU selalu liat semua kelas/jenjang -- gak ada scoping
+        // per-kelas di sini (beda dari fitur wali kelas lain yang emang
+        // di-scope ke homeroom_class_id, tapi itu bukan halaman ini).
         const [
           { data: students, error: studentErr },
           { data: details, error: detailErr },
@@ -486,15 +234,12 @@ export default function KelengkapanDataSiswa({ currentUser }) {
         setRows(merged);
         setSelectedIds(new Set());
 
-        // Dropdown filter Jenjang & Kelas cuma relevan buat yang
-        // hasFullAccess (admin & guru BK) — wali kelas udah otomatis
-        // ke-scope 1 kelas, gak butuh filter kelas/jenjang lagi.
-        if (hasFullAccess) {
-          const uniqueClasses = [
-            ...new Set((students || []).map((s) => s.class_id).filter(Boolean)),
-          ].sort();
-          setClassOptions(uniqueClasses.map((c) => ({ id: c, jenjang: getJenjang(c) })));
-        }
+        // Dropdown filter Jenjang & Kelas -- Admin & TU selalu butuh ini
+        // karena selalu liat semua kelas.
+        const uniqueClasses = [
+          ...new Set((students || []).map((s) => s.class_id).filter(Boolean)),
+        ].sort();
+        setClassOptions(uniqueClasses.map((c) => ({ id: c, jenjang: getJenjang(c) })));
       } catch (err) {
         console.error("[KelengkapanDataSiswa] Gagal memuat data:", err);
         setError("Gagal memuat data kelengkapan siswa. Coba refresh halaman.");
@@ -504,7 +249,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
     };
 
     load();
-  }, [isAdmin, hasFullAccess, isWaliKelas, currentUser]);
+  }, [currentUser]);
 
   const summary = useMemo(
     () =>
@@ -536,17 +281,56 @@ export default function KelengkapanDataSiswa({ currentUser }) {
     });
   }, [rows, statusFilter, jenjangFilter, classFilter, search]);
 
-  // Daftar jenjang unik (7/8/9) dari classOptions, buat dropdown pertama.
+  // ✅ UPDATED: hasil pencarian buat picker "Pilih Siswa" (dipakai di tab
+  // Isi Data/Preview kalau belum ada selectedStudent). Dulu picker ini
+  // CUMA bisa dicari lewat nama/NIS (harus ngetik dulu baru muncul
+  // hasil) -- sekarang bisa juga di-narrow lewat dropdown Jenjang/Kelas
+  // (persis kayak filter di tab "Data Siswa"), dan kalau salah satu
+  // filter itu aktif, hasil boleh muncul WALAU kolom pencarian kosong
+  // (misal wali kelas cuma mau browse "kelas 8B" tanpa inget nama
+  // siapa2). Kalau gak ada query DAN gak ada filter aktif, tetep kosong
+  // -- biar gak nge-render ratusan siswa sekaligus pas box baru dibuka.
+  // Dibatasi PICKER_LIMIT biar ringan.
+  const PICKER_LIMIT = 30;
+  const pickerMatches = useMemo(() => {
+    const q = pickerQuery.trim().toLowerCase();
+    const hasQuery = q.length > 0;
+    const hasClassFilter = pickerJenjang !== "all" || pickerClass !== "all";
+    if (!hasQuery && !hasClassFilter) return [];
+    return rows
+      .filter((r) => {
+        if (pickerJenjang !== "all" && getJenjang(r.class_id) !== pickerJenjang) return false;
+        if (pickerClass !== "all" && r.class_id !== pickerClass) return false;
+        if (hasQuery) {
+          const matchName = r.full_name?.toLowerCase().includes(q);
+          const matchNis = r.nis?.toLowerCase?.().includes(q);
+          if (!matchName && !matchNis) return false;
+        }
+        return true;
+      })
+      .slice(0, PICKER_LIMIT);
+  }, [rows, pickerQuery, pickerJenjang, pickerClass]);
+
+  // Daftar jenjang unik (7/8/9) dari classOptions, dipakai bareng buat
+  // dropdown Jenjang di tab "Data Siswa" MAUPUN picker "Pilih Siswa".
   const jenjangOptions = useMemo(() => {
     return [...new Set(classOptions.map((c) => c.jenjang).filter(Boolean))].sort();
   }, [classOptions]);
 
-  // Dropdown Kelas (kedua) cuma nampilin kelas dari jenjang yang lagi
-  // dipilih di dropdown pertama. Kalau jenjang "Semua", tampilkan semua.
+  // Dropdown Kelas (kedua) di tab "Data Siswa" -- cuma nampilin kelas
+  // dari jenjang yang lagi dipilih di dropdown pertama. Kalau jenjang
+  // "Semua", tampilkan semua.
   const filteredClassOptions = useMemo(() => {
     if (jenjangFilter === "all") return classOptions;
     return classOptions.filter((c) => c.jenjang === jenjangFilter);
   }, [classOptions, jenjangFilter]);
+
+  // Sama kayak filteredClassOptions di atas, tapi versi picker (state
+  // pickerJenjang, terpisah dari jenjangFilter tab list).
+  const pickerFilteredClassOptions = useMemo(() => {
+    if (pickerJenjang === "all") return classOptions;
+    return classOptions.filter((c) => c.jenjang === pickerJenjang);
+  }, [classOptions, pickerJenjang]);
 
   // Reset ke halaman pertama (30 teratas) tiap kali filter/search berubah,
   // biar gak nyangkut di posisi scroll yang salah pas hasil filter beda.
@@ -757,17 +541,38 @@ export default function KelengkapanDataSiswa({ currentUser }) {
     return window.confirm("Perubahan belum disimpan. Yakin mau keluar tanpa menyimpan?");
   };
 
-  // Buka 1 siswa: isi adminForm dari detail-nya (buat sumber data tab Isi
-  // Data & Preview), lalu langsung arahkan ke tab yang sesuai role --
-  // admin/TU ke "Isi Data" (bisa langsung ngedit), wali kelas/guru BK
-  // (gak punya akses edit) langsung ke "Preview" (read-only).
-  const openStudent = (student) => {
+  // Isi adminForm dari detail siswa yang dipilih, TANPA ngubah tab yang
+  // lagi aktif. Dipakai bareng oleh openStudent() (dari list, otomatis
+  // pindah tab) dan selectStudentInTab() (dari picker di dalam tab Isi
+  // Data/Preview, tetap di tab yang sama).
+  const loadStudentIntoForm = (student) => {
     setSelectedStudent(student);
     setAdminForm(emptyAdminForm(student.detail));
     setAdminEditError(null);
     setAdminFormDirty(false);
     setSaveSuccessVisible(false);
-    setActivePageTab(isAdmin ? "isi" : "preview");
+    setPickerQuery("");
+    setPickerJenjang("all");
+    setPickerClass("all");
+  };
+
+  // ✅ CHANGE: klik nama siswa dari list SELALU landing ke tab "Preview"
+  // dulu (read-only) -- dulu admin/TU langsung ke "Isi Data", tapi itu
+  // beresiko kepencet ubah data pas niatnya cuma mau ngecek. Preview lebih
+  // aman jadi default "lihat dulu, edit belakangan". Mau edit tinggal 1
+  // klik pindah ke tab "Isi Data" di tab bar -- siswa yang lagi dibuka
+  // TETAP kepilih (selectedStudent gak direset), jadi gak nambah kerjaan
+  // pilih ulang siswanya.
+  const openStudent = (student) => {
+    loadStudentIntoForm(student);
+    setActivePageTab("preview");
+  };
+
+  // ✅ NEW: dipanggil dari picker "Pilih Siswa" di dalam tab Isi Data/
+  // Preview -- beda dari openStudent(), tab yang lagi aktif TIDAK diubah
+  // (user emang udah di tab itu, tinggal munculin data siswa yang dipilih).
+  const selectStudentInTab = (student) => {
+    loadStudentIntoForm(student);
   };
 
   // ====== NAVIGASI GESER SISWA SEBELUM/SESUDAHNYA (tab Isi Data & Preview) ======
@@ -868,21 +673,154 @@ export default function KelengkapanDataSiswa({ currentUser }) {
     setAdminEditError(null);
     setAdminFormDirty(false);
     setSaveSuccessVisible(false);
+    setPickerQuery("");
+    setPickerJenjang("all");
+    setPickerClass("all");
     setActivePageTab("list");
   };
 
   // Ganti tab level-halaman (dipanggil dari tab bar). Klik tab "Data
-  // Siswa" == backToList (ada guard dirty). Klik "Isi Data"/"Preview"
-  // cuma jalan kalau udah ada selectedStudent (kalau belum, tab-nya emang
-  // di-disable di UI, tapi guard di sini jaga-jaga juga).
+  // Siswa" == backToList (ada guard dirty). Klik "Isi Data"/"Preview" udah
+  // gak butuh selectedStudent lagi -- kalau belum ada siswa yang dipilih,
+  // tab-nya nampilin picker "Pilih Siswa" (lihat renderStudentPicker()).
   const goToTab = (tabKey) => {
     if (tabKey === "list") {
       backToList();
       return;
     }
-    if (!selectedStudent) return;
     setActivePageTab(tabKey);
   };
+
+  // ✅ NEW: card "Pilih Siswa" yang muncul di tab Isi Data/Preview kalau
+  // belum ada selectedStudent (misal user langsung klik tab-nya tanpa
+  // milih siswa dulu dari list). Search-nya lokal (pickerQuery), baru
+  // nampilin hasil kalau udah ngetik sesuatu.
+  const renderStudentPicker = () => (
+    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-md p-4 sm:p-5 border border-slate-100 dark:border-slate-700">
+      <p className="text-sm sm:text-base font-semibold text-slate-700 dark:text-slate-200 mb-3">
+        Pilih siswa dulu buat {activePageTab === "isi" ? "isi datanya" : "liat preview-nya"}.
+      </p>
+      {/* ✅ UPDATED: Cari Siswa + Pilih Jenjang + Pilih Kelas digabung jadi
+          1 baris (sebelumnya search-nya 1 baris sendiri, dropdown di
+          baris terpisah di bawahnya) -- disamain gayanya sama baris
+          filter di tab "Data Siswa": Cari Siswa fleksibel (flex-1) biar
+          lebar nyesuaiin sisa ruang, dropdown Jenjang/Kelas lebar tetap
+          (shrink-0). Kalau kepotong di layar sempit, baris ini scroll
+          horizontal (overflow-x-auto), bukan ke-wrap turun baris. */}
+      {/* ✅ UPDATED: dari scroll horizontal (overflow-x-auto) jadi wrap
+          otomatis (flex-wrap) -- semua field (Cari Siswa, Jenjang, Kelas)
+          langsung keliatan semua tanpa perlu geser/toggle, cuma turun ke
+          baris baru sendiri kalau ruang di layar gak cukup. */}
+      <div className="flex flex-wrap items-end gap-2 sm:gap-3 mb-3">
+        <div className="flex-1 min-w-[160px]">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+            Cari Siswa
+          </label>
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={pickerQuery}
+              onChange={(e) => setPickerQuery(e.target.value)}
+              placeholder="Nama atau NIS..."
+              autoFocus
+              className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-300"
+            />
+          </div>
+        </div>
+
+        {jenjangOptions.length > 0 && (
+          <div className="shrink-0 min-w-[130px]">
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              Pilih Jenjang
+            </label>
+            <select
+              value={pickerJenjang}
+              onChange={(e) => {
+                setPickerJenjang(e.target.value);
+                // Reset filter Kelas tiap ganti Jenjang, sama kayak
+                // perilaku dropdown Jenjang di tab "Data Siswa".
+                setPickerClass("all");
+              }}
+              className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+            >
+              <option value="all">Semua Jenjang</option>
+              {jenjangOptions.map((j) => (
+                <option key={j} value={j}>
+                  Kelas {j}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {pickerFilteredClassOptions.length > 0 && (
+          <div className="shrink-0 min-w-[140px]">
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              Pilih Kelas
+            </label>
+            <select
+              value={pickerClass}
+              onChange={(e) => setPickerClass(e.target.value)}
+              className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+            >
+              <option value="all">Semua Kelas</option>
+              {pickerFilteredClassOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  Kelas {c.id}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+      <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+        {pickerMatches.length === 0 ? (
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
+            {pickerQuery.trim() || pickerJenjang !== "all" || pickerClass !== "all"
+              ? "Gak ada siswa yang cocok."
+              : "Mulai ketik atau pilih jenjang/kelas buat cari siswa dari daftar."}
+          </p>
+        ) : (
+          pickerMatches.map((r) => {
+            const meta = STATUS_META[r.status];
+            const Icon = meta?.icon;
+            return (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => selectStudentInTab(r)}
+                className="w-full flex items-center justify-between gap-3 px-2 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition"
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 truncate">
+                    {r.full_name}
+                  </span>
+                  <span className="block text-xs text-slate-400 dark:text-slate-500">
+                    {r.nis} · {r.class_id}
+                  </span>
+                </span>
+                {meta && (
+                  <span
+                    className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${meta.badge}`}
+                  >
+                    {Icon && <Icon size={12} />}
+                    {meta.label}
+                  </span>
+                )}
+              </button>
+            );
+          })
+        )}
+        {pickerMatches.length === PICKER_LIMIT && (
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center pt-2">
+            Hasil dibatasi {PICKER_LIMIT} siswa teratas -- perhalus kata kunci pencarian kalau
+            siswanya belum keliatan.
+          </p>
+        )}
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -929,29 +867,26 @@ export default function KelengkapanDataSiswa({ currentUser }) {
             keliatan jelas lagi ngapain (isi data vs cuma liat), bukan
             numpuk semua di 1 modal kecil. */}
         <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700 mb-5 sm:mb-6 overflow-x-auto">
+          {/* ✅ CLEANUP: tab "Isi Data" dulu conditional (isAdmin || isTU),
+              tapi karena halaman ini FINAL cuma bisa diakses Admin/TU
+              (lihat dokumentasi role di atas komponen), kondisinya selalu
+              true -- jadi tinggal tampilin langsung, gak perlu di-guard
+              lagi di sini. */}
           {[
             { key: "list", label: "Data Siswa" },
-            ...(isAdmin ? [{ key: "isi", label: "Isi Data" }] : []),
+            { key: "isi", label: "Isi Data" },
             { key: "preview", label: "Preview" },
           ].map((tab) => {
-            // Tab "isi" & "preview" nonaktif selama belum ada siswa yang
-            // dipilih dari list -- gak masuk akal nampilin form/ringkasan
-            // kosong tanpa konteks siswa mana.
-            const disabled = tab.key !== "list" && !selectedStudent;
             const active = activePageTab === tab.key;
             return (
               <button
                 key={tab.key}
                 type="button"
-                disabled={disabled}
                 onClick={() => goToTab(tab.key)}
-                title={disabled ? "Pilih siswa dulu dari tab Data Siswa" : undefined}
                 className={`shrink-0 px-4 py-2.5 text-base sm:text-lg font-extrabold uppercase border-b-2 -mb-px transition ${
                   active
                     ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                    : disabled
-                      ? "border-transparent text-slate-300 dark:text-slate-600 cursor-not-allowed"
-                      : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                    : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                 }`}
               >
                 {tab.label}
@@ -1016,12 +951,15 @@ export default function KelengkapanDataSiswa({ currentUser }) {
             </div>
 
             {/* ====== FILTER ====== */}
-            {/* Semua kontrol filter (Cari Siswa, Pilih Jenjang, Pilih Kelas,
-            Reset) digabung jadi 1 baris. Cari Siswa fleksibel (flex-1),
-            dropdown & tombol reset lebar tetap (shrink-0). Kalau kepotong
-            di layar sempit, baris ini scroll horizontal. */}
+            {/* ✅ UPDATED: dari scroll horizontal (overflow-x-auto) jadi
+            wrap otomatis (flex-wrap) -- semua kontrol filter (Cari Siswa,
+            Pilih Jenjang, Pilih Kelas, Reset) tetep digabung 1 baris kalau
+            muat, tapi kalau kepotong di layar sempit langsung turun ke
+            baris baru sendiri, gak perlu geser/toggle buat liat semuanya.
+            Cari Siswa tetep fleksibel (flex-1), dropdown & tombol reset
+            lebar tetap (shrink-0). */}
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-md p-3 sm:p-4 border border-slate-100 dark:border-slate-700 mb-4 flex flex-col gap-3">
-              <div className="flex flex-nowrap items-end gap-2 sm:gap-3 overflow-x-auto">
+              <div className="flex flex-wrap items-end gap-2 sm:gap-3">
                 <div className="flex-1 min-w-[160px]">
                   <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
                     Cari Siswa
@@ -1056,94 +994,75 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                   </select>
                 </div>
 
-                {hasFullAccess &&
-                  (jenjangOptions.length > 0 || filteredClassOptions.length > 0) && (
-                    <>
-                      {jenjangOptions.length > 0 && (
-                        <div className="shrink-0 min-w-[130px]">
-                          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                            Pilih Jenjang
-                          </label>
-                          <select
-                            value={jenjangFilter}
-                            onChange={(e) => {
-                              setJenjangFilter(e.target.value);
-                              // Reset filter Kelas tiap ganti Jenjang, biar gak
-                              // nyangkut pilih kelas dari jenjang yang udah gak aktif.
-                              setClassFilter("all");
-                            }}
-                            className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
-                          >
-                            <option value="all">Semua Jenjang</option>
-                            {jenjangOptions.map((j) => (
-                              <option key={j} value={j}>
-                                Kelas {j}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                {(jenjangOptions.length > 0 || filteredClassOptions.length > 0) && (
+                  <>
+                    {jenjangOptions.length > 0 && (
+                      <div className="shrink-0 min-w-[130px]">
+                        <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                          Pilih Jenjang
+                        </label>
+                        <select
+                          value={jenjangFilter}
+                          onChange={(e) => {
+                            setJenjangFilter(e.target.value);
+                            // Reset filter Kelas tiap ganti Jenjang, biar gak
+                            // nyangkut pilih kelas dari jenjang yang udah gak aktif.
+                            setClassFilter("all");
+                          }}
+                          className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+                        >
+                          <option value="all">Semua Jenjang</option>
+                          {jenjangOptions.map((j) => (
+                            <option key={j} value={j}>
+                              Kelas {j}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
-                      {filteredClassOptions.length > 0 && (
-                        <div className="shrink-0 min-w-[140px]">
-                          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                            Pilih Kelas
-                          </label>
-                          <select
-                            value={classFilter}
-                            onChange={(e) => setClassFilter(e.target.value)}
-                            className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
-                          >
-                            <option value="all">Semua Kelas</option>
-                            {filteredClassOptions.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                Kelas {c.id}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                    {filteredClassOptions.length > 0 && (
+                      <div className="shrink-0 min-w-[140px]">
+                        <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                          Pilih Kelas
+                        </label>
+                        <select
+                          value={classFilter}
+                          onChange={(e) => setClassFilter(e.target.value)}
+                          className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+                        >
+                          <option value="all">Semua Kelas</option>
+                          {filteredClassOptions.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              Kelas {c.id}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
-                      {(statusFilter !== "all" ||
-                        verifiedFilter !== "all" ||
-                        jenjangFilter !== "all" ||
-                        classFilter !== "all") && (
-                        <div className="shrink-0">
-                          <span className="block text-[11px] mb-1 invisible">Reset</span>
-                          <button
-                            onClick={() => {
-                              setStatusFilter("all");
-                              setVerifiedFilter("all");
-                              setJenjangFilter("all");
-                              setClassFilter(
-                                hasFullAccess ? "all" : currentUser?.homeroom_class_id || "all"
-                              );
-                            }}
-                            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap"
-                          >
-                            Reset Filter
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
+                    {(statusFilter !== "all" ||
+                      verifiedFilter !== "all" ||
+                      jenjangFilter !== "all" ||
+                      classFilter !== "all") && (
+                      <div className="shrink-0">
+                        <span className="block text-[11px] mb-1 invisible">Reset</span>
+                        <button
+                          onClick={() => {
+                            setStatusFilter("all");
+                            setVerifiedFilter("all");
+                            setJenjangFilter("all");
+                            setClassFilter("all");
+                          }}
+                          className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap"
+                        >
+                          Reset Filter
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-
-              {/* Wali kelas (gak hasFullAccess) tetap bisa reset status filter
-              aja, taruh di baris sendiri karena gak ada dropdown Jenjang/Kelas. */}
-              {!hasFullAccess && (statusFilter !== "all" || verifiedFilter !== "all") && (
-                <div>
-                  <button
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setVerifiedFilter("all");
-                    }}
-                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2 rounded-lg whitespace-nowrap"
-                  >
-                    Reset Filter Status
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* ====== TOOLBAR SELEKSI & EXPORT PDF ====== */}
@@ -1390,10 +1309,10 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                     )}
                     {selectedStudent.isVerified ? "Terverifikasi Admin" : "Belum Diverifikasi"}
                   </span>
-                  {/* Tombol verifikasi cuma buat admin -- wali kelas/guru BK
-                    liat status ini tapi gak nge-verifikasi (cocokin ke
+                  {/* Tombol verifikasi cuma buat admin/TU -- wali kelas/guru
+                    BK liat status ini tapi gak nge-verifikasi (cocokin ke
                     dokumen fisik itu tugas TU/admin sekolah). */}
-                  {isAdmin && selectedStudent.detail && (
+                  {(isAdmin || isTU) && selectedStudent.detail && (
                     <button
                       onClick={() =>
                         handleToggleVerify(selectedStudent.id, !selectedStudent.isVerified)
@@ -1510,8 +1429,9 @@ export default function KelengkapanDataSiswa({ currentUser }) {
           </div>
         )}
 
-      {/* ====== TAB "ISI DATA" (admin only) ====== */}
-      {activePageTab === "isi" && selectedStudent && isAdmin && (
+      {/* ====== TAB "ISI DATA" (admin & TU) ====== */}
+      {activePageTab === "isi" && !selectedStudent && (isAdmin || isTU) && renderStudentPicker()}
+      {activePageTab === "isi" && selectedStudent && (isAdmin || isTU) && (
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-md p-4 sm:p-5 border border-slate-100 dark:border-slate-700">
           <form onSubmit={handleSaveAdminEdit} className="space-y-3">
             {adminEditError && (
@@ -1647,6 +1567,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
           kayak DataSiswaIndukPDF.js -- kolom bener-bener sejajar (bukan
           teks nyambung), biar konsisten sama hasil export PDF/Excel yang
           udah familiar buat TU. */}
+      {activePageTab === "preview" && !selectedStudent && renderStudentPicker()}
       {activePageTab === "preview" && selectedStudent && (
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-md p-4 sm:p-5 border border-slate-100 dark:border-slate-700 overflow-x-auto">
           {adminForm ? (
@@ -1720,7 +1641,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Siswa ini belum pernah mengisi data tambahan sama sekali.
               </p>
-              {isAdmin && (
+              {(isAdmin || isTU) && (
                 <button
                   onClick={() => setActivePageTab("isi")}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition"

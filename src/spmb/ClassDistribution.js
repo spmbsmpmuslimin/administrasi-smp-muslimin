@@ -445,55 +445,93 @@ export const generateClassDistribution = (
     console.log(`✅ Phase 2 (Increase diversity): ${phase2Swaps} swaps`);
     console.log(`✅ Phase 3 (Balance variance): ${phase3Swaps} swaps`);
 
-    // ⭐ PHASE 4: FORCE SPREAD DOMINANT SCHOOLS
+    // ⭐ PHASE 4: FORCE SPREAD DOMINANT SCHOOLS (v2 - lebih niat & lebih ketat)
+    // Bug versi lama: begitu 1 sekolah gagal nemu kandidat tukeran yang valid,
+    // SELURUH phase langsung nyerah (padahal sekolah lain yang masih timpang
+    // jadi ikut kebengkalai gara-gara 1 sekolah "sial" ketemu duluan). Versi
+    // ini: setiap sekolah yang timpang dicoba SEMUA kombinasi kandidat
+    // (semua kelas overload x semua siswa di kelas itu x semua kelas
+    // underload x semua siswa di kelas itu) sebelum dianggap "gak bisa
+    // diperbaiki", dan sekolah lain tetap lanjut diproses walau 1 sekolah
+    // gagal. Ambang batas selisih juga diperketat dari >3 jadi >2, karena
+    // kelas isi ~20 siswa dari ~10-11 sekolah asal, selisih 3 masih kerasa
+    // njomplang.
     let phase4Swaps = 0;
-    for (let iteration = 0; iteration < 100; iteration++) {
-      let swapped = false;
+    const maxAllowedSpread = 1;
 
-      // Find schools with very uneven distribution
+    for (let iteration = 0; iteration < 300; iteration++) {
+      let anySwapThisIteration = false;
+
       for (const school of uniqueSchools) {
         const schoolDistribution = classNames.map(
           (className) => schoolCountPerClass[className][school] || 0
         );
-
         const maxInClass = Math.max(...schoolDistribution);
         const minInClass = Math.min(...schoolDistribution);
 
-        // If difference is more than 3, try to balance
-        if (maxInClass - minInClass > 3) {
-          const maxClassIdx = schoolDistribution.indexOf(maxInClass);
-          const minClassIdx = schoolDistribution.indexOf(minInClass);
-          const maxClassName = classNames[maxClassIdx];
-          const minClassName = classNames[minClassIdx];
+        // Sekolah ini udah cukup rata, skip - lanjut cek sekolah berikutnya
+        // (BUKAN berhenti total)
+        if (maxInClass - minInClass <= maxAllowedSpread) continue;
 
-          // Find student from overloaded school in max class
-          const sourceStudentIdx = distribution[maxClassName].findIndex(
+        // Semua kelas yang lagi "kebanyakan" & "kekurangan" dari sekolah ini
+        // (bisa lebih dari 1 kelas masing-masing)
+        const overloadedClasses = classNames.filter(
+          (c) => (schoolCountPerClass[c][school] || 0) === maxInClass
+        );
+        const underloadedClasses = classNames.filter(
+          (c) => (schoolCountPerClass[c][school] || 0) === minInClass
+        );
+
+        let swappedForThisSchool = false;
+
+        for (const maxClassName of overloadedClasses) {
+          if (swappedForThisSchool) break;
+
+          const candidateSources = distribution[maxClassName].filter(
             (s) => sanitizeSchoolName(s.asal_sekolah) === school
           );
 
-          if (sourceStudentIdx !== -1) {
-            const sourceStudent = distribution[maxClassName][sourceStudentIdx];
+          for (const sourceStudent of candidateSources) {
+            if (swappedForThisSchool) break;
 
-            // Find swap candidate in min class (same gender, different school)
-            const targetStudentIdx = distribution[minClassName].findIndex(
-              (s) =>
-                s.jenis_kelamin === sourceStudent.jenis_kelamin &&
-                sanitizeSchoolName(s.asal_sekolah) !== school
-            );
+            for (const minClassName of underloadedClasses) {
+              if (swappedForThisSchool) break;
 
-            if (targetStudentIdx !== -1) {
-              const targetStudent = distribution[minClassName][targetStudentIdx];
-              const targetSchool = sanitizeSchoolName(targetStudent.asal_sekolah);
+              // Coba SEMUA kandidat target di kelas ini (bukan cuma yang
+              // pertama ketemu) - urutkan biar swap yang paling "aman"
+              // (gak numpuk sekolah lain) dicoba duluan.
+              const candidateTargets = distribution[minClassName]
+                .filter(
+                  (s) =>
+                    s.jenis_kelamin === sourceStudent.jenis_kelamin &&
+                    sanitizeSchoolName(s.asal_sekolah) !== school
+                )
+                .sort((a, b) => {
+                  const aCount =
+                    schoolCountPerClass[maxClassName][sanitizeSchoolName(a.asal_sekolah)] || 0;
+                  const bCount =
+                    schoolCountPerClass[maxClassName][sanitizeSchoolName(b.asal_sekolah)] || 0;
+                  return aCount - bCount;
+                });
 
-              // Check if swap won't create new imbalance
-              const targetSchoolInMax = schoolCountPerClass[maxClassName][targetSchool] || 0;
-              const targetSchoolInMin = schoolCountPerClass[minClassName][targetSchool] || 0;
+              for (const targetStudent of candidateTargets) {
+                const targetSchool = sanitizeSchoolName(targetStudent.asal_sekolah);
+                const targetSchoolInMax = schoolCountPerClass[maxClassName][targetSchool] || 0;
+                const targetSchoolInMin = schoolCountPerClass[minClassName][targetSchool] || 0;
 
-              // Only swap if it improves balance
-              if (targetSchoolInMax - targetSchoolInMin < 3) {
-                // Perform swap
-                distribution[maxClassName][sourceStudentIdx] = targetStudent;
-                distribution[minClassName][targetStudentIdx] = sourceStudent;
+                // Swap gak boleh bikin sekolah lain jadi timpang gara-gara
+                // pindah tempat
+                if (targetSchoolInMax + 1 - (targetSchoolInMin - 1) > maxAllowedSpread) continue;
+
+                // Lakukan swap
+                const srcIdx = distribution[maxClassName].findIndex(
+                  (s) => s.id === sourceStudent.id
+                );
+                const tgtIdx = distribution[minClassName].findIndex(
+                  (s) => s.id === targetStudent.id
+                );
+                distribution[maxClassName][srcIdx] = targetStudent;
+                distribution[minClassName][tgtIdx] = sourceStudent;
 
                 // Update tracking
                 schoolCountPerClass[maxClassName][school]--;
@@ -509,15 +547,22 @@ export const generateClassDistribution = (
                 schoolCountPerClass[minClassName][targetSchool]--;
 
                 phase4Swaps++;
-                swapped = true;
+                swappedForThisSchool = true;
+                anySwapThisIteration = true;
                 break;
               }
             }
           }
         }
+        // swappedForThisSchool gagal? Gapapa, lanjut ke sekolah berikutnya
+        // di for-loop ini juga (bukan break keluar semua) - itu inti
+        // perbaikannya.
       }
 
-      if (!swapped) break;
+      // Baru berhenti kalau SATU PUTARAN PENUH ke semua sekolah gak
+      // menghasilkan swap sama sekali (beneran udah mentok/optimal),
+      // bukan cuma gara-gara 1 sekolah pertama gagal.
+      if (!anySwapThisIteration) break;
     }
 
     console.log(`✅ Phase 4 (Force spread dominant): ${phase4Swaps} swaps`);

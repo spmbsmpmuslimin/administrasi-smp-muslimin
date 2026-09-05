@@ -153,9 +153,11 @@ const ClassDivision = ({
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-4 lg:px-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-4 sm:p-6 text-white">
-        <h2 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">📚 Pembagian Kelas Otomatis</h2>
-        <p className="text-purple-100 text-sm sm:text-base">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-lg p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-bold mb-1 text-blue-900 dark:text-blue-200">
+          📚 Pembagian Kelas Otomatis
+        </h2>
+        <p className="text-blue-700 dark:text-blue-400 text-sm sm:text-base">
           Distribusi Siswa Baru Ke Kelas 7A - 7F Secara Seimbang
         </p>
       </div>
@@ -245,7 +247,7 @@ const ClassDivision = ({
               <button
                 onClick={() => handleExportSavedClasses(allStudents, setIsExporting, showToast)}
                 disabled={isExporting || studentsWithClass.length === 0}
-                className="px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+                className="px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
               >
                 <i className="fas fa-file-excel"></i>
                 {isExporting ? "Exporting..." : `Export Kelas`}
@@ -400,7 +402,7 @@ const ClassDivision = ({
                         handleExportClassDivision(classDistribution, setIsExporting, showToast)
                       }
                       disabled={isExporting || isLoading}
-                      className="px-3 sm:px-4 py-1 sm:py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[40px]"
+                      className="px-3 sm:px-4 py-1 sm:py-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[40px]"
                     >
                       <i className="fas fa-file-excel text-xs sm:text-sm"></i>
                       {isExporting ? "Exporting..." : "Export Excel"}
@@ -433,7 +435,7 @@ const ClassDivision = ({
                   <button
                     onClick={() => handleExportSavedClasses(allStudents, setIsExporting, showToast)}
                     disabled={isExporting}
-                    className="px-3 sm:px-4 py-1 sm:py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[40px]"
+                    className="px-3 sm:px-4 py-1 sm:py-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[40px]"
                   >
                     <i className="fas fa-file-excel text-xs sm:text-sm"></i>
                     {isExporting ? "Exporting..." : "Export Excel"}
@@ -1258,7 +1260,7 @@ const ClassDivision = ({
       {/* 🚨 MODAL MERAH TRANSFER */}
       {showTransferModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-2xl max-w-md w-full p-4 sm:p-6 text-white border-4 border-red-900 mx-2 sm:mx-4">
+          <div className="bg-red-700 rounded-lg shadow-2xl max-w-md w-full p-4 sm:p-6 text-white border-4 border-red-900 mx-2 sm:mx-4">
             <div className="text-center mb-3 sm:mb-4">
               <div className="text-4xl sm:text-6xl mb-2">🚨</div>
               <h3 className="text-xl sm:text-2xl font-black">PERINGATAN KRITIS!</h3>

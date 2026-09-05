@@ -110,7 +110,12 @@ export const sidebarGroups = [
         // ✅ FIX: Guru BK/BP dihilangkan dari menu ini -- Guru BK gak
         // punya jam mengajar reguler kayak guru mapel/wali kelas, jadi
         // menu "Jadwal Mengajar" gak relevan buat role ini.
-        show: (ctx) => ctx.isTeacher || ctx.userRole === "homeroom",
+        // ✅ CLEANUP: kondisi `userRole === "homeroom"` dihapus -- role itu
+        // gak pernah ada di kolom `role` tabel users (yang valid: admin, tu,
+        // teacher, guru_bk, petugas_perpus, siswa). Status Wali Kelas
+        // ditentukan dari homeroom_class_id terisi, bukan dari nilai role,
+        // dan itu udah otomatis kecover lewat isTeacher. Dead code, no-op.
+        show: (ctx) => ctx.isTeacher,
       },
       {
         page: "jurnal-harian",
@@ -159,7 +164,13 @@ export const sidebarGroups = [
   {
     id: "eraport",
     title: "E-RAPORT",
-    // ⚠️ Perilaku asli: seluruh grup E-RAPORT disembunyikan dari Admin di sidebar
+    // ⚠️ SENGAJA, BUKAN BUG: modul E-Raport internal ini dinonaktifkan
+    // sementara karena sekolah sudah pindah pakai aplikasi e-rapor resmi
+    // dari pemerintah. Jangan aktifin lagi grup ini buat Admin/TU sebelum
+    // dikonfirmasi ulang -- kalau nanti mau diaktifkan lagi, cukup ubah
+    // baris show() di bawah ini (dan setting eraportActive di database).
+    //
+    // Perilaku asli: seluruh grup E-RAPORT disembunyikan dari Admin di sidebar
     // (walaupun Admin tetap punya akses route era-dashboard-admin dkk via App.js).
     // TU disamain kayak Admin -> ikut disembunyikan juga.
     show: (ctx) => ctx.eraportActive && !ctx.isAdmin && !ctx.isTU,

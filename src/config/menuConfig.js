@@ -69,9 +69,10 @@ const defaultProps = (ctx) => ({
 
 export const menuConfig = [
   // ===== MENU UTAMA & AKADEMIK =====
-  { path: "/dashboard", component: Dashboard },
+  { path: "/dashboard", title: "Dashboard", component: Dashboard },
   {
     path: "/portal-siswa",
+    title: "Portal Siswa",
     component: StudentPortal,
     allowedRoles: ["siswa"],
     layout: false,
@@ -84,12 +85,14 @@ export const menuConfig = [
   },
   {
     path: "/portal-siswa-guru",
+    title: "Portal Siswa (Guru)",
     component: PortalSiswaGuru,
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
   },
   {
     path: "/denah-duduk",
+    title: "Denah Duduk",
     component: withPortalBackButton(DenahDuduk),
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
@@ -97,151 +100,204 @@ export const menuConfig = [
   },
   {
     path: "/organigram",
+    title: "Organigram Kelas",
     component: withPortalBackButton(Organigram),
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
     getProps: (ctx) => ({ currentUser: ctx.user }),
   },
-  { path: "/teachers", component: Teachers },
-  { path: "/classes", component: Classes },
-  { path: "/students", component: Students },
+  { path: "/teachers", title: "Data Guru", component: Teachers },
+  { path: "/classes", title: "Data Kelas", component: Classes },
+  { path: "/students", title: "Data Siswa", component: Students },
   {
     path: "/data-induk-siswa",
-    component: withPortalBackButton(DataSiswaInduk),
-    allowedRoles: ["admin", "teacher", "guru_bk"],
+    title: "Data Induk Siswa",
+    component: DataSiswaInduk,
+    // ✅ FIX: dibuka dari withPortalBackButton(DataSiswaInduk) -- tombol
+    // "Kembali ke Portal Siswa" gak relevan lagi buat route ini. Dulu
+    // dipakai wali kelas yang masuk lewat hub Portal Siswa, tapi sekarang
+    // route ini khusus Admin & TU (lihat allowedRoles di bawah), yang gak
+    // pernah masuk lewat Portal Siswa sama sekali.
+    // ✅ FIX: "teacher" dibuang -- guru emang gak pernah dikasih lihat menu
+    // ini di sidebar (lihat sidebarConfig.js, show-nya cuma isAdmin/isTU),
+    // jadi allowedRoles disamain sama apa yang sidebar tampilin. "tu"
+    // ditambahin karena TU harus akses semua yang Admin bisa akses.
+    // ✅ FIX: "guru_bk" dibuang juga -- sidebar sengaja cuma nampilin menu
+    // ini buat Admin & TU, jadi allowedRoles disamain biar route gak lebih
+    // longgar dari yang ditampilin sidebar.
+    allowedRoles: ["admin", "tu"],
     requireWaliKelas: false,
     getProps: (ctx) => ({ currentUser: ctx.user }),
   },
-  { path: "/attendance", component: AttendanceMain },
+  { path: "/attendance", title: "Presensi", component: AttendanceMain },
   {
     path: "/attendance-teacher",
+    // Dinamis: Admin/TU mantau semua guru, Teacher/Guru BK isi presensi
+    // diri sendiri -- title bisa berupa function (user) => string, lihat
+    // getCurrentPageName() di Layout.js.
+    title: (user) =>
+      user?.role === "admin" || user?.role === "tu" ? "Monitor Presensi Guru" : "Presensi Guru",
     component: TeacherAttendance,
-    allowedRoles: ["teacher", "guru_bk", "admin"],
+    // ✅ FIX: "tu" ditambahin. "teacher" TETAP HARUS ADA -- 1 halaman ini
+    // dipakai dobel: Admin/TU liat "Monitor Presensi Guru" (mantau semua
+    // guru), sedangkan Teacher/Guru BK liat "Presensi Guru" (isi presensi
+    // diri sendiri) -- lihat label() dinamis di sidebarConfig.js. Kalau
+    // "teacher" dibuang dari sini, guru kena Akses Ditolak pas mau
+    // presensi sendiri walau menunya masih muncul di sidebar mereka.
+    allowedRoles: ["teacher", "guru_bk", "admin", "tu"],
   },
   {
     path: "/jurnal-harian",
+    title: "Jurnal Harian",
     component: JurnalHarian,
-    allowedRoles: ["teacher", "guru_bk"],
+    // ✅ FIX: "guru_bk" dibuang -- sidebar sengaja gak nampilin menu ini
+    // buat Guru BK (jurnal mengajar harian cuma relevan buat guru yang
+    // punya jam KBM reguler), jadi route disamain biar konsisten.
+    allowedRoles: ["teacher"],
   },
   {
     path: "/jurnal-harian-rekap",
+    title: "Rekap Jurnal Harian",
     component: AdminJurnalRekap,
     allowedRoles: ["admin"],
   },
-  { path: "/nilai-siswa", component: GradeMain },
+  { path: "/nilai-siswa", title: "Nilai Siswa", component: GradeMain },
   {
     path: "/attendance-management",
+    title: "Kelola Presensi",
     component: AttendanceManagement,
     allowedRoles: ["admin"],
   },
   {
     path: "/admin-attendance",
+    title: "Monitor Presensi",
     component: AdminAttendance,
-    allowedRoles: ["admin", "guru_bk"],
+    allowedRoles: ["admin", "guru_bk", "tu"], // ✅ FIX: tambah "tu"
   },
-  { path: "/jadwal-saya", component: TeacherSchedule },
+  { path: "/jadwal-saya", title: "Jadwal Saya", component: TeacherSchedule },
   {
     path: "/kelola-jadwal-pelajaran",
+    title: "Kelola Jadwal Pelajaran",
     component: withPortalBackButton(KelolaJadwalPelajaran),
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
   },
   {
     path: "/jadwal-piket",
+    title: "Jadwal Piket",
     component: withPortalBackButton(DutySchedule),
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
     getProps: (ctx) => ({ currentUser: ctx.user }),
   },
-  { path: "/catatan-siswa", component: withPortalBackButton(CatatanSiswa) },
+  {
+    path: "/catatan-siswa",
+    title: "Catatan Siswa",
+    component: withPortalBackButton(CatatanSiswa),
+  },
   {
     path: "/konseling",
+    title: "Konseling",
     component: KonselingMain,
     getProps: (ctx) => ({ ...defaultProps(ctx), initialTab: "konseling" }),
   },
   {
     path: "/home-visit",
+    title: "Home Visit",
     component: KonselingMain,
     getProps: (ctx) => ({ ...defaultProps(ctx), initialTab: "home-visit" }),
   },
-  { path: "/reports", component: Reports },
+  { path: "/reports", title: "Laporan", component: Reports },
 
   // ===== SISTEM (ADMIN ONLY) =====
-  { path: "/spmb", component: SPMB },
+  { path: "/spmb", title: "SPMB", component: SPMB },
   {
     path: "/settings",
+    title: "Pengaturan",
     component: Setting,
     getProps: (ctx) => ({
       ...defaultProps(ctx),
       onToggleDarkMode: ctx.handleToggleDarkMode,
     }),
   },
-  { path: "/monitor-sistem", component: MonitorSistem },
+  { path: "/monitor-sistem", title: "Monitor Sistem", component: MonitorSistem },
 
   // ===== E-RAPORT =====
   {
     path: "/era-dashboard-admin",
+    title: "Dashboard E-Raport (Admin)",
     component: DashboardAdmin,
     allowedRoles: ["admin"],
   },
   {
     path: "/era-dashboard-teacher",
+    title: "Dashboard E-Raport (Guru)",
     component: DashboardTeacher,
     allowedRoles: ["teacher"],
   },
   {
     path: "/era-dashboard-homeroom",
+    title: "Dashboard E-Raport (Wali Kelas)",
     component: DashboardHomeroomTeacher,
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
   },
   {
     path: "/era-input-tp",
+    title: "Input Tujuan Pembelajaran",
     component: InputTP,
     allowedRoles: ["admin", "teacher"],
   },
   {
     path: "/era-input-nilai",
+    title: "Input Nilai",
     component: InputNilai,
     allowedRoles: ["admin", "teacher"],
   },
   {
     path: "/era-cek-nilai",
+    title: "Cek Nilai",
     component: CekNilai,
     allowedRoles: ["admin", "teacher"],
   },
   {
     path: "/era-input-kehadiran",
+    title: "Input Kehadiran",
     component: InputKehadiran,
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
   },
   {
     path: "/era-input-catatan",
+    title: "Input Catatan",
     component: InputCatatan,
     allowedRoles: ["admin", "teacher"],
     requireWaliKelas: true,
   },
   {
     path: "/era-input-kokurikuler",
+    title: "Input Kokurikuler",
     component: InputKokurikuler,
     allowedRoles: ["admin", "teacher"],
     requireWaliKelas: true,
   },
   {
     path: "/era-input-ekstrakurikuler",
+    title: "Input Ekstrakurikuler",
     component: InputEkstrakurikuler,
     allowedRoles: ["admin", "teacher"],
     requireWaliKelas: true,
   },
   {
     path: "/era-cek-kelengkapan",
+    title: "Cek Kelengkapan Nilai",
     component: CekStatusNilai,
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
   },
   {
     path: "/era-cetak-raport",
+    title: "Cetak Raport",
     component: RaportPage,
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
@@ -250,6 +306,7 @@ export const menuConfig = [
   // ===== RUANG BELAJAR =====
   {
     path: "/ruang-belajar-admin",
+    title: "Ruang Belajar",
     component: RuangBelajarAdmin,
     allowedRoles: ["admin", "teacher"],
     requireRuangBelajarAccess: true, // ← whitelist by user id, lihat config/ruangBelajarAccess.js
@@ -258,18 +315,21 @@ export const menuConfig = [
   // ===== PERPUSTAKAAN =====
   {
     path: "/katalog-buku",
+    title: "Katalog Buku",
     component: PerpusMain,
     allowedRoles: ["petugas_perpus"],
     getProps: (ctx) => ({ ...defaultProps(ctx), currentPage: "katalog-buku" }),
   },
   {
     path: "/peminjaman",
+    title: "Peminjaman Buku",
     component: PerpusMain,
     allowedRoles: ["petugas_perpus"],
     getProps: (ctx) => ({ ...defaultProps(ctx), currentPage: "peminjaman" }),
   },
   {
     path: "/pengembalian",
+    title: "Pengembalian Buku",
     component: PerpusMain,
     allowedRoles: ["petugas_perpus"],
     getProps: (ctx) => ({ ...defaultProps(ctx), currentPage: "pengembalian" }),

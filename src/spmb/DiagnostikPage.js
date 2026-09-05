@@ -275,7 +275,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
   return (
     <div className="px-3 sm:px-4 lg:px-6">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800 dark:text-gray-100 flex items-center gap-2 sm:gap-3">
-        <i className="fas fa-chart-line text-purple-600 dark:text-purple-400 text-lg sm:text-xl"></i>
+        <i className="fas fa-chart-line text-blue-600 dark:text-blue-400 text-lg sm:text-xl"></i>
         <span className="text-base sm:text-2xl">Skor Test Diagnostik</span>
       </h2>
 
@@ -286,31 +286,35 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-900/30 focus:outline-none pl-10 sm:pl-12 min-h-[48px]"
+            className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-sm sm:text-base transition-colors bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none pl-10 sm:pl-12 min-h-[48px]"
             placeholder="Cari nama siswa atau no. pendaftaran..."
           />
           <i className="fas fa-search absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm sm:text-base"></i>
         </div>
 
-        <div className="flex gap-2 sm:gap-3 flex-col xs:flex-row">
+        <div className="flex gap-2">
           <button
             onClick={handleExportTemplate}
             disabled={isExporting || !allStudents || allStudents.length === 0}
-            className="bg-gradient-to-r from-green-700 to-green-500 dark:from-green-800 dark:to-green-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none"
+            className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-[11px] sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 justify-center min-h-[44px] sm:min-h-[48px] flex-1 min-w-0"
           >
-            <i className="fas fa-file-download text-sm sm:text-base"></i>
-            <span className="hidden sm:inline">
+            <i className="fas fa-file-download text-xs sm:text-sm shrink-0"></i>
+            <span className="hidden sm:inline truncate">
               {isExporting ? "Exporting..." : "Export Template"}
             </span>
+            <span className="sm:hidden truncate">{isExporting ? "..." : "Template"}</span>
           </button>
 
           <button
             onClick={handleImportClick}
             disabled={isImporting}
-            className="bg-gradient-to-r from-blue-800 to-blue-600 dark:from-blue-700 dark:to-blue-500 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:-translate-y-1 hover:shadow-xl disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none"
+            className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 px-2 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-[11px] sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 justify-center min-h-[44px] sm:min-h-[48px] flex-1 min-w-0"
           >
-            <i className="fas fa-file-upload text-sm sm:text-base"></i>
-            <span className="hidden sm:inline">{isImporting ? "Membaca..." : "Import Excel"}</span>
+            <i className="fas fa-file-upload text-xs sm:text-sm shrink-0"></i>
+            <span className="hidden sm:inline truncate">
+              {isImporting ? "Membaca..." : "Import Excel"}
+            </span>
+            <span className="sm:hidden truncate">{isImporting ? "..." : "Import"}</span>
           </button>
           <input
             ref={fileInputRef}
@@ -324,10 +328,12 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
             <button
               onClick={handleSaveAll}
               disabled={isBulkSaving}
-              className="bg-gradient-to-r from-purple-800 to-purple-600 dark:from-purple-900 dark:to-purple-700 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 sm:gap-3 justify-center min-h-[48px] flex-1 xs:flex-none"
+              className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-2 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-[11px] sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 justify-center min-h-[44px] sm:min-h-[48px] flex-1 min-w-0"
             >
-              <i className="fas fa-save text-sm sm:text-base"></i>
-              <span>{isBulkSaving ? "Menyimpan..." : `Simpan Semua (${dirtyCount})`}</span>
+              <i className="fas fa-save text-xs sm:text-sm shrink-0"></i>
+              <span className="truncate">
+                {isBulkSaving ? "Menyimpan..." : `Simpan (${dirtyCount})`}
+              </span>
             </button>
           )}
         </div>
@@ -357,7 +363,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
               <button
                 onClick={handleApplyImport}
                 disabled={isBulkSaving || importPreview.validCount === 0}
-                className="bg-gradient-to-r from-green-700 to-green-500 dark:from-green-800 dark:to-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isBulkSaving ? "Menerapkan..." : `Terapkan ${importPreview.validCount} Data`}
               </button>
@@ -423,7 +429,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
-            <thead className="bg-gradient-to-r from-purple-800 to-purple-600 dark:from-purple-900 dark:to-purple-700 text-white">
+            <thead className="bg-slate-800 dark:bg-slate-900 text-white">
               <tr>
                 <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[180px]">
                   Nama Siswa
@@ -496,7 +502,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                           step="0.01"
                           value={getFieldValue(student, "skor_akademik")}
                           onChange={(e) => updateEdit(student.id, "skor_akademik", e.target.value)}
-                          className="w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/30 focus:outline-none"
+                          className="w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
                           placeholder="-"
                         />
                       </td>
@@ -506,7 +512,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                           onChange={(e) =>
                             updateEdit(student.id, "kategori_baca_latin", e.target.value)
                           }
-                          className="w-full min-w-[140px] p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/30 focus:outline-none"
+                          className="w-full min-w-[140px] p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
                         >
                           <option value="">-- Belum dites --</option>
                           {KATEGORI_OPTIONS.map((opt) => (
@@ -522,7 +528,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                           onChange={(e) =>
                             updateEdit(student.id, "kategori_mengaji", e.target.value)
                           }
-                          className="w-full min-w-[140px] p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/30 focus:outline-none"
+                          className="w-full min-w-[140px] p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
                         >
                           <option value="">-- Belum dites --</option>
                           {KATEGORI_OPTIONS.map((opt) => (
@@ -533,7 +539,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                         </select>
                       </td>
                       <td className="p-3">
-                        <span className="font-bold text-purple-700 dark:text-purple-300 text-sm">
+                        <span className="font-bold text-blue-700 dark:text-blue-300 text-sm">
                           {skorGabungan !== null ? skorGabungan : "-"}
                         </span>
                       </td>
@@ -541,7 +547,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                         <button
                           onClick={() => handleSaveRow(student)}
                           disabled={!dirty || saving}
-                          className="bg-gradient-to-r from-purple-800 to-purple-600 dark:from-purple-900 dark:to-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:-translate-y-1 hover:shadow-md transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center gap-1 justify-center min-h-[36px] min-w-[70px]"
+                          className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 justify-center min-h-[36px] min-w-[70px]"
                           title="Simpan baris ini"
                         >
                           {saving ? (

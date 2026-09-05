@@ -13,7 +13,22 @@
 // dimasukin karena kondisional / gak semua siswa punya / baru keisi
 // belakangan: no_hp (siswa), no_kip (cuma penerima KIP), no_peserta_ujian/
 // no_ijazah/no_daftar (baru keisi pas lulus), kode_pos (sering nempel di
-// teks alamat), keterangan (cuma catatan tambahan), anak_ke, sekolah_asal.
+// teks alamat), keterangan (cuma catatan tambahan), anak_ke.
+//
+// ✅ UPDATE: `sekolah_asal` DITAMBAHIN ke daftar wajib -- penting dicatat
+// terutama pas penerimaan siswa baru (kelas 7). Field ini SENGAJA
+// diperlakukan FLAT (wajib buat SEMUA jenjang, bukan cuma kelas 7),
+// karena getCompletionStatus/resolveCompletion di file ini belum support
+// syarat wajib yang beda per jenjang.
+// ⚠️ KONSEKUENSI YANG DISADARI & DITERIMA: siswa kelas 8/9 yang emang dari
+// awal gak ada data `sekolah_asal`-nya (data lama, sebelum field ini
+// wajib) bakal ke-hitung "Sebagian" walau 19 field lain udah lengkap --
+// ini BUKAN bug, ini keputusan sadar (Opsi A) sambil nunggu diisi manual
+// belakangan oleh TU/admin. Kalau ke depannya mau dibikin kondisional
+// per jenjang (gak numpuk ke kelas 8/9 lama), getCompletionStatus/
+// resolveCompletion di bawah perlu diubah buat nerima info jenjang, dan
+// PERUBAHANNYA HARUS DISINKRONIN ke pages/Students.js juga (fungsi ini
+// dipake bareng di sana).
 export const REQUIRED_FIELDS = [
   "jenis_kelamin",
   "tempat_lahir",
@@ -24,6 +39,7 @@ export const REQUIRED_FIELDS = [
   "no_akta_lahir",
   "agama",
   "alamat",
+  "sekolah_asal",
   "nama_ayah",
   "nik_ayah",
   "pekerjaan_ayah",

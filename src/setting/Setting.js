@@ -273,7 +273,8 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Kelola data siswa, kelas, penugasan guru, dan pengaturan umum sekolah",
       icon: School,
       color: "emerald",
-      available: user?.role === "admin" || user?.role === "guru_bk",
+      // ✅ FIX: tambah "tu"
+      available: user?.role === "admin" || user?.role === "guru_bk" || user?.role === "tu",
     },
     {
       id: "academic",
@@ -281,7 +282,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Atur periode dan tahun ajaran",
       icon: Calendar,
       color: "amber",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "jadwal-guru",
@@ -289,7 +290,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Import jadwal massal & master kode guru",
       icon: CalendarClock,
       color: "amber",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "kelola-raport",
@@ -297,7 +298,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Import nilai raport dari PDF & kelola raport digital siswa",
       icon: FileSpreadsheet,
       color: "teal",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "portal-siswa",
@@ -305,7 +306,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Kelola akun, password, dan akses login portal siswa",
       icon: UserPlus,
       color: "rose",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "profile",
@@ -321,7 +322,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Pantau aktivitas login dan engagement guru",
       icon: UserCheck,
       color: "teal",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "user-management",
@@ -329,7 +330,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Kelola akun pengguna dan hak akses",
       icon: ShieldCheck,
       color: "fuchsia",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "system",
@@ -337,7 +338,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Pengaturan sistem dan database",
       icon: Database,
       color: "slate",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "raport",
@@ -345,7 +346,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Setup template dan format raport",
       icon: FileBarChart,
       color: "cyan",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "maintenance",
@@ -353,7 +354,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Mode pemeliharaan dan backup",
       icon: Wrench,
       color: "red",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
       id: "feedback-guru",
@@ -361,7 +362,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Kelola masukan, saran, dan laporan bug dari guru & siswa",
       icon: MessageSquare,
       color: "violet",
-      available: user?.role === "admin",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
   ];
 
