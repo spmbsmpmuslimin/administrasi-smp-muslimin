@@ -84,6 +84,20 @@ const TeacherDashboard = ({ user }) => {
   const [todaySchedule, setTodaySchedule] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [absentStudents, setAbsentStudents] = useState([]); // ✅ TAMBAH STATE BARU
+  // ✅ NEW: Referensi presensi HARIAN (diinput wali kelas kelas tsb) untuk
+  // kelas-kelas yang guru ini ajar mapel-nya hari ini. Beda sama
+  // absentStudents di atas -- itu hasil input guru mapel sendiri, ini
+  // "contekan" dari data wali kelas, biar pas masuk kelas guru mapel udah
+  // tau siapa yang gak hadir tanpa perlu nanya siswa dulu dulu.
+  // Grouped per class_id: { "7F": [{full_name, status}, ...], "7A": [...] }
+  const [harianReferenceByClass, setHarianReferenceByClass] = useState({});
+  // ✅ NEW: Alasan kenapa harianReferenceByClass kosong, biar guru tau itu
+  // normal (bukan error/data ilang). Kemungkinan nilai:
+  // - "no_schedule" : gak ada jadwal ngajar hari ini (weekend/libur)
+  // - "no_data_yet" : ada jadwal ngajar hari ini, tapi wali kelas dari
+  //                   kelas tsb belum input presensi harian hari ini
+  // - "has_data"    : ada datanya, section normal ditampilkan
+  const [harianReferenceStatus, setHarianReferenceStatus] = useState("no_schedule");
   // ✅ NEW: Materi terakhir per kelas+mapel (dari jurnal_harian), buat pengingat
   // sebelum guru masuk kelas. Key: "classId||subject"
   const [lastMateriMap, setLastMateriMap] = useState({});
@@ -545,6 +559,100 @@ const TeacherDashboard = ({ user }) => {
     }
   };
 
+  // ✅ NEW: Fetch presensi HARIAN (punya wali kelas) untuk semua kelas yang
+  // guru ini ajar mapel-nya hari ini. TIDAK difilter by teacher_id, karena
+  // data ini punya WALI KELAS kelas tsb, bukan punya guru mapel yang lagi
+  // login -- beda sama fetchAbsentStudents di atas.
+  const fetchHarianReferenceForMapelClasses = async (todaySchedule) => {
+    if (!todaySchedule || todaySchedule.length === 0) {
+      setHarianReferenceByClass({});
+      setHarianReferenceStatus("no_schedule");
+      return;
+    }
+
+    try {
+      const now = new Date();
+      const offset = 7 * 60 * 60 * 1000;
+      const todayIndonesia = new Date(now.getTime() + offset);
+      const todayString = todayIndonesia.toISOString().split("T")[0];
+
+      const classIdsToday = [...new Set(todaySchedule.map((s) => s.class_id).filter(Boolean))];
+
+      if (classIdsToday.length === 0) {
+        setHarianReferenceByClass({});
+        setHarianReferenceStatus("no_schedule");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("attendances")
+        .select(
+          `
+        student_id,
+        status,
+        students!inner(full_name),
+        class_id
+      `
+        )
+        .eq("date", todayString)
+        .in("class_id", classIdsToday)
+        .eq("type", "harian")
+        .in("status", ["Sakit", "Izin", "Alpa"])
+        .order("students(full_name)", { ascending: true });
+
+      if (error) throw error;
+
+      // ✅ Cek juga apa wali kelas dari kelas-kelas ini SUDAH presensi hari
+      // ini sama sekali (walau hasilnya semua Hadir) -- biar bisa bedain
+      // "belum presensi" vs "udah presensi, semua hadir".
+      const { data: anyHarianToday, error: anyError } = await supabase
+        .from("attendances")
+        .select("class_id")
+        .eq("date", todayString)
+        .in("class_id", classIdsToday)
+        .eq("type", "harian")
+        .limit(1);
+
+      if (anyError) throw anyError;
+
+      // Group by class_id, dedup per student
+      const byClass = {};
+      (data || []).forEach((item) => {
+        const classId = item.class_id;
+        if (!byClass[classId]) byClass[classId] = new Map();
+        if (!byClass[classId].has(item.student_id)) {
+          byClass[classId].set(item.student_id, {
+            id: item.student_id,
+            full_name: item.students?.full_name || "Nama tidak tersedia",
+            status: item.status,
+          });
+        }
+      });
+
+      const result = {};
+      Object.entries(byClass).forEach(([classId, studentMap]) => {
+        result[classId] = Array.from(studentMap.values()).sort((a, b) =>
+          a.full_name.localeCompare(b.full_name)
+        );
+      });
+
+      setHarianReferenceByClass(result);
+
+      if (Object.keys(result).length > 0) {
+        setHarianReferenceStatus("has_data");
+      } else if (anyHarianToday && anyHarianToday.length > 0) {
+        // Wali kelas dari kelas lain udah presensi, tapi semua siswa Hadir
+        setHarianReferenceStatus("has_data");
+      } else {
+        setHarianReferenceStatus("no_data_yet");
+      }
+    } catch (err) {
+      console.error("❌ Error fetching harian reference:", err);
+      setHarianReferenceByClass({});
+      setHarianReferenceStatus("no_data_yet");
+    }
+  };
+
   const fetchTeacherData = async (teacherCode, teacherUUID) => {
     try {
       setLoading(true);
@@ -595,6 +703,8 @@ const TeacherDashboard = ({ user }) => {
         setAnnouncements([]);
         setTodaySchedule([]);
         setAbsentStudents([]);
+        setHarianReferenceByClass({});
+        setHarianReferenceStatus("no_schedule");
         setLoading(false);
         return;
       }
@@ -663,7 +773,16 @@ const TeacherDashboard = ({ user }) => {
       await fetchAbsentStudents(classIds, teacherUUID);
 
       // Fetch today's schedule
-      await fetchTodaySchedule(teacherCode, teacherUUID, academicYearId, assignmentsWithClasses);
+      const schedule = await fetchTodaySchedule(
+        teacherCode,
+        teacherUUID,
+        academicYearId,
+        assignmentsWithClasses
+      );
+
+      // ✅ NEW: Referensi presensi harian dari wali kelas, buat kelas-kelas
+      // yang guru ini ajar mapel-nya HARI INI (bukan semua kelas semester ini).
+      await fetchHarianReferenceForMapelClasses(schedule);
     } catch (err) {
       console.error("❌ Error in fetchTeacherData:", err);
       setError(err.message);
@@ -840,9 +959,13 @@ const TeacherDashboard = ({ user }) => {
           {/* Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {/* Left Column: Mata Pelajaran & Kelas + Daftar Siswa Tidak Hadir */}
-            <div>
-              {/* Mata Pelajaran & Kelas */}
-              <div className="bg-gradient-to-br from-white dark:from-gray-800 via-slate-50/30 dark:via-gray-700/30 to-blue-50/30 dark:to-blue-900/20 rounded-xl shadow-lg border border-slate-200 dark:border-gray-700 p-4 sm:p-6 backdrop-blur-sm mb-6">
+            <div className="h-full flex flex-col">
+              {/* Mata Pelajaran & Kelas -- flex-1 biar card ini stretch
+                  ngikutin tinggi card "Jadwal Hari Ini" di kolom kanan
+                  (grid defaultnya udah stretch row-nya, tapi div wrapper
+                  polos di atas ini gak nurunin stretch itu ke card di
+                  dalemnya tanpa flex eksplisit). */}
+              <div className="flex-1 flex flex-col bg-gradient-to-br from-white dark:from-gray-800 via-slate-50/30 dark:via-gray-700/30 to-blue-50/30 dark:to-blue-900/20 rounded-xl shadow-lg border border-slate-200 dark:border-gray-700 p-4 sm:p-6 backdrop-blur-sm">
                 <h3 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-gray-100 mb-4 flex items-center">
                   <span className="mr-2 text-blue-600 dark:text-blue-400">📖</span>
                   Mata Pelajaran & Kelas
@@ -951,6 +1074,96 @@ const TeacherDashboard = ({ user }) => {
                       </p>
                     </div>
                   )}
+                </div>
+
+                {/* ✅ NEW SECTION: REFERENSI PRESENSI HARIAN DARI WALI KELAS
+                    "Contekan" sebelum guru mapel input presensi mapel-nya
+                    sendiri -- diambil dari presensi harian yg sudah diinput
+                    wali kelas kelas tsb (BUKAN input guru mapel ini). Pola
+                    sama persis kayak di HomeroomTeacherDashboard.js, cuma
+                    di sini gak ada status "only_homeroom" karena guru mapel
+                    biasa gak punya kelas walian sendiri. */}
+                <div className="mt-6 pt-6 border-t border-slate-200 dark:border-gray-700">
+                  <h4 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-gray-100 mb-1 flex items-center">
+                    <span className="mr-2 text-indigo-600 dark:text-indigo-400">📋</span>
+                    Referensi Presensi Harian (dari Wali Kelas)
+                  </h4>
+                  <p className="text-sm text-slate-500 dark:text-gray-400 mb-3">
+                    Data ini dari presensi harian yang sudah diinput wali kelas masing-masing.
+                    Gunakan sebagai gambaran awal sebelum mengisi presensi mapel Anda sendiri.
+                  </p>
+
+                  {harianReferenceStatus === "no_schedule" && (
+                    <div className="text-center py-4 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900/30">
+                      <div className="text-xl mb-2">📅</div>
+                      <p className="text-sm text-slate-600 dark:text-gray-400">
+                        Tidak ada jadwal mengajar hari ini
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-gray-500 mt-1">
+                        Referensi presensi harian akan muncul di sini pada hari Anda memiliki jadwal
+                        mengajar mapel.
+                      </p>
+                    </div>
+                  )}
+
+                  {harianReferenceStatus === "no_data_yet" && (
+                    <div className="text-center py-4 border border-amber-200 dark:border-amber-700 rounded-lg bg-amber-50 dark:bg-amber-900/30">
+                      <div className="text-xl mb-2">⏳</div>
+                      <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                        Wali kelas dari kelas yang Anda ajar hari ini belum menginput presensi
+                        harian
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                        Coba cek lagi beberapa saat lagi, atau hubungi wali kelas terkait.
+                      </p>
+                    </div>
+                  )}
+
+                  {harianReferenceStatus === "has_data" &&
+                    Object.keys(harianReferenceByClass).length === 0 && (
+                      <div className="text-center py-4 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900/30">
+                        <div className="text-xl mb-2">🎉</div>
+                        <p className="text-sm text-slate-600 dark:text-gray-400">
+                          Semua siswa hadir di kelas yang Anda ajar hari ini (berdasarkan presensi
+                          harian wali kelas)
+                        </p>
+                      </div>
+                    )}
+
+                  {harianReferenceStatus === "has_data" &&
+                    Object.keys(harianReferenceByClass).length > 0 && (
+                      <div className="space-y-4">
+                        {Object.entries(harianReferenceByClass)
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([classId, studentsInClass]) => (
+                            <div
+                              key={classId}
+                              className="border border-indigo-100 dark:border-indigo-900/50 rounded-lg p-3 bg-indigo-50/40 dark:bg-indigo-900/10"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                                  🏫 Kelas {classId}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-gray-400">
+                                  {studentsInClass.length} siswa tidak hadir
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {studentsInClass.map((student) => (
+                                  <span
+                                    key={student.id}
+                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(
+                                      student.status
+                                    )}`}
+                                  >
+                                    {getStatusIcon(student.status)} {student.full_name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                 </div>
               </div>
             </div>

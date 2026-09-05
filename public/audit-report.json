@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-04T12:06:35.527Z",
-  "executionTimeMs": 850,
-  "filesScanned": 234,
+  "generatedAt": "2026-09-05T04:31:16.280Z",
+  "executionTimeMs": 447,
+  "filesScanned": 239,
   "summary": {
     "status": "critical",
     "criticalCount": 1,
@@ -45,23 +45,24 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5011 class warna (di 172 file) kemungkinan belum dark-mode-aware",
+          "title": "5071 class warna (di 172 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
             "src/spmb/StudentForm.js — 120 class belum ada dark: variant",
             "src/pages/CatatanSiswa.js — 118 class belum ada dark: variant",
+            "src/pages/datasiswa-induk/DataSiswaInduk.js — 111 class belum ada dark: variant",
             "src/pages/grades/Grades.js — 108 class belum ada dark: variant",
-            "src/spmb/ClassDivision.js — 96 class belum ada dark: variant",
-            "src/pages/datasiswa-induk/DataSiswaInduk.js — 89 class belum ada dark: variant",
+            "src/spmb/ClassDivision.js — 108 class belum ada dark: variant",
             "src/pages/grades/GradesKatrol.js — 88 class belum ada dark: variant",
             "src/components/AdminDashboard.js — 86 class belum ada dark: variant",
             "src/setting/UserManagementTab.js — 86 class belum ada dark: variant",
+            "src/components/HomeroomTeacherDashboard.js — 82 class belum ada dark: variant",
             "src/pages/TeacherSchedule.js — 82 class belum ada dark: variant",
             "src/pages/attendance/AttendanceManagement.js — 78 class belum ada dark: variant",
             "src/setting/school-management/SchoolSettingsTab.js — 76 class belum ada dark: variant",
+            "src/spmb/StudentList.js — 75 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
-            "src/components/HomeroomTeacherDashboard.js — 67 class belum ada dark: variant",
             "src/pages/Students.js — 67 class belum ada dark: variant",
             "src/reports/modals/AdminReportModal.js — 66 class belum ada dark: variant",
             "src/attendance-teacher/reports/ITMReport.js — 65 class belum ada dark: variant",
@@ -71,7 +72,6 @@
             "src/reports/modals/AcademicGradesView.js — 62 class belum ada dark: variant",
             "src/components/TeacherDashboard.js — 60 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
-            "src/spmb/StudentList.js — 59 class belum ada dark: variant",
             "src/system/MonitorDashboard.js — 55 class belum ada dark: variant",
             "src/reports/AdminReports.js — 54 class belum ada dark: variant",
             "src/setting/school-management/StudentModals.js — 54 class belum ada dark: variant",
@@ -83,11 +83,11 @@
             "src/reports/modals/HomeroomReportModal.js — 50 class belum ada dark: variant",
             "src/setting/portal-siswa/AkunSiswaTab.js — 50 class belum ada dark: variant",
             "src/setting/SystemTab.js — 50 class belum ada dark: variant",
-            "src/setting/kelola-raport/RekapKelulusan.js — 48 class belum ada dark: variant",
+            "src/pages/kelola-raport/RekapKelulusan.js — 48 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
             "src/pages/Classes.js — 47 class belum ada dark: variant",
-            "src/setting/kelola-raport/ImportRaportForm.js — 47 class belum ada dark: variant"
+            "src/pages/kelola-raport/ImportRaportForm.js — 47 class belum ada dark: variant"
           ]
         }
       ]
@@ -109,23 +109,24 @@
             "src/e-raport/PreviewRaport.js:198 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
             "src/e-raport/PreviewRaport.js:217 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
             "src/pages/attendance/AttendanceManagement.js:553 → select(\"id, student_id, status, notes, students ( id, full_name, nis )\")",
+            "src/pages/kelola-raport/ManajemenRaportTable.js:215 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
+            "src/pages/kelola-raport/RekapKelulusan.js:153 → select(\"student_nis, semester, student_report_grades(id, subject, score)\")",
+            "src/pages/kelola-raport/RekapMultiSemester.js:400 → select(\"student_name, student_nis, semester, student_report_grades(subject, score)\")",
             "src/portal-siswa/StudentRaport.js:137 → select(\"id, academic_year, semester, status, student_report_grades(subject, score)\")",
             "src/reports/AdminReports.js:481 → select(\"*, students(nis, full_name, class_id)\")",
-            "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
-            "src/setting/kelola-raport/ManajemenRaportTable.js:215 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
-            "src/setting/kelola-raport/RekapKelulusan.js:153 → select(\"student_nis, semester, student_report_grades(id, subject, score)\")",
-            "src/setting/kelola-raport/RekapMultiSemester.js:400 → select(\"student_name, student_nis, semester, student_report_grades(subject, score)\")"
+            "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")"
           ]
         },
         {
           "severity": "info",
-          "title": "29 embedded join yang UDAH pake disambiguation hint",
+          "title": "30 embedded join yang UDAH pake disambiguation hint",
           "description": "FYI aja — ternyata di banyak file (CetakRaport, ReportHelpers, AdminReports, dll) project ini sebenernya pake embedded join Supabase, bukan resolve manual semua di JS. Yang ini kelihatannya udah aman karena udah ada hint (`!inner`, `!nama_fk`, atau `alias:table`) yang secara eksplisit nunjuk relasi mana yang dimaksud — itu emang cara resmi Supabase buat ngehindarin PGRST200. Kalau ternyata ini emang pattern yang lo pake sengaja, gue bakal update catatan gue soal ini.",
           "details": [
             "src/attendance-teacher/reports/DailySummary.js:71 → select(\"*, users!teacher_id ( full_name )\")",
             "src/components/AdminJurnalRekap.js:54 → select(\"*, users:user_id(full_name, teacher_id)\")",
-            "src/components/HomeroomTeacherDashboard.js:513 → select(\"student_id, status, students!inner(full_name), class_id\")",
-            "src/components/HomeroomTeacherDashboard.js:611 → select(\"student_id, status, students!inner(full_name), class_id, subject\")",
+            "src/components/HomeroomTeacherDashboard.js:508 → select(\"student_id, status, students!inner(full_name), class_id\")",
+            "src/components/HomeroomTeacherDashboard.js:601 → select(\"student_id, status, students!inner(full_name), class_id, subject\")",
+            "src/components/HomeroomTeacherDashboard.js:683 → select(\"student_id, status, students!inner(full_name), class_id\")",
             "src/components/SaranMasukanSiswa.js:73 → select(\"id, message, status, created_at, users:student_id (full_name)\")",
             "src/components/TeacherDashboard.js:482 → select(\"student_id, status, students!inner(full_name), class_id, subject\")",
             "src/e-raport/CekNilai.js:184 → select(\"*, students!inner(full_name, nis, is_active)\")",
@@ -200,8 +201,9 @@
             "src/pages/attendance/AttendanceManagement.js:111 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/attendance/AttendanceManagement.js:128 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/CatatanSiswa.js:891 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
-            "src/pages/datasiswa-induk/DataSiswaInduk.js:445 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
+            "src/pages/datasiswa-induk/DataSiswaInduk.js:193 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/DenahDuduk.js:83 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
+            "src/pages/kelola-raport/RaportShared.js:336 → query tabel academic_years langsung",
             "src/pages/KelolaJadwalPiket.js:91 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/Organigram.js:75 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/portal-siswa/StudentDashboard.js:199 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
@@ -209,7 +211,6 @@
             "src/portal-siswa/StudentOrganigram.js:50 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/portal-siswa/StudentPiket.js:66 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/reports/modals/AcademicGradesView.js:39 → query tabel academic_years langsung",
-            "src/setting/kelola-raport/RaportShared.js:336 → query tabel academic_years langsung",
             "src/setting/UserManagementTab.js:135 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)"
           ]
         },

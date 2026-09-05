@@ -94,8 +94,15 @@ export const sidebarGroups = [
         show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isGuruBK,
       },
       {
-        page: "nilai-siswa",
-        label: "Nilai Siswa",
+        // ✅ FIX (Sep 2026): Admin/TU dulu nyasar ke GradeMain (halaman
+        // input nilai harian punya Guru) padahal mereka gak ikut campur
+        // di situ. Sekarang Admin/TU diarahin ke halaman baru
+        // "nilai-raport-siswa" (kelola raport digital, dulu tab
+        // "Manajemen Nilai Raport" di Setting) -- Teacher/Guru BK tetap
+        // ke "nilai-siswa" (GradeMain) seperti biasa.
+        page: (ctx) => (ctx.isAdmin || ctx.isTU ? "nilai-raport-siswa" : "nilai-siswa"),
+        label: (ctx) => (ctx.isAdmin || ctx.isTU ? "Nilai Raport Siswa" : "Nilai Siswa"),
+        highlightPages: ["nilai-siswa", "nilai-raport-siswa"],
         icon: [
           "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
         ],

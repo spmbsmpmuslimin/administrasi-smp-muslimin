@@ -1,6 +1,9 @@
-// setting/kelola-raport/RaportNilaiTab.js
-// Dipanggil dari Setting.js sebagai isi card menu "Nilai Raport"
-// (id: "kelola-raport") di halaman Pengaturan, lewat renderActiveTab().
+// pages/kelola-raport/RaportNilaiTab.js
+// Dipanggil dari NilaiRaportSiswa.js (route /nilai-raport-siswa, menu
+// utama sidebar khusus Admin/TU). Dulu dipanggil dari Setting.js sebagai
+// isi card "kelola-raport" (Manajemen Nilai Raport) -- sekarang folder
+// ini dipindah keluar dari setting/ ke pages/ biar lebih gampang dicari,
+// gak nyampur lagi sama tab-tab Pengaturan lainnya.
 // Entry point fitur Nilai Raport — cuma nge-render sub-nav internal
 // (Import / Manajemen / Rekap) dan switch komponen anaknya, ga ada
 // logic data sendiri.
@@ -17,13 +20,7 @@
 // - RekapKelulusan.js         -> rekap nilai semester 1-6 kelas 9 (roster saat ini, bukan class_name historis) + edit nilai langsung buat proses kelulusan
 
 import React, { useState } from "react";
-import {
-  Upload,
-  ListChecks,
-  BarChart3,
-  GraduationCap,
-  Settings,
-} from "lucide-react";
+import { Upload, ListChecks, BarChart3, GraduationCap, Settings } from "lucide-react";
 import ImportRaportForm from "./ImportRaportForm";
 import ManajemenRaportTable from "./ManajemenRaportTable";
 import RekapMultiSemester from "./RekapMultiSemester";
@@ -48,12 +45,7 @@ const RaportNilaiTab = (props) => {
   const renderSubTab = () => {
     switch (activeSubTab) {
       case "import":
-        return (
-          <ImportRaportForm
-            {...props}
-            onImportSelesai={() => setActiveSubTab("manajemen")}
-          />
-        );
+        return <ImportRaportForm {...props} onImportSelesai={() => setActiveSubTab("manajemen")} />;
       case "manajemen":
         return <ManajemenRaportTable {...props} />;
       case "rekap":
@@ -82,7 +74,8 @@ const RaportNilaiTab = (props) => {
                 isActive
                   ? "bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800"
                   : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent"
-              }`}>
+              }`}
+            >
               <Icon size={16} />
               {tab.label}
             </button>

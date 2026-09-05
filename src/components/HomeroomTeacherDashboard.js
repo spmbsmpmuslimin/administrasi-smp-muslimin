@@ -1196,10 +1196,12 @@ const HomeroomTeacherDashboard = ({ user }) => {
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 md:gap-6 mb-4 sm:mb-6 md:mb-8">
           {/* Left Column: Mata Pelajaran & Kelas + 2 Daftar Siswa Tidak Hadir */}
-          <div>
-            {/* Mata Pelajaran & Kelas */}
+          <div className="h-full flex flex-col">
+            {/* Mata Pelajaran & Kelas -- flex-1 biar card ini (atau card
+                fallback di bawah) stretch ngikutin tinggi card "Jadwal
+                Hari Ini" di kolom kanan. */}
             {teachingData.classesTaught.length > 0 && (
-              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200 mb-6">
+              <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200">
                 <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
                   <span className="mr-2">📖</span>
                   Mata Pelajaran & Kelas
@@ -1511,7 +1513,7 @@ const HomeroomTeacherDashboard = ({ user }) => {
 
             {/* Jika tidak ada mata pelajaran */}
             {teachingData.classesTaught.length === 0 && (
-              <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200 mb-6">
+              <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200">
                 <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
                   <span className="mr-2">📖</span>
                   Mata Pelajaran & Kelas
@@ -1527,8 +1529,8 @@ const HomeroomTeacherDashboard = ({ user }) => {
           </div>
 
           {/* Right Column: Jadwal Hari Ini */}
-          <div>
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200">
+          <div className="h-full flex flex-col">
+            <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5 md:p-6 transition-colors duration-200">
               <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
                 <span className="mr-2">🗓️</span>
                 Jadwal Hari Ini - {currentDay}

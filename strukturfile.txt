@@ -1,6 +1,5 @@
 # Struktur File & Database — Administrasi SMP Muslimin Cililin
 ## Daftar Tabel Database Supabase
-
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
 academic_years : id,year,semester,start_date,end_date,is_active,created_at,updated_at
 announcement : id,title,content,created_at,updated_at,effective_from,effective_until,target_role,is_active
@@ -43,7 +42,7 @@ ruang_belajar : id,title,category,description,content,resource_type,thumbnail,ur
 saran_masukan : id,student_id,class_id,message,status,created_at
 school_settings : id,setting_key,setting_value,created_at,updated_at
 seating_charts : id,class_id,academic_year,semester,rows,cols,seats_per_desk,layout,updated_at
-siswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos,skor_akademik,kategori_baca_latin,kategori_mengaji
+siswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos,skor_akademik,kategori_baca_latin,kategori_mengaji,input_by,input_by_id,updated_by,updated_by_id
 spmb_settings : id,target_academic_year,is_active,registration_start_date,registration_end_date,created_at,updated_at
 student_auth : id,student_id,username,password,is_active,last_login,created_at,updated_at
 student_development_notes : id,student_id,teacher_id,class_id,academic_year,semester,category,label,note_content,action_taken,created_at,updated_at,academic_year_id
@@ -62,14 +61,12 @@ teacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,c
 tindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at
 tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
-users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count 
+users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count
 
 ========================================================================================
 
 ## Struktur Folder & File Project
 
-```
-.
 |-- src
 |   |-- assets
 |   |   |-- Background.webp
@@ -95,6 +92,10 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- TodaySchedule.js
 |   |   `-- index.html
 |   |-- components
+|   |   |-- ui
+|   |   |   |-- Card.js
+|   |   |   |-- PageContainer.js
+|   |   |   `-- Typography.js
 |   |   |-- AdminDashboard.js
 |   |   |-- AdminJurnalRekap.js
 |   |   |-- AnnouncementList.js
@@ -167,6 +168,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   `-- AttendanceTable.js
 |   |   |-- datasiswa-induk
 |   |   |   |-- DataSiswaInduk.js
+|   |   |   |-- DataSiswaIndukConfig.js
 |   |   |   |-- DataSiswaIndukExcel.js
 |   |   |   `-- DataSiswaIndukPDF.js
 |   |   |-- grades
@@ -176,6 +178,16 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   |-- GradesKatrol.js
 |   |   |   |-- KatrolTable.js
 |   |   |   `-- Utils.js
+|   |   |-- kelola-raport
+|   |   |   |-- ImportRaportForm.js
+|   |   |   |-- KelolaKKM.js
+|   |   |   |-- ManajemenRaportTable.js
+|   |   |   |-- NilaiRaportSiswa.js
+|   |   |   |-- RaportNilaiTab.js
+|   |   |   |-- RaportShared.js
+|   |   |   |-- RekapKelulusan.js
+|   |   |   |-- RekapMultiSemester.js
+|   |   |   `-- parseLegerExcel.js
 |   |   |-- CatatanSiswa.js
 |   |   |-- CatatanSiswaExport.js
 |   |   |-- Classes.js
@@ -200,7 +212,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- belajar
 |   |   |   `-- bahasa-inggris
 |   |   |       |-- data
-|   |   |       |-- chapterData.js
+|   |   |       |   `-- chapterData.js
 |   |   |       |-- ChapterDetail.js
 |   |   |       `-- ChapterList.js
 |   |   |-- ruang-belajar-admin
@@ -211,6 +223,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   |-- RuangBelajarCategories.js
 |   |   |   |-- RuangBelajarDetail.js
 |   |   |   `-- RuangBelajarHome.js
+|   |   |-- BirthdayCelebration.js
 |   |   |-- StudentBottomNav.js
 |   |   |-- StudentDashboard.js
 |   |   |-- StudentDataSiswa.js
@@ -252,27 +265,20 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- academic
 |   |   |   |-- AcademicYearTab.js
 |   |   |   |-- CopyAssignmentsModal.js
+|   |   |   |-- PreflightCheck.js
 |   |   |   |-- SemesterManagement.js
 |   |   |   |-- Simulator.js
+|   |   |   |-- TransitionReadiness.js
 |   |   |   `-- YearTransition.js
 |   |   |-- feedback
 |   |   |   |-- FeedbackCombinedTab.js
 |   |   |   |-- FeedbackGuruTab.js
 |   |   |   `-- FeedbackSiswaTab.js
-|   |   |-- kelola-raport
-|   |   |   |-- ImportRaportForm.js
-|   |   |   |-- KelolaKKM.js
-|   |   |   |-- ManajemenRaportTable.js
-|   |   |   |-- RaportNilaiTab.js
-|   |   |   |-- RaportShared.js
-|   |   |   |-- RekapKelulusan.js
-|   |   |   |-- RekapMultiSemester.js
-|   |   |   `-- parseLegerExcel.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
 |   |   |   `-- PortalSiswaTab.js
 |   |   |-- school-management
-|   |   |   |-- BulkImportModals.js
+|   |   |   |-- RiwayatMutasiTab.js
 |   |   |   |-- SchoolCombinedTab.js
 |   |   |   |-- SchoolManagementTab.js
 |   |   |   |-- SchoolSettingsTab.js
@@ -299,6 +305,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- ClassDistribution.js
 |   |   |-- ClassDivision.js
 |   |   |-- ClassOperations.js
+|   |   |-- DiagnostikPage.js
 |   |   |-- SPMB.js
 |   |   |-- SpmbExcel.js
 |   |   |-- Statistics.js
@@ -310,14 +317,18 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   |-- BusinessLogicChecker.js
 |   |   |   |-- DataValidator.js
 |   |   |   `-- DatabaseChecker.js
+|   |   |-- lib
+|   |   |   `-- fetchSupabaseSchema.js
 |   |   |-- CodeAudit.js
 |   |   |-- DatabaseCleanupMonitor.js
+|   |   |-- DatabaseStructure.js
 |   |   |-- HealthChecker.js
 |   |   |-- MonitorDashboard.js
 |   |   |-- MonitorHistory.js
 |   |   |-- MonitorResults.js
 |   |   |-- MonitorSistem.js
-|   |   `-- PerformanceMonitor.js
+|   |   |-- PerformanceMonitor.js
+|   |   `-- ProjectStructure.js
 |   |-- utils
 |   |   |-- deviceInfo.js
 |   |   |-- excelExportKit.js
@@ -325,6 +336,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- offlineHelper.js
 |   |   |-- pdfExportKit.js
 |   |   |-- studentDevices.js
+|   |   |-- studentProfileCompletion.js
 |   |   |-- studentSession.js
 |   |   |-- systemHelpers.js
 |   |   `-- userDevices.js
@@ -334,7 +346,3 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |-- index.js
 |   |-- reportWebVitals.js
 |   `-- supabaseClient.js
-`-- strukturfile.txt
-
-39 directories, 243 files
-```

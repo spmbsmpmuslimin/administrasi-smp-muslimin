@@ -22,6 +22,7 @@ import TeacherSchedule from "../pages/TeacherSchedule";
 import KelolaJadwalPelajaran from "../pages/KelolaJadwalPelajaran";
 import DutySchedule from "../pages/KelolaJadwalPiket";
 import CatatanSiswa from "../pages/CatatanSiswa";
+import NilaiRaportSiswa from "../pages/kelola-raport/NilaiRaportSiswa";
 import Setting from "../setting/Setting";
 
 import KonselingMain from "../konseling/KonselingMain";
@@ -162,6 +163,16 @@ export const menuConfig = [
     allowedRoles: ["admin"],
   },
   { path: "/nilai-siswa", title: "Nilai Siswa", component: GradeMain },
+  {
+    // Dulu isi card "Manajemen Nilai Raport" di Setting (?tab=kelola-raport),
+    // sekarang dipindah jadi menu utama sendiri buat Admin/TU -- lihat
+    // sidebarConfig.js item "nilai-siswa" yang sekarang nge-alihin
+    // Admin/TU kesini (bukan ke GradeMain punya Guru).
+    path: "/nilai-raport-siswa",
+    title: "Nilai Raport Siswa",
+    component: NilaiRaportSiswa,
+    allowedRoles: ["admin", "tu"],
+  },
   {
     path: "/attendance-management",
     title: "Kelola Presensi",

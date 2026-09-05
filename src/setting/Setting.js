@@ -4,10 +4,14 @@
 // query param ?tab=. Tiap tab dapet commonProps yang sama (user, loading,
 // showToast, schoolConfig, darkMode, dll) lewat renderActiveTab().
 //
-// Baru ditambahin: card "kelola-raport" (Nilai Raport) -> render
-// RaportNilaiTab.js. Beda dari card "raport" (Konfigurasi E-Raport, isinya
-// RaportConfig.js) -- yang itu setup template/format, ini kelola datanya
-// (import PDF nilai raport, manajemen per siswa, rekap multi semester).
+// ✅ FIX (Sep 2026): card "kelola-raport" (Manajemen Nilai Raport ->
+// RaportNilaiTab.js) dipindah keluar dari sini, sekarang jadi halaman
+// mandiri di pages/NilaiRaportSiswa.js (route /nilai-raport-siswa),
+// diakses langsung dari Sidebar > menu utama buat Admin/TU -- bukan lagi
+// tab di dalam Pengaturan. Beda sama card "raport" (Konfigurasi E-Raport,
+// isinya RaportConfig.js) yang TETAP di sini -- itu setup template/format,
+// sedangkan kelola-raport isi datanya (import PDF nilai raport, manajemen
+// per siswa, rekap multi semester), makanya lebih pas jadi menu utama.
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -26,7 +30,6 @@ import {
   UserCheck,
   ShieldCheck,
   FileBarChart,
-  FileSpreadsheet,
   Wrench,
   CalendarClock,
 } from "lucide-react";
@@ -37,7 +40,6 @@ import AcademicYearTab from "./academic/AcademicYearTab";
 import SystemTab from "./SystemTab";
 import MaintenanceModeTab from "./MaintenanceModeTab";
 import RaportConfig from "../e-raport/RaportConfig";
-import RaportNilaiTab from "./kelola-raport/RaportNilaiTab";
 import UserManagementTab from "./UserManagementTab";
 import FeedbackCombinedTab from "./feedback/FeedbackCombinedTab";
 import ActiveUsersTab from "./ActiveUsersTab";
@@ -261,8 +263,9 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
 
   // Menu cards configuration - URUTAN sesuai frekuensi pemakaian sehari-hari
   // (Sep 2026): Manajemen Data Sekolah, Tahun Ajaran, Jadwal Pelajaran,
-  // Nilai Raport, Portal Siswa, Profile, Active User, Manajemen User,
-  // Manajemen System, Manajemen E-Raport, Maintenance, Feedback Guru & Siswa.
+  // Portal Siswa, Profile, Active User, Manajemen User, Manajemen System,
+  // Manajemen E-Raport, Maintenance, Feedback Guru & Siswa.
+  // (Nilai Raport udah pindah keluar dari sini, jadi halaman mandiri.)
   // NOTE: cuma "title" & urutan array yang berubah -- "id" tetap sama
   // persis, jadi routing (?tab=id) & switch-case di renderActiveTab() gak
   // kepengaruh sama sekali.
@@ -290,14 +293,6 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Import jadwal massal & master kode guru",
       icon: CalendarClock,
       color: "amber",
-      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
-    },
-    {
-      id: "kelola-raport",
-      title: "Manajemen Nilai Raport",
-      description: "Import nilai raport dari PDF & kelola raport digital siswa",
-      icon: FileSpreadsheet,
-      color: "teal",
       available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
     {
@@ -401,8 +396,6 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
         return <AcademicYearTab {...commonProps} />;
       case "raport":
         return <RaportConfig {...commonProps} />;
-      case "kelola-raport":
-        return <RaportNilaiTab {...commonProps} />;
       case "maintenance":
         return <MaintenanceModeTab {...commonProps} />;
       case "system":

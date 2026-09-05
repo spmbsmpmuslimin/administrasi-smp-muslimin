@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-04T12:06:35.742Z",
-  "executionTimeMs": 213,
+  "generatedAt": "2026-09-05T04:31:16.465Z",
+  "executionTimeMs": 182,
   "tree": {
     "name": "src",
     "path": "src",
@@ -350,6 +350,71 @@
         "type": "folder",
         "children": [
           {
+            "name": "ui",
+            "path": "src/components/ui",
+            "type": "folder",
+            "children": [
+              {
+                "name": "Card.js",
+                "type": "file",
+                "file": {
+                  "path": "src/components/ui/Card.js",
+                  "type": "component",
+                  "lines": 31,
+                  "functions": [
+                    "Card"
+                  ],
+                  "imports": [],
+                  "importedBy": [
+                    "src/components/Dashboard.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "PageContainer.js",
+                "type": "file",
+                "file": {
+                  "path": "src/components/ui/PageContainer.js",
+                  "type": "page",
+                  "lines": 39,
+                  "functions": [
+                    "PageContainer"
+                  ],
+                  "imports": [
+                    "src/components/ui/Typography.js"
+                  ],
+                  "importedBy": [
+                    "src/components/Dashboard.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "Typography.js",
+                "type": "file",
+                "file": {
+                  "path": "src/components/ui/Typography.js",
+                  "type": "component",
+                  "lines": 74,
+                  "functions": [
+                    "PageTitle",
+                    "SectionTitle",
+                    "Text",
+                    "Muted",
+                    "Subtitle"
+                  ],
+                  "imports": [],
+                  "importedBy": [
+                    "src/components/Dashboard.js",
+                    "src/components/ui/PageContainer.js"
+                  ],
+                  "isOrphan": false
+                }
+              }
+            ]
+          },
+          {
             "name": "AdminDashboard.js",
             "type": "file",
             "file": {
@@ -435,7 +500,7 @@
             "file": {
               "path": "src/components/BottomNav.js",
               "type": "component",
-              "lines": 339,
+              "lines": 392,
               "functions": [
                 "BottomNav"
               ],
@@ -490,7 +555,7 @@
             "file": {
               "path": "src/components/Dashboard.js",
               "type": "component",
-              "lines": 269,
+              "lines": 310,
               "functions": [
                 "Dashboard",
                 "UnknownRoleView"
@@ -499,7 +564,10 @@
                 "src/components/AdminDashboard.js",
                 "src/components/HomeroomTeacherDashboard.js",
                 "src/components/TeacherDashboard.js",
-                "src/components/GuruBKDashboard.js"
+                "src/components/GuruBKDashboard.js",
+                "src/components/ui/PageContainer.js",
+                "src/components/ui/Card.js",
+                "src/components/ui/Typography.js"
               ],
               "importedBy": [
                 "src/config/menuConfig.js"
@@ -556,7 +624,7 @@
             "file": {
               "path": "src/components/HomeroomTeacherDashboard.js",
               "type": "component",
-              "lines": 1499,
+              "lines": 1648,
               "functions": [
                 "normalizeJamTime",
                 "findJamKe",
@@ -580,7 +648,7 @@
             "file": {
               "path": "src/components/Layout.js",
               "type": "component",
-              "lines": 749,
+              "lines": 744,
               "functions": [
                 "resolveEraDashboardPath",
                 "Layout"
@@ -803,7 +871,7 @@
             "file": {
               "path": "src/config/menuConfig.js",
               "type": "config",
-              "lines": 280,
+              "lines": 351,
               "functions": [
                 "defaultProps"
               ],
@@ -826,6 +894,7 @@
                 "src/pages/KelolaJadwalPelajaran.js",
                 "src/pages/KelolaJadwalPiket.js",
                 "src/pages/CatatanSiswa.js",
+                "src/pages/kelola-raport/NilaiRaportSiswa.js",
                 "src/setting/Setting.js",
                 "src/konseling/KonselingMain.js",
                 "src/reports/Reports.js",
@@ -881,7 +950,7 @@
             "file": {
               "path": "src/config/sidebarConfig.js",
               "type": "config",
-              "lines": 313,
+              "lines": 331,
               "functions": [],
               "imports": [],
               "importedBy": [
@@ -1544,7 +1613,7 @@
                 "file": {
                   "path": "src/pages/attendance/Attendance.js",
                   "type": "page",
-                  "lines": 1773,
+                  "lines": 1874,
                   "functions": [
                     "getDefaultDate",
                     "getTodayWIB",
@@ -1729,7 +1798,7 @@
                 "file": {
                   "path": "src/pages/attendance/AttendanceTable.js",
                   "type": "page",
-                  "lines": 332,
+                  "lines": 354,
                   "functions": [
                     "AttendanceTable"
                   ],
@@ -1753,22 +1822,39 @@
                 "file": {
                   "path": "src/pages/datasiswa-induk/DataSiswaInduk.js",
                   "type": "page",
-                  "lines": 1739,
+                  "lines": 1660,
                   "functions": [
-                    "KelengkapanDataSiswa",
-                    "getJenjang",
-                    "emptyAdminForm",
-                    "formatTanggalLahirSingkat",
-                    "getDetailRowValue"
+                    "KelengkapanDataSiswa"
                   ],
                   "imports": [
                     "src/supabaseClient.js",
                     "src/pages/datasiswa-induk/DataSiswaIndukPDF.js",
                     "src/pages/datasiswa-induk/DataSiswaIndukExcel.js",
-                    "src/utils/studentProfileCompletion.js"
+                    "src/utils/studentProfileCompletion.js",
+                    "src/pages/datasiswa-induk/DataSiswaIndukConfig.js"
                   ],
                   "importedBy": [
                     "src/config/menuConfig.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "DataSiswaIndukConfig.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/datasiswa-induk/DataSiswaIndukConfig.js",
+                  "type": "page",
+                  "lines": 294,
+                  "functions": [
+                    "getJenjang",
+                    "emptyAdminForm",
+                    "formatTanggalLahirSingkat",
+                    "getDetailRowValue"
+                  ],
+                  "imports": [],
+                  "importedBy": [
+                    "src/pages/datasiswa-induk/DataSiswaInduk.js"
                   ],
                   "isOrphan": false
                 }
@@ -1966,6 +2052,215 @@
                   "imports": [],
                   "importedBy": [
                     "src/pages/grades/GradesKatrol.js"
+                  ],
+                  "isOrphan": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "kelola-raport",
+            "path": "src/pages/kelola-raport",
+            "type": "folder",
+            "children": [
+              {
+                "name": "ImportRaportForm.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/ImportRaportForm.js",
+                  "type": "page",
+                  "lines": 1066,
+                  "functions": [
+                    "normalizeNis",
+                    "nisVariants",
+                    "ImportProgress",
+                    "PreviewImportTable",
+                    "ImportRaportForm"
+                  ],
+                  "imports": [
+                    "src/supabaseClient.js",
+                    "src/pages/kelola-raport/RaportShared.js",
+                    "src/pages/kelola-raport/parseLegerExcel.js"
+                  ],
+                  "importedBy": [
+                    "src/pages/kelola-raport/RaportNilaiTab.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "KelolaKKM.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/KelolaKKM.js",
+                  "type": "page",
+                  "lines": 285,
+                  "functions": [
+                    "KelolaKKM"
+                  ],
+                  "imports": [
+                    "src/supabaseClient.js"
+                  ],
+                  "importedBy": [
+                    "src/pages/kelola-raport/RaportNilaiTab.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "ManajemenRaportTable.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/ManajemenRaportTable.js",
+                  "type": "page",
+                  "lines": 901,
+                  "functions": [
+                    "normalizeNis",
+                    "nisVariants",
+                    "DetailRaportSiswa",
+                    "ManajemenRaportTable"
+                  ],
+                  "imports": [
+                    "src/supabaseClient.js",
+                    "src/pages/kelola-raport/RaportShared.js"
+                  ],
+                  "importedBy": [
+                    "src/pages/kelola-raport/RaportNilaiTab.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "NilaiRaportSiswa.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/NilaiRaportSiswa.js",
+                  "type": "page",
+                  "lines": 98,
+                  "functions": [
+                    "NilaiRaportSiswa"
+                  ],
+                  "imports": [
+                    "src/supabaseClient.js",
+                    "src/pages/kelola-raport/RaportNilaiTab.js"
+                  ],
+                  "importedBy": [
+                    "src/config/menuConfig.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "parseLegerExcel.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/parseLegerExcel.js",
+                  "type": "page",
+                  "lines": 289,
+                  "functions": [
+                    "normCell",
+                    "findHeaderRow",
+                    "findSubjectColumns",
+                    "buildSubjectNameMap",
+                    "findLabelValue"
+                  ],
+                  "imports": [],
+                  "importedBy": [
+                    "src/pages/kelola-raport/ImportRaportForm.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "RaportNilaiTab.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/RaportNilaiTab.js",
+                  "type": "page",
+                  "lines": 93,
+                  "functions": [
+                    "RaportNilaiTab"
+                  ],
+                  "imports": [
+                    "src/pages/kelola-raport/ImportRaportForm.js",
+                    "src/pages/kelola-raport/ManajemenRaportTable.js",
+                    "src/pages/kelola-raport/RekapMultiSemester.js",
+                    "src/pages/kelola-raport/RekapKelulusan.js",
+                    "src/pages/kelola-raport/KelolaKKM.js"
+                  ],
+                  "importedBy": [
+                    "src/pages/kelola-raport/NilaiRaportSiswa.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "RaportShared.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/RaportShared.js",
+                  "type": "page",
+                  "lines": 406,
+                  "functions": [
+                    "useAcademicYears",
+                    "useReportedClasses",
+                    "StatusBadge",
+                    "RaportTable",
+                    "SemesterFilterBar"
+                  ],
+                  "imports": [
+                    "src/supabaseClient.js"
+                  ],
+                  "importedBy": [
+                    "src/pages/kelola-raport/ImportRaportForm.js",
+                    "src/pages/kelola-raport/ManajemenRaportTable.js",
+                    "src/pages/kelola-raport/RekapKelulusan.js",
+                    "src/pages/kelola-raport/RekapMultiSemester.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "RekapKelulusan.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/RekapKelulusan.js",
+                  "type": "page",
+                  "lines": 682,
+                  "functions": [
+                    "RekapKelulusan"
+                  ],
+                  "imports": [
+                    "src/supabaseClient.js",
+                    "src/pages/kelola-raport/RaportShared.js"
+                  ],
+                  "importedBy": [
+                    "src/pages/kelola-raport/RaportNilaiTab.js"
+                  ],
+                  "isOrphan": false
+                }
+              },
+              {
+                "name": "RekapMultiSemester.js",
+                "type": "file",
+                "file": {
+                  "path": "src/pages/kelola-raport/RekapMultiSemester.js",
+                  "type": "page",
+                  "lines": 620,
+                  "functions": [
+                    "getMapelAbbrev",
+                    "formatTimestampID",
+                    "styleHeaderCell",
+                    "applyThinBorder",
+                    "buildSheetForSemester",
+                    "RekapMultiSemester"
+                  ],
+                  "imports": [
+                    "src/supabaseClient.js",
+                    "src/pages/kelola-raport/RaportShared.js"
+                  ],
+                  "importedBy": [
+                    "src/pages/kelola-raport/RaportNilaiTab.js"
                   ],
                   "isOrphan": false
                 }
@@ -3293,7 +3588,7 @@
             "file": {
               "path": "src/reports/Reports.js",
               "type": "other",
-              "lines": 153,
+              "lines": 157,
               "functions": [
                 "Reports"
               ],
@@ -3677,195 +3972,6 @@
                   ],
                   "importedBy": [
                     "src/setting/feedback/FeedbackCombinedTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              }
-            ]
-          },
-          {
-            "name": "kelola-raport",
-            "path": "src/setting/kelola-raport",
-            "type": "folder",
-            "children": [
-              {
-                "name": "ImportRaportForm.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-raport/ImportRaportForm.js",
-                  "type": "other",
-                  "lines": 1066,
-                  "functions": [
-                    "normalizeNis",
-                    "nisVariants",
-                    "ImportProgress",
-                    "PreviewImportTable",
-                    "ImportRaportForm"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-raport/RaportShared.js",
-                    "src/setting/kelola-raport/parseLegerExcel.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-raport/RaportNilaiTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "KelolaKKM.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-raport/KelolaKKM.js",
-                  "type": "other",
-                  "lines": 285,
-                  "functions": [
-                    "KelolaKKM"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-raport/RaportNilaiTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "ManajemenRaportTable.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-raport/ManajemenRaportTable.js",
-                  "type": "other",
-                  "lines": 901,
-                  "functions": [
-                    "normalizeNis",
-                    "nisVariants",
-                    "DetailRaportSiswa",
-                    "ManajemenRaportTable"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-raport/RaportShared.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-raport/RaportNilaiTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "parseLegerExcel.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-raport/parseLegerExcel.js",
-                  "type": "other",
-                  "lines": 289,
-                  "functions": [
-                    "normCell",
-                    "findHeaderRow",
-                    "findSubjectColumns",
-                    "buildSubjectNameMap",
-                    "findLabelValue"
-                  ],
-                  "imports": [],
-                  "importedBy": [
-                    "src/setting/kelola-raport/ImportRaportForm.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "RaportNilaiTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-raport/RaportNilaiTab.js",
-                  "type": "other",
-                  "lines": 100,
-                  "functions": [
-                    "RaportNilaiTab"
-                  ],
-                  "imports": [
-                    "src/setting/kelola-raport/ImportRaportForm.js",
-                    "src/setting/kelola-raport/ManajemenRaportTable.js",
-                    "src/setting/kelola-raport/RekapMultiSemester.js",
-                    "src/setting/kelola-raport/RekapKelulusan.js",
-                    "src/setting/kelola-raport/KelolaKKM.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/Setting.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "RaportShared.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-raport/RaportShared.js",
-                  "type": "other",
-                  "lines": 406,
-                  "functions": [
-                    "useAcademicYears",
-                    "useReportedClasses",
-                    "StatusBadge",
-                    "RaportTable",
-                    "SemesterFilterBar"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-raport/ImportRaportForm.js",
-                    "src/setting/kelola-raport/ManajemenRaportTable.js",
-                    "src/setting/kelola-raport/RekapKelulusan.js",
-                    "src/setting/kelola-raport/RekapMultiSemester.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "RekapKelulusan.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-raport/RekapKelulusan.js",
-                  "type": "other",
-                  "lines": 682,
-                  "functions": [
-                    "RekapKelulusan"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-raport/RaportShared.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-raport/RaportNilaiTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "RekapMultiSemester.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-raport/RekapMultiSemester.js",
-                  "type": "other",
-                  "lines": 620,
-                  "functions": [
-                    "getMapelAbbrev",
-                    "formatTimestampID",
-                    "styleHeaderCell",
-                    "applyThinBorder",
-                    "buildSheetForSemester",
-                    "RekapMultiSemester"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-raport/RaportShared.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-raport/RaportNilaiTab.js"
                   ],
                   "isOrphan": false
                 }
@@ -4299,7 +4405,7 @@
             "file": {
               "path": "src/setting/Setting.js",
               "type": "other",
-              "lines": 603,
+              "lines": 597,
               "functions": [
                 "Setting"
               ],
@@ -4311,7 +4417,6 @@
                 "src/setting/SystemTab.js",
                 "src/setting/MaintenanceModeTab.js",
                 "src/e-raport/RaportConfig.js",
-                "src/setting/kelola-raport/RaportNilaiTab.js",
                 "src/setting/UserManagementTab.js",
                 "src/setting/feedback/FeedbackCombinedTab.js",
                 "src/setting/ActiveUsersTab.js",
@@ -4424,7 +4529,7 @@
             "file": {
               "path": "src/spmb/ClassDistribution.js",
               "type": "other",
-              "lines": 773,
+              "lines": 818,
               "functions": [
                 "formatTahunAjaran",
                 "getTahunAjaran",
@@ -4450,7 +4555,7 @@
             "file": {
               "path": "src/spmb/ClassDivision.js",
               "type": "other",
-              "lines": 1327,
+              "lines": 1329,
               "functions": [
                 "ClassDivision"
               ],
@@ -4506,7 +4611,7 @@
             "file": {
               "path": "src/spmb/DiagnostikPage.js",
               "type": "page",
-              "lines": 574,
+              "lines": 580,
               "functions": [
                 "DiagnostikPage"
               ],
@@ -4554,7 +4659,7 @@
             "file": {
               "path": "src/spmb/SpmbExcel.js",
               "type": "other",
-              "lines": 704,
+              "lines": 789,
               "functions": [
                 "exportAllStudents",
                 "exportClassDivision",
@@ -4598,7 +4703,7 @@
             "file": {
               "path": "src/spmb/StudentForm.js",
               "type": "other",
-              "lines": 1288,
+              "lines": 1389,
               "functions": [
                 "StudentForm"
               ],
@@ -4615,7 +4720,7 @@
             "file": {
               "path": "src/spmb/StudentList.js",
               "type": "other",
-              "lines": 985,
+              "lines": 992,
               "functions": [
                 "StudentList"
               ],
@@ -5119,7 +5224,7 @@
             "file": {
               "path": "src/utils/studentProfileCompletion.js",
               "type": "util",
-              "lines": 93,
+              "lines": 109,
               "functions": [
                 "genderCodeToLabel",
                 "getCompletionStatus",
@@ -5345,6 +5450,13 @@
             "src/pages/grades/GradesExcel.js",
             "src/pages/grades/GradesKatrol.js",
             "src/pages/JurnalHarian.js",
+            "src/pages/kelola-raport/ImportRaportForm.js",
+            "src/pages/kelola-raport/KelolaKKM.js",
+            "src/pages/kelola-raport/ManajemenRaportTable.js",
+            "src/pages/kelola-raport/NilaiRaportSiswa.js",
+            "src/pages/kelola-raport/RaportShared.js",
+            "src/pages/kelola-raport/RekapKelulusan.js",
+            "src/pages/kelola-raport/RekapMultiSemester.js",
             "src/pages/KelolaJadwalPelajaran.js",
             "src/pages/KelolaJadwalPiket.js",
             "src/pages/Organigram.js",
@@ -5389,12 +5501,6 @@
             "src/setting/ChangePasswordSection.js",
             "src/setting/feedback/FeedbackGuruTab.js",
             "src/setting/feedback/FeedbackSiswaTab.js",
-            "src/setting/kelola-raport/ImportRaportForm.js",
-            "src/setting/kelola-raport/KelolaKKM.js",
-            "src/setting/kelola-raport/ManajemenRaportTable.js",
-            "src/setting/kelola-raport/RaportShared.js",
-            "src/setting/kelola-raport/RekapKelulusan.js",
-            "src/setting/kelola-raport/RekapMultiSemester.js",
             "src/setting/MaintenanceModeTab.js",
             "src/setting/portal-siswa/AkunSiswaTab.js",
             "src/setting/ProfileTab.js",
@@ -5425,14 +5531,14 @@
       }
     ]
   },
-  "totalFiles": 234,
-  "totalFunctions": 660,
+  "totalFiles": 239,
+  "totalFunctions": 668,
   "orphanCount": 11,
   "byType": {
-    "other": 144,
-    "component": 21,
+    "other": 136,
+    "component": 23,
+    "page": 48,
     "config": 4,
-    "page": 37,
     "hook": 1,
     "service": 2,
     "checker": 4,
@@ -5792,7 +5898,7 @@
     "src/components/BottomNav.js": {
       "path": "src/components/BottomNav.js",
       "type": "component",
-      "lines": 339,
+      "lines": 392,
       "functions": [
         "BottomNav"
       ],
@@ -5835,7 +5941,7 @@
     "src/components/Dashboard.js": {
       "path": "src/components/Dashboard.js",
       "type": "component",
-      "lines": 269,
+      "lines": 310,
       "functions": [
         "Dashboard",
         "UnknownRoleView"
@@ -5844,7 +5950,10 @@
         "src/components/AdminDashboard.js",
         "src/components/HomeroomTeacherDashboard.js",
         "src/components/TeacherDashboard.js",
-        "src/components/GuruBKDashboard.js"
+        "src/components/GuruBKDashboard.js",
+        "src/components/ui/PageContainer.js",
+        "src/components/ui/Card.js",
+        "src/components/ui/Typography.js"
       ],
       "importedBy": [
         "src/config/menuConfig.js"
@@ -5889,7 +5998,7 @@
     "src/components/HomeroomTeacherDashboard.js": {
       "path": "src/components/HomeroomTeacherDashboard.js",
       "type": "component",
-      "lines": 1499,
+      "lines": 1648,
       "functions": [
         "normalizeJamTime",
         "findJamKe",
@@ -5909,7 +6018,7 @@
     "src/components/Layout.js": {
       "path": "src/components/Layout.js",
       "type": "component",
-      "lines": 749,
+      "lines": 744,
       "functions": [
         "resolveEraDashboardPath",
         "Layout"
@@ -6064,6 +6173,52 @@
       ],
       "isOrphan": false
     },
+    "src/components/ui/Card.js": {
+      "path": "src/components/ui/Card.js",
+      "type": "component",
+      "lines": 31,
+      "functions": [
+        "Card"
+      ],
+      "imports": [],
+      "importedBy": [
+        "src/components/Dashboard.js"
+      ],
+      "isOrphan": false
+    },
+    "src/components/ui/PageContainer.js": {
+      "path": "src/components/ui/PageContainer.js",
+      "type": "page",
+      "lines": 39,
+      "functions": [
+        "PageContainer"
+      ],
+      "imports": [
+        "src/components/ui/Typography.js"
+      ],
+      "importedBy": [
+        "src/components/Dashboard.js"
+      ],
+      "isOrphan": false
+    },
+    "src/components/ui/Typography.js": {
+      "path": "src/components/ui/Typography.js",
+      "type": "component",
+      "lines": 74,
+      "functions": [
+        "PageTitle",
+        "SectionTitle",
+        "Text",
+        "Muted",
+        "Subtitle"
+      ],
+      "imports": [],
+      "importedBy": [
+        "src/components/Dashboard.js",
+        "src/components/ui/PageContainer.js"
+      ],
+      "isOrphan": false
+    },
     "src/components/WaliKelasWidgetTab.js": {
       "path": "src/components/WaliKelasWidgetTab.js",
       "type": "component",
@@ -6085,7 +6240,7 @@
     "src/config/menuConfig.js": {
       "path": "src/config/menuConfig.js",
       "type": "config",
-      "lines": 280,
+      "lines": 351,
       "functions": [
         "defaultProps"
       ],
@@ -6108,6 +6263,7 @@
         "src/pages/KelolaJadwalPelajaran.js",
         "src/pages/KelolaJadwalPiket.js",
         "src/pages/CatatanSiswa.js",
+        "src/pages/kelola-raport/NilaiRaportSiswa.js",
         "src/setting/Setting.js",
         "src/konseling/KonselingMain.js",
         "src/reports/Reports.js",
@@ -6155,7 +6311,7 @@
     "src/config/sidebarConfig.js": {
       "path": "src/config/sidebarConfig.js",
       "type": "config",
-      "lines": 313,
+      "lines": 331,
       "functions": [],
       "imports": [],
       "importedBy": [
@@ -6681,7 +6837,7 @@
     "src/pages/attendance/Attendance.js": {
       "path": "src/pages/attendance/Attendance.js",
       "type": "page",
-      "lines": 1773,
+      "lines": 1874,
       "functions": [
         "getDefaultDate",
         "getTodayWIB",
@@ -6834,7 +6990,7 @@
     "src/pages/attendance/AttendanceTable.js": {
       "path": "src/pages/attendance/AttendanceTable.js",
       "type": "page",
-      "lines": 332,
+      "lines": 354,
       "functions": [
         "AttendanceTable"
       ],
@@ -6910,22 +7066,35 @@
     "src/pages/datasiswa-induk/DataSiswaInduk.js": {
       "path": "src/pages/datasiswa-induk/DataSiswaInduk.js",
       "type": "page",
-      "lines": 1739,
+      "lines": 1660,
       "functions": [
-        "KelengkapanDataSiswa",
-        "getJenjang",
-        "emptyAdminForm",
-        "formatTanggalLahirSingkat",
-        "getDetailRowValue"
+        "KelengkapanDataSiswa"
       ],
       "imports": [
         "src/supabaseClient.js",
         "src/pages/datasiswa-induk/DataSiswaIndukPDF.js",
         "src/pages/datasiswa-induk/DataSiswaIndukExcel.js",
-        "src/utils/studentProfileCompletion.js"
+        "src/utils/studentProfileCompletion.js",
+        "src/pages/datasiswa-induk/DataSiswaIndukConfig.js"
       ],
       "importedBy": [
         "src/config/menuConfig.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/datasiswa-induk/DataSiswaIndukConfig.js": {
+      "path": "src/pages/datasiswa-induk/DataSiswaIndukConfig.js",
+      "type": "page",
+      "lines": 294,
+      "functions": [
+        "getJenjang",
+        "emptyAdminForm",
+        "formatTanggalLahirSingkat",
+        "getDetailRowValue"
+      ],
+      "imports": [],
+      "importedBy": [
+        "src/pages/datasiswa-induk/DataSiswaInduk.js"
       ],
       "isOrphan": false
     },
@@ -7117,6 +7286,172 @@
       ],
       "importedBy": [
         "src/config/menuConfig.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/ImportRaportForm.js": {
+      "path": "src/pages/kelola-raport/ImportRaportForm.js",
+      "type": "page",
+      "lines": 1066,
+      "functions": [
+        "normalizeNis",
+        "nisVariants",
+        "ImportProgress",
+        "PreviewImportTable",
+        "ImportRaportForm"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/pages/kelola-raport/RaportShared.js",
+        "src/pages/kelola-raport/parseLegerExcel.js"
+      ],
+      "importedBy": [
+        "src/pages/kelola-raport/RaportNilaiTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/KelolaKKM.js": {
+      "path": "src/pages/kelola-raport/KelolaKKM.js",
+      "type": "page",
+      "lines": 285,
+      "functions": [
+        "KelolaKKM"
+      ],
+      "imports": [
+        "src/supabaseClient.js"
+      ],
+      "importedBy": [
+        "src/pages/kelola-raport/RaportNilaiTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/ManajemenRaportTable.js": {
+      "path": "src/pages/kelola-raport/ManajemenRaportTable.js",
+      "type": "page",
+      "lines": 901,
+      "functions": [
+        "normalizeNis",
+        "nisVariants",
+        "DetailRaportSiswa",
+        "ManajemenRaportTable"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/pages/kelola-raport/RaportShared.js"
+      ],
+      "importedBy": [
+        "src/pages/kelola-raport/RaportNilaiTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/NilaiRaportSiswa.js": {
+      "path": "src/pages/kelola-raport/NilaiRaportSiswa.js",
+      "type": "page",
+      "lines": 98,
+      "functions": [
+        "NilaiRaportSiswa"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/pages/kelola-raport/RaportNilaiTab.js"
+      ],
+      "importedBy": [
+        "src/config/menuConfig.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/parseLegerExcel.js": {
+      "path": "src/pages/kelola-raport/parseLegerExcel.js",
+      "type": "page",
+      "lines": 289,
+      "functions": [
+        "normCell",
+        "findHeaderRow",
+        "findSubjectColumns",
+        "buildSubjectNameMap",
+        "findLabelValue"
+      ],
+      "imports": [],
+      "importedBy": [
+        "src/pages/kelola-raport/ImportRaportForm.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/RaportNilaiTab.js": {
+      "path": "src/pages/kelola-raport/RaportNilaiTab.js",
+      "type": "page",
+      "lines": 93,
+      "functions": [
+        "RaportNilaiTab"
+      ],
+      "imports": [
+        "src/pages/kelola-raport/ImportRaportForm.js",
+        "src/pages/kelola-raport/ManajemenRaportTable.js",
+        "src/pages/kelola-raport/RekapMultiSemester.js",
+        "src/pages/kelola-raport/RekapKelulusan.js",
+        "src/pages/kelola-raport/KelolaKKM.js"
+      ],
+      "importedBy": [
+        "src/pages/kelola-raport/NilaiRaportSiswa.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/RaportShared.js": {
+      "path": "src/pages/kelola-raport/RaportShared.js",
+      "type": "page",
+      "lines": 406,
+      "functions": [
+        "useAcademicYears",
+        "useReportedClasses",
+        "StatusBadge",
+        "RaportTable",
+        "SemesterFilterBar"
+      ],
+      "imports": [
+        "src/supabaseClient.js"
+      ],
+      "importedBy": [
+        "src/pages/kelola-raport/ImportRaportForm.js",
+        "src/pages/kelola-raport/ManajemenRaportTable.js",
+        "src/pages/kelola-raport/RekapKelulusan.js",
+        "src/pages/kelola-raport/RekapMultiSemester.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/RekapKelulusan.js": {
+      "path": "src/pages/kelola-raport/RekapKelulusan.js",
+      "type": "page",
+      "lines": 682,
+      "functions": [
+        "RekapKelulusan"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/pages/kelola-raport/RaportShared.js"
+      ],
+      "importedBy": [
+        "src/pages/kelola-raport/RaportNilaiTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/pages/kelola-raport/RekapMultiSemester.js": {
+      "path": "src/pages/kelola-raport/RekapMultiSemester.js",
+      "type": "page",
+      "lines": 620,
+      "functions": [
+        "getMapelAbbrev",
+        "formatTimestampID",
+        "styleHeaderCell",
+        "applyThinBorder",
+        "buildSheetForSemester",
+        "RekapMultiSemester"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/pages/kelola-raport/RaportShared.js"
+      ],
+      "importedBy": [
+        "src/pages/kelola-raport/RaportNilaiTab.js"
       ],
       "isOrphan": false
     },
@@ -8043,7 +8378,7 @@
     "src/reports/Reports.js": {
       "path": "src/reports/Reports.js",
       "type": "other",
-      "lines": 153,
+      "lines": 157,
       "functions": [
         "Reports"
       ],
@@ -8491,156 +8826,6 @@
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-raport/ImportRaportForm.js": {
-      "path": "src/setting/kelola-raport/ImportRaportForm.js",
-      "type": "other",
-      "lines": 1066,
-      "functions": [
-        "normalizeNis",
-        "nisVariants",
-        "ImportProgress",
-        "PreviewImportTable",
-        "ImportRaportForm"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/setting/kelola-raport/RaportShared.js",
-        "src/setting/kelola-raport/parseLegerExcel.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-raport/RaportNilaiTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-raport/KelolaKKM.js": {
-      "path": "src/setting/kelola-raport/KelolaKKM.js",
-      "type": "other",
-      "lines": 285,
-      "functions": [
-        "KelolaKKM"
-      ],
-      "imports": [
-        "src/supabaseClient.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-raport/RaportNilaiTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-raport/ManajemenRaportTable.js": {
-      "path": "src/setting/kelola-raport/ManajemenRaportTable.js",
-      "type": "other",
-      "lines": 901,
-      "functions": [
-        "normalizeNis",
-        "nisVariants",
-        "DetailRaportSiswa",
-        "ManajemenRaportTable"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/setting/kelola-raport/RaportShared.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-raport/RaportNilaiTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-raport/parseLegerExcel.js": {
-      "path": "src/setting/kelola-raport/parseLegerExcel.js",
-      "type": "other",
-      "lines": 289,
-      "functions": [
-        "normCell",
-        "findHeaderRow",
-        "findSubjectColumns",
-        "buildSubjectNameMap",
-        "findLabelValue"
-      ],
-      "imports": [],
-      "importedBy": [
-        "src/setting/kelola-raport/ImportRaportForm.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-raport/RaportNilaiTab.js": {
-      "path": "src/setting/kelola-raport/RaportNilaiTab.js",
-      "type": "other",
-      "lines": 100,
-      "functions": [
-        "RaportNilaiTab"
-      ],
-      "imports": [
-        "src/setting/kelola-raport/ImportRaportForm.js",
-        "src/setting/kelola-raport/ManajemenRaportTable.js",
-        "src/setting/kelola-raport/RekapMultiSemester.js",
-        "src/setting/kelola-raport/RekapKelulusan.js",
-        "src/setting/kelola-raport/KelolaKKM.js"
-      ],
-      "importedBy": [
-        "src/setting/Setting.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-raport/RaportShared.js": {
-      "path": "src/setting/kelola-raport/RaportShared.js",
-      "type": "other",
-      "lines": 406,
-      "functions": [
-        "useAcademicYears",
-        "useReportedClasses",
-        "StatusBadge",
-        "RaportTable",
-        "SemesterFilterBar"
-      ],
-      "imports": [
-        "src/supabaseClient.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-raport/ImportRaportForm.js",
-        "src/setting/kelola-raport/ManajemenRaportTable.js",
-        "src/setting/kelola-raport/RekapKelulusan.js",
-        "src/setting/kelola-raport/RekapMultiSemester.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-raport/RekapKelulusan.js": {
-      "path": "src/setting/kelola-raport/RekapKelulusan.js",
-      "type": "other",
-      "lines": 682,
-      "functions": [
-        "RekapKelulusan"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/setting/kelola-raport/RaportShared.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-raport/RaportNilaiTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-raport/RekapMultiSemester.js": {
-      "path": "src/setting/kelola-raport/RekapMultiSemester.js",
-      "type": "other",
-      "lines": 620,
-      "functions": [
-        "getMapelAbbrev",
-        "formatTimestampID",
-        "styleHeaderCell",
-        "applyThinBorder",
-        "buildSheetForSemester",
-        "RekapMultiSemester"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/setting/kelola-raport/RaportShared.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-raport/RaportNilaiTab.js"
-      ],
-      "isOrphan": false
-    },
     "src/setting/MaintenanceModeTab.js": {
       "path": "src/setting/MaintenanceModeTab.js",
       "type": "other",
@@ -8841,7 +9026,7 @@
     "src/setting/Setting.js": {
       "path": "src/setting/Setting.js",
       "type": "other",
-      "lines": 603,
+      "lines": 597,
       "functions": [
         "Setting"
       ],
@@ -8853,7 +9038,6 @@
         "src/setting/SystemTab.js",
         "src/setting/MaintenanceModeTab.js",
         "src/e-raport/RaportConfig.js",
-        "src/setting/kelola-raport/RaportNilaiTab.js",
         "src/setting/UserManagementTab.js",
         "src/setting/feedback/FeedbackCombinedTab.js",
         "src/setting/ActiveUsersTab.js",
@@ -8939,7 +9123,7 @@
     "src/spmb/ClassDistribution.js": {
       "path": "src/spmb/ClassDistribution.js",
       "type": "other",
-      "lines": 773,
+      "lines": 818,
       "functions": [
         "formatTahunAjaran",
         "getTahunAjaran",
@@ -8961,7 +9145,7 @@
     "src/spmb/ClassDivision.js": {
       "path": "src/spmb/ClassDivision.js",
       "type": "other",
-      "lines": 1327,
+      "lines": 1329,
       "functions": [
         "ClassDivision"
       ],
@@ -9009,7 +9193,7 @@
     "src/spmb/DiagnostikPage.js": {
       "path": "src/spmb/DiagnostikPage.js",
       "type": "page",
-      "lines": 574,
+      "lines": 580,
       "functions": [
         "DiagnostikPage"
       ],
@@ -9049,7 +9233,7 @@
     "src/spmb/SpmbExcel.js": {
       "path": "src/spmb/SpmbExcel.js",
       "type": "other",
-      "lines": 704,
+      "lines": 789,
       "functions": [
         "exportAllStudents",
         "exportClassDivision",
@@ -9085,7 +9269,7 @@
     "src/spmb/StudentForm.js": {
       "path": "src/spmb/StudentForm.js",
       "type": "other",
-      "lines": 1288,
+      "lines": 1389,
       "functions": [
         "StudentForm"
       ],
@@ -9098,7 +9282,7 @@
     "src/spmb/StudentList.js": {
       "path": "src/spmb/StudentList.js",
       "type": "other",
-      "lines": 985,
+      "lines": 992,
       "functions": [
         "StudentList"
       ],
@@ -9179,6 +9363,13 @@
         "src/pages/grades/GradesExcel.js",
         "src/pages/grades/GradesKatrol.js",
         "src/pages/JurnalHarian.js",
+        "src/pages/kelola-raport/ImportRaportForm.js",
+        "src/pages/kelola-raport/KelolaKKM.js",
+        "src/pages/kelola-raport/ManajemenRaportTable.js",
+        "src/pages/kelola-raport/NilaiRaportSiswa.js",
+        "src/pages/kelola-raport/RaportShared.js",
+        "src/pages/kelola-raport/RekapKelulusan.js",
+        "src/pages/kelola-raport/RekapMultiSemester.js",
         "src/pages/KelolaJadwalPelajaran.js",
         "src/pages/KelolaJadwalPiket.js",
         "src/pages/Organigram.js",
@@ -9223,12 +9414,6 @@
         "src/setting/ChangePasswordSection.js",
         "src/setting/feedback/FeedbackGuruTab.js",
         "src/setting/feedback/FeedbackSiswaTab.js",
-        "src/setting/kelola-raport/ImportRaportForm.js",
-        "src/setting/kelola-raport/KelolaKKM.js",
-        "src/setting/kelola-raport/ManajemenRaportTable.js",
-        "src/setting/kelola-raport/RaportShared.js",
-        "src/setting/kelola-raport/RekapKelulusan.js",
-        "src/setting/kelola-raport/RekapMultiSemester.js",
         "src/setting/MaintenanceModeTab.js",
         "src/setting/portal-siswa/AkunSiswaTab.js",
         "src/setting/ProfileTab.js",
@@ -9632,7 +9817,7 @@
     "src/utils/studentProfileCompletion.js": {
       "path": "src/utils/studentProfileCompletion.js",
       "type": "util",
-      "lines": 93,
+      "lines": 109,
       "functions": [
         "genderCodeToLabel",
         "getCompletionStatus",
@@ -9698,6 +9883,6 @@
       "isOrphan": false
     }
   },
-  "asciiTree": "|-- src\n|   |-- assets\n|   |   |-- Background.webp\n|   |   |-- logo_sekolah-0.png\n|   |   `-- logo_sekolah.png\n|   |-- attendance-teacher\n|   |   |-- reports\n|   |   |   |-- DailySummary.js\n|   |   |   |-- ExportExcel.js\n|   |   |   |-- ITMReport.js\n|   |   |   |-- ITMReportExcel.js\n|   |   |   `-- MonthlyView.js\n|   |   |-- AdminAttendanceView.js\n|   |   |-- AttendanceTabs.js\n|   |   |-- CustomDatePicker.js\n|   |   |-- LocationValidator.js\n|   |   |-- ManualCheckIn.js\n|   |   |-- MyAttendanceStatus.js\n|   |   |-- MyMonthlyHistory.js\n|   |   |-- QRCodeGenerator.js\n|   |   |-- QRScanner.js\n|   |   |-- TeacherAttendance.js\n|   |   |-- TodaySchedule.js\n|   |   `-- index.html\n|   |-- components\n|   |   |-- AdminDashboard.js\n|   |   |-- AdminJurnalRekap.js\n|   |   |-- AnnouncementList.js\n|   |   |-- AnnouncementPopup.js\n|   |   |-- BottomNav.js\n|   |   |-- CatatanWalikelasBk.js\n|   |   |-- ConnectedDevices.js\n|   |   |-- Dashboard.js\n|   |   |-- FeedbackGuru.js\n|   |   |-- GuruBKDashboard.js\n|   |   |-- HomeroomTeacherDashboard.js\n|   |   |-- Layout.js\n|   |   |-- Login.js\n|   |   |-- Logo.js\n|   |   |-- NotifikasiBk.js\n|   |   |-- PengumumanWaliKelas.js\n|   |   |-- SaranMasukanSiswa.js\n|   |   |-- Sidebar.js\n|   |   |-- StudentLogin.js\n|   |   |-- TeacherDashboard.js\n|   |   `-- WaliKelasWidgetTab.js\n|   |-- config\n|   |   |-- menuConfig.js\n|   |   |-- ruangBelajarAccess.js\n|   |   `-- sidebarConfig.js\n|   |-- e-raport\n|   |   |-- CekNilai.js\n|   |   |-- CekStatusNilai.js\n|   |   |-- CetakRaport.js\n|   |   |-- DashboardAdmin.js\n|   |   |-- DashboardHomeroomTeacher.js\n|   |   |-- DashboardTeacher.js\n|   |   |-- InputCatatan.js\n|   |   |-- InputEkstrakurikuler.js\n|   |   |-- InputKehadiran.js\n|   |   |-- InputKokurikuler.js\n|   |   |-- InputNilai.js\n|   |   |-- InputTP.js\n|   |   |-- PreviewNilai.js\n|   |   |-- PreviewRaport.js\n|   |   |-- RaportConfig.js\n|   |   `-- RaportPage.js\n|   |-- konseling\n|   |   |-- home-visit\n|   |   |   |-- HomeVisit.js\n|   |   |   |-- HomeVisitDetail.js\n|   |   |   |-- HomeVisitExportPDF.js\n|   |   |   |-- HomeVisitFilter.js\n|   |   |   |-- HomeVisitModal.js\n|   |   |   |-- HomeVisitStats.js\n|   |   |   `-- HomeVisitTable.js\n|   |   |-- ExportPDF.js\n|   |   |-- FilterBar.js\n|   |   |-- Konseling.js\n|   |   |-- KonselingMain.js\n|   |   |-- KonselingModal.js\n|   |   |-- KonselingTable.js\n|   |   `-- StatsCards.js\n|   |-- pages\n|   |   |-- attendance\n|   |   |   |-- AdminAttendance.js\n|   |   |   |-- Attendance.js\n|   |   |   |-- AttendanceExcel.js\n|   |   |   |-- AttendanceFilters.js\n|   |   |   |-- AttendanceMain.js\n|   |   |   |-- AttendanceManagement.js\n|   |   |   |-- AttendanceModals.js\n|   |   |   |-- AttendancePDF.js\n|   |   |   |-- AttendanceStats.js\n|   |   |   `-- AttendanceTable.js\n|   |   |-- datasiswa-induk\n|   |   |   |-- DataSiswaInduk.js\n|   |   |   |-- DataSiswaIndukExcel.js\n|   |   |   `-- DataSiswaIndukPDF.js\n|   |   |-- grades\n|   |   |   |-- GradeMain.js\n|   |   |   |-- Grades.js\n|   |   |   |-- GradesExcel.js\n|   |   |   |-- GradesKatrol.js\n|   |   |   |-- KatrolTable.js\n|   |   |   `-- Utils.js\n|   |   |-- CatatanSiswa.js\n|   |   |-- CatatanSiswaExport.js\n|   |   |-- Classes.js\n|   |   |-- DataExcel.js\n|   |   |-- DenahDuduk.js\n|   |   |-- JurnalHarian.js\n|   |   |-- KelolaJadwalPelajaran.js\n|   |   |-- KelolaJadwalPiket.js\n|   |   |-- Organigram.js\n|   |   |-- PortalBackButton.js\n|   |   |-- PortalSiswaGuru.js\n|   |   |-- Students.js\n|   |   |-- TeacherSchedule.js\n|   |   |-- TeacherScheduleExcel.js\n|   |   `-- Teachers.js\n|   |-- perpustakaan\n|   |   |-- Katalog.js\n|   |   |-- Peminjaman.js\n|   |   |-- Pengembalian.js\n|   |   `-- PerpusMain.js\n|   |-- portal-siswa\n|   |   |-- belajar\n|   |   |   `-- bahasa-inggris\n|   |   |       |-- data\n|   |   |       |   `-- chapterData.js\n|   |   |       |-- ChapterDetail.js\n|   |   |       `-- ChapterList.js\n|   |   |-- ruang-belajar-admin\n|   |   |   |-- RuangBelajarAdmin.js\n|   |   |   `-- RuangBelajarForm.js\n|   |   |-- ruang-belajar-siswa\n|   |   |   |-- BelajarMain.js\n|   |   |   |-- RuangBelajarCategories.js\n|   |   |   |-- RuangBelajarDetail.js\n|   |   |   `-- RuangBelajarHome.js\n|   |   |-- BirthdayCelebration.js\n|   |   |-- StudentBottomNav.js\n|   |   |-- StudentDashboard.js\n|   |   |-- StudentDataSiswa.js\n|   |   |-- StudentDenahDuduk.js\n|   |   |-- StudentHelpers.js\n|   |   |-- StudentInfo.js\n|   |   |-- StudentJadwal.js\n|   |   |-- StudentLayout.js\n|   |   |-- StudentOrganigram.js\n|   |   |-- StudentPengumuman.js\n|   |   |-- StudentPerangkatTerhubung.js\n|   |   |-- StudentPiket.js\n|   |   |-- StudentPortal.js\n|   |   |-- StudentPresensi.js\n|   |   |-- StudentProfile.js\n|   |   |-- StudentRaport.js\n|   |   |-- StudentSaran.js\n|   |   |-- StudentSidebar.js\n|   |   `-- useStudentProfile.js\n|   |-- reports\n|   |   |-- modals\n|   |   |   |-- AcademicGradesView.js\n|   |   |   |-- AdminReportModal.js\n|   |   |   |-- BKReportModal.js\n|   |   |   |-- HomeroomReportModal.js\n|   |   |   `-- TeacherReportModal.js\n|   |   |-- AdminReports.js\n|   |   |-- BKReports.js\n|   |   |-- DailyAttendanceSection.js\n|   |   |-- HomeroomTeacherReports.js\n|   |   |-- ReportExcel.js\n|   |   |-- ReportHelpers.js\n|   |   |-- Reports.js\n|   |   `-- TeacherReports.js\n|   |-- services\n|   |   |-- academicYearService.js\n|   |   `-- semesterService.js\n|   |-- setting\n|   |   |-- academic\n|   |   |   |-- AcademicYearTab.js\n|   |   |   |-- CopyAssignmentsModal.js\n|   |   |   |-- PreflightCheck.js\n|   |   |   |-- SemesterManagement.js\n|   |   |   |-- Simulator.js\n|   |   |   |-- TransitionReadiness.js\n|   |   |   `-- YearTransition.js\n|   |   |-- feedback\n|   |   |   |-- FeedbackCombinedTab.js\n|   |   |   |-- FeedbackGuruTab.js\n|   |   |   `-- FeedbackSiswaTab.js\n|   |   |-- kelola-raport\n|   |   |   |-- ImportRaportForm.js\n|   |   |   |-- KelolaKKM.js\n|   |   |   |-- ManajemenRaportTable.js\n|   |   |   |-- RaportNilaiTab.js\n|   |   |   |-- RaportShared.js\n|   |   |   |-- RekapKelulusan.js\n|   |   |   |-- RekapMultiSemester.js\n|   |   |   `-- parseLegerExcel.js\n|   |   |-- portal-siswa\n|   |   |   |-- AkunSiswaTab.js\n|   |   |   `-- PortalSiswaTab.js\n|   |   |-- school-management\n|   |   |   |-- RiwayatMutasiTab.js\n|   |   |   |-- SchoolCombinedTab.js\n|   |   |   |-- SchoolManagementTab.js\n|   |   |   |-- SchoolSettingsTab.js\n|   |   |   |-- StudentManagement.js\n|   |   |   |-- StudentModals.js\n|   |   |   `-- TeacherAssignmentTab.js\n|   |   |-- ActiveUsersTab.js\n|   |   |-- AdminJadwalMassal.js\n|   |   |-- AdminKodeGuru.js\n|   |   |-- AdminPanel.js\n|   |   |-- AuditLogPanel.js\n|   |   |-- ChangePasswordSection.js\n|   |   |-- ConnectedDevicesAdminTab.js\n|   |   |-- JadwalGuruTab.js\n|   |   |-- MaintenanceModeTab.js\n|   |   |-- MaintenancePage.js\n|   |   |-- ProfileTab.js\n|   |   |-- Setting.js\n|   |   |-- StudentConnectedDevicesAdminTab.js\n|   |   |-- SystemTab.js\n|   |   |-- TeacherAssignmentExcel.js\n|   |   `-- UserManagementTab.js\n|   |-- spmb\n|   |   |-- ClassDistribution.js\n|   |   |-- ClassDivision.js\n|   |   |-- ClassOperations.js\n|   |   |-- DiagnostikPage.js\n|   |   |-- SPMB.js\n|   |   |-- SpmbExcel.js\n|   |   |-- Statistics.js\n|   |   |-- StudentForm.js\n|   |   `-- StudentList.js\n|   |-- system\n|   |   |-- checkers\n|   |   |   |-- AppHealthChecker.js\n|   |   |   |-- BusinessLogicChecker.js\n|   |   |   |-- DataValidator.js\n|   |   |   `-- DatabaseChecker.js\n|   |   |-- lib\n|   |   |   `-- fetchSupabaseSchema.js\n|   |   |-- CodeAudit.js\n|   |   |-- DatabaseCleanupMonitor.js\n|   |   |-- DatabaseStructure.js\n|   |   |-- HealthChecker.js\n|   |   |-- MonitorDashboard.js\n|   |   |-- MonitorHistory.js\n|   |   |-- MonitorResults.js\n|   |   |-- MonitorSistem.js\n|   |   |-- PerformanceMonitor.js\n|   |   `-- ProjectStructure.js\n|   |-- utils\n|   |   |-- deviceInfo.js\n|   |   |-- excelExportKit.js\n|   |   |-- jamPelajaran.js\n|   |   |-- offlineHelper.js\n|   |   |-- pdfExportKit.js\n|   |   |-- studentDevices.js\n|   |   |-- studentProfileCompletion.js\n|   |   |-- studentSession.js\n|   |   |-- systemHelpers.js\n|   |   `-- userDevices.js\n|   |-- App.js\n|   |-- constants.js\n|   |-- index.css\n|   |-- index.js\n|   |-- reportWebVitals.js\n|   `-- supabaseClient.js",
-  "totalAllFiles": 239
+  "asciiTree": "|-- src\n|   |-- assets\n|   |   |-- Background.webp\n|   |   |-- logo_sekolah-0.png\n|   |   `-- logo_sekolah.png\n|   |-- attendance-teacher\n|   |   |-- reports\n|   |   |   |-- DailySummary.js\n|   |   |   |-- ExportExcel.js\n|   |   |   |-- ITMReport.js\n|   |   |   |-- ITMReportExcel.js\n|   |   |   `-- MonthlyView.js\n|   |   |-- AdminAttendanceView.js\n|   |   |-- AttendanceTabs.js\n|   |   |-- CustomDatePicker.js\n|   |   |-- LocationValidator.js\n|   |   |-- ManualCheckIn.js\n|   |   |-- MyAttendanceStatus.js\n|   |   |-- MyMonthlyHistory.js\n|   |   |-- QRCodeGenerator.js\n|   |   |-- QRScanner.js\n|   |   |-- TeacherAttendance.js\n|   |   |-- TodaySchedule.js\n|   |   `-- index.html\n|   |-- components\n|   |   |-- ui\n|   |   |   |-- Card.js\n|   |   |   |-- PageContainer.js\n|   |   |   `-- Typography.js\n|   |   |-- AdminDashboard.js\n|   |   |-- AdminJurnalRekap.js\n|   |   |-- AnnouncementList.js\n|   |   |-- AnnouncementPopup.js\n|   |   |-- BottomNav.js\n|   |   |-- CatatanWalikelasBk.js\n|   |   |-- ConnectedDevices.js\n|   |   |-- Dashboard.js\n|   |   |-- FeedbackGuru.js\n|   |   |-- GuruBKDashboard.js\n|   |   |-- HomeroomTeacherDashboard.js\n|   |   |-- Layout.js\n|   |   |-- Login.js\n|   |   |-- Logo.js\n|   |   |-- NotifikasiBk.js\n|   |   |-- PengumumanWaliKelas.js\n|   |   |-- SaranMasukanSiswa.js\n|   |   |-- Sidebar.js\n|   |   |-- StudentLogin.js\n|   |   |-- TeacherDashboard.js\n|   |   `-- WaliKelasWidgetTab.js\n|   |-- config\n|   |   |-- menuConfig.js\n|   |   |-- ruangBelajarAccess.js\n|   |   `-- sidebarConfig.js\n|   |-- e-raport\n|   |   |-- CekNilai.js\n|   |   |-- CekStatusNilai.js\n|   |   |-- CetakRaport.js\n|   |   |-- DashboardAdmin.js\n|   |   |-- DashboardHomeroomTeacher.js\n|   |   |-- DashboardTeacher.js\n|   |   |-- InputCatatan.js\n|   |   |-- InputEkstrakurikuler.js\n|   |   |-- InputKehadiran.js\n|   |   |-- InputKokurikuler.js\n|   |   |-- InputNilai.js\n|   |   |-- InputTP.js\n|   |   |-- PreviewNilai.js\n|   |   |-- PreviewRaport.js\n|   |   |-- RaportConfig.js\n|   |   `-- RaportPage.js\n|   |-- konseling\n|   |   |-- home-visit\n|   |   |   |-- HomeVisit.js\n|   |   |   |-- HomeVisitDetail.js\n|   |   |   |-- HomeVisitExportPDF.js\n|   |   |   |-- HomeVisitFilter.js\n|   |   |   |-- HomeVisitModal.js\n|   |   |   |-- HomeVisitStats.js\n|   |   |   `-- HomeVisitTable.js\n|   |   |-- ExportPDF.js\n|   |   |-- FilterBar.js\n|   |   |-- Konseling.js\n|   |   |-- KonselingMain.js\n|   |   |-- KonselingModal.js\n|   |   |-- KonselingTable.js\n|   |   `-- StatsCards.js\n|   |-- pages\n|   |   |-- attendance\n|   |   |   |-- AdminAttendance.js\n|   |   |   |-- Attendance.js\n|   |   |   |-- AttendanceExcel.js\n|   |   |   |-- AttendanceFilters.js\n|   |   |   |-- AttendanceMain.js\n|   |   |   |-- AttendanceManagement.js\n|   |   |   |-- AttendanceModals.js\n|   |   |   |-- AttendancePDF.js\n|   |   |   |-- AttendanceStats.js\n|   |   |   `-- AttendanceTable.js\n|   |   |-- datasiswa-induk\n|   |   |   |-- DataSiswaInduk.js\n|   |   |   |-- DataSiswaIndukConfig.js\n|   |   |   |-- DataSiswaIndukExcel.js\n|   |   |   `-- DataSiswaIndukPDF.js\n|   |   |-- grades\n|   |   |   |-- GradeMain.js\n|   |   |   |-- Grades.js\n|   |   |   |-- GradesExcel.js\n|   |   |   |-- GradesKatrol.js\n|   |   |   |-- KatrolTable.js\n|   |   |   `-- Utils.js\n|   |   |-- kelola-raport\n|   |   |   |-- ImportRaportForm.js\n|   |   |   |-- KelolaKKM.js\n|   |   |   |-- ManajemenRaportTable.js\n|   |   |   |-- NilaiRaportSiswa.js\n|   |   |   |-- RaportNilaiTab.js\n|   |   |   |-- RaportShared.js\n|   |   |   |-- RekapKelulusan.js\n|   |   |   |-- RekapMultiSemester.js\n|   |   |   `-- parseLegerExcel.js\n|   |   |-- CatatanSiswa.js\n|   |   |-- CatatanSiswaExport.js\n|   |   |-- Classes.js\n|   |   |-- DataExcel.js\n|   |   |-- DenahDuduk.js\n|   |   |-- JurnalHarian.js\n|   |   |-- KelolaJadwalPelajaran.js\n|   |   |-- KelolaJadwalPiket.js\n|   |   |-- Organigram.js\n|   |   |-- PortalBackButton.js\n|   |   |-- PortalSiswaGuru.js\n|   |   |-- Students.js\n|   |   |-- TeacherSchedule.js\n|   |   |-- TeacherScheduleExcel.js\n|   |   `-- Teachers.js\n|   |-- perpustakaan\n|   |   |-- Katalog.js\n|   |   |-- Peminjaman.js\n|   |   |-- Pengembalian.js\n|   |   `-- PerpusMain.js\n|   |-- portal-siswa\n|   |   |-- belajar\n|   |   |   `-- bahasa-inggris\n|   |   |       |-- data\n|   |   |       |   `-- chapterData.js\n|   |   |       |-- ChapterDetail.js\n|   |   |       `-- ChapterList.js\n|   |   |-- ruang-belajar-admin\n|   |   |   |-- RuangBelajarAdmin.js\n|   |   |   `-- RuangBelajarForm.js\n|   |   |-- ruang-belajar-siswa\n|   |   |   |-- BelajarMain.js\n|   |   |   |-- RuangBelajarCategories.js\n|   |   |   |-- RuangBelajarDetail.js\n|   |   |   `-- RuangBelajarHome.js\n|   |   |-- BirthdayCelebration.js\n|   |   |-- StudentBottomNav.js\n|   |   |-- StudentDashboard.js\n|   |   |-- StudentDataSiswa.js\n|   |   |-- StudentDenahDuduk.js\n|   |   |-- StudentHelpers.js\n|   |   |-- StudentInfo.js\n|   |   |-- StudentJadwal.js\n|   |   |-- StudentLayout.js\n|   |   |-- StudentOrganigram.js\n|   |   |-- StudentPengumuman.js\n|   |   |-- StudentPerangkatTerhubung.js\n|   |   |-- StudentPiket.js\n|   |   |-- StudentPortal.js\n|   |   |-- StudentPresensi.js\n|   |   |-- StudentProfile.js\n|   |   |-- StudentRaport.js\n|   |   |-- StudentSaran.js\n|   |   |-- StudentSidebar.js\n|   |   `-- useStudentProfile.js\n|   |-- reports\n|   |   |-- modals\n|   |   |   |-- AcademicGradesView.js\n|   |   |   |-- AdminReportModal.js\n|   |   |   |-- BKReportModal.js\n|   |   |   |-- HomeroomReportModal.js\n|   |   |   `-- TeacherReportModal.js\n|   |   |-- AdminReports.js\n|   |   |-- BKReports.js\n|   |   |-- DailyAttendanceSection.js\n|   |   |-- HomeroomTeacherReports.js\n|   |   |-- ReportExcel.js\n|   |   |-- ReportHelpers.js\n|   |   |-- Reports.js\n|   |   `-- TeacherReports.js\n|   |-- services\n|   |   |-- academicYearService.js\n|   |   `-- semesterService.js\n|   |-- setting\n|   |   |-- academic\n|   |   |   |-- AcademicYearTab.js\n|   |   |   |-- CopyAssignmentsModal.js\n|   |   |   |-- PreflightCheck.js\n|   |   |   |-- SemesterManagement.js\n|   |   |   |-- Simulator.js\n|   |   |   |-- TransitionReadiness.js\n|   |   |   `-- YearTransition.js\n|   |   |-- feedback\n|   |   |   |-- FeedbackCombinedTab.js\n|   |   |   |-- FeedbackGuruTab.js\n|   |   |   `-- FeedbackSiswaTab.js\n|   |   |-- portal-siswa\n|   |   |   |-- AkunSiswaTab.js\n|   |   |   `-- PortalSiswaTab.js\n|   |   |-- school-management\n|   |   |   |-- RiwayatMutasiTab.js\n|   |   |   |-- SchoolCombinedTab.js\n|   |   |   |-- SchoolManagementTab.js\n|   |   |   |-- SchoolSettingsTab.js\n|   |   |   |-- StudentManagement.js\n|   |   |   |-- StudentModals.js\n|   |   |   `-- TeacherAssignmentTab.js\n|   |   |-- ActiveUsersTab.js\n|   |   |-- AdminJadwalMassal.js\n|   |   |-- AdminKodeGuru.js\n|   |   |-- AdminPanel.js\n|   |   |-- AuditLogPanel.js\n|   |   |-- ChangePasswordSection.js\n|   |   |-- ConnectedDevicesAdminTab.js\n|   |   |-- JadwalGuruTab.js\n|   |   |-- MaintenanceModeTab.js\n|   |   |-- MaintenancePage.js\n|   |   |-- ProfileTab.js\n|   |   |-- Setting.js\n|   |   |-- StudentConnectedDevicesAdminTab.js\n|   |   |-- SystemTab.js\n|   |   |-- TeacherAssignmentExcel.js\n|   |   `-- UserManagementTab.js\n|   |-- spmb\n|   |   |-- ClassDistribution.js\n|   |   |-- ClassDivision.js\n|   |   |-- ClassOperations.js\n|   |   |-- DiagnostikPage.js\n|   |   |-- SPMB.js\n|   |   |-- SpmbExcel.js\n|   |   |-- Statistics.js\n|   |   |-- StudentForm.js\n|   |   `-- StudentList.js\n|   |-- system\n|   |   |-- checkers\n|   |   |   |-- AppHealthChecker.js\n|   |   |   |-- BusinessLogicChecker.js\n|   |   |   |-- DataValidator.js\n|   |   |   `-- DatabaseChecker.js\n|   |   |-- lib\n|   |   |   `-- fetchSupabaseSchema.js\n|   |   |-- CodeAudit.js\n|   |   |-- DatabaseCleanupMonitor.js\n|   |   |-- DatabaseStructure.js\n|   |   |-- HealthChecker.js\n|   |   |-- MonitorDashboard.js\n|   |   |-- MonitorHistory.js\n|   |   |-- MonitorResults.js\n|   |   |-- MonitorSistem.js\n|   |   |-- PerformanceMonitor.js\n|   |   `-- ProjectStructure.js\n|   |-- utils\n|   |   |-- deviceInfo.js\n|   |   |-- excelExportKit.js\n|   |   |-- jamPelajaran.js\n|   |   |-- offlineHelper.js\n|   |   |-- pdfExportKit.js\n|   |   |-- studentDevices.js\n|   |   |-- studentProfileCompletion.js\n|   |   |-- studentSession.js\n|   |   |-- systemHelpers.js\n|   |   `-- userDevices.js\n|   |-- App.js\n|   |-- constants.js\n|   |-- index.css\n|   |-- index.js\n|   |-- reportWebVitals.js\n|   `-- supabaseClient.js",
+  "totalAllFiles": 244
 }
