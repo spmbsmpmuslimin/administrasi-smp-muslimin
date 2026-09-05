@@ -17,6 +17,7 @@ import {
   handleMoveStudentSaved,
   handleExportClassDivision,
   handleExportSavedClasses,
+  handleExportSavedClassesNIS,
   handleDragStart,
   handleDragOver,
   handleDragLeave,
@@ -25,6 +26,7 @@ import {
   handleAddStudent,
   getAllStudentsInDistribution,
   handleSwapStudents,
+  generateAndSaveNIS,
 } from "./ClassOperations";
 import { exportClassDivision } from "./SpmbExcel";
 
@@ -235,7 +237,7 @@ const ClassDivision = ({
             </div>
 
             {/* Row 2: Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={loadSavedClassDistribution}
                 disabled={isLoading || studentsWithClass.length === 0}
@@ -254,6 +256,20 @@ const ClassDivision = ({
               </button>
 
               <button
+                onClick={() => handleExportSavedClassesNIS(allStudents, setIsExporting, showToast)}
+                disabled={
+                  isExporting ||
+                  studentsWithClass.length === 0 ||
+                  !studentsWithClass.some((s) => s.nis && s.nis !== "-")
+                }
+                title="Export ringkas per-kelas pakai NIS (butuh Generate NIS dulu)"
+                className="px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-800 border-2 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400 font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+              >
+                <i className="fas fa-file-excel"></i>
+                {isExporting ? "Exporting..." : `Export Kelas (NIS)`}
+              </button>
+
+              <button
                 onClick={() =>
                   resetClassAssignments(
                     allStudents,
@@ -267,6 +283,23 @@ const ClassDivision = ({
                 className="px-3 sm:px-4 py-2 sm:py-3 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
               >
                 🔄 Reset Pembagian
+              </button>
+
+              <button
+                onClick={() =>
+                  generateAndSaveNIS(
+                    allStudents,
+                    supabase,
+                    setIsLoading,
+                    showToast,
+                    getCurrentAcademicYear,
+                    onRefreshData
+                  )
+                }
+                disabled={isLoading || studentsWithClass.length === 0}
+                className="px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+              >
+                🔢 Generate NIS
               </button>
 
               <button

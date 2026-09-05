@@ -197,6 +197,110 @@ export const exportAllStudents = async (allStudents, totalStudents, showToast) =
  * terpisah dari pembagian kelas ini).
  * Format: No | No. Pendaftaran | Nama Lengkap | Jenis Kelamin | Kelas | Asal Sekolah
  */
+// Helper: bikin 1 worksheet "Kelas {className}" -- dipake bareng oleh
+// exportClassDivision (laporan lengkap, identifier No. Pendaftaran) dan
+// exportClassDivisionNIS (laporan ringkas abis NIS jadi, identifier NIS).
+const addClassSheet = (
+  workbook,
+  className,
+  students,
+  academicYear,
+  currentDate,
+  identifierMode
+) => {
+  const worksheet = workbook.addWorksheet(`Kelas ${className}`);
+
+  const identifierLabel = identifierMode === "nis" ? "NIS" : "No. Pendaftaran";
+
+  worksheet.columns = [
+    { width: 5 }, // No
+    { width: 20 }, // No. Pendaftaran / NIS
+    { width: 35 }, // Nama
+    { width: 15 }, // Jenis Kelamin
+    { width: 12 }, // Kelas
+    { width: 28 }, // Asal Sekolah
+  ];
+
+  const totalLaki = students.filter((s) => s.jenis_kelamin === "L").length;
+  const totalPerempuan = students.filter((s) => s.jenis_kelamin === "P").length;
+
+  const nextRow = addLetterhead(worksheet, {
+    title: `DAFTAR SISWA KELAS ${className} - TAHUN AJARAN ${academicYear}`,
+    mergeCols: 6,
+    metaLines: [
+      `Tanggal Export: ${currentDate}`,
+      `Total Siswa: ${students.length} siswa`,
+      `Laki-laki: ${totalLaki} siswa`,
+      `Perempuan: ${totalPerempuan} siswa`,
+    ],
+  });
+
+  const headers = [
+    "No.",
+    identifierLabel,
+    "Nama Lengkap",
+    "Jenis Kelamin",
+    "Kelas",
+    "Asal Sekolah",
+  ];
+  const headerRow = worksheet.getRow(nextRow);
+  headerRow.values = headers;
+  styleTableHeaderRow(headerRow, { fillColor: EXCEL_COLORS.accentPurple });
+
+  setupPrintOptions(worksheet, {
+    orientation: "portrait",
+    freezeHeaderRow: nextRow,
+  });
+
+  const sortedStudents = [...students].sort((a, b) =>
+    (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "")
+  );
+
+  sortedStudents.forEach((student, index) => {
+    const row = worksheet.getRow(nextRow + 1 + index);
+    // Fallback ke no_pendaftaran kalau mode NIS tapi siswa ini somehow
+    // belum punya NIS (misal baru sebagian yang digenerate).
+    const identifierValue =
+      identifierMode === "nis"
+        ? student.nis && student.nis !== "-"
+          ? student.nis
+          : student.no_pendaftaran || "-"
+        : student.no_pendaftaran || "-";
+
+    row.values = [
+      index + 1,
+      identifierValue,
+      student.nama_lengkap || "-",
+      student.jenis_kelamin || "-",
+      className,
+      student.asal_sekolah || "-",
+    ];
+
+    // Kolom identifier (No.Pendaftaran/NIS) dipaksa text -- format
+    // "SPMB-26.27.07.024" atau "27.28.07.001", ada titik & strip, aman
+    // tapi dipaksa text biar konsisten & gak ada risiko Excel salah nebak
+    // format.
+    styleTableDataRow(row, index, [1, 4, 5], [2]);
+  });
+
+  // Tambahkan baris kosong untuk tanda tangan (di 2 kolom paling kanan:
+  // Kelas & Asal Sekolah, biar posisinya tetap di sisi kanan walau
+  // sekarang total kolomnya 6)
+  const signatureLabelRowNum = nextRow + sortedStudents.length + 3;
+  worksheet.mergeCells(`E${signatureLabelRowNum}:F${signatureLabelRowNum}`);
+  const signCell = worksheet.getCell(`E${signatureLabelRowNum}`);
+  signCell.value = "Wali Kelas";
+  signCell.alignment = { horizontal: "center", vertical: "middle" };
+  signCell.font = { bold: true, size: 11 };
+
+  const signatureNameRowNum = nextRow + sortedStudents.length + 8;
+  worksheet.mergeCells(`E${signatureNameRowNum}:F${signatureNameRowNum}`);
+  const signNameCell = worksheet.getCell(`E${signatureNameRowNum}`);
+  signNameCell.value = "(............................)";
+  signNameCell.alignment = { horizontal: "center", vertical: "middle" };
+  signNameCell.font = { size: 11 };
+};
+
 export const exportClassDivision = async (classDistribution, showToast) => {
   if (
     !guardHasData(Object.keys(classDistribution || {}), {
@@ -387,95 +491,21 @@ export const exportClassDivision = async (classDistribution, showToast) => {
       };
     });
 
-    // Buat sheet untuk setiap kelas
+    // Buat sheet untuk setiap kelas -- laporan LENGKAP ini SELALU pakai
+    // No. Pendaftaran sebagai identifier (BUKAN NIS), walau siswanya udah
+    // punya NIS. Sengaja: laporan ini dipakai buat keperluan di luar
+    // sistem (verifikasi pihak lain) yang butuh state pembagian kelas
+    // apa adanya, terpisah dari laporan ringkas ber-NIS
+    // (exportClassDivisionNIS di bawah).
     sortedClasses.forEach((className) => {
-      const students = classDistribution[className];
-      const worksheet = workbook.addWorksheet(`Kelas ${className}`);
-
-      // Set column widths
-      worksheet.columns = [
-        { width: 5 }, // No
-        { width: 20 }, // No. Pendaftaran
-        { width: 35 }, // Nama
-        { width: 15 }, // Jenis Kelamin
-        { width: 12 }, // Kelas
-        { width: 28 }, // Asal Sekolah
-      ];
-
-      // Calculate statistics
-      const totalLaki = students.filter((s) => s.jenis_kelamin === "L").length;
-      const totalPerempuan = students.filter((s) => s.jenis_kelamin === "P").length;
-
-      // Letterhead standar via kit
-      const nextRow = addLetterhead(worksheet, {
-        title: `DAFTAR SISWA KELAS ${className} - TAHUN AJARAN ${academicYear}`,
-        mergeCols: 6,
-        metaLines: [
-          `Tanggal Export: ${currentDate}`,
-          `Total Siswa: ${students.length} siswa`,
-          `Laki-laki: ${totalLaki} siswa`,
-          `Perempuan: ${totalPerempuan} siswa`,
-        ],
-      });
-
-      // Header tabel -- pakai accentPurple biar beda dari sheet data utama,
-      // sesuai konvensi warna di excelExportKit
-      const headers = [
-        "No.",
-        "No. Pendaftaran",
-        "Nama Lengkap",
-        "Jenis Kelamin",
-        "Kelas",
-        "Asal Sekolah",
-      ];
-      const headerRow = worksheet.getRow(nextRow);
-      headerRow.values = headers;
-      styleTableHeaderRow(headerRow, { fillColor: EXCEL_COLORS.accentPurple });
-
-      // Print setup: portrait cukup (6 kolom masih muat), freeze header tabel
-      setupPrintOptions(worksheet, {
-        orientation: "portrait",
-        freezeHeaderRow: nextRow,
-      });
-
-      // Data rows - Sort berdasarkan nama (A-Z)
-      const sortedStudents = [...students].sort((a, b) =>
-        (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "")
+      addClassSheet(
+        workbook,
+        className,
+        classDistribution[className],
+        academicYear,
+        currentDate,
+        "no_pendaftaran"
       );
-
-      sortedStudents.forEach((student, index) => {
-        const row = worksheet.getRow(nextRow + 1 + index);
-        row.values = [
-          index + 1,
-          student.no_pendaftaran || "-",
-          student.nama_lengkap || "-",
-          student.jenis_kelamin || "-",
-          className,
-          student.asal_sekolah || "-",
-        ];
-
-        // No.Pendaftaran (kolom 2) dipaksa text -- formatnya "SPMB-26.27.07.024",
-        // ada titik & strip, aman-aman aja tapi dipaksa text biar konsisten &
-        // gak ada risiko Excel salah nebak format.
-        styleTableDataRow(row, index, [1, 4, 5], [2]);
-      });
-
-      // Tambahkan baris kosong untuk tanda tangan (di 2 kolom paling kanan:
-      // Kelas & Asal Sekolah, biar posisinya tetap di sisi kanan walau
-      // sekarang total kolomnya 6)
-      const signatureLabelRowNum = nextRow + sortedStudents.length + 3;
-      worksheet.mergeCells(`E${signatureLabelRowNum}:F${signatureLabelRowNum}`);
-      const signCell = worksheet.getCell(`E${signatureLabelRowNum}`);
-      signCell.value = "Wali Kelas";
-      signCell.alignment = { horizontal: "center", vertical: "middle" };
-      signCell.font = { bold: true, size: 11 };
-
-      const signatureNameRowNum = nextRow + sortedStudents.length + 8;
-      worksheet.mergeCells(`E${signatureNameRowNum}:F${signatureNameRowNum}`);
-      const signNameCell = worksheet.getCell(`E${signatureNameRowNum}`);
-      signNameCell.value = "(............................)";
-      signNameCell.alignment = { horizontal: "center", vertical: "middle" };
-      signNameCell.font = { size: 11 };
     });
 
     // Download
@@ -493,6 +523,65 @@ export const exportClassDivision = async (classDistribution, showToast) => {
     console.error("Error exporting class division:", error);
     if (showToast) {
       showToast("❌ Gagal export pembagian kelas. Silakan coba lagi.", "error");
+    }
+    return false;
+  }
+};
+
+/**
+ * 📋 Export Pembagian Kelas + NIS (ringkas)
+ * Dipakai SETELAH generateAndSaveNIS (ClassOperations.js) jalan. Sengaja
+ * TANPA sheet Rekapitulasi & Sebaran Asal SD -- itu udah kepake di laporan
+ * lengkap (exportClassDivision, identifier No. Pendaftaran, buat keperluan
+ * verifikasi luar sistem sebelum NIS ada). Sheet per-kelas di sini identik
+ * strukturnya, cuma identifier-nya NIS.
+ */
+export const exportClassDivisionNIS = async (classDistribution, showToast) => {
+  if (
+    !guardHasData(Object.keys(classDistribution || {}), {
+      showToast,
+      message: "Tidak ada data pembagian kelas (dengan NIS) untuk di-export",
+    })
+  ) {
+    return false;
+  }
+
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const academicYear = getCurrentAcademicYear();
+    const currentDate = new Date().toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const sortedClasses = Object.keys(classDistribution).sort();
+
+    sortedClasses.forEach((className) => {
+      addClassSheet(
+        workbook,
+        className,
+        classDistribution[className],
+        academicYear,
+        currentDate,
+        "nis"
+      );
+    });
+
+    const fileName = `Pembagian_Kelas_7_NIS_TA_${academicYear.replace("/", "-")}_${
+      new Date().toISOString().split("T")[0]
+    }.xlsx`;
+    await downloadWorkbook(workbook, fileName);
+
+    if (showToast) {
+      showToast(`✅ Berhasil export ${sortedClasses.length} kelas (NIS): ${fileName}`, "success");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error exporting class division with NIS:", error);
+    if (showToast) {
+      showToast("❌ Gagal export pembagian kelas (NIS). Silakan coba lagi.", "error");
     }
     return false;
   }

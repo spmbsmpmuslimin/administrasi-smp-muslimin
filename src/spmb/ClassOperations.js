@@ -3,7 +3,8 @@
 // NIS dikasih sekolah belakangan setelah siswa fixed diterima & kelasnya
 // final (proses terpisah).
 
-import { exportClassDivision } from "./SpmbExcel";
+import { exportClassDivision, exportClassDivisionNIS } from "./SpmbExcel";
+import { generateNIS } from "./ClassDistribution";
 
 // ⚠️ NIS SENGAJA TIDAK di-generate/disimpan di sini. NIS dikasih sekolah
 // belakangan setelah siswa BENER-BENER fixed diterima & penempatan
@@ -383,6 +384,39 @@ export const handleExportSavedClasses = async (allStudents, setIsExporting, show
   }
 };
 
+// Export Excel ringkas (per-kelas + NIS aja, tanpa Rekapitulasi/Sebaran
+// Asal SD) -- dipake setelah generateAndSaveNIS jalan.
+export const handleExportSavedClassesNIS = async (allStudents, setIsExporting, showToast) => {
+  const studentsWithClass = allStudents.filter(
+    (s) => s.kelas && !s.is_transferred && s.status === "diterima"
+  );
+  if (studentsWithClass.length === 0) {
+    showToast("Tidak ada siswa dengan kelas yang bisa di-export", "error");
+    return;
+  }
+  const studentsWithNIS = studentsWithClass.filter((s) => s.nis && s.nis !== "-");
+  if (studentsWithNIS.length === 0) {
+    showToast("Belum ada siswa yang punya NIS -- generate NIS dulu", "error");
+    return;
+  }
+  const distribution = {};
+  studentsWithClass.forEach((student) => {
+    const className = student.kelas;
+    if (!distribution[className]) {
+      distribution[className] = [];
+    }
+    distribution[className].push(student);
+  });
+  setIsExporting(true);
+  try {
+    await exportClassDivisionNIS(distribution, showToast);
+  } catch (error) {
+    console.error("Error in handleExportSavedClassesNIS:", error);
+  } finally {
+    setIsExporting(false);
+  }
+};
+
 // Drag & Drop Handlers
 export const handleDragStart = (e, student, fromClass, setDraggedStudent) => {
   setDraggedStudent({ student, fromClass });
@@ -596,4 +630,113 @@ export const handleSwapStudents = (
   setShowSwapModal(false);
   setSwapStudent1(null);
   setSwapStudent2(null);
+};
+
+// ============================================================
+// GENERATE NIS
+// ============================================================
+// Konversi tahun ajaran aktif ("2027/2028", dari getCurrentAcademicYear()
+// / spmb_settings.target_academic_year) ke format kode dipakai di NIS
+// ("27.28"). generateNIS() di ClassDistribution.js tinggal terima format
+// ini + grade + nomor urut.
+const academicYearToNISCode = (academicYearStr) => {
+  if (!academicYearStr || typeof academicYearStr !== "string") return null;
+  const parts = academicYearStr.split("/");
+  if (parts.length !== 2) return null;
+  const tahunMasuk = parts[0].trim().slice(-2);
+  const tahunKeluar = parts[1].trim().slice(-2);
+  if (!tahunMasuk || !tahunKeluar) return null;
+  return `${tahunMasuk}.${tahunKeluar}`;
+};
+
+// Generate & simpan NIS buat siswa yang udah punya kelas (belum ditransfer).
+// Format: {tahun_masuk}.{tahun_keluar}.07.{urut 3 digit} -- 07 itu kode
+// TETAP identitas SPMB/sekolah (BUKAN kode kelas), sama buat semua
+// angkatan. Nomor urut: per kelas diurutkan abjad nama_lengkap, lanjut
+// terus lintas kelas (7A -> 7F), BUKAN ikut urutan allStudents yang
+// biasanya ikutan nomor_pendaftaran.
+//
+// Idempotent: bisa dipencet ulang, hasilnya bakal sama persis selama data
+// siswa/kelas gak berubah -- makanya boleh nimpa NIS yang udah ada tanpa
+// takut kacau, TAPI tetep minta konfirmasi biar TU sadar ini nimpa.
+export const generateAndSaveNIS = async (
+  allStudents,
+  supabase,
+  setIsLoading,
+  showToast,
+  getCurrentAcademicYear,
+  onRefreshData
+) => {
+  const studentsWithClass = allStudents.filter(
+    (s) => s.kelas && !s.is_transferred && s.status === "diterima"
+  );
+
+  if (studentsWithClass.length === 0) {
+    showToast("Tidak ada siswa dengan kelas yang bisa digenerate NIS-nya", "error");
+    return;
+  }
+
+  const nisCode = academicYearToNISCode(getCurrentAcademicYear());
+  if (!nisCode) {
+    showToast("❌ Gagal baca tahun ajaran aktif, cek Pengaturan SPMB dulu", "error");
+    return;
+  }
+
+  if (
+    !window.confirm(
+      `Generate NIS untuk ${studentsWithClass.length} siswa (kode tahun ajaran ${nisCode})?\n\nNIS yang sudah ada sebelumnya akan ditimpa.`
+    )
+  ) {
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    const byClass = {};
+    studentsWithClass.forEach((s) => {
+      if (!byClass[s.kelas]) byClass[s.kelas] = [];
+      byClass[s.kelas].push(s);
+    });
+
+    // Urut kelas 7A -> 7F
+    const sortedClassNames = Object.keys(byClass).sort();
+
+    let seq = 1;
+    const updates = [];
+    sortedClassNames.forEach((className) => {
+      const sortedStudents = [...byClass[className]].sort((a, b) =>
+        (a.nama_lengkap || "").localeCompare(b.nama_lengkap || "")
+      );
+      sortedStudents.forEach((student) => {
+        updates.push({
+          id: student.id,
+          nis: generateNIS(nisCode, 7, seq),
+        });
+        seq++;
+      });
+    });
+
+    for (const update of updates) {
+      const { error } = await supabase
+        .from("siswa_baru")
+        .update({
+          nis: update.nis,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", update.id);
+
+      if (error) throw error;
+    }
+
+    showToast(`✅ Berhasil generate NIS untuk ${updates.length} siswa!`, "success");
+
+    if (onRefreshData) {
+      await onRefreshData();
+    }
+  } catch (error) {
+    console.error("Error generating NIS:", error);
+    showToast("❌ Gagal generate NIS: " + error.message, "error");
+  } finally {
+    setIsLoading(false);
+  }
 };
