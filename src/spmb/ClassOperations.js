@@ -18,6 +18,7 @@ export const saveClassAssignments = async (
   supabase,
   setIsLoading,
   showToast,
+  confirmFn,
   onRefreshData,
   setShowPreview,
   setClassDistribution,
@@ -25,9 +26,12 @@ export const saveClassAssignments = async (
   setHistory,
   setHistoryIndex
 ) => {
-  if (!window.confirm("Simpan pembagian kelas ini?")) {
-    return;
-  }
+  const ok = await confirmFn({
+    title: "Simpan Pembagian Kelas",
+    message: "Simpan pembagian kelas ini?",
+    confirmText: "Ya, Simpan",
+  });
+  if (!ok) return;
 
   setIsLoading(true);
   try {
@@ -42,16 +46,21 @@ export const saveClassAssignments = async (
       });
     });
 
-    for (const update of updates) {
-      const { error } = await supabase
-        .from("siswa_baru")
-        .update({
-          kelas: update.kelas,
-        })
-        .eq("id", update.id);
+    // Kirim semua update PARALEL (Promise.all) -- sama kayak fix di
+    // resetClassAssignments/generateAndSaveNIS, bukan upsert (risiko
+    // not-null constraint kalau ada kolom wajib yang gak dikirim).
+    await Promise.all(
+      updates.map(async (update) => {
+        const { error } = await supabase
+          .from("siswa_baru")
+          .update({
+            kelas: update.kelas,
+          })
+          .eq("id", update.id);
 
-      if (error) throw error;
-    }
+        if (error) throw error;
+      })
+    );
 
     showToast(`✅ Berhasil menyimpan pembagian ${updates.length} siswa!`, "success");
     setShowPreview(false);
@@ -157,10 +166,6 @@ export const transferToStudents = async (
     return;
   }
 
-  if (!window.confirm(`Transfer ${studentsWithClass.length} siswa ke tabel Students?`)) {
-    return;
-  }
-
   setIsLoading(true);
   try {
     const currentYear = getCurrentAcademicYear();
@@ -233,6 +238,7 @@ export const resetClassAssignments = async (
   supabase,
   setIsLoading,
   showToast,
+  confirmFn,
   onRefreshData
 ) => {
   const studentsWithClass = allStudents.filter(
@@ -244,25 +250,35 @@ export const resetClassAssignments = async (
     return;
   }
 
-  if (
-    !window.confirm(`Reset pembagian ${studentsWithClass.length} siswa? Semua kelas akan direset.`)
-  ) {
-    return;
-  }
+  const ok = await confirmFn({
+    title: "Reset Pembagian Kelas",
+    message: `Reset pembagian ${studentsWithClass.length} siswa? Semua kelas akan direset.`,
+    variant: "danger",
+    confirmText: "Ya, Reset",
+  });
+  if (!ok) return;
 
   setIsLoading(true);
   try {
-    for (const siswa of studentsWithClass) {
-      const { error } = await supabase
-        .from("siswa_baru")
-        .update({
-          kelas: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", siswa.id);
+    // Kirim semua update PARALEL (Promise.all), bukan satu-satu berurutan
+    // -- itu penyebab lama (30-100+ siswa = 30-100+ round-trip berurutan).
+    // Sengaja tetep pakai .update() biasa (bukan upsert) karena upsert bisa
+    // kena error not-null constraint buat kolom wajib yang gak dikirim di
+    // payload (nama_lengkap, no_pendaftaran, dst) -- .update() aman karena
+    // cuma nyentuh kolom yang disebut.
+    await Promise.all(
+      studentsWithClass.map(async (siswa) => {
+        const { error } = await supabase
+          .from("siswa_baru")
+          .update({
+            kelas: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", siswa.id);
 
-      if (error) throw error;
-    }
+        if (error) throw error;
+      })
+    );
 
     showToast(`✅ Berhasil reset pembagian ${studentsWithClass.length} siswa!`, "success");
 
@@ -319,9 +335,14 @@ export const handleMoveStudentSaved = async (
   showToast,
   setIsLoading,
   supabase,
-  onRefreshData // 🔥 TAMBAH PARAMETER INI
+  onRefreshData, // 🔥 TAMBAH PARAMETER INI
+  confirmFn
 ) => {
-  if (!window.confirm(`Pindahkan siswa ke ${toClass}?`)) return;
+  const ok = await confirmFn({
+    title: "Pindah Kelas",
+    message: `Pindahkan siswa ke ${toClass}?`,
+  });
+  if (!ok) return;
 
   const success = await updateClassAssignment(
     studentId,
@@ -478,7 +499,7 @@ export const handleDrop = (
 };
 
 // Remove student dari kelas (kembali ke unassigned)
-export const handleRemoveStudent = (
+export const handleRemoveStudent = async (
   studentId,
   fromClass,
   currentDistribution,
@@ -488,9 +509,16 @@ export const handleRemoveStudent = (
   showToast,
   historyIndex,
   setHistory,
-  setHistoryIndex
+  setHistoryIndex,
+  confirmFn
 ) => {
-  if (!window.confirm("Keluarkan siswa dari kelas ini?")) return;
+  const ok = await confirmFn({
+    title: "Keluarkan Siswa",
+    message: "Keluarkan siswa dari kelas ini?",
+    variant: "danger",
+    confirmText: "Ya, Keluarkan",
+  });
+  if (!ok) return;
 
   const newDistribution = JSON.parse(JSON.stringify(currentDistribution));
   const student = newDistribution[fromClass].find((s) => s.id === studentId);
@@ -664,6 +692,7 @@ export const generateAndSaveNIS = async (
   supabase,
   setIsLoading,
   showToast,
+  confirmFn,
   getCurrentAcademicYear,
   onRefreshData
 ) => {
@@ -682,13 +711,13 @@ export const generateAndSaveNIS = async (
     return;
   }
 
-  if (
-    !window.confirm(
-      `Generate NIS untuk ${studentsWithClass.length} siswa (kode tahun ajaran ${nisCode})?\n\nNIS yang sudah ada sebelumnya akan ditimpa.`
-    )
-  ) {
-    return;
-  }
+  const ok = await confirmFn({
+    title: "Generate NIS",
+    message: `Generate NIS untuk ${studentsWithClass.length} siswa (kode tahun ajaran ${nisCode})?\n\nNIS yang sudah ada sebelumnya akan ditimpa.`,
+    variant: "warning",
+    confirmText: "Ya, Generate",
+  });
+  if (!ok) return;
 
   setIsLoading(true);
   try {
@@ -716,17 +745,22 @@ export const generateAndSaveNIS = async (
       });
     });
 
-    for (const update of updates) {
-      const { error } = await supabase
-        .from("siswa_baru")
-        .update({
-          nis: update.nis,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", update.id);
+    // Kirim semua update PARALEL (Promise.all) -- sama kayak fix di
+    // resetClassAssignments, gak pakai upsert karena berisiko kena
+    // not-null constraint buat kolom wajib yang gak ikut dikirim.
+    await Promise.all(
+      updates.map(async (update) => {
+        const { error } = await supabase
+          .from("siswa_baru")
+          .update({
+            nis: update.nis,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", update.id);
 
-      if (error) throw error;
-    }
+        if (error) throw error;
+      })
+    );
 
     showToast(`✅ Berhasil generate NIS untuk ${updates.length} siswa!`, "success");
 

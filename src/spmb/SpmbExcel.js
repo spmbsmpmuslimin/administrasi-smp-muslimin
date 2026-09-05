@@ -224,15 +224,21 @@ const addClassSheet = (
   const totalLaki = students.filter((s) => s.jenis_kelamin === "L").length;
   const totalPerempuan = students.filter((s) => s.jenis_kelamin === "P").length;
 
+  // Export NIS (ringkas): catatan (tanggal, total, L/P) ditaruh DI BAWAH
+  // tabel, bukan di letterhead atas -- beda dari laporan lengkap yang
+  // catatannya tetap di atas (bareng judul).
+  const notesAtBottom = identifierMode === "nis";
+  const noteLines = [
+    `Tanggal Export: ${currentDate}`,
+    `Total Siswa: ${students.length} siswa`,
+    `Laki-laki: ${totalLaki} siswa`,
+    `Perempuan: ${totalPerempuan} siswa`,
+  ];
+
   const nextRow = addLetterhead(worksheet, {
     title: `DAFTAR SISWA KELAS ${className} - TAHUN AJARAN ${academicYear}`,
     mergeCols: 6,
-    metaLines: [
-      `Tanggal Export: ${currentDate}`,
-      `Total Siswa: ${students.length} siswa`,
-      `Laki-laki: ${totalLaki} siswa`,
-      `Perempuan: ${totalPerempuan} siswa`,
-    ],
+    metaLines: notesAtBottom ? [] : noteLines,
   });
 
   const headers = [
@@ -249,7 +255,6 @@ const addClassSheet = (
 
   setupPrintOptions(worksheet, {
     orientation: "portrait",
-    freezeHeaderRow: nextRow,
   });
 
   const sortedStudents = [...students].sort((a, b) =>
@@ -283,17 +288,36 @@ const addClassSheet = (
     styleTableDataRow(row, index, [1, 4, 5], [2]);
   });
 
+  // Kalau notesAtBottom: tulis catatan di bawah tabel (1 baris kosong dulu,
+  // baru 4 baris catatan), dan geser posisi tanda tangan biar gak numpuk
+  // sama catatan.
+  let afterDataRow = nextRow + sortedStudents.length;
+  if (notesAtBottom) {
+    afterDataRow += 1; // baris kosong pemisah
+    noteLines.forEach((line, i) => {
+      const cell = worksheet.getCell(`A${afterDataRow + 1 + i}`);
+      cell.value = line;
+      cell.font = {
+        name: EXCEL_FONT_FAMILY,
+        size: 10,
+        italic: true,
+        color: { argb: EXCEL_COLORS.textMuted },
+      };
+    });
+    afterDataRow += noteLines.length;
+  }
+
   // Tambahkan baris kosong untuk tanda tangan (di 2 kolom paling kanan:
   // Kelas & Asal Sekolah, biar posisinya tetap di sisi kanan walau
   // sekarang total kolomnya 6)
-  const signatureLabelRowNum = nextRow + sortedStudents.length + 3;
+  const signatureLabelRowNum = afterDataRow + 3;
   worksheet.mergeCells(`E${signatureLabelRowNum}:F${signatureLabelRowNum}`);
   const signCell = worksheet.getCell(`E${signatureLabelRowNum}`);
   signCell.value = "Wali Kelas";
   signCell.alignment = { horizontal: "center", vertical: "middle" };
   signCell.font = { bold: true, size: 11 };
 
-  const signatureNameRowNum = nextRow + sortedStudents.length + 8;
+  const signatureNameRowNum = afterDataRow + 8;
   worksheet.mergeCells(`E${signatureNameRowNum}:F${signatureNameRowNum}`);
   const signNameCell = worksheet.getCell(`E${signatureNameRowNum}`);
   signNameCell.value = "(............................)";
@@ -349,7 +373,6 @@ export const exportClassDivision = async (classDistribution, showToast) => {
 
     setupPrintOptions(rekapSheet, {
       orientation: "portrait",
-      freezeHeaderRow: rekapNextRow,
     });
 
     let rekapTotalLaki = 0;
@@ -457,7 +480,6 @@ export const exportClassDivision = async (classDistribution, showToast) => {
 
     setupPrintOptions(sebaranSheet, {
       orientation: "portrait",
-      freezeHeaderRow: sebaranNextRow,
     });
 
     // Baris data per sekolah

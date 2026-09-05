@@ -29,6 +29,8 @@ import {
   generateAndSaveNIS,
 } from "./ClassOperations";
 import { exportClassDivision } from "./SpmbExcel";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import { useConfirmDialog } from "../components/ui/useConfirmDialog";
 
 const ClassDivision = ({
   allStudents,
@@ -63,6 +65,7 @@ const ClassDivision = ({
   const [savedClassDistribution, setSavedClassDistribution] = useState({});
   const [showSavedClasses, setShowSavedClasses] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const { confirm, confirmDialogProps } = useConfirmDialog();
 
   // Load siswa yang belum dibagi kelas
   useEffect(() => {
@@ -256,26 +259,13 @@ const ClassDivision = ({
               </button>
 
               <button
-                onClick={() => handleExportSavedClassesNIS(allStudents, setIsExporting, showToast)}
-                disabled={
-                  isExporting ||
-                  studentsWithClass.length === 0 ||
-                  !studentsWithClass.some((s) => s.nis && s.nis !== "-")
-                }
-                title="Export ringkas per-kelas pakai NIS (butuh Generate NIS dulu)"
-                className="px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-800 border-2 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400 font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
-              >
-                <i className="fas fa-file-excel"></i>
-                {isExporting ? "Exporting..." : `Export Kelas (NIS)`}
-              </button>
-
-              <button
                 onClick={() =>
                   resetClassAssignments(
                     allStudents,
                     supabase,
                     setIsLoading,
                     showToast,
+                    confirm,
                     onRefreshData
                   )
                 }
@@ -292,6 +282,7 @@ const ClassDivision = ({
                     supabase,
                     setIsLoading,
                     showToast,
+                    confirm,
                     getCurrentAcademicYear,
                     onRefreshData
                   )
@@ -300,6 +291,20 @@ const ClassDivision = ({
                 className="px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
               >
                 🔢 Generate NIS
+              </button>
+
+              <button
+                onClick={() => handleExportSavedClassesNIS(allStudents, setIsExporting, showToast)}
+                disabled={
+                  isExporting ||
+                  studentsWithClass.length === 0 ||
+                  !studentsWithClass.some((s) => s.nis && s.nis !== "-")
+                }
+                title="Export ringkas per-kelas pakai NIS (butuh Generate NIS dulu)"
+                className="px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-800 border-2 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400 font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+              >
+                <i className="fas fa-file-excel"></i>
+                {isExporting ? "Exporting..." : `Export Kelas (NIS)`}
               </button>
 
               <button
@@ -448,6 +453,7 @@ const ClassDivision = ({
                           supabase,
                           setIsLoading,
                           showToast,
+                          confirm,
                           onRefreshData,
                           setShowPreview,
                           setClassDistribution,
@@ -476,14 +482,16 @@ const ClassDivision = ({
                 )}
 
                 <button
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        showSavedClasses
-                          ? "Tutup edit kelas tersimpan?"
-                          : "Batalkan pembagian? Semua perubahan akan hilang."
-                      )
-                    ) {
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: showSavedClasses ? "Tutup Edit Kelas" : "Batalkan Pembagian",
+                      message: showSavedClasses
+                        ? "Tutup edit kelas tersimpan?"
+                        : "Batalkan pembagian? Semua perubahan akan hilang.",
+                      variant: "danger",
+                      confirmText: "Ya, Lanjutkan",
+                    });
+                    if (ok) {
                       setShowPreview(false);
                       setShowSavedClasses(false);
                       setClassDistribution({});
@@ -700,7 +708,8 @@ const ClassDivision = ({
                                   showToast,
                                   historyIndex,
                                   setHistory,
-                                  setHistoryIndex
+                                  setHistoryIndex,
+                                  confirm
                                 )
                               }
                               className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 px-2 py-1 text-xs"
@@ -895,7 +904,8 @@ const ClassDivision = ({
                                     showToast,
                                     setIsLoading,
                                     supabase,
-                                    onRefreshData
+                                    onRefreshData,
+                                    confirm
                                   );
                                   e.target.value = "";
                                 }
@@ -946,7 +956,8 @@ const ClassDivision = ({
                               showToast,
                               setIsLoading,
                               supabase,
-                              onRefreshData
+                              onRefreshData,
+                              confirm
                             );
                             setDraggedStudent(null);
                             setDragOverClass(null);
@@ -1077,7 +1088,8 @@ const ClassDivision = ({
                                     showToast,
                                     historyIndex,
                                     setHistory,
-                                    setHistoryIndex
+                                    setHistoryIndex,
+                                    confirm
                                   )
                                 }
                                 className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs px-2 py-1"
@@ -1354,6 +1366,8 @@ const ClassDivision = ({
           </div>
         </div>
       )}
+
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   );
 };
