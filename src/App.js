@@ -39,6 +39,24 @@ const canAccessWaliKelasRoute = (user) => {
   return user?.role === "admin" || isWaliKelas(user);
 };
 
+/**
+ * Check if user is Wakasek Kurikulum
+ * Wakasek Kurikulum = teacher dengan jabatan_struktural = 'wakasek_kurikulum'
+ * (pola sama persis kayak isWaliKelas -- role tetap "teacher", ditandai
+ * lewat kolom tambahan, bukan role terpisah)
+ */
+const isWakasekKurikulum = (user) => {
+  return user?.role === "teacher" && user?.jabatan_struktural === "wakasek_kurikulum";
+};
+
+/**
+ * Check if user can access Wakasek Kurikulum routes
+ * Admin atau Wakasek Kurikulum bisa akses
+ */
+const canAccessWakasekKurikulumRoute = (user) => {
+  return user?.role === "admin" || isWakasekKurikulum(user);
+};
+
 // 🔥 PROTECTED ROUTE COMPONENT - WITH MAINTENANCE MODE
 const ProtectedRoute = ({
   children,
@@ -47,6 +65,7 @@ const ProtectedRoute = ({
   darkMode,
   allowedRoles = [],
   requireWaliKelas = false, // ← Untuk route khusus wali kelas
+  requireWakasekKurikulum = false, // ← Untuk route khusus wakasek kurikulum
   requireRuangBelajarAccess = false, // ← Untuk route Kelola Ruang Belajar (whitelist)
   onShowToast,
 }) => {
@@ -73,20 +92,20 @@ const ProtectedRoute = ({
         // (akun siswa ada di tabel `student_auth`, bukan `users`)
         if (user?.role === "siswa") {
           setUserRole("siswa");
-          setUserFullData({ role: "siswa", homeroom_class_id: null });
+          setUserFullData({ role: "siswa", homeroom_class_id: null, jabatan_struktural: null });
           setRoleLoading(false);
           return;
         }
 
         const { data, error } = await supabase
           .from("users")
-          .select("role, homeroom_class_id")
+          .select("role, homeroom_class_id, jabatan_struktural")
           .eq("id", user.id)
           .maybeSingle();
 
         if (error || !data) {
           setUserRole("teacher");
-          setUserFullData({ role: "teacher", homeroom_class_id: null });
+          setUserFullData({ role: "teacher", homeroom_class_id: null, jabatan_struktural: null });
           setRoleLoading(false);
           return;
         }
@@ -97,7 +116,7 @@ const ProtectedRoute = ({
       } catch (error) {
         console.error("❌ Unexpected error:", error);
         setUserRole("teacher");
-        setUserFullData({ role: "teacher", homeroom_class_id: null });
+        setUserFullData({ role: "teacher", homeroom_class_id: null, jabatan_struktural: null });
         setRoleLoading(false);
       }
     };
@@ -112,11 +131,7 @@ const ProtectedRoute = ({
         const { data, error } = await supabase
           .from("school_settings")
           .select("setting_key, setting_value")
-          .in("setting_key", [
-            "maintenance_mode",
-            "maintenance_message",
-            "maintenance_whitelist",
-          ]);
+          .in("setting_key", ["maintenance_mode", "maintenance_message", "maintenance_whitelist"]);
 
         if (error) {
           setMaintenanceLoading(false);
@@ -129,13 +144,12 @@ const ProtectedRoute = ({
         });
 
         const isMaintenance =
-          settings.maintenance_mode === "true" ||
-          settings.maintenance_mode === true;
+          settings.maintenance_mode === "true" || settings.maintenance_mode === true;
 
         setMaintenanceMode(isMaintenance);
         setMaintenanceMessage(
           settings.maintenance_message ||
-            "Aplikasi sedang dalam maintenance. Kami akan kembali segera!",
+            "Aplikasi sedang dalam maintenance. Kami akan kembali segera!"
         );
 
         if (settings.maintenance_whitelist) {
@@ -164,12 +178,11 @@ const ProtectedRoute = ({
           event: "*",
           schema: "public",
           table: "school_settings",
-          filter:
-            "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
+          filter: "setting_key=in.(maintenance_mode,maintenance_message,maintenance_whitelist)",
         },
         () => {
           checkMaintenance();
-        },
+        }
       )
       .subscribe();
 
@@ -188,16 +201,19 @@ const ProtectedRoute = ({
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}>
+        }`}
+      >
         <div className="text-center">
           <div
             className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "border-blue-400" : "border-blue-600"
-            }`}></div>
+            }`}
+          ></div>
           <p
             className={`text-sm sm:text-base font-medium transition-colors ${
               darkMode ? "text-gray-300" : "text-theme-secondary"
-            }`}>
+            }`}
+          >
             Checking session...
           </p>
         </div>
@@ -225,17 +241,20 @@ const ProtectedRoute = ({
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}>
+        }`}
+      >
         <div className="text-center max-w-md mx-auto">
           <div
             className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "bg-red-900/30" : "bg-red-100"
-            }`}>
+            }`}
+          >
             <svg
               className={`w-7 h-7 sm:w-8 sm:h-8 ${darkMode ? "text-red-400" : "text-red-600"}`}
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -247,13 +266,15 @@ const ProtectedRoute = ({
           <h2
             className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
               darkMode ? "text-white" : "text-theme"
-            }`}>
+            }`}
+          >
             Akses Ditolak
           </h2>
           <p
             className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
               darkMode ? "text-gray-400" : "text-theme-secondary"
-            }`}>
+            }`}
+          >
             Anda tidak memiliki izin untuk mengakses halaman ini.
           </p>
           <button
@@ -262,7 +283,8 @@ const ProtectedRoute = ({
               darkMode
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}>
+            }`}
+          >
             Kembali ke Dashboard
           </button>
         </div>
@@ -278,19 +300,22 @@ const ProtectedRoute = ({
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}>
+        }`}
+      >
         <div className="text-center max-w-md mx-auto">
           <div
             className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "bg-yellow-900/30" : "bg-yellow-100"
-            }`}>
+            }`}
+          >
             <svg
               className={`w-7 h-7 sm:w-8 sm:h-8 ${
                 darkMode ? "text-yellow-400" : "text-yellow-600"
               }`}
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -302,20 +327,19 @@ const ProtectedRoute = ({
           <h2
             className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
               darkMode ? "text-white" : "text-theme"
-            }`}>
+            }`}
+          >
             Akses Khusus Wali Kelas
           </h2>
           <p
             className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
               darkMode ? "text-gray-400" : "text-theme-secondary"
-            }`}>
+            }`}
+          >
             Halaman ini hanya dapat diakses oleh Wali Kelas atau Admin.
-            {userFullData?.role === "teacher" &&
-              userFullData?.homeroom_class_id === null && (
-                <span className="block mt-2 text-xs italic">
-                  (Status Anda: Guru Mapel)
-                </span>
-              )}
+            {userFullData?.role === "teacher" && userFullData?.homeroom_class_id === null && (
+              <span className="block mt-2 text-xs italic">(Status Anda: Guru Mapel)</span>
+            )}
           </p>
           <button
             onClick={() => (window.location.href = "/era-dashboard-teacher")}
@@ -323,7 +347,8 @@ const ProtectedRoute = ({
               darkMode
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}>
+            }`}
+          >
             Kembali ke Dashboard Guru
           </button>
         </div>
@@ -331,28 +356,89 @@ const ProtectedRoute = ({
     );
   }
 
-  // ✅ Ruang Belajar Access Check (whitelist sementara)
-  if (
-    requireRuangBelajarAccess &&
-    !canAccessRuangBelajarRoute(userRole, user?.id)
-  ) {
+  // ✅ Wakasek Kurikulum Check
+  if (requireWakasekKurikulum && !canAccessWakasekKurikulumRoute(userFullData)) {
     return (
       <div
         className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}>
+        }`}
+      >
         <div className="text-center max-w-md mx-auto">
           <div
             className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "bg-yellow-900/30" : "bg-yellow-100"
-            }`}>
+            }`}
+          >
+            <svg
+              className={`w-7 h-7 sm:w-8 sm:h-8 ${
+                darkMode ? "text-yellow-400" : "text-yellow-600"
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+          </div>
+          <h2
+            className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
+              darkMode ? "text-white" : "text-theme"
+            }`}
+          >
+            Akses Khusus Wakasek Kurikulum
+          </h2>
+          <p
+            className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
+              darkMode ? "text-gray-400" : "text-theme-secondary"
+            }`}
+          >
+            Halaman ini hanya dapat diakses oleh Wakasek Kurikulum atau Admin.
+          </p>
+          <button
+            onClick={() => (window.location.href = "/dashboard")}
+            className={`w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 touch-manipulation active:scale-95 ${
+              darkMode
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            Kembali ke Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Ruang Belajar Access Check (whitelist sementara)
+  if (requireRuangBelajarAccess && !canAccessRuangBelajarRoute(userRole, user?.id)) {
+    return (
+      <div
+        className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+          darkMode
+            ? "bg-gradient-to-br from-gray-900 to-gray-800"
+            : "bg-gradient-to-br from-blue-50 to-indigo-100"
+        }`}
+      >
+        <div className="text-center max-w-md mx-auto">
+          <div
+            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
+              darkMode ? "bg-yellow-900/30" : "bg-yellow-100"
+            }`}
+          >
             <svg
               className={`w-7 h-7 sm:w-8 sm:h-8 ${darkMode ? "text-yellow-400" : "text-yellow-600"}`}
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24">
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -364,13 +450,15 @@ const ProtectedRoute = ({
           <h2
             className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
               darkMode ? "text-white" : "text-theme"
-            }`}>
+            }`}
+          >
             Akses Terbatas
           </h2>
           <p
             className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
               darkMode ? "text-gray-400" : "text-theme-secondary"
-            }`}>
+            }`}
+          >
             Halaman ini hanya bisa diakses oleh user tertentu yang ditunjuk.
           </p>
           <button
@@ -379,7 +467,8 @@ const ProtectedRoute = ({
               darkMode
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}>
+            }`}
+          >
             Kembali ke Dashboard
           </button>
         </div>
@@ -439,10 +528,7 @@ function App() {
             localStorage.removeItem("user");
             localStorage.removeItem("rememberMe");
             setUser(null);
-            handleShowToast(
-              "Sesi Anda telah berakhir. Silakan login kembali.",
-              "warning",
-            );
+            handleShowToast("Sesi Anda telah berakhir. Silakan login kembali.", "warning");
             setLoading(false);
             return;
           }
@@ -551,11 +637,12 @@ function App() {
         user={user}
         onLogout={handleLogout}
         darkMode={darkMode}
-        onToggleDarkMode={handleToggleDarkMode}>
+        onToggleDarkMode={handleToggleDarkMode}
+      >
         {children}
       </Layout>
     ),
-    [user, handleLogout, darkMode, handleToggleDarkMode],
+    [user, handleLogout, darkMode, handleToggleDarkMode]
   );
 
   // ========== 6. RENDER ADMIN PANEL (route rahasia, di luar menuConfig) ==========
@@ -566,15 +653,13 @@ function App() {
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,
-        }}>
+        }}
+      >
         <Routes>
           <Route
             path="/secret-admin-panel-2024"
             element={
-              <ProtectedRoute
-                user={user}
-                isLoading={loading}
-                allowedRoles={["admin"]}>
+              <ProtectedRoute user={user} isLoading={loading} allowedRoles={["admin"]}>
                 <AdminPanel darkMode={darkMode} />
               </ProtectedRoute>
             }
@@ -592,16 +677,19 @@ function App() {
           darkMode
             ? "bg-gradient-to-br from-gray-900 to-gray-800"
             : "bg-gradient-to-br from-blue-50 to-indigo-100"
-        }`}>
+        }`}
+      >
         <div className="text-center">
           <div
             className={`animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 mx-auto mb-3 sm:mb-4 transition-colors ${
               darkMode ? "border-blue-400" : "border-blue-600"
-            }`}></div>
+            }`}
+          ></div>
           <p
             className={`text-sm sm:text-base font-medium transition-colors ${
               darkMode ? "text-gray-300" : "text-theme-secondary"
-            }`}>
+            }`}
+          >
             Loading...
           </p>
         </div>
@@ -616,6 +704,7 @@ function App() {
     darkMode,
     handleLogout,
     handleToggleDarkMode,
+    isWakasekKurikulum: isWakasekKurikulum(user),
   };
 
   return (
@@ -623,7 +712,8 @@ function App() {
       future={{
         v7_startTransition: true,
         v7_relativeSplatPath: true,
-      }}>
+      }}
+    >
       {/* ✅ Toast Notification dengan Dark Mode & Responsive */}
       {showToast && (
         <div className={getToastStyle()}>
@@ -634,9 +724,7 @@ function App() {
               {toastType === "warning" && "⚠️"}
               {toastType === "info" && "ℹ️"}
             </span>
-            <span className="font-medium text-sm sm:text-base break-words">
-              {toastMessage}
-            </span>
+            <span className="font-medium text-sm sm:text-base break-words">{toastMessage}</span>
           </div>
         </div>
       )}
@@ -647,10 +735,7 @@ function App() {
           path="/"
           element={
             user ? (
-              <Navigate
-                to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"}
-                replace
-              />
+              <Navigate to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"} replace />
             ) : (
               <Login
                 onLogin={handleLogin}
@@ -666,15 +751,9 @@ function App() {
           path="/login-siswa"
           element={
             user ? (
-              <Navigate
-                to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"}
-                replace
-              />
+              <Navigate to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"} replace />
             ) : (
-              <StudentLogin
-                onLogin={handleLogin}
-                onShowToast={handleShowToast}
-              />
+              <StudentLogin onLogin={handleLogin} onShowToast={handleShowToast} />
             )
           }
         />
@@ -686,6 +765,7 @@ function App() {
             component: Component,
             allowedRoles = [],
             requireWaliKelas = false,
+            requireWakasekKurikulum = false,
             requireRuangBelajarAccess = false,
             layout = true,
             getProps = (ctx) => ({
@@ -705,7 +785,9 @@ function App() {
                   onShowToast={handleShowToast}
                   allowedRoles={allowedRoles}
                   requireWaliKelas={requireWaliKelas}
-                  requireRuangBelajarAccess={requireRuangBelajarAccess}>
+                  requireWakasekKurikulum={requireWakasekKurikulum}
+                  requireRuangBelajarAccess={requireRuangBelajarAccess}
+                >
                   {layout ? (
                     <LayoutWrapper>
                       <Component {...getProps(menuCtx)} />
@@ -716,7 +798,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-          ),
+          )
         )}
 
         {/* ========== CATCH-ALL ROUTE ========== */}

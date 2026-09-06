@@ -74,6 +74,7 @@ export const Login = ({ onLogin, onShowToast }) => {
           full_name: data.full_name,
           teacher_id: data.teacher_id,
           homeroom_class_id: data.homeroom_class_id,
+          jabatan_struktural: data.jabatan_struktural,
           email: data.email || `${data.username}@smp.edu`,
           is_active: data.is_active,
           created_at: data.created_at,
@@ -85,7 +86,7 @@ export const Login = ({ onLogin, onShowToast }) => {
 
       // ❌ Nggak ketemu di `users` -> ini bukan akun staf
       throw new Error(
-        "Username tidak ditemukan. Kalau kamu siswa, silakan login lewat halaman Portal Siswa.",
+        "Username tidak ditemukan. Kalau kamu siswa, silakan login lewat halaman Portal Siswa."
       );
     } catch (error) {
       setErrors({ general: error.message });
@@ -161,7 +162,8 @@ export const Login = ({ onLogin, onShowToast }) => {
             backgroundSize: "100% auto",
             backgroundPosition: "center top",
             backgroundRepeat: "no-repeat",
-          }}></div>
+          }}
+        ></div>
 
         {/* Desktop cover overlay */}
         <div
@@ -171,7 +173,8 @@ export const Login = ({ onLogin, onShowToast }) => {
             backgroundSize: "cover",
             backgroundPosition: "center center",
             backgroundRepeat: "no-repeat",
-          }}></div>
+          }}
+        ></div>
 
         {/* Aesthetic Overlay - HANYA EDGES BLUR, CENTER TETAP JELAS */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-transparent to-purple-900/30"></div>
@@ -192,9 +195,7 @@ export const Login = ({ onLogin, onShowToast }) => {
               <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 leading-tight uppercase drop-shadow-2xl">
                 Selamat Datang di
                 <br />
-                <span className="text-blue-300 glow-pulse inline-block">
-                  SMP Muslimin Cililin
-                </span>
+                <span className="text-blue-300 glow-pulse inline-block">SMP Muslimin Cililin</span>
               </h1>
             </div>
 
@@ -203,10 +204,12 @@ export const Login = ({ onLogin, onShowToast }) => {
               <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse shadow-lg shadow-blue-400/50"></div>
               <div
                 className="w-3 h-3 bg-purple-400 rounded-full animate-pulse shadow-lg shadow-purple-400/50"
-                style={{ animationDelay: "0.2s" }}></div>
+                style={{ animationDelay: "0.2s" }}
+              ></div>
               <div
                 className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50"
-                style={{ animationDelay: "0.4s" }}></div>
+                style={{ animationDelay: "0.4s" }}
+              ></div>
             </div>
           </div>
         </div>
@@ -221,7 +224,8 @@ export const Login = ({ onLogin, onShowToast }) => {
         <div className="absolute top-0 left-0 w-72 h-72 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div
           className="absolute bottom-0 right-0 w-72 h-72 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}></div>
+          style={{ animationDelay: "1s" }}
+        ></div>
 
         {/* Form Container */}
         <div className="relative w-full max-w-sm">
@@ -244,18 +248,14 @@ export const Login = ({ onLogin, onShowToast }) => {
             {/* Form Header */}
             <div className="mb-5 text-center">
               <h2 className="text-white text-base font-bold mb-1">Login</h2>
-              <p className="text-slate-300 text-xs">
-                Silakan Login Ke Akun Anda
-              </p>
+              <p className="text-slate-300 text-xs">Silakan Login Ke Akun Anda</p>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Username Field */}
               <div>
-                <label className="block text-xs font-semibold text-slate-200 mb-2">
-                  Username
-                </label>
+                <label className="block text-xs font-semibold text-slate-200 mb-2">Username</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Mail className="h-4 w-4 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
@@ -283,9 +283,7 @@ export const Login = ({ onLogin, onShowToast }) => {
 
               {/* Password Field */}
               <div>
-                <label className="block text-xs font-semibold text-slate-200 mb-2">
-                  Password
-                </label>
+                <label className="block text-xs font-semibold text-slate-200 mb-2">Password</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
@@ -305,12 +303,9 @@ export const Login = ({ onLogin, onShowToast }) => {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
-                    onClick={togglePasswordVisibility}>
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    onClick={togglePasswordVisibility}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
@@ -330,19 +325,18 @@ export const Login = ({ onLogin, onShowToast }) => {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-2 border-slate-500 bg-slate-900/50 text-blue-500 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
                   />
-                  <span className="ml-2 text-slate-200 select-none font-medium">
-                    Ingat saya
-                  </span>
+                  <span className="ml-2 text-slate-200 select-none font-medium">Ingat saya</span>
                 </label>
                 <button
                   type="button"
                   onClick={() =>
                     onShowToast(
                       "Hubungi admin untuk reset password: admin@smpmuslimin.sch.id",
-                      "info",
+                      "info"
                     )
                   }
-                  className="font-semibold text-blue-300 hover:text-blue-200 transition-colors">
+                  className="font-semibold text-blue-300 hover:text-blue-200 transition-colors"
+                >
                   Lupa password?
                 </button>
               </div>
@@ -359,7 +353,8 @@ export const Login = ({ onLogin, onShowToast }) => {
               <button
                 type="submit"
                 className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 hover:from-blue-700 hover:via-blue-600 hover:to-purple-700 text-white text-sm font-bold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/40 hover:shadow-xl hover:shadow-blue-500/60 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                disabled={isLoading}>
+                disabled={isLoading}
+              >
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-3 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
@@ -376,15 +371,14 @@ export const Login = ({ onLogin, onShowToast }) => {
               <button
                 type="button"
                 onClick={() => navigate("/login-siswa")}
-                className="text-base font-bold text-blue-300 hover:text-blue-200 transition-colors mb-2">
+                className="text-base font-bold text-blue-300 hover:text-blue-200 transition-colors mb-2"
+              >
                 Login Sebagai Siswa 👉
               </button>
               <p className="text-[10px] text-slate-300 font-semibold">
                 © 2026 SMP MUSLIMIN CILILIN
               </p>
-              <p className="text-[10px] text-slate-400 mt-1">
-                Sistem Administrasi Sekolah v1.0.0
-              </p>
+              <p className="text-[10px] text-slate-400 mt-1">Sistem Administrasi Sekolah v1.0.0</p>
             </div>
           </div>
         </div>

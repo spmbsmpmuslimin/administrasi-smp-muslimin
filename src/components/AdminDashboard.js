@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { getActiveAcademicInfo } from "../services/academicYearService";
+import PageContainer from "./ui/PageContainer";
+import Card from "./ui/Card";
+import { PageTitle, SectionTitle, Text, Muted, Subtitle } from "./ui/Typography";
 
-const AdminDashboard = ({ user }) => {
+const AdminDashboard = ({ user, darkMode }) => {
   const navigate = useNavigate();
 
   // State untuk academic info
@@ -509,718 +512,867 @@ const AdminDashboard = ({ user }) => {
   };
 
   const getTrendIcon = (today, yesterday) => {
-    if (today > yesterday) return { icon: "↑", color: "text-green-600 dark:text-green-400" };
-    if (today < yesterday) return { icon: "↓", color: "text-red-600 dark:text-red-400" };
-    return { icon: "→", color: "text-slate-600 dark:text-slate-400" };
+    if (today > yesterday)
+      return { icon: "↑", color: darkMode ? "text-green-400" : "text-green-600" };
+    if (today < yesterday) return { icon: "↓", color: darkMode ? "text-red-400" : "text-red-600" };
+    return { icon: "→", color: darkMode ? "text-slate-400" : "text-slate-600" };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <div className="flex items-center justify-center h-32 sm:h-48">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Memuat dashboard admin...</p>
+          <div
+            className={`inline-block animate-spin rounded-full h-8 w-8 border-b-2 mb-2 ${
+              darkMode ? "border-blue-400" : "border-blue-600"
+            }`}
+          />
+          <Subtitle darkMode={darkMode}>Memuat dashboard admin...</Subtitle>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
-        {/* Error Banner */}
-        {error && (
-          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-4 flex justify-between items-center">
-            <div>
-              <span className="font-medium">Error: </span>
-              {error}
-            </div>
-            <button
-              onClick={() => setError(null)}
-              className="text-red-800 dark:text-red-400 hover:text-red-900 font-bold text-xl"
-            >
-              ×
-            </button>
+    <PageContainer darkMode={darkMode}>
+      {/* Error Banner */}
+      {error && (
+        <div
+          className={`border px-4 py-3 rounded-lg flex justify-between items-center ${darkMode ? "bg-red-900/30 border-red-700 text-red-300" : "bg-red-100 border-red-400 text-red-700"}`}
+        >
+          <div>
+            <span className="font-medium">Error: </span>
+            {error}
           </div>
-        )}
+          <button
+            onClick={() => setError(null)}
+            className={`hover:text-red-900 font-bold text-xl ${darkMode ? "text-red-400" : "text-red-800"}`}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
-        {/* Header */}
-        <div className="mb-6">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-            <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-200 mb-3">
-              Selamat Datang, {user?.full_name || user?.username}
-            </h1>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                Administrator
-              </span>
-              {activeAcademicInfo?.displayText && (
-                <span className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  📚 {activeAcademicInfo.displayText}
+      {/* Header */}
+      <Card darkMode={darkMode}>
+        <PageTitle darkMode={darkMode} className="mb-3">
+          Selamat Datang, {user?.full_name || user?.username}
+        </PageTitle>
+        <div className="flex flex-wrap items-center gap-3">
+          <span
+            className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium border ${darkMode ? "bg-purple-900/40 text-purple-300 border-purple-800" : "bg-purple-50 text-purple-700 border-purple-200"}`}
+          >
+            Administrator
+          </span>
+          {activeAcademicInfo?.displayText && (
+            <span
+              className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium border ${darkMode ? "bg-emerald-900/40 text-emerald-300 border-emerald-800" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}
+            >
+              📚 {activeAcademicInfo.displayText}
+            </span>
+          )}
+        </div>
+      </Card>
+
+      {/* Aksi Cepat dihapus - shortcut (Presensi Guru, Laporan, Pengaturan)
+            sudah dipindah ke BottomNav mobile (role admin). Lihat BottomNav.js. */}
+
+      {/* Real-Time Monitoring Dashboard */}
+      <div
+        className={`bg-gradient-to-br rounded-xl shadow-lg border p-6 ${darkMode ? "from-blue-900/20 via-slate-800 to-indigo-900/20 border-blue-800" : "from-blue-50 via-white to-indigo-50 border-blue-200"}`}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3
+            className={`text-lg font-semibold flex items-center gap-2 ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+          >
+            <span className={darkMode ? "text-blue-400" : "text-blue-600"}>📊</span>
+            Monitoring Real-Time
+          </h3>
+          <div
+            className={`flex items-center gap-2 text-xs ${darkMode ? "text-slate-400" : "text-slate-500"}`}
+          >
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span>Live • {monitoring.lastUpdate}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          {/* Teacher Attendance */}
+          <div
+            className={`rounded-lg p-2 sm:p-4 border-l-4 border-blue-500 ${darkMode ? "bg-slate-800" : "bg-white"}`}
+          >
+            <div
+              className={`text-[10px] sm:text-sm font-medium leading-tight mb-1 sm:mb-2 truncate ${darkMode ? "text-slate-400" : "text-slate-600"}`}
+            >
+              ✅ <span className="hidden sm:inline">Presensi </span>Guru
+            </div>
+            <div
+              className={`text-base sm:text-2xl font-bold mb-1 ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+            >
+              {monitoring.teacherAttendance.hadir}/{monitoring.teacherAttendance.total}
+            </div>
+            <span
+              className={`inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${
+                monitoring.teacherAttendance.percentage >= 90
+                  ? darkMode
+                    ? "bg-green-900/40 text-green-300"
+                    : "bg-green-100 text-green-700"
+                  : monitoring.teacherAttendance.percentage >= 75
+                    ? darkMode
+                      ? "bg-yellow-900/40 text-yellow-300"
+                      : "bg-yellow-100 text-yellow-700"
+                    : darkMode
+                      ? "bg-red-900/40 text-red-300"
+                      : "bg-red-100 text-red-700"
+              }`}
+            >
+              {monitoring.teacherAttendance.percentage}%
+            </span>
+            <div
+              className={`text-[9px] sm:text-xs leading-tight mt-1 ${darkMode ? "text-slate-500" : "text-slate-500"}`}
+            >
+              {monitoring.teacherAttendance.belumAbsen > 0 && (
+                <span className={darkMode ? "text-orange-400" : "text-orange-600"}>
+                  {monitoring.teacherAttendance.belumAbsen} belum absen
+                </span>
+              )}
+              {monitoring.teacherAttendance.belumAbsen === 0 && (
+                <span className={darkMode ? "text-green-400" : "text-green-600"}>
+                  Semua absen ✓
                 </span>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Aksi Cepat dihapus - shortcut (Presensi Guru, Laporan, Pengaturan)
-            sudah dipindah ke BottomNav mobile (role admin). Lihat BottomNav.js. */}
-
-        {/* Real-Time Monitoring Dashboard */}
-        <div className="mb-6">
-          <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-900/20 dark:via-slate-800 dark:to-indigo-900/20 rounded-xl shadow-lg border border-blue-200 dark:border-blue-800 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <span className="text-blue-600 dark:text-blue-400">📊</span>
-                Monitoring Real-Time
-              </h3>
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Live • {monitoring.lastUpdate}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
-              {/* Teacher Attendance */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-blue-500">
-                <div className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight mb-1 sm:mb-2 truncate">
-                  ✅ <span className="hidden sm:inline">Presensi </span>Guru
-                </div>
-                <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
-                  {monitoring.teacherAttendance.hadir}/{monitoring.teacherAttendance.total}
-                </div>
-                <span
-                  className={`inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${
-                    monitoring.teacherAttendance.percentage >= 90
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                      : monitoring.teacherAttendance.percentage >= 75
-                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                  }`}
-                >
-                  {monitoring.teacherAttendance.percentage}%
-                </span>
-                <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">
-                  {monitoring.teacherAttendance.belumAbsen > 0 && (
-                    <span className="text-orange-600 dark:text-orange-400">
-                      {monitoring.teacherAttendance.belumAbsen} belum absen
-                    </span>
-                  )}
-                  {monitoring.teacherAttendance.belumAbsen === 0 && (
-                    <span className="text-green-600 dark:text-green-400">Semua absen ✓</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Student Attendance */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-purple-500">
-                <div className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight mb-1 sm:mb-2 truncate">
-                  🎓 <span className="hidden sm:inline">Presensi </span>Siswa
-                </div>
-                <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
-                  {monitoring.studentAttendance.hadir}/{monitoring.studentAttendance.total}
-                </div>
-                <span
-                  className={`inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${
-                    monitoring.studentAttendance.percentage >= 90
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                      : monitoring.studentAttendance.percentage >= 75
-                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                  }`}
-                >
-                  {monitoring.studentAttendance.percentage}%
-                </span>
-                <div className="flex flex-wrap gap-1 text-[9px] sm:text-xs mt-1">
-                  {monitoring.studentAttendance.terlambat > 0 && (
-                    <span className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 px-1.5 py-0.5 rounded">
-                      ⏰ {monitoring.studentAttendance.terlambat}
-                    </span>
-                  )}
-                  {monitoring.studentAttendance.alpha > 0 && (
-                    <span className="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-1.5 py-0.5 rounded">
-                      ⚠️ {monitoring.studentAttendance.alpha}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Active Classes */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-2 sm:p-4 border-l-4 border-emerald-500">
-                <div className="text-[10px] sm:text-sm font-medium text-slate-600 dark:text-slate-400 leading-tight mb-1 sm:mb-2 truncate">
-                  🏫 Kelas
-                </div>
-                <div className="text-base sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-1">
-                  {monitoring.activeClasses.active} Kelas
-                </div>
-                <span className="inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                  {monitoring.activeClasses.active}/{monitoring.activeClasses.total}
-                </span>
-                <div className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">
-                  Sem {activeAcademicInfo?.activeSemester || "1"} •{" "}
-                  {activeAcademicInfo?.year || "2025/2026"}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Performance Comparison & Urgent Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Left: Performance Comparison */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-              <span className="text-amber-600 dark:text-amber-400">📈</span>
-              Perbandingan Performa
-            </h3>
-
-            <div className="space-y-4">
-              {/* Teacher Attendance Comparison */}
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-transparent rounded-lg border border-blue-100 dark:border-blue-800">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
-                      <span className="text-blue-600 dark:text-blue-400">👨‍🏫</span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-slate-800 dark:text-slate-200">
-                        Kehadiran Guru
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        Dibandingkan kemarin
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                      {performance.teacherToday}%
-                    </div>
-                    <div className="text-sm">
-                      <span
-                        className={`${
-                          getTrendIcon(performance.teacherToday, performance.teacherYesterday).color
-                        } font-medium`}
-                      >
-                        {getTrendIcon(performance.teacherToday, performance.teacherYesterday).icon}{" "}
-                        {Math.abs(performance.teacherToday - performance.teacherYesterday)}%
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">
-                        ({performance.teacherYesterday}% kemarin)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                  <span className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
-                    <div
-                      className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full"
-                      style={{ width: `${performance.teacherToday}%` }}
-                    ></div>
-                  </span>
-                  <span>Hari ini</span>
-                </div>
-              </div>
-
-              {/* Student Attendance Comparison */}
-              <div className="p-4 bg-gradient-to-r from-purple-50 to-white dark:from-purple-900/10 dark:to-transparent rounded-lg border border-purple-100 dark:border-purple-800">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/40 rounded-lg flex items-center justify-center">
-                      <span className="text-purple-600 dark:text-purple-400">👨‍🎓</span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-slate-800 dark:text-slate-200">
-                        Kehadiran Siswa
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        Dibandingkan kemarin
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                      {performance.studentToday}%
-                    </div>
-                    <div className="text-sm">
-                      <span
-                        className={`${
-                          getTrendIcon(performance.studentToday, performance.studentYesterday).color
-                        } font-medium`}
-                      >
-                        {getTrendIcon(performance.studentToday, performance.studentYesterday).icon}{" "}
-                        {Math.abs(performance.studentToday - performance.studentYesterday)}%
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">
-                        ({performance.studentYesterday}% kemarin)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                  <span className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
-                    <div
-                      className="bg-gradient-to-r from-purple-400 to-purple-600 h-full rounded-full"
-                      style={{ width: `${performance.studentToday}%` }}
-                    ></div>
-                  </span>
-                  <span>Hari ini</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Urgent Actions */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <span className="text-red-600 dark:text-red-400">🚨</span>
-                Tindakan Mendesak
-              </h3>
-              <span className="text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-2 py-1 rounded-full">
-                {urgentActions.length} item
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {urgentActions.map((action) => (
-                <div
-                  key={action.id}
-                  className={`p-4 rounded-lg border ${
-                    action.type === "critical"
-                      ? "bg-gradient-to-r from-red-50 to-white dark:from-red-900/20 dark:to-transparent border-red-200 dark:border-red-800"
-                      : action.type === "warning"
-                        ? "bg-gradient-to-r from-amber-50 to-white dark:from-amber-900/20 dark:to-transparent border-amber-200 dark:border-amber-800"
-                        : "bg-gradient-to-r from-emerald-50 to-white dark:from-emerald-900/20 dark:to-transparent border-emerald-200 dark:border-emerald-800"
-                  } cursor-pointer hover:shadow-md transition-shadow`}
-                  onClick={() => navigate(action.route)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`text-xl ${
-                        action.type === "critical"
-                          ? "text-red-600 dark:text-red-400"
-                          : action.type === "warning"
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-emerald-600 dark:text-emerald-400"
-                      }`}
-                    >
-                      {action.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4
-                          className={`font-medium ${
-                            action.type === "critical"
-                              ? "text-red-700 dark:text-red-300"
-                              : action.type === "warning"
-                                ? "text-amber-700 dark:text-amber-300"
-                                : "text-emerald-700 dark:text-emerald-300"
-                          }`}
-                        >
-                          {action.title}
-                        </h4>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            action.type === "critical"
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                              : action.type === "warning"
-                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                          }`}
-                        >
-                          {action.type === "critical"
-                            ? "KRITIS"
-                            : action.type === "warning"
-                              ? "PERINGATAN"
-                              : "INFO"}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-                        {action.description}
-                      </p>
-                      <button className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1">
-                        {action.action} →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Activity Timeline */}
-            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-              <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">
-                🕐 Aktivitas Terbaru
-              </h4>
-              <div className="space-y-2">
-                {recentActivities.length > 0 ? (
-                  recentActivities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg"
-                    >
-                      <div className="flex-shrink-0 w-8 text-center">
-                        <span className="text-lg">{activity.icon}</span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-slate-700 dark:text-slate-300">
-                          {activity.text}
-                        </p>
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-500">
-                        {activity.time}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4 text-slate-500 dark:text-slate-400">
-                    <p className="text-sm">Tidak ada aktivitas terbaru</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pengumuman Section */}
-        <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 dark:from-slate-800 dark:via-blue-900/10 dark:to-indigo-900/10 rounded-xl shadow-xl border border-blue-100 dark:border-blue-800 p-4 sm:p-5 md:p-6 backdrop-blur-sm transition-colors duration-200">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
-            <h3 className="text-base sm:text-lg md:text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center">
-              <span className="mr-2 text-blue-600 dark:text-blue-400">📢</span>
-              Kelola Pengumuman
-            </h3>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 dark:from-green-600 dark:to-emerald-700 dark:hover:from-green-700 dark:hover:to-emerald-800 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-105 active:scale-95 touch-manipulation"
-              disabled={submitting}
+          {/* Student Attendance */}
+          <div
+            className={`rounded-lg p-2 sm:p-4 border-l-4 border-purple-500 ${darkMode ? "bg-slate-800" : "bg-white"}`}
+          >
+            <div
+              className={`text-[10px] sm:text-sm font-medium leading-tight mb-1 sm:mb-2 truncate ${darkMode ? "text-slate-400" : "text-slate-600"}`}
             >
-              <span className="mr-1">✨</span> Tambah Pengumuman
-            </button>
+              🎓 <span className="hidden sm:inline">Presensi </span>Siswa
+            </div>
+            <div
+              className={`text-base sm:text-2xl font-bold mb-1 ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+            >
+              {monitoring.studentAttendance.hadir}/{monitoring.studentAttendance.total}
+            </div>
+            <span
+              className={`inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${
+                monitoring.studentAttendance.percentage >= 90
+                  ? darkMode
+                    ? "bg-green-900/40 text-green-300"
+                    : "bg-green-100 text-green-700"
+                  : monitoring.studentAttendance.percentage >= 75
+                    ? darkMode
+                      ? "bg-yellow-900/40 text-yellow-300"
+                      : "bg-yellow-100 text-yellow-700"
+                    : darkMode
+                      ? "bg-red-900/40 text-red-300"
+                      : "bg-red-100 text-red-700"
+              }`}
+            >
+              {monitoring.studentAttendance.percentage}%
+            </span>
+            <div className="flex flex-wrap gap-1 text-[9px] sm:text-xs mt-1">
+              {monitoring.studentAttendance.terlambat > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded ${darkMode ? "bg-yellow-900/40 text-yellow-300" : "bg-yellow-100 text-yellow-700"}`}
+                >
+                  ⏰ {monitoring.studentAttendance.terlambat}
+                </span>
+              )}
+              {monitoring.studentAttendance.alpha > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded ${darkMode ? "bg-red-900/40 text-red-300" : "bg-red-100 text-red-700"}`}
+                >
+                  ⚠️ {monitoring.studentAttendance.alpha}
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Form dengan field lengkap */}
-          {showAddForm && (
-            <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 dark:from-slate-800 dark:to-blue-900/10 p-4 rounded-xl mb-4 border-2 border-blue-200 dark:border-blue-700 shadow-inner backdrop-blur-sm transition-colors duration-200">
-              <h4 className="font-semibold mb-3 text-slate-800 dark:text-slate-200 text-sm sm:text-base flex items-center">
-                <span className="mr-2">{editData ? "✏️" : "➕"}</span>
-                {editData ? "Edit Pengumuman" : "Tambah Pengumuman Baru"}
-              </h4>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                {/* Judul */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Judul Pengumuman *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm sm:text-base"
-                    required
-                    disabled={submitting}
-                    placeholder="Contoh: Jadwal Pembagian Raport"
-                  />
-                </div>
-
-                {/* Konten */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Isi Pengumuman *
-                  </label>
-                  <textarea
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm sm:text-base"
-                    required
-                    disabled={submitting}
-                    placeholder="Masukkan detail pengumuman..."
-                  />
-                </div>
-
-                {/* Tanggal Efektif */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Mulai Tayang *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={formatDateForInput(formData.effective_from)}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          effective_from: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm sm:text-base"
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Berakhir *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={formatDateForInput(formData.effective_until)}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          effective_until: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm sm:text-base"
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-                </div>
-
-                {/* Target Role & Status */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Target Penerima *
-                    </label>
-                    <select
-                      value={formData.target_role}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          target_role: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm sm:text-base"
-                      disabled={submitting}
-                    >
-                      <option value="semua">Semua Guru</option>
-                      <option value="teacher">Guru Mapel</option>
-                      <option value="walikelas">Wali Kelas</option>
-                      <option value="guru_bk">Guru BK</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Status
-                    </label>
-                    <div className="flex items-center h-10">
-                      <label className="inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.is_active}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              is_active: e.target.checked,
-                            })
-                          }
-                          className="sr-only peer"
-                          disabled={submitting}
-                        />
-                        <div className="relative w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-700"></div>
-                        <span className="ml-3 text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {formData.is_active ? "Aktif" : "Nonaktif"}
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tombol Action */}
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-blue-600 dark:to-blue-700 dark:hover:from-blue-700 dark:hover:to-blue-800 disabled:from-blue-300 disabled:to-blue-400 dark:disabled:from-blue-800 dark:disabled:to-blue-900 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none active:scale-95 touch-manipulation"
-                  >
-                    <span className="mr-1">{submitting ? "⏳" : editData ? "💾" : "✨"}</span>
-                    {submitting ? "Menyimpan..." : editData ? "Update" : "Simpan"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    disabled={submitting}
-                    className="bg-gradient-to-r from-slate-400 to-slate-500 hover:from-slate-500 hover:to-slate-600 dark:from-slate-600 dark:to-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-800 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-800 dark:disabled:to-slate-900 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none active:scale-95 touch-manipulation"
-                  >
-                    <span className="mr-1">✕</span>
-                    Batal
-                  </button>
-                </div>
-              </form>
+          {/* Active Classes */}
+          <div
+            className={`rounded-lg p-2 sm:p-4 border-l-4 border-emerald-500 ${darkMode ? "bg-slate-800" : "bg-white"}`}
+          >
+            <div
+              className={`text-[10px] sm:text-sm font-medium leading-tight mb-1 sm:mb-2 truncate ${darkMode ? "text-slate-400" : "text-slate-600"}`}
+            >
+              🏫 Kelas
             </div>
-          )}
-
-          {/* Daftar Pengumuman dengan info lengkap */}
-          <div>
-            {announcements.length > 0 ? (
-              <div className="space-y-4">
-                {announcements.map((announcement) => {
-                  const isActive = isAnnouncementActive(announcement);
-                  const statusColor = announcement.is_active
-                    ? isActive
-                      ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300"
-                      : "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
-                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400";
-
-                  return (
-                    <div
-                      key={announcement.id}
-                      className="group border-l-4 border-blue-500 dark:border-blue-600 pl-4 py-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-r-xl hover:from-blue-100/80 hover:to-indigo-100/50 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/40 transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg"
-                    >
-                      <div className="flex flex-col gap-3">
-                        {/* Header: Title + Status Badge */}
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors flex items-start flex-1">
-                            <span className="mr-2 mt-0.5">📋</span>
-                            {announcement.title}
-                          </h4>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}
-                            >
-                              {announcement.is_active
-                                ? isActive
-                                  ? "🟢 Tayang"
-                                  : "🟡 Dijadwalkan"
-                                : "⚫ Nonaktif"}
-                            </span>
-                            <button
-                              onClick={() =>
-                                toggleActiveStatus(announcement.id, announcement.is_active)
-                              }
-                              className="text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              title={announcement.is_active ? "Nonaktifkan" : "Aktifkan"}
-                            >
-                              {announcement.is_active ? "👁️" : "🚫"}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Content */}
-                        <p className="text-sm text-slate-600 dark:text-slate-400 ml-6 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">
-                          {announcement.content}
-                        </p>
-
-                        {/* Meta Info */}
-                        <div className="ml-6 space-y-1">
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <span>👥</span>
-                              <span className="font-medium">
-                                {announcement.target_role === "semua"
-                                  ? "Semua Guru"
-                                  : announcement.target_role === "teacher"
-                                    ? "Guru Mapel"
-                                    : announcement.target_role === "walikelas"
-                                      ? "Wali Kelas"
-                                      : announcement.target_role === "guru_bk"
-                                        ? "Guru BK"
-                                        : "Admin"}
-                              </span>
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span>📅</span>
-                              <span>
-                                {new Date(announcement.effective_from).toLocaleDateString("id-ID", {
-                                  day: "numeric",
-                                  month: "short",
-                                })}{" "}
-                                -{" "}
-                                {new Date(announcement.effective_until).toLocaleDateString(
-                                  "id-ID",
-                                  {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  }
-                                )}
-                              </span>
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <span>🕐</span>
-                              <span>
-                                {new Date(announcement.created_at).toLocaleDateString("id-ID", {
-                                  day: "numeric",
-                                  month: "short",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-2 ml-6">
-                          <button
-                            onClick={() => handleEdit(announcement)}
-                            disabled={submitting}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:text-blue-400 dark:disabled:text-blue-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200 transform hover:scale-105 active:scale-95 touch-manipulation shadow-sm"
-                          >
-                            <span className="mr-1">✏️</span>Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(announcement.id)}
-                            disabled={submitting}
-                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:text-red-400 dark:disabled:text-red-700 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200 transform hover:scale-105 active:scale-95 touch-manipulation shadow-sm"
-                          >
-                            <span className="mr-1">🗑️</span>Hapus
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 sm:py-10 md:py-12 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800 dark:to-blue-900/10 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800 transition-colors duration-200">
-                <div className="text-2xl sm:text-3xl md:text-4xl mb-4 animate-bounce">📢</div>
-                <h4 className="font-medium text-slate-800 dark:text-slate-200 mb-2 text-sm sm:text-base">
-                  Belum Ada Pengumuman
-                </h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                  Klik tombol "✨ Tambah Pengumuman" untuk membuat pengumuman pertama
-                </p>
-                <div className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-                  <span className="mr-1">💡</span>
-                  Tip: Pengumuman akan tampil otomatis di dashboard guru
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-slate-600 dark:text-slate-400">
-              <p>Dashboard Admin • {getTodayFormatted()}</p>
-              <p className="text-xs mt-1">Terakhir diperbarui: {monitoring.lastUpdate}</p>
+            <div
+              className={`text-base sm:text-2xl font-bold mb-1 ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+            >
+              {monitoring.activeClasses.active} Kelas
             </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => fetchAllData()}
-                className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
-              >
-                <span>🔄</span>
-                Refresh Data
-              </button>
-              <div className="flex items-center gap-2 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-slate-600 dark:text-slate-400">Online</span>
-                </div>
-                <span className="text-slate-400 dark:text-slate-600">•</span>
-                <span className="text-slate-600 dark:text-slate-400">System v1.0.0</span>
-              </div>
+            <span
+              className={`inline-block text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${darkMode ? "bg-emerald-900/40 text-emerald-300" : "bg-emerald-100 text-emerald-700"}`}
+            >
+              {monitoring.activeClasses.active}/{monitoring.activeClasses.total}
+            </span>
+            <div
+              className={`text-[9px] sm:text-xs leading-tight mt-1 ${darkMode ? "text-slate-500" : "text-slate-500"}`}
+            >
+              Sem {activeAcademicInfo?.activeSemester || "1"} •{" "}
+              {activeAcademicInfo?.year || "2025/2026"}
             </div>
           </div>
         </div>
       </div>
-    </div>
+      {/* Performance Comparison & Urgent Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Performance Comparison */}
+        <Card darkMode={darkMode}>
+          <SectionTitle darkMode={darkMode} className="flex items-center gap-2">
+            <span className={darkMode ? "text-amber-400" : "text-amber-600"}>📈</span>
+            Perbandingan Performa
+          </SectionTitle>
+
+          <div className="space-y-4">
+            {/* Teacher Attendance Comparison */}
+            <div
+              className={`p-4 bg-gradient-to-r rounded-lg border ${darkMode ? "from-blue-900/10 to-transparent border-blue-800" : "from-blue-50 to-white border-blue-100"}`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? "bg-blue-900/40" : "bg-blue-100"}`}
+                  >
+                    <span className={darkMode ? "text-blue-400" : "text-blue-600"}>👨‍🏫</span>
+                  </div>
+                  <div>
+                    <div
+                      className={`font-medium ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+                    >
+                      Kehadiran Guru
+                    </div>
+                    <div className={`text-xs ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                      Dibandingkan kemarin
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div
+                    className={`text-xl font-bold ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+                  >
+                    {performance.teacherToday}%
+                  </div>
+                  <div className="text-sm">
+                    <span
+                      className={`${
+                        getTrendIcon(performance.teacherToday, performance.teacherYesterday).color
+                      } font-medium`}
+                    >
+                      {getTrendIcon(performance.teacherToday, performance.teacherYesterday).icon}{" "}
+                      {Math.abs(performance.teacherToday - performance.teacherYesterday)}%
+                    </span>
+                    <span
+                      className={`text-xs ml-1 ${darkMode ? "text-slate-400" : "text-slate-500"}`}
+                    >
+                      ({performance.teacherYesterday}% kemarin)
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`flex items-center gap-2 text-xs ${darkMode ? "text-slate-400" : "text-slate-600"}`}
+              >
+                <span
+                  className={`flex-1 rounded-full h-1.5 ${darkMode ? "bg-slate-700" : "bg-slate-200"}`}
+                >
+                  <div
+                    className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full"
+                    style={{ width: `${performance.teacherToday}%` }}
+                  ></div>
+                </span>
+                <span>Hari ini</span>
+              </div>
+            </div>
+
+            {/* Student Attendance Comparison */}
+            <div
+              className={`p-4 bg-gradient-to-r rounded-lg border ${darkMode ? "from-purple-900/10 to-transparent border-purple-800" : "from-purple-50 to-white border-purple-100"}`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? "bg-purple-900/40" : "bg-purple-100"}`}
+                  >
+                    <span className={darkMode ? "text-purple-400" : "text-purple-600"}>👨‍🎓</span>
+                  </div>
+                  <div>
+                    <div
+                      className={`font-medium ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+                    >
+                      Kehadiran Siswa
+                    </div>
+                    <div className={`text-xs ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
+                      Dibandingkan kemarin
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div
+                    className={`text-xl font-bold ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+                  >
+                    {performance.studentToday}%
+                  </div>
+                  <div className="text-sm">
+                    <span
+                      className={`${
+                        getTrendIcon(performance.studentToday, performance.studentYesterday).color
+                      } font-medium`}
+                    >
+                      {getTrendIcon(performance.studentToday, performance.studentYesterday).icon}{" "}
+                      {Math.abs(performance.studentToday - performance.studentYesterday)}%
+                    </span>
+                    <span
+                      className={`text-xs ml-1 ${darkMode ? "text-slate-400" : "text-slate-500"}`}
+                    >
+                      ({performance.studentYesterday}% kemarin)
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`flex items-center gap-2 text-xs ${darkMode ? "text-slate-400" : "text-slate-600"}`}
+              >
+                <span
+                  className={`flex-1 rounded-full h-1.5 ${darkMode ? "bg-slate-700" : "bg-slate-200"}`}
+                >
+                  <div
+                    className="bg-gradient-to-r from-purple-400 to-purple-600 h-full rounded-full"
+                    style={{ width: `${performance.studentToday}%` }}
+                  ></div>
+                </span>
+                <span>Hari ini</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Right: Urgent Actions */}
+        <Card darkMode={darkMode}>
+          <div className="flex items-center justify-between mb-4">
+            <h3
+              className={`text-lg font-semibold flex items-center gap-2 ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+            >
+              <span className={darkMode ? "text-red-400" : "text-red-600"}>🚨</span>
+              Tindakan Mendesak
+            </h3>
+            <span
+              className={`text-xs px-2 py-1 rounded-full ${darkMode ? "bg-red-900/40 text-red-300" : "bg-red-100 text-red-700"}`}
+            >
+              {urgentActions.length} item
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {urgentActions.map((action) => (
+              <div
+                key={action.id}
+                className={`p-4 rounded-lg border ${
+                  action.type === "critical"
+                    ? `bg-gradient-to-r ${darkMode ? "from-red-900/20 to-transparent border-red-800" : "from-red-50 to-white border-red-200"}`
+                    : action.type === "warning"
+                      ? `bg-gradient-to-r ${darkMode ? "from-amber-900/20 to-transparent border-amber-800" : "from-amber-50 to-white border-amber-200"}`
+                      : `bg-gradient-to-r ${darkMode ? "from-emerald-900/20 to-transparent border-emerald-800" : "from-emerald-50 to-white border-emerald-200"}`
+                } cursor-pointer hover:shadow-md transition-shadow`}
+                onClick={() => navigate(action.route)}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`text-xl ${
+                      action.type === "critical"
+                        ? darkMode
+                          ? "text-red-400"
+                          : "text-red-600"
+                        : action.type === "warning"
+                          ? darkMode
+                            ? "text-amber-400"
+                            : "text-amber-600"
+                          : darkMode
+                            ? "text-emerald-400"
+                            : "text-emerald-600"
+                    }`}
+                  >
+                    {action.icon}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <h4
+                        className={`font-medium ${
+                          action.type === "critical"
+                            ? darkMode
+                              ? "text-red-300"
+                              : "text-red-700"
+                            : action.type === "warning"
+                              ? darkMode
+                                ? "text-amber-300"
+                                : "text-amber-700"
+                              : darkMode
+                                ? "text-emerald-300"
+                                : "text-emerald-700"
+                        }`}
+                      >
+                        {action.title}
+                      </h4>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          action.type === "critical"
+                            ? darkMode
+                              ? "bg-red-900/40 text-red-300"
+                              : "bg-red-100 text-red-700"
+                            : action.type === "warning"
+                              ? darkMode
+                                ? "bg-amber-900/40 text-amber-300"
+                                : "bg-amber-100 text-amber-700"
+                              : darkMode
+                                ? "bg-emerald-900/40 text-emerald-300"
+                                : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {action.type === "critical"
+                          ? "KRITIS"
+                          : action.type === "warning"
+                            ? "PERINGATAN"
+                            : "INFO"}
+                      </span>
+                    </div>
+                    <p className={`text-sm mb-2 ${darkMode ? "text-slate-400" : "text-slate-600"}`}>
+                      {action.description}
+                    </p>
+                    <button
+                      className={`text-sm font-medium flex items-center gap-1 ${darkMode ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"}`}
+                    >
+                      {action.action} →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Activity Timeline */}
+          <div
+            className={`mt-6 pt-6 border-t ${darkMode ? "border-slate-700" : "border-slate-200"}`}
+          >
+            <h4
+              className={`text-sm font-medium mb-3 ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+            >
+              🕐 Aktivitas Terbaru
+            </h4>
+            <div className="space-y-2">
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className={`flex items-center gap-3 p-2 rounded-lg ${darkMode ? "hover:bg-slate-700/50" : "hover:bg-slate-50"}`}
+                  >
+                    <div className="flex-shrink-0 w-8 text-center">
+                      <span className="text-lg">{activity.icon}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                        {activity.text}
+                      </p>
+                    </div>
+                    <div className={`text-xs ${darkMode ? "text-slate-500" : "text-slate-500"}`}>
+                      {activity.time}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div
+                  className={`text-center py-4 ${darkMode ? "text-slate-400" : "text-slate-500"}`}
+                >
+                  <p className="text-sm">Tidak ada aktivitas terbaru</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Pengumuman Section */}
+      <div
+        className={`bg-gradient-to-br rounded-xl shadow-xl border p-4 sm:p-5 md:p-6 backdrop-blur-sm transition-colors duration-200 ${darkMode ? "from-slate-800 via-blue-900/10 to-indigo-900/10 border-blue-800" : "from-white via-blue-50/30 to-indigo-50/50 border-blue-100"}`}
+      >
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
+          <h3
+            className={`text-base sm:text-lg md:text-lg font-semibold flex items-center ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+          >
+            <span className={`mr-2 ${darkMode ? "text-blue-400" : "text-blue-600"}`}>📢</span>
+            Kelola Pengumuman
+          </h3>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className={`bg-gradient-to-r text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-105 active:scale-95 touch-manipulation ${darkMode ? "from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800" : "from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"}`}
+            disabled={submitting}
+          >
+            <span className="mr-1">✨</span> Tambah Pengumuman
+          </button>
+        </div>
+
+        {/* Form dengan field lengkap */}
+        {showAddForm && (
+          <div
+            className={`bg-gradient-to-br p-4 rounded-xl mb-4 border-2 shadow-inner backdrop-blur-sm transition-colors duration-200 ${darkMode ? "from-slate-800 to-blue-900/10 border-blue-700" : "from-slate-50 to-blue-50/50 border-blue-200"}`}
+          >
+            <h4
+              className={`font-semibold mb-3 text-sm sm:text-base flex items-center ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+            >
+              <span className="mr-2">{editData ? "✏️" : "➕"}</span>
+              {editData ? "Edit Pengumuman" : "Tambah Pengumuman Baru"}
+            </h4>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Judul */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}
+                >
+                  Judul Pengumuman *
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm sm:text-base ${darkMode ? "border-slate-600 focus:ring-blue-600 bg-slate-800 text-slate-200" : "border-slate-300 focus:ring-blue-500 bg-white text-slate-800"}`}
+                  required
+                  disabled={submitting}
+                  placeholder="Contoh: Jadwal Pembagian Raport"
+                />
+              </div>
+
+              {/* Konten */}
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}
+                >
+                  Isi Pengumuman *
+                </label>
+                <textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  rows={4}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm sm:text-base ${darkMode ? "border-slate-600 focus:ring-blue-600 bg-slate-800 text-slate-200" : "border-slate-300 focus:ring-blue-500 bg-white text-slate-800"}`}
+                  required
+                  disabled={submitting}
+                  placeholder="Masukkan detail pengumuman..."
+                />
+              </div>
+
+              {/* Tanggal Efektif */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}
+                  >
+                    Mulai Tayang *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formatDateForInput(formData.effective_from)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        effective_from: e.target.value,
+                      })
+                    }
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm sm:text-base ${darkMode ? "border-slate-600 focus:ring-blue-600 bg-slate-800 text-slate-200" : "border-slate-300 focus:ring-blue-500 bg-white text-slate-800"}`}
+                    required
+                    disabled={submitting}
+                  />
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}
+                  >
+                    Berakhir *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formatDateForInput(formData.effective_until)}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        effective_until: e.target.value,
+                      })
+                    }
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm sm:text-base ${darkMode ? "border-slate-600 focus:ring-blue-600 bg-slate-800 text-slate-200" : "border-slate-300 focus:ring-blue-500 bg-white text-slate-800"}`}
+                    required
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+
+              {/* Target Role & Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}
+                  >
+                    Target Penerima *
+                  </label>
+                  <select
+                    value={formData.target_role}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        target_role: e.target.value,
+                      })
+                    }
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm sm:text-base ${darkMode ? "border-slate-600 focus:ring-blue-600 bg-slate-800 text-slate-200" : "border-slate-300 focus:ring-blue-500 bg-white text-slate-800"}`}
+                    disabled={submitting}
+                  >
+                    <option value="semua">Semua Guru</option>
+                    <option value="teacher">Guru Mapel</option>
+                    <option value="walikelas">Wali Kelas</option>
+                    <option value="guru_bk">Guru BK</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${darkMode ? "text-slate-300" : "text-slate-700"}`}
+                  >
+                    Status
+                  </label>
+                  <div className="flex items-center h-10">
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.is_active}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            is_active: e.target.checked,
+                          })
+                        }
+                        className="sr-only peer"
+                        disabled={submitting}
+                      />
+                      <div
+                        className={`relative w-11 h-6 peer-focus:outline-none peer-focus:ring-4 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${darkMode ? "bg-slate-700 peer-focus:ring-blue-800 peer-checked:bg-blue-700" : "bg-slate-300 peer-focus:ring-blue-300 peer-checked:bg-blue-600"}`}
+                      ></div>
+                      <span
+                        className={`ml-3 text-sm font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}
+                      >
+                        {formData.is_active ? "Aktif" : "Nonaktif"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tombol Action */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`bg-gradient-to-r text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none active:scale-95 touch-manipulation ${darkMode ? "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-blue-800 disabled:to-blue-900" : "from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-blue-300 disabled:to-blue-400"}`}
+                >
+                  <span className="mr-1">{submitting ? "⏳" : editData ? "💾" : "✨"}</span>
+                  {submitting ? "Menyimpan..." : editData ? "Update" : "Simpan"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={submitting}
+                  className={`bg-gradient-to-r text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none active:scale-95 touch-manipulation ${darkMode ? "from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 disabled:from-slate-800 disabled:to-slate-900" : "from-slate-400 to-slate-500 hover:from-slate-500 hover:to-slate-600 disabled:from-slate-300 disabled:to-slate-400"}`}
+                >
+                  <span className="mr-1">✕</span>
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Daftar Pengumuman dengan info lengkap */}
+        <div>
+          {announcements.length > 0 ? (
+            <div className="space-y-4">
+              {announcements.map((announcement) => {
+                const isActive = isAnnouncementActive(announcement);
+                const statusColor = announcement.is_active
+                  ? isActive
+                    ? darkMode
+                      ? "bg-green-900/40 text-green-300"
+                      : "bg-green-100 text-green-800"
+                    : darkMode
+                      ? "bg-yellow-900/40 text-yellow-300"
+                      : "bg-yellow-100 text-yellow-800"
+                  : darkMode
+                    ? "bg-slate-800 text-slate-400"
+                    : "bg-slate-100 text-slate-600";
+
+                return (
+                  <div
+                    key={announcement.id}
+                    className={`group border-l-4 pl-4 py-3 bg-gradient-to-r rounded-r-xl transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg ${darkMode ? "border-blue-600 from-blue-900/20 to-indigo-900/20 hover:from-blue-900/40 hover:to-indigo-900/40" : "border-blue-500 from-blue-50/80 to-indigo-50/50 hover:from-blue-100/80 hover:to-indigo-100/50"}`}
+                  >
+                    <div className="flex flex-col gap-3">
+                      {/* Header: Title + Status Badge */}
+                      <div className="flex justify-between items-start gap-2">
+                        <h4
+                          className={`font-semibold text-sm sm:text-base transition-colors flex items-start flex-1 ${darkMode ? "text-slate-200 group-hover:text-blue-400" : "text-slate-800 group-hover:text-blue-700"}`}
+                        >
+                          <span className="mr-2 mt-0.5">📋</span>
+                          {announcement.title}
+                        </h4>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}
+                          >
+                            {announcement.is_active
+                              ? isActive
+                                ? "🟢 Tayang"
+                                : "🟡 Dijadwalkan"
+                              : "⚫ Nonaktif"}
+                          </span>
+                          <button
+                            onClick={() =>
+                              toggleActiveStatus(announcement.id, announcement.is_active)
+                            }
+                            className={`transition-colors ${darkMode ? "text-slate-400 hover:text-blue-400" : "text-slate-500 hover:text-blue-600"}`}
+                            title={announcement.is_active ? "Nonaktifkan" : "Aktifkan"}
+                          >
+                            {announcement.is_active ? "👁️" : "🚫"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <p
+                        className={`text-sm ml-6 transition-colors ${darkMode ? "text-slate-400 group-hover:text-slate-300" : "text-slate-600 group-hover:text-slate-700"}`}
+                      >
+                        {announcement.content}
+                      </p>
+
+                      {/* Meta Info */}
+                      <div className="ml-6 space-y-1">
+                        <div
+                          className={`flex flex-wrap items-center gap-3 text-xs ${darkMode ? "text-slate-500" : "text-slate-500"}`}
+                        >
+                          <span className="flex items-center gap-1">
+                            <span>👥</span>
+                            <span className="font-medium">
+                              {announcement.target_role === "semua"
+                                ? "Semua Guru"
+                                : announcement.target_role === "teacher"
+                                  ? "Guru Mapel"
+                                  : announcement.target_role === "walikelas"
+                                    ? "Wali Kelas"
+                                    : announcement.target_role === "guru_bk"
+                                      ? "Guru BK"
+                                      : "Admin"}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span>📅</span>
+                            <span>
+                              {new Date(announcement.effective_from).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                              })}{" "}
+                              -{" "}
+                              {new Date(announcement.effective_until).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span>🕐</span>
+                            <span>
+                              {new Date(announcement.created_at).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 ml-6">
+                        <button
+                          onClick={() => handleEdit(announcement)}
+                          disabled={submitting}
+                          className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 touch-manipulation shadow-sm ${darkMode ? "text-blue-400 hover:text-blue-300 disabled:text-blue-700 hover:bg-blue-900/30" : "text-blue-600 hover:text-blue-800 disabled:text-blue-400 hover:bg-blue-100"}`}
+                        >
+                          <span className="mr-1">✏️</span>Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(announcement.id)}
+                          disabled={submitting}
+                          className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 touch-manipulation shadow-sm ${darkMode ? "text-red-400 hover:text-red-300 disabled:text-red-700 hover:bg-red-900/30" : "text-red-600 hover:text-red-800 disabled:text-red-400 hover:bg-red-100"}`}
+                        >
+                          <span className="mr-1">🗑️</span>Hapus
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div
+              className={`text-center py-8 sm:py-10 md:py-12 bg-gradient-to-br rounded-xl border-2 border-dashed transition-colors duration-200 ${darkMode ? "from-slate-800 to-blue-900/10 border-blue-800" : "from-slate-50 to-blue-50/30 border-blue-200"}`}
+            >
+              <div className="text-2xl sm:text-3xl md:text-4xl mb-4 animate-bounce">📢</div>
+              <h4
+                className={`font-medium mb-2 text-sm sm:text-base ${darkMode ? "text-slate-200" : "text-slate-800"}`}
+              >
+                Belum Ada Pengumuman
+              </h4>
+              <p className={`text-sm mb-4 ${darkMode ? "text-slate-400" : "text-slate-600"}`}>
+                Klik tombol "✨ Tambah Pengumuman" untuk membuat pengumuman pertama
+              </p>
+              <div
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${darkMode ? "bg-blue-900/40 text-blue-300" : "bg-blue-100 text-blue-700"}`}
+              >
+                <span className="mr-1">💡</span>
+                Tip: Pengumuman akan tampil otomatis di dashboard guru
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className={`pt-6 border-t ${darkMode ? "border-slate-700" : "border-slate-200"}`}>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className={`text-sm ${darkMode ? "text-slate-400" : "text-slate-600"}`}>
+            <p>Dashboard Admin • {getTodayFormatted()}</p>
+            <p className="text-xs mt-1">Terakhir diperbarui: {monitoring.lastUpdate}</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => fetchAllData()}
+              className={`px-3 py-1.5 text-sm border rounded-lg transition-colors flex items-center gap-2 ${darkMode ? "border-slate-600 text-slate-300 hover:bg-slate-700" : "border-slate-300 text-slate-700 hover:bg-slate-50"}`}
+            >
+              <span>🔄</span>
+              Refresh Data
+            </button>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className={darkMode ? "text-slate-400" : "text-slate-600"}>Online</span>
+              </div>
+              <span className={darkMode ? "text-slate-600" : "text-slate-400"}>•</span>
+              <span className={darkMode ? "text-slate-400" : "text-slate-600"}>System v1.0.0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </PageContainer>
   );
 };
 

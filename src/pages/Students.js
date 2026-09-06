@@ -140,7 +140,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   }, [searchParams, setSearchParams]);
 
   const handleOpenDataInduk = (siswa) => {
-    navigate(`/student-profile-completion?student=${siswa.id}`);
+    navigate(`/data-induk-siswa?student=${siswa.id}`);
   };
 
   // CRUD siswa (edit, tandai keluar/pindah) sekarang dipusatkan di
