@@ -305,6 +305,81 @@ export const sidebarGroups = [
   },
 
   {
+    // ===== WAKASEK KURIKULUM =====
+    // Muncul cuma buat user dengan jabatan_struktural = 'wakasek_kurikulum'
+    // (ctx.isWakasekKurikulum) -- guru biasa & wali kelas TIDAK melihat
+    // grup ini sama sekali. Admin bisa lihat juga karena admin selalu
+    // punya akses penuh (lihat canAccessWakasekKurikulumRoute di App.js).
+    //
+    // Struktur ideal (dari Bre) ada di komentar tiap sectionHeader.
+    // Item yang belum punya halaman SENGAJA belum dimasukkan ke sini
+    // (biar nggak jadi link mati / halaman kosong) -- lihat TODO di
+    // bawah tiap section buat yang masih perlu dibangun.
+    id: "kurikulum",
+    title: "KURIKULUM",
+    show: (ctx) => ctx.isWakasekKurikulum || ctx.isAdmin,
+    items: [
+      // --- Perencanaan ---
+      // TODO: Kalender Pendidikan, Minggu Efektif -> belum ada halaman
+      // TODO: Pembagian Tugas Guru -> ada TeacherAssignmentTab.js, belum
+      //       dicek isinya, belum aman buat di-reuse
+      {
+        page: "kurikulum-jadwal-pelajaran",
+        label: "Jadwal Pelajaran",
+        sectionHeader: "Perencanaan",
+        icon: [
+          "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+        ],
+      },
+
+      // --- Guru & Pembelajaran ---
+      // TODO: Beban Mengajar, Monitoring Pembelajaran -> belum ada halaman
+      {
+        page: "kurikulum-rekap-jurnal",
+        label: "Monitoring Jurnal",
+        sectionHeader: "Guru & Pembelajaran",
+        icon: [
+          "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+        ],
+      },
+
+      // --- Penilaian ---
+      // TODO: Ketuntasan (KKM) -> ada KelolaKKM.js, belum dicek isinya
+      {
+        page: "kurikulum-status-nilai",
+        label: "Status Pengisian Nilai",
+        sectionHeader: "Penilaian",
+        icon: [
+          "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
+        ],
+      },
+      {
+        page: "kurikulum-nilai-raport-siswa",
+        label: "Rekap Nilai",
+        icon: [
+          "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+        ],
+      },
+
+      // --- Akademik & Laporan ---
+      // TODO: Rekap Akademik, Asesmen, Evaluasi, Laporan Jadwal/Guru/Nilai
+      // terpisah, Export -> belum ada halaman spesifik. Sementara pakai
+      // halaman "Laporan" umum yang sudah kebuka buat semua role.
+      // TODO: Dokumen Kurikulum, Agenda Akademik, Pengumuman -> belum ada
+      // halaman (tabel academic_events & kaldik_documents sudah ada di DB,
+      // tapi belum ada UI-nya)
+      {
+        page: "reports",
+        label: "Laporan",
+        sectionHeader: "Akademik & Laporan",
+        icon: [
+          "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+        ],
+      },
+    ],
+  },
+
+  {
     id: "sistem",
     title: "SISTEM",
     show: (ctx) => ctx.isAdmin || ctx.isTU,
