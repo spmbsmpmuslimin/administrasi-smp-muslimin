@@ -23,7 +23,7 @@ const getClassName = (assignment) => {
   return `Kelas ${assignment.class_id}`;
 };
 
-// Palet warna per mata pelajaran -- biar kartu guru yang ngajar 2+ mapel
+// Palet Warna per mata pelajaran -- biar kartu guru yang ngajar 2+ mapel
 // gampang dibedain sekilas mata (bukan cuma beda teks). Warna dipilih
 // deterministik dari nama mapel (getSubjectTheme), jadi mapel yang sama
 // selalu dapet warna yang sama di mana pun dia muncul (list aktif & riwayat).
