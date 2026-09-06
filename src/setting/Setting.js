@@ -293,7 +293,11 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Import jadwal massal & master kode guru",
       icon: CalendarClock,
       color: "amber",
-      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
+      // ✅ FIX: tambah akses Wakasek Kurikulum (jabatan_struktural)
+      available:
+        user?.role === "admin" ||
+        user?.role === "tu" ||
+        user?.jabatan_struktural === "wakasek_kurikulum",
     },
     {
       id: "portal-siswa",
@@ -305,14 +309,8 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
     },
     {
       id: "profile",
-      // Judul & deskripsi beda per role -- admin butuh isi/edit data guru
-      // lain (lewat tab "Isi Data Guru"), guru cuma liat/kelola punya
-      // sendiri, jadi framing halamannya disesuaikan biar gak nyasar.
-      title: user?.role === "admin" ? "Manajemen Profil Guru" : "Profil Saya",
-      description:
-        user?.role === "admin"
-          ? "Lihat profil Anda & kelola data profil seluruh guru"
-          : "Kelola informasi profil pribadi Anda",
+      title: "Manajemen Profile",
+      description: "Kelola informasi profil pribadi Anda",
       icon: User,
       color: "sky",
       available: true,
@@ -484,18 +482,13 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
               </div>
             </div>
 
-            {/* Back Button - Di sebelah kanan
-                Admin: balik ke grid Pengaturan (changeTab). Selain admin
-                (guru/tu/dll): langsung ke Dashboard utama aplikasi, karena
-                mereka gak akan balik ke grid Pengaturan lagi setelah ini. */}
+            {/* Back Button - Di sebelah kanan */}
             <button
-              onClick={() =>
-                user?.role === "admin" ? changeTab("dashboard") : navigate("/dashboard")
-              }
+              onClick={() => changeTab("dashboard")}
               className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all active:scale-95 text-gray-700 dark:text-gray-300 font-medium"
             >
               <ChevronRight size={18} className="rotate-180" />
-              <span>Kembali</span>
+              <span className="hidden sm:inline">Kembali</span>
             </button>
           </div>
 

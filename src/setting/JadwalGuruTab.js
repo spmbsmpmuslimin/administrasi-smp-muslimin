@@ -13,12 +13,12 @@ import AdminJadwalMassal from "./AdminJadwalMassal";
 import AdminKodeGuru from "./AdminKodeGuru";
 
 const SUB_TABS = [
-  { id: "import", label: "Import Jadwal Massal", icon: UploadCloud },
   { id: "kode-guru", label: "Master Kode Guru", icon: BookUser },
+  { id: "import", label: "Import Jadwal Massal", icon: UploadCloud },
 ];
 
 export default function JadwalGuruTab() {
-  const [subTab, setSubTab] = useState("import");
+  const [subTab, setSubTab] = useState("kode-guru");
 
   return (
     <div className="w-full">

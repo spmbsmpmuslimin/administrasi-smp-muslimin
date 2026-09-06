@@ -347,38 +347,10 @@ export const menuConfig = [
   },
 
   // ===== WAKASEK KURIKULUM =====
-  // Route baru, terpisah dari route admin/wali-kelas yang sudah ada, jadi
-  // akses role lain (admin, tu, teacher biasa) TIDAK berubah sama sekali.
-  // Komponen di-reuse dari modul admin/wali-kelas yang sudah jalan.
-  {
-    path: "/kurikulum-jadwal-pelajaran",
-    title: "Kelola Jadwal Pelajaran",
-    component: KelolaJadwalPelajaran,
-    allowedRoles: ["teacher"],
-    requireWakasekKurikulum: true,
-    getProps: (ctx) => ({ currentUser: ctx.user }),
-  },
-  {
-    path: "/kurikulum-rekap-jurnal",
-    title: "Rekap Jurnal Harian Guru",
-    component: AdminJurnalRekap,
-    allowedRoles: ["teacher"],
-    requireWakasekKurikulum: true,
-  },
-  {
-    path: "/kurikulum-nilai-raport-siswa",
-    title: "Nilai Raport Siswa",
-    component: NilaiRaportSiswa,
-    allowedRoles: ["teacher"],
-    requireWakasekKurikulum: true,
-  },
-  {
-    path: "/kurikulum-status-nilai",
-    title: "Status Pengisian Nilai",
-    component: CekStatusNilai,
-    allowedRoles: ["teacher"],
-    requireWakasekKurikulum: true,
-  },
+  // Sengaja TIDAK ada route baru di sini. "Kelola Jadwal Pelajaran" buat
+  // wakasek kurikulum nunut ke halaman /settings yang sudah ada (tab
+  // "jadwal-guru" di Setting.js) -- lihat perubahan "available" di
+  // Setting.js dan alias "settings-jadwal-guru" di Layout.js.
 ];
 
 export { defaultProps };

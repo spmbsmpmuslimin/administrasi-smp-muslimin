@@ -1,16 +1,29 @@
 //[file name]: Sidebar.js
 import React, { useState, useEffect } from "react";
+import { Database, BookOpen, BarChart3, CalendarClock, Library, Settings } from "lucide-react";
 import sekolahLogo from "../assets/logo_sekolah.png";
 import { supabase } from "../supabaseClient";
 import { sidebarGroups } from "../config/sidebarConfig";
+
+// ⭐ Icon per kategori (group.id di sidebarConfig.js) -- cuma buat header
+// grup, gak ada hubungannya sama icon tiap menu item (yang udah ada
+// sendiri-sendiri di sidebarConfig.js).
+const GROUP_ICONS = {
+  "master-data": Database,
+  akademik: BookOpen,
+  eraport: BarChart3,
+  kurikulum: CalendarClock,
+  perpustakaan: Library,
+  sistem: Settings,
+};
 
 // ========== Sub-komponen: 1 baris menu ==========
 const MenuLink = ({ page, label, icon, isCollapsed, isActive, indent, onClick }) => (
   <a
     href={`#${page}`}
     className={`
-      flex items-center gap-3 ${indent ? "px-6 sm:px-8" : "px-4 sm:px-6"} py-2.5 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-      touch-manipulation min-h-[44px]
+      flex items-center gap-3 ${indent ? "px-6 sm:px-8" : "px-4 sm:px-6"} py-2 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
+      touch-manipulation min-h-[40px]
       ${isCollapsed ? "justify-center" : ""}
       ${
         isActive
@@ -108,6 +121,10 @@ const Sidebar = ({
   // tetap kehitung sebagai staff di daftar "Data Guru & Staff", tapi diksh
   // akses sidebar selevel Admin.
   const isTU = normalizedRole === "tu";
+  // ⭐ Wakasek Kurikulum: bukan role, tapi jabatan struktural tambahan di
+  // tabel users (kolom jabatan_struktural). Guru biasa yang juga menjabat
+  // wakasek tetap punya role "teacher", jadi ini flag terpisah dari role.
+  const isWakasekKurikulum = userData.jabatan_struktural === "wakasek_kurikulum";
 
   const fullName = userData.full_name || "User";
   const roleName =
@@ -145,6 +162,7 @@ const Sidebar = ({
     isGuruBK,
     isTU,
     isWaliKelas,
+    isWakasekKurikulum,
     userRole: normalizedRole,
     eraportActive,
   };
@@ -235,11 +253,21 @@ const Sidebar = ({
 
             return (
               <div key={group.id} className="mb-4 sm:mb-5">
-                {group.title && !isCollapsed && (
-                  <div className="px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
-                    {group.title}
-                  </div>
-                )}
+                {group.title &&
+                  !isCollapsed &&
+                  (() => {
+                    const GroupIcon = GROUP_ICONS[group.id];
+                    return (
+                      <div className="flex items-center gap-2 px-4 sm:px-6 pt-1 pb-2 mb-1 border-b border-blue-800 dark:border-gray-800">
+                        {GroupIcon && (
+                          <GroupIcon className="w-3.5 h-3.5 text-blue-300 dark:text-gray-400 flex-shrink-0" />
+                        )}
+                        <span className="text-[11px] font-extrabold uppercase text-white dark:text-gray-100 tracking-widest">
+                          {group.title}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                 {visibleItems.map((item) => {
                   const resolvedPage = typeof item.page === "function" ? item.page(ctx) : item.page;

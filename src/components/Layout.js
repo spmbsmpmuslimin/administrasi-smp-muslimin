@@ -236,6 +236,11 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
         // tab di dalam /settings, lihat Setting.js), jadi gak bisa lewat
         // lookup menuByKey biasa -- perlu path lengkap dengan query param.
         path = "/settings?tab=profile";
+      } else if (page === "settings-jadwal-guru") {
+        // alias khusus buat Wakasek Kurikulum: tab "Manajemen Jadwal
+        // Pelajaran" di dalam Setting.js (id: "jadwal-guru"), bukan route
+        // mandiri di menuConfig.
+        path = "/settings?tab=jadwal-guru";
       } else {
         const entry = menuByKey.get(page);
         path = entry?.path;
@@ -397,6 +402,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
               id: user?.id,
               full_name: user?.full_name || user?.username || "User",
               homeroom_class_name: user?.homeroom_class_id || "",
+              jabatan_struktural: user?.jabatan_struktural || "",
             }}
             darkMode={darkMode}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -421,6 +427,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             id: user?.id,
             full_name: user?.full_name || user?.username || "User",
             homeroom_class_name: user?.homeroom_class_id || "",
+            jabatan_struktural: user?.jabatan_struktural || "",
           }}
           onClose={() => setMobileMenuOpen(false)}
           darkMode={darkMode}
