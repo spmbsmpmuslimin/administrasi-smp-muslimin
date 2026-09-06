@@ -94,8 +94,10 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |-- components
 |   |   |-- ui
 |   |   |   |-- Card.js
+|   |   |   |-- ConfirmDialog.js
 |   |   |   |-- PageContainer.js
-|   |   |   `-- Typography.js
+|   |   |   |-- Typography.js
+|   |   |   `-- useConfirmDialog.js
 |   |   |-- AdminDashboard.js
 |   |   |-- AdminJurnalRekap.js
 |   |   |-- AnnouncementList.js

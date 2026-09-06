@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-05T04:31:16.280Z",
-  "executionTimeMs": 447,
-  "filesScanned": 239,
+  "generatedAt": "2026-09-06T01:11:44.039Z",
+  "executionTimeMs": 430,
+  "filesScanned": 241,
   "summary": {
     "status": "critical",
     "criticalCount": 1,
@@ -45,15 +45,15 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5071 class warna (di 172 file) kemungkinan belum dark-mode-aware",
+          "title": "5008 class warna (di 172 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
             "src/spmb/StudentForm.js — 120 class belum ada dark: variant",
             "src/pages/CatatanSiswa.js — 118 class belum ada dark: variant",
+            "src/spmb/ClassDivision.js — 117 class belum ada dark: variant",
             "src/pages/datasiswa-induk/DataSiswaInduk.js — 111 class belum ada dark: variant",
             "src/pages/grades/Grades.js — 108 class belum ada dark: variant",
-            "src/spmb/ClassDivision.js — 108 class belum ada dark: variant",
             "src/pages/grades/GradesKatrol.js — 88 class belum ada dark: variant",
             "src/components/AdminDashboard.js — 86 class belum ada dark: variant",
             "src/setting/UserManagementTab.js — 86 class belum ada dark: variant",
@@ -62,15 +62,14 @@
             "src/pages/attendance/AttendanceManagement.js — 78 class belum ada dark: variant",
             "src/setting/school-management/SchoolSettingsTab.js — 76 class belum ada dark: variant",
             "src/spmb/StudentList.js — 75 class belum ada dark: variant",
+            "src/components/TeacherDashboard.js — 71 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
-            "src/pages/Students.js — 67 class belum ada dark: variant",
             "src/reports/modals/AdminReportModal.js — 66 class belum ada dark: variant",
             "src/attendance-teacher/reports/ITMReport.js — 65 class belum ada dark: variant",
             "src/system/PerformanceMonitor.js — 65 class belum ada dark: variant",
             "src/system/ProjectStructure.js — 65 class belum ada dark: variant",
             "src/setting/school-management/SchoolManagementTab.js — 64 class belum ada dark: variant",
             "src/reports/modals/AcademicGradesView.js — 62 class belum ada dark: variant",
-            "src/components/TeacherDashboard.js — 60 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
             "src/system/MonitorDashboard.js — 55 class belum ada dark: variant",
             "src/reports/AdminReports.js — 54 class belum ada dark: variant",
@@ -86,8 +85,9 @@
             "src/pages/kelola-raport/RekapKelulusan.js — 48 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
-            "src/pages/Classes.js — 47 class belum ada dark: variant",
-            "src/pages/kelola-raport/ImportRaportForm.js — 47 class belum ada dark: variant"
+            "src/pages/kelola-raport/ImportRaportForm.js — 47 class belum ada dark: variant",
+            "src/setting/ProfileTab.js — 47 class belum ada dark: variant",
+            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant"
           ]
         }
       ]
@@ -119,7 +119,7 @@
         },
         {
           "severity": "info",
-          "title": "30 embedded join yang UDAH pake disambiguation hint",
+          "title": "31 embedded join yang UDAH pake disambiguation hint",
           "description": "FYI aja — ternyata di banyak file (CetakRaport, ReportHelpers, AdminReports, dll) project ini sebenernya pake embedded join Supabase, bukan resolve manual semua di JS. Yang ini kelihatannya udah aman karena udah ada hint (`!inner`, `!nama_fk`, atau `alias:table`) yang secara eksplisit nunjuk relasi mana yang dimaksud — itu emang cara resmi Supabase buat ngehindarin PGRST200. Kalau ternyata ini emang pattern yang lo pake sengaja, gue bakal update catatan gue soal ini.",
           "details": [
             "src/attendance-teacher/reports/DailySummary.js:71 → select(\"*, users!teacher_id ( full_name )\")",
@@ -128,7 +128,8 @@
             "src/components/HomeroomTeacherDashboard.js:601 → select(\"student_id, status, students!inner(full_name), class_id, subject\")",
             "src/components/HomeroomTeacherDashboard.js:683 → select(\"student_id, status, students!inner(full_name), class_id\")",
             "src/components/SaranMasukanSiswa.js:73 → select(\"id, message, status, created_at, users:student_id (full_name)\")",
-            "src/components/TeacherDashboard.js:482 → select(\"student_id, status, students!inner(full_name), class_id, subject\")",
+            "src/components/TeacherDashboard.js:496 → select(\"student_id, status, students!inner(full_name), class_id, subject\")",
+            "src/components/TeacherDashboard.js:589 → select(\"student_id, status, students!inner(full_name), class_id\")",
             "src/e-raport/CekNilai.js:184 → select(\"*, students!inner(full_name, nis, is_active)\")",
             "src/pages/CatatanSiswa.js:1025 → select(\"*, teacher:users(full_name)\")",
             "src/pages/CatatanSiswa.js:1169 → select(\"id, student:students(full_name)\")",

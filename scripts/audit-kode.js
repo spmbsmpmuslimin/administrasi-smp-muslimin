@@ -22,7 +22,7 @@
  *                               tabel udah dihapus/direname)
  *
  * CARA PAKAI:
- *   node scripts/audit-kode.js
+ *   node scripts/audit-kode.js atau bisa pake npm run check-all
  *
  * Output: public/audit-report.json — dibaca otomatis sama tab
  * "Code Audit" di Monitor Sistem (src/system/CodeAudit.js).
