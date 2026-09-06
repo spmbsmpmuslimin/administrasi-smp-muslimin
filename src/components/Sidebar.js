@@ -17,16 +17,24 @@ const GROUP_ICONS = {
   sistem: Settings,
 };
 
-// ⭐ Aksen warna kategori -- disamain semua pakai emerald (hijau) biar
-// konsisten satu warna di seluruh sidebar, gak beda-beda per grup lagi.
+// ⭐ Aksen warna kategori -- disamain semua pakai "sky" (biru terang) biar
+// senada sama warna dasar sidebar (bg-blue-900 di bawah), bukan warna
+// asing kayak emerald/hijau yang kelihatan numpang/gak nyambung. Dipilih
+// "sky" (bukan "blue" polos) supaya tetap ada kontras cukup buat nunjukin
+// state aktif/badge di atas background biru tua -- kalau dipaksa sama
+// persis "blue", active state jadi nyaris gak keliatan bedanya sama
+// background-nya sendiri.
+// Shade sengaja digelapin (700/800, bukan 400/500) + opacity diturunin
+// dikit -- biar aksennya nyatu/gak terlalu "pop"/menonjol nabrak dari
+// keseluruhan sidebar yang emang gelap (blue-900).
 const GROUP_ACCENTS = {};
 const DEFAULT_ACCENT = {
-  badge: "bg-emerald-500",
-  iconText: "text-emerald-50",
-  active: "from-emerald-600/90 to-emerald-700/40",
-  activeBorder: "border-emerald-400",
-  card: "bg-emerald-500/[0.07]",
-  itemIcon: "bg-emerald-400/20 text-emerald-200",
+  badge: "bg-sky-700",
+  iconText: "text-sky-50",
+  active: "from-sky-700/80 to-sky-800/40",
+  activeBorder: "border-sky-500",
+  card: "bg-sky-500/[0.05]",
+  itemIcon: "bg-sky-500/15 text-sky-200",
 };
 
 // ========== Sub-komponen: 1 baris menu ==========

@@ -2,6 +2,37 @@
 // Single source of truth untuk semua route "biasa" (yang lewat ProtectedRoute + LayoutWrapper).
 // Route khusus (login "/", "/login-siswa", "/secret-admin-panel-2024", catch-all "*") TETAP
 // hardcoded langsung di App.js karena behavior-nya beda (gak pakai Layout / gak pakai ProtectedRoute biasa).
+//
+// ⚠️ PENTING -- ini file yang BENERAN nge-gembok akses (lihat juga
+// ProtectedRoute di components/App.js yang eksekusi pengecekan ini):
+//   allowedRoles            : array role yang boleh masuk. [] = semua role login boleh.
+//   requireWaliKelas        : true = TAMBAHAN cek khusus (admin ATAU wali kelas)
+//   requireWakasekKurikulum : true = TAMBAHAN cek GENERIK ke SEMUA role di allowedRoles
+//                             (admin ATAU wakasek kurikulum) -- pakai ini kalau
+//                             route memang KHUSUS wakasek kurikulum.
+//   teacherRequiresWakasekKurikulum : true = TAMBAHAN cek CUMA buat role
+//                             persis "teacher" (role lain di allowedRoles yang
+//                             sama TETAP bebas, gak ikut kena syarat ini).
+//                             Pakai ini kalau allowedRoles CAMPUR (misal
+//                             admin/guru_bk/tu bebas + teacher wajib wakasek).
+//   requireRuangBelajarAccess: true = TAMBAHAN cek whitelist by user id
+//
+// File ini BEDA sama config/sidebarConfig.js (yang cuma ngatur nongol/
+// gaknya menu di sidebar, gak ngegembok apa-apa). Sidebar bisa aja
+// nyembunyiin menu dari role tertentu, tapi kalau route-nya di sini gak
+// dibatasin allowedRoles-nya, role itu TETAP bisa masuk kalau nembak
+// URL-nya langsung. Selalu cek 2 file ini BARENGAN pas nambah akses buat
+// role/jabatan baru -- nambah di salah satu doang bakal ketauan pas
+// testing (baik "menu gak nongol" ATAU "nongol tapi Akses Ditolak").
+//
+// (Sep 2026, kasus "Monitor Presensi Siswa" buat Wakasek Kurikulum:
+// sebelumnya /admin-attendance cuma nambahin "teacher" ke allowedRoles
+// tanpa syarat tambahan -- efeknya SEMUA guru mapel biasa teknisnya ikut
+// bisa akses via URL langsung, cuma "aman" karena sidebar nyembunyiin
+// menu-nya. Sekarang FIXED pakai teacherRequiresWakasekKurikulum: true,
+// jadi generik role "teacher" udah beneran digembok cuma buat yang
+// Wakasek Kurikulum -- lihat komentar di entry /admin-attendance di
+// bawah, dan ProtectedRoute di App.js buat detail implementasinya.)
 
 // Import semua page/module components
 import Dashboard from "../components/Dashboard";
@@ -50,6 +81,8 @@ import RaportPage from "../e-raport/RaportPage";
 
 import PerpusMain from "../perpustakaan/PerpusMain";
 import RuangBelajarAdmin from "../portal-siswa/ruang-belajar-admin/RuangBelajarAdmin";
+
+import KurikulumAdministrasi from "../pages/wakasek-kurikulum/KurikulumAdministrasi";
 
 // ========== HELPER: default props buat kebanyakan komponen ==========
 // ctx = { user, onShowToast, darkMode, handleLogout, handleToggleDarkMode }
@@ -145,6 +178,11 @@ export const menuConfig = [
     // diri sendiri) -- lihat label() dinamis di sidebarConfig.js. Kalau
     // "teacher" dibuang dari sini, guru kena Akses Ditolak pas mau
     // presensi sendiri walau menunya masih muncul di sidebar mereka.
+    //
+    // "teacher" di sini SENGAJA generik (gak dibatasin
+    // teacherRequiresWakasekKurikulum kayak /admin-attendance) -- karena
+    // halaman ini justru DIPERUNTUKKAN buat semua guru isi presensi
+    // sendiri, jadi generik itu emang sesuai maksudnya, bukan celah.
     allowedRoles: ["teacher", "guru_bk", "admin", "tu"],
   },
   {
@@ -183,7 +221,20 @@ export const menuConfig = [
     path: "/admin-attendance",
     title: "Monitor Presensi",
     component: AdminAttendance,
-    allowedRoles: ["admin", "guru_bk", "tu"], // ✅ FIX: tambah "tu"
+    // ✅ FIX (Sep 2026): "teacher" ditambahin -- Wakasek Kurikulum role-nya
+    // tetap "teacher" (ditandai lewat jabatan_struktural, sama pola kayak
+    // Wali Kelas), jadi kalau gak ada "teacher" di sini dia kena Akses
+    // Ditolak walau menu "Monitor Presensi Siswa" udah muncul di sidebar-nya
+    // (lihat sidebarConfig.js grup KURIKULUM).
+    //
+    // ✅ FIX lanjutan: teacherRequiresWakasekKurikulum: true dipasang biar
+    // "teacher" di allowedRoles TIDAK generik ke semua guru mapel --
+    // ProtectedRoute (App.js) bakal cek TAMBAHAN khusus buat role
+    // "teacher": wajib Wakasek Kurikulum. Admin/guru_bk/tu di allowedRoles
+    // yang sama TETAP bebas, gak kena syarat tambahan ini (lihat komentar
+    // di ProtectedRoute buat detail logic-nya).
+    allowedRoles: ["admin", "guru_bk", "tu", "teacher"],
+    teacherRequiresWakasekKurikulum: true,
   },
   { path: "/jadwal-saya", title: "Jadwal Saya", component: TeacherSchedule },
   {
@@ -347,10 +398,30 @@ export const menuConfig = [
   },
 
   // ===== WAKASEK KURIKULUM =====
-  // Sengaja TIDAK ada route baru di sini. "Kelola Jadwal Pelajaran" buat
-  // wakasek kurikulum nunut ke halaman /settings yang sudah ada (tab
-  // "jadwal-guru" di Setting.js) -- lihat perubahan "available" di
-  // Setting.js dan alias "settings-jadwal-guru" di Layout.js.
+  // ✅ FIX (Sep 2026): sebelumnya "Kelola Jadwal Pelajaran" buat wakasek
+  // kurikulum cuma numpang tab "jadwal-guru" di /settings (via alias
+  // "settings-jadwal-guru" di Layout.js) -- gak ada route sendiri.
+  // Sekarang diganti jadi hub "Administrasi": halaman mandiri baru,
+  // card-grid sendiri (mirip Setting.js) di
+  // src/pages/wakasek-kurikulum/KurikulumAdministrasi.js. Card pertamanya
+  // masih "Manajemen Jadwal Pelajaran" (reuse JadwalGuruTab yang sama
+  // persis), tapi sekarang jadi wadah buat nampung menu-menu khusus tugas
+  // struktural Wakasek Kurikulum kedepannya, biar gak numpuk campur sama
+  // menu "Guru Mapel" biasa dia di sidebar.
+  //
+  // requireWakasekKurikulum: true -> otomatis dicek ProtectedRoute lewat
+  // canAccessWakasekKurikulumRoute() (admin ATAU wakasek kurikulum).
+  {
+    path: "/kurikulum-administrasi",
+    title: "Administrasi",
+    component: KurikulumAdministrasi,
+    allowedRoles: ["admin", "teacher"],
+    requireWakasekKurikulum: true,
+    getProps: (ctx) => ({
+      ...defaultProps(ctx),
+      onToggleDarkMode: ctx.handleToggleDarkMode,
+    }),
+  },
 ];
 
 export { defaultProps };

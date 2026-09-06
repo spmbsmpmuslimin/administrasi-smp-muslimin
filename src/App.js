@@ -66,6 +66,14 @@ const ProtectedRoute = ({
   allowedRoles = [],
   requireWaliKelas = false, // ← Untuk route khusus wali kelas
   requireWakasekKurikulum = false, // ← Untuk route khusus wakasek kurikulum
+  // ← Buat route yang allowedRoles-nya CAMPUR beberapa role (misal
+  // ["admin","guru_bk","tu","teacher"]), tapi CUMA role "teacher" yang
+  // wajib Wakasek Kurikulum -- role lain di allowedRoles yang sama TETAP
+  // bebas, gak ikut kena syarat ini. Beda sama requireWakasekKurikulum di
+  // atas yang berlaku generik ke SEMUA role (bakal ikut ngeblok guru_bk/
+  // tu kalau dipasang bareng). Lihat catatan "KNOWN LIMITATION" di
+  // config/menuConfig.js buat konteks lengkapnya.
+  teacherRequiresWakasekKurikulum = false,
   requireRuangBelajarAccess = false, // ← Untuk route Kelola Ruang Belajar (whitelist)
   onShowToast,
 }) => {
@@ -234,6 +242,29 @@ const ProtectedRoute = ({
   }
 
   // Role-based access check
+  // ⚠️ KETERBATASAN (dicatet Sep 2026, lihat juga komentar header di
+  // config/menuConfig.js soal kasus "admin-attendance"): allowedRoles di
+  // sini cuma bisa jawab "role X ada di daftar apa enggak" -- gak ada
+  // konsep "role X boleh asal jabatan_struktural-nya Y juga, tapi role Z
+  // di daftar yang sama gak perlu syarat itu". requireWaliKelas &
+  // requireWakasekKurikulum di bawah ini SAMA-SAMA nge-cek SEMUA role yang
+  // lolos allowedRoles, gak bisa di-scope cuma ke 1 role tertentu doang.
+  //
+  // Efeknya: kalau ada route yang allowedRoles-nya campur beberapa role,
+  // dan cuma SALAH SATU role itu yang butuh syarat tambahan (misal cuma
+  // "teacher" yang harus Wakasek Kurikulum, sedangkan "admin"/"guru_bk"/
+  // "tu" di allowedRoles yang sama gak perlu), requireWakasekKurikulum
+  // GAK BISA dipasang di situ (bakal ikut ngeblok role lain yang harusnya
+  // bebas syarat). Solusi sementara: masukin role itu ke allowedRoles
+  // tanpa syarat tambahan, terima resiko role itu jadi "generik" (semua
+  // yang punya role tsb bisa akses via URL langsung, gak cuma yang
+  // dimaksud -- disembunyiin doang lewat sidebarConfig.js).
+  //
+  // Kalau ini perlu dibenerin bener-bener (bukan cuma disembunyiin di
+  // sidebar): ganti allowedRoles dari array flat jadi struktur per-role
+  // (misal { admin: true, teacher: (u) => isWakasekKurikulum(u) }), terus
+  // ganti blok if di bawah ini buat evaluasi per-role. Belum dikerjain --
+  // PR/todo kedepannya kalau makin banyak kasus kayak gini.
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
     return (
       <div
@@ -357,7 +388,18 @@ const ProtectedRoute = ({
   }
 
   // ✅ Wakasek Kurikulum Check
-  if (requireWakasekKurikulum && !canAccessWakasekKurikulumRoute(userFullData)) {
+  // Kondisi ini sengaja di-OR jadi 2 sumber:
+  // 1. requireWakasekKurikulum -- berlaku generik ke SEMUA role di
+  //    allowedRoles (dipakai kalau route memang KHUSUS wakasek kurikulum,
+  //    contoh: /kurikulum-administrasi).
+  // 2. teacherRequiresWakasekKurikulum -- CUMA berlaku kalau userRole
+  //    persis "teacher". Dipakai buat route yang allowedRoles-nya CAMPUR
+  //    (admin/guru_bk/tu boleh bebas, tapi kalau yang lewat itu "teacher",
+  //    wajib Wakasek Kurikulum). Contoh: /admin-attendance.
+  if (
+    (requireWakasekKurikulum && !canAccessWakasekKurikulumRoute(userFullData)) ||
+    (teacherRequiresWakasekKurikulum && userRole === "teacher" && !isWakasekKurikulum(userFullData))
+  ) {
     return (
       <div
         className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
@@ -766,6 +808,7 @@ function App() {
             allowedRoles = [],
             requireWaliKelas = false,
             requireWakasekKurikulum = false,
+            teacherRequiresWakasekKurikulum = false,
             requireRuangBelajarAccess = false,
             layout = true,
             getProps = (ctx) => ({
@@ -786,6 +829,7 @@ function App() {
                   allowedRoles={allowedRoles}
                   requireWaliKelas={requireWaliKelas}
                   requireWakasekKurikulum={requireWakasekKurikulum}
+                  teacherRequiresWakasekKurikulum={teacherRequiresWakasekKurikulum}
                   requireRuangBelajarAccess={requireRuangBelajarAccess}
                 >
                   {layout ? (

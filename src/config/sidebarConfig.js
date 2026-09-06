@@ -2,7 +2,7 @@
 // Single source of truth untuk struktur menu di Sidebar.js
 //
 // ctx yang dikirim ke setiap show()/label()/page() function:
-// { isAdmin, isTeacher, isGuruBK, isTU, isWaliKelas, userRole, eraportActive }
+// { isAdmin, isTeacher, isGuruBK, isTU, isWaliKelas, isWakasekKurikulum, userRole, eraportActive }
 //
 // Tiap item:
 //   page            : string, ATAU function(ctx) => string (buat target dinamis)
@@ -13,6 +13,32 @@
 //   indent          : true kalau menu ini sub-item (padding lebih dalam, dipakai di E-RAPORT > Wali Kelas)
 //   sectionHeader   : string, render mini-header sebelum item ini (misal "Konseling", "Menu Wali Kelas")
 //   sectionHeaderStyle : "main" (default, uppercase besar) | "sub" (lebih kecil, dipakai utk sub-section)
+//
+// ⚠️ PENTING -- JANGAN KETUKER 2 KONSEP INI (sumber bug "menu dobel" & bug
+// "Akses Ditolak" yang paling sering kejadian di file ini):
+//
+// 1. show(ctx) DI SINI = cuma ngatur NONGOL/GAKNYA menu di sidebar. Ini
+//    murni tampilan (UI). Nge-return true gak otomatis ngasih akses ke
+//    page-nya, dan nge-return false gak ngeblok orang yang nembak URL-nya
+//    langsung.
+// 2. allowedRoles / requireWaliKelas / requireWakasekKurikulum di
+//    config/menuConfig.js = yang beneran ngatur BOLEH/GAKNYA akses ke
+//    halaman (dicek di ProtectedRoute, components/App.js). Ini yang jadi
+//    "gembok" sungguhan.
+//
+// Konsekuensinya:
+// - Kalau ada page yang dipakai di 2 grup sidebar berbeda (contoh:
+//   "attendance-teacher" & "admin-attendance", muncul di grup AKADEMIK
+//   DAN grup KURIKULUM buat Wakasek Kurikulum), JANGAN nambahin kondisi
+//   ctx yang sama ke KEDUA show()-nya cuma buat "jaga-jaga akses" --
+//   akibatnya menu itu nongol 2x di sidebar yang sama. Cukup pastikan
+//   allowedRoles di menuConfig.js udah bener; show() di sini tinggal
+//   diatur SEKALI di grup yang memang mau ditampilin.
+// - Sebaliknya, nambahin entry baru di sini (page-nya udah bisa diakses
+//   role tsb) TIDAK otomatis berarti page-nya aman/boleh diakses role
+//   tsb -- selalu cek juga allowedRoles di menuConfig.js, atau bakal
+//   ketemu "Akses Ditolak" walau menu-nya udah muncul (kejadian nyata:
+//   kasus "admin-attendance" Sep 2026).
 
 export const sidebarGroups = [
   {
@@ -81,6 +107,11 @@ export const sidebarGroups = [
         page: "attendance-teacher",
         label: (ctx) => (ctx.isAdmin || ctx.isTU ? "Monitor Presensi Guru" : "Presensi Guru"),
         icon: ["M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"],
+        // NOTE: gak perlu tambah ctx.isWakasekKurikulum di sini -- Wakasek
+        // Kurikulum role-nya "teacher", jadi ctx.isTeacher udah otomatis
+        // true buat dia. Entry ini emang SENGAJA dobel tampil di AKADEMIK
+        // (selain di grup KURIKULUM di bawah) karena Wakasek Kurikulum
+        // tetap guru mapel biasa juga.
         show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isTeacher || ctx.isGuruBK,
       },
       {
@@ -97,6 +128,13 @@ export const sidebarGroups = [
         icon: [
           "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
         ],
+        // ✅ FIX (Sep 2026): "isWakasekKurikulum" DICABUT lagi dari sini --
+        // ini cuma ngatur tampil-gaknya menu di grup AKADEMIK, sedangkan
+        // akses page-nya sendiri udah dijamin lewat allowedRoles di
+        // menuConfig.js (bukan lewat show() ini). Kalau ditambahin,
+        // Wakasek Kurikulum jadi liat menu ini 2x (AKADEMIK + KURIKULUM) --
+        // padahal Wakasek Kurikulum udah punya entry sendiri di grup
+        // KURIKULUM (lihat di bawah).
         show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isGuruBK,
       },
       {
@@ -317,9 +355,41 @@ export const sidebarGroups = [
     title: "KURIKULUM",
     show: (ctx) => ctx.isWakasekKurikulum,
     items: [
+      // ===== Monitoring (Sep 2026) =====
+      // Reuse page yang sama persis dengan yang dipakai Admin/TU/Guru BK
+      // di grup AKADEMIK (attendance-teacher & admin-attendance) -- cuma
+      // beda entry sidebar biar nongol juga di grup KURIKULUM. Sengaja
+      // gak dicek "jangan dobel sama isTeacher/isGuruBK" karena kalau
+      // Wakasek Kurikulum-nya merangkap guru mapel, dobel tampil di
+      // AKADEMIK & KURIKULUM itu memang disengaja (per keputusan produk).
       {
-        page: "settings-jadwal-guru",
-        label: "Kelola Jadwal Pelajaran",
+        page: "attendance-teacher",
+        label: "Monitor Presensi Guru",
+        highlightPages: ["attendance-teacher"],
+        icon: ["M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"],
+      },
+      {
+        page: "admin-attendance",
+        label: "Monitor Presensi Siswa",
+        highlightPages: ["admin-attendance"],
+        icon: [
+          "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+        ],
+      },
+      // ===== Administrasi (Sep 2026) =====
+      // ⚠️ Sebelumnya item ini langsung nunjuk ke "settings-jadwal-guru"
+      // (alias ke Setting.js?tab=jadwal-guru). Sekarang diganti jadi hub
+      // "Administrasi" -- halaman baru terpisah (bukan bagian dari
+      // Setting.js lagi) di src/pages/wakasek-kurikulum/KurikulumAdministrasi.js,
+      // isinya card-grid mirip Pengaturan tapi khusus scope Wakasek
+      // Kurikulum. Card pertama & satu-satunya buat saat ini: "Manajemen
+      // Jadwal Pelajaran" (reuse JadwalGuruTab yang sama). Tujuannya biar
+      // sidebar Wakasek Kurikulum (yang juga guru mapel biasa) gak numpuk
+      // -- kedepannya semua menu khusus tugas struktural dia dikumpulin
+      // di sini.
+      {
+        page: "kurikulum-administrasi",
+        label: "Administrasi",
         icon: [
           "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
         ],
