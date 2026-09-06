@@ -2,8 +2,9 @@
 /**
  * db-struktur.js
  * -----------------------------------------------------------------------
- * Generate struktur database (tabel, kolom, tipe, PK/FK) dari Supabase,
- * jalan di TERMINAL — bukan dari browser.
+ * Generate struktur database (tabel, kolom, tipe, PK/FK, plus reverse-FK
+ * "referencedBy" — tabel lain yang FK ke tabel ini) dari Supabase, jalan
+ * di TERMINAL — bukan dari browser.
  *
  * KENAPA HARUS DARI TERMINAL, PADAHAL DatabaseStructure.js AWALNYA
  * DIRENCANAIN FETCH LANGSUNG DARI UI?
@@ -178,6 +179,28 @@ async function main() {
     };
   });
   tables.sort((a, b) => a.name.localeCompare(b.name));
+
+  // ---------------------------------------------------------------------
+  // Reverse FK map — "referencedBy": tabel LAIN yang FK ke tabel ini.
+  // PostgREST OpenAPI schema cuma nyimpen FK di sisi kolom yang JADI FK
+  // (outgoing), gak ada info "siapa yang nunjuk balik ke saya". Tapi
+  // karena kita udah punya foreignKeys dari SEMUA tabel di atas, tinggal
+  // cross-reference doang — gak perlu request tambahan ke Supabase.
+  // ---------------------------------------------------------------------
+  const referencedByMap = {};
+  tables.forEach((t) => {
+    t.foreignKeys.forEach((fk) => {
+      if (!referencedByMap[fk.refTable]) referencedByMap[fk.refTable] = [];
+      referencedByMap[fk.refTable].push({
+        table: t.name,
+        column: fk.column,
+        refColumn: fk.refColumn,
+      });
+    });
+  });
+  tables.forEach((t) => {
+    t.referencedBy = (referencedByMap[t.name] || []).sort((a, b) => a.table.localeCompare(b.table));
+  });
 
   // Format list polos "tabel : kolom1,kolom2,..." — enak buat ditempel ke
   // dokumentasi/chat, beda kegunaan sama tabel interaktif yang detail per

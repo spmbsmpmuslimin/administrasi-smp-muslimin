@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-06T01:11:47.436Z",
-  "executionTimeMs": 2785,
+  "generatedAt": "2026-09-06T02:07:52.528Z",
+  "executionTimeMs": 2990,
   "totalTables": 62,
   "tables": [
     {
@@ -115,7 +115,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "academic_years",
@@ -188,7 +189,84 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": [
+        {
+          "table": "attendance_eraport",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "attendances",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "catatan_eraport",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "ekstrakurikuler_eraport",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "grades_katrol",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "jurnal_harian",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "konseling",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "nilai_eraport",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "raport_config",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "raport_metadata",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "student_development_notes",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "students",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "teacher_assignments",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "teacher_schedules",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "tujuan_pembelajaran",
+          "column": "academic_year_id",
+          "refColumn": "id"
+        }
+      ]
     },
     {
       "name": "announcement",
@@ -269,7 +347,14 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": [
+        {
+          "table": "announcement_reads",
+          "column": "announcement_id",
+          "refColumn": "id"
+        }
+      ]
     },
     {
       "name": "announcement_reads",
@@ -335,7 +420,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "app_config",
@@ -376,7 +462,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "attendance_eraport",
@@ -538,7 +625,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "attendances",
@@ -668,7 +756,8 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "attendances_view",
@@ -723,7 +812,8 @@
         }
       ],
       "primaryKeys": [],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "audit_logs",
@@ -788,7 +878,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "buku",
@@ -885,7 +976,14 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": [
+        {
+          "table": "peminjaman",
+          "column": "buku_id",
+          "refColumn": "id"
+        }
+      ]
     },
     {
       "name": "buku_dengan_stok",
@@ -998,7 +1096,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "buku_stats",
@@ -1037,7 +1136,8 @@
         }
       ],
       "primaryKeys": [],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "catatan_eraport",
@@ -1207,7 +1307,8 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "class_organization",
@@ -1297,7 +1398,8 @@
           "refTable": "students",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "class_schedules",
@@ -1370,7 +1472,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "classes",
@@ -1435,7 +1538,44 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": [
+        {
+          "table": "attendance_eraport",
+          "column": "class_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "catatan_eraport",
+          "column": "class_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "grades",
+          "column": "class_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "nilai_eraport",
+          "column": "class_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "raport_config",
+          "column": "class_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "students",
+          "column": "class_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "teacher_assignments",
+          "column": "class_id",
+          "refColumn": "id"
+        }
+      ]
     },
     {
       "name": "cleanup_history",
@@ -1484,7 +1624,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "duty_schedules",
@@ -1541,7 +1682,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "ekstrakurikuler_eraport",
@@ -1639,7 +1781,8 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "eraport_settings",
@@ -1705,7 +1848,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "event_categories",
@@ -1746,7 +1890,14 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": [
+        {
+          "table": "academic_events",
+          "column": "category_id",
+          "refColumn": "id"
+        }
+      ]
     },
     {
       "name": "feedback_guru",
@@ -1820,7 +1971,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "grades",
@@ -1926,7 +2078,8 @@
           "refTable": "classes",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "grades_katrol",
@@ -2184,7 +2337,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "grades_katrol_settings",
@@ -2281,7 +2435,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "homevisits",
@@ -2433,6 +2588,13 @@
         {
           "column": "student_id",
           "refTable": "students",
+          "refColumn": "id"
+        }
+      ],
+      "referencedBy": [
+        {
+          "table": "tindaklanjut_homevisits",
+          "column": "home_visit_id",
           "refColumn": "id"
         }
       ]
@@ -2605,7 +2767,8 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "kaldik_documents",
@@ -2671,7 +2834,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "kelulusan_config",
@@ -2704,7 +2868,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "kkm_mapel",
@@ -2745,7 +2910,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "konseling",
@@ -2987,7 +3153,8 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "nilai_eraport",
@@ -3157,6 +3324,13 @@
           "refTable": "users",
           "refColumn": "id"
         }
+      ],
+      "referencedBy": [
+        {
+          "table": "nilai_eraport_detail",
+          "column": "nilai_eraport_id",
+          "refColumn": "id"
+        }
       ]
     },
     {
@@ -3231,7 +3405,8 @@
           "refTable": "tujuan_pembelajaran",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "notifications",
@@ -3417,7 +3592,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "peminjaman",
@@ -3579,7 +3755,8 @@
           "refTable": "students",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "pengumuman_siswa",
@@ -3652,7 +3829,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "raport_config",
@@ -3758,7 +3936,8 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "raport_metadata",
@@ -3856,7 +4035,8 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "ruang_belajar",
@@ -3986,7 +4166,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "saran_masukan",
@@ -4052,7 +4233,8 @@
           "refTable": "students",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "school_settings",
@@ -4101,7 +4283,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "seating_charts",
@@ -4182,7 +4365,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "siswa_baru",
@@ -4535,7 +4719,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "spmb_settings",
@@ -4600,7 +4785,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "student_auth",
@@ -4682,7 +4868,8 @@
           "refTable": "students",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "student_development_notes",
@@ -4820,6 +5007,13 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
+      ],
+      "referencedBy": [
+        {
+          "table": "notifications",
+          "column": "note_id",
+          "refColumn": "id"
+        }
       ]
     },
     {
@@ -4910,7 +5104,8 @@
           "refTable": "students",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "student_mutations",
@@ -5008,7 +5203,8 @@
           "refTable": "students",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "student_profile_details",
@@ -5298,7 +5494,8 @@
           "refTable": "students",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "student_report_grades",
@@ -5356,7 +5553,8 @@
           "refTable": "student_reports",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "student_reports",
@@ -5494,6 +5692,13 @@
           "refTable": "students",
           "refColumn": "id"
         }
+      ],
+      "referencedBy": [
+        {
+          "table": "student_report_grades",
+          "column": "report_id",
+          "refColumn": "id"
+        }
       ]
     },
     {
@@ -5624,6 +5829,98 @@
           "refTable": "users",
           "refColumn": "id"
         }
+      ],
+      "referencedBy": [
+        {
+          "table": "attendance_eraport",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "attendances",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "catatan_eraport",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "class_organization",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "ekstrakurikuler_eraport",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "grades_katrol",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "homevisits",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "konseling",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "nilai_eraport",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "notifications",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "peminjaman",
+          "column": "peminjam_student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "saran_masukan",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "student_auth",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "student_development_notes",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "student_devices",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "student_mutations",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "student_profile_details",
+          "column": "student_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "student_reports",
+          "column": "student_id",
+          "refColumn": "id"
+        }
       ]
     },
     {
@@ -5730,7 +6027,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "teacher_assignments",
@@ -5826,6 +6124,13 @@
         {
           "column": "academic_year_id",
           "refTable": "academic_years",
+          "refColumn": "id"
+        }
+      ],
+      "referencedBy": [
+        {
+          "table": "jurnal_harian",
+          "column": "assignment_id",
           "refColumn": "id"
         }
       ]
@@ -5950,7 +6255,8 @@
           "refTable": "users",
           "refColumn": "teacher_id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "teacher_attendance_view",
@@ -6014,7 +6320,8 @@
           "refTable": "users",
           "refColumn": "teacher_id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "teacher_codes",
@@ -6103,7 +6410,8 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": []
     },
     {
       "name": "teacher_schedules",
@@ -6225,7 +6533,8 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "tindaklanjut_homevisits",
@@ -6299,7 +6608,8 @@
           "refTable": "homevisits",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "tujuan_pembelajaran",
@@ -6405,6 +6715,13 @@
           "refTable": "academic_years",
           "refColumn": "id"
         }
+      ],
+      "referencedBy": [
+        {
+          "table": "nilai_eraport_detail",
+          "column": "tujuan_pembelajaran_id",
+          "refColumn": "id"
+        }
       ]
     },
     {
@@ -6495,7 +6812,8 @@
           "refTable": "users",
           "refColumn": "id"
         }
-      ]
+      ],
+      "referencedBy": []
     },
     {
       "name": "users",
@@ -6616,7 +6934,134 @@
       "primaryKeys": [
         "id"
       ],
-      "foreignKeys": []
+      "foreignKeys": [],
+      "referencedBy": [
+        {
+          "table": "academic_events",
+          "column": "created_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "announcement_reads",
+          "column": "user_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "attendance_eraport",
+          "column": "created_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "attendance_eraport",
+          "column": "updated_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "attendances",
+          "column": "teacher_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "eraport_settings",
+          "column": "updated_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "feedback_guru",
+          "column": "guru_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "grades_katrol",
+          "column": "processed_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "jurnal_harian",
+          "column": "user_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "kaldik_documents",
+          "column": "uploaded_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "konseling",
+          "column": "guru_bk_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "nilai_eraport",
+          "column": "guru_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "nilai_eraport",
+          "column": "created_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "nilai_eraport",
+          "column": "updated_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "notifications",
+          "column": "recipient_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "notifications",
+          "column": "created_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "peminjaman",
+          "column": "petugas_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "ruang_belajar",
+          "column": "created_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "student_development_notes",
+          "column": "teacher_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "students",
+          "column": "user_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "system_health_logs",
+          "column": "checked_by",
+          "refColumn": "id"
+        },
+        {
+          "table": "teacher_attendance",
+          "column": "teacher_id",
+          "refColumn": "teacher_id"
+        },
+        {
+          "table": "teacher_attendance_view",
+          "column": "teacher_id",
+          "refColumn": "teacher_id"
+        },
+        {
+          "table": "teacher_schedules",
+          "column": "teacher_id",
+          "refColumn": "id"
+        },
+        {
+          "table": "user_devices",
+          "column": "user_id",
+          "refColumn": "id"
+        }
+      ]
     }
   ],
   "plainList": "## Daftar Tabel Database Supabase\nacademic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at\nacademic_years : id,year,semester,start_date,end_date,is_active,created_at,updated_at\nannouncement : id,title,content,created_at,updated_at,effective_from,effective_until,target_role,is_active\nannouncement_reads : id,announcement_id,user_id,read_at,created_at\napp_config : id,is_maintenance,maintenance_message,updated_at\nattendance_eraport : id,student_id,class_id,academic_year_id,semester,sakit,izin,alpa,catatan,is_locked,created_at,updated_at,created_by,updated_by\nattendances : id,student_id,teacher_id,date,subject,status,created_at,notes,class_id,type,academic_year_id,semester\nattendances_view : date,class_id,subject,status,notes,type\naudit_logs : id,user_id,action,target_user_id,target_user_name,details,created_at\nbuku : id,judul,penulis,penerbit,tahun,isbn,kategori,rak,total_eksemplar,created_at,updated_at\nbuku_dengan_stok : id,judul,penulis,penerbit,tahun,isbn,kategori,rak,total_eksemplar,created_at,updated_at,dipinjam,tersedia\nbuku_stats : total_judul,total_eksemplar,total_dipinjam,total_tersedia\ncatatan_eraport : id,student_id,class_id,academic_year_id,semester,catatan_wali_kelas,catatan_ekskul,catatan_prestasi,saran,created_at,updated_at,created_by,sakit,ijin,tanpa_keterangan,total_hadir,updated_by\nclass_organization : id,class_id,academic_year,position,position_order,position_level,student_id,created_at,updated_at\nclass_schedules : id,class_id,day,subject,start_time,end_time,teacher_name,created_at\nclasses : id,grade,academic_year,created_at,updated_at,is_active,academic_year_id\ncleanup_history : id,timestamp,triggered_by,results,created_at\nduty_schedules : id,class_id,academic_year,semester,layout,updated_at\nekstrakurikuler_eraport : id,student_id,academic_year_id,semester,nama_ekskul,predikat,keterangan,created_at,updated_at\neraport_settings : id,is_active,active_period,message,updated_at,updated_by\nevent_categories : id,name,color,created_at\nfeedback_guru : id,guru_id,kategori,pesan,halaman,status,created_at\ngrades : id,student_id,class_id,teacher_id,subject,assignment_type,score,semester,academic_year,created_at,academic_year_id\ngrades_katrol : id,student_id,class_id,teacher_id,academic_year_id,subject,academic_year,semester,nh1,nh2,nh3,psts,psas,rata_nh,nilai_akhir,nilai_akhir_k,kkm,nilai_min_kelas,nilai_max_kelas,target_min,target_max,jumlah_siswa_kelas,formula_used,processed_by,created_at,updated_at,student_name,student_nis\ngrades_katrol_settings : id,mata_pelajaran_id,kelas_id,kkm,nilai_maksimal,created_at,updated_at,updated_by,academic_year,semester,academic_year_id\nhomevisits : id,student_id,nama_siswa,kelas,nis,tanggal_kunjungan,jenis_kunjungan,kategori_permasalahan,alasan,alamat_kunjungan,nama_pihak_ditemui,hubungan_pihak_ditemui,hasil_kondisi_info,hasil_diskusi,status,created_at,updated_at\njurnal_harian : id,user_id,teacher_id,assignment_id,class_id,subject,academic_year_id,semester,tanggal,jam_ke,materi,kegiatan_pembelajaran,kendala_catatan,status,created_at,updated_at,tujuan_pembelajaran\nkaldik_documents : id,academic_year,title,file_url,uploaded_by,created_at\nkelulusan_config : id,nilai_akhir_minimum,updated_at\nkkm_mapel : id,mata_pelajaran,kkm,updated_at\nkonseling : id,student_id,nis,full_name,gender,class_id,tanggal,jenis_layanan,bidang_bimbingan,permasalahan,kronologi,tindakan_layanan,hasil_layanan,rencana_tindak_lanjut,status_layanan,guru_bk_id,guru_bk_name,academic_year,semester,created_at,updated_at,tingkat_urgensi,kategori_masalah,perlu_followup,tanggal_followup,academic_year_id\nnilai_eraport : id,student_id,class_id,mata_pelajaran,guru_id,academic_year_id,semester,nilai_akhir,deskripsi_capaian,kkm,created_at,updated_at,created_by,updated_by\nnilai_eraport_detail : id,nilai_eraport_id,tujuan_pembelajaran_id,status_tercapai,created_at,updated_at\nnotifications : id,recipient_id,type,title,message,student_id,note_id,class_id,created_by,created_by_name,is_read,read_at,created_at,student_name,category,label,note_content,action_taken\npeminjaman : id,buku_id,judul_buku_snapshot,nama_peminjam,no_anggota,tanggal_pinjam,tanggal_jatuh_tempo,tanggal_kembali,status,denda,kondisi_buku,catatan,petugas_id,created_at,updated_at,peminjam_student_id\npengumuman_siswa : id,title,content,target_class,created_by,is_pinned,created_at,updated_at\nraport_config : id,class_id,mata_pelajaran,academic_year_id,kkm,created_at,updated_at,jenjang,semester,is_jenjang_default\nraport_metadata : id,academic_year_id,semester,tanggal_raport,tempat,nama_kepala_sekolah,nip_kepala_sekolah,ttd_kepala_sekolah,created_at,updated_at\nruang_belajar : id,title,category,description,content,resource_type,thumbnail,url,estimated_minutes,is_featured,is_active,created_by,created_at,updated_at\nsaran_masukan : id,student_id,class_id,message,status,created_at\nschool_settings : id,setting_key,setting_value,created_at,updated_at\nseating_charts : id,class_id,academic_year,semester,rows,cols,seats_per_desk,layout,updated_at\nsiswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos,skor_akademik,kategori_baca_latin,kategori_mengaji,input_by,input_by_id,updated_by,updated_by_id\nspmb_settings : id,target_academic_year,is_active,registration_start_date,registration_end_date,created_at,updated_at\nstudent_auth : id,student_id,username,password,is_active,last_login,created_at,updated_at\nstudent_development_notes : id,student_id,teacher_id,class_id,academic_year,semester,category,label,note_content,action_taken,created_at,updated_at,academic_year_id\nstudent_devices : id,student_id,device_id,brand,model,platform,browser,last_login_at,created_at\nstudent_mutations : id,student_id,type,mutation_date,sekolah_asal,sekolah_tujuan,keterangan,created_by,created_at,class_id\nstudent_profile_details : student_id,alamat,no_hp,nama_ortu,no_hp_ortu,sekolah_asal,updated_at,jenis_kelamin,tempat_lahir,tanggal_lahir,nisn,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,agama,no_kk,nik,no_akta_lahir,no_ijazah,no_peserta_ujian,dusun,kode_pos,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,anak_ke,keterangan,no_daftar,verified_at\nstudent_report_grades : id,report_id,subject,score,created_at\nstudent_reports : id,student_id,student_name,student_nis,class_name,academic_year,semester,attendance,homeroom_note,extracurricular,status,source_file,created_by,created_at,updated_at\nstudents : id,full_name,nis,gender,class_id,academic_year,is_active,created_at,updated_at,academic_year_id,user_id,nisn\nsystem_health_logs : id,checked_at,checked_by,total_issues,critical_count,warning_count,info_count,issues_detail,execution_time,status,created_at\nteacher_assignments : id,teacher_id,class_id,subject,academic_year,semester,created_at,academic_year_id,updated_at\nteacher_attendance : id,teacher_id,attendance_date,status,clock_in,check_in_method,notes,created_at,updated_at,gps_location,is_suspicious,full_name,admin_info\nteacher_attendance_view : teacher_id,full_name,status,attendance_date,clock_in,check_in_method\nteacher_codes : id,academic_year,code,teacher_name,subject,note,created_at,updated_at,teacher_id,weekly_hours\nteacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,created_at,updated_at,academic_year_id,subject,source\ntindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at\ntujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active\nuser_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at\nusers : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count"

@@ -231,6 +231,11 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       if (page === "era-dashboard") {
         // alias dinamis, bukan entry asli di menuConfig
         path = resolveEraDashboardPath(user);
+      } else if (page === "settings-profile") {
+        // alias khusus: bukan entry asli di menuConfig (ProfileTab adalah
+        // tab di dalam /settings, lihat Setting.js), jadi gak bisa lewat
+        // lookup menuByKey biasa -- perlu path lengkap dengan query param.
+        path = "/settings?tab=profile";
       } else {
         const entry = menuByKey.get(page);
         path = entry?.path;
@@ -523,7 +528,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                     style={{ minWidth: "44px", minHeight: "44px" }}
                   >
                     <User size={16} className="text-white flex-shrink-0" />
-                    <span className="hidden sm:block text-sm font-medium text-white">Profile</span>
+                    <span className="hidden sm:block text-sm font-medium text-white">Akun</span>
                   </button>
 
                   {profileDropdownOpen && (

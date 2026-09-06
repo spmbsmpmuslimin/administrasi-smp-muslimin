@@ -20,6 +20,12 @@ export const sidebarGroups = [
     title: null,
     items: [
       {
+        page: "settings-profile",
+        label: "Profile Saya",
+        highlightPages: ["settings"],
+        icon: ["M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"],
+      },
+      {
         page: "dashboard",
         label: "Dashboard",
         icon: ["M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z", "m7 7 5-5 5 5"],

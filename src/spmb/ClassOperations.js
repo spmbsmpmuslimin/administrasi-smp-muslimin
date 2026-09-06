@@ -306,6 +306,7 @@ export const resetClassAssignments = async (
           .from("siswa_baru")
           .update({
             kelas: null,
+            nis: null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", siswa.id);

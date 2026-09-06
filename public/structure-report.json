@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-06T01:11:44.213Z",
-  "executionTimeMs": 172,
+  "generatedAt": "2026-09-06T02:41:14.885Z",
+  "executionTimeMs": 151,
   "tree": {
     "name": "src",
     "path": "src",
@@ -572,24 +572,6 @@
                 "src/components/GuruBKDashboard.js"
               ],
               "isOrphan": false
-            }
-          },
-          {
-            "name": "ConnectedDevices.js",
-            "type": "file",
-            "file": {
-              "path": "src/components/ConnectedDevices.js",
-              "type": "component",
-              "lines": 160,
-              "functions": [
-                "ConnectedDevices",
-                "formatWIB"
-              ],
-              "imports": [
-                "src/utils/studentDevices.js"
-              ],
-              "importedBy": [],
-              "isOrphan": true
             }
           },
           {
@@ -2726,77 +2708,6 @@
         "type": "folder",
         "children": [
           {
-            "name": "belajar",
-            "path": "src/portal-siswa/belajar",
-            "type": "folder",
-            "children": [
-              {
-                "name": "bahasa-inggris",
-                "path": "src/portal-siswa/belajar/bahasa-inggris",
-                "type": "folder",
-                "children": [
-                  {
-                    "name": "data",
-                    "path": "src/portal-siswa/belajar/bahasa-inggris/data",
-                    "type": "folder",
-                    "children": [
-                      {
-                        "name": "chapterData.js",
-                        "type": "file",
-                        "file": {
-                          "path": "src/portal-siswa/belajar/bahasa-inggris/data/chapterData.js",
-                          "type": "other",
-                          "lines": 259,
-                          "functions": [],
-                          "imports": [],
-                          "importedBy": [
-                            "src/portal-siswa/belajar/bahasa-inggris/ChapterDetail.js",
-                            "src/portal-siswa/belajar/bahasa-inggris/ChapterList.js"
-                          ],
-                          "isOrphan": false
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "name": "ChapterDetail.js",
-                    "type": "file",
-                    "file": {
-                      "path": "src/portal-siswa/belajar/bahasa-inggris/ChapterDetail.js",
-                      "type": "other",
-                      "lines": 50,
-                      "functions": [
-                        "ChapterDetail"
-                      ],
-                      "imports": [
-                        "src/portal-siswa/belajar/bahasa-inggris/data/chapterData.js"
-                      ],
-                      "importedBy": [],
-                      "isOrphan": true
-                    }
-                  },
-                  {
-                    "name": "ChapterList.js",
-                    "type": "file",
-                    "file": {
-                      "path": "src/portal-siswa/belajar/bahasa-inggris/ChapterList.js",
-                      "type": "other",
-                      "lines": 109,
-                      "functions": [
-                        "ChapterList"
-                      ],
-                      "imports": [
-                        "src/portal-siswa/belajar/bahasa-inggris/data/chapterData.js"
-                      ],
-                      "importedBy": [],
-                      "isOrphan": true
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
             "name": "ruang-belajar-admin",
             "path": "src/portal-siswa/ruang-belajar-admin",
             "type": "folder",
@@ -3381,23 +3292,6 @@
             "type": "folder",
             "children": [
               {
-                "name": "AcademicGradesView.js",
-                "type": "file",
-                "file": {
-                  "path": "src/reports/modals/AcademicGradesView.js",
-                  "type": "other",
-                  "lines": 568,
-                  "functions": [
-                    "AcademicGradesView"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js"
-                  ],
-                  "importedBy": [],
-                  "isOrphan": true
-                }
-              },
-              {
                 "name": "AdminReportModal.js",
                 "type": "file",
                 "file": {
@@ -3429,36 +3323,6 @@
                     "src/reports/BKReports.js"
                   ],
                   "isOrphan": false
-                }
-              },
-              {
-                "name": "HomeroomReportModal.js",
-                "type": "file",
-                "file": {
-                  "path": "src/reports/modals/HomeroomReportModal.js",
-                  "type": "other",
-                  "lines": 540,
-                  "functions": [
-                    "HomeroomReportModal"
-                  ],
-                  "imports": [],
-                  "importedBy": [],
-                  "isOrphan": true
-                }
-              },
-              {
-                "name": "TeacherReportModal.js",
-                "type": "file",
-                "file": {
-                  "path": "src/reports/modals/TeacherReportModal.js",
-                  "type": "other",
-                  "lines": 962,
-                  "functions": [
-                    "TeacherReportModal"
-                  ],
-                  "imports": [],
-                  "importedBy": [],
-                  "isOrphan": true
                 }
               }
             ]
@@ -3760,7 +3624,6 @@
                 "src/pages/JurnalHarian.js",
                 "src/pages/Students.js",
                 "src/pages/TeacherSchedule.js",
-                "src/services/semesterService.js",
                 "src/setting/academic/AcademicYearTab.js",
                 "src/setting/academic/CopyAssignmentsModal.js",
                 "src/setting/academic/PreflightCheck.js",
@@ -3776,31 +3639,6 @@
                 "src/setting/TeacherAssignmentExcel.js"
               ],
               "isOrphan": false
-            }
-          },
-          {
-            "name": "semesterService.js",
-            "type": "file",
-            "file": {
-              "path": "src/services/semesterService.js",
-              "type": "service",
-              "lines": 666,
-              "functions": [
-                "getSemesterData",
-                "getMonthlyDetailData",
-                "getSemesterStatistics",
-                "validateSemesterAccess",
-                "saveAttendance",
-                "bulkSaveAttendance",
-                "getAcademicYear",
-                "getSemesterType"
-              ],
-              "imports": [
-                "src/supabaseClient.js",
-                "src/services/academicYearService.js"
-              ],
-              "importedBy": [],
-              "isOrphan": true
             }
           }
         ]
@@ -4923,28 +4761,6 @@
             ]
           },
           {
-            "name": "lib",
-            "path": "src/system/lib",
-            "type": "folder",
-            "children": [
-              {
-                "name": "fetchSupabaseSchema.js",
-                "type": "file",
-                "file": {
-                  "path": "src/system/lib/fetchSupabaseSchema.js",
-                  "type": "system",
-                  "lines": 126,
-                  "functions": [
-                    "parseColumnNotes"
-                  ],
-                  "imports": [],
-                  "importedBy": [],
-                  "isOrphan": true
-                }
-              }
-            ]
-          },
-          {
             "name": "CodeAudit.js",
             "type": "file",
             "file": {
@@ -4990,7 +4806,7 @@
             "file": {
               "path": "src/system/DatabaseStructure.js",
               "type": "system",
-              "lines": 345,
+              "lines": 371,
               "functions": [
                 "formatDate",
                 "TableCard",
@@ -5047,38 +4863,6 @@
                 "src/system/MonitorSistem.js"
               ],
               "isOrphan": false
-            }
-          },
-          {
-            "name": "MonitorHistory.js",
-            "type": "file",
-            "file": {
-              "path": "src/system/MonitorHistory.js",
-              "type": "system",
-              "lines": 210,
-              "functions": [
-                "MonitorHistory"
-              ],
-              "imports": [
-                "src/supabaseClient.js"
-              ],
-              "importedBy": [],
-              "isOrphan": true
-            }
-          },
-          {
-            "name": "MonitorResults.js",
-            "type": "file",
-            "file": {
-              "path": "src/system/MonitorResults.js",
-              "type": "system",
-              "lines": 532,
-              "functions": [
-                "MonitorResults"
-              ],
-              "imports": [],
-              "importedBy": [],
-              "isOrphan": true
             }
           },
           {
@@ -5276,7 +5060,6 @@
                 "src/utils/deviceInfo.js"
               ],
               "importedBy": [
-                "src/components/ConnectedDevices.js",
                 "src/components/StudentLogin.js",
                 "src/portal-siswa/StudentPerangkatTerhubung.js",
                 "src/setting/StudentConnectedDevicesAdminTab.js"
@@ -5326,27 +5109,6 @@
                 "src/portal-siswa/useStudentProfile.js"
               ],
               "isOrphan": false
-            }
-          },
-          {
-            "name": "systemHelpers.js",
-            "type": "file",
-            "file": {
-              "path": "src/utils/systemHelpers.js",
-              "type": "util",
-              "lines": 124,
-              "functions": [
-                "getCurrentAcademicYear",
-                "getCurrentSemester",
-                "getActiveSemesterInfo",
-                "isDateInSemester",
-                "getSemesterDateRange",
-                "formatSemesterDisplay",
-                "logActiveSemesterInfo"
-              ],
-              "imports": [],
-              "importedBy": [],
-              "isOrphan": true
             }
           },
           {
@@ -5550,11 +5312,9 @@
             "src/reports/AdminReports.js",
             "src/reports/BKReports.js",
             "src/reports/HomeroomTeacherReports.js",
-            "src/reports/modals/AcademicGradesView.js",
             "src/reports/ReportHelpers.js",
             "src/reports/TeacherReports.js",
             "src/services/academicYearService.js",
-            "src/services/semesterService.js",
             "src/setting/academic/AcademicYearTab.js",
             "src/setting/academic/CopyAssignmentsModal.js",
             "src/setting/academic/SemesterManagement.js",
@@ -5587,7 +5347,6 @@
             "src/system/DatabaseCleanupMonitor.js",
             "src/system/HealthChecker.js",
             "src/system/MonitorDashboard.js",
-            "src/system/MonitorHistory.js",
             "src/system/PerformanceMonitor.js",
             "src/utils/studentDevices.js",
             "src/utils/userDevices.js"
@@ -5597,19 +5356,19 @@
       }
     ]
   },
-  "totalFiles": 241,
-  "totalFunctions": 680,
-  "orphanCount": 11,
+  "totalFiles": 229,
+  "totalFunctions": 655,
+  "orphanCount": 0,
   "byType": {
-    "other": 136,
-    "component": 25,
+    "other": 130,
+    "component": 24,
     "page": 48,
     "config": 4,
     "hook": 1,
-    "service": 2,
+    "service": 1,
     "checker": 4,
-    "system": 11,
-    "util": 10
+    "system": 8,
+    "util": 9
   },
   "nodes": {
     "src/App.js": {
@@ -5989,20 +5748,6 @@
         "src/components/GuruBKDashboard.js"
       ],
       "isOrphan": false
-    },
-    "src/components/ConnectedDevices.js": {
-      "path": "src/components/ConnectedDevices.js",
-      "type": "component",
-      "lines": 160,
-      "functions": [
-        "ConnectedDevices",
-        "formatWIB"
-      ],
-      "imports": [
-        "src/utils/studentDevices.js"
-      ],
-      "importedBy": [],
-      "isOrphan": true
     },
     "src/components/Dashboard.js": {
       "path": "src/components/Dashboard.js",
@@ -7785,44 +7530,6 @@
       ],
       "isOrphan": false
     },
-    "src/portal-siswa/belajar/bahasa-inggris/ChapterDetail.js": {
-      "path": "src/portal-siswa/belajar/bahasa-inggris/ChapterDetail.js",
-      "type": "other",
-      "lines": 50,
-      "functions": [
-        "ChapterDetail"
-      ],
-      "imports": [
-        "src/portal-siswa/belajar/bahasa-inggris/data/chapterData.js"
-      ],
-      "importedBy": [],
-      "isOrphan": true
-    },
-    "src/portal-siswa/belajar/bahasa-inggris/ChapterList.js": {
-      "path": "src/portal-siswa/belajar/bahasa-inggris/ChapterList.js",
-      "type": "other",
-      "lines": 109,
-      "functions": [
-        "ChapterList"
-      ],
-      "imports": [
-        "src/portal-siswa/belajar/bahasa-inggris/data/chapterData.js"
-      ],
-      "importedBy": [],
-      "isOrphan": true
-    },
-    "src/portal-siswa/belajar/bahasa-inggris/data/chapterData.js": {
-      "path": "src/portal-siswa/belajar/bahasa-inggris/data/chapterData.js",
-      "type": "other",
-      "lines": 259,
-      "functions": [],
-      "imports": [],
-      "importedBy": [
-        "src/portal-siswa/belajar/bahasa-inggris/ChapterDetail.js",
-        "src/portal-siswa/belajar/bahasa-inggris/ChapterList.js"
-      ],
-      "isOrphan": false
-    },
     "src/portal-siswa/BirthdayCelebration.js": {
       "path": "src/portal-siswa/BirthdayCelebration.js",
       "type": "other",
@@ -8358,19 +8065,6 @@
       ],
       "isOrphan": false
     },
-    "src/reports/modals/AcademicGradesView.js": {
-      "path": "src/reports/modals/AcademicGradesView.js",
-      "type": "other",
-      "lines": 568,
-      "functions": [
-        "AcademicGradesView"
-      ],
-      "imports": [
-        "src/supabaseClient.js"
-      ],
-      "importedBy": [],
-      "isOrphan": true
-    },
     "src/reports/modals/AdminReportModal.js": {
       "path": "src/reports/modals/AdminReportModal.js",
       "type": "other",
@@ -8396,28 +8090,6 @@
         "src/reports/BKReports.js"
       ],
       "isOrphan": false
-    },
-    "src/reports/modals/HomeroomReportModal.js": {
-      "path": "src/reports/modals/HomeroomReportModal.js",
-      "type": "other",
-      "lines": 540,
-      "functions": [
-        "HomeroomReportModal"
-      ],
-      "imports": [],
-      "importedBy": [],
-      "isOrphan": true
-    },
-    "src/reports/modals/TeacherReportModal.js": {
-      "path": "src/reports/modals/TeacherReportModal.js",
-      "type": "other",
-      "lines": 962,
-      "functions": [
-        "TeacherReportModal"
-      ],
-      "imports": [],
-      "importedBy": [],
-      "isOrphan": true
     },
     "src/reports/ReportExcel.js": {
       "path": "src/reports/ReportExcel.js",
@@ -8602,7 +8274,6 @@
         "src/pages/JurnalHarian.js",
         "src/pages/Students.js",
         "src/pages/TeacherSchedule.js",
-        "src/services/semesterService.js",
         "src/setting/academic/AcademicYearTab.js",
         "src/setting/academic/CopyAssignmentsModal.js",
         "src/setting/academic/PreflightCheck.js",
@@ -8618,27 +8289,6 @@
         "src/setting/TeacherAssignmentExcel.js"
       ],
       "isOrphan": false
-    },
-    "src/services/semesterService.js": {
-      "path": "src/services/semesterService.js",
-      "type": "service",
-      "lines": 666,
-      "functions": [
-        "getSemesterData",
-        "getMonthlyDetailData",
-        "getSemesterStatistics",
-        "validateSemesterAccess",
-        "saveAttendance",
-        "bulkSaveAttendance",
-        "getAcademicYear",
-        "getSemesterType"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/services/academicYearService.js"
-      ],
-      "importedBy": [],
-      "isOrphan": true
     },
     "src/setting/academic/AcademicYearTab.js": {
       "path": "src/setting/academic/AcademicYearTab.js",
@@ -9521,11 +9171,9 @@
         "src/reports/AdminReports.js",
         "src/reports/BKReports.js",
         "src/reports/HomeroomTeacherReports.js",
-        "src/reports/modals/AcademicGradesView.js",
         "src/reports/ReportHelpers.js",
         "src/reports/TeacherReports.js",
         "src/services/academicYearService.js",
-        "src/services/semesterService.js",
         "src/setting/academic/AcademicYearTab.js",
         "src/setting/academic/CopyAssignmentsModal.js",
         "src/setting/academic/SemesterManagement.js",
@@ -9558,7 +9206,6 @@
         "src/system/DatabaseCleanupMonitor.js",
         "src/system/HealthChecker.js",
         "src/system/MonitorDashboard.js",
-        "src/system/MonitorHistory.js",
         "src/system/PerformanceMonitor.js",
         "src/utils/studentDevices.js",
         "src/utils/userDevices.js"
@@ -9693,7 +9340,7 @@
     "src/system/DatabaseStructure.js": {
       "path": "src/system/DatabaseStructure.js",
       "type": "system",
-      "lines": 345,
+      "lines": 371,
       "functions": [
         "formatDate",
         "TableCard",
@@ -9723,17 +9370,6 @@
       ],
       "isOrphan": false
     },
-    "src/system/lib/fetchSupabaseSchema.js": {
-      "path": "src/system/lib/fetchSupabaseSchema.js",
-      "type": "system",
-      "lines": 126,
-      "functions": [
-        "parseColumnNotes"
-      ],
-      "imports": [],
-      "importedBy": [],
-      "isOrphan": true
-    },
     "src/system/MonitorDashboard.js": {
       "path": "src/system/MonitorDashboard.js",
       "type": "system",
@@ -9753,30 +9389,6 @@
         "src/system/MonitorSistem.js"
       ],
       "isOrphan": false
-    },
-    "src/system/MonitorHistory.js": {
-      "path": "src/system/MonitorHistory.js",
-      "type": "system",
-      "lines": 210,
-      "functions": [
-        "MonitorHistory"
-      ],
-      "imports": [
-        "src/supabaseClient.js"
-      ],
-      "importedBy": [],
-      "isOrphan": true
-    },
-    "src/system/MonitorResults.js": {
-      "path": "src/system/MonitorResults.js",
-      "type": "system",
-      "lines": 532,
-      "functions": [
-        "MonitorResults"
-      ],
-      "imports": [],
-      "importedBy": [],
-      "isOrphan": true
     },
     "src/system/MonitorSistem.js": {
       "path": "src/system/MonitorSistem.js",
@@ -9931,7 +9543,6 @@
         "src/utils/deviceInfo.js"
       ],
       "importedBy": [
-        "src/components/ConnectedDevices.js",
         "src/components/StudentLogin.js",
         "src/portal-siswa/StudentPerangkatTerhubung.js",
         "src/setting/StudentConnectedDevicesAdminTab.js"
@@ -9974,23 +9585,6 @@
       ],
       "isOrphan": false
     },
-    "src/utils/systemHelpers.js": {
-      "path": "src/utils/systemHelpers.js",
-      "type": "util",
-      "lines": 124,
-      "functions": [
-        "getCurrentAcademicYear",
-        "getCurrentSemester",
-        "getActiveSemesterInfo",
-        "isDateInSemester",
-        "getSemesterDateRange",
-        "formatSemesterDisplay",
-        "logActiveSemesterInfo"
-      ],
-      "imports": [],
-      "importedBy": [],
-      "isOrphan": true
-    },
     "src/utils/userDevices.js": {
       "path": "src/utils/userDevices.js",
       "type": "util",
@@ -10007,6 +9601,6 @@
       "isOrphan": false
     }
   },
-  "asciiTree": "|-- src\n|   |-- assets\n|   |   |-- Background.webp\n|   |   |-- logo_sekolah-0.png\n|   |   `-- logo_sekolah.png\n|   |-- attendance-teacher\n|   |   |-- reports\n|   |   |   |-- DailySummary.js\n|   |   |   |-- ExportExcel.js\n|   |   |   |-- ITMReport.js\n|   |   |   |-- ITMReportExcel.js\n|   |   |   `-- MonthlyView.js\n|   |   |-- AdminAttendanceView.js\n|   |   |-- AttendanceTabs.js\n|   |   |-- CustomDatePicker.js\n|   |   |-- LocationValidator.js\n|   |   |-- ManualCheckIn.js\n|   |   |-- MyAttendanceStatus.js\n|   |   |-- MyMonthlyHistory.js\n|   |   |-- QRCodeGenerator.js\n|   |   |-- QRScanner.js\n|   |   |-- TeacherAttendance.js\n|   |   |-- TodaySchedule.js\n|   |   `-- index.html\n|   |-- components\n|   |   |-- ui\n|   |   |   |-- Card.js\n|   |   |   |-- ConfirmDialog.js\n|   |   |   |-- PageContainer.js\n|   |   |   |-- Typography.js\n|   |   |   `-- useConfirmDialog.js\n|   |   |-- AdminDashboard.js\n|   |   |-- AdminJurnalRekap.js\n|   |   |-- AnnouncementList.js\n|   |   |-- AnnouncementPopup.js\n|   |   |-- BottomNav.js\n|   |   |-- CatatanWalikelasBk.js\n|   |   |-- ConnectedDevices.js\n|   |   |-- Dashboard.js\n|   |   |-- FeedbackGuru.js\n|   |   |-- GuruBKDashboard.js\n|   |   |-- HomeroomTeacherDashboard.js\n|   |   |-- Layout.js\n|   |   |-- Login.js\n|   |   |-- Logo.js\n|   |   |-- NotifikasiBk.js\n|   |   |-- PengumumanWaliKelas.js\n|   |   |-- SaranMasukanSiswa.js\n|   |   |-- Sidebar.js\n|   |   |-- StudentLogin.js\n|   |   |-- TeacherDashboard.js\n|   |   `-- WaliKelasWidgetTab.js\n|   |-- config\n|   |   |-- menuConfig.js\n|   |   |-- ruangBelajarAccess.js\n|   |   `-- sidebarConfig.js\n|   |-- e-raport\n|   |   |-- CekNilai.js\n|   |   |-- CekStatusNilai.js\n|   |   |-- CetakRaport.js\n|   |   |-- DashboardAdmin.js\n|   |   |-- DashboardHomeroomTeacher.js\n|   |   |-- DashboardTeacher.js\n|   |   |-- InputCatatan.js\n|   |   |-- InputEkstrakurikuler.js\n|   |   |-- InputKehadiran.js\n|   |   |-- InputKokurikuler.js\n|   |   |-- InputNilai.js\n|   |   |-- InputTP.js\n|   |   |-- PreviewNilai.js\n|   |   |-- PreviewRaport.js\n|   |   |-- RaportConfig.js\n|   |   `-- RaportPage.js\n|   |-- konseling\n|   |   |-- home-visit\n|   |   |   |-- HomeVisit.js\n|   |   |   |-- HomeVisitDetail.js\n|   |   |   |-- HomeVisitExportPDF.js\n|   |   |   |-- HomeVisitFilter.js\n|   |   |   |-- HomeVisitModal.js\n|   |   |   |-- HomeVisitStats.js\n|   |   |   `-- HomeVisitTable.js\n|   |   |-- ExportPDF.js\n|   |   |-- FilterBar.js\n|   |   |-- Konseling.js\n|   |   |-- KonselingMain.js\n|   |   |-- KonselingModal.js\n|   |   |-- KonselingTable.js\n|   |   `-- StatsCards.js\n|   |-- pages\n|   |   |-- attendance\n|   |   |   |-- AdminAttendance.js\n|   |   |   |-- Attendance.js\n|   |   |   |-- AttendanceExcel.js\n|   |   |   |-- AttendanceFilters.js\n|   |   |   |-- AttendanceMain.js\n|   |   |   |-- AttendanceManagement.js\n|   |   |   |-- AttendanceModals.js\n|   |   |   |-- AttendancePDF.js\n|   |   |   |-- AttendanceStats.js\n|   |   |   `-- AttendanceTable.js\n|   |   |-- datasiswa-induk\n|   |   |   |-- DataSiswaInduk.js\n|   |   |   |-- DataSiswaIndukConfig.js\n|   |   |   |-- DataSiswaIndukExcel.js\n|   |   |   `-- DataSiswaIndukPDF.js\n|   |   |-- grades\n|   |   |   |-- GradeMain.js\n|   |   |   |-- Grades.js\n|   |   |   |-- GradesExcel.js\n|   |   |   |-- GradesKatrol.js\n|   |   |   |-- KatrolTable.js\n|   |   |   `-- Utils.js\n|   |   |-- kelola-raport\n|   |   |   |-- ImportRaportForm.js\n|   |   |   |-- KelolaKKM.js\n|   |   |   |-- ManajemenRaportTable.js\n|   |   |   |-- NilaiRaportSiswa.js\n|   |   |   |-- RaportNilaiTab.js\n|   |   |   |-- RaportShared.js\n|   |   |   |-- RekapKelulusan.js\n|   |   |   |-- RekapMultiSemester.js\n|   |   |   `-- parseLegerExcel.js\n|   |   |-- CatatanSiswa.js\n|   |   |-- CatatanSiswaExport.js\n|   |   |-- Classes.js\n|   |   |-- DataExcel.js\n|   |   |-- DenahDuduk.js\n|   |   |-- JurnalHarian.js\n|   |   |-- KelolaJadwalPelajaran.js\n|   |   |-- KelolaJadwalPiket.js\n|   |   |-- Organigram.js\n|   |   |-- PortalBackButton.js\n|   |   |-- PortalSiswaGuru.js\n|   |   |-- Students.js\n|   |   |-- TeacherSchedule.js\n|   |   |-- TeacherScheduleExcel.js\n|   |   `-- Teachers.js\n|   |-- perpustakaan\n|   |   |-- Katalog.js\n|   |   |-- Peminjaman.js\n|   |   |-- Pengembalian.js\n|   |   `-- PerpusMain.js\n|   |-- portal-siswa\n|   |   |-- belajar\n|   |   |   `-- bahasa-inggris\n|   |   |       |-- data\n|   |   |       |   `-- chapterData.js\n|   |   |       |-- ChapterDetail.js\n|   |   |       `-- ChapterList.js\n|   |   |-- ruang-belajar-admin\n|   |   |   |-- RuangBelajarAdmin.js\n|   |   |   `-- RuangBelajarForm.js\n|   |   |-- ruang-belajar-siswa\n|   |   |   |-- BelajarMain.js\n|   |   |   |-- RuangBelajarCategories.js\n|   |   |   |-- RuangBelajarDetail.js\n|   |   |   `-- RuangBelajarHome.js\n|   |   |-- BirthdayCelebration.js\n|   |   |-- StudentBottomNav.js\n|   |   |-- StudentDashboard.js\n|   |   |-- StudentDataSiswa.js\n|   |   |-- StudentDenahDuduk.js\n|   |   |-- StudentHelpers.js\n|   |   |-- StudentInfo.js\n|   |   |-- StudentJadwal.js\n|   |   |-- StudentLayout.js\n|   |   |-- StudentOrganigram.js\n|   |   |-- StudentPengumuman.js\n|   |   |-- StudentPerangkatTerhubung.js\n|   |   |-- StudentPiket.js\n|   |   |-- StudentPortal.js\n|   |   |-- StudentPresensi.js\n|   |   |-- StudentProfile.js\n|   |   |-- StudentRaport.js\n|   |   |-- StudentSaran.js\n|   |   |-- StudentSidebar.js\n|   |   `-- useStudentProfile.js\n|   |-- reports\n|   |   |-- modals\n|   |   |   |-- AcademicGradesView.js\n|   |   |   |-- AdminReportModal.js\n|   |   |   |-- BKReportModal.js\n|   |   |   |-- HomeroomReportModal.js\n|   |   |   `-- TeacherReportModal.js\n|   |   |-- AdminReports.js\n|   |   |-- BKReports.js\n|   |   |-- DailyAttendanceSection.js\n|   |   |-- HomeroomTeacherReports.js\n|   |   |-- ReportExcel.js\n|   |   |-- ReportHelpers.js\n|   |   |-- Reports.js\n|   |   `-- TeacherReports.js\n|   |-- services\n|   |   |-- academicYearService.js\n|   |   `-- semesterService.js\n|   |-- setting\n|   |   |-- academic\n|   |   |   |-- AcademicYearTab.js\n|   |   |   |-- CopyAssignmentsModal.js\n|   |   |   |-- PreflightCheck.js\n|   |   |   |-- SemesterManagement.js\n|   |   |   |-- Simulator.js\n|   |   |   |-- TransitionReadiness.js\n|   |   |   `-- YearTransition.js\n|   |   |-- feedback\n|   |   |   |-- FeedbackCombinedTab.js\n|   |   |   |-- FeedbackGuruTab.js\n|   |   |   `-- FeedbackSiswaTab.js\n|   |   |-- portal-siswa\n|   |   |   |-- AkunSiswaTab.js\n|   |   |   `-- PortalSiswaTab.js\n|   |   |-- school-management\n|   |   |   |-- RiwayatMutasiTab.js\n|   |   |   |-- SchoolCombinedTab.js\n|   |   |   |-- SchoolManagementTab.js\n|   |   |   |-- SchoolSettingsTab.js\n|   |   |   |-- StudentManagement.js\n|   |   |   |-- StudentModals.js\n|   |   |   `-- TeacherAssignmentTab.js\n|   |   |-- ActiveUsersTab.js\n|   |   |-- AdminJadwalMassal.js\n|   |   |-- AdminKodeGuru.js\n|   |   |-- AdminPanel.js\n|   |   |-- AuditLogPanel.js\n|   |   |-- ChangePasswordSection.js\n|   |   |-- ConnectedDevicesAdminTab.js\n|   |   |-- JadwalGuruTab.js\n|   |   |-- MaintenanceModeTab.js\n|   |   |-- MaintenancePage.js\n|   |   |-- ProfileTab.js\n|   |   |-- Setting.js\n|   |   |-- StudentConnectedDevicesAdminTab.js\n|   |   |-- SystemTab.js\n|   |   |-- TeacherAssignmentExcel.js\n|   |   `-- UserManagementTab.js\n|   |-- spmb\n|   |   |-- ClassDistribution.js\n|   |   |-- ClassDivision.js\n|   |   |-- ClassOperations.js\n|   |   |-- DiagnostikPage.js\n|   |   |-- SPMB.js\n|   |   |-- SpmbExcel.js\n|   |   |-- Statistics.js\n|   |   |-- StudentForm.js\n|   |   `-- StudentList.js\n|   |-- system\n|   |   |-- checkers\n|   |   |   |-- AppHealthChecker.js\n|   |   |   |-- BusinessLogicChecker.js\n|   |   |   |-- DataValidator.js\n|   |   |   `-- DatabaseChecker.js\n|   |   |-- lib\n|   |   |   `-- fetchSupabaseSchema.js\n|   |   |-- CodeAudit.js\n|   |   |-- DatabaseCleanupMonitor.js\n|   |   |-- DatabaseStructure.js\n|   |   |-- HealthChecker.js\n|   |   |-- MonitorDashboard.js\n|   |   |-- MonitorHistory.js\n|   |   |-- MonitorResults.js\n|   |   |-- MonitorSistem.js\n|   |   |-- PerformanceMonitor.js\n|   |   `-- ProjectStructure.js\n|   |-- utils\n|   |   |-- deviceInfo.js\n|   |   |-- excelExportKit.js\n|   |   |-- jamPelajaran.js\n|   |   |-- offlineHelper.js\n|   |   |-- pdfExportKit.js\n|   |   |-- studentDevices.js\n|   |   |-- studentProfileCompletion.js\n|   |   |-- studentSession.js\n|   |   |-- systemHelpers.js\n|   |   `-- userDevices.js\n|   |-- App.js\n|   |-- constants.js\n|   |-- index.css\n|   |-- index.js\n|   |-- reportWebVitals.js\n|   `-- supabaseClient.js",
-  "totalAllFiles": 246
+  "asciiTree": "|-- src\n|   |-- assets\n|   |   |-- Background.webp\n|   |   |-- logo_sekolah-0.png\n|   |   `-- logo_sekolah.png\n|   |-- attendance-teacher\n|   |   |-- reports\n|   |   |   |-- DailySummary.js\n|   |   |   |-- ExportExcel.js\n|   |   |   |-- ITMReport.js\n|   |   |   |-- ITMReportExcel.js\n|   |   |   `-- MonthlyView.js\n|   |   |-- AdminAttendanceView.js\n|   |   |-- AttendanceTabs.js\n|   |   |-- CustomDatePicker.js\n|   |   |-- LocationValidator.js\n|   |   |-- ManualCheckIn.js\n|   |   |-- MyAttendanceStatus.js\n|   |   |-- MyMonthlyHistory.js\n|   |   |-- QRCodeGenerator.js\n|   |   |-- QRScanner.js\n|   |   |-- TeacherAttendance.js\n|   |   |-- TodaySchedule.js\n|   |   `-- index.html\n|   |-- components\n|   |   |-- ui\n|   |   |   |-- Card.js\n|   |   |   |-- ConfirmDialog.js\n|   |   |   |-- PageContainer.js\n|   |   |   |-- Typography.js\n|   |   |   `-- useConfirmDialog.js\n|   |   |-- AdminDashboard.js\n|   |   |-- AdminJurnalRekap.js\n|   |   |-- AnnouncementList.js\n|   |   |-- AnnouncementPopup.js\n|   |   |-- BottomNav.js\n|   |   |-- CatatanWalikelasBk.js\n|   |   |-- Dashboard.js\n|   |   |-- FeedbackGuru.js\n|   |   |-- GuruBKDashboard.js\n|   |   |-- HomeroomTeacherDashboard.js\n|   |   |-- Layout.js\n|   |   |-- Login.js\n|   |   |-- Logo.js\n|   |   |-- NotifikasiBk.js\n|   |   |-- PengumumanWaliKelas.js\n|   |   |-- SaranMasukanSiswa.js\n|   |   |-- Sidebar.js\n|   |   |-- StudentLogin.js\n|   |   |-- TeacherDashboard.js\n|   |   `-- WaliKelasWidgetTab.js\n|   |-- config\n|   |   |-- menuConfig.js\n|   |   |-- ruangBelajarAccess.js\n|   |   `-- sidebarConfig.js\n|   |-- e-raport\n|   |   |-- CekNilai.js\n|   |   |-- CekStatusNilai.js\n|   |   |-- CetakRaport.js\n|   |   |-- DashboardAdmin.js\n|   |   |-- DashboardHomeroomTeacher.js\n|   |   |-- DashboardTeacher.js\n|   |   |-- InputCatatan.js\n|   |   |-- InputEkstrakurikuler.js\n|   |   |-- InputKehadiran.js\n|   |   |-- InputKokurikuler.js\n|   |   |-- InputNilai.js\n|   |   |-- InputTP.js\n|   |   |-- PreviewNilai.js\n|   |   |-- PreviewRaport.js\n|   |   |-- RaportConfig.js\n|   |   `-- RaportPage.js\n|   |-- konseling\n|   |   |-- home-visit\n|   |   |   |-- HomeVisit.js\n|   |   |   |-- HomeVisitDetail.js\n|   |   |   |-- HomeVisitExportPDF.js\n|   |   |   |-- HomeVisitFilter.js\n|   |   |   |-- HomeVisitModal.js\n|   |   |   |-- HomeVisitStats.js\n|   |   |   `-- HomeVisitTable.js\n|   |   |-- ExportPDF.js\n|   |   |-- FilterBar.js\n|   |   |-- Konseling.js\n|   |   |-- KonselingMain.js\n|   |   |-- KonselingModal.js\n|   |   |-- KonselingTable.js\n|   |   `-- StatsCards.js\n|   |-- pages\n|   |   |-- attendance\n|   |   |   |-- AdminAttendance.js\n|   |   |   |-- Attendance.js\n|   |   |   |-- AttendanceExcel.js\n|   |   |   |-- AttendanceFilters.js\n|   |   |   |-- AttendanceMain.js\n|   |   |   |-- AttendanceManagement.js\n|   |   |   |-- AttendanceModals.js\n|   |   |   |-- AttendancePDF.js\n|   |   |   |-- AttendanceStats.js\n|   |   |   `-- AttendanceTable.js\n|   |   |-- datasiswa-induk\n|   |   |   |-- DataSiswaInduk.js\n|   |   |   |-- DataSiswaIndukConfig.js\n|   |   |   |-- DataSiswaIndukExcel.js\n|   |   |   `-- DataSiswaIndukPDF.js\n|   |   |-- grades\n|   |   |   |-- GradeMain.js\n|   |   |   |-- Grades.js\n|   |   |   |-- GradesExcel.js\n|   |   |   |-- GradesKatrol.js\n|   |   |   |-- KatrolTable.js\n|   |   |   `-- Utils.js\n|   |   |-- kelola-raport\n|   |   |   |-- ImportRaportForm.js\n|   |   |   |-- KelolaKKM.js\n|   |   |   |-- ManajemenRaportTable.js\n|   |   |   |-- NilaiRaportSiswa.js\n|   |   |   |-- RaportNilaiTab.js\n|   |   |   |-- RaportShared.js\n|   |   |   |-- RekapKelulusan.js\n|   |   |   |-- RekapMultiSemester.js\n|   |   |   `-- parseLegerExcel.js\n|   |   |-- CatatanSiswa.js\n|   |   |-- CatatanSiswaExport.js\n|   |   |-- Classes.js\n|   |   |-- DataExcel.js\n|   |   |-- DenahDuduk.js\n|   |   |-- JurnalHarian.js\n|   |   |-- KelolaJadwalPelajaran.js\n|   |   |-- KelolaJadwalPiket.js\n|   |   |-- Organigram.js\n|   |   |-- PortalBackButton.js\n|   |   |-- PortalSiswaGuru.js\n|   |   |-- Students.js\n|   |   |-- TeacherSchedule.js\n|   |   |-- TeacherScheduleExcel.js\n|   |   `-- Teachers.js\n|   |-- perpustakaan\n|   |   |-- Katalog.js\n|   |   |-- Peminjaman.js\n|   |   |-- Pengembalian.js\n|   |   `-- PerpusMain.js\n|   |-- portal-siswa\n|   |   |-- ruang-belajar-admin\n|   |   |   |-- RuangBelajarAdmin.js\n|   |   |   `-- RuangBelajarForm.js\n|   |   |-- ruang-belajar-siswa\n|   |   |   |-- BelajarMain.js\n|   |   |   |-- RuangBelajarCategories.js\n|   |   |   |-- RuangBelajarDetail.js\n|   |   |   `-- RuangBelajarHome.js\n|   |   |-- BirthdayCelebration.js\n|   |   |-- StudentBottomNav.js\n|   |   |-- StudentDashboard.js\n|   |   |-- StudentDataSiswa.js\n|   |   |-- StudentDenahDuduk.js\n|   |   |-- StudentHelpers.js\n|   |   |-- StudentInfo.js\n|   |   |-- StudentJadwal.js\n|   |   |-- StudentLayout.js\n|   |   |-- StudentOrganigram.js\n|   |   |-- StudentPengumuman.js\n|   |   |-- StudentPerangkatTerhubung.js\n|   |   |-- StudentPiket.js\n|   |   |-- StudentPortal.js\n|   |   |-- StudentPresensi.js\n|   |   |-- StudentProfile.js\n|   |   |-- StudentRaport.js\n|   |   |-- StudentSaran.js\n|   |   |-- StudentSidebar.js\n|   |   `-- useStudentProfile.js\n|   |-- reports\n|   |   |-- modals\n|   |   |   |-- AdminReportModal.js\n|   |   |   `-- BKReportModal.js\n|   |   |-- AdminReports.js\n|   |   |-- BKReports.js\n|   |   |-- DailyAttendanceSection.js\n|   |   |-- HomeroomTeacherReports.js\n|   |   |-- ReportExcel.js\n|   |   |-- ReportHelpers.js\n|   |   |-- Reports.js\n|   |   `-- TeacherReports.js\n|   |-- services\n|   |   `-- academicYearService.js\n|   |-- setting\n|   |   |-- academic\n|   |   |   |-- AcademicYearTab.js\n|   |   |   |-- CopyAssignmentsModal.js\n|   |   |   |-- PreflightCheck.js\n|   |   |   |-- SemesterManagement.js\n|   |   |   |-- Simulator.js\n|   |   |   |-- TransitionReadiness.js\n|   |   |   `-- YearTransition.js\n|   |   |-- feedback\n|   |   |   |-- FeedbackCombinedTab.js\n|   |   |   |-- FeedbackGuruTab.js\n|   |   |   `-- FeedbackSiswaTab.js\n|   |   |-- portal-siswa\n|   |   |   |-- AkunSiswaTab.js\n|   |   |   `-- PortalSiswaTab.js\n|   |   |-- school-management\n|   |   |   |-- RiwayatMutasiTab.js\n|   |   |   |-- SchoolCombinedTab.js\n|   |   |   |-- SchoolManagementTab.js\n|   |   |   |-- SchoolSettingsTab.js\n|   |   |   |-- StudentManagement.js\n|   |   |   |-- StudentModals.js\n|   |   |   `-- TeacherAssignmentTab.js\n|   |   |-- ActiveUsersTab.js\n|   |   |-- AdminJadwalMassal.js\n|   |   |-- AdminKodeGuru.js\n|   |   |-- AdminPanel.js\n|   |   |-- AuditLogPanel.js\n|   |   |-- ChangePasswordSection.js\n|   |   |-- ConnectedDevicesAdminTab.js\n|   |   |-- JadwalGuruTab.js\n|   |   |-- MaintenanceModeTab.js\n|   |   |-- MaintenancePage.js\n|   |   |-- ProfileTab.js\n|   |   |-- Setting.js\n|   |   |-- StudentConnectedDevicesAdminTab.js\n|   |   |-- SystemTab.js\n|   |   |-- TeacherAssignmentExcel.js\n|   |   `-- UserManagementTab.js\n|   |-- spmb\n|   |   |-- ClassDistribution.js\n|   |   |-- ClassDivision.js\n|   |   |-- ClassOperations.js\n|   |   |-- DiagnostikPage.js\n|   |   |-- SPMB.js\n|   |   |-- SpmbExcel.js\n|   |   |-- Statistics.js\n|   |   |-- StudentForm.js\n|   |   `-- StudentList.js\n|   |-- system\n|   |   |-- checkers\n|   |   |   |-- AppHealthChecker.js\n|   |   |   |-- BusinessLogicChecker.js\n|   |   |   |-- DataValidator.js\n|   |   |   `-- DatabaseChecker.js\n|   |   |-- CodeAudit.js\n|   |   |-- DatabaseCleanupMonitor.js\n|   |   |-- DatabaseStructure.js\n|   |   |-- HealthChecker.js\n|   |   |-- MonitorDashboard.js\n|   |   |-- MonitorSistem.js\n|   |   |-- PerformanceMonitor.js\n|   |   `-- ProjectStructure.js\n|   |-- utils\n|   |   |-- deviceInfo.js\n|   |   |-- excelExportKit.js\n|   |   |-- jamPelajaran.js\n|   |   |-- offlineHelper.js\n|   |   |-- pdfExportKit.js\n|   |   |-- studentDevices.js\n|   |   |-- studentProfileCompletion.js\n|   |   |-- studentSession.js\n|   |   `-- userDevices.js\n|   |-- App.js\n|   |-- constants.js\n|   |-- index.css\n|   |-- index.js\n|   |-- reportWebVitals.js\n|   `-- supabaseClient.js",
+  "totalAllFiles": 234
 }

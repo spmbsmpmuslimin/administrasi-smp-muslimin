@@ -63,6 +63,11 @@ function TableCard({ table, allTableNames }) {
               <Link2 size={12} /> {table.foreignKeys.length}
             </span>
           )}
+          {(table.referencedBy || []).length > 0 && (
+            <span className="flex items-center gap-0.5 text-purple-500 dark:text-purple-400">
+              <Network size={12} /> {table.referencedBy.length}
+            </span>
+          )}
         </div>
       </button>
       {open && (
@@ -117,6 +122,26 @@ function TableCard({ table, allTableNames }) {
               </tbody>
             </table>
           </div>
+
+          {(table.referencedBy || []).length > 0 && (
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-[10px] uppercase font-semibold text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-1">
+                <Network size={11} />
+                Direferensikan oleh ({table.referencedBy.length})
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {table.referencedBy.map((ref, i) => (
+                  <span
+                    key={i}
+                    className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                    title={`${ref.table}.${ref.column} → ${table.name}.${ref.refColumn}`}
+                  >
+                    {ref.table}.{ref.column}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -223,7 +248,8 @@ function DatabaseStructure() {
             <div>
               <h2 className="font-bold text-gray-800 dark:text-gray-100">Struktur Database</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                Daftar tabel, kolom, tipe data, dan foreign key — gak perlu diupdate manual kayak
+                Daftar tabel, kolom, tipe data, foreign key (outgoing), dan tabel lain yang
+                nge-refer balik ke tabel ini (incoming) — gak perlu diupdate manual kayak
                 strukturfile.txt.
               </p>
             </div>
