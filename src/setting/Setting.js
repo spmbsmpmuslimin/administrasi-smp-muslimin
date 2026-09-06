@@ -309,7 +309,11 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
     },
     {
       id: "profile",
-      title: "Manajemen Profile",
+      // ✅ FIX: Admin/TU tetap "Manajemen Profile" (kesan mengelola akun
+      // orang lain juga), tapi buat Guru/Guru BK/role lain ini cuma
+      // profil diri sendiri, jadi labelnya dibikin lebih personal:
+      // "Profile Saya".
+      title: user?.role === "admin" || user?.role === "tu" ? "Manajemen Profile" : "Profile Saya",
       description: "Kelola informasi profil pribadi Anda",
       icon: User,
       color: "sky",
@@ -482,13 +486,28 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
               </div>
             </div>
 
-            {/* Back Button - Di sebelah kanan */}
+            {/* Back Button - Di sebelah kanan
+                ✅ FIX: Sebelumnya semua role balik ke grid "Pengaturan"
+                (changeTab("dashboard")). Sekarang khusus tab "profile" buat
+                Guru/Guru BK/role lain (bukan Admin/TU), tombol ini langsung
+                balik ke Dashboard utama aplikasi -- karena bagi mereka
+                "Profile Saya" bukan bagian dari alur pengaturan sekolah.
+                Admin/TU tetap balik ke menu Pengaturan seperti biasa.
+                Teks "Kembali" juga sekarang selalu ditampilkan, gak
+                disembunyikan lagi di layar kecil. */}
             <button
-              onClick={() => changeTab("dashboard")}
+              onClick={() => {
+                const isAdminOrTU = user?.role === "admin" || user?.role === "tu";
+                if (activeTab === "profile" && !isAdminOrTU) {
+                  navigate("/dashboard");
+                } else {
+                  changeTab("dashboard");
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all active:scale-95 text-gray-700 dark:text-gray-300 font-medium"
             >
               <ChevronRight size={18} className="rotate-180" />
-              <span className="hidden sm:inline">Kembali</span>
+              <span>Kembali</span>
             </button>
           </div>
 

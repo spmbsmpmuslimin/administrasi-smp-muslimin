@@ -6,6 +6,11 @@ import Simulator from "./Simulator";
 
 // Import academic year service
 import { getActiveAcademicInfo, getActiveYearString } from "../../services/academicYearService";
+// ✅ FIX: dipakai di STEP 5 (masukin siswa baru dari SPMB), gantiin insert
+// manual sendiri yang dulu ada di sini -- biar cuma ada 1 versi logic
+// transfer siswa_baru -> students (yang dipakai juga sama tombol "Transfer
+// ke Students" di SPMB), gak ada 2 versi yang bisa beda kelakuan.
+import { transferToStudents } from "../../spmb/ClassOperations";
 
 const YearTransition = ({
   schoolStats,
@@ -132,14 +137,18 @@ const YearTransition = ({
       const existingNIS = new Set(existingStudents?.map((s) => s.nis) || []);
 
       // Filter siswa baru yang NIS-nya belum terdaftar
+      // ✅ FIX: dulu bandingin siswa.nisn (NISN, nomor dari pemerintah) ke
+      // existingNIS (isinya NIS sekolah, format beda total) -- akibatnya
+      // deteksi konflik nyaris gak pernah kena walau kelihatan kayak ada
+      // pengamanan. Sekarang bandingin NIS ke NIS, jenis nomor yang sama.
       const validNewStudents = [];
       const conflictedNIS = [];
 
       siswaBaruData?.forEach((siswa) => {
-        if (siswa.nisn && existingNIS.has(siswa.nisn)) {
+        if (siswa.nis && existingNIS.has(siswa.nis)) {
           conflictedNIS.push({
             nama: siswa.nama_lengkap,
-            nisn: siswa.nisn,
+            nis: siswa.nis,
           });
         } else {
           validNewStudents.push(siswa);
@@ -441,47 +450,35 @@ const YearTransition = ({
         if (latestSiswaBaruData && latestSiswaBaruData.length > 0) {
           showToast(`Memasukkan ${latestSiswaBaruData.length} siswa baru...`, "info");
 
-          // Group siswa baru berdasarkan kelas
-          const distributionByClass = {};
-          latestSiswaBaruData.forEach((siswa) => {
-            const kelas = siswa.kelas;
-            if (!distributionByClass[kelas]) {
-              distributionByClass[kelas] = [];
-            }
-            distributionByClass[kelas].push(siswa);
-          });
-
-          // Insert siswa baru ke database dengan academic_year_id yang benar
-          for (const [classId, siswaList] of Object.entries(distributionByClass)) {
-            if (siswaList.length === 0) continue;
-
-            const newStudentsData = siswaList.map((siswa) => ({
-              nis: siswa.nisn || null,
-              full_name: siswa.nama_lengkap,
-              gender: siswa.jenis_kelamin,
-              class_id: classId,
-              academic_year: yearTransition.newYear,
-              academic_year_id: targetAcademicYearId, // ← Gunakan ID semester baru
-              is_active: true,
-            }));
-
-            const { error: insertError } = await supabase.from("students").insert(newStudentsData);
-
-            if (insertError) throw insertError;
-          }
-
-          // Update status siswa baru di SPMB
-          const siswaBaruIds = latestSiswaBaruData.map((s) => s.id);
-          const { error: updateSiswaBaruError } = await supabase
-            .from("siswa_baru")
-            .update({
-              is_transferred: true,
-              transferred_at: new Date().toISOString(),
-              transferred_by: user?.id || null,
-            })
-            .in("id", siswaBaruIds);
-
-          if (updateSiswaBaruError) throw updateSiswaBaruError;
+          // ✅ FIX: dulu di sini ada insert manual sendiri ke `students`
+          // (duplikat logic dari ClassOperations.js, dengan bug sendiri:
+          // NIS keisi dari siswa.nisn bukan siswa.nis, dan gak pernah
+          // nyalin ke student_profile_details sama sekali -- jadi siswa
+          // yang masuk lewat sini kehilangan data alamat/data ortu yang
+          // udah dikumpulin pas SPMB). Sekarang manggil transferToStudents()
+          // yang sama persis dipakai tombol "Transfer ke Students" di SPMB,
+          // biar cuma ada 1 versi logic transfer & konsisten kelakuannya.
+          //
+          // setIsLoading dikasih no-op ((() => {})) karena loading state di
+          // sini udah dihandle executeYearTransition sendiri di luar --
+          // kalau transferToStudents dikasih setLoading asli, finally-nya
+          // bakal matiin loading duluan padahal STEP 6 & 7 masih lanjut.
+          //
+          // Kalau transfer ini gagal, transferToStudents() sekarang throw
+          // ulang errornya (lihat fix di ClassOperations.js) -- jadi bakal
+          // ketangkep sama catch di executeYearTransition ini juga, dan
+          // STEP 6 & 7 gak akan lanjut jalan dalam kondisi data setengah
+          // jadi.
+          await transferToStudents(
+            latestSiswaBaruData,
+            supabase,
+            () => {},
+            showToast,
+            () => yearTransition.newYear,
+            undefined,
+            targetAcademicYearId,
+            user?.id || null
+          );
         }
       }
 
@@ -628,7 +625,7 @@ const YearTransition = ({
                   <ul className="text-red-700 dark:text-red-400 text-sm space-y-1 list-disc list-inside max-h-32 overflow-y-auto">
                     {yearTransition.preview.conflictedNIS.map((item, idx) => (
                       <li key={idx}>
-                        {item.nama} (NIS: {item.nisn})
+                        {item.nama} (NIS: {item.nis})
                       </li>
                     ))}
                   </ul>

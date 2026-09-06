@@ -700,79 +700,154 @@ export default function KelengkapanDataSiswa({ currentUser }) {
       <p className="text-sm sm:text-base font-semibold text-slate-700 dark:text-slate-200 mb-3">
         Pilih siswa dulu buat {activePageTab === "isi" ? "isi datanya" : "liat preview-nya"}.
       </p>
-      {/* ✅ UPDATED: Cari Siswa + Pilih Jenjang + Pilih Kelas digabung jadi
-          1 baris (sebelumnya search-nya 1 baris sendiri, dropdown di
-          baris terpisah di bawahnya) -- disamain gayanya sama baris
-          filter di tab "Data Siswa": Cari Siswa fleksibel (flex-1) biar
-          lebar nyesuaiin sisa ruang, dropdown Jenjang/Kelas lebar tetap
-          (shrink-0). Kalau kepotong di layar sempit, baris ini scroll
-          horizontal (overflow-x-auto), bukan ke-wrap turun baris. */}
-      {/* ✅ UPDATED: dari scroll horizontal (overflow-x-auto) jadi wrap
-          otomatis (flex-wrap) -- semua field (Cari Siswa, Jenjang, Kelas)
-          langsung keliatan semua tanpa perlu geser/toggle, cuma turun ke
-          baris baru sendiri kalau ruang di layar gak cukup. */}
-      <div className="flex flex-wrap items-end gap-2 sm:gap-3 mb-3">
-        <div className="flex-1 min-w-[160px]">
-          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-            Cari Siswa
-          </label>
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={pickerQuery}
-              onChange={(e) => setPickerQuery(e.target.value)}
-              placeholder="Nama atau NIS..."
-              autoFocus
-              className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-300"
-            />
+      {/* ✅ UPDATED: layout filter disamain sama tab "Data Siswa" --
+          khusus HP (< sm): baris 1 = Cari Siswa (kotak label+input nyatu,
+          full width), baris 2 = Pilih Jenjang & Pilih Kelas sejajar 2
+          kolom sama lebar (grid-cols-2). Di sm ke atas tetap pakai
+          flex-wrap kayak semula. */}
+      <div className="mb-3">
+        {/* Mobile (< sm) */}
+        <div className="sm:hidden flex flex-col gap-2.5">
+          <div className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 flex items-center gap-2.5 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 focus-within:border-indigo-300 transition">
+            <Search size={16} className="text-slate-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <label className="block text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                Cari Siswa
+              </label>
+              <input
+                type="text"
+                value={pickerQuery}
+                onChange={(e) => setPickerQuery(e.target.value)}
+                placeholder="Nama atau NIS..."
+                autoFocus
+                className="w-full text-sm bg-transparent border-0 p-0 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-0"
+              />
+            </div>
           </div>
+
+          {(jenjangOptions.length > 0 || pickerFilteredClassOptions.length > 0) && (
+            <div className="grid grid-cols-2 gap-2.5">
+              {jenjangOptions.length > 0 && (
+                <div
+                  className={`rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 focus-within:border-indigo-300 transition ${
+                    pickerFilteredClassOptions.length === 0 ? "col-span-2" : ""
+                  }`}
+                >
+                  <label className="block text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                    Pilih Jenjang
+                  </label>
+                  <select
+                    value={pickerJenjang}
+                    onChange={(e) => {
+                      setPickerJenjang(e.target.value);
+                      setPickerClass("all");
+                    }}
+                    className="w-full text-sm bg-transparent border-0 p-0 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-0"
+                  >
+                    <option value="all">Semua Jenjang</option>
+                    {jenjangOptions.map((j) => (
+                      <option key={j} value={j}>
+                        Kelas {j}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {pickerFilteredClassOptions.length > 0 && (
+                <div
+                  className={`rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 focus-within:border-indigo-300 transition ${
+                    jenjangOptions.length === 0 ? "col-span-2" : ""
+                  }`}
+                >
+                  <label className="block text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                    Pilih Kelas
+                  </label>
+                  <select
+                    value={pickerClass}
+                    onChange={(e) => setPickerClass(e.target.value)}
+                    className="w-full text-sm bg-transparent border-0 p-0 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-0"
+                  >
+                    <option value="all">Semua Kelas</option>
+                    {pickerFilteredClassOptions.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        Kelas {c.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {jenjangOptions.length > 0 && (
-          <div className="shrink-0 min-w-[130px]">
+        {/* Tablet/Desktop (sm ke atas) -- tetap seperti semula */}
+        <div className="hidden sm:flex flex-wrap items-end gap-2 sm:gap-3">
+          <div className="flex-1 min-w-[160px]">
             <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-              Pilih Jenjang
+              Cari Siswa
             </label>
-            <select
-              value={pickerJenjang}
-              onChange={(e) => {
-                setPickerJenjang(e.target.value);
-                // Reset filter Kelas tiap ganti Jenjang, sama kayak
-                // perilaku dropdown Jenjang di tab "Data Siswa".
-                setPickerClass("all");
-              }}
-              className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
-            >
-              <option value="all">Semua Jenjang</option>
-              {jenjangOptions.map((j) => (
-                <option key={j} value={j}>
-                  Kelas {j}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                value={pickerQuery}
+                onChange={(e) => setPickerQuery(e.target.value)}
+                placeholder="Nama atau NIS..."
+                autoFocus
+                className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-300"
+              />
+            </div>
           </div>
-        )}
 
-        {pickerFilteredClassOptions.length > 0 && (
-          <div className="shrink-0 min-w-[140px]">
-            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-              Pilih Kelas
-            </label>
-            <select
-              value={pickerClass}
-              onChange={(e) => setPickerClass(e.target.value)}
-              className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
-            >
-              <option value="all">Semua Kelas</option>
-              {pickerFilteredClassOptions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  Kelas {c.id}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+          {jenjangOptions.length > 0 && (
+            <div className="shrink-0 min-w-[130px]">
+              <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                Pilih Jenjang
+              </label>
+              <select
+                value={pickerJenjang}
+                onChange={(e) => {
+                  setPickerJenjang(e.target.value);
+                  // Reset filter Kelas tiap ganti Jenjang, sama kayak
+                  // perilaku dropdown Jenjang di tab "Data Siswa".
+                  setPickerClass("all");
+                }}
+                className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+              >
+                <option value="all">Semua Jenjang</option>
+                {jenjangOptions.map((j) => (
+                  <option key={j} value={j}>
+                    Kelas {j}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {pickerFilteredClassOptions.length > 0 && (
+            <div className="shrink-0 min-w-[140px]">
+              <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                Pilih Kelas
+              </label>
+              <select
+                value={pickerClass}
+                onChange={(e) => setPickerClass(e.target.value)}
+                className="w-full text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+              >
+                <option value="all">Semua Kelas</option>
+                {pickerFilteredClassOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    Kelas {c.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
       <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
         {pickerMatches.length === 0 ? (
@@ -959,7 +1034,125 @@ export default function KelengkapanDataSiswa({ currentUser }) {
             Cari Siswa tetep fleksibel (flex-1), dropdown & tombol reset
             lebar tetap (shrink-0). */}
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-md p-3 sm:p-4 border border-slate-100 dark:border-slate-700 mb-4 flex flex-col gap-3">
-              <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+              {/* ✅ NEW: Layout filter khusus HP (< sm).
+                  Sebelumnya semua filter (Cari Siswa, Status Verifikasi,
+                  Pilih Jenjang, Pilih Kelas) pakai flex-wrap dengan
+                  min-width masing-masing beda -> di layar sempit lebarnya
+                  gak konsisten & kadang numpuk/nabrak satu sama lain.
+                  Sekarang di HP: tiap filter dibungkus 1 kotak (border)
+                  yang isinya label + input/dropdown SEKALIGUS, jadi
+                  keliatan itu 1 kesatuan yang bisa diklik/ditap (bukan
+                  label ngambang misah dari kotak inputnya). Pilih Jenjang
+                  & Pilih Kelas taruh sejajar 2 kolom (grid-cols-2) biar
+                  lebarnya persis sama. */}
+              <div className="sm:hidden flex flex-col gap-2.5">
+                <div className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 flex items-center gap-2.5 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 focus-within:border-indigo-300 transition">
+                  <Search size={16} className="text-slate-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                      Cari Siswa
+                    </label>
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Nama atau NIS..."
+                      className="w-full text-sm bg-transparent border-0 p-0 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-0"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 focus-within:border-indigo-300 transition">
+                  <label className="block text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                    Status Verifikasi
+                  </label>
+                  <select
+                    value={verifiedFilter}
+                    onChange={(e) => setVerifiedFilter(e.target.value)}
+                    className="w-full text-sm bg-transparent border-0 p-0 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-0"
+                  >
+                    <option value="all">Semua</option>
+                    <option value="verified">Terverifikasi</option>
+                    <option value="unverified">Belum Diverifikasi</option>
+                  </select>
+                </div>
+
+                {(jenjangOptions.length > 0 || filteredClassOptions.length > 0) && (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {jenjangOptions.length > 0 && (
+                      <div
+                        className={`rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 focus-within:border-indigo-300 transition ${
+                          filteredClassOptions.length === 0 ? "col-span-2" : ""
+                        }`}
+                      >
+                        <label className="block text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                          Pilih Jenjang
+                        </label>
+                        <select
+                          value={jenjangFilter}
+                          onChange={(e) => {
+                            setJenjangFilter(e.target.value);
+                            setClassFilter("all");
+                          }}
+                          className="w-full text-sm bg-transparent border-0 p-0 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-0"
+                        >
+                          <option value="all">Semua Jenjang</option>
+                          {jenjangOptions.map((j) => (
+                            <option key={j} value={j}>
+                              Kelas {j}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {filteredClassOptions.length > 0 && (
+                      <div
+                        className={`rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 focus-within:border-indigo-300 transition ${
+                          jenjangOptions.length === 0 ? "col-span-2" : ""
+                        }`}
+                      >
+                        <label className="block text-[10px] font-medium text-slate-400 dark:text-slate-500 leading-tight">
+                          Pilih Kelas
+                        </label>
+                        <select
+                          value={classFilter}
+                          onChange={(e) => setClassFilter(e.target.value)}
+                          className="w-full text-sm bg-transparent border-0 p-0 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-0"
+                        >
+                          <option value="all">Semua Kelas</option>
+                          {filteredClassOptions.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              Kelas {c.id}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(statusFilter !== "all" ||
+                  verifiedFilter !== "all" ||
+                  jenjangFilter !== "all" ||
+                  classFilter !== "all") && (
+                  <button
+                    onClick={() => {
+                      setStatusFilter("all");
+                      setVerifiedFilter("all");
+                      setJenjangFilter("all");
+                      setClassFilter("all");
+                    }}
+                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2.5 rounded-lg w-full"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+
+              {/* Layout filter versi tablet/desktop (sm ke atas) -- tetap
+                  seperti semula, gak ada perubahan. */}
+              <div className="hidden sm:flex flex-wrap items-end gap-2 sm:gap-3">
                 <div className="flex-1 min-w-[160px]">
                   <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
                     Cari Siswa
@@ -1121,105 +1314,172 @@ export default function KelengkapanDataSiswa({ currentUser }) {
                 Tidak ada siswa yang cocok dengan filter ini.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                <table className="w-full table-fixed text-left border-collapse bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                  <thead>
-                    {/* Header kolom -- font SENGAJA dibikin lebih gede &
+              <>
+                {/* ✅ NEW: Card list khusus HP (< sm) -- sebelumnya tabel
+                    6 kolom (Nama, NIS, Kelas, Jenis Kelamin, TTL, Status)
+                    dipaksa muat semua di layar sempit pakai table-fixed,
+                    hasilnya numpuk & susah dibaca. Sekarang di HP cuma
+                    tampil 3 info penting: Nama Siswa, NIS, dan Status
+                    (checkbox + badge terverifikasi tetap ada). Info
+                    lainnya (Kelas, Jenis Kelamin, TTL) tetap bisa dilihat
+                    lengkap begitu buka detail siswa (openStudent). Tabel
+                    lengkap tetap dipakai apa adanya di layar sm ke atas. */}
+                <div className="sm:hidden space-y-2">
+                  {paginatedRows.map((r) => {
+                    const meta = STATUS_META[r.status];
+                    const StatusIcon = meta.icon;
+                    const isSelected = selectedIds.has(r.id);
+
+                    return (
+                      <div
+                        key={r.id}
+                        onClick={() => openStudent(r)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                          isSelected
+                            ? "bg-indigo-50/70 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800"
+                            : "bg-white/80 dark:bg-slate-800/80 border-slate-100 dark:border-slate-700 active:bg-slate-50 dark:active:bg-slate-700/40"
+                        }`}
+                      >
+                        <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectOne(r.id)}
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-400"
+                          />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
+                            {r.full_name}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            NIS: {r.nis || "-"}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          {r.isVerified && (
+                            <span
+                              title="Terverifikasi Admin"
+                              className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                            >
+                              <ShieldCheck size={11} />
+                            </span>
+                          )}
+                          <span
+                            className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full whitespace-nowrap ${meta.badge}`}
+                          >
+                            <StatusIcon size={12} />
+                            {meta.label}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Tabel lengkap -- tetap tampil apa adanya di layar sm ke atas */}
+                <div className="hidden sm:block overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                  <table className="w-full table-fixed text-left border-collapse bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                    <thead>
+                      {/* Header kolom -- font SENGAJA dibikin lebih gede &
                         bold/uppercase dibanding isian data di bawahnya,
                         biar jelas beda mana judul kolom mana isinya.
                         table-fixed + lebar per kolom (di bawah) dipake
                         biar kolom "Nama Siswa" dapet porsi paling lebar
                         (gak nyisain space kosong di kanan) & kolom lain
                         gak ikutan melar gak jelas. */}
-                    <tr className="border-b-2 border-slate-200 dark:border-slate-600">
-                      <th className="p-3 w-10"></th>
-                      <th className="p-3 w-[22%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200">
-                        Nama Siswa
-                      </th>
-                      <th className="p-3 w-[12%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap">
-                        NIS
-                      </th>
-                      <th className="p-3 w-[8%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap">
-                        Kelas
-                      </th>
-                      <th className="p-3 w-[13%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap">
-                        Jenis Kelamin
-                      </th>
-                      <th className="p-3 w-[25%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap">
-                        Tempat, Tanggal Lahir
-                      </th>
-                      <th className="p-3 w-[20%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap text-right">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedRows.map((r) => {
-                      const meta = STATUS_META[r.status];
-                      const StatusIcon = meta.icon;
-                      const jenisKelamin = r.detail?.jenis_kelamin || null;
-                      const ttl = getDetailRowValue(r.detail, { key: "ttl", combine: "ttl" });
+                      <tr className="border-b-2 border-slate-200 dark:border-slate-600">
+                        <th className="p-3 w-10"></th>
+                        <th className="p-3 w-[22%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200">
+                          Nama Siswa
+                        </th>
+                        <th className="p-3 w-[12%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                          NIS
+                        </th>
+                        <th className="p-3 w-[8%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                          Kelas
+                        </th>
+                        <th className="p-3 w-[13%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                          Jenis Kelamin
+                        </th>
+                        <th className="p-3 w-[25%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                          Tempat, Tanggal Lahir
+                        </th>
+                        <th className="p-3 w-[20%] text-sm sm:text-base font-extrabold uppercase text-slate-700 dark:text-slate-200 whitespace-nowrap text-right">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedRows.map((r) => {
+                        const meta = STATUS_META[r.status];
+                        const StatusIcon = meta.icon;
+                        const jenisKelamin = r.detail?.jenis_kelamin || null;
+                        const ttl = getDetailRowValue(r.detail, { key: "ttl", combine: "ttl" });
 
-                      return (
-                        <tr
-                          key={r.id}
-                          onClick={() => openStudent(r)}
-                          className={`border-b border-slate-100 dark:border-slate-700 cursor-pointer transition ${
-                            selectedIds.has(r.id)
-                              ? "bg-indigo-50/70 dark:bg-indigo-900/20"
-                              : "hover:bg-slate-50 dark:hover:bg-slate-700/40"
-                          }`}
-                        >
-                          <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.has(r.id)}
-                              onChange={() => toggleSelectOne(r.id)}
-                              className="w-4 h-4 shrink-0 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-400"
-                            />
-                          </td>
-                          <td className="p-3 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
-                            {r.full_name}
-                          </td>
-                          <td className="p-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {r.nis || "-"}
-                          </td>
-                          <td className="p-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {r.class_id || "-"}
-                          </td>
-                          <td className="p-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {jenisKelamin || "-"}
-                          </td>
-                          <td
-                            className="p-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 truncate"
-                            title={ttl || undefined}
+                        return (
+                          <tr
+                            key={r.id}
+                            onClick={() => openStudent(r)}
+                            className={`border-b border-slate-100 dark:border-slate-700 cursor-pointer transition ${
+                              selectedIds.has(r.id)
+                                ? "bg-indigo-50/70 dark:bg-indigo-900/20"
+                                : "hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                            }`}
                           >
-                            {ttl || "-"}
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {r.isVerified && (
+                            <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(r.id)}
+                                onChange={() => toggleSelectOne(r.id)}
+                                className="w-4 h-4 shrink-0 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-400"
+                              />
+                            </td>
+                            <td className="p-3 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
+                              {r.full_name}
+                            </td>
+                            <td className="p-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              {r.nis || "-"}
+                            </td>
+                            <td className="p-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              {r.class_id || "-"}
+                            </td>
+                            <td className="p-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                              {jenisKelamin || "-"}
+                            </td>
+                            <td
+                              className="p-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 truncate"
+                              title={ttl || undefined}
+                            >
+                              {ttl || "-"}
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {r.isVerified && (
+                                  <span
+                                    title="Terverifikasi Admin"
+                                    className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                                  >
+                                    <ShieldCheck size={13} />
+                                  </span>
+                                )}
                                 <span
-                                  title="Terverifikasi Admin"
-                                  className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                                  className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${meta.badge}`}
                                 >
-                                  <ShieldCheck size={13} />
+                                  <StatusIcon size={13} />
+                                  {meta.label}
                                 </span>
-                              )}
-                              <span
-                                className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${meta.badge}`}
-                              >
-                                <StatusIcon size={13} />
-                                {meta.label}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
 
             {/* ====== MUAT LEBIH BANYAK (PAGINATION) ====== */}

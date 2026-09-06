@@ -984,20 +984,22 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* Mobile (di bawah sm): daftar Card, satu siswa = satu Card */}
-      {/* ---------------------------------------------------- */}
+      {/* Mobile (di bawah sm): daftar Card, satu siswa = satu Card
+          ✅ FIX: disamain filosofinya sama card HP di Data Siswa Induk --
+          gak perlu nampilin semua kolom (No., NISN, Jenis Kelamin) di
+          list, cukup yang penting buat sekilas scan: Kelas, Nama, NIS,
+          Status. Info lain (NISN, Jenis Kelamin) tetap bisa dicek lewat
+          "Lihat Data Siswa Induk". Badge Kelengkapan + 2 tombol aksi yang
+          sebelumnya masing-masing full-width (bikin card jadi panjang)
+          sekarang digabung jadi 1 baris ringkas (icon button sejajar). */}
       <div className="sm:hidden space-y-3">
         {visibleData.length > 0 ? (
-          visibleData.map((siswa, index) => (
+          visibleData.map((siswa) => (
             <Card key={siswa.id} darkMode={darkMode}>
-              <div
-                className={`flex justify-between items-start border-b pb-3 mb-3 ${
-                  darkMode ? "border-gray-700" : "border-gray-100"
-                }`}
-              >
-                <div className="flex-1 min-w-0 pr-2">
-                  <Muted darkMode={darkMode} className="block mb-1">
-                    No. {index + 1} | Kelas:{" "}
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <Muted darkMode={darkMode} className="block mb-0.5 text-[11px]">
+                    Kelas{" "}
                     <span className={`font-bold ${darkMode ? "text-blue-400" : "text-blue-600"}`}>
                       {siswa.class_id}
                     </span>
@@ -1006,6 +1008,9 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     className={`text-base font-bold truncate ${darkMode ? "text-white" : "text-gray-900"}`}
                   >
                     {siswa.full_name}
+                  </p>
+                  <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    NIS: <span className="font-mono">{siswa.nis}</span>
                   </p>
                 </div>
                 <span
@@ -1023,83 +1028,52 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                 </span>
               </div>
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <Muted darkMode={darkMode}>NIS:</Muted>
-                  <span className={`font-mono ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
-                    {siswa.nis}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <Muted darkMode={darkMode}>NISN:</Muted>
-                  <span className={`font-mono ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
-                    {siswa.nisn || (
-                      <span
-                        className={`italic font-sans ${darkMode ? "text-gray-500" : "text-gray-400"}`}
-                      >
-                        Belum ada
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <Muted darkMode={darkMode}>Jenis Kelamin:</Muted>
-                  <span className={darkMode ? "text-gray-200" : "text-gray-900"}>
-                    {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
-                  </span>
-                </div>
-              </div>
-
               {canEditDelete && (
-                <>
-                  <div
-                    className={`mt-3 pt-3 border-t flex items-center justify-between gap-2 ${
-                      darkMode ? "border-gray-700" : "border-gray-100"
-                    }`}
-                  >
-                    <Muted darkMode={darkMode}>Kelengkapan Data Induk</Muted>
-                    {(() => {
-                      const meta =
-                        COMPLETION_STATUS_META[siswa.completionStatus] ||
-                        COMPLETION_STATUS_META.belum;
-                      const Icon = COMPLETION_STATUS_ICON[siswa.completionStatus] || XCircle;
-                      return (
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}
-                        >
-                          <Icon size={12} />
-                          {meta.label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-
-                  <button
-                    onClick={() => handleOpenDataInduk(siswa)}
-                    className={`mt-2 w-full px-3 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 border transition-colors min-h-[44px] touch-manipulation ${
-                      darkMode
-                        ? "bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300 border-indigo-800"
-                        : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200"
-                    }`}
-                  >
-                    <ClipboardList size={16} />
-                    <span>Lihat Data Siswa Induk</span>
-                  </button>
-                </>
-              )}
-
-              {canEditDelete && (
-                <button
-                  onClick={() => handleOpenRiwayat(siswa)}
-                  className={`mt-2 w-full px-3 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 min-h-[44px] touch-manipulation ${
-                    darkMode
-                      ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                <div
+                  className={`mt-3 pt-3 border-t flex items-center justify-between gap-2 ${
+                    darkMode ? "border-gray-700" : "border-gray-100"
                   }`}
                 >
-                  <History size={16} />
-                  <span>Lihat Riwayat</span>
-                </button>
+                  {(() => {
+                    const meta =
+                      COMPLETION_STATUS_META[siswa.completionStatus] ||
+                      COMPLETION_STATUS_META.belum;
+                    const Icon = COMPLETION_STATUS_ICON[siswa.completionStatus] || XCircle;
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${meta.badge}`}
+                      >
+                        <Icon size={12} />
+                        {meta.label}
+                      </span>
+                    );
+                  })()}
+
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => handleOpenDataInduk(siswa)}
+                      title="Lihat Data Siswa Induk"
+                      className={`p-2.5 rounded-lg transition-colors touch-manipulation ${
+                        darkMode
+                          ? "bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300"
+                          : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700"
+                      }`}
+                    >
+                      <ClipboardList size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleOpenRiwayat(siswa)}
+                      title="Lihat Riwayat Mutasi"
+                      className={`p-2.5 rounded-lg transition-colors touch-manipulation ${
+                        darkMode
+                          ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                          : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      <History size={16} />
+                    </button>
+                  </div>
+                </div>
               )}
             </Card>
           ))

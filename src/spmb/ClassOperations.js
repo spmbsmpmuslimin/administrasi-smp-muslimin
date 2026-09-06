@@ -178,7 +178,16 @@ export const transferToStudents = async (
   setIsLoading,
   showToast,
   getCurrentAcademicYear,
-  onRefreshData
+  onRefreshData,
+  // ✅ FIX: 2 parameter opsional baru -- ditambahin biar fungsi ini bisa
+  // dipakai bareng dari YearTransition.js (proses "Transisi Tahun Ajaran"),
+  // bukan cuma dari tombol "Transfer ke Students" di SPMB. Sebelumnya
+  // YearTransition.js punya insert manual sendiri yang gak isi 2 kolom ini
+  // (academic_year_id gak pernah keisi, transferred_by gak konsisten).
+  // Default null biar pemanggilan lama (dari ClassDivision.js) tetap jalan
+  // tanpa perlu diubah.
+  academicYearId = null,
+  transferredBy = null
 ) => {
   const studentsWithClass = allStudents.filter(
     (s) => s.kelas && !s.is_transferred && s.status === "diterima"
@@ -215,6 +224,12 @@ export const transferToStudents = async (
             nisn: cleanValue(siswa.nisn),
             class_id: siswa.kelas,
             academic_year: currentYear,
+            // ✅ FIX: dulu gak pernah keisi sama sekali dari sini (cuma
+            // YearTransition.js yang isi ini, lewat insert manualnya
+            // sendiri). Sekarang ikut ditulis kalau pemanggil ngasih
+            // (misal dari proses Transisi Tahun Ajaran) -- null kalau
+            // enggak, sama kayak kelakuan lama.
+            academic_year_id: academicYearId || null,
             gender: siswa.jenis_kelamin,
             is_active: true,
           },
@@ -247,6 +262,10 @@ export const transferToStudents = async (
         .update({
           is_transferred: true,
           transferred_at: new Date().toISOString(),
+          // ✅ FIX: dulu gak pernah keisi dari sini (siswa yang ditransfer
+          // manual di SPMB gak kecatat siapa yang ngerjain), sekarang ikut
+          // ditulis kalau pemanggil ngasih.
+          transferred_by: transferredBy || null,
         })
         .eq("id", siswa.id);
 
@@ -261,6 +280,12 @@ export const transferToStudents = async (
   } catch (error) {
     console.error("Error transferring students:", error);
     showToast("❌ Gagal transfer siswa: " + error.message, "error");
+    // ✅ FIX: rethrow biar pemanggil (misal YearTransition.js, yang masih
+    // punya beberapa step lanjutan setelah ini) tau proses ini gagal dan
+    // bisa berhenti -- sebelumnya error ditelen di sini doang, jadi kalau
+    // dipanggil dari alur multi-step, step-step setelahnya tetap lanjut
+    // jalan walau transfer ini gagal di tengah.
+    throw error;
   } finally {
     setIsLoading(false);
   }

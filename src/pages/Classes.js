@@ -9,6 +9,8 @@ import { DataExcel } from "../pages/DataExcel";
 import { AlertTriangle, Users, FileSpreadsheet } from "lucide-react";
 import PageContainer from "../components/ui/PageContainer";
 import Card from "../components/ui/Card";
+import ConfirmDialog from "../components/ui/ConfirmDialog";
+import { useConfirmDialog } from "../components/ui/useConfirmDialog";
 import { PageTitle, SectionTitle, Text, Muted, Subtitle } from "../components/ui/Typography";
 
 // State kosong dipakai bareng oleh versi mobile (card) & versi tablet/desktop (table)
@@ -26,6 +28,9 @@ export const Classes = ({ user, onShowToast, darkMode }) => {
   const [kelasData, setKelasData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  // ⭐ NEW: konfirmasi sebelum export -- biar gak kepencet gak sengaja
+  // langsung download file Excel-nya.
+  const { confirm, confirmDialogProps } = useConfirmDialog();
 
   useEffect(() => {
     fetchDataKelas();
@@ -118,6 +123,17 @@ export const Classes = ({ user, onShowToast, darkMode }) => {
   }));
 
   const handleExportExcel = async () => {
+    // ⭐ NEW: konfirmasi dulu sebelum export -- mencegah kepencet gak
+    // sengaja langsung ke-download.
+    const ok = await confirm({
+      title: "Export Data Kelas?",
+      message: `File Excel berisi data ${kelasData.length} kelas akan didownload.`,
+      confirmText: "Ya, Export",
+      cancelText: "Batal",
+      variant: "default",
+    });
+    if (!ok) return;
+
     try {
       await DataExcel.exportClasses(excelData);
       onShowToast("Data kelas berhasil diexport", "success");
@@ -195,7 +211,7 @@ export const Classes = ({ user, onShowToast, darkMode }) => {
         {kelasData.length > 0 && (
           <button
             onClick={handleExportExcel}
-            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-white shadow-sm transition-colors touch-manipulation min-h-[44px] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+            className={`hidden sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-white shadow-sm transition-colors touch-manipulation min-h-[44px] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
               darkMode
                 ? "bg-green-600 hover:bg-green-500 focus:ring-offset-gray-900"
                 : "bg-green-600 hover:bg-green-700"
@@ -211,6 +227,63 @@ export const Classes = ({ user, onShowToast, darkMode }) => {
       {/* Mobile (di bawah sm): daftar Card, satu kelas = satu Card */}
       {/* ---------------------------------------------------- */}
       <div className="sm:hidden space-y-3">
+        {/* ✅ FIX: Ringkasan total dipindah ke ATAS (sebelum list kartu per
+            kelas) -- sebelumnya nongol di paling bawah setelah semua
+            kartu, jadi orang harus scroll dulu buat lihat overview-nya.
+            Sekarang langsung kelihatan begitu buka halaman. Juga
+            ditambah info "Jumlah Kelas" yang sebelumnya gak ada sama
+            sekali di ringkasan ini (cuma Siswa Total/Laki-laki/
+            Perempuan). */}
+        {kelasData.length > 0 && (
+          <div
+            className={`rounded-xl shadow-md p-4 text-white bg-gradient-to-r ${
+              darkMode ? "from-blue-700 to-blue-800" : "from-blue-600 to-blue-700"
+            }`}
+          >
+            <h4
+              className={`text-base font-bold mb-3 border-b pb-2 ${
+                darkMode ? "border-blue-500" : "border-blue-400"
+              }`}
+            >
+              Total Keseluruhan
+            </h4>
+            <div className="flex justify-between items-center text-center">
+              <div className="flex-1 border-r border-blue-400/60 pr-2">
+                <p className="text-xs font-medium opacity-90">Jumlah Kelas</p>
+                <p className="text-xl font-extrabold">{kelasData.length}</p>
+              </div>
+              <div className="flex-1 border-r border-blue-400/60 px-2">
+                <p className="text-xs font-medium opacity-90">Siswa Total</p>
+                <p className="text-xl font-extrabold">{totalSiswa}</p>
+              </div>
+              <div className="flex-1 border-r border-blue-400/60 px-2">
+                <p className="text-xs font-medium opacity-90">Laki-laki</p>
+                <p className="text-lg font-bold">{totalLaki}</p>
+              </div>
+              <div className="flex-1 pl-2">
+                <p className="text-xs font-medium opacity-90">Perempuan</p>
+                <p className="text-lg font-bold">{totalPerempuan}</p>
+              </div>
+            </div>
+
+            {/* ✅ NEW: khusus HP, tombol Export ditaruh di sini (di bawah
+                ringkasan), bukan lagi di header atas -- biar gak numpuk
+                sejajar sama judul halaman & lebih gampang dijangkau
+                jempol pas udah liat ringkasannya. */}
+            <button
+              onClick={handleExportExcel}
+              className={`mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-colors touch-manipulation min-h-[44px] bg-gradient-to-r ${
+                darkMode
+                  ? "from-sky-900/50 to-indigo-900/50 hover:from-sky-900/70 hover:to-indigo-900/70 text-sky-100"
+                  : "from-sky-100 to-indigo-100 hover:from-sky-200 hover:to-indigo-200 text-blue-800"
+              }`}
+            >
+              <FileSpreadsheet size={16} />
+              Export Excel
+            </button>
+          </div>
+        )}
+
         {kelasData.length > 0 ? (
           kelasData.map((kelas, index) => (
             <Card key={kelas.id} darkMode={darkMode} className="touch-manipulation">
@@ -284,37 +357,6 @@ export const Classes = ({ user, onShowToast, darkMode }) => {
           <Card darkMode={darkMode}>
             <EmptyState darkMode={darkMode} />
           </Card>
-        )}
-
-        {/* Ringkasan total -- cuma tampil di mobile, versi desktop ada di baris TOTAL tabel */}
-        {kelasData.length > 0 && (
-          <div
-            className={`rounded-xl shadow-md p-4 text-white bg-gradient-to-r ${
-              darkMode ? "from-blue-700 to-blue-800" : "from-blue-600 to-blue-700"
-            }`}
-          >
-            <h4
-              className={`text-base font-bold mb-3 border-b pb-2 ${
-                darkMode ? "border-blue-500" : "border-blue-400"
-              }`}
-            >
-              Total Keseluruhan
-            </h4>
-            <div className="flex justify-between items-center text-center">
-              <div className="flex-1 border-r border-blue-400/60 pr-2">
-                <p className="text-xs font-medium opacity-90">Siswa Total</p>
-                <p className="text-xl font-extrabold">{totalSiswa}</p>
-              </div>
-              <div className="flex-1 border-r border-blue-400/60 px-2">
-                <p className="text-xs font-medium opacity-90">Laki-laki</p>
-                <p className="text-lg font-bold">{totalLaki}</p>
-              </div>
-              <div className="flex-1 pl-2">
-                <p className="text-xs font-medium opacity-90">Perempuan</p>
-                <p className="text-lg font-bold">{totalPerempuan}</p>
-              </div>
-            </div>
-          </div>
         )}
       </div>
 
@@ -448,6 +490,8 @@ export const Classes = ({ user, onShowToast, darkMode }) => {
           )}
         </div>
       </Card>
+
+      <ConfirmDialog {...confirmDialogProps} />
     </PageContainer>
   );
 };

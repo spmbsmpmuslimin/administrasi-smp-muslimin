@@ -307,12 +307,15 @@ export const sidebarGroups = [
   {
     // ===== WAKASEK KURIKULUM =====
     // Muncul cuma buat user dengan jabatan_struktural = 'wakasek_kurikulum'
-    // (ctx.isWakasekKurikulum). Admin bisa lihat juga. Item ini nunjuk ke
-    // tab "jadwal-guru" di dalam Setting.js (BUKAN route baru) -- lihat
+    // (ctx.isWakasekKurikulum). Admin SENGAJA tidak ikut ditampilkan di sini
+    // (per permintaan, biar sidebar Admin gak numpuk) -- Admin tetap bisa
+    // akses route "settings-jadwal-guru" langsung kalau dibutuhkan, cuma
+    // gak muncul sebagai menu di sidebar-nya. Item ini nunjuk ke tab
+    // "jadwal-guru" di dalam Setting.js (BUKAN route baru) -- lihat
     // alias "settings-jadwal-guru" di Layout.js.
     id: "kurikulum",
     title: "KURIKULUM",
-    show: (ctx) => ctx.isWakasekKurikulum || ctx.isAdmin,
+    show: (ctx) => ctx.isWakasekKurikulum,
     items: [
       {
         page: "settings-jadwal-guru",

@@ -17,18 +17,31 @@ const GROUP_ICONS = {
   sistem: Settings,
 };
 
+// ⭐ Aksen warna kategori -- disamain semua pakai emerald (hijau) biar
+// konsisten satu warna di seluruh sidebar, gak beda-beda per grup lagi.
+const GROUP_ACCENTS = {};
+const DEFAULT_ACCENT = {
+  badge: "bg-emerald-500",
+  iconText: "text-emerald-50",
+  active: "from-emerald-600/90 to-emerald-700/40",
+  activeBorder: "border-emerald-400",
+  card: "bg-emerald-500/[0.07]",
+  itemIcon: "bg-emerald-400/20 text-emerald-200",
+};
+
 // ========== Sub-komponen: 1 baris menu ==========
-const MenuLink = ({ page, label, icon, isCollapsed, isActive, indent, onClick }) => (
+const MenuLink = ({ page, label, icon, isCollapsed, isActive, indent, onClick, accent }) => (
   <a
     href={`#${page}`}
     className={`
-      flex items-center gap-3 ${indent ? "px-6 sm:px-8" : "px-4 sm:px-6"} py-2 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-blue-800 dark:hover:bg-gray-800 rounded-r-full mr-4
-      touch-manipulation min-h-[40px]
+      relative flex items-center gap-3 ${indent ? "px-6 sm:px-8 ml-2" : "px-4 sm:px-6"} py-2 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-white/10 dark:hover:bg-gray-800 rounded-r-full mr-4
+      touch-manipulation min-h-[38px]
       ${isCollapsed ? "justify-center" : ""}
+      ${indent ? "border-l-2 border-white/10" : ""}
       ${
         isActive
-          ? "bg-blue-800 dark:bg-gray-800 border-r-4 border-blue-400 dark:border-blue-500 font-semibold text-blue-100 dark:text-gray-100"
-          : "hover:text-blue-100 dark:hover:text-gray-100"
+          ? `bg-gradient-to-r ${accent.active} border-l-4 ${accent.activeBorder} font-semibold text-white shadow-sm`
+          : "hover:text-white hover:translate-x-0.5"
       }
     `}
     onClick={(e) => {
@@ -37,26 +50,46 @@ const MenuLink = ({ page, label, icon, isCollapsed, isActive, indent, onClick })
     }}
     title={isCollapsed ? label : ""}
   >
-    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      {icon.map((d, i) => (
-        <path key={i} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={d} />
-      ))}
-    </svg>
-    {!isCollapsed && <span className="flex-1 text-sm">{label}</span>}
+    <span
+      className={`flex items-center justify-center flex-shrink-0 rounded-lg ${
+        indent ? "w-6 h-6" : "w-7 h-7"
+      } ${isActive ? "bg-white/20" : accent.itemIcon}`}
+    >
+      <svg
+        className={indent ? "w-3.5 h-3.5" : "w-4 h-4"}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        {icon.map((d, i) => (
+          <path key={i} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={d} />
+        ))}
+      </svg>
+    </span>
+    {!isCollapsed && (
+      <span className={`flex-1 ${indent ? "text-[13px] text-white/85" : "text-sm"}`}>{label}</span>
+    )}
   </a>
 );
 
 // ========== Sub-komponen: header section (mis. "MASTER DATA", "Konseling", "Menu Wali Kelas") ==========
-const SectionHeader = ({ text, style = "main" }) =>
+const SectionHeader = ({ text, style = "main", accent }) =>
   style === "sub" ? (
-    <div className="px-6 sm:px-8 pb-1 pt-2">
-      <div className="text-xs uppercase font-semibold text-blue-200 dark:text-gray-500 tracking-wider">
+    <div className="px-6 sm:px-8 pb-0.5 pt-1.5 ml-2">
+      <div
+        className="flex items-center gap-1.5 text-[11px] uppercase font-semibold italic text-white/70 tracking-wider border-l-2 pl-2"
+        style={{ borderColor: "rgba(255,255,255,0.25)" }}
+      >
         {text}
       </div>
     </div>
   ) : (
-    <div className="mt-4 sm:mt-5 mb-1 px-4 sm:px-6 pb-2 text-xs uppercase font-semibold text-blue-300 dark:text-gray-400 tracking-wider">
-      {text}
+    <div className="mt-1 mb-1 px-4 sm:px-6 pb-1">
+      <span
+        className={`inline-block text-[11px] uppercase font-bold text-white tracking-wider ${accent.badge} px-2.5 py-0.5 rounded-full shadow-sm`}
+      >
+        {text}
+      </span>
     </div>
   );
 
@@ -241,7 +274,7 @@ const Sidebar = ({
         </div>
 
         {/* ========== NAVIGATION (generated dari sidebarConfig.js) ========== */}
-        <nav className="py-4 flex-1">
+        <nav className="py-2 flex-1">
           {sidebarGroups.map((group) => {
             const groupVisible = group.show ? group.show(ctx) : true;
             if (!groupVisible) return null;
@@ -251,18 +284,27 @@ const Sidebar = ({
             const visibleItems = group.items.filter((item) => (item.show ? item.show(ctx) : true));
             if (visibleItems.length === 0) return null;
 
+            const accent = GROUP_ACCENTS[group.id] || DEFAULT_ACCENT;
+
             return (
-              <div key={group.id} className="mb-4 sm:mb-5">
+              <div
+                key={group.id}
+                className={`mb-2.5 sm:mb-3 mx-2 rounded-xl py-1 ${group.title ? accent.card : ""}`}
+              >
                 {group.title &&
                   !isCollapsed &&
                   (() => {
                     const GroupIcon = GROUP_ICONS[group.id];
                     return (
-                      <div className="flex items-center gap-2 px-4 sm:px-6 pt-1 pb-2 mb-1 border-b border-blue-800 dark:border-gray-800">
+                      <div className="flex items-center gap-2 px-4 pt-2 pb-2 mb-1">
                         {GroupIcon && (
-                          <GroupIcon className="w-3.5 h-3.5 text-blue-300 dark:text-gray-400 flex-shrink-0" />
+                          <span
+                            className={`flex items-center justify-center w-5 h-5 rounded-full ${accent.badge} flex-shrink-0 shadow-sm`}
+                          >
+                            <GroupIcon className={`w-3 h-3 ${accent.iconText}`} />
+                          </span>
                         )}
-                        <span className="text-[11px] font-extrabold uppercase text-white dark:text-gray-100 tracking-widest">
+                        <span className="text-[11px] font-extrabold uppercase text-white tracking-widest">
                           {group.title}
                         </span>
                       </div>
@@ -279,7 +321,11 @@ const Sidebar = ({
                   return (
                     <React.Fragment key={resolvedPage}>
                       {item.sectionHeader && !isCollapsed && (
-                        <SectionHeader text={item.sectionHeader} style={item.sectionHeaderStyle} />
+                        <SectionHeader
+                          text={item.sectionHeader}
+                          style={item.sectionHeaderStyle}
+                          accent={accent}
+                        />
                       )}
                       <MenuLink
                         page={resolvedPage}
@@ -289,6 +335,7 @@ const Sidebar = ({
                         isActive={isActive}
                         indent={item.indent}
                         onClick={handleMenuClick}
+                        accent={accent}
                       />
                     </React.Fragment>
                   );
