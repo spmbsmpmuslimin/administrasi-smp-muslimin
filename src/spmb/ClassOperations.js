@@ -90,6 +90,26 @@ const cleanValue = (value) => {
   return trimmed === "" || trimmed === "-" ? null : trimmed;
 };
 
+// ✅ FIX: student_profile_details.jenis_kelamin punya CHECK constraint
+// yang cuma nerima "LAKI-LAKI"/"PEREMPUAN" -- sedangkan siswa_baru nyimpen
+// "L"/"P". Tanpa konversi ini, upsert ke student_profile_details bakal
+// gagal (23514 check constraint violation) buat SEMUA siswa.
+const toJenisKelaminLabel = (kode) => {
+  const k = cleanValue(kode);
+  if (k === "L") return "LAKI-LAKI";
+  if (k === "P") return "PEREMPUAN";
+  return k; // biarin apa adanya kalau udah full text atau null
+};
+
+// ✅ FIX: student_profile_details.pendidikan_ayah/ibu punya CHECK
+// constraint yang cuma nerima kode singkat (SD/SMP/SMA/D3/S1/S2) --
+// sedangkan siswa_baru ada yang formatnya "SD/Sederajat", "SMA/SMK", dll.
+// Ambil bagian sebelum "/" biar konsisten sama constraint.
+const toPendidikanCode = (val) => {
+  const v = cleanValue(val);
+  return v ? v.split("/")[0].trim() : v;
+};
+
 // Susun payload buat student_profile_details dari 1 row siswa_baru + id
 // students yang baru di-insert. SEMUA field yang udah dikumpulin pas SPMB
 // disalin ke sini (biar siswa/ortu gak perlu isi ulang manual lewat
@@ -118,12 +138,15 @@ const cleanValue = (value) => {
 function buildProfileDetailPayload(siswa, studentId) {
   return {
     student_id: studentId,
-    jenis_kelamin: cleanValue(siswa.jenis_kelamin),
+    jenis_kelamin: toJenisKelaminLabel(siswa.jenis_kelamin), // ✅ FIX: L/P -> LAKI-LAKI/PEREMPUAN
     tempat_lahir: cleanValue(siswa.tempat_lahir),
     tanggal_lahir: siswa.tanggal_lahir || null,
     nisn: cleanValue(siswa.nisn),
     sekolah_asal: cleanValue(siswa.asal_sekolah),
-    agama: cleanValue(siswa.agama),
+    // ✅ FIX: seragamin ke uppercase (data siswa_baru ada campuran
+    // "Islam"/"ISLAM"/kosong) -- gak ada CHECK constraint di kolom ini,
+    // jadi ini murni konsistensi, bukan wajib buat menghindari error.
+    agama: cleanValue(siswa.agama) ? cleanValue(siswa.agama).toUpperCase() : null,
     nik: cleanValue(siswa.nik),
     no_kk: cleanValue(siswa.no_kk),
     no_akta_lahir: cleanValue(siswa.no_akta_lahir),
@@ -131,12 +154,12 @@ function buildProfileDetailPayload(siswa, studentId) {
     no_daftar: cleanValue(siswa.no_pendaftaran),
     nama_ayah: cleanValue(siswa.nama_ayah),
     pekerjaan_ayah: cleanValue(siswa.pekerjaan_ayah),
-    pendidikan_ayah: cleanValue(siswa.pendidikan_ayah),
+    pendidikan_ayah: toPendidikanCode(siswa.pendidikan_ayah), // ✅ FIX: "SD/Sederajat" -> "SD"
     nik_ayah: cleanValue(siswa.nik_ayah),
     tempat_tgl_lahir_ayah: cleanValue(siswa.tempat_tgl_lahir_ayah),
     nama_ibu: cleanValue(siswa.nama_ibu),
     pekerjaan_ibu: cleanValue(siswa.pekerjaan_ibu),
-    pendidikan_ibu: cleanValue(siswa.pendidikan_ibu),
+    pendidikan_ibu: toPendidikanCode(siswa.pendidikan_ibu), // ✅ FIX: "SD/Sederajat" -> "SD"
     nik_ibu: cleanValue(siswa.nik_ibu),
     tempat_tgl_lahir_ibu: cleanValue(siswa.tempat_tgl_lahir_ibu),
     alamat: cleanValue(siswa.alamat),
@@ -178,7 +201,18 @@ export const transferToStudents = async (
         .insert([
           {
             full_name: siswa.nama_lengkap,
-            nis: null, // NIS diisi belakangan di proses assignment NIS terpisah (bukan di sini)
+            // ✅ FIX: dulu hardcode null dengan komentar "NIS diisi
+            // belakangan di proses assignment NIS terpisah (bukan di
+            // sini)" -- padahal gak ada proses lain yang beneran baca
+            // siswa_baru.nis lalu nulis ke students.nis. Baca langsung
+            // dari sini (NIS udah digenerate di Tahap 3 / generateAndSaveNIS
+            // sebelum transfer). cleanValue() jaga-jaga kalau ternyata
+            // ada siswa yang ke-transfer sebelum sempat di-generate NIS-nya.
+            nis: cleanValue(siswa.nis),
+            // ✅ FIX: kolom nisn di tabel students sebelumnya gak pernah
+            // diisi sama sekali (siswa baru selalu punya nisn kosong
+            // sampai admin isi manual).
+            nisn: cleanValue(siswa.nisn),
             class_id: siswa.kelas,
             academic_year: currentYear,
             gender: siswa.jenis_kelamin,

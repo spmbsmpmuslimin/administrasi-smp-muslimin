@@ -1,4 +1,8 @@
 // pages/DataSiswa.js
+// Dirender lewat menuConfig.js DI DALAM Layout.js -- sidebar, header, dan
+// background halaman udah disediain Layout.js. Komponen ini pakai
+// PageContainer & Card standar dari components/ui, bukan bikin
+// min-h-screen/background sendiri.
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -20,7 +24,28 @@ import {
   AlertCircle,
   XCircle,
   History,
+  FileSpreadsheet,
+  Search,
+  Target,
 } from "lucide-react";
+import PageContainer from "../components/ui/PageContainer";
+import Card from "../components/ui/Card";
+import { PageTitle, SectionTitle, Text, Muted, Subtitle } from "../components/ui/Typography";
+
+// State kosong dipakai bareng oleh versi mobile (card) & versi tablet/desktop (table)
+const EmptyState = ({ darkMode, showEmptyPrompt }) => (
+  <div className="py-10 sm:py-12 text-center">
+    <Users className={`mx-auto mb-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`} size={40} />
+    <SectionTitle darkMode={darkMode} className="mb-1">
+      {showEmptyPrompt ? "Belum ada data siswa" : "Siswa tidak ditemukan"}
+    </SectionTitle>
+    <Muted darkMode={darkMode}>
+      {showEmptyPrompt
+        ? "Belum ada data siswa aktif yang tersimpan di sistem."
+        : "Coba ubah kata kunci pencarian atau filter yang dipakai."}
+    </Muted>
+  </div>
+);
 
 export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   // Ikon per status kelengkapan (label & warna badge ambil dari
@@ -53,10 +78,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   // Fetch user data dari database untuk dapetin teacher_id dan homeroom_class_id
   useEffect(() => {
     const fetchUserDetails = async () => {
-      console.log("👤 User from props:", userFromProps);
-
       if (!userFromProps?.id) {
-        console.log("❌ No user from props");
         setCurrentUser(null);
         return;
       }
@@ -69,15 +91,14 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
           .single();
 
         if (error) {
-          console.error("❌ Error fetching user details:", error);
+          console.error("Error fetching user details:", error);
           setCurrentUser(userFromProps);
           return;
         }
 
-        console.log("✅ User details fetched:", data);
         setCurrentUser(data);
       } catch (error) {
-        console.error("❌ Error in fetchUserDetails:", error);
+        console.error("Error in fetchUserDetails:", error);
         setCurrentUser(userFromProps);
       }
     };
@@ -130,13 +151,6 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
     navigate(`/settings?tab=school&schooltab=mutasi&student=${siswa.id}`);
   };
 
-  useEffect(() => {
-    console.log("🔐 canEditDelete:", canEditDelete);
-    console.log("👤 User Role:", currentUser?.role);
-    console.log("📋 Selected Kelas:", selectedKelas);
-    console.log("🏠 Homeroom Class:", currentUser?.homeroom_class_id);
-  }, [canEditDelete, selectedKelas, currentUser]);
-
   // Fetch students dan kelas options saat component mount
   useEffect(() => {
     fetchStudents();
@@ -146,7 +160,6 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   // Fetch teacher assignments setelah currentUser ready
   useEffect(() => {
     if (currentUser) {
-      console.log("✅ Current user loaded, fetching teacher assignments...");
       fetchTeacherAssignments();
     }
   }, [currentUser]);
@@ -208,27 +221,20 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
 
   const fetchTeacherAssignments = async () => {
     try {
-      console.log("👤 Current User from state:", currentUser);
-
       if (!currentUser) {
-        console.log("🔴 No current user found in state");
         setTeacherClasses([]);
         return;
       }
 
       if (currentUser.role === "admin") {
-        console.log("👑 User is admin - showing all classes");
         setTeacherClasses([]);
         return;
       }
 
       if (!currentUser.teacher_id) {
-        console.log("🔴 No teacher_id found for user:", currentUser);
         setTeacherClasses([]);
         return;
       }
-
-      console.log("👨‍🏫 Fetching assignments for teacher_id:", currentUser.teacher_id);
 
       // Step 1: Ambil academic year yang aktif (via service - udah nanganin
       // kasus 2 tahun ajaran ke-mark aktif bersamaan, auto-fix ke yang paling
@@ -236,15 +242,9 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
       const activeYear = await getActiveAcademicYear();
 
       if (!activeYear) {
-        console.log("⚠️ No active academic year found");
-        console.log(
-          "💡 Tip: Make sure there's a record with is_active = true in academic_years table"
-        );
         setTeacherClasses([]);
         return;
       }
-
-      console.log("📅 Active academic year:", activeYear);
 
       // Step 2: Ambil assignments berdasarkan teacher_id dan academic_year_id yang aktif
       const { data: assignments, error: assignError } = await supabase
@@ -254,62 +254,39 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
         .eq("academic_year_id", activeYear.activeSemesterId);
 
       if (assignError) {
-        console.error("❌ Error fetching assignments:", assignError);
+        console.error("Error fetching assignments:", assignError);
         setTeacherClasses([]);
         return;
       }
 
-      console.log("📋 Raw assignments data (ALL COLUMNS):", assignments);
-
       if (!assignments || assignments.length === 0) {
-        console.log(
-          "⚠️ No assignments found for teacher_id:",
-          currentUser.teacher_id,
-          "in academic_year_id:",
-          activeYear.activeSemesterId
-        );
         setTeacherClasses([]);
         return;
       }
 
       const classIds = [...new Set(assignments.map((a) => a.class_id))].filter(Boolean).sort();
 
-      console.log("✅ Unique class IDs extracted:", classIds);
-
       setTeacherClasses(classIds);
     } catch (error) {
-      console.error("💥 CATCH Error in fetchTeacherAssignments:", error);
+      console.error("CATCH Error in fetchTeacherAssignments:", error);
       setTeacherClasses([]);
     }
   };
 
   useEffect(() => {
-    console.log("🔄 useEffect triggered");
-    console.log("📊 teacherClasses:", teacherClasses);
-    console.log("📚 allSiswaData length:", allSiswaData.length);
-    console.log("🎓 allKelasOptions:", allKelasOptions);
-
     if (teacherClasses.length > 0) {
       const filteredSiswa = allSiswaData.filter((siswa) => teacherClasses.includes(siswa.class_id));
       setSiswaData(filteredSiswa);
 
-      console.log("✅ Filtered Siswa length:", filteredSiswa.length);
-
       const filteredKelas = allKelasOptions.filter((kelas) => teacherClasses.includes(kelas));
       setKelasOptions(filteredKelas);
-
-      console.log("🎯 Filtered Kelas:", filteredKelas);
 
       const jenjangSet = new Set(
         filteredKelas.map((kelas) => kelas?.charAt(0)).filter((j) => ["7", "8", "9"].includes(j))
       );
-      const jenjangArray = Array.from(jenjangSet).sort();
-
-      console.log("📚 Available Jenjang:", jenjangArray);
-
-      setAvailableJenjang(jenjangArray);
+      setAvailableJenjang(Array.from(jenjangSet).sort());
     } else {
-      console.log("⚪ No teacher classes - showing all data (Admin atau teacherClasses empty)");
+      // Admin atau teacherClasses kosong -- tampilkan semua data
       setSiswaData(allSiswaData);
       setKelasOptions(allKelasOptions);
 
@@ -374,8 +351,8 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
       : kelasOptions;
   }, [selectedJenjang, kelasOptions]);
 
-  // ✅ UPDATED: Kalau belum ada pencarian/filter sama sekali, tampilkan SEMUA siswa
-  // (nanti dipotong ke 30 pertama lewat visibleData + tombol "Muat Lebih Banyak").
+  // Kalau belum ada pencarian/filter sama sekali, tampilkan SEMUA siswa
+  // (nanti dipotong ke PAGE_SIZE pertama lewat visibleData + tombol "Muat Lebih Banyak").
   // Kalau ada pencarian dan/atau filter Jenjang/Kelas/Gender, itu dipakai buat mempersempit hasil.
   const hasSearch = searchTerm.trim().length > 0;
   const isDefaultView = !hasSearch && !selectedJenjang && !selectedKelas && !selectedGender;
@@ -399,7 +376,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
   // Amber prompt cuma dipakai kalau memang belum ada data sama sekali yang berhasil di-fetch
   const showEmptyPrompt = !isLoading && siswaData.length === 0;
 
-  // Reset batas tampilan ke 30 lagi tiap kali pencarian/filter berubah
+  // Reset batas tampilan ke PAGE_SIZE lagi tiap kali pencarian/filter berubah
   useEffect(() => {
     setDisplayLimit(PAGE_SIZE);
   }, [searchTerm, selectedJenjang, selectedKelas, selectedGender]);
@@ -416,12 +393,25 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
     setSelectedKelas("");
   };
 
+  // ------------------------------------------------------------------
+  // Modal Export -- pakai darkMode prop yang sama kayak sisa halaman
+  // ------------------------------------------------------------------
   const ExportModal = React.memo(() => (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 px-6 py-5 rounded-t-xl">
-          <h2 className="text-xl font-bold text-white text-center">📊 Export Data Siswa</h2>
-          <p className="text-blue-100 dark:text-blue-200 text-center text-sm mt-1">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div
+        className={`rounded-xl shadow-xl w-full max-w-md border ${
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        }`}
+      >
+        <div
+          className={`px-6 py-5 rounded-t-xl bg-gradient-to-r ${
+            darkMode ? "from-blue-800 to-blue-900" : "from-blue-600 to-blue-700"
+          }`}
+        >
+          <h2 className="text-xl font-bold text-white text-center flex items-center justify-center gap-2">
+            <FileSpreadsheet size={20} /> Export Data Siswa
+          </h2>
+          <p className={`text-center text-sm mt-1 ${darkMode ? "text-blue-200" : "text-blue-100"}`}>
             Pilih jenis export yang diinginkan
           </p>
         </div>
@@ -432,15 +422,19 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
             disabled={exportLoading || siswaData.length === 0}
             className={`w-full p-4 rounded-lg border-2 transition-all flex items-center justify-between min-h-[70px] ${
               exportLoading || siswaData.length === 0
-                ? "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                : "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-300 dark:hover:border-blue-600"
+                ? darkMode
+                  ? "bg-gray-700 border-gray-600 text-gray-500 cursor-not-allowed"
+                  : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
+                : darkMode
+                  ? "bg-blue-900/30 border-blue-700 text-blue-300 hover:bg-blue-900/50 hover:border-blue-600"
+                  : "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
             }`}
           >
             <div className="text-left">
               <div className="font-semibold">Export Semua Data</div>
               <div className="text-sm opacity-75">{siswaData.length} siswa (kelas saya)</div>
             </div>
-            <div className="text-2xl">📋</div>
+            <FileSpreadsheet size={24} />
           </button>
 
           <button
@@ -448,8 +442,12 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
             disabled={exportLoading || filteredData.length === 0}
             className={`w-full p-4 rounded-lg border-2 transition-all flex items-center justify-between min-h-[70px] ${
               exportLoading || filteredData.length === 0
-                ? "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                : "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-300 dark:hover:border-blue-600"
+                ? darkMode
+                  ? "bg-gray-700 border-gray-600 text-gray-500 cursor-not-allowed"
+                  : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
+                : darkMode
+                  ? "bg-blue-900/30 border-blue-700 text-blue-300 hover:bg-blue-900/50 hover:border-blue-600"
+                  : "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
             }`}
           >
             <div className="text-left">
@@ -464,14 +462,14 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                   }`}
               </div>
             </div>
-            <div className="text-2xl">🎯</div>
+            <Target size={24} />
           </button>
 
           {availableJenjang.length > 0 && (
             <div className="space-y-3">
-              <div className="font-semibold text-gray-700 dark:text-gray-300 text-sm">
+              <Text darkMode={darkMode} className="font-semibold">
                 Export Per Jenjang:
-              </div>
+              </Text>
               <div className="grid grid-cols-3 gap-2">
                 {availableJenjang.map((jenjang) => {
                   const count = siswaData.filter((s) => s.class_id?.startsWith(jenjang)).length;
@@ -482,8 +480,12 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                       disabled={exportLoading || count === 0}
                       className={`p-3 rounded-lg border transition-all ${
                         exportLoading || count === 0
-                          ? "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                          : "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-300 dark:hover:border-blue-600"
+                          ? darkMode
+                            ? "bg-gray-700 border-gray-600 text-gray-500 cursor-not-allowed"
+                            : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
+                          : darkMode
+                            ? "bg-blue-900/30 border-blue-700 text-blue-300 hover:bg-blue-900/50 hover:border-blue-600"
+                            : "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
                       }`}
                     >
                       <div className="font-semibold text-sm">Kelas {jenjang}</div>
@@ -496,9 +498,9 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
           )}
 
           <div className="space-y-3">
-            <div className="font-semibold text-gray-700 dark:text-gray-300 text-sm">
+            <Text darkMode={darkMode} className="font-semibold">
               Export Per Kelas:
-            </div>
+            </Text>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
               {kelasOptions.map((kelas) => {
                 const count = siswaData.filter((s) => s.class_id === kelas).length;
@@ -509,8 +511,12 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     disabled={exportLoading || count === 0}
                     className={`p-3 rounded-lg border transition-all text-left ${
                       exportLoading || count === 0
-                        ? "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                        : "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-300 dark:hover:border-blue-600"
+                        ? darkMode
+                          ? "bg-gray-700 border-gray-600 text-gray-500 cursor-not-allowed"
+                          : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
+                        : darkMode
+                          ? "bg-blue-900/30 border-blue-700 text-blue-300 hover:bg-blue-900/50 hover:border-blue-600"
+                          : "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300"
                     }`}
                   >
                     <div className="font-semibold text-sm">{kelas}</div>
@@ -522,11 +528,15 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
           </div>
         </div>
 
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 flex justify-end">
+        <div
+          className={`border-t p-4 flex justify-end ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+        >
           <button
             onClick={() => setShowExportModal(false)}
             disabled={exportLoading}
-            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium disabled:opacity-50"
+            className={`px-4 py-2 font-medium disabled:opacity-50 min-h-[44px] ${
+              darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-600 hover:text-gray-800"
+            }`}
           >
             {exportLoading ? "Mengexport..." : "Tutup"}
           </button>
@@ -537,56 +547,154 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
-        <div className="mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
-            Data Siswa
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
-            Memuat data siswa...
-          </p>
+      <PageContainer darkMode={darkMode}>
+        <div>
+          <PageTitle darkMode={darkMode}>Data Siswa</PageTitle>
+          <Subtitle darkMode={darkMode}>Memuat data siswa...</Subtitle>
         </div>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 dark:border-blue-400 transition-colors duration-300"></div>
+        <div className="flex justify-center items-center h-48 sm:h-64">
+          <div
+            className={`animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 ${
+              darkMode ? "border-blue-400" : "border-blue-600"
+            }`}
+          />
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
+  // Config warna stat card -- dipisah dari JSX biar 8 warna (indigo/emerald/
+  // blue/rose buat wali kelas, indigo/emerald/amber/violet/cyan buat admin)
+  // gak perlu nulis ternary darkMode berulang di tiap card.
+  const statColor = (name) => {
+    const map = {
+      indigo: {
+        bg: "bg-indigo-50",
+        bgDark: "bg-indigo-900/20",
+        border: "border-indigo-100",
+        borderDark: "border-indigo-800",
+        iconBg: "bg-indigo-100",
+        iconBgDark: "bg-indigo-900/40",
+        icon: "text-indigo-600",
+        iconDark: "text-indigo-300",
+        label: "text-indigo-800/70",
+        labelDark: "text-indigo-300/70",
+        value: "text-indigo-700",
+        valueDark: "text-indigo-300",
+      },
+      emerald: {
+        bg: "bg-emerald-50",
+        bgDark: "bg-emerald-900/20",
+        border: "border-emerald-100",
+        borderDark: "border-emerald-800",
+        iconBg: "bg-emerald-100",
+        iconBgDark: "bg-emerald-900/40",
+        icon: "text-emerald-600",
+        iconDark: "text-emerald-300",
+        label: "text-emerald-800/70",
+        labelDark: "text-emerald-300/70",
+        value: "text-emerald-700",
+        valueDark: "text-emerald-300",
+      },
+      blue: {
+        bg: "bg-blue-50",
+        bgDark: "bg-blue-900/20",
+        border: "border-blue-100",
+        borderDark: "border-blue-800",
+        iconBg: "bg-blue-100",
+        iconBgDark: "bg-blue-900/40",
+        icon: "text-blue-600",
+        iconDark: "text-blue-300",
+        label: "text-blue-800/70",
+        labelDark: "text-blue-300/70",
+        value: "text-blue-700",
+        valueDark: "text-blue-300",
+      },
+      rose: {
+        bg: "bg-rose-50",
+        bgDark: "bg-rose-900/20",
+        border: "border-rose-100",
+        borderDark: "border-rose-800",
+        iconBg: "bg-rose-100",
+        iconBgDark: "bg-rose-900/40",
+        icon: "text-rose-600",
+        iconDark: "text-rose-300",
+        label: "text-rose-800/70",
+        labelDark: "text-rose-300/70",
+        value: "text-rose-700",
+        valueDark: "text-rose-300",
+      },
+      amber: {
+        bg: "bg-amber-50",
+        bgDark: "bg-amber-900/20",
+        border: "border-amber-100",
+        borderDark: "border-amber-800",
+        label: "text-amber-800/70",
+        labelDark: "text-amber-300/70",
+        value: "text-amber-700",
+        valueDark: "text-amber-300",
+      },
+      violet: {
+        bg: "bg-violet-50",
+        bgDark: "bg-violet-900/20",
+        border: "border-violet-100",
+        borderDark: "border-violet-800",
+        label: "text-violet-800/70",
+        labelDark: "text-violet-300/70",
+        value: "text-violet-700",
+        valueDark: "text-violet-300",
+      },
+      cyan: {
+        bg: "bg-cyan-50",
+        bgDark: "bg-cyan-900/20",
+        border: "border-cyan-100",
+        borderDark: "border-cyan-800",
+        label: "text-cyan-800/70",
+        labelDark: "text-cyan-300/70",
+        value: "text-cyan-700",
+        valueDark: "text-cyan-300",
+      },
+    };
+    return map[name];
+  };
+
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+    <PageContainer darkMode={darkMode}>
       {showExportModal && <ExportModal />}
 
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-300">
-              Data Siswa
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
-              Manajemen Data Siswa SMP Muslimin Cililin
-            </p>
-          </div>
-          <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl transition-colors duration-300">
-            <Users
-              className="text-blue-600 dark:text-blue-400 transition-colors duration-300"
-              size={28}
-            />
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <PageTitle darkMode={darkMode}>Data Siswa</PageTitle>
+          <Subtitle darkMode={darkMode}>Manajemen Data Siswa SMP Muslimin Cililin</Subtitle>
+        </div>
+        <div className={`p-3 rounded-xl ${darkMode ? "bg-blue-900/30" : "bg-blue-100"}`}>
+          <Users className={darkMode ? "text-blue-400" : "text-blue-600"} size={28} />
         </div>
       </div>
 
+      {/* Banner mode Wali Kelas (read-only) */}
       {isHomeroomTeacher && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border border-blue-200 dark:border-blue-700">
+        <div
+          className={`p-4 rounded-xl border bg-gradient-to-r ${
+            darkMode
+              ? "from-blue-900/20 to-blue-800/20 border-blue-700"
+              : "from-blue-50 to-blue-100 border-blue-200"
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 dark:bg-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                darkMode ? "bg-blue-700" : "bg-blue-600"
+              }`}
+            >
               <Eye className="text-white" size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-blue-800 dark:text-blue-300">
-                🏠 Mode Wali Kelas (Lihat Saja)
+              <p className={`text-sm font-bold ${darkMode ? "text-blue-300" : "text-blue-800"}`}>
+                Mode Wali Kelas (Lihat Saja)
               </p>
-              <p className="text-xs text-blue-700 dark:text-blue-400">
+              <p className={`text-xs ${darkMode ? "text-blue-400" : "text-blue-700"}`}>
                 Anda dapat memantau data siswa di kelas {currentUser?.homeroom_class_id}. Untuk
                 perubahan data siswa, silakan hubungi Admin/TU.
               </p>
@@ -595,17 +703,30 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
         </div>
       )}
 
+      {/* Banner mode Admin */}
       {canEditDeleteMemo && currentUser?.role === "admin" && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border border-purple-200 dark:border-purple-700">
+        <div
+          className={`p-4 rounded-xl border bg-gradient-to-r ${
+            darkMode
+              ? "from-purple-900/20 to-purple-800/20 border-purple-700"
+              : "from-purple-50 to-purple-100 border-purple-200"
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-600 dark:bg-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                darkMode ? "bg-purple-700" : "bg-purple-600"
+              }`}
+            >
               <Eye className="text-white" size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-purple-800 dark:text-purple-300">
-                👑 Mode Admin Aktif
+              <p
+                className={`text-sm font-bold ${darkMode ? "text-purple-300" : "text-purple-800"}`}
+              >
+                Mode Admin Aktif
               </p>
-              <p className="text-xs text-purple-700 dark:text-purple-400">
+              <p className={`text-xs ${darkMode ? "text-purple-400" : "text-purple-700"}`}>
                 Halaman ini khusus lihat data & rekap kelengkapan. Buat tambah/edit/tandai
                 keluar-pindah siswa, buka Settings → Manajemen Sekolah → Data Sekolah.
               </p>
@@ -617,7 +738,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
       {/* Stats card — kasus 4 card (Wali Kelas) tetap grid 2x2 (2 kolom).
           Kasus lain (Admin/Guru BK, 2–5 card sesuai jumlah jenjang yang diampu) tetap 1 baris penuh. */}
       <div
-        className="grid gap-2 sm:gap-4 mb-6 sm:mb-8"
+        className="grid gap-2 sm:gap-4"
         style={{
           gridTemplateColumns: isHomeroomTeacher
             ? "repeat(2, minmax(0, 1fr))"
@@ -628,135 +749,121 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
       >
         {isHomeroomTeacher ? (
           <>
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-2 sm:p-4 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-sm min-w-0">
-              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-3 sm:mb-2 text-center sm:text-left">
-                <div className="p-1.5 sm:p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg">
-                  <GraduationCap className="text-indigo-600 dark:text-indigo-300" size={16} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] sm:text-xs font-semibold text-indigo-800/70 dark:text-indigo-300/70 truncate">
-                    Kelas Anda
-                  </div>
-                  <div className="text-sm sm:text-lg font-bold text-indigo-700 dark:text-indigo-300 truncate">
-                    {currentUser?.homeroom_class_id}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-2 sm:p-4 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm min-w-0">
-              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-3 sm:mb-2 text-center sm:text-left">
-                <div className="p-1.5 sm:p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg">
-                  <Users className="text-emerald-600 dark:text-emerald-300" size={16} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] sm:text-xs font-semibold text-emerald-800/70 dark:text-emerald-300/70 truncate">
-                    Total Siswa
-                  </div>
-                  <div className="text-sm sm:text-lg font-bold text-emerald-700 dark:text-emerald-300 truncate">
-                    {siswaData.filter((s) => s.class_id === currentUser?.homeroom_class_id).length}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-2 sm:p-4 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm min-w-0">
-              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-3 sm:mb-2 text-center sm:text-left">
-                <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
-                  <User className="text-blue-600 dark:text-blue-300" size={16} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] sm:text-xs font-semibold text-blue-800/70 dark:text-blue-300/70 truncate">
-                    Laki-laki
-                  </div>
-                  <div className="text-sm sm:text-lg font-bold text-blue-700 dark:text-blue-300 truncate">
-                    {
-                      siswaData.filter(
-                        (s) => s.class_id === currentUser?.homeroom_class_id && s.gender === "L"
-                      ).length
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-rose-50 dark:bg-rose-900/20 p-2 sm:p-4 rounded-xl border border-rose-100 dark:border-rose-800 shadow-sm min-w-0">
-              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-3 sm:mb-2 text-center sm:text-left">
-                <div className="p-1.5 sm:p-2 bg-rose-100 dark:bg-rose-900/40 rounded-lg">
-                  <UserCheck className="text-rose-600 dark:text-rose-300" size={16} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] sm:text-xs font-semibold text-rose-800/70 dark:text-rose-300/70 truncate">
-                    Perempuan
-                  </div>
-                  <div className="text-sm sm:text-lg font-bold text-rose-700 dark:text-rose-300 truncate">
-                    {
-                      siswaData.filter(
-                        (s) => s.class_id === currentUser?.homeroom_class_id && s.gender === "P"
-                      ).length
-                    }
+            {[
+              {
+                color: "indigo",
+                Icon: GraduationCap,
+                label: "Kelas Anda",
+                value: currentUser?.homeroom_class_id,
+              },
+              {
+                color: "emerald",
+                Icon: Users,
+                label: "Total Siswa",
+                value: siswaData.filter((s) => s.class_id === currentUser?.homeroom_class_id)
+                  .length,
+              },
+              {
+                color: "blue",
+                Icon: User,
+                label: "Laki-laki",
+                value: siswaData.filter(
+                  (s) => s.class_id === currentUser?.homeroom_class_id && s.gender === "L"
+                ).length,
+              },
+              {
+                color: "rose",
+                Icon: UserCheck,
+                label: "Perempuan",
+                value: siswaData.filter(
+                  (s) => s.class_id === currentUser?.homeroom_class_id && s.gender === "P"
+                ).length,
+              },
+            ].map(({ color, Icon, label, value }) => {
+              const c = statColor(color);
+              return (
+                <div
+                  key={label}
+                  className={`p-2 sm:p-4 rounded-xl border shadow-sm min-w-0 ${
+                    darkMode ? `${c.bgDark} ${c.borderDark}` : `${c.bg} ${c.border}`
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 sm:mb-2 text-center sm:text-left">
+                    <div
+                      className={`p-1.5 sm:p-2 rounded-lg ${darkMode ? c.iconBgDark : c.iconBg}`}
+                    >
+                      <Icon className={darkMode ? c.iconDark : c.icon} size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <div
+                        className={`text-[10px] sm:text-xs font-semibold truncate ${darkMode ? c.labelDark : c.label}`}
+                      >
+                        {label}
+                      </div>
+                      <div
+                        className={`text-sm sm:text-lg font-bold truncate ${darkMode ? c.valueDark : c.value}`}
+                      >
+                        {value}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              );
+            })}
           </>
         ) : (
           <>
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-2 sm:p-4 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-sm min-w-0 text-center sm:text-left">
-              <div className="text-[10px] sm:text-xs font-semibold text-indigo-800/70 dark:text-indigo-300/70 mb-0.5 sm:mb-1 truncate">
-                Total Kelas
-              </div>
-              <div className="text-sm sm:text-xl font-bold text-indigo-700 dark:text-indigo-300 truncate">
-                {kelasOptions.length}
-              </div>
-            </div>
-
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-2 sm:p-4 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm min-w-0 text-center sm:text-left">
-              <div className="text-[10px] sm:text-xs font-semibold text-emerald-800/70 dark:text-emerald-300/70 mb-0.5 sm:mb-1 truncate">
-                Total Siswa
-              </div>
-              <div className="text-sm sm:text-xl font-bold text-emerald-700 dark:text-emerald-300 truncate">
-                {siswaData.length}
-              </div>
-            </div>
-
-            {availableJenjang.includes("7") && (
-              <div className="bg-amber-50 dark:bg-amber-900/20 p-2 sm:p-4 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm min-w-0 text-center sm:text-left">
-                <div className="text-[10px] sm:text-xs font-semibold text-amber-800/70 dark:text-amber-300/70 mb-0.5 sm:mb-1 truncate">
-                  Kelas 7
-                </div>
-                <div className="text-sm sm:text-xl font-bold text-amber-700 dark:text-amber-300 truncate">
-                  {siswaData.filter((s) => s.class_id?.startsWith("7")).length}
-                </div>
-              </div>
-            )}
-
-            {availableJenjang.includes("8") && (
-              <div className="bg-violet-50 dark:bg-violet-900/20 p-2 sm:p-4 rounded-xl border border-violet-100 dark:border-violet-800 shadow-sm min-w-0 text-center sm:text-left">
-                <div className="text-[10px] sm:text-xs font-semibold text-violet-800/70 dark:text-violet-300/70 mb-0.5 sm:mb-1 truncate">
-                  Kelas 8
-                </div>
-                <div className="text-sm sm:text-xl font-bold text-violet-700 dark:text-violet-300 truncate">
-                  {siswaData.filter((s) => s.class_id?.startsWith("8")).length}
-                </div>
-              </div>
-            )}
-
-            {availableJenjang.includes("9") && (
-              <div className="bg-cyan-50 dark:bg-cyan-900/20 p-2 sm:p-4 rounded-xl border border-cyan-100 dark:border-cyan-800 shadow-sm min-w-0 text-center sm:text-left">
-                <div className="text-[10px] sm:text-xs font-semibold text-cyan-800/70 dark:text-cyan-300/70 mb-0.5 sm:mb-1 truncate">
-                  Kelas 9
-                </div>
-                <div className="text-sm sm:text-xl font-bold text-cyan-700 dark:text-cyan-300 truncate">
-                  {siswaData.filter((s) => s.class_id?.startsWith("9")).length}
-                </div>
-              </div>
-            )}
+            {[
+              { color: "indigo", label: "Total Kelas", value: kelasOptions.length, show: true },
+              { color: "emerald", label: "Total Siswa", value: siswaData.length, show: true },
+              {
+                color: "amber",
+                label: "Kelas 7",
+                value: siswaData.filter((s) => s.class_id?.startsWith("7")).length,
+                show: availableJenjang.includes("7"),
+              },
+              {
+                color: "violet",
+                label: "Kelas 8",
+                value: siswaData.filter((s) => s.class_id?.startsWith("8")).length,
+                show: availableJenjang.includes("8"),
+              },
+              {
+                color: "cyan",
+                label: "Kelas 9",
+                value: siswaData.filter((s) => s.class_id?.startsWith("9")).length,
+                show: availableJenjang.includes("9"),
+              },
+            ]
+              .filter((s) => s.show)
+              .map(({ color, label, value }) => {
+                const c = statColor(color);
+                return (
+                  <div
+                    key={label}
+                    className={`p-2 sm:p-4 rounded-xl border shadow-sm min-w-0 text-center sm:text-left ${
+                      darkMode ? `${c.bgDark} ${c.borderDark}` : `${c.bg} ${c.border}`
+                    }`}
+                  >
+                    <div
+                      className={`text-[10px] sm:text-xs font-semibold mb-0.5 sm:mb-1 truncate ${darkMode ? c.labelDark : c.label}`}
+                    >
+                      {label}
+                    </div>
+                    <div
+                      className={`text-sm sm:text-xl font-bold truncate ${darkMode ? c.valueDark : c.value}`}
+                    >
+                      {value}
+                    </div>
+                  </div>
+                );
+              })}
           </>
         )}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl border border-blue-100 dark:border-gray-700 shadow-sm mb-6">
+      {/* Filter bar */}
+      <Card darkMode={darkMode}>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
           <div className="md:col-span-2">
             <div className="relative">
@@ -765,154 +872,179 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                 placeholder="Cari siswa berdasarkan nama atau NIS..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className={`w-full p-3 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  darkMode
+                    ? "border-gray-600 bg-gray-700 text-white"
+                    : "border-gray-300 bg-white text-gray-900"
+                }`}
               />
-              <div className="absolute right-3 top-3 text-gray-400">🔍</div>
+              <Search
+                className={`absolute right-3 top-3.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                size={16}
+              />
             </div>
           </div>
 
-          <div>
-            <select
-              value={selectedJenjang}
-              onChange={handleJenjangChange}
-              disabled={availableJenjang.length === 0}
-              className={`w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                availableJenjang.length === 0
-                  ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70"
-                  : "bg-white dark:bg-gray-700 cursor-pointer"
-              } text-gray-900 dark:text-white`}
-            >
-              <option value="">Semua Jenjang</option>
-              {availableJenjang.map((jenjang) => (
-                <option key={jenjang} value={jenjang}>
-                  Kelas {jenjang}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={selectedJenjang}
+            onChange={handleJenjangChange}
+            disabled={availableJenjang.length === 0}
+            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              darkMode
+                ? `border-gray-600 text-white ${availableJenjang.length === 0 ? "bg-gray-800 cursor-not-allowed opacity-70" : "bg-gray-700 cursor-pointer"}`
+                : `border-gray-300 text-gray-900 ${availableJenjang.length === 0 ? "bg-gray-100 cursor-not-allowed opacity-70" : "bg-white cursor-pointer"}`
+            }`}
+          >
+            <option value="">Semua Jenjang</option>
+            {availableJenjang.map((jenjang) => (
+              <option key={jenjang} value={jenjang}>
+                Kelas {jenjang}
+              </option>
+            ))}
+          </select>
 
-          <div>
-            <select
-              value={selectedKelas}
-              onChange={(e) => setSelectedKelas(e.target.value)}
-              disabled={!selectedJenjang}
-              className={`w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                !selectedJenjang
-                  ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70"
-                  : "bg-white dark:bg-gray-700 cursor-pointer"
-              } text-gray-900 dark:text-white`}
-            >
-              <option value="">Semua Kelas</option>
-              {filteredKelasOptions.map((kelas) => (
-                <option key={kelas} value={kelas}>
-                  {kelas}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={selectedKelas}
+            onChange={(e) => setSelectedKelas(e.target.value)}
+            disabled={!selectedJenjang}
+            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              darkMode
+                ? `border-gray-600 text-white ${!selectedJenjang ? "bg-gray-800 cursor-not-allowed opacity-70" : "bg-gray-700 cursor-pointer"}`
+                : `border-gray-300 text-gray-900 ${!selectedJenjang ? "bg-gray-100 cursor-not-allowed opacity-70" : "bg-white cursor-pointer"}`
+            }`}
+          >
+            <option value="">Semua Kelas</option>
+            {filteredKelasOptions.map((kelas) => (
+              <option key={kelas} value={kelas}>
+                {kelas}
+              </option>
+            ))}
+          </select>
 
-          <div>
-            <select
-              value={selectedGender}
-              onChange={(e) => setSelectedGender(e.target.value)}
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="">Semua Gender</option>
-              <option value="L">Laki-laki</option>
-              <option value="P">Perempuan</option>
-            </select>
-          </div>
+          <select
+            value={selectedGender}
+            onChange={(e) => setSelectedGender(e.target.value)}
+            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              darkMode
+                ? "border-gray-600 bg-gray-700 text-white"
+                : "border-gray-300 bg-white text-gray-900"
+            }`}
+          >
+            <option value="">Semua Gender</option>
+            <option value="L">Laki-laki</option>
+            <option value="P">Perempuan</option>
+          </select>
 
-          <div>
-            <button
-              onClick={() => setShowExportModal(true)}
-              disabled={siswaData.length === 0}
-              className={`w-full p-3 rounded-lg font-semibold flex items-center justify-center gap-2 ${
-                siswaData.length === 0
-                  ? "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-lg"
-              }`}
-            >
-              <span>📊</span>
-              <span>Export</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setShowExportModal(true)}
+            disabled={siswaData.length === 0}
+            className={`w-full p-3 rounded-lg font-semibold flex items-center justify-center gap-2 min-h-[44px] touch-manipulation ${
+              siswaData.length === 0
+                ? darkMode
+                  ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md hover:shadow-lg"
+            }`}
+          >
+            <FileSpreadsheet size={16} />
+            <span>Export</span>
+          </button>
         </div>
-      </div>
+      </Card>
 
+      {/* Info jumlah data */}
       {showEmptyPrompt ? (
-        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-sm inline-flex items-center gap-2">
-          <span>👆</span>
-          <span className="text-amber-800 dark:text-amber-300 font-medium">
+        <div
+          className={`p-3 rounded-lg border text-sm inline-flex items-center gap-2 ${
+            darkMode ? "bg-amber-900/20 border-amber-800" : "bg-amber-50 border-amber-200"
+          }`}
+        >
+          <span className={`font-medium ${darkMode ? "text-amber-300" : "text-amber-800"}`}>
             Belum ada data siswa aktif yang bisa ditampilkan.
           </span>
         </div>
       ) : (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-700 text-sm inline-block">
-          Menampilkan{" "}
-          <strong className="text-blue-700 dark:text-blue-300">
-            {hasMore ? `${visibleData.length} dari ${filteredData.length}` : filteredData.length}{" "}
-            Siswa
-          </strong>
-          {isDefaultView && " (semua kelas, belum difilter)"}
-          {searchTerm && ` dengan kata kunci "${searchTerm}"`}
-          {selectedKelas && ` Di Kelas ${selectedKelas}`}
-          {selectedGender && ` ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}`}
+        <div
+          className={`p-3 rounded-lg border text-sm inline-block ${
+            darkMode ? "bg-blue-900/30 border-blue-700" : "bg-blue-50 border-blue-100"
+          }`}
+        >
+          <Text darkMode={darkMode} className="inline">
+            Menampilkan{" "}
+            <strong className={darkMode ? "text-blue-300" : "text-blue-700"}>
+              {hasMore ? `${visibleData.length} dari ${filteredData.length}` : filteredData.length}{" "}
+              Siswa
+            </strong>
+            {isDefaultView && " (semua kelas, belum difilter)"}
+            {searchTerm && ` dengan kata kunci "${searchTerm}"`}
+            {selectedKelas && ` Di Kelas ${selectedKelas}`}
+            {selectedGender && ` ${selectedGender === "L" ? "Laki-laki" : "Perempuan"}`}
+          </Text>
         </div>
       )}
 
-      <div className="md:hidden space-y-3">
+      {/* ---------------------------------------------------- */}
+      {/* Mobile (di bawah sm): daftar Card, satu siswa = satu Card */}
+      {/* ---------------------------------------------------- */}
+      <div className="sm:hidden space-y-3">
         {visibleData.length > 0 ? (
           visibleData.map((siswa, index) => (
-            <div
-              key={siswa.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700"
-            >
-              <div className="flex justify-between items-start border-b border-gray-100 dark:border-gray-700 pb-3 mb-3">
+            <Card key={siswa.id} darkMode={darkMode}>
+              <div
+                className={`flex justify-between items-start border-b pb-3 mb-3 ${
+                  darkMode ? "border-gray-700" : "border-gray-100"
+                }`}
+              >
                 <div className="flex-1 min-w-0 pr-2">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  <Muted darkMode={darkMode} className="block mb-1">
                     No. {index + 1} | Kelas:{" "}
-                    <span className="font-bold text-blue-600 dark:text-blue-400">
+                    <span className={`font-bold ${darkMode ? "text-blue-400" : "text-blue-600"}`}>
                       {siswa.class_id}
                     </span>
-                  </p>
-                  <p className="text-base font-bold text-gray-900 dark:text-white truncate">
+                  </Muted>
+                  <p
+                    className={`text-base font-bold truncate ${darkMode ? "text-white" : "text-gray-900"}`}
+                  >
                     {siswa.full_name}
                   </p>
                 </div>
-                <div className="flex-shrink-0 ml-2">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      siswa.is_active
-                        ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                    }`}
-                  >
-                    {siswa.is_active ? "Aktif" : "Non-Aktif"}
-                  </span>
-                </div>
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${
+                    siswa.is_active
+                      ? darkMode
+                        ? "bg-green-900/30 text-green-300"
+                        : "bg-green-100 text-green-800"
+                      : darkMode
+                        ? "bg-gray-700 text-gray-400"
+                        : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {siswa.is_active ? "Aktif" : "Non-Aktif"}
+                </span>
               </div>
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-gray-400 font-medium">NIS:</span>
-                  <span className="font-mono text-gray-900 dark:text-gray-200">{siswa.nis}</span>
+                  <Muted darkMode={darkMode}>NIS:</Muted>
+                  <span className={`font-mono ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
+                    {siswa.nis}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-gray-400 font-medium">NISN:</span>
-                  <span className="font-mono text-gray-900 dark:text-gray-200">
+                  <Muted darkMode={darkMode}>NISN:</Muted>
+                  <span className={`font-mono ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
                     {siswa.nisn || (
-                      <span className="text-gray-400 dark:text-gray-500 italic font-sans">
+                      <span
+                        className={`italic font-sans ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                      >
                         Belum ada
                       </span>
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-gray-400 font-medium">
-                    Jenis Kelamin:
-                  </span>
-                  <span className="text-gray-900 dark:text-gray-200">
+                  <Muted darkMode={darkMode}>Jenis Kelamin:</Muted>
+                  <span className={darkMode ? "text-gray-200" : "text-gray-900"}>
                     {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
                   </span>
                 </div>
@@ -920,10 +1052,12 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
 
               {canEditDelete && (
                 <>
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                      Kelengkapan Data Induk
-                    </span>
+                  <div
+                    className={`mt-3 pt-3 border-t flex items-center justify-between gap-2 ${
+                      darkMode ? "border-gray-700" : "border-gray-100"
+                    }`}
+                  >
+                    <Muted darkMode={darkMode}>Kelengkapan Data Induk</Muted>
                     {(() => {
                       const meta =
                         COMPLETION_STATUS_META[siswa.completionStatus] ||
@@ -940,145 +1074,154 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     })()}
                   </div>
 
-                  <div className="mt-2">
-                    <button
-                      onClick={() => handleOpenDataInduk(siswa)}
-                      className="w-full px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 border border-indigo-200 dark:border-indigo-800 transition-colors"
-                    >
-                      <ClipboardList size={16} />
-                      <span>Lihat Data Siswa Induk</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleOpenDataInduk(siswa)}
+                    className={`mt-2 w-full px-3 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 border transition-colors min-h-[44px] touch-manipulation ${
+                      darkMode
+                        ? "bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300 border-indigo-800"
+                        : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200"
+                    }`}
+                  >
+                    <ClipboardList size={16} />
+                    <span>Lihat Data Siswa Induk</span>
+                  </button>
                 </>
               )}
 
               {canEditDelete && (
-                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={() => handleOpenRiwayat(siswa)}
-                    className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5"
-                  >
-                    <History size={16} />
-                    <span>Lihat Riwayat</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleOpenRiwayat(siswa)}
+                  className={`mt-2 w-full px-3 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 min-h-[44px] touch-manipulation ${
+                    darkMode
+                      ? "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  <History size={16} />
+                  <span>Lihat Riwayat</span>
+                </button>
               )}
-            </div>
+            </Card>
           ))
         ) : (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-              {showEmptyPrompt ? "Belum ada data siswa" : "Siswa tidak ditemukan"}
-            </p>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {showEmptyPrompt
-                ? "Belum ada data siswa aktif yang tersimpan di sistem."
-                : "Coba ubah kata kunci pencarian atau filter yang dipakai."}
-            </p>
-          </div>
+          <Card darkMode={darkMode}>
+            <EmptyState darkMode={darkMode} showEmptyPrompt={showEmptyPrompt} />
+          </Card>
         )}
 
         {hasMore && (
           <button
             onClick={() => setDisplayLimit(filteredData.length)}
-            className="w-full py-3 rounded-xl border border-dashed border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 font-semibold text-sm bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            className={`w-full py-3 rounded-xl border border-dashed font-semibold text-sm min-h-[44px] touch-manipulation ${
+              darkMode
+                ? "border-blue-700 text-blue-300 bg-blue-900/10 hover:bg-blue-900/20"
+                : "border-blue-300 text-blue-700 bg-blue-50/50 hover:bg-blue-50"
+            }`}
           >
             Muat Semua ({filteredData.length - visibleData.length} sisanya)
           </button>
         )}
       </div>
 
-      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+      {/* ---------------------------------------------------- */}
+      {/* Tablet & desktop (sm ke atas): tabel penuh di dalam Card */}
+      {/* ---------------------------------------------------- */}
+      <Card darkMode={darkMode} noPadding className="hidden sm:block overflow-hidden">
         <div className="overflow-x-auto">
           {visibleData.length > 0 ? (
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white">
+              <thead
+                className={`text-white bg-gradient-to-r ${darkMode ? "from-blue-800 to-blue-900" : "from-blue-600 to-blue-700"}`}
+              >
                 <tr>
-                  <th className="px-6 py-4 text-left w-1/12 text-sm uppercase tracking-wider text-center">
+                  <th className="px-4 py-3 text-center w-1/12 text-xs font-semibold uppercase tracking-wider">
                     No.
                   </th>
-                  <th className="px-6 py-4 text-left w-2/12 text-sm uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left w-2/12 text-xs font-semibold uppercase tracking-wider">
                     NIS
                   </th>
-                  <th className="px-6 py-4 text-left w-2/12 text-sm uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left w-2/12 text-xs font-semibold uppercase tracking-wider">
                     NISN
                   </th>
-                  <th className="px-6 py-4 text-left w-3/12 text-sm uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left w-3/12 text-xs font-semibold uppercase tracking-wider">
                     Nama
                   </th>
-                  <th className="px-6 py-4 text-left w-1/12 text-sm uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left w-1/12 text-xs font-semibold uppercase tracking-wider">
                     Kelas
                   </th>
-                  <th className="px-6 py-4 text-left w-2/12 text-sm uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left w-2/12 text-xs font-semibold uppercase tracking-wider">
                     Jenis Kelamin
                   </th>
-                  <th className="px-6 py-4 text-left w-1/12 text-sm uppercase tracking-wider text-center">
+                  <th className="px-4 py-3 text-center w-1/12 text-xs font-semibold uppercase tracking-wider">
                     Status
                   </th>
                   {canEditDelete && (
                     <>
-                      <th className="px-6 py-4 text-center w-1/12 text-sm uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center w-1/12 text-xs font-semibold uppercase tracking-wider">
                         Kelengkapan
                       </th>
-                      <th className="px-6 py-4 text-center w-1/12 text-sm uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center w-1/12 text-xs font-semibold uppercase tracking-wider">
                         Data Induk
+                      </th>
+                      <th className="px-4 py-3 text-center w-1/12 text-xs font-semibold uppercase tracking-wider">
+                        Riwayat
                       </th>
                     </>
                   )}
-                  {canEditDelete && (
-                    <th className="px-6 py-4 text-left w-1/12 text-sm uppercase tracking-wider text-center">
-                      Riwayat
-                    </th>
-                  )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className={`divide-y ${darkMode ? "divide-gray-700" : "divide-gray-200"}`}>
                 {visibleData.map((siswa, index) => (
                   <tr
                     key={siswa.id}
-                    className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    className={`transition-colors ${darkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-50"}`}
                   >
-                    <td className="px-6 py-4 text-center text-gray-700 dark:text-gray-300">
+                    <td
+                      className={`px-4 py-3 text-center text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                    >
                       {index + 1}
                     </td>
-                    <td className="px-6 py-4 font-mono text-gray-900 dark:text-white">
+                    <td
+                      className={`px-4 py-3 font-mono text-sm ${darkMode ? "text-white" : "text-gray-900"}`}
+                    >
                       {siswa.nis}
                     </td>
-                    <td className="px-6 py-4 font-mono text-gray-900 dark:text-white">
+                    <td
+                      className={`px-4 py-3 font-mono text-sm ${darkMode ? "text-white" : "text-gray-900"}`}
+                    >
                       {siswa.nisn || (
-                        <span className="text-gray-400 dark:text-gray-500 italic font-sans">
+                        <span
+                          className={`italic font-sans ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                        >
                           Belum ada
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                    <td
+                      className={`px-4 py-3 font-medium text-sm ${darkMode ? "text-white" : "text-gray-900"}`}
+                    >
                       {siswa.full_name}
                     </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
+                    <td
+                      className={`px-4 py-3 font-semibold text-sm ${darkMode ? "text-white" : "text-gray-900"}`}
+                    >
                       {siswa.class_id}
                     </td>
-                    <td className="px-6 py-4 text-gray-700 dark:text-gray-300">
+                    <td
+                      className={`px-4 py-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}
+                    >
                       {siswa.gender === "L" ? "Laki-laki" : "Perempuan"}
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-4 py-3 text-center">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
                           siswa.is_active
-                            ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                            ? darkMode
+                              ? "bg-green-900/30 text-green-300"
+                              : "bg-green-100 text-green-800"
+                            : darkMode
+                              ? "bg-gray-700 text-gray-400"
+                              : "bg-gray-100 text-gray-600"
                         }`}
                       >
                         {siswa.is_active ? "Aktif" : "Non-Aktif"}
@@ -1086,7 +1229,7 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                     </td>
                     {canEditDelete && (
                       <>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-4 py-3 text-center">
                           {(() => {
                             const meta =
                               COMPLETION_STATUS_META[siswa.completionStatus] ||
@@ -1102,71 +1245,59 @@ export const Students = ({ user: userFromProps, onShowToast, darkMode }) => {
                             );
                           })()}
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-4 py-3 text-center">
                           <button
                             onClick={() => handleOpenDataInduk(siswa)}
-                            className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                            className={`p-2 rounded-lg transition-colors ${
+                              darkMode
+                                ? "text-indigo-400 hover:bg-indigo-900/30"
+                                : "text-indigo-600 hover:bg-indigo-50"
+                            }`}
                             title="Lihat Data Siswa Induk"
                           >
                             <ClipboardList size={18} />
                           </button>
                         </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleOpenRiwayat(siswa)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              darkMode
+                                ? "text-gray-300 hover:bg-gray-700"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                            title="Lihat Riwayat Mutasi"
+                          >
+                            <History size={18} />
+                          </button>
+                        </td>
                       </>
-                    )}
-                    {canEditDelete && (
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleOpenRiwayat(siswa)}
-                          className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                          title="Lihat Riwayat Mutasi"
-                        >
-                          <History size={18} />
-                        </button>
-                      </td>
                     )}
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <div className="p-12 text-center text-gray-500 dark:text-gray-400">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                {showEmptyPrompt ? "Belum ada data siswa" : "Siswa tidak ditemukan"}
-              </p>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {showEmptyPrompt
-                  ? "Belum ada data siswa aktif yang tersimpan di sistem."
-                  : "Coba ubah kata kunci pencarian atau filter yang dipakai."}
-              </p>
-            </div>
+            <EmptyState darkMode={darkMode} showEmptyPrompt={showEmptyPrompt} />
           )}
 
           {hasMore && (
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div className={`p-4 border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
               <button
                 onClick={() => setDisplayLimit(filteredData.length)}
-                className="w-full py-3 rounded-lg border border-dashed border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 font-semibold text-sm bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                className={`w-full py-3 rounded-lg border border-dashed font-semibold text-sm ${
+                  darkMode
+                    ? "border-blue-700 text-blue-300 bg-blue-900/10 hover:bg-blue-900/20"
+                    : "border-blue-300 text-blue-700 bg-blue-50/50 hover:bg-blue-50"
+                }`}
               >
                 Muat Semua ({filteredData.length - visibleData.length} sisanya)
               </button>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </Card>
+    </PageContainer>
   );
 };
 

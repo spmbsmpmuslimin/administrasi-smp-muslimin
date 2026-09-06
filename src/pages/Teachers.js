@@ -1,11 +1,31 @@
-import React, { useState, useEffect, useMemo } from "react";
+// pages/Teachers.js
+// Dirender lewat menuConfig.js DI DALAM Layout.js -- sidebar, header, dan
+// background halaman udah disediain Layout.js. Komponen ini pakai
+// PageContainer & Card standar dari components/ui, bukan bikin
+// min-h-screen/background sendiri.
+import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { DataExcel } from "./DataExcel"; // ✅ IMPORT DATAEXCEL
+import { DataExcel } from "./DataExcel";
+import { Users, FileSpreadsheet } from "lucide-react";
+import PageContainer from "../components/ui/PageContainer";
+import Card from "../components/ui/Card";
+import { PageTitle, SectionTitle, Text, Muted, Subtitle } from "../components/ui/Typography";
 
-export const Teachers = () => {
+// State kosong dipakai bareng oleh versi mobile (card) & versi tablet/desktop (table)
+const EmptyState = ({ darkMode }) => (
+  <div className="py-10 sm:py-12 text-center">
+    <Users className={`mx-auto mb-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`} size={40} />
+    <SectionTitle darkMode={darkMode} className="mb-1">
+      Belum ada data guru
+    </SectionTitle>
+    <Muted darkMode={darkMode}>Silakan tambahkan data guru terlebih dahulu</Muted>
+  </div>
+);
+
+export const Teachers = ({ darkMode }) => {
   const [guruData, setGuruData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [exportLoading, setExportLoading] = useState(false); // ✅ STATE LOADING EXPORT
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     fetchDataGuru();
@@ -15,11 +35,11 @@ export const Teachers = () => {
     try {
       setIsLoading(true);
 
-      // ✅ UPDATE: Include teacher, guru_bk, tu, dan petugas_perpus (Data Guru & Staf)
+      // Include teacher, guru_bk, tu, dan petugas_perpus (Data Guru & Staf)
       const { data: guruData, error: guruError } = await supabase
         .from("users")
         .select("id, teacher_id, full_name, is_active, homeroom_class_id, role")
-        .in("role", ["teacher", "guru_bk", "tu", "petugas_perpus"]); // ✅ Include tu & petugas_perpus
+        .in("role", ["teacher", "guru_bk", "tu", "petugas_perpus"]);
 
       if (guruError) throw guruError;
 
@@ -50,20 +70,16 @@ export const Teachers = () => {
 
       // Gabungkan data
       const guruWithMapel = sortedGuruData.map((guru) => {
-        // ✅ Tentukan tugas/mapel berdasarkan role dan teacher_id
+        // Tentukan tugas/mapel berdasarkan role dan teacher_id
         let tugasMapel = [];
 
         if (guru.teacher_id === "KS") {
-          // Kepala Sekolah
           tugasMapel = ["Kepala Sekolah"];
         } else if (guru.role === "guru_bk") {
-          // GURU BK/BP
           tugasMapel = ["GURU BK/BP"];
         } else if (guru.role === "tu") {
-          // Staff TU
           tugasMapel = ["STAF TATA USAHA"];
         } else if (guru.role === "petugas_perpus") {
-          // Petugas Perpustakaan
           tugasMapel = ["PERPUSTAKAAN"];
         } else {
           // Guru biasa - ambil dari teacher_assignments
@@ -83,7 +99,7 @@ export const Teachers = () => {
         };
       });
 
-      // ✅ TAMBAHKAN DATA KEPALA SEKOLAH (HARDCODED)
+      // Tambahkan data Kepala Sekolah (hardcoded)
       const kepalaSekolah = {
         id: "kepala-sekolah-001",
         teacher_id: "KS",
@@ -106,7 +122,6 @@ export const Teachers = () => {
     }
   };
 
-  // ✅ FUNCTION EXPORT GURU
   const handleExportGuru = async () => {
     setExportLoading(true);
     try {
@@ -119,245 +134,258 @@ export const Teachers = () => {
     }
   };
 
-  // Loading Component
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-300">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
-            Data Guru dan Staf
-          </h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 transition-colors duration-300">
-            Memuat data guru...
-          </p>
+      <PageContainer darkMode={darkMode}>
+        <div>
+          <PageTitle darkMode={darkMode}>Data Guru dan Staf</PageTitle>
+          <Subtitle darkMode={darkMode}>Memuat data guru...</Subtitle>
         </div>
-        <div className="text-center py-8 sm:py-12">
-          <div className="inline-block w-8 h-8 sm:w-10 sm:h-10 border-3 sm:border-4 border-blue-200 dark:border-blue-500 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin mb-4 transition-colors duration-300"></div>
-          <p className="text-sm sm:text-base text-slate-500 dark:text-gray-400 transition-colors duration-300">
-            Sedang memuat data...
-          </p>
+        <div className="flex justify-center items-center h-48 sm:h-64">
+          <div
+            className={`animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 ${
+              darkMode ? "border-blue-400" : "border-blue-600"
+            }`}
+          />
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen transition-colors duration-300">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
-              Data Guru dan Staf
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 transition-colors duration-300">
-              Manajemen Data Guru dan Staf SMP Muslimin Cililin
-            </p>
-          </div>
-
-          {/* ✅ TOMBOL EXPORT GURU */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {/* Export Button */}
-            <button
-              onClick={handleExportGuru}
-              disabled={exportLoading || guruData.length === 0}
-              className={`px-4 sm:px-6 py-3 sm:py-3.5 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 min-w-[140px] sm:min-w-[160px] text-sm sm:text-base touch-manipulation ${
-                exportLoading || guruData.length === 0
-                  ? "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                  : "bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 shadow-md hover:shadow-lg"
-              }`}
-            >
-              {exportLoading ? (
-                <>
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Export...</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-lg sm:text-xl">📊</span>
-                  <span>Export Excel</span>
-                </>
-              )}
-            </button>
-          </div>
+    <PageContainer darkMode={darkMode}>
+      {/* Header: judul halaman + tombol export */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <PageTitle darkMode={darkMode}>Data Guru dan Staf</PageTitle>
+          <Subtitle darkMode={darkMode}>Manajemen Data Guru dan Staf SMP Muslimin Cililin</Subtitle>
         </div>
+
+        <button
+          onClick={handleExportGuru}
+          disabled={exportLoading || guruData.length === 0}
+          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-white shadow-sm transition-colors touch-manipulation min-h-[44px] min-w-[150px] focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+            exportLoading || guruData.length === 0
+              ? darkMode
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : darkMode
+                ? "bg-green-600 hover:bg-green-500 focus:ring-offset-gray-900"
+                : "bg-green-600 hover:bg-green-700"
+          }`}
+        >
+          {exportLoading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Export...</span>
+            </>
+          ) : (
+            <>
+              <FileSpreadsheet size={16} />
+              <span>Export Excel</span>
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Main Content Container - Menggunakan 2 Layout: Card (Default/HP) dan Table (sm: ke atas) */}
-
       {/* ---------------------------------------------------- */}
-      {/* 🚀 LAYOUT MOBILE-FIRST (Card View) - Default/HP/Kecil */}
+      {/* Mobile (di bawah sm): daftar Card, satu guru = satu Card */}
       {/* ---------------------------------------------------- */}
-      <div className="sm:hidden space-y-2">
+      <div className="sm:hidden space-y-3">
         {guruData.length > 0 ? (
           guruData.map((guru, index) => (
-            <div
-              key={guru.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-blue-100/50 dark:shadow-gray-900/50 p-3 border border-blue-100 dark:border-gray-700 hover:shadow-xl dark:hover:shadow-gray-900 transition-all duration-300 touch-manipulation"
-            >
-              {/* Header Card */}
-              <div className="flex justify-between items-start border-b border-blue-100/70 dark:border-gray-700 pb-2 mb-2">
+            <Card key={guru.id} darkMode={darkMode} className="touch-manipulation">
+              <div
+                className={`flex justify-between items-start border-b pb-2 mb-2 ${
+                  darkMode ? "border-gray-700" : "border-gray-100"
+                }`}
+              >
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-gray-400 mb-1">
+                  <Muted darkMode={darkMode} className="block mb-1">
                     No. {index + 1} | Kode:{" "}
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">
+                    <span className={`font-bold ${darkMode ? "text-blue-400" : "text-blue-600"}`}>
                       {guru.teacher_id || "-"}
                     </span>
-                  </p>
-                  <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
+                  </Muted>
+                  <p
+                    className={`text-base font-bold truncate ${darkMode ? "text-white" : "text-gray-900"}`}
+                  >
                     {guru.full_name}
                   </p>
                 </div>
-                {/* Status */}
                 <div className="flex-shrink-0 ml-3">
                   {guru.is_active ? (
-                    <span className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
+                    <span
+                      className={`inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full ${
+                        darkMode ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-800"
+                      }`}
+                    >
                       Aktif
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-semibold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full">
+                    <span
+                      className={`inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-full ${
+                        darkMode ? "bg-red-900/30 text-red-300" : "bg-red-100 text-red-800"
+                      }`}
+                    >
                       Nonaktif
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Body Card */}
-              <div className="space-y-1.5 text-sm sm:text-base">
+              <div className="space-y-1.5 text-sm">
                 <div className="flex justify-between items-start">
-                  <span className="text-slate-500 dark:text-gray-400 font-medium w-2/5">
+                  <Muted darkMode={darkMode} className="w-2/5">
                     Tugas/Mapel:
-                  </span>
-                  <div className="text-right flex-1 text-slate-900 dark:text-white font-semibold">
+                  </Muted>
+                  <div
+                    className={`text-right flex-1 font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+                  >
                     {guru.mapel?.length > 0 ? (
                       guru.mapel.join(", ")
                     ) : (
-                      <span className="text-slate-400 dark:text-gray-500 italic">
+                      <span className={`italic ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
                         Belum ada tugas
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-blue-50/50 dark:border-gray-700/50">
-                  <span className="text-slate-500 dark:text-gray-400 font-medium w-2/5">
+                <div
+                  className={`flex justify-between items-center pt-2 border-t ${
+                    darkMode ? "border-gray-700/50" : "border-gray-100/70"
+                  }`}
+                >
+                  <Muted darkMode={darkMode} className="w-2/5">
                     Wali Kelas:
-                  </span>
-                  <div className="text-right flex-1 text-slate-900 dark:text-white font-semibold">
+                  </Muted>
+                  <div
+                    className={`text-right flex-1 font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+                  >
                     {guru.walikelas !== "-" ? (
                       `KELAS ${guru.walikelas}`
                     ) : (
-                      <span className="text-slate-400 dark:text-gray-500 italic">-</span>
+                      <span className={`italic ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+                        -
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
           ))
         ) : (
-          /* Empty State untuk Mobile */
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-blue-100 dark:border-gray-700">
-            <div className="text-4xl sm:text-5xl mb-4">👨‍🏫</div>
-            <h3 className="text-base sm:text-lg font-semibold text-slate-700 dark:text-gray-200 mb-2">
-              Belum ada data guru
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-gray-400">
-              Silakan tambahkan data guru terlebih dahulu
-            </p>
-          </div>
+          <Card darkMode={darkMode}>
+            <EmptyState darkMode={darkMode} />
+          </Card>
         )}
       </div>
 
       {/* ---------------------------------------------------- */}
-      {/* 💻 LAYOUT TABLE - Tablet (sm: ke atas) & Laptop */}
+      {/* Tablet & desktop (sm ke atas): tabel penuh di dalam Card */}
       {/* ---------------------------------------------------- */}
-      <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-blue-100/50 dark:shadow-gray-900/50 overflow-hidden border border-blue-100 dark:border-gray-700 transition-colors duration-300">
-        {/* Table Wrapper - Responsive Scroll (hanya jika memang tidak muat) */}
+      <Card darkMode={darkMode} noPadding className="hidden sm:block overflow-hidden">
         <div className="overflow-x-auto">
           {guruData.length > 0 ? (
             <table className="w-full">
-              {/* Table Header */}
-              <thead className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-gray-700 dark:to-gray-600">
+              <thead
+                className={`bg-gradient-to-r ${darkMode ? "from-gray-700 to-gray-600" : "from-blue-600 to-blue-700"}`}
+              >
                 <tr>
-                  <th className="w-12 sm:w-16 px-3 sm:px-6 py-1.5 sm:py-2 text-left text-xs sm:text-sm font-semibold text-white uppercase tracking-wider text-center">
+                  <th className="w-12 sm:w-16 px-4 py-2.5 text-center text-xs font-semibold text-white uppercase tracking-wider">
                     No.
                   </th>
-                  <th className="w-24 sm:w-32 px-3 sm:px-6 py-1.5 sm:py-2 text-left text-xs sm:text-sm font-semibold text-white uppercase tracking-wider text-center">
+                  <th className="w-24 sm:w-32 px-4 py-2.5 text-center text-xs font-semibold text-white uppercase tracking-wider">
                     Kode Guru
                   </th>
-                  <th className="px-3 sm:px-6 py-1.5 sm:py-2 text-left text-xs sm:text-sm font-semibold text-white uppercase tracking-wider">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-white uppercase tracking-wider">
                     Nama Guru
                   </th>
-                  <th className="px-3 sm:px-6 py-1.5 sm:py-2 text-left text-xs sm:text-sm font-semibold text-white uppercase tracking-wider w-1/3">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-white uppercase tracking-wider w-1/3">
                     Tugas/Mapel
                   </th>
-                  <th className="w-28 sm:w-32 px-3 sm:px-6 py-1.5 sm:py-2 text-left text-xs sm:text-sm font-semibold text-white uppercase tracking-wider text-center">
+                  <th className="w-28 sm:w-32 px-4 py-2.5 text-center text-xs font-semibold text-white uppercase tracking-wider">
                     Wali Kelas
                   </th>
-                  <th className="w-20 sm:w-24 px-3 sm:px-6 py-1.5 sm:py-2 text-left text-xs sm:text-sm font-semibold text-white uppercase tracking-wider text-center">
+                  <th className="w-20 sm:w-24 px-4 py-2.5 text-center text-xs font-semibold text-white uppercase tracking-wider">
                     Status
                   </th>
                 </tr>
               </thead>
-              {/* Table Body */}
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-blue-100 dark:divide-gray-700">
+              <tbody className={`divide-y ${darkMode ? "divide-gray-700" : "divide-gray-200"}`}>
                 {guruData.map((guru, index) => (
                   <tr
                     key={guru.id}
-                    className="hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors duration-300"
+                    className={`transition-colors ${darkMode ? "hover:bg-gray-700/50" : "hover:bg-gray-50"}`}
                   >
-                    {/* Nomor */}
-                    <td className="px-3 sm:px-6 py-1.5 sm:py-2 whitespace-nowrap text-xs sm:text-sm text-slate-500 dark:text-gray-400 text-center font-medium">
+                    <td
+                      className={`px-4 py-2.5 whitespace-nowrap text-sm text-center font-medium ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       {index + 1}
                     </td>
-
-                    {/* Kode Guru */}
-                    <td className="px-3 sm:px-6 py-1.5 sm:py-2 whitespace-nowrap text-center">
-                      <div className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-center">
+                      <span
+                        className={`text-sm font-bold ${darkMode ? "text-blue-400" : "text-blue-600"}`}
+                      >
                         {guru.teacher_id || "-"}
-                      </div>
+                      </span>
                     </td>
-
-                    {/* Nama Guru */}
-                    <td className="px-3 sm:px-6 py-1.5 sm:py-2 whitespace-nowrap">
-                      <div className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      <span
+                        className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}
+                      >
                         {guru.full_name}
-                      </div>
+                      </span>
                     </td>
-
-                    {/* Tugas/Mapel */}
-                    <td className="px-3 sm:px-6 py-1.5 sm:py-2">
+                    <td className="px-4 py-2.5">
                       {guru.mapel?.length > 0 ? (
-                        <div className="text-xs sm:text-sm text-slate-900 dark:text-gray-200 font-medium">
+                        <span
+                          className={`text-sm font-medium ${darkMode ? "text-gray-200" : "text-gray-900"}`}
+                        >
                           {guru.mapel.join(", ")}
-                        </div>
+                        </span>
                       ) : (
-                        <span className="text-xs sm:text-sm text-slate-400 dark:text-gray-500 italic">
+                        <span
+                          className={`text-sm italic ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                        >
                           Belum ada tugas
                         </span>
                       )}
                     </td>
-
-                    {/* Wali Kelas */}
-                    <td className="px-3 sm:px-6 py-1.5 sm:py-2 whitespace-nowrap text-center">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-center">
                       {guru.walikelas !== "-" ? (
-                        <div className="text-xs sm:text-sm text-slate-900 dark:text-white font-medium">
+                        <span
+                          className={`text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}
+                        >
                           KELAS {guru.walikelas}
-                        </div>
+                        </span>
                       ) : (
-                        <span className="text-xs sm:text-sm text-slate-400 dark:text-gray-500 italic">
+                        <span
+                          className={`text-sm italic ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                        >
                           -
                         </span>
                       )}
                     </td>
-
-                    {/* Status */}
-                    <td className="px-3 sm:px-6 py-1.5 sm:py-2 whitespace-nowrap text-center">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-center">
                       {guru.is_active ? (
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                        <span
+                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
+                            darkMode
+                              ? "bg-green-900/30 text-green-300"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
                           Aktif
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                        <span
+                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
+                            darkMode ? "bg-red-900/30 text-red-300" : "bg-red-100 text-red-800"
+                          }`}
+                        >
                           Nonaktif
                         </span>
                       )}
@@ -367,43 +395,36 @@ export const Teachers = () => {
               </tbody>
             </table>
           ) : (
-            /* Empty State untuk Tablet/Laptop */
-            <div className="text-center py-12 sm:py-16 bg-slate-50 dark:bg-gray-800">
-              <div className="text-5xl sm:text-6xl mb-4">👨‍🏫</div>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-700 dark:text-gray-200 mb-2">
-                Belum ada data guru
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400">
-                Silakan tambahkan data guru terlebih dahulu
-              </p>
-            </div>
+            <EmptyState darkMode={darkMode} />
           )}
         </div>
-      </div>
+      </Card>
 
-      {/* Stats Footer (Optional) */}
+      {/* Stats Footer */}
       {guruData.length > 0 && (
-        <div className="mt-4 sm:mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md shadow-blue-100/50 dark:shadow-gray-900/50 border border-blue-100 dark:border-gray-700 p-3 sm:p-4 transition-colors duration-200">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs sm:text-sm text-slate-600 dark:text-gray-300 space-y-2 sm:space-y-0">
-            <span className="font-medium">
+        <Card darkMode={darkMode}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 text-sm">
+            <Text darkMode={darkMode} className="font-medium">
               Total:{" "}
-              <span className="font-bold text-blue-600 dark:text-blue-400">{guruData.length}</span>{" "}
+              <span className={`font-bold ${darkMode ? "text-blue-400" : "text-blue-600"}`}>
+                {guruData.length}
+              </span>{" "}
               Guru & Staf
-            </span>
-            <span className="font-medium">
+            </Text>
+            <Text darkMode={darkMode} className="font-medium">
               Aktif:{" "}
-              <span className="font-bold text-green-600 dark:text-green-400">
+              <span className={`font-bold ${darkMode ? "text-green-400" : "text-green-600"}`}>
                 {guruData.filter((g) => g.is_active).length}
               </span>{" "}
               | Non-aktif:{" "}
-              <span className="font-bold text-red-600 dark:text-red-400">
+              <span className={`font-bold ${darkMode ? "text-red-400" : "text-red-600"}`}>
                 {guruData.filter((g) => !g.is_active).length}
               </span>
-            </span>
+            </Text>
           </div>
-        </div>
+        </Card>
       )}
-    </div>
+    </PageContainer>
   );
 };
 

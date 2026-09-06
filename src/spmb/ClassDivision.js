@@ -168,7 +168,7 @@ const ClassDivision = ({
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 border-l-4 border-blue-500">
           <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
             Belum Dibagi Kelas
@@ -189,6 +189,18 @@ const ClassDivision = ({
             {studentsWithClass.length}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">siswa siap ditransfer</div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 border-l-4 border-amber-500">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+            Sudah Mendapat NIS
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold text-amber-600 dark:text-amber-400">
+            {allStudents.filter((s) => s.nis && !s.is_transferred).length}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            siswa siap ditransfer dengan NIS
+          </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 border-l-4 border-purple-500">
