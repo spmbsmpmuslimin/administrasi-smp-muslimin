@@ -131,17 +131,20 @@ const useStudentsData = (userData, showToast, targetYear) => {
         const to = from + rowsPerPage - 1;
 
         // Load semua students untuk statistik & pembagian kelas
+        // -- diurut alfabet (nama_lengkap) biar konsisten sama urutan tampilan
         const { data: allData } = await supabase
           .from("siswa_baru")
           .select("*")
-          .order("created_at", { ascending: false });
+          .order("nama_lengkap", { ascending: true });
 
         setAllStudents(allData || []);
 
+        // Diurut alfabet (nama_lengkap) biar halaman 1, 2, 3, dst nyambung
+        // urut A-Z, bukan ngikutin urutan created_at kayak sebelumnya
         let query = supabase
           .from("siswa_baru")
           .select("*", { count: "exact" })
-          .order("created_at", { ascending: false })
+          .order("nama_lengkap", { ascending: true })
           .range(from, to);
 
         const searchString = String(search || "").trim();
@@ -297,8 +300,8 @@ const useStudentsData = (userData, showToast, targetYear) => {
         .from("siswa_baru")
         .update({
           skor_akademik: diagnostikData.skor_akademik,
-          kategori_baca_latin: diagnostikData.kategori_baca_latin,
-          kategori_mengaji: diagnostikData.kategori_mengaji,
+          skor_baca_latin: diagnostikData.skor_baca_latin,
+          skor_baca_quran: diagnostikData.skor_baca_quran,
         })
         .eq("id", studentId);
 

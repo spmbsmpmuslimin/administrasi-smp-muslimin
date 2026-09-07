@@ -1,4 +1,22 @@
-import React, { useMemo } from "react";
+// [file name]: components/spmb/Statistics.js
+// Sesuaikan path import di bawah kalau struktur folder lo beda dari:
+//   src/spmb/Statistics.js
+//   src/components/ui/Card.js
+//   src/components/ui/Typography.js
+//   src/utils/excelExportKit.js
+import React, { useMemo, useState } from "react";
+import ExcelJS from "exceljs";
+import Card from "../components/ui/Card";
+import { Muted } from "../components/ui/Typography";
+import {
+  addLetterhead,
+  styleTableHeaderRow,
+  styleTableDataRow,
+  downloadWorkbook,
+  autoFitColumns,
+  setupPrintOptions,
+  guardHasData,
+} from "../utils/excelExportKit";
 
 const Statistics = ({
   students,
@@ -6,7 +24,11 @@ const Statistics = ({
   maleStudents,
   femaleStudents,
   getCurrentAcademicYear,
+  darkMode = false, // ⚠️ pastikan parent ngirim ini biar Card/Muted ikut dark mode
+  showToast, // optional -- kalau ada, dipakai guardHasData & error handler export
 }) => {
+  const [isExporting, setIsExporting] = useState(false);
+
   // Get top schools stats untuk bar chart (top 8)
   const getSchoolStats = useMemo(() => {
     if (!students || students.length === 0) return [];
@@ -20,7 +42,7 @@ const Statistics = ({
     return Object.entries(schoolCounts)
       .map(([school, count]) => ({ school, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
+      .slice(0, 10);
   }, [students]);
 
   // Get ALL schools dengan breakdown gender (untuk tabel)
@@ -56,6 +78,94 @@ const Statistics = ({
   const maxSchoolCount =
     getSchoolStats.length > 0 ? Math.max(...getSchoolStats.map((s) => s.count)) : 0;
 
+  // Config buat 3 stat card di atas -- disatukan di sini biar gampang nambah/ubah
+  // tanpa duplikasi JSX 3x. Warna per-card pakai `!` (important) supaya nimpa
+  // style default Card (bg-white/bg-gray-800) tanpa gonta-ganti komponen Card-nya.
+  const keyMetrics = [
+    {
+      key: "total",
+      label: "Total Pendaftar",
+      value: totalStudents,
+      percentage: null,
+      cardClass: "!bg-blue-50 dark:!bg-blue-900/20 !border-blue-200 dark:!border-blue-800/40",
+      labelClass: "!text-blue-600 dark:!text-blue-400",
+      valueClass: "text-blue-700 dark:text-blue-300",
+    },
+    {
+      key: "male",
+      label: "Siswa Laki-laki",
+      value: maleStudents,
+      percentage: malePercentage,
+      cardClass:
+        "!bg-emerald-50 dark:!bg-emerald-900/20 !border-emerald-200 dark:!border-emerald-800/40",
+      labelClass: "!text-emerald-600 dark:!text-emerald-400",
+      valueClass: "text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      key: "female",
+      label: "Siswa Perempuan",
+      value: femaleStudents,
+      percentage: femalePercentage,
+      cardClass: "!bg-pink-50 dark:!bg-pink-900/20 !border-pink-200 dark:!border-pink-800/40",
+      labelClass: "!text-pink-600 dark:!text-pink-400",
+      valueClass: "text-pink-700 dark:text-pink-300",
+    },
+  ];
+
+  // Export tabel "Pendaftar Berdasarkan Asal Sekolah" + ringkasan atas ke Excel,
+  // pakai excelExportKit biar konsisten sama export lain di app ini.
+  const handleExportExcel = async () => {
+    if (!guardHasData(getSchoolRankings, { showToast })) return;
+
+    setIsExporting(true);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Statistik Pendaftar");
+      const mergeCols = 5; // No, Asal Sekolah, Total, Laki-laki, Perempuan
+
+      const headerRowNumber = addLetterhead(worksheet, {
+        title: "DATA STATISTIK PENDAFTAR SISWA BARU",
+        mergeCols,
+        metaLines: [
+          `Tahun Ajaran ${getCurrentAcademicYear()}`,
+          `Total Pendaftar: ${totalStudents} siswa`,
+          `Laki-laki: ${maleStudents} (${malePercentage.toFixed(1)}%)`,
+          `Perempuan: ${femaleStudents} (${femalePercentage.toFixed(1)}%)`,
+        ],
+      });
+
+      const headerRow = worksheet.getRow(headerRowNumber);
+      headerRow.values = ["No", "Asal Sekolah", "Total", "Laki-laki", "Perempuan"];
+      styleTableHeaderRow(headerRow);
+
+      let currentRow = headerRowNumber + 1;
+      getSchoolRankings.forEach((school, index) => {
+        const row = worksheet.getRow(currentRow);
+        row.values = [index + 1, school.school, school.total, school.male, school.female];
+        styleTableDataRow(row, index, [1, 3, 4, 5]); // center: No, Total, L, P -- Asal Sekolah rata kiri
+        currentRow++;
+      });
+
+      autoFitColumns(worksheet);
+      setupPrintOptions(worksheet, {
+        orientation: "portrait",
+        freezeHeaderRow: headerRowNumber,
+      });
+
+      const tahunAjaran = getCurrentAcademicYear().toString().replace(/\//g, "-");
+      await downloadWorkbook(workbook, `statistik-pendaftar-${tahunAjaran}.xlsx`);
+    } catch (error) {
+      console.error("Gagal export statistik ke Excel:", error);
+      if (showToast) {
+        showToast("Gagal mengexport data ke Excel", "error");
+      } else if (typeof window !== "undefined") {
+        window.alert("Gagal mengexport data ke Excel");
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="bg-gray-50 dark:bg-slate-900 min-h-screen p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -69,38 +179,174 @@ const Statistics = ({
           </p>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-blue-200 dark:border-blue-800/40">
-            <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2">
-              Total Pendaftar
-            </div>
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-300">
-              {totalStudents}
+        {/* Key Metrics -- dipaksa 3 kolom sejajar (1 baris) dari mobile terkecil */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+          {keyMetrics.map((metric) => (
+            <Card
+              key={metric.key}
+              darkMode={darkMode}
+              noPadding
+              className={`p-2.5 sm:p-6 ${metric.cardClass}`}
+            >
+              <Muted
+                darkMode={darkMode}
+                className={`!text-[10px] sm:!text-sm font-semibold block mb-1 sm:mb-2 truncate ${metric.labelClass}`}
+              >
+                {metric.label}
+              </Muted>
+              <div
+                className={`text-lg sm:text-3xl md:text-4xl font-bold leading-tight ${metric.valueClass}`}
+              >
+                {metric.value}
+              </div>
+              {metric.percentage !== null && (
+                <div
+                  className={`text-[10px] sm:text-sm font-medium mt-0.5 sm:mt-1 ${metric.labelClass}`}
+                >
+                  {metric.percentage.toFixed(1)}%
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+
+        {/* School Rankings Table */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-sm mb-6 sm:mb-8">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4 md:mb-6">
+            <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-slate-100">
+              Pendaftar Berdasarkan Asal Sekolah
+            </h2>
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors shrink-0"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+              >
+                <path d="M12 3v12" />
+                <path d="m7 10 5 5 5-5" />
+                <path d="M5 21h14" />
+              </svg>
+              <span className="hidden xs:inline">
+                {isExporting ? "Mengexport..." : "Export Excel"}
+              </span>
+            </button>
+          </div>
+
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b-2 border-gray-200 dark:border-slate-700">
+                    <th className="text-left py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
+                      No
+                    </th>
+                    <th className="text-left py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
+                      Asal Sekolah
+                    </th>
+                    <th className="text-center py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
+                      Total
+                    </th>
+                    <th className="text-center py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
+                      <span className="hidden sm:inline">Laki-laki</span>
+                      <span className="sm:hidden">L</span>
+                    </th>
+                    <th className="text-center py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
+                      <span className="hidden sm:inline">Perempuan</span>
+                      <span className="sm:hidden">P</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {!students || students.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="text-center py-8 sm:py-12 text-gray-400 dark:text-slate-500"
+                      >
+                        Belum ada pendaftar
+                      </td>
+                    </tr>
+                  ) : (
+                    getSchoolRankings.map((school, index) => (
+                      <tr
+                        key={index}
+                        className="border-b border-gray-100 dark:border-slate-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors"
+                      >
+                        <td className="py-1 sm:py-1.5 md:py-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm text-gray-600 dark:text-slate-400 font-medium">
+                          {index + 1}
+                        </td>
+                        <td className="py-1 sm:py-1.5 md:py-2 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-200">
+                          <div className="max-w-[120px] sm:max-w-xs truncate" title={school.school}>
+                            {school.school}
+                          </div>
+                        </td>
+                        <td className="py-1 sm:py-1.5 md:py-2 px-2 sm:px-3 md:px-4 text-center">
+                          <span className="inline-flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs sm:text-sm font-bold rounded-lg min-w-[2rem]">
+                            {school.total}
+                          </span>
+                        </td>
+                        <td className="py-1 sm:py-1.5 md:py-2 px-2 sm:px-3 md:px-4 text-center">
+                          <span className="inline-flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs sm:text-sm font-semibold rounded-lg min-w-[2rem]">
+                            {school.male}
+                          </span>
+                        </td>
+                        <td className="py-1 sm:py-1.5 md:py-2 px-2 sm:px-3 md:px-4 text-center">
+                          <span className="inline-flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 text-xs sm:text-sm font-semibold rounded-lg min-w-[2rem]">
+                            {school.female}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-emerald-200 dark:border-emerald-800/40">
-            <div className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-semibold mb-2">
-              Siswa Laki-laki
+
+          {/* Summary Footer */}
+          {getSchoolRankings.length > 0 && (
+            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200 dark:border-slate-700">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-slate-400">
+                <div>
+                  Total{" "}
+                  <span className="font-semibold text-gray-900 dark:text-slate-200">
+                    {getSchoolRankings.length}
+                  </span>{" "}
+                  sekolah asal
+                </div>
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-blue-600 dark:bg-blue-500"></div>
+                    <span>
+                      <span className="font-semibold text-gray-900 dark:text-slate-200">
+                        {maleStudents}
+                      </span>{" "}
+                      Laki-laki
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-pink-600 dark:bg-pink-500"></div>
+                    <span>
+                      <span className="font-semibold text-gray-900 dark:text-slate-200">
+                        {femaleStudents}
+                      </span>{" "}
+                      Perempuan
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-emerald-700 dark:text-emerald-300">
-              {maleStudents}
-            </div>
-            <div className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 font-medium mt-1">
-              {malePercentage.toFixed(1)}%
-            </div>
-          </div>
-          <div className="bg-pink-50 dark:bg-pink-900/20 rounded-xl p-4 sm:p-6 shadow-sm border border-pink-200 dark:border-pink-800/40">
-            <div className="text-xs sm:text-sm text-pink-600 dark:text-pink-400 font-semibold mb-2">
-              Siswa Perempuan
-            </div>
-            <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-pink-700 dark:text-pink-300">
-              {femaleStudents}
-            </div>
-            <div className="text-xs sm:text-sm text-pink-600 dark:text-pink-400 font-medium mt-1">
-              {femalePercentage.toFixed(1)}%
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 mb-6 sm:mb-8">
@@ -197,7 +443,7 @@ const Statistics = ({
           {/* Bar Chart - Top Schools */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 md:p-8 shadow-sm">
             <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-slate-100 mb-4 sm:mb-6 md:mb-8">
-              Asal Sekolah (Top 8)
+              Asal Sekolah (Top 10)
             </h2>
 
             <div className="space-y-3 sm:space-y-4">
@@ -239,119 +485,6 @@ const Statistics = ({
               )}
             </div>
           </div>
-        </div>
-
-        {/* School Rankings Table - NEW */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-sm">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 md:mb-6">
-            Pendaftar Berdasarkan Asal Sekolah
-          </h2>
-
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200 dark:border-slate-700">
-                    <th className="text-left py-2 sm:py-3 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
-                      No
-                    </th>
-                    <th className="text-left py-2 sm:py-3 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
-                      Asal Sekolah
-                    </th>
-                    <th className="text-center py-2 sm:py-3 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
-                      Total
-                    </th>
-                    <th className="text-center py-2 sm:py-3 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
-                      <span className="hidden sm:inline">Laki-laki</span>
-                      <span className="sm:hidden">L</span>
-                    </th>
-                    <th className="text-center py-2 sm:py-3 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-semibold text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-900/50">
-                      <span className="hidden sm:inline">Perempuan</span>
-                      <span className="sm:hidden">P</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!students || students.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="text-center py-8 sm:py-12 text-gray-400 dark:text-slate-500"
-                      >
-                        Belum ada pendaftar
-                      </td>
-                    </tr>
-                  ) : (
-                    getSchoolRankings.map((school, index) => (
-                      <tr
-                        key={index}
-                        className="border-b border-gray-100 dark:border-slate-700 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors"
-                      >
-                        <td className="py-2 sm:py-3 md:py-4 px-2 sm:px-3 md:px-4 text-xs sm:text-sm text-gray-600 dark:text-slate-400 font-medium">
-                          {index + 1}
-                        </td>
-                        <td className="py-2 sm:py-3 md:py-4 px-2 sm:px-3 md:px-4 text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-200">
-                          <div className="max-w-[120px] sm:max-w-xs truncate" title={school.school}>
-                            {school.school}
-                          </div>
-                        </td>
-                        <td className="py-2 sm:py-3 md:py-4 px-2 sm:px-3 md:px-4 text-center">
-                          <span className="inline-flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs sm:text-sm font-bold rounded-lg min-w-[2rem]">
-                            {school.total}
-                          </span>
-                        </td>
-                        <td className="py-2 sm:py-3 md:py-4 px-2 sm:px-3 md:px-4 text-center">
-                          <span className="inline-flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs sm:text-sm font-semibold rounded-lg min-w-[2rem]">
-                            {school.male}
-                          </span>
-                        </td>
-                        <td className="py-2 sm:py-3 md:py-4 px-2 sm:px-3 md:px-4 text-center">
-                          <span className="inline-flex items-center justify-center px-1.5 sm:px-2 md:px-3 py-1 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 text-xs sm:text-sm font-semibold rounded-lg min-w-[2rem]">
-                            {school.female}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Summary Footer */}
-          {getSchoolRankings.length > 0 && (
-            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200 dark:border-slate-700">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-slate-400">
-                <div>
-                  Total{" "}
-                  <span className="font-semibold text-gray-900 dark:text-slate-200">
-                    {getSchoolRankings.length}
-                  </span>{" "}
-                  sekolah asal
-                </div>
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-blue-600 dark:bg-blue-500"></div>
-                    <span>
-                      <span className="font-semibold text-gray-900 dark:text-slate-200">
-                        {maleStudents}
-                      </span>{" "}
-                      Laki-laki
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded bg-pink-600 dark:bg-pink-500"></div>
-                    <span>
-                      <span className="font-semibold text-gray-900 dark:text-slate-200">
-                        {femaleStudents}
-                      </span>{" "}
-                      Perempuan
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

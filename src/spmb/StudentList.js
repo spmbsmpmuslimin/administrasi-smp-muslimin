@@ -18,7 +18,7 @@ const StudentList = ({
   showToast,
   allStudents,
 }) => {
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({ key: "nama_lengkap", direction: "asc" });
   // Default tampilan otomatis: Kartu di HP (layar sempit, tabel 8 kolom bakal
   // harus di-scroll horizontal), Tabel di laptop/desktop. Ini cuma nentuin
   // NILAI AWAL sekali pas komponen pertama dimuat - abis itu user tetap bebas
@@ -436,13 +436,14 @@ const StudentList = ({
         bValue = b[sortConfig.key] || "";
       }
 
-      if (aValue < bValue) {
-        return sortConfig.direction === "asc" ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === "asc" ? 1 : -1;
-      }
-      return 0;
+      // localeCompare + sensitivity "base" -- biar sortnya bener-bener alfabet
+      // "manusia" (A-Z, tanpa peduli huruf besar/kecil), bukan compare < >
+      // polos yang case-sensitive (huruf besar dianggap "lebih kecil" dari
+      // huruf kecil di JS, jadi bisa salah urutan kalau data-nya campur case).
+      const comparison = String(aValue).localeCompare(String(bValue), "id", {
+        sensitivity: "base",
+      });
+      return sortConfig.direction === "asc" ? comparison : -comparison;
     });
   }, [students, sortConfig]);
 
@@ -639,19 +640,36 @@ const StudentList = ({
         <span className="text-base sm:text-2xl">Data Calon Siswa SMP Muslimin Cililin</span>
       </h2>
 
-      {/* Search and Controls */}
-      <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <div className="flex-1 relative">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={onSearch}
-            className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-sm sm:text-base transition-colors bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none pl-10 sm:pl-12 min-h-[48px]"
-            placeholder="Cari nama siswa, asal SD, atau nama orang tua..."
-          />
-          <i className="fas fa-search absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm sm:text-base"></i>
+      {/* Statistics -- dipindah paling atas sesuai urutan: Stats > Tombol > Search */}
+      <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-xl p-2 sm:p-4 text-center">
+          <div className="text-base sm:text-2xl font-bold text-blue-800 dark:text-blue-300">
+            {totalStudents}
+          </div>
+          <div className="text-blue-600 dark:text-blue-400 text-[10px] sm:text-sm leading-tight">
+            Total Pendaftar
+          </div>
         </div>
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-2 sm:p-4 text-center">
+          <div className="text-base sm:text-2xl font-bold text-emerald-800 dark:text-emerald-300">
+            {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "L").length : 0}
+          </div>
+          <div className="text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-sm leading-tight">
+            Laki-laki
+          </div>
+        </div>
+        <div className="bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800/40 rounded-xl p-2 sm:p-4 text-center">
+          <div className="text-base sm:text-2xl font-bold text-pink-800 dark:text-pink-300">
+            {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "P").length : 0}
+          </div>
+          <div className="text-pink-600 dark:text-pink-400 text-[10px] sm:text-sm leading-tight">
+            Perempuan
+          </div>
+        </div>
+      </div>
 
+      {/* Controls: toggle Kartu/Tabel, Export, Refresh -- di bawah Stats, di atas Search */}
+      <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="grid grid-cols-3 gap-2 w-full">
           {/* View Mode Toggle */}
           <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl flex overflow-hidden">
@@ -701,33 +719,17 @@ const StudentList = ({
             <span className="truncate">{isLoading ? "Memuat..." : "Refresh"}</span>
           </button>
         </div>
-      </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/40 rounded-xl p-2 sm:p-4 text-center">
-          <div className="text-base sm:text-2xl font-bold text-blue-800 dark:text-blue-300">
-            {totalStudents}
-          </div>
-          <div className="text-blue-600 dark:text-blue-400 text-[10px] sm:text-sm leading-tight">
-            Total Pendaftar
-          </div>
-        </div>
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-2 sm:p-4 text-center">
-          <div className="text-base sm:text-2xl font-bold text-emerald-800 dark:text-emerald-300">
-            {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "L").length : 0}
-          </div>
-          <div className="text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-sm leading-tight">
-            Laki-laki
-          </div>
-        </div>
-        <div className="bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800/40 rounded-xl p-2 sm:p-4 text-center">
-          <div className="text-base sm:text-2xl font-bold text-pink-800 dark:text-pink-300">
-            {allStudents ? allStudents.filter((s) => s.jenis_kelamin === "P").length : 0}
-          </div>
-          <div className="text-pink-600 dark:text-pink-400 text-[10px] sm:text-sm leading-tight">
-            Perempuan
-          </div>
+        {/* Search box -- paling bawah, sesuai urutan Stats > Tombol > Search */}
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={onSearch}
+            className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-sm sm:text-base transition-colors bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none pl-10 sm:pl-12 min-h-[48px]"
+            placeholder="Cari nama siswa, asal SD, atau nama orang tua..."
+          />
+          <i className="fas fa-search absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm sm:text-base"></i>
         </div>
       </div>
 
@@ -920,7 +922,7 @@ const StudentList = ({
 
       {/* Pagination */}
       {shouldShowPagination && (
-        <div className="flex flex-col sm:flex-row justify-between items-center p-3 sm:p-4 mt-4 sm:mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center px-4 py-3 sm:p-4 mt-4 sm:mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 gap-3 sm:gap-4">
           <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 text-center sm:text-left">
             Menampilkan{" "}
             <span className="font-semibold">
@@ -929,17 +931,26 @@ const StudentList = ({
             dari <span className="font-semibold">{totalStudents}</span> data
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <div className="flex gap-1 w-full sm:w-auto justify-center">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-center">
+              <button
+                onClick={() => onPageChange(1)}
+                disabled={currentPageNum === 1}
+                title="Halaman Pertama"
+                className="bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-100 px-3 py-2.5 rounded-lg text-lg font-extrabold leading-none hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center min-w-[48px] min-h-[48px]"
+              >
+                <span aria-hidden="true">&laquo;</span>
+              </button>
+
               <button
                 onClick={() => onPageChange(currentPageNum - 1)}
                 disabled={currentPageNum === 1}
-                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-1 sm:gap-2 justify-center flex-1 sm:flex-none min-w-[100px] sm:min-w-[120px] min-h-[44px]"
+                className="bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-100 px-4 sm:px-5 py-2.5 rounded-lg text-sm sm:text-base font-bold hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 justify-center min-w-[48px] sm:min-w-[130px] min-h-[48px]"
               >
-                <i className="fas fa-chevron-left text-xs"></i>
-                <span>Sebelumnya</span>
+                <i className="fas fa-chevron-left text-sm sm:text-base"></i>
+                <span className="hidden sm:inline">Sebelumnya</span>
               </button>
 
-              <div className="flex gap-1 mx-1 sm:mx-2">
+              <div className="flex flex-wrap gap-2 justify-center">
                 {Array.from({ length: Math.min(5, effectiveTotalPages) }, (_, i) => {
                   let pageNum;
                   if (effectiveTotalPages <= 5) {
@@ -956,10 +967,10 @@ const StudentList = ({
                     <button
                       key={pageNum}
                       onClick={() => onPageChange(pageNum)}
-                      className={`min-w-[36px] sm:min-w-[44px] h-10 sm:h-12 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 flex items-center justify-center ${
+                      className={`min-w-[44px] sm:min-w-[48px] h-11 sm:h-12 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 flex items-center justify-center ${
                         currentPageNum === pageNum
                           ? "bg-blue-600 dark:bg-blue-500 text-white shadow-sm"
-                          : "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          : "bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
                       }`}
                     >
                       {pageNum}
@@ -971,10 +982,19 @@ const StudentList = ({
               <button
                 onClick={() => onPageChange(currentPageNum + 1)}
                 disabled={currentPageNum === effectiveTotalPages}
-                className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-1 sm:gap-2 justify-center flex-1 sm:flex-none min-w-[100px] sm:min-w-[120px] min-h-[44px]"
+                className="bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-100 px-4 sm:px-5 py-2.5 rounded-lg text-sm sm:text-base font-bold hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 justify-center min-w-[48px] sm:min-w-[130px] min-h-[48px]"
               >
-                <span>Berikutnya</span>
-                <i className="fas fa-chevron-right text-xs"></i>
+                <span className="hidden sm:inline">Berikutnya</span>
+                <i className="fas fa-chevron-right text-sm sm:text-base"></i>
+              </button>
+
+              <button
+                onClick={() => onPageChange(effectiveTotalPages)}
+                disabled={currentPageNum === effectiveTotalPages}
+                title="Halaman Terakhir"
+                className="bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-100 px-3 py-2.5 rounded-lg text-lg font-extrabold leading-none hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center min-w-[48px] min-h-[48px]"
+              >
+                <span aria-hidden="true">&raquo;</span>
               </button>
             </div>
 

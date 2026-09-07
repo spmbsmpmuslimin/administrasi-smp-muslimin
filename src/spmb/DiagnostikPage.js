@@ -21,23 +21,57 @@ import { exportDiagnostikTemplate, importDiagnostikScores } from "./SpmbExcel";
 // yang di-pass dari SPMB.js (lihat saveDiagnostikScore di sana).
 // ============================================================
 
-const KATEGORI_OPTIONS = ["Lancar", "Cukup Lancar", "Kurang Lancar", "Belum Bisa"];
+// Kriteria penilaian baca (berlaku sama buat Baca Latin & Baca Al-Qur'an).
+// Angka mentah 0-100 diinput langsung, label di bawah cuma buat
+// ditampilin sebagai keterangan otomatis (bukan input manual lagi).
+// HARUS SAMA sama tabel "Kriteria Penilaian Baca" yang dipegang penguji.
+const KRITERIA_BACA = [
+  {
+    label: "Lancar",
+    min: 91,
+    max: 100,
+    color: "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20",
+  },
+  {
+    label: "Cukup Lancar",
+    min: 76,
+    max: 90,
+    color: "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20",
+  },
+  {
+    label: "Kurang Lancar",
+    min: 60,
+    max: 75,
+    color: "text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20",
+  },
+  {
+    label: "Belum Bisa",
+    min: 0,
+    max: 59,
+    color: "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20",
+  },
+];
 
-// Baseline mapping kategori -> angka, HARUS SAMA sama:
-// - DiagnostikModal.js
-// - DIAGNOSTIK_KATEGORI_OPTIONS di SpmbExcel.js
-// - CHECK constraint di tabel siswa_baru
-const KATEGORI_SCORE_MAP = {
-  Lancar: 100,
-  "Cukup Lancar": 70,
-  "Kurang Lancar": 40,
-  "Belum Bisa": 10,
+const getKategoriFromScore = (score) => {
+  if (score === null || score === undefined || score === "" || isNaN(score)) return null;
+  const num = typeof score === "number" ? score : parseFloat(score);
+  return KRITERIA_BACA.find((k) => num >= k.min && num <= k.max) || null;
+};
+
+// Komposisi Nilai Akhir: Akademik 40%, Baca Latin 30%, Baca Al-Qur'an 30%.
+// HARUS SAMA sama:
+// - SpmbExcel.js (export/import template)
+// - dokumen "Komposisi Nilai Gabungan" yang dipegang TU/penguji
+const BOBOT = {
+  skor_akademik: 0.4,
+  skor_baca_latin: 0.3,
+  skor_baca_quran: 0.3,
 };
 
 const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToast, isLoading }) => {
   const [searchTerm, setSearchTerm] = useState("");
   // Perubahan yang BELUM disimpan, keyed by student.id.
-  // { [studentId]: { skor_akademik?, kategori_baca_latin?, kategori_mengaji? } }
+  // { [studentId]: { skor_akademik?, skor_baca_latin?, skor_baca_quran? } }
   const [edits, setEdits] = useState({});
   const [savingIds, setSavingIds] = useState({});
   const [isExporting, setIsExporting] = useState(false);
@@ -74,22 +108,38 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
   const isRowDirty = (studentId) => !!edits[studentId];
   const dirtyCount = Object.keys(edits).length;
 
-  // Preview skor gabungan per baris, dihitung live dari nilai yang lagi
-  // ditampilkan (termasuk edit yang belum disimpan).
+  // Nilai Akhir per baris, dihitung live dari nilai yang lagi ditampilkan
+  // (termasuk edit yang belum disimpan). Cuma dihitung kalau KE-3 komponen
+  // udah keisi -- kalau belum, return null (ditampilin "Belum Lengkap" di UI).
+  // Alasan: ini dipake buat pemetaan siswa baru (bukan penentu lolos/tidak),
+  // jadi data yang masih bolong sengaja dibedain dari yang udah lengkap
+  // biar TU/wali kelas gak keliru anggap siswa itu udah selesai dites.
   const computeSkorGabungan = (student) => {
     const akademikRaw = getFieldValue(student, "skor_akademik");
+    const latinRaw = getFieldValue(student, "skor_baca_latin");
+    const quranRaw = getFieldValue(student, "skor_baca_quran");
+
     const akademik = akademikRaw !== "" && akademikRaw !== null ? parseFloat(akademikRaw) : null;
-    const latin = getFieldValue(student, "kategori_baca_latin");
-    const mengaji = getFieldValue(student, "kategori_mengaji");
+    const latin = latinRaw !== "" && latinRaw !== null ? parseFloat(latinRaw) : null;
+    const quran = quranRaw !== "" && quranRaw !== null ? parseFloat(quranRaw) : null;
 
-    const values = [
-      akademik !== null && !isNaN(akademik) ? akademik : null,
-      latin ? KATEGORI_SCORE_MAP[latin] : null,
-      mengaji ? KATEGORI_SCORE_MAP[mengaji] : null,
-    ].filter((v) => v !== null);
+    if (
+      akademik === null ||
+      isNaN(akademik) ||
+      latin === null ||
+      isNaN(latin) ||
+      quran === null ||
+      isNaN(quran)
+    ) {
+      return null; // Belum Lengkap
+    }
 
-    if (values.length === 0) return null;
-    return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+    const nilaiAkhir =
+      akademik * BOBOT.skor_akademik +
+      latin * BOBOT.skor_baca_latin +
+      quran * BOBOT.skor_baca_quran;
+
+    return nilaiAkhir.toFixed(1);
   };
 
   const filteredStudents = useMemo(() => {
@@ -106,28 +156,37 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
   // lokal (kalau ada) sama data asli.
   const buildDiagnostikData = (student) => {
     const edit = edits[student.id] || {};
-    const skorRaw = edit.skor_akademik !== undefined ? edit.skor_akademik : student.skor_akademik;
 
-    let skorAkademik = null;
-    if (skorRaw !== "" && skorRaw !== null && skorRaw !== undefined) {
-      const num = typeof skorRaw === "number" ? skorRaw : parseFloat(skorRaw);
+    const parseSkor = (raw, label) => {
+      if (raw === "" || raw === null || raw === undefined) return { value: null };
+      const num = typeof raw === "number" ? raw : parseFloat(raw);
       if (isNaN(num) || num < 0 || num > 100) {
-        return { error: "Skor Akademik harus angka 0-100" };
+        return { error: `${label} harus angka 0-100` };
       }
-      skorAkademik = num;
-    }
+      return { value: num };
+    };
+
+    const akademikRaw =
+      edit.skor_akademik !== undefined ? edit.skor_akademik : student.skor_akademik;
+    const latinRaw =
+      edit.skor_baca_latin !== undefined ? edit.skor_baca_latin : student.skor_baca_latin;
+    const quranRaw =
+      edit.skor_baca_quran !== undefined ? edit.skor_baca_quran : student.skor_baca_quran;
+
+    const akademik = parseSkor(akademikRaw, "Skor Akademik");
+    if (akademik.error) return { error: akademik.error };
+
+    const latin = parseSkor(latinRaw, "Skor Baca Latin");
+    if (latin.error) return { error: latin.error };
+
+    const quran = parseSkor(quranRaw, "Skor Baca Al-Qur'an");
+    if (quran.error) return { error: quran.error };
 
     return {
       data: {
-        skor_akademik: skorAkademik,
-        kategori_baca_latin:
-          (edit.kategori_baca_latin !== undefined
-            ? edit.kategori_baca_latin
-            : student.kategori_baca_latin) || null,
-        kategori_mengaji:
-          (edit.kategori_mengaji !== undefined
-            ? edit.kategori_mengaji
-            : student.kategori_mengaji) || null,
+        skor_akademik: akademik.value,
+        skor_baca_latin: latin.value,
+        skor_baca_quran: quran.value,
       },
     };
   };
@@ -250,8 +309,8 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
     for (const row of validRows) {
       const success = await onSaveDiagnostik(row.matchedStudentId, {
         skor_akademik: row.skor_akademik,
-        kategori_baca_latin: row.kategori_baca_latin,
-        kategori_mengaji: row.kategori_mengaji,
+        skor_baca_latin: row.skor_baca_latin,
+        skor_baca_quran: row.skor_baca_quran,
       });
       if (success) successCount += 1;
       else failCount += 1;
@@ -401,8 +460,8 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                       {row.nama_lengkap || "-"}
                     </td>
                     <td className="p-2">{row.skor_akademik ?? "-"}</td>
-                    <td className="p-2">{row.kategori_baca_latin || "-"}</td>
-                    <td className="p-2">{row.kategori_mengaji || "-"}</td>
+                    <td className="p-2">{row.skor_baca_latin ?? "-"}</td>
+                    <td className="p-2">{row.skor_baca_quran ?? "-"}</td>
                     <td className="p-2">
                       {row.errors.length > 0 ? (
                         <span
@@ -444,7 +503,7 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                   Baca Latin
                 </th>
                 <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[180px]">
-                  Baca Al-Quran & Shalat
+                  Baca Al-Qur'an
                 </th>
                 <th className="p-3 text-left font-semibold text-xs sm:text-sm min-w-[100px]">
                   Gabungan
@@ -474,6 +533,12 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                   const dirty = isRowDirty(student.id);
                   const saving = !!savingIds[student.id];
                   const skorGabungan = computeSkorGabungan(student);
+                  const kategoriLatin = getKategoriFromScore(
+                    getFieldValue(student, "skor_baca_latin")
+                  );
+                  const kategoriQuran = getKategoriFromScore(
+                    getFieldValue(student, "skor_baca_quran")
+                  );
 
                   return (
                     <tr
@@ -507,41 +572,61 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                         />
                       </td>
                       <td className="p-3">
-                        <select
-                          value={getFieldValue(student, "kategori_baca_latin")}
-                          onChange={(e) =>
-                            updateEdit(student.id, "kategori_baca_latin", e.target.value)
-                          }
-                          className="w-full min-w-[140px] p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
-                        >
-                          <option value="">-- Belum dites --</option>
-                          {KATEGORI_OPTIONS.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={getFieldValue(student, "skor_baca_latin")}
+                            onChange={(e) =>
+                              updateEdit(student.id, "skor_baca_latin", e.target.value)
+                            }
+                            className="w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
+                            placeholder="-"
+                          />
+                          {kategoriLatin && (
+                            <span
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full w-fit ${kategoriLatin.color}`}
+                            >
+                              {kategoriLatin.label}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3">
-                        <select
-                          value={getFieldValue(student, "kategori_mengaji")}
-                          onChange={(e) =>
-                            updateEdit(student.id, "kategori_mengaji", e.target.value)
-                          }
-                          className="w-full min-w-[140px] p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
-                        >
-                          <option value="">-- Belum dites --</option>
-                          {KATEGORI_OPTIONS.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={getFieldValue(student, "skor_baca_quran")}
+                            onChange={(e) =>
+                              updateEdit(student.id, "skor_baca_quran", e.target.value)
+                            }
+                            className="w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
+                            placeholder="-"
+                          />
+                          {kategoriQuran && (
+                            <span
+                              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full w-fit ${kategoriQuran.color}`}
+                            >
+                              {kategoriQuran.label}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3">
-                        <span className="font-bold text-blue-700 dark:text-blue-300 text-sm">
-                          {skorGabungan !== null ? skorGabungan : "-"}
-                        </span>
+                        {skorGabungan !== null ? (
+                          <span className="font-bold text-blue-700 dark:text-blue-300 text-sm">
+                            {skorGabungan}
+                          </span>
+                        ) : (
+                          <span className="text-xs italic text-gray-400 dark:text-gray-500">
+                            Belum Lengkap
+                          </span>
+                        )}
                       </td>
                       <td className="p-3">
                         <button
