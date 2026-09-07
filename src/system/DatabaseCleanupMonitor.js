@@ -31,41 +31,52 @@ const DatabaseCleanupMonitor = () => {
       // ada tabel baru ditambahkan ke database, totalnya otomatis ikut update
       // tanpa perlu edit array ini.
       const tables = [
-        // Transaksional / harian — paling cepat gede karena nambah tiap hari
-        "attendances", // presensi harian siswa
-        "teacher_attendance", // presensi harian guru
-        "jurnal_harian", // jurnal mengajar per jam pelajaran
-        "grades", // nilai per assignment/ulangan
-        "grades_katrol", // hasil kalkulasi nilai katrol per siswa
-        "notifications", // notifikasi sistem ke user
-        "audit_logs", // log aktivitas semua user
-        "system_health_logs", // log health check (target auto-cleanup)
-
-        // Master data yang terus nambah tiap tahun ajaran
-        "students",
-        "siswa_baru",
-        "konseling",
-        "student_development_notes",
-        "nilai_eraport",
-        "teacher_assignments",
-        "announcement_reads",
-        "peminjaman", // transaksi peminjaman buku perpustakaan
-        "student_auth",
-
-        "users",
+        // Diurutkan dari yang paling banyak rows -> paling sedikit
+        // (berdasarkan hasil query pg_stat_user_tables per 2026-09-07)
+        "attendances", // 2528 - presensi harian siswa
+        "student_report_grades", // 984
+        "class_schedules", // 774
+        "teacher_schedules", // 738
+        "student_profile_details", // 663
+        "student_auth", // 663
+        "students", // 663
+        "student_graduations", // 616
+        "teacher_assignments", // 228
+        "siswa_baru", // 220
+        "grades", // 112 - nilai per assignment/ulangan
+        "student_reports", // 82
+        "student_devices", // 65
+        "teacher_codes", // 42
+        "users", // 33
+        "system_health_logs", // 28 - log health check (target auto-cleanup)
+        "user_devices", // 14
+        "cleanup_history", // 7
+        "academic_years", // 6
+        "class_organization", // 6
+        "teacher_attendance", // 4 - presensi harian guru
       ];
 
+      // Fetch semua count secara PARALEL (bukan satu-satu/sequential) biar
+      // nggak numpuk latency. Sebelumnya ini pakai for...of + await yang
+      // nunggu tiap tabel selesai dulu baru lanjut ke tabel berikutnya -
+      // itu yang bikin "Run Cleanup" kerasa lama, karena fetchStats() ini
+      // ke-trigger 2x tiap klik cleanup (sebelum & sesudah cleanup jalan).
       const tableStats = {};
 
-      for (const table of tables) {
-        const { count, error } = await supabase
-          .from(table)
-          .select("*", { count: "exact", head: true });
+      const countResults = await Promise.all(
+        tables.map(async (table) => {
+          const { count, error } = await supabase
+            .from(table)
+            .select("*", { count: "exact", head: true });
+          return { table, count: error ? null : count || 0, error };
+        })
+      );
 
+      countResults.forEach(({ table, count, error }) => {
         if (!error) {
-          tableStats[table] = count || 0;
+          tableStats[table] = count;
         }
-      }
+      });
 
       // TRY to get REAL database size + REAL total rows (semua tabel) dari PostgreSQL
       let totalRecords;
@@ -402,7 +413,7 @@ const DatabaseCleanupMonitor = () => {
           <Database className="w-4 h-4 sm:w-5 sm:h-5" />
           Records Per Table
         </h3>
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 grid-flow-col xs:grid-rows-11 lg:grid-rows-7 gap-3">
           {Object.entries(stats.tables || {})
             .sort(([, countA], [, countB]) => countB - countA)
             .map(([table, count]) => (
