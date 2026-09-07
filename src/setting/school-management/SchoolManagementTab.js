@@ -14,11 +14,13 @@ import {
   Search,
   X, // ✅ TAMBAH INI
   History,
+  GraduationCap, // ✅ TAMBAH INI - icon tab Siswa Lulus
 } from "lucide-react";
 
 import { StudentModal, DeleteConfirmModal } from "./StudentModals";
 import { useStudentManagement } from "./StudentManagement";
 import RiwayatMutasiTab from "./RiwayatMutasiTab";
+import SiswaLulusTab from "./SiswaLulusTab"; // ✅ TAMBAH INI - tab baru
 
 // SMP Config - DI LUAR COMPONENT BIAR GA DUPLIKAT
 const SMP_CONFIG = {
@@ -39,7 +41,7 @@ const SchoolManagementTab = ({
 
   const [searchParams] = useSearchParams();
 
-  // Tab switcher: Guru & Staf | Data Siswa | Riwayat Mutasi
+  // Tab switcher: Guru & Staf | Data Siswa | Riwayat Mutasi | Siswa Lulus
   const [activeSchoolTab, setActiveSchoolTab] = useState("guru");
 
   // Deep-link dari Data Siswa (tombol "Lihat Riwayat") ->
@@ -412,79 +414,63 @@ const SchoolManagementTab = ({
 
   return (
     <div className="p-4 sm:p-6 transition-colors duration-200 bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+      {/* Header + Academic Year (banner dipindah ke sisi kanan header) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
             Manajemen Sekolah
           </h2>
           <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-            {SMP_CONFIG.schoolName} - {SMP_CONFIG.schoolLevel}
-            {activeAcademicYear && (
-              <span className="ml-2 text-blue-600 dark:text-blue-400 font-semibold">
-                ({activeAcademicYear.year})
-              </span>
-            )}
+            {SMP_CONFIG.schoolName}
           </p>
         </div>
-      </div>
 
-      {/* Academic Year Banner */}
-      {activeAcademicYear ? (
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
-                <BookOpen className="text-white" size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                  📅 Tahun Ajaran Aktif
-                </p>
-                <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
-                  {activeAcademicYear.year}
-                </p>
-              </div>
+        {activeAcademicYear ? (
+          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 px-4 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800 self-start sm:self-auto">
+            <div className="w-9 h-9 shrink-0 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
+              <BookOpen className="text-white" size={18} />
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-medium whitespace-nowrap">
+                📅 Tahun Ajaran Aktif
+              </p>
+              <p className="text-base font-bold text-blue-900 dark:text-blue-100">
+                {activeAcademicYear.year}
+              </p>
             </div>
             {onNavigateToYearTransition && (
               <button
                 onClick={onNavigateToYearTransition}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md"
+                title="Kelola Tahun Ajaran"
+                className="flex items-center justify-center p-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-lg transition-all shadow-sm hover:shadow-md shrink-0"
               >
                 <ArrowRight size={16} />
-                <span>Kelola Tahun Ajaran</span>
               </button>
             )}
           </div>
-        </div>
-      ) : (
-        <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 p-4 rounded-xl border border-red-200 dark:border-red-800 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
-                <BookOpen className="text-white" size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-red-700 dark:text-red-300 font-medium">
-                  ⚠️ Tidak Ada Tahun Ajaran Aktif
-                </p>
-                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                  Silakan aktifkan tahun ajaran di Settings untuk mengelola data siswa
-                </p>
-              </div>
+        ) : (
+          <div className="flex items-center gap-3 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-800 self-start sm:self-auto">
+            <div className="w-9 h-9 shrink-0 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
+              <BookOpen className="text-white" size={18} />
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-red-700 dark:text-red-300 font-medium whitespace-nowrap">
+                ⚠️ Tidak Ada Tahun Ajaran Aktif
+              </p>
+              <p className="text-xs text-red-600 dark:text-red-400">Aktifkan di Settings</p>
             </div>
             {onNavigateToYearTransition && (
               <button
                 onClick={onNavigateToYearTransition}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md"
+                title="Atur Tahun Ajaran"
+                className="flex items-center justify-center p-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg transition-all shadow-sm hover:shadow-md shrink-0"
               >
                 <ArrowRight size={16} />
-                <span>Atur Tahun Ajaran</span>
               </button>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* WARNING SISWA TAHUN LAMA */}
       {showOldYearWarning && oldYearStudents > 0 && (
@@ -526,54 +512,74 @@ const SchoolManagementTab = ({
         </div>
       )}
 
-      {/* STATS CARDS */}
+      {/* STATS CARDS - compact di desktop (layout horizontal), tetap nyaman di HP */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 p-4 sm:p-5 rounded-xl border border-blue-200 dark:border-blue-800 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 p-4 sm:p-5 lg:p-3 rounded-xl border border-blue-200 dark:border-blue-800 transition-all duration-200 hover:shadow-md flex flex-col lg:flex-row lg:items-center lg:gap-3">
+          <div className="flex items-center gap-2 mb-3 lg:mb-0">
             <Users className="text-blue-600 dark:text-blue-400" size={20} />
-            <span className="text-blue-900 dark:text-blue-300 font-semibold text-sm">
+            <span className="text-blue-900 dark:text-blue-300 font-semibold text-sm lg:hidden">
               Total Siswa
             </span>
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
-            {schoolStats.total_students}
-          </p>
+          <div>
+            <span className="hidden lg:block text-blue-900 dark:text-blue-300 font-semibold text-xs leading-tight">
+              Total Siswa
+            </span>
+            <p className="text-2xl sm:text-3xl lg:text-xl font-bold text-blue-600 dark:text-blue-400 leading-tight">
+              {schoolStats.total_students}
+            </p>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10 p-4 sm:p-5 rounded-xl border border-green-200 dark:border-green-800 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-900/10 p-4 sm:p-5 lg:p-3 rounded-xl border border-green-200 dark:border-green-800 transition-all duration-200 hover:shadow-md flex flex-col lg:flex-row lg:items-center lg:gap-3">
+          <div className="flex items-center gap-2 mb-3 lg:mb-0">
             <UserCheck className="text-green-600 dark:text-green-400" size={20} />
-            <span className="text-green-900 dark:text-green-300 font-semibold text-sm">
+            <span className="text-green-900 dark:text-green-300 font-semibold text-sm lg:hidden">
               Total Guru
             </span>
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
-            {schoolStats.total_teachers}
-          </p>
+          <div>
+            <span className="hidden lg:block text-green-900 dark:text-green-300 font-semibold text-xs leading-tight">
+              Total Guru
+            </span>
+            <p className="text-2xl sm:text-3xl lg:text-xl font-bold text-green-600 dark:text-green-400 leading-tight">
+              {schoolStats.total_teachers}
+            </p>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-900/10 p-4 sm:p-5 rounded-xl border border-purple-200 dark:border-purple-800 transition-all duration-200 hover:shadow-md">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-900/10 p-4 sm:p-5 lg:p-3 rounded-xl border border-purple-200 dark:border-purple-800 transition-all duration-200 hover:shadow-md flex flex-col lg:flex-row lg:items-center lg:gap-3">
+          <div className="flex items-center gap-2 mb-3 lg:mb-0">
             <BookOpen className="text-purple-600 dark:text-purple-400" size={20} />
-            <span className="text-purple-900 dark:text-purple-300 font-semibold text-sm">
+            <span className="text-purple-900 dark:text-purple-300 font-semibold text-sm lg:hidden">
               Kelas
             </span>
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
-            {availableClasses.length}
-          </p>
+          <div>
+            <span className="hidden lg:block text-purple-900 dark:text-purple-300 font-semibold text-xs leading-tight">
+              Kelas
+            </span>
+            <p className="text-2xl sm:text-3xl lg:text-xl font-bold text-purple-600 dark:text-purple-400 leading-tight">
+              {availableClasses.length}
+            </p>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/10 p-4 sm:p-5 rounded-xl border border-orange-200 dark:border-orange-800 transition-all duration-200 hover:shadow-md relative group cursor-help">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-900/10 p-4 sm:p-5 lg:p-3 rounded-xl border border-orange-200 dark:border-orange-800 transition-all duration-200 hover:shadow-md relative group cursor-help flex flex-col lg:flex-row lg:items-center lg:gap-3">
+          <div className="flex items-center gap-2 mb-3 lg:mb-0">
             <Plus className="text-orange-600 dark:text-orange-400" size={20} />
-            <span className="text-orange-900 dark:text-orange-300 font-semibold text-sm">
+            <span className="text-orange-900 dark:text-orange-300 font-semibold text-sm lg:hidden">
               Siswa Baru
             </span>
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">
-            {schoolStats.active_siswa_baru}
-          </p>
+          <div>
+            <span className="hidden lg:block text-orange-900 dark:text-orange-300 font-semibold text-xs leading-tight">
+              Siswa Baru
+            </span>
+            <p className="text-2xl sm:text-3xl lg:text-xl font-bold text-orange-600 dark:text-orange-400 leading-tight">
+              {schoolStats.active_siswa_baru}
+            </p>
+          </div>
 
           {schoolStats.siswa_baru_year && schoolStats.active_siswa_baru > 0 && (
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 hidden group-hover:block z-50">
@@ -626,10 +632,24 @@ const SchoolManagementTab = ({
           <History size={18} />
           <span>Riwayat Mutasi</span>
         </button>
+        <button
+          onClick={() => setActiveSchoolTab("lulus")}
+          className={`flex items-center gap-2 px-4 sm:px-5 py-3 text-sm sm:text-base font-semibold border-b-2 transition-colors ${
+            activeSchoolTab === "lulus"
+              ? "border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400"
+              : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          }`}
+        >
+          <GraduationCap size={18} />
+          <span>Siswa Lulus</span>
+        </button>
       </div>
 
-      {/* RIWAYAT MUTASI (masuk/keluar/lulus) */}
+      {/* RIWAYAT MUTASI (masuk/keluar siswa aktif -- lulus dipisah ke tab sendiri) */}
       {activeSchoolTab === "mutasi" && <RiwayatMutasiTab />}
+
+      {/* SISWA LULUS (roster kelulusan, terpisah dari Riwayat Mutasi) */}
+      {activeSchoolTab === "lulus" && <SiswaLulusTab />}
 
       {/* READ-ONLY: DAFTAR GURU SECTION */}
       {activeSchoolTab === "guru" && (

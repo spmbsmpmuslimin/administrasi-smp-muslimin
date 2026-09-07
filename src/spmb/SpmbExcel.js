@@ -306,23 +306,6 @@ const addClassSheet = (
     });
     afterDataRow += noteLines.length;
   }
-
-  // Tambahkan baris kosong untuk tanda tangan (di 2 kolom paling kanan:
-  // Kelas & Asal Sekolah, biar posisinya tetap di sisi kanan walau
-  // sekarang total kolomnya 6)
-  const signatureLabelRowNum = afterDataRow + 3;
-  worksheet.mergeCells(`E${signatureLabelRowNum}:F${signatureLabelRowNum}`);
-  const signCell = worksheet.getCell(`E${signatureLabelRowNum}`);
-  signCell.value = "Wali Kelas";
-  signCell.alignment = { horizontal: "center", vertical: "middle" };
-  signCell.font = { bold: true, size: 11 };
-
-  const signatureNameRowNum = afterDataRow + 8;
-  worksheet.mergeCells(`E${signatureNameRowNum}:F${signatureNameRowNum}`);
-  const signNameCell = worksheet.getCell(`E${signatureNameRowNum}`);
-  signNameCell.value = "(............................)";
-  signNameCell.alignment = { horizontal: "center", vertical: "middle" };
-  signNameCell.font = { size: 11 };
 };
 
 export const exportClassDivision = async (classDistribution, showToast) => {
@@ -770,6 +753,272 @@ export const exportDiagnostikTemplate = async (allStudents, showToast) => {
  *   errorCount: number,
  * }>}
  */
+/**
+ * 📥 Import Pembagian Kelas (revisi) dari Excel
+ * Parse file hasil Export Kelas (identifier "No. Pendaftaran"), cocokkan
+ * tiap baris ke siswa yang ada, dan hasilkan DIFF terhadap kelas yang
+ * sekarang tersimpan di database -- BUKAN replace total. Dipakai buat
+ * kasus revisi kecil (misal 1-2 siswa pindah kelas atas permintaan orang
+ * tua) tanpa TU harus edit satu-satu manual di UI.
+ *
+ * TIDAK langsung nulis ke database -- fungsi ini cuma parse + diff +
+ * validasi + hasilkan preview. Caller (ImportClassDivisionModal.js)
+ * yang nentuin kapan commit-nya, lewat commitClassDivisionImport() di
+ * ClassOperations.js, dan cuma baris `status === "changed"` yang dikirim.
+ *
+ * Aturan validasi per baris:
+ * - No. Pendaftaran kosong / gak ketemu di data siswa -> error
+ * - Siswa sudah `is_transferred` -> error (harus diedit lewat menu
+ *   Data Siswa/Kelas, bukan lewat import SPMB ini)
+ * - Kelas di file kosong / gak sesuai format kelas yang valid (dikasih
+ *   lewat `validClassNames`, misal ["7A".."7F"] sesuai numClasses aktif)
+ *   -> error
+ * - Kelas di file SAMA dengan kelas di database -> status "unchanged"
+ *   (di-skip pas commit, gak dianggap error)
+ * - Kelas di file BEDA dengan kelas di database -> status "changed",
+ *   ini yang bakal ditulis pas commit. Kalau siswanya udah punya NIS,
+ *   dikasih flag `hasNis: true` (bukan error) -- NIS gak ngandung info
+ *   kelas, jadi aman pindah kelas walau udah ber-NIS, TU cuma perlu
+ *   generate ulang NIS setelah ini kalau urutannya kepengin tetap rapi.
+ *
+ * Siswa yang ADA di database (`allStudents`, sudah berkelas & belum
+ * transfer) tapi TIDAK ketemu row-nya di file -- dikembalikan lewat
+ * `missingFromFile`, dibiarin apa adanya (gak dianggap error, gak
+ * ditulis apa-apa), caller yang tampilin sebagai warning di summary.
+ *
+ * @param {File} file - file .xlsx hasil upload user
+ * @param {Array} allStudents - data siswa_baru saat ini
+ * @param {string[]} validClassNames - daftar nama kelas yang valid, misal ["7A","7B","7C"]
+ * @returns {Promise<{
+ *   success: boolean,
+ *   rows: Array<{
+ *     rowNumber: number|null,
+ *     no_pendaftaran: string,
+ *     nama_lengkap: string,
+ *     matchedStudentId: string|number|null,
+ *     kelasLama: string|null,
+ *     kelasBaru: string|null,
+ *     status: "changed"|"unchanged"|"error",
+ *     hasNis: boolean,
+ *     errors: string[],
+ *   }>,
+ *   changedCount: number,
+ *   unchangedCount: number,
+ *   errorCount: number,
+ *   missingFromFile: Array<{ id: string|number, nama_lengkap: string, kelas: string }>,
+ * }>}
+ */
+export const importClassDivision = async (file, allStudents, validClassNames) => {
+  const result = {
+    success: false,
+    rows: [],
+    changedCount: 0,
+    unchangedCount: 0,
+    errorCount: 0,
+    missingFromFile: [],
+  };
+
+  if (!file) {
+    result.rows.push({ rowNumber: null, errors: ["File tidak ditemukan"] });
+    result.errorCount = 1;
+    return result;
+  }
+
+  try {
+    const buffer = await file.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+
+    if (!workbook.worksheets || workbook.worksheets.length === 0) {
+      result.rows.push({ rowNumber: null, errors: ["Sheet Excel kosong / tidak terbaca"] });
+      result.errorCount = 1;
+      return result;
+    }
+
+    // Index siswa (yang sudah berkelas & belum ditransfer) by no_pendaftaran
+    const eligibleStudents = (allStudents || []).filter(
+      (s) => s.kelas && !s.is_transferred && s.status === "diterima"
+    );
+    const studentByNoPendaftaran = new Map(
+      eligibleStudents.map((s) => [String(s.no_pendaftaran || "").trim(), s])
+    );
+    // Index SEMUA siswa (termasuk yang sudah transfer) -- dipakai buat kasih
+    // pesan error yang jelas kalau baris di file itu ternyata siswa yang
+    // sudah ditransfer, bukan sekadar "tidak ditemukan".
+    const anyStudentByNoPendaftaran = new Map(
+      (allStudents || []).map((s) => [String(s.no_pendaftaran || "").trim(), s])
+    );
+    const matchedNoPendaftaranSet = new Set();
+
+    // File Export Kelas (exportClassDivision) bisa multi-sheet: 1 sheet
+    // "Rekapitulasi Pembagian Kelas", 1 sheet "Sebaran Asal SD", sisanya
+    // per-kelas ("Kelas 7A", dst). Loop SEMUA sheet, tapi cuma proses yang
+    // ada header "No. Pendaftaran" (skip Rekapitulasi/Sebaran otomatis).
+    for (const worksheet of workbook.worksheets) {
+      let headerRowNumber = null;
+      let noPendaftaranCol = null;
+      let namaCol = null;
+      let kelasCol = null;
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (headerRowNumber) return;
+        row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+          const val = (cell.value || "").toString().trim().toLowerCase();
+          if (val === "no. pendaftaran") {
+            headerRowNumber = rowNumber;
+            noPendaftaranCol = colNumber;
+          }
+        });
+      });
+
+      if (!headerRowNumber) continue; // bukan sheet per-kelas, skip
+
+      // Cari kolom "Nama Lengkap" & "Kelas" di baris header yang sama
+      const headerRow = worksheet.getRow(headerRowNumber);
+      let noCol = null;
+      headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+        const val = (cell.value || "").toString().trim().toLowerCase();
+        if (val === "no." || val === "no") noCol = colNumber;
+        if (val === "nama lengkap") namaCol = colNumber;
+        if (val === "kelas") kelasCol = colNumber;
+      });
+
+      if (!kelasCol) {
+        result.rows.push({
+          rowNumber: headerRowNumber,
+          errors: [
+            `Sheet "${worksheet.name}": kolom "Kelas" tidak ditemukan. Pastikan file ini hasil dari Export Kelas, bukan diketik ulang dari nol.`,
+          ],
+        });
+        result.errorCount += 1;
+        continue;
+      }
+
+      const lastRow = worksheet.lastRow ? worksheet.lastRow.number : headerRowNumber;
+
+      for (let r = headerRowNumber + 1; r <= lastRow; r++) {
+        const row = worksheet.getRow(r);
+
+        // Baris data siswa SELALU dimulai dengan nomor urut (1, 2, 3, ...)
+        // di kolom "No.". Begitu kolom ini kosong/bukan angka, itu tandanya
+        // kita sudah lewat dari tabel siswa -- masuk ke zona catatan kaki /
+        // blok tanda tangan ("Wali Kelas", "(.....)") yang teksnya taruh di
+        // kolom E (posisi kolom "Kelas") lewat merge cell, BUKAN baris data.
+        // Berhenti total di sini, jangan lanjut baca sisa baris di sheet ini.
+        if (noCol) {
+          const noVal = row.getCell(noCol).value;
+          if (noVal === null || noVal === undefined || noVal === "" || isNaN(Number(noVal))) {
+            break;
+          }
+        }
+
+        const noPendaftaranRaw = row.getCell(noPendaftaranCol).value;
+        const noPendaftaran = noPendaftaranRaw ? String(noPendaftaranRaw).trim() : "";
+
+        const namaRaw = namaCol ? row.getCell(namaCol).value : null;
+        const kelasRaw = row.getCell(kelasCol).value;
+        const kelasBaru = kelasRaw ? String(kelasRaw).trim().toUpperCase() : "";
+
+        // Skip baris kosong total (misal sisa baris kosong / baris catatan
+        // tanda tangan di bawah tabel)
+        if (!noPendaftaran && !namaRaw && !kelasBaru) continue;
+
+        const namaLengkap = namaRaw ? String(namaRaw).trim() : "";
+        const errors = [];
+        let status = "error";
+        let hasNis = false;
+        let kelasLama = null;
+        let matchedStudentId = null;
+
+        const matchedStudent = studentByNoPendaftaran.get(noPendaftaran);
+        const anyMatch = anyStudentByNoPendaftaran.get(noPendaftaran);
+
+        if (!noPendaftaran) {
+          errors.push("No. Pendaftaran kosong");
+        } else if (!anyMatch) {
+          errors.push(`No. Pendaftaran "${noPendaftaran}" tidak ditemukan di data siswa`);
+        } else if (anyMatch.is_transferred) {
+          errors.push(
+            "Siswa sudah ditransfer ke Students -- ubah kelas lewat menu Data Siswa/Kelas, bukan lewat import SPMB ini"
+          );
+        } else if (!matchedStudent) {
+          errors.push(
+            `No. Pendaftaran "${noPendaftaran}" ditemukan tapi belum punya kelas / status bukan "diterima"`
+          );
+        } else {
+          matchedStudentId = matchedStudent.id;
+          kelasLama = matchedStudent.kelas;
+          hasNis = !!(matchedStudent.nis && matchedStudent.nis !== "-");
+          matchedNoPendaftaranSet.add(noPendaftaran);
+
+          if (!kelasBaru) {
+            errors.push("Kolom Kelas kosong");
+          } else if (
+            Array.isArray(validClassNames) &&
+            validClassNames.length > 0 &&
+            !validClassNames.includes(kelasBaru)
+          ) {
+            errors.push(
+              `Kelas "${kelasBaru}" tidak valid. Kelas yang tersedia: ${validClassNames.join(", ")}`
+            );
+          } else {
+            status = kelasBaru === kelasLama ? "unchanged" : "changed";
+          }
+        }
+
+        result.rows.push({
+          rowNumber: r,
+          no_pendaftaran: noPendaftaran,
+          nama_lengkap: namaLengkap,
+          matchedStudentId,
+          kelasLama,
+          kelasBaru: kelasBaru || null,
+          status: errors.length > 0 ? "error" : status,
+          hasNis,
+          errors,
+        });
+
+        if (errors.length > 0) {
+          result.errorCount += 1;
+        } else if (status === "changed") {
+          result.changedCount += 1;
+        } else {
+          result.unchangedCount += 1;
+        }
+      }
+    }
+
+    if (result.rows.length === 0) {
+      result.rows.push({
+        rowNumber: null,
+        errors: [
+          'Header "No. Pendaftaran" tidak ditemukan di sheet manapun. Pastikan file ini hasil dari Export Kelas, bukan diketik ulang dari nol.',
+        ],
+      });
+      result.errorCount = 1;
+      return result;
+    }
+
+    // Siswa yang eligible tapi no_pendaftaran-nya gak pernah ketemu di file
+    // manapun -- dibiarin apa adanya, cuma di-flag buat ditampilkan sebagai
+    // warning di summary (bukan error).
+    result.missingFromFile = eligibleStudents
+      .filter((s) => !matchedNoPendaftaranSet.has(String(s.no_pendaftaran || "").trim()))
+      .map((s) => ({ id: s.id, nama_lengkap: s.nama_lengkap, kelas: s.kelas }));
+
+    result.success = true;
+    return result;
+  } catch (error) {
+    console.error("Error importing class division:", error);
+    result.rows.push({
+      rowNumber: null,
+      errors: [`Gagal membaca file: ${error.message}`],
+    });
+    result.errorCount += 1;
+    return result;
+  }
+};
+
 export const importDiagnostikScores = async (file, allStudents) => {
   const result = { success: false, rows: [], validCount: 0, errorCount: 0 };
 

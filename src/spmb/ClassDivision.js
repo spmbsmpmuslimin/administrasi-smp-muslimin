@@ -29,8 +29,18 @@ import {
   generateAndSaveNIS,
 } from "./ClassOperations";
 import { exportClassDivision } from "./SpmbExcel";
+import ImportClassDivisionModal from "./ImportClassDivisionModal";
 import ConfirmDialog from "../components/ui/ConfirmDialog";
 import { useConfirmDialog } from "../components/ui/useConfirmDialog";
+
+// Tab-tab di dalam halaman Pembagian Kelas SPMB. Dipisah dari 6-tombol
+// flat yang lama biar aksi ber-risiko rendah (generate/edit/import) gak
+// numpuk sama aksi ber-risiko tinggi & ireversibel (Generate NIS,
+// Transfer ke Students).
+const SUB_TABS = [
+  { key: "pembagian", label: "📝 Pembagian Kelas" },
+  { key: "finalisasi", label: "🏁 Finalisasi" },
+];
 
 const ClassDivision = ({
   allStudents,
@@ -65,6 +75,8 @@ const ClassDivision = ({
   const [savedClassDistribution, setSavedClassDistribution] = useState({});
   const [showSavedClasses, setShowSavedClasses] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState("pembagian");
+  const [showImportModal, setShowImportModal] = useState(false);
   const { confirm, confirmDialogProps } = useConfirmDialog();
 
   // Load siswa yang belum dibagi kelas
@@ -155,6 +167,21 @@ const ClassDivision = ({
   const currentDistribution = showSavedClasses ? savedClassDistribution : classDistribution;
   const isEditModeActive = showSavedClasses ? true : editMode;
 
+  // 🔒 Gate buat tombol Transfer di tab Finalisasi: gak boleh transfer
+  // kalau masih ada siswa (yang sudah "diterima" & berkelas) yang belum
+  // punya NIS -- urutan yang benar: Pembagian Kelas -> Generate NIS ->
+  // Transfer.
+  const studentsWithoutNIS = allStudents.filter(
+    (s) => s.kelas && !s.is_transferred && s.status === "diterima" && (!s.nis || s.nis === "-")
+  );
+
+  // Daftar nama kelas valid sesuai `numClasses` saat ini (7A, 7B, ...),
+  // dipakai buat validasi baris di modal Import Excel.
+  const validClassNames = Array.from(
+    { length: numClasses },
+    (_, i) => `7${String.fromCharCode(65 + i)}`
+  );
+
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-4 lg:px-6">
       {/* Header */}
@@ -165,6 +192,32 @@ const ClassDivision = ({
         <p className="text-blue-700 dark:text-blue-400 text-sm sm:text-base">
           Distribusi Siswa Baru Ke Kelas 7A - 7F Secara Seimbang
         </p>
+      </div>
+
+      {/* Sub-Tab Navigation: Pembagian Kelas vs Finalisasi */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="flex">
+          {SUB_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveSubTab(tab.key)}
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 font-medium text-xs sm:text-sm transition-colors min-h-[44px] ${
+                activeSubTab === tab.key
+                  ? "bg-blue-600 dark:bg-blue-700 text-white"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700"
+              }`}
+            >
+              {tab.label}
+              {tab.key === "finalisasi" &&
+                studentsWithoutNIS.length > 0 &&
+                studentsWithClass.length > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center bg-amber-400 text-amber-900 text-[10px] font-bold rounded-full w-4 h-4">
+                    !
+                  </span>
+                )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -212,8 +265,8 @@ const ClassDivision = ({
         </div>
       </div>
 
-      {/* Control Panel */}
-      {!showPreview && !showSavedClasses && (
+      {/* Control Panel (tab Pembagian Kelas) */}
+      {activeSubTab === "pembagian" && !showPreview && !showSavedClasses && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 dark:text-gray-100">
             ⚙️ Pengaturan Pembagian
@@ -252,13 +305,22 @@ const ClassDivision = ({
             </div>
 
             {/* Row 2: Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={loadSavedClassDistribution}
                 disabled={isLoading || studentsWithClass.length === 0}
                 className="px-3 sm:px-4 py-2 sm:py-3 bg-orange-600 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
               >
                 ✏️ Edit Kelas Tersimpan ({studentsWithClass.length})
+              </button>
+
+              <button
+                onClick={() => setShowImportModal(true)}
+                disabled={isLoading || studentsWithClass.length === 0}
+                title="Import revisi pembagian kelas dari file Excel hasil Export Kelas"
+                className="px-3 sm:px-4 py-2 sm:py-3 bg-teal-600 dark:bg-teal-700 text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+              >
+                📥 Import Excel
               </button>
 
               <button
@@ -286,53 +348,92 @@ const ClassDivision = ({
               >
                 🔄 Reset Pembagian
               </button>
-
-              <button
-                onClick={() =>
-                  generateAndSaveNIS(
-                    allStudents,
-                    supabase,
-                    setIsLoading,
-                    showToast,
-                    confirm,
-                    getCurrentAcademicYear,
-                    onRefreshData
-                  )
-                }
-                disabled={isLoading || studentsWithClass.length === 0}
-                className="px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
-              >
-                🔢 Generate NIS
-              </button>
-
-              <button
-                onClick={() => handleExportSavedClassesNIS(allStudents, setIsExporting, showToast)}
-                disabled={
-                  isExporting ||
-                  studentsWithClass.length === 0 ||
-                  !studentsWithClass.some((s) => s.nis && s.nis !== "-")
-                }
-                title="Export ringkas per-kelas pakai NIS (butuh Generate NIS dulu)"
-                className="px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-800 border-2 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400 font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
-              >
-                <i className="fas fa-file-excel"></i>
-                {isExporting ? "Exporting..." : `Export Kelas (NIS)`}
-              </button>
-
-              <button
-                onClick={() => setShowTransferModal(true)}
-                disabled={isLoading || studentsWithClass.length === 0}
-                className="px-3 sm:px-4 py-2 sm:py-3 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
-              >
-                🚀 Transfer ke Students
-              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Panel Finalisasi (tab Finalisasi) -- Generate NIS -> Export NIS ->
+          Transfer ke Students. Terpisah dari Control Panel Pembagian Kelas
+          di atas karena aksi di sini urutannya wajib & Transfer bersifat
+          IREVERSIBEL, jadi sengaja gak dicampur sama tombol-tombol yang
+          risikonya rendah/reversible. */}
+      {activeSubTab === "finalisasi" && !showPreview && !showSavedClasses && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <h3 className="text-base sm:text-lg font-semibold dark:text-gray-100">
+            🏁 Finalisasi Pembagian Kelas
+          </h3>
+
+          {studentsWithClass.length === 0 ? (
+            <div className="text-center py-6 sm:py-8 text-gray-500 dark:text-gray-400 text-sm">
+              Belum ada siswa yang dibagi kelas. Selesaikan dulu di tab "Pembagian Kelas".
+            </div>
+          ) : (
+            <>
+              {studentsWithoutNIS.length > 0 && (
+                <div className="p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs sm:text-sm text-amber-800 dark:text-amber-300">
+                  ⚠️ {studentsWithoutNIS.length} dari {studentsWithClass.length} siswa belum punya
+                  NIS. Generate NIS dulu sebelum Transfer ke Students.
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                <button
+                  onClick={() =>
+                    generateAndSaveNIS(
+                      allStudents,
+                      supabase,
+                      setIsLoading,
+                      showToast,
+                      confirm,
+                      getCurrentAcademicYear,
+                      onRefreshData
+                    )
+                  }
+                  disabled={isLoading || studentsWithClass.length === 0}
+                  className="px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+                >
+                  🔢 Generate NIS
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleExportSavedClassesNIS(allStudents, setIsExporting, showToast)
+                  }
+                  disabled={
+                    isExporting ||
+                    studentsWithClass.length === 0 ||
+                    !studentsWithClass.some((s) => s.nis && s.nis !== "-")
+                  }
+                  title="Export ringkas per-kelas pakai NIS (butuh Generate NIS dulu)"
+                  className="px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-800 border-2 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400 font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+                >
+                  <i className="fas fa-file-excel"></i>
+                  {isExporting ? "Exporting..." : `Export Kelas (NIS)`}
+                </button>
+
+                <button
+                  onClick={() => setShowTransferModal(true)}
+                  disabled={
+                    isLoading || studentsWithClass.length === 0 || studentsWithoutNIS.length > 0
+                  }
+                  title={
+                    studentsWithoutNIS.length > 0
+                      ? "Generate NIS untuk semua siswa dulu sebelum transfer"
+                      : undefined
+                  }
+                  className="px-3 sm:px-4 py-2 sm:py-3 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+                >
+                  🚀 Transfer ke Students
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Toolbar Edit Mode */}
-      {(showPreview || showSavedClasses) && (
+      {activeSubTab === "pembagian" && (showPreview || showSavedClasses) && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -437,214 +538,218 @@ const ClassDivision = ({
       )}
 
       {/* Preview Hasil Pembagian */}
-      {(showPreview || showSavedClasses) && Object.keys(currentDistribution).length > 0 && (
-        <div className="space-y-3 sm:space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2 sm:gap-0">
-              <h3 className="text-base sm:text-lg font-semibold dark:text-gray-100">
-                {showSavedClasses ? "✏️ Edit Kelas Tersimpan" : "👁️ Preview Pembagian Kelas"}
-              </h3>
-              <div className="flex gap-2 flex-wrap">
-                {showPreview && (
-                  <>
+      {activeSubTab === "pembagian" &&
+        (showPreview || showSavedClasses) &&
+        Object.keys(currentDistribution).length > 0 && (
+          <div className="space-y-3 sm:space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2 sm:gap-0">
+                <h3 className="text-base sm:text-lg font-semibold dark:text-gray-100">
+                  {showSavedClasses ? "✏️ Edit Kelas Tersimpan" : "👁️ Preview Pembagian Kelas"}
+                </h3>
+                <div className="flex gap-2 flex-wrap">
+                  {showPreview && (
+                    <>
+                      <button
+                        onClick={() =>
+                          handleExportClassDivision(classDistribution, setIsExporting, showToast)
+                        }
+                        disabled={isExporting || isLoading}
+                        className="px-3 sm:px-4 py-1 sm:py-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[40px]"
+                      >
+                        <i className="fas fa-file-excel text-xs sm:text-sm"></i>
+                        {isExporting ? "Exporting..." : "Export Excel"}
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          saveClassAssignments(
+                            classDistribution,
+                            supabase,
+                            setIsLoading,
+                            showToast,
+                            confirm,
+                            onRefreshData,
+                            setShowPreview,
+                            setClassDistribution,
+                            setEditMode,
+                            setHistory,
+                            setHistoryIndex
+                          )
+                        }
+                        disabled={isLoading}
+                        className="px-3 sm:px-4 py-1 sm:py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 font-medium text-xs sm:text-sm min-h-[36px] sm:min-h-[40px]"
+                      >
+                        💾 Simpan Pembagian
+                      </button>
+                    </>
+                  )}
+
+                  {showSavedClasses && (
                     <button
                       onClick={() =>
-                        handleExportClassDivision(classDistribution, setIsExporting, showToast)
+                        handleExportSavedClasses(allStudents, setIsExporting, showToast)
                       }
-                      disabled={isExporting || isLoading}
+                      disabled={isExporting}
                       className="px-3 sm:px-4 py-1 sm:py-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[40px]"
                     >
                       <i className="fas fa-file-excel text-xs sm:text-sm"></i>
                       {isExporting ? "Exporting..." : "Export Excel"}
                     </button>
+                  )}
 
-                    <button
-                      onClick={() =>
-                        saveClassAssignments(
-                          classDistribution,
-                          supabase,
-                          setIsLoading,
-                          showToast,
-                          confirm,
-                          onRefreshData,
-                          setShowPreview,
-                          setClassDistribution,
-                          setEditMode,
-                          setHistory,
-                          setHistoryIndex
-                        )
-                      }
-                      disabled={isLoading}
-                      className="px-3 sm:px-4 py-1 sm:py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 font-medium text-xs sm:text-sm min-h-[36px] sm:min-h-[40px]"
-                    >
-                      💾 Simpan Pembagian
-                    </button>
-                  </>
-                )}
-
-                {showSavedClasses && (
                   <button
-                    onClick={() => handleExportSavedClasses(allStudents, setIsExporting, showToast)}
-                    disabled={isExporting}
-                    className="px-3 sm:px-4 py-1 sm:py-2 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[40px]"
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: showSavedClasses ? "Tutup Edit Kelas" : "Batalkan Pembagian",
+                        message: showSavedClasses
+                          ? "Tutup edit kelas tersimpan?"
+                          : "Batalkan pembagian? Semua perubahan akan hilang.",
+                        variant: "danger",
+                        confirmText: "Ya, Lanjutkan",
+                      });
+                      if (ok) {
+                        setShowPreview(false);
+                        setShowSavedClasses(false);
+                        setClassDistribution({});
+                        setEditMode(false);
+                        setHistory([]);
+                        setHistoryIndex(-1);
+                      }
+                    }}
+                    disabled={isLoading}
+                    className="px-3 sm:px-4 py-1 sm:py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 font-medium text-xs sm:text-sm min-h-[36px] sm:min-h-[40px]"
                   >
-                    <i className="fas fa-file-excel text-xs sm:text-sm"></i>
-                    {isExporting ? "Exporting..." : "Export Excel"}
+                    {showSavedClasses ? "← Kembali" : "❌ Batal"}
                   </button>
-                )}
-
-                <button
-                  onClick={async () => {
-                    const ok = await confirm({
-                      title: showSavedClasses ? "Tutup Edit Kelas" : "Batalkan Pembagian",
-                      message: showSavedClasses
-                        ? "Tutup edit kelas tersimpan?"
-                        : "Batalkan pembagian? Semua perubahan akan hilang.",
-                      variant: "danger",
-                      confirmText: "Ya, Lanjutkan",
-                    });
-                    if (ok) {
-                      setShowPreview(false);
-                      setShowSavedClasses(false);
-                      setClassDistribution({});
-                      setEditMode(false);
-                      setHistory([]);
-                      setHistoryIndex(-1);
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="px-3 sm:px-4 py-1 sm:py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 font-medium text-xs sm:text-sm min-h-[36px] sm:min-h-[40px]"
-                >
-                  {showSavedClasses ? "← Kembali" : "❌ Batal"}
-                </button>
+                </div>
               </div>
-            </div>
 
-            {/* Grid Kelas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {Object.entries(currentDistribution).map(([className, students]) => {
-                const stats = getClassStats(students);
-                const isUnbalanced =
-                  showPreview && unbalancedClasses.some((uc) => uc.className === className);
-                const isDragOver = dragOverClass === className;
+              {/* Grid Kelas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {Object.entries(currentDistribution).map(([className, students]) => {
+                  const stats = getClassStats(students);
+                  const isUnbalanced =
+                    showPreview && unbalancedClasses.some((uc) => uc.className === className);
+                  const isDragOver = dragOverClass === className;
 
-                return (
-                  <div
-                    key={className}
-                    className={`border-2 rounded-lg p-3 sm:p-4 transition-all ${
-                      isUnbalanced
-                        ? "border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20"
-                        : isDragOver
-                          ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 scale-105"
-                          : "border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500"
-                    } ${isEditModeActive ? "cursor-pointer" : ""}`}
-                    onDragOver={
-                      isEditModeActive
-                        ? (e) => handleDragOver(e, className, setDragOverClass)
-                        : undefined
-                    }
-                    onDragLeave={
-                      isEditModeActive ? () => handleDragLeave(setDragOverClass) : undefined
-                    }
-                    onDrop={
-                      isEditModeActive
-                        ? (e) =>
-                            handleDrop(
-                              e,
-                              className,
-                              draggedStudent,
-                              currentDistribution,
-                              showSavedClasses ? setSavedClassDistribution : setClassDistribution,
-                              showSavedClasses,
-                              saveToHistory,
-                              setDraggedStudent,
-                              setDragOverClass,
-                              showToast,
-                              setHistory,
-                              setHistoryIndex,
-                              historyIndex
-                            )
-                        : undefined
-                    }
-                  >
-                    <div className="text-center mb-2 sm:mb-3">
-                      <div className="flex items-center justify-center gap-1 sm:gap-2">
-                        <h4 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-                          {className}
-                        </h4>
-                        {isUnbalanced && (
-                          <span className="text-yellow-500 dark:text-yellow-400 text-lg sm:text-xl">
-                            ⚠️
+                  return (
+                    <div
+                      key={className}
+                      className={`border-2 rounded-lg p-3 sm:p-4 transition-all ${
+                        isUnbalanced
+                          ? "border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20"
+                          : isDragOver
+                            ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 scale-105"
+                            : "border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500"
+                      } ${isEditModeActive ? "cursor-pointer" : ""}`}
+                      onDragOver={
+                        isEditModeActive
+                          ? (e) => handleDragOver(e, className, setDragOverClass)
+                          : undefined
+                      }
+                      onDragLeave={
+                        isEditModeActive ? () => handleDragLeave(setDragOverClass) : undefined
+                      }
+                      onDrop={
+                        isEditModeActive
+                          ? (e) =>
+                              handleDrop(
+                                e,
+                                className,
+                                draggedStudent,
+                                currentDistribution,
+                                showSavedClasses ? setSavedClassDistribution : setClassDistribution,
+                                showSavedClasses,
+                                saveToHistory,
+                                setDraggedStudent,
+                                setDragOverClass,
+                                showToast,
+                                setHistory,
+                                setHistoryIndex,
+                                historyIndex
+                              )
+                          : undefined
+                      }
+                    >
+                      <div className="text-center mb-2 sm:mb-3">
+                        <div className="flex items-center justify-center gap-1 sm:gap-2">
+                          <h4 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {className}
+                          </h4>
+                          {isUnbalanced && (
+                            <span className="text-yellow-500 dark:text-yellow-400 text-lg sm:text-xl">
+                              ⚠️
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
+                          {stats.total}
+                        </div>
+                        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                          siswa
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">👦 Laki-laki:</span>
+                          <span className="font-semibold dark:text-gray-300">{stats.males}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">👧 Perempuan:</span>
+                          <span className="font-semibold dark:text-gray-300">{stats.females}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">🏫 Asal SD:</span>
+                          <span className="font-semibold dark:text-gray-300">
+                            {stats.schoolCount}
                           </span>
-                        )}
+                        </div>
                       </div>
-                      <div className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
-                        {stats.total}
-                      </div>
-                      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                        siswa
-                      </div>
-                    </div>
 
-                    <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">👦 Laki-laki:</span>
-                        <span className="font-semibold dark:text-gray-300">{stats.males}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">👧 Perempuan:</span>
-                        <span className="font-semibold dark:text-gray-300">{stats.females}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">🏫 Asal SD:</span>
-                        <span className="font-semibold dark:text-gray-300">
-                          {stats.schoolCount}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-1 sm:gap-2 mt-2 sm:mt-3">
-                      <button
-                        onClick={() => {
-                          setActiveClassView(className);
-                          if (showSavedClasses) {
-                            setEditingClass(className);
-                          }
-                        }}
-                        className="flex-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium py-1 px-2 border border-blue-300 dark:border-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors min-h-[36px]"
-                      >
-                        Lihat Detail →
-                      </button>
-                      {isEditModeActive && showPreview && (
-                        <button
-                          onClick={() => {
-                            setEditingClass(className);
-                            setShowEditModal(true);
-                          }}
-                          className="flex-1 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium py-1 px-2 border border-orange-300 dark:border-orange-700 rounded hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors min-h-[36px]"
-                        >
-                          ✏️ Edit
-                        </button>
-                      )}
-                      {showSavedClasses && (
+                      <div className="flex gap-1 sm:gap-2 mt-2 sm:mt-3">
                         <button
                           onClick={() => {
                             setActiveClassView(className);
-                            setEditingClass(className);
+                            if (showSavedClasses) {
+                              setEditingClass(className);
+                            }
                           }}
-                          className="flex-1 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium py-1 px-2 border border-orange-300 dark:border-orange-700 rounded hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors min-h-[36px]"
+                          className="flex-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium py-1 px-2 border border-blue-300 dark:border-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors min-h-[36px]"
                         >
-                          ✏️ Edit Siswa
+                          Lihat Detail →
                         </button>
-                      )}
+                        {isEditModeActive && showPreview && (
+                          <button
+                            onClick={() => {
+                              setEditingClass(className);
+                              setShowEditModal(true);
+                            }}
+                            className="flex-1 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium py-1 px-2 border border-orange-300 dark:border-orange-700 rounded hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors min-h-[36px]"
+                          >
+                            ✏️ Edit
+                          </button>
+                        )}
+                        {showSavedClasses && (
+                          <button
+                            onClick={() => {
+                              setActiveClassView(className);
+                              setEditingClass(className);
+                            }}
+                            className="flex-1 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium py-1 px-2 border border-orange-300 dark:border-orange-700 rounded hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors min-h-[36px]"
+                          >
+                            ✏️ Edit Siswa
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Modal Edit Kelas (untuk preview baru) */}
       {showEditModal && editingClass && classDistribution[editingClass] && (
@@ -1378,6 +1483,19 @@ const ClassDivision = ({
           </div>
         </div>
       )}
+
+      <ImportClassDivisionModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        allStudents={allStudents}
+        validClassNames={validClassNames}
+        supabase={supabase}
+        setIsLoading={setIsLoading}
+        isLoading={isLoading}
+        showToast={showToast}
+        onRefreshData={onRefreshData}
+        confirm={confirm}
+      />
 
       <ConfirmDialog {...confirmDialogProps} />
     </div>

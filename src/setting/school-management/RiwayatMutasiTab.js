@@ -1,6 +1,6 @@
 // RiwayatMutasiTab.js
 // Sub-tab "Riwayat Mutasi" di dalam Student Management (School Combined Tab
-// -> Data Sekolah -> Data Siswa | Guru & Staf | Riwayat Mutasi).
+// -> Data Sekolah -> Data Siswa | Guru & Staf | Riwayat Mutasi | Siswa Lulus).
 //
 // Desain (disepakati 4 Sep 2026): gabungan opsi B (nempel di Student
 // Management karena mutasi emang hasil dari aksi CRUD di modul ini) + C
@@ -9,21 +9,19 @@
 // Riwayat" di halaman Data Siswa (?student=<id>), otomatis ke-filter ke
 // siswa itu doang.
 //
+// Revisi (7 Sep 2026): tab ini SEKARANG MURNI untuk mutasi siswa AKTIF
+// (masuk/keluar). Data kelulusan dipindah total ke tabel `student_graduations`
+// (lihat SiswaLulusTab.js), diisi otomatis dari alur "Mulai Tahun Ajaran
+// Baru". Type "lulus" di tabel `student_mutations` sudah tidak dipakai lagi
+// -- query di sini sengaja exclude type tersebut dari awal.
+//
 // Catatan: sengaja JOIN manual di JS (bukan embedded join Supabase),
 // konsisten sama konvensi project ini (PGRST200 avoidance).
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
-import {
-  Search,
-  ArrowRightCircle,
-  ArrowLeftCircle,
-  GraduationCap,
-  Loader2,
-  X,
-  History,
-} from "lucide-react";
+import { Search, ArrowRightCircle, ArrowLeftCircle, Loader2, X, History } from "lucide-react";
 
 const TYPE_META = {
   masuk: {
@@ -35,11 +33,6 @@ const TYPE_META = {
     label: "Keluar",
     badge: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
     Icon: ArrowLeftCircle,
-  },
-  lulus: {
-    label: "Lulus",
-    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-    Icon: GraduationCap,
   },
 };
 
@@ -81,6 +74,7 @@ const RiwayatMutasiTab = () => {
       const { data: mutData, error } = await supabase
         .from("student_mutations")
         .select("*")
+        .neq("type", "lulus") // tab ini murni masuk/keluar; lulus ada di student_graduations
         .order("mutation_date", { ascending: false });
       if (error) throw error;
 
@@ -167,6 +161,9 @@ const RiwayatMutasiTab = () => {
   }, [mutations]);
 
   const filtered = useMemo(() => {
+    // Tab ini murni untuk mutasi siswa AKTIF (masuk/keluar). Data lulus
+    // sepenuhnya ditangani tabel `student_graduations` (lihat SiswaLulusTab.js)
+    // dan sudah di-exclude sejak level query di loadData().
     return mutations.filter((m) => {
       if (filterStudentId) {
         return String(m.student_id) === String(filterStudentId);
@@ -222,7 +219,6 @@ const RiwayatMutasiTab = () => {
             <option value="semua">Semua Jenis</option>
             <option value="masuk">Masuk</option>
             <option value="keluar">Keluar</option>
-            <option value="lulus">Lulus</option>
           </select>
           <select
             value={kelasFilter}

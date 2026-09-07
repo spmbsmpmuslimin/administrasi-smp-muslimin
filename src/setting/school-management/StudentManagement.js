@@ -180,6 +180,7 @@ export const useStudentManagement = ({
           type: "masuk",
           mutation_date: studentForm.tanggal_masuk,
           sekolah_asal: studentForm.sekolah_asal.trim(),
+          class_id: studentForm.class_id || null, // ✅ FIX: sebelumnya gak kekirim, jadi class_id-nya kosong terus
           created_by: currentUserId || null,
         });
         if (mutationError) {

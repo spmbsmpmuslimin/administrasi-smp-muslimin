@@ -353,6 +353,58 @@ export const resetClassAssignments = async (
   }
 };
 
+// Commit hasil import Excel pembagian kelas (revisi). Cuma nulis baris
+// dengan status "changed" -- baris "unchanged" & "error" udah difilter
+// duluan sama caller (ImportClassDivisionModal.js) sebelum manggil ini.
+// Pola update-nya sama kayak saveClassAssignments/resetClassAssignments:
+// Promise.all per-siswa pakai .update() biasa (bukan upsert), biar gak
+// kena risiko not-null constraint buat kolom wajib yang gak dikirim.
+export const commitClassDivisionImport = async (
+  changedRows,
+  supabase,
+  setIsLoading,
+  showToast,
+  onRefreshData
+) => {
+  if (!changedRows || changedRows.length === 0) {
+    showToast("Tidak ada perubahan untuk disimpan", "error");
+    return false;
+  }
+
+  setIsLoading(true);
+  try {
+    await Promise.all(
+      changedRows.map(async (row) => {
+        const { error } = await supabase
+          .from("siswa_baru")
+          .update({
+            kelas: row.kelasBaru,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", row.matchedStudentId);
+
+        if (error) throw error;
+      })
+    );
+
+    showToast(
+      `✅ Berhasil menerapkan ${changedRows.length} perubahan kelas dari import!`,
+      "success"
+    );
+
+    if (onRefreshData) {
+      await onRefreshData();
+    }
+    return true;
+  } catch (error) {
+    console.error("Error committing class division import:", error);
+    showToast("❌ Gagal menyimpan hasil import: " + error.message, "error");
+    return false;
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 // Update kelas di database (untuk edit setelah disimpan)
 export const updateClassAssignment = async (
   studentId,
