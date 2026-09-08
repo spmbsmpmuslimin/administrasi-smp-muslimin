@@ -37,7 +37,10 @@ const MONTHS = [
   "Desember",
 ];
 
-const ITMReport = () => {
+const ITMReport = ({ currentUser } = {}) => {
+  // ✅ SCOPE: kalau dipanggil tanpa currentUser (pemakaian lama di sisi admin),
+  // tetap full-picker. Kalau dipanggil dari sisi guru, dropdown di-lock ke diri sendiri.
+  const isAdmin = !currentUser || currentUser.role === "admin";
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -74,6 +77,13 @@ const ITMReport = () => {
 
     fetchTeachers();
   }, []);
+
+  // ✅ Guru: auto-pilih dirinya sendiri begitu daftar teachers selesai di-fetch
+  useEffect(() => {
+    if (!isAdmin && currentUser?.teacher_id && teachers.length > 0) {
+      setSelectedTeacher(currentUser.teacher_id);
+    }
+  }, [isAdmin, currentUser, teachers]);
 
   // Helper: Get dates for each week in month
   const getWeeksInMonth = (year, month) => {
@@ -450,19 +460,25 @@ const ITMReport = () => {
               <User className="inline mr-1 w-4 h-4 sm:w-4 sm:h-4" />
               Pilih Guru
             </label>
-            <select
-              value={selectedTeacher}
-              onChange={(e) => setSelectedTeacher(e.target.value)}
-              className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
-              disabled={loading}
-            >
-              <option value="">-- Pilih Guru --</option>
-              {teachers.map((teacher) => (
-                <option key={teacher.id} value={teacher.teacher_id}>
-                  {teacher.full_name} ({teacher.teacher_id})
-                </option>
-              ))}
-            </select>
+            {isAdmin ? (
+              <select
+                value={selectedTeacher}
+                onChange={(e) => setSelectedTeacher(e.target.value)}
+                className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
+                disabled={loading}
+              >
+                <option value="">-- Pilih Guru --</option>
+                {teachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.teacher_id}>
+                    {teacher.full_name} ({teacher.teacher_id})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 dark:text-gray-200 min-h-[44px] flex items-center font-medium">
+                {currentUser?.full_name || "-"}
+              </div>
+            )}
           </div>
 
           <div>

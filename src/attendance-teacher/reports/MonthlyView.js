@@ -223,7 +223,13 @@ const MonthlyView = ({ currentUser }) => {
     }
   };
 
-  const filteredTeachers = teachers.filter((teacher) =>
+  // ✅ SCOPE: admin liat semua guru, guru cuma liat data dirinya sendiri
+  const isAdmin = currentUser?.role === "admin";
+  const visibleTeachers = isAdmin
+    ? teachers
+    : teachers.filter((teacher) => teacher.teacher_id === currentUser?.teacher_id);
+
+  const filteredTeachers = visibleTeachers.filter((teacher) =>
     teacher.full_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -272,22 +278,24 @@ const MonthlyView = ({ currentUser }) => {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-            size={20}
-          />
-          <input
-            type="text"
-            placeholder="Cari nama guru..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-          />
+      {/* Search - admin only, percuma buat guru yang cuma liat 1 baris */}
+      {isAdmin && (
+        <div className="mb-4">
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+              size={20}
+            />
+            <input
+              type="text"
+              placeholder="Cari nama guru..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Loading State */}
       {loading ? (
@@ -362,8 +370,8 @@ const MonthlyView = ({ currentUser }) => {
                               title: holiday
                                 ? `🎉 ${holiday}`
                                 : weekend
-                                ? "🏠 Weekend (Libur)"
-                                : "Belum absen",
+                                  ? "🏠 Weekend (Libur)"
+                                  : "Belum absen",
                             };
 
                         return (
@@ -399,8 +407,8 @@ const MonthlyView = ({ currentUser }) => {
                             percentage >= 90
                               ? "text-green-600 dark:text-green-400"
                               : percentage >= 75
-                              ? "text-yellow-600 dark:text-yellow-400"
-                              : "text-red-600 dark:text-red-400";
+                                ? "text-yellow-600 dark:text-yellow-400"
+                                : "text-red-600 dark:text-red-400";
                           return (
                             <span className={`${color} text-sm sm:text-base`}>{percentage}%</span>
                           );

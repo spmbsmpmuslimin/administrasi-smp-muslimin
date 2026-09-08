@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient";
 import QRScanner from "./QRScanner";
 import ManualCheckIn from "./ManualCheckIn";
 import QRCodeGenerator from "./QRCodeGenerator";
+import { getActiveSemesterId } from "../services/academicYearService";
 
 const AttendanceTabs = ({ currentUser, onSuccess }) => {
   const [activeTab, setActiveTab] = useState("qr");
@@ -137,6 +138,14 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
       console.log("💾 Processing submit for date (WIB):", today);
       console.log("📝 Submit data:", submitData);
 
+      // ✅ Ambil semester aktif buat di-tag ke record presensi
+      const activeSemesterId = await getActiveSemesterId();
+      if (!activeSemesterId) {
+        console.warn(
+          "⚠️ Tidak ada semester aktif — presensi tetap disimpan tapi academic_year_id null. Admin perlu aktifkan tahun ajaran di Setting > Akademik."
+        );
+      }
+
       // Check lagi apakah sudah ada
       const { data: existingData } = await supabase
         .from("teacher_attendance")
@@ -157,6 +166,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
             notes: submitData.notes || null,
             gps_location: submitData.gps_location || null,
             admin_info: submitData.admin_info || null,
+            academic_year_id: activeSemesterId,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existingData.id);
@@ -175,6 +185,7 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
           notes: submitData.notes || null,
           gps_location: submitData.gps_location || null,
           admin_info: submitData.admin_info || null,
+          academic_year_id: activeSemesterId,
         });
 
         if (insertError) throw insertError;
@@ -266,10 +277,10 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
                         todayAttendance.status === "Hadir"
                           ? "text-green-600 dark:text-green-400"
                           : todayAttendance.status === "Izin"
-                          ? "text-blue-600 dark:text-blue-400"
-                          : todayAttendance.status === "Sakit"
-                          ? "text-yellow-600 dark:text-yellow-400"
-                          : "text-red-600 dark:text-red-400"
+                            ? "text-blue-600 dark:text-blue-400"
+                            : todayAttendance.status === "Sakit"
+                              ? "text-yellow-600 dark:text-yellow-400"
+                              : "text-red-600 dark:text-red-400"
                       }`}
                     >
                       {todayAttendance.status}
