@@ -629,17 +629,19 @@ const SPMB = ({ user, onShowToast }) => {
                         Mulai dengan mendaftarkan siswa baru
                       </p>
                     </div>
-                  ) : filteredStudents.length === 0 && searchInput ? (
-                    <div className="text-center py-12 sm:py-16">
-                      <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">🔍</div>
-                      <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg font-medium">
-                        Tidak ada hasil
-                      </p>
-                      <p className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm mt-1 sm:mt-2">
-                        Coba kata kunci lain
-                      </p>
-                    </div>
                   ) : (
+                    // FIX: sebelumnya ada cabang ketiga di sini buat
+                    // "filteredStudents.length === 0 && searchInput" yang
+                    // nge-render <div>Tidak ada hasil</div> gantiin
+                    // <StudentList>. Masalahnya, kotak input pencarian itu
+                    // sendiri ada DI DALAM StudentList -- begitu di-unmount,
+                    // user kehilangan tempat buat ngedit/hapus pencarian
+                    // (kesannya "stuck", padahal search box-nya beneran ilang
+                    // dari layar). StudentList sendiri udah punya empty-state
+                    // "Tidak ada data yang sesuai dengan pencarian" yang
+                    // dirender DI DALAM komponennya, jadi search box tetap
+                    // ada & bisa diedit terus. Selalu render StudentList di
+                    // sini, biarkan dia yang handle empty-state pencarian.
                     <StudentList
                       students={filteredStudents}
                       allStudents={allStudents}
