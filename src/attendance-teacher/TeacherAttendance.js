@@ -7,7 +7,6 @@ import AttendanceTabs from "./AttendanceTabs";
 import MyAttendanceStatus from "./MyAttendanceStatus";
 import MyMonthlyHistory from "./MyMonthlyHistory";
 import TodaySchedule from "./TodaySchedule";
-import MonthlyView from "./reports/MonthlyView";
 import ITMReport from "./reports/ITMReport";
 
 // Admin Component
@@ -305,20 +304,6 @@ const TeacherAttendance = ({ user }) => {
             Riwayat Saya
           </button>
           <button
-            onClick={() => setActiveView("laporan")}
-            className={`
-              flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold 
-              transition-all text-sm sm:text-base
-              ${
-                activeView === "laporan"
-                  ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg"
-                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600"
-              }
-            `}
-          >
-            Laporan Bulanan
-          </button>
-          <button
             onClick={() => setActiveView("itm")}
             className={`
               flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold 
@@ -330,7 +315,7 @@ const TeacherAttendance = ({ user }) => {
               }
             `}
           >
-            Laporan Tatap Muka
+            Tatap Muka
           </button>
         </div>
 
@@ -355,13 +340,8 @@ const TeacherAttendance = ({ user }) => {
           <MyMonthlyHistory currentUser={currentUser} />
         )}
 
-        {activeView === "laporan" && (
-          /* Laporan Bulanan - scoped ke diri sendiri (lihat filter di MonthlyView.js) */
-          <MonthlyView currentUser={currentUser} />
-        )}
-
         {activeView === "itm" && (
-          /* Laporan Tatap Muka - guru dropdown di-lock ke diri sendiri (lihat isAdmin di ITMReport.js) */
+          /* Tatap Muka - guru dropdown di-lock ke diri sendiri (lihat isAdmin di ITMReport.js) */
           <ITMReport currentUser={currentUser} />
         )}
       </div>

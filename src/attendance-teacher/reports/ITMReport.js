@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import { exportITMReportToExcel } from "./ITMReportExcel";
+import { getActiveAcademicYear } from "../../services/academicYearService";
 // ✅ FIX: JAM_SCHEDULE & getJamKe() sebelumnya di-hardcode lokal di file
 // ini, terpisah dari "../../utils/jamPelajaran" yang jadi single source
 // of truth (dipake KelolaJadwalPelajaran.js & AdminJadwalMassal.js).
@@ -49,6 +50,76 @@ const ITMReport = ({ currentUser } = {}) => {
   const [teachersLoading, setTeachersLoading] = useState(true);
   const [teachersError, setTeachersError] = useState(null);
   const [reportData, setReportData] = useState(null);
+
+  // ✅ FIX (revisi 2): sebelumnya dropdown "Tahun" narik SEMUA histori
+  // academic_years (getAllAcademicYears()) -- jadinya nongol tahun-tahun
+  // lama yang gak relevan (2023, 2024, 2025) padahal gak ada gunanya buat
+  // laporan tatap muka guru. Sekarang cuma pake tahun ajaran yang lagi
+  // AKTIF (getActiveAcademicYear()) -- contoh "2026/2027" cuma ngasih 2
+  // opsi: 2026 & 2027 (dua tahun kalender yang beneran ke-cover sama
+  // semester 1 & 2 tahun ajaran itu).
+  const [yearOptions, setYearOptions] = useState([]);
+  const [yearOptionsLoading, setYearOptionsLoading] = useState(true);
+
+  // Fetch tahun ajaran aktif -> tentuin opsi dropdown "Tahun" + default
+  // selectedYear (tahun kalender yang lagi kejalanin sekarang).
+  useEffect(() => {
+    const fetchYearOptions = async () => {
+      try {
+        setYearOptionsLoading(true);
+
+        const activeInfo = await getActiveAcademicYear();
+        const fallbackYear = new Date().getFullYear();
+
+        if (!activeInfo?.year) {
+          // Gak ada tahun ajaran aktif sama sekali -- fallback ke tahun
+          // kalender sekarang biar dropdown gak kosong.
+          setYearOptions([fallbackYear]);
+          setSelectedYear(fallbackYear);
+          return;
+        }
+
+        // "2026/2027" -> [2026, 2027]. Tahun ajaran normal cuma nyebrang
+        // 2 tahun kalender (semester 1 di tahun pertama, semester 2 di
+        // tahun kedua), jadi ini cukup buat cover semua kemungkinan bulan
+        // di tahun ajaran aktif.
+        const yearsFromActive = String(activeInfo.year)
+          .split("/")
+          .map((y) => parseInt(y, 10))
+          .filter((y) => !Number.isNaN(y));
+
+        const sortedYears =
+          yearsFromActive.length > 0
+            ? [...new Set(yearsFromActive)].sort((a, b) => a - b)
+            : [fallbackYear];
+
+        setYearOptions(sortedYears);
+
+        // Default selectedYear: tahun kalender dari semester yang LAGI
+        // AKTIF (bukan asal tahun pertama di rentang), biar pas dibuka
+        // langsung nunjuk ke semester yang beneran berjalan sekarang.
+        const activeSemesterRow = activeInfo.semesters?.find(
+          (s) => s.id === activeInfo.activeSemesterId
+        );
+        const activeStartYear = activeSemesterRow?.start_date
+          ? new Date(activeSemesterRow.start_date).getFullYear()
+          : null;
+
+        if (activeStartYear && sortedYears.includes(activeStartYear)) {
+          setSelectedYear(activeStartYear);
+        } else {
+          setSelectedYear(sortedYears[0]);
+        }
+      } catch (err) {
+        console.error("Error fetching active academic year for year options:", err);
+        setYearOptions([new Date().getFullYear()]);
+      } finally {
+        setYearOptionsLoading(false);
+      }
+    };
+
+    fetchYearOptions();
+  }, []);
 
   // Fetch semua guru aktif
   useEffect(() => {
@@ -507,13 +578,17 @@ const ITMReport = ({ currentUser } = {}) => {
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="w-full px-3 py-2.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none touch-manipulation min-h-[44px]"
-              disabled={loading}
+              disabled={loading || yearOptionsLoading}
             >
-              {[2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
+              {yearOptionsLoading ? (
+                <option value={selectedYear}>Memuat...</option>
+              ) : (
+                yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 

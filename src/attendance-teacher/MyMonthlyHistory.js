@@ -11,8 +11,20 @@ import {
   List,
   Grid3x3,
   Clock,
+  FileSpreadsheet,
 } from "lucide-react";
+import ExcelJS from "exceljs";
 import { supabase } from "../supabaseClient";
+import {
+  EXCEL_COLORS,
+  EXCEL_FONT_FAMILY,
+  addLetterhead,
+  styleTableHeaderRow,
+  styleTableDataRow,
+  autoFitColumns,
+  setupPrintOptions,
+  downloadWorkbook,
+} from "../utils/excelExportKit";
 
 const MyMonthlyHistory = ({ currentUser }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -20,6 +32,7 @@ const MyMonthlyHistory = ({ currentUser }) => {
   const [attendances, setAttendances] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState("list"); // list | calendar
+  const [exporting, setExporting] = useState(false);
 
   const months = [
     "Januari",
@@ -200,6 +213,153 @@ const MyMonthlyHistory = ({ currentUser }) => {
     }
   };
 
+  // Export laporan bulanan presensi diri sendiri ke Excel, pake
+  // excelExportKit biar konsisten (letterhead, warna, border) sama laporan
+  // lain di app ini. Beda sama ExportExcel.js punya Admin (yang matrix
+  // semua guru) -- ini 1 sheet per hari kalender buat 1 guru doang, jadi
+  // guardHasData dari kit sengaja gak dipake di sini: kalender bulan ini
+  // selalu ada barisnya (Weekend/Libur/Alpa) walau belum ada satupun
+  // presensi Hadir tercatat, jadi "data kosong" bukan kondisi yang valid.
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const monthName = months[selectedMonth];
+      // Excel sheet name max 31 char & gak boleh ada karakter tertentu
+      const worksheet = workbook.addWorksheet(
+        `Presensi ${monthName} ${selectedYear}`.substring(0, 31)
+      );
+
+      const TOTAL_COLUMNS = 7; // No, Tanggal, Hari, Status, Jam Masuk, Metode, Keterangan
+      const FULL_DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+      let rowNum = addLetterhead(worksheet, {
+        title: `LAPORAN PRESENSI GURU - ${monthName.toUpperCase()} ${selectedYear}`,
+        mergeCols: TOTAL_COLUMNS,
+        metaLines: [
+          `Nama Guru : ${currentUser?.full_name || "-"}`,
+          `Kode Guru : ${currentUser?.teacher_id || "-"}`,
+          `Dicetak   : ${new Date().toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}`,
+        ],
+      });
+
+      const headerRow = worksheet.getRow(rowNum);
+      headerRow.values = ["No", "Tanggal", "Hari", "Status", "Jam Masuk", "Metode", "Keterangan"];
+      styleTableHeaderRow(headerRow);
+      const headerRowNumber = rowNum;
+      rowNum++;
+
+      const totalDaysInMonth = getDaysInMonth();
+
+      // Warna badge per status, dari palet resmi excelExportKit -- biar
+      // sama persis sama warna yang dipake di laporan-laporan lain
+      const statusFillMap = {
+        Hadir: EXCEL_COLORS.success,
+        Izin: EXCEL_COLORS.primary,
+        Sakit: EXCEL_COLORS.warning,
+        Alpa: EXCEL_COLORS.danger,
+      };
+
+      for (let day = 1; day <= totalDaysInMonth; day++) {
+        const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${String(
+          day
+        ).padStart(2, "0")}`;
+        const dayName = FULL_DAY_NAMES[new Date(selectedYear, selectedMonth, day).getDay()];
+        const attendance = getAttendanceForDate(day);
+        const weekend = isWeekend(selectedYear, selectedMonth, day);
+        const holiday = isNationalHoliday(dateStr);
+
+        let status;
+        let keterangan = "-";
+        if (attendance) {
+          status = attendance.status;
+          if (attendance.notes) keterangan = attendance.notes;
+        } else if (holiday) {
+          status = "Libur";
+          keterangan = holiday;
+        } else if (weekend) {
+          status = "Weekend";
+        } else {
+          status = "Alpa";
+        }
+
+        const dataRow = worksheet.addRow([
+          day,
+          dateStr,
+          dayName,
+          status,
+          attendance ? formatTime(attendance.clock_in) : "-",
+          attendance ? formatCheckInMethod(attendance.check_in_method) : "-",
+          keterangan,
+        ]);
+
+        // Kolom No, Hari, Status, Jam Masuk, Metode di-center; Tanggal &
+        // Keterangan rata kiri (default styleTableDataRow)
+        styleTableDataRow(dataRow, day - 1, [1, 3, 4, 5, 6]);
+
+        const statusCell = dataRow.getCell(4);
+        if (statusFillMap[status]) {
+          statusCell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: statusFillMap[status] },
+          };
+          statusCell.font = {
+            name: EXCEL_FONT_FAMILY,
+            bold: true,
+            color: { argb: EXCEL_COLORS.headerText },
+          };
+        } else if (weekend || holiday) {
+          // Weekend/Libur: tint biru muda di seluruh baris biar gampang
+          // dipindai sekilas, konsisten sama box info di laporan lain
+          dataRow.eachCell((cell) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: EXCEL_COLORS.primaryLight },
+            };
+          });
+        }
+      }
+
+      // Ringkasan di bawah tabel
+      const stats = calculateStats();
+      const attendanceRate =
+        totalDaysInMonth > 0 ? ((stats.hadir / totalDaysInMonth) * 100).toFixed(1) : 0;
+
+      worksheet.addRow([]);
+      const summaryTitleRow = worksheet.addRow(["Ringkasan"]);
+      summaryTitleRow.getCell(1).font = { name: EXCEL_FONT_FAMILY, bold: true, size: 12 };
+
+      [
+        ["Hadir", stats.hadir],
+        ["Izin", stats.izin],
+        ["Sakit", stats.sakit],
+        ["Alpa", stats.alpa],
+        ["Tingkat Kehadiran", `${attendanceRate}%`],
+      ].forEach(([label, value]) => {
+        const r = worksheet.addRow([label, value]);
+        r.getCell(1).font = { name: EXCEL_FONT_FAMILY, size: 10 };
+        r.getCell(2).font = { name: EXCEL_FONT_FAMILY, bold: true, size: 10 };
+      });
+
+      autoFitColumns(worksheet);
+      setupPrintOptions(worksheet, { orientation: "portrait", freezeHeaderRow: headerRowNumber });
+
+      const safeName = (currentUser?.full_name || "Guru").replace(/[^a-zA-Z0-9]/g, "_");
+      await downloadWorkbook(workbook, `Presensi_${safeName}_${monthName}_${selectedYear}.xlsx`);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      alert("Gagal mengekspor data ke Excel");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const stats = calculateStats();
   const daysInMonth = getDaysInMonth();
   const firstDay = getFirstDayOfMonth();
@@ -209,9 +369,23 @@ const MyMonthlyHistory = ({ currentUser }) => {
     <div className="space-y-4">
       {/* Header & Stats */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar className="text-blue-600 dark:text-blue-400" size={24} />
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Riwayat Saya</h2>
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="text-blue-600 dark:text-blue-400" size={24} />
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Riwayat Saya</h2>
+          </div>
+          <button
+            onClick={handleExportExcel}
+            disabled={exporting || loading}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white text-sm font-semibold rounded-lg transition-all min-h-[40px]"
+          >
+            {exporting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <FileSpreadsheet size={16} />
+            )}
+            <span className="hidden sm:inline">{exporting ? "Mengekspor..." : "Export Excel"}</span>
+          </button>
         </div>
 
         {/* Stats Summary */}
@@ -403,24 +577,24 @@ const MyMonthlyHistory = ({ currentUser }) => {
                           attendance
                             ? getStatusColor(attendance.status) + " shadow-md"
                             : isToday
-                            ? "bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-lg border-2 border-blue-300 dark:border-blue-500"
-                            : holiday
-                            ? "bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 border-2 border-red-300 dark:border-red-700"
-                            : weekend
-                            ? "bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 border border-gray-400 dark:border-gray-600"
-                            : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-600 dark:hover:to-gray-700 border border-gray-200 dark:border-gray-600"
+                              ? "bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white shadow-lg border-2 border-blue-300 dark:border-blue-500"
+                              : holiday
+                                ? "bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 border-2 border-red-300 dark:border-red-700"
+                                : weekend
+                                  ? "bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 border border-gray-400 dark:border-gray-600"
+                                  : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-600 dark:hover:to-gray-700 border border-gray-200 dark:border-gray-600"
                         }
                       `}
                       title={
                         attendance
                           ? `${attendance.status} - ${formatTime(attendance.clock_in)}`
                           : holiday
-                          ? `🎉 ${holiday}`
-                          : weekend
-                          ? "🏠 Weekend (Libur)"
-                          : isToday
-                          ? "Hari ini"
-                          : ""
+                            ? `🎉 ${holiday}`
+                            : weekend
+                              ? "🏠 Weekend (Libur)"
+                              : isToday
+                                ? "Hari ini"
+                                : ""
                       }
                     >
                       <span
@@ -428,10 +602,10 @@ const MyMonthlyHistory = ({ currentUser }) => {
                           attendance || isToday
                             ? "text-white"
                             : holiday
-                            ? "text-red-700 dark:text-red-300"
-                            : weekend
-                            ? "text-gray-600 dark:text-gray-400"
-                            : "text-gray-700 dark:text-gray-300"
+                              ? "text-red-700 dark:text-red-300"
+                              : weekend
+                                ? "text-gray-600 dark:text-gray-400"
+                                : "text-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {day}
