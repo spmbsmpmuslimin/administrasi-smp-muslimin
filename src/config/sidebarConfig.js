@@ -89,12 +89,11 @@ export const sidebarGroups = [
           "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
           "M9 14l2 2 4-4",
         ],
-        // Sebelumnya cuma bisa diakses walikelas lewat hub "Portal Siswa"
-        // (portal-siswa-guru), yang show()-nya cuma isWaliKelas -- admin
-        // gak pernah nyampe kesitu walau route-nya (menuConfig.js) udah
-        // allowedRoles admin/teacher/guru_bk. Sekarang dikasih entry
-        // langsung di sidebar, tapi dibatasi cuma buat Admin.
-        show: (ctx) => ctx.isAdmin || ctx.isTU,
+        // ✅ FIX (Sep 2026): dibuka lagi buat Wali Kelas -- sebelumnya cuma
+        // Admin & TU. Disamain sama allowedRoles+requireWaliKelas di
+        // /data-induk-siswa (menuConfig.js): guru mapel biasa TETAP gak
+        // liat menu ini, cuma yang emang wali kelas (isWaliKelas).
+        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isWaliKelas,
       },
     ],
   },

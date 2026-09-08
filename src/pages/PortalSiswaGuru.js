@@ -17,7 +17,14 @@ const menuItems = [
     title: "Profile Siswa",
     description: "Lihat dan kelola data profil siswa",
     icon: CheckCircle,
-    path: "/student-profile-completion",
+    // ✅ FIX (Sep 2026): sebelumnya nunjuk ke "/student-profile-completion"
+    // -- path itu gak pernah ada di menuConfig.js (kemungkinan sisa dari
+    // rename/refactor ke DataSiswaInduk.js), jadi klik card ini jatuh ke
+    // catch-all route ("*") terus auto ke-Navigate balik ke /dashboard.
+    // Sekarang diarahin ke path yang beneran terdaftar: /data-induk-siswa
+    // (lihat menuConfig.js -- allowedRoles udah include "teacher" +
+    // requireWaliKelas: true, jadi walikelas emang udah boleh masuk situ).
+    path: "/data-induk-siswa",
     color: "bg-blue-100 text-blue-600",
   },
   {
@@ -78,9 +85,7 @@ export default function PortalSiswaGuru({ user, onShowToast, darkMode }) {
 
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-1">
-        Portal Siswa
-      </h1>
+      <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-1">Portal Siswa</h1>
       <p className="text-sm text-slate-500 mb-6">
         Akses cepat ke seluruh data dan aktivitas siswa di kelas Anda
       </p>
@@ -94,18 +99,18 @@ export default function PortalSiswaGuru({ user, onShowToast, darkMode }) {
               onClick={() => navigate(item.path)}
               className="group text-left bg-white rounded-2xl border border-slate-200 p-4 shadow-sm
                          hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5
-                         transition-all duration-200 flex flex-col gap-3">
+                         transition-all duration-200 flex flex-col gap-3"
+            >
               <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.color}`}>
+                className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.color}`}
+              >
                 <Icon size={22} />
               </div>
               <div>
                 <h3 className="font-semibold text-slate-800 text-sm md:text-base group-hover:text-blue-600">
                   {item.title}
                 </h3>
-                <p className="text-xs md:text-sm text-slate-500 mt-0.5">
-                  {item.description}
-                </p>
+                <p className="text-xs md:text-sm text-slate-500 mt-0.5">{item.description}</p>
               </div>
             </button>
           );

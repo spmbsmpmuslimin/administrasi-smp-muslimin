@@ -399,7 +399,7 @@ const SchoolManagementTab = ({
     }
   }, [activeAcademicYear, loading, isInitialLoad, showToast]);
 
-  if (loading && !activeAcademicYear) {
+  if ((loading || isInitialLoad) && !activeAcademicYear) {
     return (
       <div className="flex items-center justify-center p-8 sm:p-12 bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
         <div className="text-center">

@@ -14,7 +14,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-import { runPreflightCheck } from "../../services/academicYearService";
+import { runPreflightCheck, PREFLIGHT_TABLE_COUNT } from "../../services/academicYearService";
 
 const StatCard = ({ label, value, colorClass }) => (
   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center">
@@ -170,7 +170,7 @@ function PreflightCheck() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
           <div className="animate-spin text-3xl mb-2">🔄</div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Memeriksa {18} tabel terkait tahun ajaran...
+            Memeriksa {PREFLIGHT_TABLE_COUNT} tabel terkait tahun ajaran...
           </p>
         </div>
       )}

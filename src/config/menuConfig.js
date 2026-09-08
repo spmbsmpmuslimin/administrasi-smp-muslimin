@@ -147,20 +147,17 @@ export const menuConfig = [
     path: "/data-induk-siswa",
     title: "Data Induk Siswa",
     component: DataSiswaInduk,
-    // ✅ FIX: dibuka dari withPortalBackButton(DataSiswaInduk) -- tombol
-    // "Kembali ke Portal Siswa" gak relevan lagi buat route ini. Dulu
-    // dipakai wali kelas yang masuk lewat hub Portal Siswa, tapi sekarang
-    // route ini khusus Admin & TU (lihat allowedRoles di bawah), yang gak
-    // pernah masuk lewat Portal Siswa sama sekali.
-    // ✅ FIX: "teacher" dibuang -- guru emang gak pernah dikasih lihat menu
-    // ini di sidebar (lihat sidebarConfig.js, show-nya cuma isAdmin/isTU),
-    // jadi allowedRoles disamain sama apa yang sidebar tampilin. "tu"
-    // ditambahin karena TU harus akses semua yang Admin bisa akses.
-    // ✅ FIX: "guru_bk" dibuang juga -- sidebar sengaja cuma nampilin menu
-    // ini buat Admin & TU, jadi allowedRoles disamain biar route gak lebih
-    // longgar dari yang ditampilin sidebar.
-    allowedRoles: ["admin", "tu"],
-    requireWaliKelas: false,
+    // ✅ FIX (Sep 2026): dibuka lagi buat Wali Kelas -- sebelumnya sempat
+    // dibatasin cuma Admin & TU (guru/guru_bk dibuang dari allowedRoles
+    // pas "teacher" masih generik ke semua guru mapel, bukan cuma wali
+    // kelas). Sekarang "teacher" ditambahin BARENGAN requireWaliKelas:
+    // true, jadi yang beneran ke-gembok cuma guru yang emang wali kelas
+    // (homeroom_class_id keisi) -- guru mapel biasa TETAP kena Akses
+    // Ditolak. "tu" tetap ada karena TU harus akses semua yang Admin bisa.
+    // Jangan lupa samain juga show() di sidebarConfig.js (tambah
+    // ctx.isWaliKelas) biar menunya kelihatan buat wali kelas.
+    allowedRoles: ["admin", "tu", "teacher"],
+    requireWaliKelas: true,
     getProps: (ctx) => ({ currentUser: ctx.user }),
   },
   { path: "/attendance", title: "Presensi", component: AttendanceMain },

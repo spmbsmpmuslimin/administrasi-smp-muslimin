@@ -358,6 +358,99 @@ const YearTransition = ({
         showToast(`Meluluskan ${preview.graduating.length} siswa...`, "info");
         const graduatingIds = preview.graduating.map((s) => s.id);
 
+        // 3a. Snapshot data LENGKAP siswa yang lulus -> student_graduations.
+        // Dilakukan SEBELUM students.is_active di-nonaktifkan (di bawah),
+        // biar `students` + `student_profile_details` masih bisa di-join
+        // apa adanya. Tabel ini baru dibikin (7 Sep 2026) sebagai arsip
+        // permanen kelulusan -- sebelumnya siswa kelas 9 cuma dinonaktifin
+        // doang, gak ada jejak datanya buat ditampilin di tab "Siswa Lulus"
+        // (lihat SiswaLulusTab.js).
+        const { data: graduatingFull, error: graduatingFetchError } = await supabase
+          .from("students")
+          .select(
+            `id, full_name, nis, nisn, class_id,
+            student_profile_details (
+              jenis_kelamin, tempat_lahir, tanggal_lahir, agama, alamat, dusun,
+              kode_pos, nik, no_kk, no_akta_lahir, nama_ayah, pekerjaan_ayah,
+              pendidikan_ayah, nik_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu,
+              nik_ibu, sekolah_asal, anak_ke, no_kip
+            )`
+          )
+          .in("id", graduatingIds);
+
+        if (graduatingFetchError) throw graduatingFetchError;
+
+        // tahun_lulus diambil dari TAHUN AJARAN YANG BERAKHIR (preview.currentYear,
+        // format "2025/2026"), BUKAN preview.newYear -- siswa lulus dari tahun
+        // ajaran yang mau ditinggalkan, bukan dari tahun ajaran baru yang mau
+        // dimulai. Ambil bagian setelah "/" (contoh: "2025/2026" -> 2026).
+        const tahunLulus = parseInt(preview.currentYear.split("/")[1], 10) || null;
+        const tanggalLulus = new Date().toISOString().slice(0, 10);
+
+        const graduationRows = (graduatingFull || []).map((s) => {
+          // student_profile_details bisa balik sebagai object ATAU array
+          // tergantung metadata relasi FK di Supabase -- handle dua-duanya.
+          const rawProfile = s.student_profile_details;
+          const profile = Array.isArray(rawProfile) ? rawProfile[0] || {} : rawProfile || {};
+
+          return {
+            nama: s.full_name,
+            nis: s.nis,
+            nisn: s.nisn,
+            jenis_kelamin: profile.jenis_kelamin || null,
+            tempat_lahir: profile.tempat_lahir || null,
+            tanggal_lahir: profile.tanggal_lahir || null,
+            agama: profile.agama || null,
+            alamat: profile.alamat || null,
+            dusun: profile.dusun || null,
+            kode_pos: profile.kode_pos || null,
+            nik: profile.nik || null,
+            no_kk: profile.no_kk || null,
+            no_akta_lahir: profile.no_akta_lahir || null,
+            nama_ayah: profile.nama_ayah || null,
+            pekerjaan_ayah: profile.pekerjaan_ayah || null,
+            pendidikan_ayah: profile.pendidikan_ayah || null,
+            nik_ayah: profile.nik_ayah || null,
+            nama_ibu: profile.nama_ibu || null,
+            pekerjaan_ibu: profile.pekerjaan_ibu || null,
+            pendidikan_ibu: profile.pendidikan_ibu || null,
+            nik_ibu: profile.nik_ibu || null,
+            sekolah_asal: profile.sekolah_asal || null,
+            anak_ke: profile.anak_ke || null,
+            no_kip: profile.no_kip || null,
+            // Murni Admin-only, gak ada sumber otomatisnya -- diisi manual
+            // belakangan lewat tab "Siswa Lulus" (kalau sudah ada fitur
+            // edit-nya) begitu ijazah/no peserta ujian terbit.
+            no_ijazah: null,
+            no_peserta_ujian: null,
+            kelas_terakhir: s.class_id,
+            tahun_lulus: tahunLulus,
+            tanggal_lulus: tanggalLulus,
+            keterangan: null,
+            created_by: user?.id || null,
+          };
+        });
+
+        if (graduationRows.length > 0) {
+          const { error: graduationInsertError } = await supabase
+            .from("student_graduations")
+            .insert(graduationRows);
+
+          // Soft-fail: kalau snapshot gagal disimpen, data siswa aslinya
+          // (students + student_profile_details) masih utuh -- jadi masih
+          // bisa direkonstruksi manual belakangan. Jangan sampai seluruh
+          // transisi tahun ajaran batal cuma gara-gara ini.
+          if (graduationInsertError) {
+            console.error("Gagal insert student_graduations:", graduationInsertError);
+            showToast(
+              "⚠️ Gagal menyimpan arsip data siswa lulus, cek manual nanti: " +
+                graduationInsertError.message,
+              "error"
+            );
+          }
+        }
+
+        // 3b. Nonaktifkan siswa di tabel students (proses lama, tetap jalan)
         const { error: graduateError } = await supabase
           .from("students")
           .update({ is_active: false })
@@ -667,7 +760,10 @@ const YearTransition = ({
                     {yearTransition.preview.newStudents?.length || 0} siswa baru masuk kelas 7
                     (sesuai pembagian di SPMB)
                   </li>
-                  <li>Siswa kelas {graduatingGrade} akan diluluskan</li>
+                  <li>
+                    Siswa kelas {graduatingGrade} akan diluluskan dan datanya masuk pada Siswa Lulus
+                    (Student_Graduations)
+                  </li>
                   <li>Assignment guru akan direset</li>
                   <li>Tahun ajaran berubah ke {yearTransition.preview.newYear} - Semester 1</li>
                   <li>

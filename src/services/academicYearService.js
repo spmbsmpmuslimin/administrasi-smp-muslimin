@@ -861,34 +861,42 @@ export const autoFixDataIntegrity = async () => {
 // ========================================
 // 🛡️ PREFLIGHT CHECK (Cek Kesinambungan)
 // ========================================
-// Daftar semua tabel yang punya kolom academic_year_id (FK ke academic_years).
+// Daftar tabel yang PUNYA kolom academic_year_id DAN beneran kesentuh sama
+// proses transisi tahun ajaran (executeYearTransition() di YearTransition.js
+// + transferToStudents() di ClassOperations.js).
+//
+// ⚠️ SENGAJA DIPERSEMPIT (7 Sep 2026): sebelumnya ada 18 tabel di sini,
+// termasuk tabel-tabel akademik lain yang emang pakai academic_year_id
+// (grades, attendances, jurnal_harian, konseling, dll) tapi TIDAK PERNAH
+// ditulis/dibaca sama proses transisi itu sendiri. Kesehatan datanya gak
+// ngaruh ke sukses/gagalnya tombol "Mulai Tahun Ajaran Baru" - itu masalah
+// data lain yang gak nyambung ke sini, cuma bikin bingung ("kok yang gak
+// relevan ikut dicek juga?"). Kalau butuh general health-check lintas semua
+// tabel akademik (bukan spesifik transisi), itu urusan terpisah, bukan
+// scope tab "Cek Kesinambungan" yang secara eksplisit diposisikan sebagai
+// pre-check SEBELUM transisi (lihat komentar header PreflightCheck.js).
+//
+// 6 tabel lain yang BENERAN kesentuh transisi (siswa_baru, spmb_settings,
+// school_settings, student_auth, student_graduations, student_profile_details)
+// SENGAJA gak dimasukkan ke sini juga - soalnya mereka gak punya kolom
+// academic_year_id (jadi gak cocok sama pola cek generic orphan/mismatch di
+// bawah). Kesiapan tabel-tabel itu dicek dengan cara yang beda-beda (lebih
+// spesifik per-kasus) di runTransitionReadinessCheck() / TransitionReadiness.js.
+//
 // textColumn diisi kalau tabel itu JUGA punya kolom teks "academic_year" yang
 // perlu disinkronkan manual (legacy column) - kalau null berarti tabel itu
 // cuma pakai academic_year_id doang, gak ada kolom teks yang bisa mismatch.
 const TABLES_WITH_ACADEMIC_YEAR_ID = [
-  { table: "attendance_eraport", label: "Absensi E-Rapor", textColumn: null },
-  { table: "attendances", label: "Absensi Harian", textColumn: null },
-  { table: "catatan_eraport", label: "Catatan E-Rapor", textColumn: null },
   { table: "classes", label: "Kelas", textColumn: "academic_year" },
-  { table: "ekstrakurikuler_eraport", label: "Ekstrakurikuler E-Rapor", textColumn: null },
-  { table: "grades", label: "Nilai", textColumn: "academic_year" },
-  { table: "grades_katrol", label: "Nilai Katrol", textColumn: "academic_year" },
-  { table: "grades_katrol_settings", label: "Setting Nilai Katrol", textColumn: "academic_year" },
-  { table: "jurnal_harian", label: "Jurnal Harian", textColumn: null },
-  { table: "konseling", label: "Konseling", textColumn: "academic_year" },
-  { table: "nilai_eraport", label: "Nilai E-Rapor", textColumn: null },
-  { table: "raport_config", label: "Konfigurasi Rapor", textColumn: null },
-  { table: "raport_metadata", label: "Metadata Rapor", textColumn: null },
-  {
-    table: "student_development_notes",
-    label: "Catatan Perkembangan Siswa",
-    textColumn: "academic_year",
-  },
   { table: "students", label: "Data Siswa", textColumn: "academic_year" },
   { table: "teacher_assignments", label: "Penugasan Guru", textColumn: "academic_year" },
-  { table: "teacher_schedules", label: "Jadwal Guru", textColumn: null },
-  { table: "tujuan_pembelajaran", label: "Tujuan Pembelajaran", textColumn: null },
 ];
+
+// Diekspor biar UI (PreflightCheck.js) bisa nampilin jumlah tabel yang
+// bakal dicek TANPA hardcode angka manual -- dulu ada teks "Memeriksa 18
+// tabel..." yang ke-tulis literal padahal daftarnya udah berubah beberapa
+// kali, jadi gampang basi kalau daftar di atas diubah lagi belakangan.
+export const PREFLIGHT_TABLE_COUNT = TABLES_WITH_ACADEMIC_YEAR_ID.length;
 
 export const runPreflightCheck = async () => {
   try {
@@ -1275,6 +1283,173 @@ export const runTransitionReadinessCheck = async (schoolConfig = {}) => {
         ? `Gagal cek jumlah teacher_assignments: ${countError.message}`
         : `${assignmentCount || 0} assignment guru buat ${currentYear} bakal DIHAPUS otomatis pas transisi. Pastiin data ini udah gak dibutuhkan (backup/export dulu kalau perlu).`,
     });
+
+    // 8. school_settings harus punya baris setting_key="academic_year" --
+    // STEP 7 executeYearTransition() nge-update baris ini pakai .eq(), kalau
+    // barisnya gak ada, update itu JALAN TANPA ERROR tapi 0 baris keupdate
+    // (silent fail) -- tahun ajaran aktif di UI bakal keliatan gak berubah
+    // padahal proses lain (kenaikan kelas, dll) udah kejalan semua.
+    const { data: academicYearSetting, error: settingCheckError } = await supabase
+      .from("school_settings")
+      .select("setting_key, setting_value")
+      .eq("setting_key", "academic_year")
+      .maybeSingle();
+
+    if (settingCheckError) {
+      items.push({
+        id: "school_settings_row",
+        label: "Setting tahun ajaran (school_settings)",
+        status: "critical",
+        message: `Gagal cek school_settings: ${settingCheckError.message}`,
+      });
+    } else if (!academicYearSetting) {
+      items.push({
+        id: "school_settings_row",
+        label: "Setting tahun ajaran (school_settings)",
+        status: "critical",
+        message:
+          'Baris school_settings dengan setting_key="academic_year" gak ditemukan. Update tahun ajaran pas transisi bakal SILENT FAIL (0 baris keupdate). Tambahin baris ini dulu sebelum lanjut.',
+      });
+    } else {
+      items.push({
+        id: "school_settings_row",
+        label: "Setting tahun ajaran (school_settings)",
+        status: "ok",
+        message: `Baris ditemukan, nilai sekarang: "${academicYearSetting.setting_value}".`,
+      });
+    }
+
+    // 9-11. Kesiapan siswa yang bakal LULUS (kelas terakhir) -- relevan buat
+    // fitur snapshot student_graduations (STEP 3 executeYearTransition()).
+    // Ngikutin logika graduatingGrade = grade terakhir di config.grades,
+    // sama persis kayak di YearTransition.js.
+    const graduatingGrade = grades[grades.length - 1];
+    const { data: graduatingStudents, error: graduatingError } = await supabase
+      .from("students")
+      .select("id, full_name, nis, class_id")
+      .eq("is_active", true)
+      .like("class_id", `${graduatingGrade}%`);
+
+    if (graduatingError) {
+      items.push({
+        id: "graduation_readiness",
+        label: "Kesiapan data siswa lulus",
+        status: "critical",
+        message: `Gagal cek siswa kelas ${graduatingGrade}: ${graduatingError.message}`,
+      });
+    } else if ((graduatingStudents || []).length === 0) {
+      items.push({
+        id: "graduation_readiness",
+        label: "Kesiapan data siswa lulus",
+        status: "info",
+        message: `Gak ada siswa aktif di kelas ${graduatingGrade} - gak ada yang diluluskan pas transisi ini.`,
+      });
+    } else {
+      const graduatingIds = graduatingStudents.map((s) => s.id);
+
+      // 9. student_profile_details -- kalau kosong/gak lengkap, snapshot di
+      // student_graduations bakal penuh null (nama doang, tanpa alamat/NIK/
+      // data ortu).
+      const { data: profiles, error: profilesError } = await supabase
+        .from("student_profile_details")
+        .select("student_id, nik, alamat, nama_ayah, nama_ibu")
+        .in("student_id", graduatingIds);
+
+      if (profilesError) {
+        items.push({
+          id: "graduating_profile_details",
+          label: "Kelengkapan profil siswa lulus",
+          status: "critical",
+          message: `Gagal cek student_profile_details: ${profilesError.message}`,
+        });
+      } else {
+        const profileMap = new Map((profiles || []).map((p) => [p.student_id, p]));
+        const incomplete = graduatingStudents.filter((s) => {
+          const p = profileMap.get(s.id);
+          // Dianggap gak lengkap kalau baris profil gak ada sama sekali,
+          // ATAU ada tapi field-field inti (NIK/alamat/data ortu) kosong.
+          return !p || !p.nik || !p.alamat || (!p.nama_ayah && !p.nama_ibu);
+        });
+
+        items.push({
+          id: "graduating_profile_details",
+          label: "Kelengkapan profil siswa lulus",
+          status: incomplete.length > 0 ? "warning" : "ok",
+          message:
+            incomplete.length > 0
+              ? `${incomplete.length} dari ${graduatingStudents.length} siswa kelas ${graduatingGrade} punya data profil (NIK/alamat/data ortu) yang belum lengkap - arsip kelulusannya bakal ada field kosong. Lengkapi dulu lewat DataSiswaInduk.js kalau perlu.`
+              : `Semua ${graduatingStudents.length} siswa kelas ${graduatingGrade} punya data profil yang lengkap.`,
+          details: incomplete.slice(0, 10).map((s) => s.full_name),
+        });
+      }
+
+      // 10. student_auth -- info doang (bukan critical), biar admin tau
+      // kalau ada siswa lulus yang emang dari awal gak pernah punya akun,
+      // jadi update is_active=false di STEP 3 gak nyentuh mereka (wajar).
+      const { data: authRows, error: authError } = await supabase
+        .from("student_auth")
+        .select("student_id")
+        .in("student_id", graduatingIds);
+
+      if (authError) {
+        items.push({
+          id: "graduating_auth",
+          label: "Akun login siswa lulus",
+          status: "warning",
+          message: `Gagal cek student_auth: ${authError.message}`,
+        });
+      } else {
+        const authIds = new Set((authRows || []).map((a) => a.student_id));
+        const noAuth = graduatingStudents.filter((s) => !authIds.has(s.id));
+
+        items.push({
+          id: "graduating_auth",
+          label: "Akun login siswa lulus",
+          status: "info",
+          message:
+            noAuth.length > 0
+              ? `${noAuth.length} dari ${graduatingStudents.length} siswa kelas ${graduatingGrade} emang gak punya akun student_auth - wajar dilewatin pas nonaktifin akun di STEP 3.`
+              : `Semua ${graduatingStudents.length} siswa kelas ${graduatingGrade} punya akun student_auth.`,
+        });
+      }
+
+      // 11. student_graduations -- cek udah ada baris duluan buat siswa yang
+      // sama (indikasi transisi ini pernah kejalan sebagian / kepencet 2x).
+      // Dicocokkan pakai nis, bukan id siswa (student_graduations gak nyimpen
+      // FK ke students, cuma snapshot data).
+      const graduatingNIS = graduatingStudents.map((s) => s.nis).filter(Boolean);
+
+      const tahunLulusCheck = parseInt(currentYear.split("/")[1], 10) || null;
+      const { data: existingGrads, error: existingGradsError } = await supabase
+        .from("student_graduations")
+        .select("nis, nama")
+        .eq("tahun_lulus", tahunLulusCheck);
+
+      if (existingGradsError) {
+        items.push({
+          id: "graduation_duplicate",
+          label: "Cek data lulus ganda",
+          status: "warning",
+          message: `Gagal cek student_graduations: ${existingGradsError.message}`,
+        });
+      } else {
+        const existingNISSet = new Set((existingGrads || []).map((g) => g.nis).filter(Boolean));
+        const alreadyGraduated = (graduatingStudents || []).filter(
+          (s) => s.nis && existingNISSet.has(s.nis)
+        );
+
+        items.push({
+          id: "graduation_duplicate",
+          label: "Cek data lulus ganda",
+          status: alreadyGraduated.length > 0 ? "critical" : "ok",
+          message:
+            alreadyGraduated.length > 0
+              ? `${alreadyGraduated.length} siswa kelas ${graduatingGrade} SUDAH ADA di student_graduations buat tahun lulus ${tahunLulusCheck} - kemungkinan transisi ini pernah dijalankan sebagian. Cek dulu manual, jangan sampai data lulus dobel.`
+              : `Belum ada data lulus ganda untuk tahun ${tahunLulusCheck}, aman.`,
+          details: alreadyGraduated.slice(0, 10).map((s) => s.full_name),
+        });
+      }
+    }
 
     return {
       currentYear,

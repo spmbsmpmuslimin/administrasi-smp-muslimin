@@ -67,18 +67,26 @@ function isValidPhone(raw) {
 // dipecah jadi Ayah/Ibu terpisah — kolom lamanya dibiarin aja di DB (gak
 // didrop) buat jaga-jaga data lama, tapi UI-nya udah gak nampilin/isi itu.
 //
-// ⚠️ UPDATE (kunci Kelompok B eks-SPMB, hilangkan Data Kelulusan &
-// Lainnya): sejak field siswa_baru diperkaya & auto-tersalin ke
-// student_profile_details pas transfer siswa diterima, field2 berikut
-// yang tadinya "Kelompok B" (boleh diedit mandiri) SEKARANG DIKUNCI jadi
-// read-only di sini juga, disamain kayak Kelompok A -- biar cuma ADA 1
-// sumber isian awal (SPMB) + 1 pintu koreksi (Admin/TU lewat
-// DataSiswaInduk.js), gak ada pintu ke-3 dari siswa/ortu yang bisa bikin
-// datanya beda sama yang di SPMB / kesimpen Admin:
-//   nama_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu,
-//   pendidikan_ibu, alamat, no_hp_ortu, kode_pos
-// Kalau ada yang salah/berubah (pindah rumah, ganti kerjaan, ganti nomor),
-// siswa/ortu HARUS lapor ke Tata Usaha, bukan ubah sendiri dari sini.
+// ⚠️ UPDATE 2 (unlock field yang masih kosong): sejak backlog data lama
+// (hasil import Excel TU sebelum aplikasi ini ada) ketauan banyak yang
+// bolong, field2 di bawah ini SEKARANG BOLEH diisi mandiri oleh
+// siswa/ortu -- TAPI CUMA KALAU nilainya masih kosong di database:
+//   nisn, jenis_kelamin, tempat_lahir, tanggal_lahir, sekolah_asal,
+//   alamat, kode_pos, agama, nik, no_kk, no_akta_lahir,
+//   nama_ayah, nik_ayah, tempat_tgl_lahir_ayah, pekerjaan_ayah, pendidikan_ayah,
+//   nama_ibu, nik_ibu, tempat_tgl_lahir_ibu, pekerjaan_ibu, pendidikan_ibu,
+//   no_hp_ortu
+// Begitu field itu keisi (dari siswa ATAU dari TU), otomatis TERKUNCI
+// LAGI selamanya -- kalau ternyata salah ketik, harus lapor Tata Usaha
+// buat dikoreksi lewat DataSiswaInduk.js, bukan diedit ulang dari sini.
+// Ini bukan "pintu ke-3" yang membuka lagi celah data nyimpang: karena
+// begitu terkunci, field itu PERSIS sama seperti sebelum update ini --
+// cuma dipakai buat ngisi yang KOSONG, bukan buat nimpa/mengoreksi yang
+// udah ada. Lihat LockableField & unlockableFields di ProfileInfo di
+// bawah buat detail implementasinya.
+// No. KIP, No. Ijazah, No. Peserta Ujian, No. Daftar, dan Keterangan
+// TETAP admin-only (gak termasuk dalam daftar di atas) -- lihat alasannya
+// di bagian "Section Data Kelulusan & Lainnya" di bawah.
 //
 // Section "Data Kelulusan & Lainnya" (No. Ijazah, No. Peserta Ujian,
 // No. Daftar, Keterangan) DIHAPUS TOTAL dari sisi siswa (baik tampilan
@@ -88,9 +96,10 @@ function isValidPhone(raw) {
 // DataSiswaInduk.js) dan udah jadi pintu ganda (siswa + admin bisa nulis
 // ke kolom yang sama tanpa pembagian tanggung jawab).
 //
-// Field yang TETAP bisa diisi mandiri sama siswa/ortu (gak ada di SPMB,
-// gak ada sumber lain): no_hp (HP siswa sendiri, opsional), anak_ke.
-// `dusun` DIBIARIN ADA DI DB (buat data lama), tapi SENGAJA gak
+// Field yang SELALU bisa diisi mandiri (gak pernah terkunci, gak ada di
+// SPMB, gak ada sumber lain): no_hp (HP siswa sendiri, opsional), anak_ke.
+// Field lain yang CUMA bisa diisi kalau masih kosong: lihat UPDATE 2 di
+// atas. `dusun` DIBIARIN ADA DI DB (buat data lama), tapi SENGAJA gak
 // dimunculin di UI manapun -- purpose-nya gak jelas & isinya biasanya
 // udah nempel di teks `alamat`.
 //
@@ -159,19 +168,53 @@ function pekerjaanOptionsFor(value, standardList) {
   return standardList.includes(value) ? standardList : [value, ...standardList];
 }
 
+const AGAMA_OPTIONS = ["ISLAM", "KRISTEN", "KATOLIK", "HINDU", "BUDDHA", "KONGHUCU"];
+
+// ✅ NEW: field kosong (null/undefined/string kosong) di database = boleh
+// diisi mandiri sekali sama siswa/ortu. Field yang UDAH ada isinya (dari
+// SPMB atau diisi TU) tetap terkunci total kayak sebelumnya. Ini dicek per
+// FIELD, bukan per SISWA -- jadi 1 siswa bisa isi beberapa field yang
+// masih kosong dalam 1x submit yang sama, sementara field lain yang udah
+// keisi tetap gak kesentuh.
+function isEmptyValue(v) {
+  return v === null || v === undefined || v === "";
+}
+
 export function ProfileInfo({ student, onUpdated }) {
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
-  // Cuma field yang BENERAN masih bisa diedit mandiri sama siswa/ortu yang
-  // masuk state `form` ini. Field eks-SPMB (nama_ayah, pekerjaan_ayah,
-  // pendidikan_ayah, nama_ibu, pekerjaan_ibu, pendidikan_ibu, alamat,
-  // no_hp_ortu, kode_pos) udah dikunci -> dibaca LANGSUNG dari `student`
-  // prop di JSX (bukan disimpen di `form`), biar gak sengaja ke-submit
-  // ulang lewat handleSubmit.
+  // `form` sekarang nampung SEMUA field yang mungkin diisi mandiri --
+  // baik yang dari awal emang selalu terbuka (no_hp, anak_ke) maupun yang
+  // cuma kebuka KALAU nilainya masih kosong di DB (lihat isEmptyValue()
+  // + LockableField di bawah). Field yang udah keisi gak pernah kesentuh
+  // dari form ini sama sekali (lihat handleSubmit), jadi nilai form buat
+  // field yang udah terkunci gak relevan/gak pernah dipakai.
   const [form, setForm] = useState({
     no_hp: "",
     anak_ke: "",
+    nisn: "",
+    jenis_kelamin: "",
+    tempat_lahir: "",
+    tanggal_lahir: "",
+    sekolah_asal: "",
+    alamat: "",
+    kode_pos: "",
+    agama: "",
+    nik: "",
+    no_kk: "",
+    no_akta_lahir: "",
+    nama_ayah: "",
+    nik_ayah: "",
+    tempat_tgl_lahir_ayah: "",
+    pekerjaan_ayah: "",
+    pendidikan_ayah: "",
+    nama_ibu: "",
+    nik_ibu: "",
+    tempat_tgl_lahir_ibu: "",
+    pekerjaan_ibu: "",
+    pendidikan_ibu: "",
+    no_hp_ortu: "",
   });
 
   // Sinkronin form pas data student berubah (pertama kali load, atau
@@ -180,6 +223,28 @@ export function ProfileInfo({ student, onUpdated }) {
     setForm({
       no_hp: student?.no_hp || "",
       anak_ke: student?.anak_ke ?? "",
+      nisn: student?.nisn || "",
+      jenis_kelamin: student?.jenis_kelamin || "",
+      tempat_lahir: student?.tempat_lahir || "",
+      tanggal_lahir: student?.tanggal_lahir || "",
+      sekolah_asal: student?.sekolah_asal || "",
+      alamat: student?.alamat || "",
+      kode_pos: student?.kode_pos || "",
+      agama: student?.agama || "",
+      nik: student?.nik || "",
+      no_kk: student?.no_kk || "",
+      no_akta_lahir: student?.no_akta_lahir || "",
+      nama_ayah: student?.nama_ayah || "",
+      nik_ayah: student?.nik_ayah || "",
+      tempat_tgl_lahir_ayah: student?.tempat_tgl_lahir_ayah || "",
+      pekerjaan_ayah: student?.pekerjaan_ayah || "",
+      pendidikan_ayah: student?.pendidikan_ayah || "",
+      nama_ibu: student?.nama_ibu || "",
+      nik_ibu: student?.nik_ibu || "",
+      tempat_tgl_lahir_ibu: student?.tempat_tgl_lahir_ibu || "",
+      pekerjaan_ibu: student?.pekerjaan_ibu || "",
+      pendidikan_ibu: student?.pendidikan_ibu || "",
+      no_hp_ortu: student?.no_hp_ortu || "",
     });
   }, [student]);
 
@@ -247,6 +312,11 @@ export function ProfileInfo({ student, onUpdated }) {
     // butuh lihat/edit ke-4 field ini, lewat DataSiswaInduk.js aja.
   ];
 
+  // 16 digit angka -- format standar NIK/No. KK Indonesia. Divalidasi
+  // CUMA kalau field itu emang lagi kebuka (kosong di DB) dan diisi --
+  // field yang udah terkunci gak pernah lewat validasi ini.
+  const isValid16Digit = (v) => /^\d{16}$/.test(String(v).trim());
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError(null);
@@ -264,29 +334,66 @@ export function ProfileInfo({ student, onUpdated }) {
       return;
     }
 
+    // ✅ NEW: field yang boleh diisi mandiri KALAU masih kosong di DB.
+    // Field yang udah keisi (isEmptyValue(student?.[key]) === false)
+    // SENGAJA gak dimasukin ke payload sama sekali -- biar upsert
+    // Supabase gak nyentuh/nimpa kolom yang harusnya cuma boleh dikoreksi
+    // TU lewat DataSiswaInduk.js.
+    const unlockableFields = [
+      "nisn",
+      "jenis_kelamin",
+      "tempat_lahir",
+      "tanggal_lahir",
+      "sekolah_asal",
+      "alamat",
+      "kode_pos",
+      "agama",
+      "nik",
+      "no_kk",
+      "no_akta_lahir",
+      "nama_ayah",
+      "nik_ayah",
+      "tempat_tgl_lahir_ayah",
+      "pekerjaan_ayah",
+      "pendidikan_ayah",
+      "nama_ibu",
+      "nik_ibu",
+      "tempat_tgl_lahir_ibu",
+      "pekerjaan_ibu",
+      "pendidikan_ibu",
+      "no_hp_ortu",
+    ];
+    const nikLikeFields = ["nik", "no_kk", "nik_ayah", "nik_ibu"];
+
+    const extra = {};
+    for (const key of unlockableFields) {
+      if (!isEmptyValue(student?.[key])) continue; // udah keisi -> skip total
+      const val = typeof form[key] === "string" ? form[key].trim() : form[key];
+      if (nikLikeFields.includes(key) && val && !isValid16Digit(val)) {
+        setFormError(`${key.toUpperCase()} harus 16 digit angka. Cek lagi ya.`);
+        return;
+      }
+      extra[key] = val === "" ? null : val;
+    }
+
     setSubmitting(true);
     try {
       // Upsert: 1 baris per siswa di student_profile_details
       // (student_id = primary key), jadi otomatis update kalau udah
       // pernah isi, atau insert kalau baru pertama kali.
-      // Kirim CUMA field yang beneran masih self-service dari sisi siswa:
-      // no_hp (HP siswa sendiri), anak_ke. `dusun` gak dikirim dari sini
-      // (dibiarin apa adanya di DB, gak diutak-atik lewat portal ini).
-      // SEMUA field lain -- identitas/dokumen resmi (jenis_kelamin,
-      // tempat/tanggal lahir, agama, NIK, No.KK, No.Akta Lahir, sekolah
-      // asal, No.KIP/Ijazah/Peserta Ujian/Daftar, NIK & TTL ortu) MAUPUN
-      // eks-Kelompok B yang sekarang udah dikunci (nama_ayah,
-      // pekerjaan_ayah, pendidikan_ayah, nama_ibu, pekerjaan_ibu,
-      // pendidikan_ibu, alamat, no_hp_ortu, kode_pos) DAN `keterangan`
-      // (sekarang admin-only) -- SENGAJA gak dikirim dari sini lagi.
-      // Sumbernya cuma SPMB (isi awal) + admin/TU lewat DataSiswaInduk.js
-      // (koreksi), biar tervalidasi ke dokumen fisik & gak ada pintu
-      // ganda (samain pola kayak NISN yang udah duluan begini).
+      // Kirim field yang SELALU self-service (no_hp, anak_ke) + field di
+      // `extra` (field lain yang kebetulan masih kosong di DB pas ini
+      // disubmit). SEMUA field yang udah ada isinya -- baik eks-SPMB
+      // (nama_ayah dkk, alamat, no_hp_ortu, kode_pos) maupun identitas
+      // resmi (NIK, No.KK, dst) -- TETAP gak kesentuh dari sini, cuma
+      // bisa dikoreksi TU lewat DataSiswaInduk.js. `keterangan` juga
+      // tetap admin-only, gak pernah dikirim dari sini.
       const { error: upsertErr } = await supabase.from("student_profile_details").upsert(
         {
           student_id: student.id,
           no_hp: form.no_hp ? normalizePhone(form.no_hp) : null,
           anak_ke: form.anak_ke === "" ? null : Number(form.anak_ke),
+          ...extra,
           updated_at: new Date().toISOString(),
           // Data berubah -> status verifikasi admin otomatis batal, harus
           // dicek ulang. Lihat DataSiswaInduk.js buat tombol
@@ -310,7 +417,76 @@ export function ProfileInfo({ student, onUpdated }) {
 
   const inputClass =
     "w-full text-sm text-theme border border-theme rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300";
+  const lockedInputClass =
+    "w-full text-sm text-theme-secondary bg-theme-surface border border-theme rounded-lg px-3 py-2 cursor-not-allowed";
   const labelClass = "block text-sm font-semibold text-theme-secondary mb-1";
+
+  // ✅ NEW: 1 komponen dipakai bareng buat SEMUA field yang "terkunci
+  // kalau udah keisi, kebuka kalau masih kosong" -- baik field yang
+  // sebelumnya udah ada inputnya (NISN, Alamat, dst, cuma tadinya SELALU
+  // disabled) maupun field yang sebelumnya cuma nongol di tampilan biasa
+  // (Jenis Kelamin, NIK, No. KK, dst -- sebelumnya gak ada input edit-nya
+  // sama sekali). `dbValue` (nilai asli di `student`) yang nentuin
+  // lock/unlock; `formValue`/`onChange` cuma relevan pas lagi kebuka.
+  function LockableField({
+    label: fieldLabel,
+    dbValue,
+    formValue,
+    onChange,
+    type = "text",
+    options,
+    taRows = 2,
+  }) {
+    if (!isEmptyValue(dbValue)) {
+      return (
+        <div>
+          <label className={labelClass}>{fieldLabel}</label>
+          {type === "textarea" ? (
+            <textarea rows={taRows} value={dbValue} disabled className={lockedInputClass} />
+          ) : (
+            <input
+              type={type === "date" ? "date" : "text"}
+              value={dbValue}
+              disabled
+              className={lockedInputClass}
+            />
+          )}
+        </div>
+      );
+    }
+    return (
+      <div>
+        <label className={labelClass}>
+          {fieldLabel}{" "}
+          <span className="text-amber-600 dark:text-amber-400 font-normal text-xs">
+            (belum diisi TU — boleh diisi sendiri)
+          </span>
+        </label>
+        {type === "textarea" ? (
+          <textarea rows={taRows} value={formValue} onChange={onChange} className={inputClass} />
+        ) : type === "select" ? (
+          <select value={formValue} onChange={onChange} className={inputClass}>
+            <option value="">-- Pilih {fieldLabel} --</option>
+            {options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type={type}
+            value={formValue}
+            onChange={onChange}
+            placeholder={fieldLabel}
+            className={inputClass}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   if (isEditing) {
     return (
@@ -327,47 +503,67 @@ export function ProfileInfo({ student, onUpdated }) {
             Data Siswa
           </p>
           <p className="text-xs text-theme-secondary -mt-1">
-            Data identitas resmi & kontak (jenis kelamin, tempat/tanggal lahir, agama, NIK, No. KK,
-            No. Akta Lahir, sekolah asal, No. KIP/Ijazah/Peserta Ujian/Daftar, alamat, kode pos)
-            dikelola oleh Tata Usaha berdasarkan dokumen fisik & data pendaftaran SPMB. Kalau ada
-            yang salah/berubah (pindah rumah dll), hubungi Tata Usaha — bukan diisi sendiri dari
-            sini.
+            Field yang masih kosong boleh diisi sendiri (sekali) — begitu tersimpan, otomatis
+            terkunci dan cuma bisa dikoreksi lewat Tata Usaha kalau ternyata salah ketik.
           </p>
 
-          <div>
-            <label className={labelClass}>NISN</label>
-            <input
-              type="text"
-              value={student?.nisn || "Belum tersedia, hubungi Tata Usaha"}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-          </div>
+          <LockableField
+            label="NISN"
+            dbValue={student?.nisn}
+            formValue={form.nisn}
+            onChange={setField("nisn")}
+          />
 
-          <div>
-            <label className={labelClass}>Alamat Lengkap</label>
-            <textarea
-              rows={2}
-              value={student?.alamat || "Belum tersedia, hubungi Tata Usaha"}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-          </div>
+          <LockableField
+            label="Jenis Kelamin"
+            dbValue={student?.jenis_kelamin}
+            formValue={form.jenis_kelamin}
+            onChange={setField("jenis_kelamin")}
+            type="select"
+            options={["LAKI-LAKI", "PEREMPUAN"]}
+          />
+
+          <LockableField
+            label="Tempat Lahir"
+            dbValue={student?.tempat_lahir}
+            formValue={form.tempat_lahir}
+            onChange={setField("tempat_lahir")}
+          />
+
+          <LockableField
+            label="Tanggal Lahir"
+            dbValue={student?.tanggal_lahir}
+            formValue={form.tanggal_lahir}
+            onChange={setField("tanggal_lahir")}
+            type="date"
+          />
+
+          <LockableField
+            label="Sekolah Asal"
+            dbValue={student?.sekolah_asal}
+            formValue={form.sekolah_asal}
+            onChange={setField("sekolah_asal")}
+          />
+
+          <LockableField
+            label="Alamat Lengkap"
+            dbValue={student?.alamat}
+            formValue={form.alamat}
+            onChange={setField("alamat")}
+            type="textarea"
+          />
 
           {/* Kolom `dusun` SENGAJA gak dimasukin ke UI manapun (baik view
               maupun form edit) -- purpose-nya gak jelas & datanya biasanya
               udah nempel di teks `alamat`. Kolomnya dibiarin ada di DB
               buat data lama, tapi gak dipake/ditampilin lagi di sini. */}
 
-          <div>
-            <label className={labelClass}>Kode Pos</label>
-            <input
-              type="text"
-              value={student?.kode_pos || "Belum tersedia, hubungi Tata Usaha"}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-          </div>
+          <LockableField
+            label="Kode Pos"
+            dbValue={student?.kode_pos}
+            formValue={form.kode_pos}
+            onChange={setField("kode_pos")}
+          />
 
           <div>
             <label className={labelClass}>No. HP Siswa (Kalau Ada)</label>
@@ -383,6 +579,15 @@ export function ProfileInfo({ student, onUpdated }) {
             </p>
           </div>
 
+          <LockableField
+            label="Agama"
+            dbValue={student?.agama}
+            formValue={form.agama}
+            onChange={setField("agama")}
+            type="select"
+            options={AGAMA_OPTIONS}
+          />
+
           <div>
             <label className={labelClass}>Anak Ke Berapa Dalam Keluarga</label>
             <input
@@ -393,6 +598,30 @@ export function ProfileInfo({ student, onUpdated }) {
               className={inputClass}
             />
           </div>
+
+          <LockableField
+            label="NIK"
+            dbValue={student?.nik}
+            formValue={form.nik}
+            onChange={setField("nik")}
+          />
+
+          <LockableField
+            label="No. Kartu Keluarga (KK)"
+            dbValue={student?.no_kk}
+            formValue={form.no_kk}
+            onChange={setField("no_kk")}
+          />
+
+          <LockableField
+            label="No. Akta Lahir"
+            dbValue={student?.no_akta_lahir}
+            formValue={form.no_akta_lahir}
+            onChange={setField("no_akta_lahir")}
+          />
+          {/* No. KIP SENGAJA gak dibukain di sini -- bukan bagian dari
+              REQUIRED_FIELDS status kelengkapan, dan tetap admin-only
+              kayak No. Ijazah/No. Peserta Ujian/No. Daftar/Keterangan. */}
         </div>
 
         {/* ---- Data Orangtua (gabungan Ayah, Ibu, & Kontak) ---- */}
@@ -401,93 +630,91 @@ export function ProfileInfo({ student, onUpdated }) {
             Data Orangtua
           </p>
           <p className="text-xs text-theme-secondary -mt-1">
-            Seluruh data orang tua (nama, pekerjaan, pendidikan, NIK, tempat/tanggal lahir, No. HP)
-            dikelola Tata Usaha berdasarkan data pendaftaran SPMB & dokumen fisik. Kalau ada yang
-            salah/berubah (ganti kerjaan, ganti nomor, dll), hubungi Tata Usaha.
+            Sama kayak di atas — field yang masih kosong boleh diisi sendiri, yang udah keisi tetap
+            terkunci.
           </p>
-          <div>
-            <label className={labelClass}>Nama Lengkap Ayah</label>
-            <input
-              type="text"
-              value={student?.nama_ayah || "Belum tersedia, hubungi Tata Usaha"}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-          </div>
 
-          <div>
-            <label className={labelClass}>Pekerjaan Ayah</label>
-            <select
-              value={student?.pekerjaan_ayah || ""}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            >
-              {!student?.pekerjaan_ayah && (
-                <option value="">Belum tersedia, hubungi Tata Usaha</option>
-              )}
-              {pekerjaanOptionsFor(student?.pekerjaan_ayah, PEKERJAAN_LIST_AYAH).map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Pendidikan Terakhir Ayah</label>
-            <input
-              type="text"
-              value={student?.pendidikan_ayah || "Belum tersedia, hubungi Tata Usaha"}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-          </div>
+          <LockableField
+            label="Nama Lengkap Ayah"
+            dbValue={student?.nama_ayah}
+            formValue={form.nama_ayah}
+            onChange={setField("nama_ayah")}
+          />
 
-          <div>
-            <label className={labelClass}>Nama Lengkap Ibu</label>
-            <input
-              type="text"
-              value={student?.nama_ibu || "Belum tersedia, hubungi Tata Usaha"}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-          </div>
+          <LockableField
+            label="NIK Ayah"
+            dbValue={student?.nik_ayah}
+            formValue={form.nik_ayah}
+            onChange={setField("nik_ayah")}
+          />
 
-          <div>
-            <label className={labelClass}>Pekerjaan Ibu</label>
-            <select
-              value={student?.pekerjaan_ibu || ""}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            >
-              {!student?.pekerjaan_ibu && (
-                <option value="">Belum tersedia, hubungi Tata Usaha</option>
-              )}
-              {pekerjaanOptionsFor(student?.pekerjaan_ibu, PEKERJAAN_LIST_IBU).map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Pendidikan Terakhir Ibu</label>
-            <input
-              type="text"
-              value={student?.pendidikan_ibu || "Belum tersedia, hubungi Tata Usaha"}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-          </div>
+          <LockableField
+            label="Tempat, Tanggal Lahir Ayah"
+            dbValue={student?.tempat_tgl_lahir_ayah}
+            formValue={form.tempat_tgl_lahir_ayah}
+            onChange={setField("tempat_tgl_lahir_ayah")}
+          />
 
-          <div>
-            <label className={labelClass}>No. HP Orang Tua/Wali</label>
-            <input
-              type="tel"
-              value={student?.no_hp_ortu || "Belum tersedia, hubungi Tata Usaha"}
-              disabled
-              className={`${inputClass} bg-theme-surface text-theme-secondary cursor-not-allowed`}
-            />
-          </div>
+          <LockableField
+            label="Pekerjaan Ayah"
+            dbValue={student?.pekerjaan_ayah}
+            formValue={form.pekerjaan_ayah}
+            onChange={setField("pekerjaan_ayah")}
+            type="select"
+            options={PEKERJAAN_LIST_AYAH}
+          />
+
+          <LockableField
+            label="Pendidikan Terakhir Ayah"
+            dbValue={student?.pendidikan_ayah}
+            formValue={form.pendidikan_ayah}
+            onChange={setField("pendidikan_ayah")}
+          />
+
+          <LockableField
+            label="Nama Lengkap Ibu"
+            dbValue={student?.nama_ibu}
+            formValue={form.nama_ibu}
+            onChange={setField("nama_ibu")}
+          />
+
+          <LockableField
+            label="NIK Ibu"
+            dbValue={student?.nik_ibu}
+            formValue={form.nik_ibu}
+            onChange={setField("nik_ibu")}
+          />
+
+          <LockableField
+            label="Tempat, Tanggal Lahir Ibu"
+            dbValue={student?.tempat_tgl_lahir_ibu}
+            formValue={form.tempat_tgl_lahir_ibu}
+            onChange={setField("tempat_tgl_lahir_ibu")}
+          />
+
+          <LockableField
+            label="Pekerjaan Ibu"
+            dbValue={student?.pekerjaan_ibu}
+            formValue={form.pekerjaan_ibu}
+            onChange={setField("pekerjaan_ibu")}
+            type="select"
+            options={PEKERJAAN_LIST_IBU}
+          />
+
+          <LockableField
+            label="Pendidikan Terakhir Ibu"
+            dbValue={student?.pendidikan_ibu}
+            formValue={form.pendidikan_ibu}
+            onChange={setField("pendidikan_ibu")}
+          />
+
+          <LockableField
+            label="No. HP Orang Tua/Wali"
+            dbValue={student?.no_hp_ortu}
+            formValue={form.no_hp_ortu}
+            onChange={setField("no_hp_ortu")}
+            type="tel"
+          />
         </div>
 
         {/* Section "Lainnya" (Keterangan, No. Ijazah, No. Peserta Ujian,
