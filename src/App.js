@@ -33,10 +33,25 @@ const isWaliKelas = (user) => {
 
 /**
  * Check if user can access Wali Kelas routes
- * Admin atau Wali Kelas bisa akses
+ * Admin, TU, atau Wali Kelas bisa akses
+ *
+ * ✅ FIX (Sep 2026): "tu" ditambahin di sini. Sebelumnya cuma cek "admin"
+ * ATAU isWaliKelas(user) -- efeknya route yang requireWaliKelas: true TAPI
+ * "tu" ada di allowedRoles-nya (contoh: /data-induk-siswa di
+ * config/menuConfig.js) bikin TU LOLOS cek allowedRoles tapi keblock DI
+ * SINI, hasilnya "Akses Ditolak" walau menu-nya kelihatan di sidebar
+ * (sidebarConfig.js gak salah, karena show()-nya cuma ngatur tampilan,
+ * bukan akses beneran -- lihat catatan di sidebarConfig.js).
+ * "tu" ditambahin di canAccessWaliKelasRoute (bukan cuma di
+ * allowedRoles) karena TU emang harus bisa akses semua yang Admin bisa
+ * (lihat juga catatan yang sama di config/menuConfig.js). Ini AMAN buat
+ * route requireWaliKelas LAIN yang gak nyantumin "tu" di allowedRoles-nya
+ * (misal /denah-duduk, /jadwal-piket) -- karena route-route itu udah
+ * keblock duluan di cek allowedRoles (baris ~268 di bawah), TIDAK PERNAH
+ * nyampe ke canAccessWaliKelasRoute ini buat role "tu".
  */
 const canAccessWaliKelasRoute = (user) => {
-  return user?.role === "admin" || isWaliKelas(user);
+  return user?.role === "admin" || user?.role === "tu" || isWaliKelas(user);
 };
 
 /**
