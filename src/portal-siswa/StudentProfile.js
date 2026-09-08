@@ -21,7 +21,12 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { clearStudentSession } from "../utils/studentSession";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  REQUIRED_FIELDS,
+  getCompletionStatus,
+  COMPLETION_STATUS_META,
+} from "../utils/studentProfileCompletion";
+import { Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 
 // --- Helper validasi & normalisasi nomor HP Indonesia -------------------
 // Nerima input dalam berbagai format umum (08xxxxxxxxxx, +62xxxxxxxxxxx,
@@ -180,6 +185,55 @@ function isEmptyValue(v) {
   return v === null || v === undefined || v === "";
 }
 
+// Daftar field yang boleh diisi mandiri KALAU masih kosong di DB (lihat
+// "UPDATE 2" di komentar panjang di atas). Diangkat ke scope module (bukan
+// di dalem handleSubmit doang) biar bisa dipake bareng buat:
+//   1. handleSubmit -> nentuin field mana yang boleh dikirim ke DB.
+//   2. Badge kelengkapan data (lihat getProfileCompleteness) -> nentuin
+//      berapa dari field2 ini yang udah keisi buat siswa yang lagi login.
+const UNLOCKABLE_FIELDS = [
+  "nisn",
+  "jenis_kelamin",
+  "tempat_lahir",
+  "tanggal_lahir",
+  "sekolah_asal",
+  "alamat",
+  "kode_pos",
+  "agama",
+  "nik",
+  "no_kk",
+  "no_akta_lahir",
+  "nama_ayah",
+  "nik_ayah",
+  "tempat_tgl_lahir_ayah",
+  "pekerjaan_ayah",
+  "pendidikan_ayah",
+  "nama_ibu",
+  "nik_ibu",
+  "tempat_tgl_lahir_ibu",
+  "pekerjaan_ibu",
+  "pendidikan_ibu",
+  "no_hp_ortu",
+];
+
+// ⚠️ CATATAN kelengkapan data (badge di ProfileInfo di bawah): kriteria
+// "Lengkap/Sebagian/Belum Isi" SENGAJA gak dihitung manual di file ini --
+// dipake langsung getCompletionStatus() + REQUIRED_FIELDS dari
+// utils/studentProfileCompletion.js, SATU-SATUNYA sumber kebenaran yang
+// juga dipake DataSiswaInduk.js (halaman admin/TU/wali kelas). Ini
+// penting: `student` di sini (dari useStudentProfile.js) udah berisi
+// `jenis_kelamin` sebagai LABEL jadi ("Perempuan"/"Laki-laki", lihat
+// catatan di rows[] bawah), BUKAN kode P/L mentah dari tabel `students` --
+// jadi cukup langsung getCompletionStatus(student), TANPA perlu
+// resolveCompletion(genderCode, ...) yang minta kode mentah (itu cuma
+// dipake di DataSiswaInduk.js yang emang megang `students.gender` mentah).
+// Kalau ternyata useStudentProfile.js TERNYATA belum nge-resolve gender
+// prioritas students.gender > student_profile_details.jenis_kelamin kayak
+// resolveCompletion(), badge di sini bisa keliatan "Sebagian" padahal
+// harusnya "Lengkap" utk siswa yg gender-nya cuma keisi di tabel
+// `students` -- worth dicek ke useStudentProfile.js kalau ketemu kasus
+// gitu di lapangan.
+
 export function ProfileInfo({ student, onUpdated }) {
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -247,6 +301,20 @@ export function ProfileInfo({ student, onUpdated }) {
       no_hp_ortu: student?.no_hp_ortu || "",
     });
   }, [student]);
+
+  // Status kelengkapan (buat badge) -- pakai getCompletionStatus() resmi
+  // dari utils/studentProfileCompletion.js (lihat catatan panjang di atas
+  // komponen ini), SAMA PERSIS kayak yang dipake DataSiswaInduk.js. Cuma
+  // dihitung ulang pas `student` beneran berubah (misal abis
+  // onUpdated/refetch), bukan tiap render.
+  const completionStatus = React.useMemo(() => getCompletionStatus(student), [student]);
+  // `filledCount` CUMA buat tampilan "x/y" di badge status "Sebagian" --
+  // gak dipake buat nentuin status-nya sendiri (itu tugas
+  // getCompletionStatus di atas, biar 1 sumber kebenaran).
+  const filledCount = React.useMemo(
+    () => REQUIRED_FIELDS.filter((f) => student?.[f] && String(student[f]).trim() !== "").length,
+    [student]
+  );
 
   // ---- Tampilan (bukan edit) — dikelompokin persis kayak formulir ----
   const rows = [
@@ -339,34 +407,10 @@ export function ProfileInfo({ student, onUpdated }) {
     // SENGAJA gak dimasukin ke payload sama sekali -- biar upsert
     // Supabase gak nyentuh/nimpa kolom yang harusnya cuma boleh dikoreksi
     // TU lewat DataSiswaInduk.js.
-    const unlockableFields = [
-      "nisn",
-      "jenis_kelamin",
-      "tempat_lahir",
-      "tanggal_lahir",
-      "sekolah_asal",
-      "alamat",
-      "kode_pos",
-      "agama",
-      "nik",
-      "no_kk",
-      "no_akta_lahir",
-      "nama_ayah",
-      "nik_ayah",
-      "tempat_tgl_lahir_ayah",
-      "pekerjaan_ayah",
-      "pendidikan_ayah",
-      "nama_ibu",
-      "nik_ibu",
-      "tempat_tgl_lahir_ibu",
-      "pekerjaan_ibu",
-      "pendidikan_ibu",
-      "no_hp_ortu",
-    ];
     const nikLikeFields = ["nik", "no_kk", "nik_ayah", "nik_ibu"];
 
     const extra = {};
-    for (const key of unlockableFields) {
+    for (const key of UNLOCKABLE_FIELDS) {
       if (!isEmptyValue(student?.[key])) continue; // udah keisi -> skip total
       const val = typeof form[key] === "string" ? form[key].trim() : form[key];
       if (nikLikeFields.includes(key) && val && !isValid16Digit(val)) {
@@ -742,8 +786,49 @@ export function ProfileInfo({ student, onUpdated }) {
     );
   }
 
+  const statusMeta = COMPLETION_STATUS_META[completionStatus];
+  const StatusIcon =
+    completionStatus === "lengkap"
+      ? CheckCircle2
+      : completionStatus === "sebagian"
+        ? AlertTriangle
+        : XCircle;
+
   return (
     <div>
+      {/* Badge kelengkapan data -- warna & label DIAMBIL LANGSUNG dari
+          COMPLETION_STATUS_META (utils/studentProfileCompletion.js), jadi
+          identik sama badge "Kelengkapan" di halaman Data Siswa Induk
+          (admin/TU/wali kelas). Cuma icon-nya yang dipasang di sini
+          sendiri (util-nya sengaja gak megang lucide-react, lihat
+          komentar di file util). Status "Sebagian" dikasih tambahan
+          "(x/20)" biar siswa tau seberapa jauh, "Lengkap"/"Belum Isi" gak
+          perlu angka (0/20 atau 20/20 gak nambah info). Dipasang di sini
+          (bukan cuma di tombol "Lengkapi / Edit Data") biar keliatan
+          begitu buka menu Profile, gak perlu nunggu scroll ke bawah. */}
+      <div
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full mb-3 ${statusMeta.badge}`}
+      >
+        <StatusIcon size={14} />
+        {statusMeta.label}
+        {completionStatus === "sebagian" && ` (${filledCount}/${REQUIRED_FIELDS.length})`}
+      </div>
+
+      {/* Pesan ajakan CUMA muncul pas status "Sebagian" (data udah ada
+          tapi belum semua field wajib keisi) -- status "Lengkap" gak
+          perlu diingetin apa-apa, status "Belum Isi" udah cukup jelas
+          dari tombol "Lengkapi / Edit Data" di bawah tanpa perlu banner
+          terpisah. */}
+      {completionStatus === "sebagian" && (
+        <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm rounded-lg px-3 py-2.5 mb-3">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <span>
+            <span className="font-semibold">Segera Lengkapi Data Putra/i Anda.</span> Masih ada data
+            yang belum diisi lengkap.
+          </span>
+        </div>
+      )}
+
       {/* Grid 3 kolom (label, titik dua, value) dalam SATU grid container
           bareng, jadi lebar kolom label otomatis ngikutin label terpanjang
           & titik duanya sejajar semua. Baris section ("Data Siswa", "Data
