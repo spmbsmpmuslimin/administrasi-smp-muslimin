@@ -5,7 +5,7 @@ import {
   MapPin,
   Phone,
   Calendar,
-  Image,
+  Image as ImageIcon,
   Edit3,
   Save,
   Upload,
@@ -735,7 +735,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
               <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Image size={20} className="text-orange-600 dark:text-orange-400" />
+                <ImageIcon size={20} className="text-orange-600 dark:text-orange-400" />
               </div>
               Logo Sekolah
             </h3>
