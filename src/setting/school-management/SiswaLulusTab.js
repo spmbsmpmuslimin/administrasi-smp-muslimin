@@ -1,5 +1,5 @@
 // SiswaLulusTab.js
-// Sub-tab "Siswa Lulus" di dalam Student Management (School Combined Tab
+// Sub-Tab "Siswa Lulus" di dalam Student Management (School Combined Tab
 // -> Data Sekolah -> Guru & Staf | Data Siswa | Riwayat Mutasi | Siswa
 // Lulus).
 //
