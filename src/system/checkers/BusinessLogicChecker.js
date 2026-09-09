@@ -58,6 +58,11 @@ export const checkBusinessLogic = async () => {
     const studentStatusIssues = await checkStudentStatusLogic();
     issues.push(...studentStatusIssues);
 
+    // 9. Check Siswa Baru Pipeline (SPMB -> NIS -> transfer ke Students)
+    console.log("🧾 Checking siswa baru pipeline...");
+    const siswaBaruPipelineIssues = await checkSiswaBaruPipeline();
+    issues.push(...siswaBaruPipelineIssues);
+
     const executionTime = Date.now() - startTime;
     console.log(`✅ BusinessLogicChecker completed in ${executionTime}ms`);
     console.log(`📊 Found ${issues.length} business logic issues`);
@@ -115,8 +120,7 @@ const checkAcademicYearRules = async () => {
         category: "business_logic",
         severity: "critical",
         message: "No active academic year",
-        details:
-          "System requires exactly one active academic year for proper operation",
+        details: "System requires exactly one active academic year for proper operation",
         table: "academic_years",
       });
     }
@@ -153,7 +157,7 @@ const checkAcademicYearRules = async () => {
 
       if (active.end_date && active.end_date < today) {
         const daysPast = Math.floor(
-          (new Date(today) - new Date(active.end_date)) / (1000 * 60 * 60 * 24),
+          (new Date(today) - new Date(active.end_date)) / (1000 * 60 * 60 * 24)
         );
         issues.push({
           category: "business_logic",
@@ -208,12 +212,7 @@ const checkAttendanceLogic = async () => {
     const { data: recentAttendances } = await supabase
       .from("attendances")
       .select("student_id, date, subject, class_id")
-      .gte(
-        "date",
-        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
-      )
+      .gte("date", new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
       .limit(1000);
 
     if (recentAttendances) {
@@ -223,9 +222,7 @@ const checkAttendanceLogic = async () => {
         attendanceMap.set(key, (attendanceMap.get(key) || 0) + 1);
       });
 
-      const duplicates = Array.from(attendanceMap.values()).filter(
-        (count) => count > 1,
-      ).length;
+      const duplicates = Array.from(attendanceMap.values()).filter((count) => count > 1).length;
       if (duplicates > 0) {
         issues.push({
           category: "business_logic",
@@ -245,14 +242,9 @@ const checkAttendanceLogic = async () => {
         id,
         date,
         students!inner(is_active, full_name)
-      `,
+      `
       )
-      .gte(
-        "date",
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
-      )
+      .gte("date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
       .eq("students.is_active", false)
       .limit(50);
 
@@ -311,12 +303,9 @@ const checkGradeLogic = async () => {
         id,
         created_at,
         students!inner(is_active, full_name)
-      `,
+      `
       )
-      .gte(
-        "created_at",
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      )
+      .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
       .eq("students.is_active", false)
       .limit(50);
 
@@ -385,6 +374,25 @@ const checkClassLogic = async () => {
         }
       }
     }
+
+    // Classes with academic_year (string) but no academic_year_id (FK) --
+    // gap yang ketemu manual di YearTransition.js's createNewClasses():
+    // cuma nulis academic_year string, gak pernah isi academic_year_id.
+    const { count: missingYearIdCount } = await supabase
+      .from("classes")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .is("academic_year_id", null);
+
+    if (missingYearIdCount > 0) {
+      issues.push({
+        category: "business_logic",
+        severity: "info",
+        message: "Kelas aktif tanpa academic_year_id",
+        details: `${missingYearIdCount} kelas aktif tidak punya academic_year_id (cuma punya academic_year berupa string). Belum ada yang membaca kolom ini sejauh ini, tapi berpotensi jadi masalah kalau ada fitur baru yang join/filter classes lewat academic_year_id.`,
+        table: "classes",
+      });
+    }
   } catch (error) {
     console.error("Error checking class logic:", error);
     issues.push({
@@ -449,10 +457,7 @@ const checkTeacherScheduleConflicts = async () => {
             const sched2 = dayScheds[j];
 
             // Check time overlap
-            if (
-              sched1.start_time < sched2.end_time &&
-              sched2.start_time < sched1.end_time
-            ) {
+            if (sched1.start_time < sched2.end_time && sched2.start_time < sched1.end_time) {
               // ✅ FIX: sertain class_id tiap slot di pesan -- kalau
               // class_id-nya SAMA berarti ini murni row duplikat (data
               // ke-insert dobel), kalau class_id-nya BEDA berarti guru
@@ -561,18 +566,13 @@ const checkStaleTeacherAssignments = async () => {
     // assignment bakal keflag stale (kode vs UUID gak akan pernah match).
     const [{ data: scheduleCombos }, { data: usersData }] = await Promise.all([
       supabase.from("teacher_schedules").select("teacher_id, class_id"),
-      supabase
-        .from("users")
-        .select("id, teacher_id")
-        .not("teacher_id", "is", null),
+      supabase.from("users").select("id, teacher_id").not("teacher_id", "is", null),
     ]);
 
     const scheduleKeySet = new Set(
-      (scheduleCombos || []).map((s) => `${s.teacher_id}-${s.class_id}`),
+      (scheduleCombos || []).map((s) => `${s.teacher_id}-${s.class_id}`)
     );
-    const codeToUuid = new Map(
-      (usersData || []).map((u) => [u.teacher_id, u.id]),
-    );
+    const codeToUuid = new Map((usersData || []).map((u) => [u.teacher_id, u.id]));
 
     const stale = assignments.filter((a) => {
       if ((a.subject || "").toUpperCase() === "BP/BK") return false;
@@ -695,6 +695,54 @@ const checkStudentStatusLogic = async () => {
       message: "Could not complete student status logic check",
       details: error.message,
       table: "students",
+    });
+  }
+
+  return issues;
+};
+
+/**
+ * Siswa baru yang statusnya "diterima" & kelas udah keisi, tapi NIS masih
+ * kosong ("-" atau null/empty, sama kayak konvensi cek di
+ * ClassDivision.js) -- ini kondisi yang dibiarin lolos kalau Transisi
+ * Tahun Ajaran otomatis (YearTransition.js STEP 5) dijalankan sebelum NIS
+ * digenerate manual di tab Finalisasi SPMB. Tombol transfer manual di
+ * ClassDivision.js udah di-guard (disabled) buat kondisi ini, tapi jalur
+ * otomatis YearTransition.js belum -- lihat catatan proyek.
+ */
+const checkSiswaBaruPipeline = async () => {
+  const issues = [];
+
+  try {
+    const { data: stuck, error } = await supabase
+      .from("siswa_baru")
+      .select("id, nama_lengkap, nis")
+      .eq("status", "diterima")
+      .not("kelas", "is", null)
+      .eq("is_transferred", false)
+      .limit(200);
+
+    if (error) throw error;
+
+    const belumAdaNis = (stuck || []).filter((s) => !s.nis || s.nis === "-");
+
+    if (belumAdaNis.length > 0) {
+      issues.push({
+        category: "business_logic",
+        severity: "warning",
+        message: "Siswa baru diterima & sudah punya kelas, tapi NIS belum digenerate",
+        details: `${belumAdaNis.length} siswa di siswa_baru sudah diterima dan kelasnya keisi, tapi NIS masih kosong. Kalau Transisi Tahun Ajaran otomatis dijalankan sebelum NIS digenerate manual di tab Finalisasi SPMB, siswa ini berisiko ke-transfer ke tabel students dengan NIS kosong.`,
+        table: "siswa_baru",
+      });
+    }
+  } catch (error) {
+    console.error("Error checking siswa baru pipeline:", error);
+    issues.push({
+      category: "business_logic",
+      severity: "info",
+      message: "Could not complete siswa baru pipeline check",
+      details: error.message,
+      table: "siswa_baru",
     });
   }
 

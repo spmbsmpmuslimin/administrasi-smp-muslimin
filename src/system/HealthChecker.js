@@ -3,6 +3,7 @@ import { checkDatabase } from "./checkers/DatabaseChecker";
 import { checkDataValidation } from "./checkers/DataValidator";
 import { checkBusinessLogic } from "./checkers/BusinessLogicChecker";
 import { checkAppHealth } from "./checkers/AppHealthChecker";
+import { checkRaport } from "./checkers/RaportChecker";
 
 class HealthChecker {
   constructor() {
@@ -11,6 +12,7 @@ class HealthChecker {
       validation: null,
       businessLogic: null,
       appHealth: null,
+      raport: null,
     };
     this.startTime = null;
     this.errors = [];
@@ -21,17 +23,19 @@ class HealthChecker {
     this.errors = [];
 
     try {
-      const [database, validation, businessLogic, appHealth] = await Promise.allSettled([
+      const [database, validation, businessLogic, appHealth, raport] = await Promise.allSettled([
         this.runDatabaseCheck(),
         this.runDataValidationCheck(),
         this.runBusinessLogicCheck(),
         this.runAppHealthCheck(),
+        this.runRaportCheck(),
       ]);
 
       this.results.database = this.processCheckResult(database, "Database Check");
       this.results.validation = this.processCheckResult(validation, "Data Validation");
       this.results.businessLogic = this.processCheckResult(businessLogic, "Business Logic");
       this.results.appHealth = this.processCheckResult(appHealth, "App Health");
+      this.results.raport = this.processCheckResult(raport, "Raport Check");
 
       const executionTime = Date.now() - this.startTime;
       const summary = this.calculateSummary();
@@ -122,6 +126,24 @@ class HealthChecker {
       this.errors.push({ checker: "appHealth", error: error.message });
       return {
         status: "info",
+        error: error.message,
+        checks: [],
+        issues: [],
+      };
+    }
+  }
+
+  async runRaportCheck() {
+    console.log("🔍 Running raport checks...");
+    try {
+      const result = await checkRaport();
+      console.log("✅ Raport check completed:", result);
+      return this.transformResult(result, "raport");
+    } catch (error) {
+      console.error("❌ Raport check failed:", error);
+      this.errors.push({ checker: "raport", error: error.message });
+      return {
+        status: "warning",
         error: error.message,
         checks: [],
         issues: [],
@@ -220,6 +242,7 @@ class HealthChecker {
     countIssues(this.results.validation);
     countIssues(this.results.businessLogic);
     countIssues(this.results.appHealth);
+    countIssues(this.results.raport);
 
     // Determine overall status
     // Note: Database constraint only allows 'healthy', 'warning', 'critical'

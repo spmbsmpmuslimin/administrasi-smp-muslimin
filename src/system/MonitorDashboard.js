@@ -58,8 +58,8 @@ const CheckerProgressBar = ({ checker, isActive, isDone }) => {
         isActive
           ? "border-blue-400 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-600 shadow-lg scale-105"
           : isDone
-          ? "border-green-400 bg-green-50 dark:bg-green-900/30 dark:border-green-600"
-          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+            ? "border-green-400 bg-green-50 dark:bg-green-900/30 dark:border-green-600"
+            : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
       }`}
     >
       <div className="flex items-center justify-between mb-3">
@@ -70,8 +70,8 @@ const CheckerProgressBar = ({ checker, isActive, isDone }) => {
               isActive
                 ? "text-blue-700 dark:text-blue-300"
                 : isDone
-                ? "text-green-700 dark:text-green-300"
-                : "text-gray-500 dark:text-gray-400"
+                  ? "text-green-700 dark:text-green-300"
+                  : "text-gray-500 dark:text-gray-400"
             }`}
           >
             {checker.name}
@@ -90,8 +90,8 @@ const CheckerProgressBar = ({ checker, isActive, isDone }) => {
             isActive
               ? "bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 animate-pulse"
               : isDone
-              ? "bg-gradient-to-r from-green-500 to-green-600 dark:from-green-400 dark:to-green-500"
-              : "bg-gray-300 dark:bg-gray-600"
+                ? "bg-gradient-to-r from-green-500 to-green-600 dark:from-green-400 dark:to-green-500"
+                : "bg-gray-300 dark:bg-gray-600"
           }`}
           style={{ width: `${progress}%` }}
         />
@@ -170,8 +170,8 @@ const OverallProgressBar = ({ progress, elapsedTime, currentPhase }) => {
                 isComplete
                   ? "bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-700"
                   : isActive
-                  ? "bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700"
-                  : "bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
+                    ? "bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700"
+                    : "bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
               }`}
             >
               <div
@@ -179,8 +179,8 @@ const OverallProgressBar = ({ progress, elapsedTime, currentPhase }) => {
                   isComplete
                     ? "text-green-700 dark:text-green-300"
                     : isActive
-                    ? "text-blue-700 dark:text-blue-300"
-                    : "text-gray-500 dark:text-gray-400"
+                      ? "text-blue-700 dark:text-blue-300"
+                      : "text-gray-500 dark:text-gray-400"
                 }`}
               >
                 {item.label}
@@ -257,6 +257,7 @@ const MonitorDashboard = ({ user }) => {
       time: null,
     },
     { id: "appHealth", name: "App Health", status: "pending", time: null },
+    { id: "raport", name: "Raport Check", status: "pending", time: null },
   ]);
 
   const timerRef = useRef(null);
@@ -328,6 +329,7 @@ const MonitorDashboard = ({ user }) => {
           validation: finalResults.results?.validation || {},
           businessLogic: finalResults.results?.businessLogic || {},
           appHealth: finalResults.results?.appHealth || {},
+          raport: finalResults.results?.raport || {},
         },
         execution_time: parseInt(finalResults.executionTime) || null,
       };
@@ -420,6 +422,7 @@ const MonitorDashboard = ({ user }) => {
         time: null,
       },
       { id: "appHealth", name: "App Health", status: "pending", time: null },
+      { id: "raport", name: "Raport Check", status: "pending", time: null },
     ];
     setCheckers(initialCheckers);
 
@@ -435,15 +438,16 @@ const MonitorDashboard = ({ user }) => {
       // Simulate progress for each phase
       const phases = [
         {
-          progress: 25,
+          progress: 20,
           phase: "🗄️ Checking database connections and integrity...",
         },
         {
-          progress: 50,
+          progress: 40,
           phase: "✅ Validating data consistency and structure...",
         },
-        { progress: 75, phase: "🧠 Verifying business rules and logic..." },
-        { progress: 100, phase: "📱 Analyzing application health metrics..." },
+        { progress: 60, phase: "🧠 Verifying business rules and logic..." },
+        { progress: 80, phase: "📱 Analyzing application health metrics..." },
+        { progress: 100, phase: "📋 Checking raport data integrity..." },
       ];
 
       let phaseIndex = 0;
@@ -491,6 +495,12 @@ const MonitorDashboard = ({ user }) => {
           name: "App Health",
           status: "done",
           time: checkResult.results?.appHealth?.executionTime || 0,
+        },
+        {
+          id: "raport",
+          name: "Raport Check",
+          status: "done",
+          time: checkResult.results?.raport?.executionTime || 0,
         },
       ];
 
@@ -703,10 +713,10 @@ const MonitorDashboard = ({ user }) => {
                         item.summary.status === "healthy"
                           ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
                           : item.summary.status === "warning"
-                          ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
-                          : item.summary.status === "critical"
-                          ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                          : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                            ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
+                            : item.summary.status === "critical"
+                              ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                              : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                       }`}
                     >
                       {item.summary.status}
@@ -769,8 +779,8 @@ const MonitorDashboard = ({ user }) => {
                   (Number(results.summary?.totalIssues) || 0) === 0
                     ? "green"
                     : (Number(results.summary?.criticalCount) || 0) > 0
-                    ? "red"
-                    : "yellow"
+                      ? "red"
+                      : "yellow"
                 }
                 isAnimating={true}
               />
@@ -837,10 +847,10 @@ const MonitorDashboard = ({ user }) => {
                               status === "healthy"
                                 ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
                                 : status === "warning"
-                                ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
-                                : status === "critical"
-                                ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                                : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                                  ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
+                                  : status === "critical"
+                                    ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                    : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                             }`}
                           >
                             {String(status)}
@@ -961,12 +971,14 @@ const MonitorDashboard = ({ user }) => {
                             checkerName === "validation"
                               ? "Data Validation"
                               : checkerName === "businessLogic"
-                              ? "Business Logic"
-                              : checkerName === "appHealth"
-                              ? "App Health"
-                              : checkerName === "database"
-                              ? "Database Check"
-                              : String(checkerName);
+                                ? "Business Logic"
+                                : checkerName === "appHealth"
+                                  ? "App Health"
+                                  : checkerName === "database"
+                                    ? "Database Check"
+                                    : checkerName === "raport"
+                                      ? "Raport Check"
+                                      : String(checkerName);
 
                           allIssues.push({
                             key: `${checkerName}-${idx}`,
@@ -989,8 +1001,8 @@ const MonitorDashboard = ({ user }) => {
                           issue.severity === "critical"
                             ? "border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-900/30"
                             : issue.severity === "warning"
-                            ? "border-yellow-500 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/30"
-                            : "border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30"
+                              ? "border-yellow-500 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/30"
+                              : "border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30"
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -998,8 +1010,8 @@ const MonitorDashboard = ({ user }) => {
                             {issue.severity === "critical"
                               ? "🔴"
                               : issue.severity === "warning"
-                              ? "⚠️"
-                              : "ℹ️"}
+                                ? "⚠️"
+                                : "ℹ️"}
                           </span>
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-gray-800 dark:text-gray-200 mb-1 text-sm sm:text-base">
@@ -1034,8 +1046,8 @@ const MonitorDashboard = ({ user }) => {
                               issue.severity === "critical"
                                 ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
                                 : issue.severity === "warning"
-                                ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
-                                : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                                  ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
+                                  : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
                             }`}
                           >
                             {issue.severity}
