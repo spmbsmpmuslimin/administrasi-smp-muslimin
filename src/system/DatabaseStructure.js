@@ -27,7 +27,24 @@ import {
   Check,
   ListTree,
   Network,
+  Table2,
+  Columns3,
 } from "lucide-react";
+
+// Metric card pastel, konsisten sama gaya di CodeAudit.js / ProjectStructure.js.
+function MetricCard({ icon: Icon, label, value, colorClass, iconBg }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+      <div className={`p-2.5 rounded-lg flex-shrink-0 ${iconBg}`}>
+        <Icon className={`w-5 h-5 ${colorClass}`} />
+      </div>
+      <div className="min-w-0">
+        <div className={`text-xl sm:text-2xl font-bold leading-tight ${colorClass}`}>{value}</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 function formatDate(iso) {
   if (!iso) return "-";
@@ -228,6 +245,13 @@ function DatabaseStructure() {
   }, [loadReport]);
 
   const allTableNames = useMemo(() => new Set((report?.tables || []).map((t) => t.name)), [report]);
+  const stats = useMemo(() => {
+    const tables = report?.tables || [];
+    return {
+      totalColumns: tables.reduce((sum, t) => sum + t.columns.length, 0),
+      totalForeignKeys: tables.reduce((sum, t) => sum + t.foreignKeys.length, 0),
+    };
+  }, [report]);
   const filteredTables = useMemo(() => {
     if (!report?.tables) return [];
     const q = search.trim().toLowerCase();
@@ -244,7 +268,9 @@ function DatabaseStructure() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-5 mb-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-start gap-3">
-            <Database className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
+              <Database className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
             <div>
               <h2 className="font-bold text-gray-800 dark:text-gray-100">Struktur Database</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -277,15 +303,17 @@ function DatabaseStructure() {
       </div>
 
       {loading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <div className="animate-spin text-3xl mb-2">🔄</div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-10 text-center">
+          <RefreshCw className="w-8 h-8 mx-auto mb-3 text-blue-500 animate-spin" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Memuat struktur database...</p>
         </div>
       )}
 
       {!loading && notFound && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <div className="text-5xl mb-3">🗄️</div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-10 text-center">
+          <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-3">
+            <Database className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+          </div>
           <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
             Belum ada laporan struktur database
           </p>
@@ -299,11 +327,38 @@ function DatabaseStructure() {
 
       {!loading && report && (
         <>
-          <div className="flex items-center gap-4 flex-wrap text-xs text-gray-500 dark:text-gray-400 mb-4 px-1">
-            <span className="flex items-center gap-1">
-              <Clock size={13} /> Terakhir di-generate: {formatDate(report.generatedAt)}
+          {/* Metric cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+            <MetricCard
+              icon={Table2}
+              label="Total Tabel"
+              value={report.totalTables}
+              colorClass="text-blue-600 dark:text-blue-400"
+              iconBg="bg-blue-50 dark:bg-blue-900/30"
+            />
+            <MetricCard
+              icon={Columns3}
+              label="Total Kolom"
+              value={stats.totalColumns}
+              colorClass="text-gray-700 dark:text-gray-300"
+              iconBg="bg-gray-100 dark:bg-gray-700"
+            />
+            <MetricCard
+              icon={Link2}
+              label="Foreign Key"
+              value={stats.totalForeignKeys}
+              colorClass="text-purple-600 dark:text-purple-400"
+              iconBg="bg-purple-50 dark:bg-purple-900/30"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400 mb-4 px-0.5">
+            <span className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full px-3 py-1.5">
+              <Clock size={15} className="text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                Terakhir di-generate: {formatDate(report.generatedAt)}
+              </span>
             </span>
-            <span>{report.totalTables} tabel terdeteksi</span>
           </div>
 
           {/* Toggle mode tampilan */}

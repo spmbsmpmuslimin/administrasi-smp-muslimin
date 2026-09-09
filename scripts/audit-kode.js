@@ -346,6 +346,12 @@ function checkMenuSidebarConsistency() {
   const issues = [];
   const menuConfigPath = path.join(SRC_DIR, "config", "menuConfig.js");
   const sidebarConfigPath = path.join(SRC_DIR, "config", "sidebarConfig.js");
+  // Layout.js nge-handle sebagian "page" sidebar sebagai ALIAS khusus
+  // (bukan entry asli di menuConfig.js) -- misal "settings-profile" yang
+  // di-redirect manual ke "/settings?tab=profile". Ini pattern sah, BUKAN
+  // broken link, jadi harus dikecualiin dari perbandingan di bawah.
+  // Lihat komentar di handleNavigate() -- Layout.js.
+  const layoutPath = path.join(SRC_DIR, "components", "Layout.js");
 
   if (!fs.existsSync(menuConfigPath) || !fs.existsSync(sidebarConfigPath)) {
     pushIssue(
@@ -365,11 +371,35 @@ function checkMenuSidebarConsistency() {
     [...menuContent.matchAll(/path:\s*["'`]\/([a-zA-Z0-9_-]*)["'`]/g)].map((m) => m[1])
   );
 
+  // Parse alias langsung dari handleNavigate() di Layout.js: setiap
+  // `else if (page === "...")` / `if (page === "...")` dianggap alias sah
+  // yang di-resolve manual ke path lengkap (kadang dengan query param),
+  // bukan lewat lookup menuByKey biasa. Kalau Layout.js gak ketemu, cuma
+  // skip bagian ini (fallback ke behavior lama) + kasih info biar ketauan
+  // kalau lokasi filenya berubah.
+  const knownAliases = new Set();
+  if (fs.existsSync(layoutPath)) {
+    const layoutContent = fs.readFileSync(layoutPath, "utf8");
+    for (const m of layoutContent.matchAll(/page\s*===\s*["'`]([a-zA-Z0-9_-]+)["'`]/g)) {
+      knownAliases.add(m[1]);
+    }
+  } else {
+    pushIssue(
+      issues,
+      "info",
+      "Layout.js gak ketemu di src/components/ -- skip pengecekan alias",
+      "checkMenuSidebarConsistency gak bisa parse alias dari handleNavigate() (misal 'settings-profile'), jadi kemungkinan ada false positive broken link kalau ada alias yang sengaja gak match langsung ke menuConfig.js. Cek lokasi Layout.js kalau ini muncul.",
+      []
+    );
+  }
+
   const sidebarPages = [...sidebarContent.matchAll(/page:\s*["'`]([a-zA-Z0-9_-]+)["'`]/g)].map(
     (m) => m[1]
   );
 
-  const brokenLinks = [...new Set(sidebarPages)].filter((page) => !menuKeys.has(page));
+  const brokenLinks = [...new Set(sidebarPages)].filter(
+    (page) => !menuKeys.has(page) && !knownAliases.has(page)
+  );
 
   if (brokenLinks.length > 0) {
     pushIssue(

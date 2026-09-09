@@ -23,6 +23,10 @@ import {
   Check,
   ListTree,
   Network,
+  Files,
+  Component,
+  AlertTriangle,
+  Tags,
 } from "lucide-react";
 
 const TYPE_COLOR = {
@@ -52,25 +56,31 @@ function formatDate(iso) {
 // clickable: undefined kalau card ini emang gak punya aksi apa-apa (misal
 // Total File / Tipe Terbanyak), diisi fungsi kalau card ini bisa jadi
 // shortcut filter (misal klik "Kemungkinan Orphan" langsung nyalain
-// filter orphan).
-function SummaryCard({ label, value, colorClass, onClick, active }) {
+// filter orphan). Pake gaya metric card pastel biar konsisten sama
+// CodeAudit.js -- icon dalam kotak warna, bukan cuma angka polos.
+function SummaryCard({ icon: Icon, label, value, colorClass, iconBg, onClick, active }) {
   const Tag = onClick ? "button" : "div";
   return (
     <Tag
       onClick={onClick}
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-4 text-center transition-colors ${
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-4 flex items-center gap-3 text-left transition-colors ${
         active
-          ? "border-yellow-400 dark:border-yellow-600 ring-1 ring-yellow-300 dark:ring-yellow-700"
+          ? "border-amber-300 dark:border-amber-700 ring-1 ring-amber-200 dark:ring-amber-800"
           : "border-gray-200 dark:border-gray-700"
       } ${onClick ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50" : ""}`}
     >
-      <div className={`text-2xl sm:text-3xl font-bold ${colorClass}`}>{value}</div>
-      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-        {label}
+      <div className={`p-2.5 rounded-lg flex-shrink-0 ${iconBg}`}>
+        <Icon className={`w-5 h-5 ${colorClass}`} />
+      </div>
+      <div className="min-w-0">
+        <div className={`text-xl sm:text-2xl font-bold leading-tight truncate ${colorClass}`}>
+          {value}
+        </div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{label}</div>
         {onClick && (
-          <span className="block text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+          <div className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
             {active ? "klik buat lihat semua file" : "klik buat filter"}
-          </span>
+          </div>
         )}
       </div>
     </Tag>
@@ -95,7 +105,7 @@ function FileRow({ node, depth, onSelect, isSelected }) {
         {node.name}
       </span>
       {file.isOrphan && (
-        <span className="ml-auto flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 font-semibold">
+        <span className="ml-auto flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-semibold">
           orphan
         </span>
       )}
@@ -188,7 +198,7 @@ function FileDetailPanel({ file, onNavigate }) {
             </span>
             <span className="text-xs text-gray-400 dark:text-gray-500">{file.lines} baris</span>
             {file.isOrphan && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 font-semibold">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-semibold">
                 Possibly Unused — gak ada file lain yang import ini
               </span>
             )}
@@ -378,7 +388,9 @@ function ProjectStructure() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-5 mb-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-start gap-3">
-            <FolderTree className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
+              <FolderTree className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
             <div>
               <h2 className="font-bold text-gray-800 dark:text-gray-100">Struktur Project</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -409,15 +421,17 @@ function ProjectStructure() {
       </div>
 
       {loading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <div className="animate-spin text-3xl mb-2">🔄</div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-10 text-center">
+          <RefreshCw className="w-8 h-8 mx-auto mb-3 text-blue-500 animate-spin" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Memuat peta struktur...</p>
         </div>
       )}
 
       {!loading && notFound && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <div className="text-5xl mb-3">🗂️</div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-10 text-center">
+          <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-3">
+            <FolderTree className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+          </div>
           <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
             Belum ada laporan struktur
           </p>
@@ -433,32 +447,43 @@ function ProjectStructure() {
           {/* Summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             <SummaryCard
+              icon={Files}
               label="Total File"
               value={report.totalFiles}
-              colorClass="text-gray-800 dark:text-gray-100"
+              colorClass="text-gray-700 dark:text-gray-300"
+              iconBg="bg-gray-100 dark:bg-gray-700"
             />
             <SummaryCard
+              icon={Component}
               label="Fungsi/Component"
               value={report.totalFunctions}
               colorClass="text-blue-600 dark:text-blue-400"
+              iconBg="bg-blue-50 dark:bg-blue-900/30"
             />
             <SummaryCard
+              icon={AlertTriangle}
               label="Kemungkinan Orphan"
               value={report.orphanCount}
-              colorClass="text-yellow-600 dark:text-yellow-400"
+              colorClass="text-amber-600 dark:text-amber-400"
+              iconBg="bg-amber-50 dark:bg-amber-900/30"
               active={showOrphansOnly}
               onClick={report.orphanCount > 0 ? () => setShowOrphansOnly((v) => !v) : undefined}
             />
             <SummaryCard
+              icon={Tags}
               label="Tipe Terbanyak"
               value={Object.entries(report.byType).sort((a, b) => b[1] - a[1])[0]?.[0] || "-"}
               colorClass="text-purple-600 dark:text-purple-400"
+              iconBg="bg-purple-50 dark:bg-purple-900/30"
             />
           </div>
 
-          <div className="flex items-center gap-4 flex-wrap text-xs text-gray-500 dark:text-gray-400 mb-4 px-1">
-            <span className="flex items-center gap-1">
-              <Clock size={13} /> Terakhir di-generate: {formatDate(report.generatedAt)}
+          <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400 mb-4 px-0.5">
+            <span className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full px-3 py-1.5">
+              <Clock size={15} className="text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                Terakhir di-generate: {formatDate(report.generatedAt)}
+              </span>
             </span>
           </div>
 
@@ -512,7 +537,7 @@ function ProjectStructure() {
                   onClick={() => setShowOrphansOnly((v) => !v)}
                   className={`text-xs font-medium px-3 py-2 rounded-lg border transition-colors ${
                     showOrphansOnly
-                      ? "bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400"
+                      ? "bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400"
                       : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                   }`}
                 >

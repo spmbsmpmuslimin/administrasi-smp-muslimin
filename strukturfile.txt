@@ -45,6 +45,8 @@ school_settings : id,setting_key,setting_value,created_at,updated_at
 seating_charts : id,class_id,academic_year,semester,rows,cols,seats_per_desk,layout,updated_at
 siswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos,skor_akademik,input_by,input_by_id,updated_by,updated_by_id,skor_baca_latin,skor_baca_quran
 spmb_settings : id,target_academic_year,is_active,registration_start_date,registration_end_date,created_at,updated_at
+spp_bills : id,student_id,class_id,period_month,period_year,amount,status,note,created_by,created_at,updated_at
+spp_payments : id,bill_id,student_id,amount_paid,payment_date,payment_method,note,recorded_by,created_at
 student_auth : id,student_id,username,password,is_active,last_login,created_at,updated_at
 student_development_notes : id,student_id,teacher_id,class_id,academic_year,semester,category,label,note_content,action_taken,created_at,updated_at,academic_year_id
 student_devices : id,student_id,device_id,brand,model,platform,browser,last_login_at,created_at
@@ -161,6 +163,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- administrasi-tu
 |   |   |   |-- AdministrasiTU.js
 |   |   |   |-- ComingSoonPanel.js
+|   |   |   |-- KeuanganTab.js
 |   |   |   `-- PersuratanTab.js
 |   |   |-- attendance
 |   |   |   |-- AdminAttendance.js
