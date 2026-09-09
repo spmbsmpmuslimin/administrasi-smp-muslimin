@@ -40,6 +40,7 @@ import StudentPortal from "../portal-siswa/StudentPortal";
 import PortalSiswaGuru from "../pages/PortalSiswaGuru";
 import DenahDuduk from "../pages/DenahDuduk";
 import Organigram from "../pages/Organigram";
+import KeuanganKelas from "../pages/KeuanganKelas";
 import { withPortalBackButton } from "../pages/PortalBackButton";
 import Teachers from "../pages/Teachers";
 import Classes from "../pages/Classes";
@@ -140,6 +141,17 @@ export const menuConfig = [
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
     getProps: (ctx) => ({ currentUser: ctx.user }),
+  },
+  {
+    path: "/keuangan-kelas",
+    title: "Info Pembayaran",
+    // Read-only: rekap status SPP semua siswa di kelas yang dia pegang
+    // sebagai walikelas. Beda dari /administrasi-tu (yang bisa
+    // catat/hapus pembayaran) -- walikelas cuma boleh liat.
+    component: withPortalBackButton(KeuanganKelas),
+    allowedRoles: ["teacher"],
+    requireWaliKelas: true,
+    getProps: (ctx) => ({ user: ctx.user }),
   },
   { path: "/teachers", title: "Data Guru", component: Teachers },
   { path: "/classes", title: "Data Kelas", component: Classes },

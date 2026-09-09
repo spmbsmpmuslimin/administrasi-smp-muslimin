@@ -15,16 +15,14 @@
 // kayak school-management/SchoolCombinedTab.js yang dipake di Setting.js,
 // lihat PersuratanTab.js.
 //
-// ✅ TAHAP AWAL (Sep 2026) -- urutan build sesuai dokumentasi rencana user
-// (paling urgent duluan: Persuratan -> Arsip -> SPP -> Inventaris ->
-// Laporan). "Persuratan" baru skeleton sub-tab (isinya masih
-// ComingSoonPanel, nunggu skema tabel DB). "Administrasi Keuangan" (SPP)
-// udah jadi komponen asli -- lihat KeuanganTab.js (nempel ke
-// spp_bills/spp_payments, sub-tab Tagihan/Pembayaran/Tunggakan/Riwayat).
-// Sisa 3 kategori (Arsip, Inventaris, Laporan) masih ComingSoonPanel
-// polos di level card -- ganti `component` card yang bersangkutan kalau
-// modulnya udah mulai digarap, gak perlu ubah apapun di switcher/render
-// dashboard-nya.
+// ✅ TAHAP AWAL (Sep 2026) -- "Persuratan" baru skeleton sub-tab (isinya
+// masih ComingSoonPanel, nunggu skema tabel DB). "Administrasi Keuangan"
+// (SPP) udah jadi komponen asli -- lihat KeuanganTab.js (nempel ke
+// spp_bills/spp_payments, sub-tab Tagihan/Pembayaran/Tunggakan/Riwayat) --
+// dan sengaja ditaro paling depan di grid card. Sisa 3 kategori (Arsip,
+// Inventaris, Laporan) masih ComingSoonPanel polos di level card -- ganti
+// `component` card yang bersangkutan kalau modulnya udah mulai digarap,
+// gak perlu ubah apapun di switcher/render dashboard-nya.
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
@@ -98,11 +96,20 @@ const CARD_COLOR_STYLES = {
   },
 };
 
-// Menu cards -- urutan SENGAJA sesuai prioritas build di dokumentasi
-// rencana user (Persuratan -> Arsip -> SPP -> Inventaris -> Laporan).
+// Menu cards -- urutan tampilan card SENGAJA taro "Administrasi Keuangan"
+// paling depan (beda sama urutan prioritas build di dokumentasi rencana
+// user yang tadinya Persuratan -> Arsip -> SPP -> Inventaris -> Laporan).
 // NOTE: cuma "component" yang berubah kalau modul udah digarap, "id"
 // jangan diubah-ubah -- dipake juga buat ?tab= di URL.
 const menuCards = [
+  {
+    id: "keuangan",
+    title: "Administrasi Keuangan",
+    description: "Pembayaran SPP, tunggakan, dan riwayat pembayaran",
+    icon: Wallet,
+    color: "emerald",
+    component: KeuanganTab,
+  },
   {
     id: "persuratan",
     title: "Persuratan",
@@ -123,14 +130,6 @@ const menuCards = [
         description="Modul arsip digital masih dalam pengembangan."
       />
     ),
-  },
-  {
-    id: "keuangan",
-    title: "Administrasi Keuangan",
-    description: "Pembayaran SPP, tunggakan, dan riwayat pembayaran",
-    icon: Wallet,
-    color: "emerald",
-    component: KeuanganTab,
   },
   {
     id: "inventaris",

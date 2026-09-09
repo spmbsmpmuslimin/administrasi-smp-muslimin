@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   Network,
   BookOpen,
+  Wallet,
 } from "lucide-react";
 import { shouldShowRuangBelajarMenu } from "../config/ruangBelajarAccess"; // sesuaikan path relatif
 
@@ -61,6 +62,13 @@ const menuItems = [
     icon: Network,
     path: "/organigram",
     color: "bg-indigo-100 text-indigo-600",
+  },
+  {
+    title: "Info Pembayaran",
+    description: "Rekap status SPP siswa di kelas (read-only)",
+    icon: Wallet,
+    path: "/keuangan-kelas",
+    color: "bg-emerald-100 text-emerald-600",
   },
 ];
 

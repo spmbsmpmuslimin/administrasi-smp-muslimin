@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-09T04:17:07.892Z",
-  "executionTimeMs": 440,
-  "filesScanned": 247,
+  "generatedAt": "2026-09-09T07:02:42.853Z",
+  "executionTimeMs": 3472,
+  "filesScanned": 248,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
@@ -16,11 +16,9 @@
       "issues": [
         {
           "severity": "info",
-          "title": "3 file gak pernah di-import di mana pun (dead file candidate)",
+          "title": "1 file gak pernah di-import di mana pun (dead file candidate)",
           "description": "File-file ini gak ketemu di-import statis dari file lain. Kemungkinan sisa refactor / fitur lama. Cek manual dulu sebelum dihapus — bisa aja dipake lewat dynamic import atau string reference yang gak kebaca regex.",
           "details": [
-            "src/pages/administrasi-tu/KeuanganTab.js",
-            "src/pages/administrasi-tu/PersuratanTab.js",
             "src/setting/kelola-jadwal/AdminJadwalMassal-backup.js"
           ]
         }
@@ -37,7 +35,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5189 class warna (di 179 file) kemungkinan belum dark-mode-aware",
+          "title": "5180 class warna (di 179 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -58,28 +56,28 @@
             "src/components/TeacherDashboard.js — 71 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
             "src/attendance-teacher/reports/ITMReport.js — 67 class belum ada dark: variant",
+            "src/system/ProjectStructure.js — 67 class belum ada dark: variant",
             "src/reports/modals/AdminReportModal.js — 66 class belum ada dark: variant",
             "src/pages/kelola-raport/ManajemenRaportTable.js — 65 class belum ada dark: variant",
             "src/system/PerformanceMonitor.js — 65 class belum ada dark: variant",
-            "src/system/ProjectStructure.js — 65 class belum ada dark: variant",
             "src/setting/school-management/SchoolManagementTab.js — 64 class belum ada dark: variant",
             "src/setting/school-management/SiswaLulusTab.js — 62 class belum ada dark: variant",
             "src/pages/kelola-raport/RekapKelulusan.js — 60 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
+            "src/system/DatabaseStructure.js — 58 class belum ada dark: variant",
             "src/system/MonitorDashboard.js — 55 class belum ada dark: variant",
             "src/reports/AdminReports.js — 54 class belum ada dark: variant",
             "src/setting/school-management/StudentModals.js — 54 class belum ada dark: variant",
             "src/system/DatabaseCleanupMonitor.js — 53 class belum ada dark: variant",
-            "src/system/DatabaseStructure.js — 53 class belum ada dark: variant",
             "src/e-raport/CetakRaport.js — 51 class belum ada dark: variant",
             "src/setting/academic/Simulator.js — 51 class belum ada dark: variant",
             "src/pages/attendance/AdminAttendance.js — 50 class belum ada dark: variant",
             "src/setting/portal-siswa/AkunSiswaTab.js — 50 class belum ada dark: variant",
             "src/setting/SystemTab.js — 50 class belum ada dark: variant",
+            "src/system/CodeAudit.js — 48 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
-            "src/spmb/DiagnostikPage.js — 47 class belum ada dark: variant",
-            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant"
+            "src/spmb/DiagnostikPage.js — 47 class belum ada dark: variant"
           ]
         }
       ]
@@ -90,7 +88,7 @@
       "issues": [
         {
           "severity": "warning",
-          "title": "24 embedded join TANPA disambiguation hint",
+          "title": "21 embedded join TANPA disambiguation hint",
           "description": "Query ini pake relational select (`select('*, table(...)')`) tanpa hint kayak `!inner`, `!nama_fk`, atau `alias:table`. Ini yang paling rawan kena PGRST200 kalau ada lebih dari satu foreign key antar 2 tabel itu. Worth di-cek satu-satu.",
           "details": [
             "src/components/StudentLogin.js:70 → select(\"*, students(id, full_name, nis, class_id, academic_year)\")",
@@ -100,12 +98,9 @@
             "src/e-raport/InputNilai.js:302 → select(\"id, student_id, nilai_akhir, deskripsi_capaian, nilai_eraport_detail ( id, tujuan_pembelaj\")",
             "src/e-raport/PreviewRaport.js:198 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
             "src/e-raport/PreviewRaport.js:217 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
-            "src/pages/administrasi-tu/AdministrasiTU.js:226 → select(\"id, amount, due_date, status, students(id, full_name, nis)\")",
-            "src/pages/administrasi-tu/AdministrasiTU.js:673 → select(\"id, amount, period_month, period_year, status, students(id, full_name, nis, class_id)\")",
-            "src/pages/administrasi-tu/AdministrasiTU.js:800 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
-            "src/pages/administrasi-tu/KeuanganTab.js:216 → select(\"id, amount, due_date, status, students(id, full_name, nis)\")",
-            "src/pages/administrasi-tu/KeuanganTab.js:645 → select(\"id, amount, period_month, period_year, status, students(id, full_name, nis, class_id)\")",
-            "src/pages/administrasi-tu/KeuanganTab.js:754 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
+            "src/pages/administrasi-tu/KeuanganTab.js:200 → select(\"id, amount, due_date, status, students(id, full_name, nis)\")",
+            "src/pages/administrasi-tu/KeuanganTab.js:629 → select(\"id, amount, period_month, period_year, status, students(id, full_name, nis, class_id)\")",
+            "src/pages/administrasi-tu/KeuanganTab.js:738 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
             "src/pages/attendance/AttendanceManagement.js:553 → select(\"id, student_id, status, notes, students ( id, full_name, nis )\")",
             "src/pages/kelola-raport/ManajemenRaportTable.js:608 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
             "src/pages/kelola-raport/RekapKelulusan.js:184 → select(\"id, student_nis, semester, academic_year, student_report_grades(id, subject, score)\")",
@@ -147,8 +142,8 @@
             "src/setting/academic/AcademicYearTab.js:167 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
             "src/setting/academic/AcademicYearTab.js:211 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
             "src/setting/feedback/FeedbackGuruTab.js:23 → select(\"*, guru:users!feedback_guru_guru_id_fkey ( full_name, username )\")",
-            "src/system/checkers/BusinessLogicChecker.js:243 → select(\"id, date, students!inner(is_active, full_name)\")",
-            "src/system/checkers/BusinessLogicChecker.js:309 → select(\"id, created_at, students!inner(is_active, full_name)\")",
+            "src/system/checkers/BusinessLogicChecker.js:240 → select(\"id, date, students!inner(is_active, full_name)\")",
+            "src/system/checkers/BusinessLogicChecker.js:301 → select(\"id, created_at, students!inner(is_active, full_name)\")",
             "src/system/checkers/DataValidator.js:563 → select(\"id, student_id, students!inner(is_active, full_name)\")"
           ]
         }

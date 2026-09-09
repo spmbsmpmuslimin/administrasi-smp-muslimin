@@ -30,13 +30,13 @@ import {
   MessageSquare,
   GraduationCap,
   LayoutGrid,
-  Network,
+  Wallet,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import StudentDataSiswa from "./StudentDataSiswa";
 import StudentDenahDuduk from "./StudentDenahDuduk";
-import StudentOrganigram from "./StudentOrganigram";
+import StudentKeuangan from "./StudentKeuangan";
 
 const MENUS = [
   {
@@ -62,18 +62,6 @@ const MENUS = [
     subtitleColorClass: "text-indigo-700/70 dark:text-indigo-400/70",
     iconBgClass: "bg-white/80",
     iconColorClass: "text-indigo-600",
-  },
-  {
-    key: "raport",
-    title: "Nilai Raport",
-    subtitle: "Riwayat nilai per semester",
-    icon: GraduationCap,
-    cardBgClass: "bg-rose-100 dark:bg-rose-900/30",
-    cardBorderClass: "border-rose-200",
-    titleColorClass: "text-rose-900 dark:text-rose-300",
-    subtitleColorClass: "text-rose-700/70 dark:text-rose-400/70",
-    iconBgClass: "bg-white/80",
-    iconColorClass: "text-rose-600",
   },
   {
     key: "piket",
@@ -124,16 +112,28 @@ const MENUS = [
     iconColorClass: "text-amber-600",
   },
   {
-    key: "organigram",
-    title: "Struktur Organisasi",
-    subtitle: "Bagan pengurus kelas",
-    icon: Network,
-    cardBgClass: "bg-sky-100 dark:bg-sky-900/30",
-    cardBorderClass: "border-sky-200",
-    titleColorClass: "text-sky-900 dark:text-sky-300",
-    subtitleColorClass: "text-sky-700/70 dark:text-sky-400/70",
+    key: "raport",
+    title: "Nilai Raport",
+    subtitle: "Riwayat nilai per semester",
+    icon: GraduationCap,
+    cardBgClass: "bg-rose-100 dark:bg-rose-900/30",
+    cardBorderClass: "border-rose-200",
+    titleColorClass: "text-rose-900 dark:text-rose-300",
+    subtitleColorClass: "text-rose-700/70 dark:text-rose-400/70",
     iconBgClass: "bg-white/80",
-    iconColorClass: "text-sky-600",
+    iconColorClass: "text-rose-600",
+  },
+  {
+    key: "keuangan",
+    title: "Info Pembayaran",
+    subtitle: "Status & riwayat SPP",
+    icon: Wallet,
+    cardBgClass: "bg-emerald-100 dark:bg-emerald-900/30",
+    cardBorderClass: "border-emerald-200",
+    titleColorClass: "text-emerald-900 dark:text-emerald-300",
+    subtitleColorClass: "text-emerald-700/70 dark:text-emerald-400/70",
+    iconBgClass: "bg-white/80",
+    iconColorClass: "text-emerald-600",
   },
 ];
 
@@ -223,10 +223,10 @@ export default function StudentInfo({ initialMenu } = {}) {
         return <StudentSaran student={student} />;
       case "raport":
         return <StudentRaport student={student} />;
+      case "keuangan":
+        return <StudentKeuangan student={student} />;
       case "denah-duduk":
         return <StudentDenahDuduk student={student} />;
-      case "organigram":
-        return <StudentOrganigram student={student} />;
       default:
         return null;
     }
@@ -243,7 +243,8 @@ export default function StudentInfo({ initialMenu } = {}) {
           <button
             type="button"
             onClick={() => setActiveMenu(null)}
-            className="flex items-center gap-1 text-base font-bold text-theme-secondary active:text-theme-secondary">
+            className="flex items-center gap-1 text-base font-bold text-theme-secondary active:text-theme-secondary"
+          >
             <ChevronLeft size={20} />
             Kembali
           </button>
@@ -251,12 +252,14 @@ export default function StudentInfo({ initialMenu } = {}) {
 
         <section className="w-full bg-theme-bg rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div
-            className={`flex items-center gap-3 p-4 border-b border-gray-50 ${menu.cardBgClass}`}>
+            className={`flex items-center gap-3 p-4 border-b border-gray-50 ${menu.cardBgClass}`}
+          >
             <div className="w-9 h-9 bg-white/80 rounded-full flex items-center justify-center shrink-0 shadow-sm">
               <Icon size={18} className={menu.iconColorClass} />
             </div>
             <span
-              className={`text-base font-extrabold uppercase tracking-wide ${menu.titleColorClass}`}>
+              className={`text-base font-extrabold uppercase tracking-wide ${menu.titleColorClass}`}
+            >
               {menu.title}
             </span>
           </div>
@@ -294,29 +297,26 @@ export default function StudentInfo({ initialMenu } = {}) {
               key={key}
               type="button"
               onClick={() => setActiveMenu(key)}
-              className={`flex flex-col items-start gap-2.5 p-4 rounded-2xl border shadow-sm text-left active:scale-[0.98] transition-transform ${cardBgClass} ${cardBorderClass}`}>
+              className={`flex flex-col items-start gap-2.5 p-4 rounded-2xl border shadow-sm text-left active:scale-[0.98] transition-transform ${cardBgClass} ${cardBorderClass}`}
+            >
               <div
-                className={`w-11 h-11 ${iconBgClass} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}>
+                className={`w-11 h-11 ${iconBgClass} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}
+              >
                 <Icon size={20} className={iconColorClass} />
               </div>
               <div className="w-full">
                 <div className="flex items-center justify-between gap-1">
-                  <span
-                    className={`text-base font-bold leading-tight ${titleColorClass}`}>
+                  <span className={`text-base font-bold leading-tight ${titleColorClass}`}>
                     {title}
                   </span>
-                  <ChevronRight
-                    size={18}
-                    className={`shrink-0 ${titleColorClass} opacity-40`}
-                  />
+                  <ChevronRight size={18} className={`shrink-0 ${titleColorClass} opacity-40`} />
                 </div>
-                <p
-                  className={`text-sm mt-0.5 leading-snug font-medium ${subtitleColorClass}`}>
+                <p className={`text-sm mt-0.5 leading-snug font-medium ${subtitleColorClass}`}>
                   {subtitle}
                 </p>
               </div>
             </button>
-          ),
+          )
         )}
       </div>
     </div>
