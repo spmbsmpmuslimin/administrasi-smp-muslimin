@@ -226,14 +226,13 @@
             },
             {
               name: "Data & Sistem",
-              items: ["~ Manajemen Data (dulu: Pengaturan)", "+ Administrasi TU", "Monitor Sistem"],
+              items: ["Manajemen Data", "Administrasi TU", "Monitor Sistem"],
             },
           ],
           notes: [
-            "Grup Data & Sistem gantiin grup Sistem lama.",
-            "Manajemen Data: rename dari Pengaturan, ke halaman grid card 'Manajemen X' + card baru Manajemen SPMB.",
-            "Administrasi TU: menu baru, belum dibuat, rencananya grid card juga.",
-            "Monitor Sistem: link langsung, bukan card di dalam grid Manajemen Data.",
+            "Sudah diimplementasikan di sidebarConfig.js.",
+            "SPMB dihapus dari sidebar, route tetap hidup nunggu jadi card di dalam Manajemen Data (belum dibuat).",
+            "E-Raport digate lewat flag eraportActive + whitelist isTeacher/isWaliKelas — gak nongol lagi buat Admin.",
           ],
         },
         tu: {
@@ -255,7 +254,7 @@
             },
             {
               name: "Data & Sistem",
-              items: ["~ Manajemen Data (dulu: Pengaturan)", "+ Administrasi TU", "Monitor Sistem"],
+              items: ["Manajemen Data", "Administrasi TU", "Monitor Sistem"],
             },
           ],
           notes: ["Akses TU disamakan dengan Admin, termasuk grup Data & Sistem ini."],
@@ -277,7 +276,7 @@
               ],
             },
           ],
-          notes: [],
+          notes: ["E-Raport gak nongol karena eraportActive lagi dimatikan."],
         },
         wali: {
           label: "Guru + wali kelas",
@@ -301,7 +300,7 @@
             },
           ],
           notes: [
-            "Menu wali kelas (input kehadiran, catatan, kokurikuler, dll) dihapus karena termasuk bagian E-Raport yang nonaktif.",
+            "Menu wali kelas (input kehadiran, catatan, kokurikuler, dll) ikut ke-hide karena nempel di grup E-Raport yang lagi nonaktif.",
           ],
         },
         wakasek: {
@@ -326,7 +325,9 @@
             },
           ],
           notes: [
-            "Monitor presensi guru dan siswa dobel dengan yang di Akademik — sengaja per komentar kode.",
+            "Monitor presensi guru dan siswa dobel dengan yang di Akademik — sengaja, dan sekarang gak ke-duplikat dobel juga sama Wakasek Kurikulum karena kondisi isWakasekKurikulum di grup Akademik udah dicabut.",
+            "Item Administrasi sekarang ke halaman baru KurikulumAdministrasi.js, bukan lagi tab di Setting.js.",
+            "Label 'Administrasi' di sini beda konteks sama 'Administrasi TU' punya Admin/TU — aman karena masing-masing cuma nongol di role-nya sendiri.",
           ],
         },
         bk: {
@@ -356,21 +357,18 @@
             { name: "Master data", items: ["Data guru dan staff", "Data kelas", "Data siswa"] },
             { name: "Perpustakaan", items: ["Katalog buku", "Peminjaman", "Pengembalian"] },
           ],
-          notes: ["Grup akademik kosong total sehingga ke-hide otomatis."],
+          notes: [
+            "Grup akademik kosong total sehingga ke-hide otomatis.",
+            "Celah lama (E-Raport ikut nongol buat role ini) udah kefix — sekarang whitelist E-Raport eksplisit cuma isTeacher/isWaliKelas.",
+          ],
         },
         siswa: {
           label: "Siswa",
-          groups: [
-            { name: "Main", items: ["Profile saya", "Dashboard"] },
-            {
-              name: "Master data (celah)",
-              items: ["Data guru dan staff", "Data kelas", "Data siswa"],
-            },
-          ],
+          groups: [{ name: "Main", items: ["Profile saya", "Dashboard"] }],
           notes: [
-            "Tidak ada flag ctx.isSiswa di Sidebar.js.",
-            "Master data kemungkinan gak sengaja ikut muncul untuk siswa.",
-            "Grup akademik kosong sehingga ke-hide.",
+            "Fixed: Master Data (Data guru, Data kelas, Data siswa) sekarang disembunyikan buat Siswa lewat show: !isSiswa di 3 item itu.",
+            "E-Raport juga udah gak nyasar ke Siswa lagi karena whitelist eksplisit isTeacher/isWaliKelas.",
+            "Sidebar Siswa sekarang cuma Profile Saya & Dashboard.",
           ],
         },
       };

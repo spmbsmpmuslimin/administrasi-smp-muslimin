@@ -70,15 +70,6 @@ const formatRupiah = (n) =>
     maximumFractionDigits: 0,
   }).format(Number(n) || 0);
 
-// Jenjang (7/8/9) diambil dari kolom classes.grade -- dipakai buat
-// mempersempit dropdown Kelas (A-F dst) di 3 panel yang butuh filter
-// kelas (Tagihan, Tunggakan, Riwayat).
-const getJenjangOptions = (classes) =>
-  Array.from(new Set(classes.map((c) => c.grade))).sort((a, b) => a - b);
-
-const getKelasByJenjang = (classes, jenjang) =>
-  jenjang ? classes.filter((c) => String(c.grade) === String(jenjang)) : classes;
-
 const SUB_TABS = [
   { id: "tagihan", label: "Tagihan SPP", icon: FileText },
   { id: "pembayaran", label: "Catat Pembayaran", icon: Plus },
@@ -205,7 +196,6 @@ const EmptyRow = ({ darkMode, children }) => (
 // ============================================================
 const TagihanPanel = ({ classes, darkMode, user, notify }) => {
   const now = new Date();
-  const [jenjang, setJenjang] = useState("");
   const [classId, setClassId] = useState("");
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -309,27 +299,10 @@ const TagihanPanel = ({ classes, darkMode, user, notify }) => {
   return (
     <div className="space-y-5">
       <div
-        className={`rounded-xl border p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end ${
+        className={`rounded-xl border p-4 grid grid-cols-2 sm:grid-cols-5 gap-3 items-end ${
           darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
         }`}
       >
-        <Field label="Jenjang" darkMode={darkMode}>
-          <select
-            value={jenjang}
-            onChange={(e) => {
-              setJenjang(e.target.value);
-              setClassId("");
-            }}
-            className={inputClass(darkMode)}
-          >
-            <option value="">Semua jenjang</option>
-            {getJenjangOptions(classes).map((g) => (
-              <option key={g} value={g}>
-                Kelas {g}
-              </option>
-            ))}
-          </select>
-        </Field>
         <Field label="Kelas" darkMode={darkMode}>
           <select
             value={classId}
@@ -337,7 +310,7 @@ const TagihanPanel = ({ classes, darkMode, user, notify }) => {
             className={inputClass(darkMode)}
           >
             <option value="">Pilih kelas</option>
-            {getKelasByJenjang(classes, jenjang).map((c) => (
+            {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.id}
               </option>
@@ -661,7 +634,6 @@ const PembayaranPanel = ({ darkMode, user, notify }) => {
 // 3. Tunggakan -- rekap siswa yang belum lunas
 // ============================================================
 const TunggakanPanel = ({ classes, darkMode }) => {
-  const [jenjang, setJenjang] = useState("");
   const [classId, setClassId] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -700,23 +672,6 @@ const TunggakanPanel = ({ classes, darkMode }) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-        <Field label="Jenjang" darkMode={darkMode}>
-          <select
-            value={jenjang}
-            onChange={(e) => {
-              setJenjang(e.target.value);
-              setClassId("");
-            }}
-            className={inputClass(darkMode)}
-          >
-            <option value="">Semua jenjang</option>
-            {getJenjangOptions(classes).map((g) => (
-              <option key={g} value={g}>
-                Kelas {g}
-              </option>
-            ))}
-          </select>
-        </Field>
         <Field label="Filter kelas" darkMode={darkMode}>
           <select
             value={classId}
@@ -724,7 +679,7 @@ const TunggakanPanel = ({ classes, darkMode }) => {
             className={inputClass(darkMode)}
           >
             <option value="">Semua kelas</option>
-            {getKelasByJenjang(classes, jenjang).map((c) => (
+            {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.id}
               </option>
@@ -786,7 +741,6 @@ const TunggakanPanel = ({ classes, darkMode }) => {
 // 4. Riwayat -- log semua pembayaran
 // ============================================================
 const RiwayatPanel = ({ classes, darkMode }) => {
-  const [jenjang, setJenjang] = useState("");
   const [classId, setClassId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -828,23 +782,6 @@ const RiwayatPanel = ({ classes, darkMode }) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <Field label="Jenjang" darkMode={darkMode}>
-          <select
-            value={jenjang}
-            onChange={(e) => {
-              setJenjang(e.target.value);
-              setClassId("");
-            }}
-            className={inputClass(darkMode)}
-          >
-            <option value="">Semua jenjang</option>
-            {getJenjangOptions(classes).map((g) => (
-              <option key={g} value={g}>
-                Kelas {g}
-              </option>
-            ))}
-          </select>
-        </Field>
         <Field label="Filter kelas" darkMode={darkMode}>
           <select
             value={classId}
@@ -852,7 +789,7 @@ const RiwayatPanel = ({ classes, darkMode }) => {
             className={inputClass(darkMode)}
           >
             <option value="">Semua kelas</option>
-            {getKelasByJenjang(classes, jenjang).map((c) => (
+            {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.id}
               </option>

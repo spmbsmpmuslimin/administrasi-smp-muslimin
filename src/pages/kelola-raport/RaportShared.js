@@ -363,8 +363,10 @@ export function useAcademicYears(showToast) {
 //
 // Makanya untuk raport (arsip historis), Kelas TIDAK diambil dari tabel
 // `classes`. Sebagai gantinya:
-//   - Saat IMPORT: Kelas diisi manual (teks bebas) oleh admin, sesuai apa
-//     yang tertulis di PDF raport -- lihat ImportRaportForm.js
+//   - Saat IMPORT: Kelas dibaca OTOMATIS dari tiap file leger Excel (baris
+//     "KELAS :") -- lihat ImportRaportForm.js. Saat input manual (tanpa
+//     file, lihat TambahManualForm di ManajemenRaportTable.js): diisi
+//     bebas oleh admin.
 //   - Saat FILTER (Manajemen Nilai / Rekap): pilihan Kelas diambil dari
 //     nilai class_name yang SUDAH PERNAH diimport ke student_reports
 //     (useReportedClasses di bawah) -- ini mencerminkan data yang beneran

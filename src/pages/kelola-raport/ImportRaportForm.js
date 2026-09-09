@@ -2,53 +2,51 @@
 // Dipanggil sebagai sub-tab dari RaportNilaiTab.js (tab "Import Raport"
 // di menu "Nilai Raport"), bukan halaman berdiri sendiri.
 // Alur 3 step (state lokal "step"): form -> progress -> preview.
-//   1. form     : pilih tahun ajaran/semester/kelas + sumber data (PDF/Excel)
-//                 + upload file
-//   2. progress : proses ekstraksi. Beda jalur tergantung sumber:
-//                 - PDF   : upload ke Storage bucket "raport-pdf", lalu
-//                           invoke Edge Function "extract-raport-pdf"
-//                           (lihat supabase/functions/extract-raport-pdf/index.ts)
-//                 - Excel : diparse LANGSUNG DI BROWSER pakai parseLegerExcel.js
-//                           (SheetJS), gak lewat Edge Function -- data leger
-//                           udah tabular jadi ga butuh OCR/text-extraction.
-//                           File aslinya tetep diupload ke Storage buat arsip
-//                           (source_file), tapi itu gak nge-block hasil parse.
+//   1. form     : pilih tahun ajaran/semester + upload file leger Excel
+//                 (bisa BANYAK sekaligus, lihat catatan BATCH IMPORT di
+//                 bawah)
+//   2. progress : file diparse LANGSUNG DI BROWSER pakai parseLegerExcel.js
+//                 (SheetJS) -- gak lewat server/Edge Function sama sekali,
+//                 soalnya data leger udah tabular jadi ga butuh
+//                 OCR/text-extraction. File aslinya tetep diupload ke
+//                 Storage buat arsip (source_file), tapi itu gak nge-block
+//                 hasil parse.
 //   3. preview  : sub-komponen PreviewImportTable di bawah, buat admin
 //                 cek/koreksi sebelum simpan
+//
+// CATATAN (raport 2026): jalur import PDF e-Raport Pemerintah yang dulu
+// ada di sini (upload ke Storage bucket "raport-pdf" + invoke Edge
+// Function "extract-raport-pdf") SUDAH DICABUT -- di lapangan Excel leger
+// jauh lebih gampang & lebih akurat (gak butuh OCR), jadi PDF gak kepake
+// lagi. Kalau suatu saat perlu diaktifin lagi, cek riwayat git file ini
+// sebelum perubahan ini buat referensi implementasinya (handleUploadPdf,
+// state `sumber`/`file`/`kelas`, toggle "Sumber Data"). Edge Function
+// `extract-raport-pdf` sendiri gak dihapus di sini (di luar scope file
+// JS) -- kalau emang udah gak dipakai sama sekali, hapus juga dari
+// supabase/functions.
 //
 // Simpan Import (di step preview) nge-insert ke tabel student_reports +
 // student_report_grades (lihat supabase/migrations/..._create_nilai_raport.sql).
 // Siswa dicocokkan ke tabel `students` by NIS -- kalau ga ketemu, tetap
 // disimpan (student_id null) sebagai snapshot data dari file yang diimport.
-// Bagian ini SUMBER-AGNOSTIC -- siswaList dari PDF maupun Excel punya shape
-// yang sama persis, jadi handleSimpan/PreviewImportTable ga perlu tau file
-// aslinya PDF atau Excel.
 //
-// Progress bar step 2 buat PDF ANGKA PERKIRAAN (upload=30%, extract=70%,
-// done=100%), bukan progress real dari Edge Function -- Edge Function ga
-// stream progress, cuma balikin hasil pas selesai. Buat Excel progress-nya
-// juga cuma kosmetik (parsing di browser cepet banget, hampir instan).
+// Progress bar step 2 cuma kosmetik (parsing di browser cepet banget,
+// hampir instan) -- persen dihitung dari progres tiap file dalam batch,
+// bukan progress real dari proses async manapun.
 //
 // Catatan: kolom "Ketidakhadiran" & "Ekstra Kurikuler" yang ada di file
 // leger Excel BELUM diimport (lihat komen di parseLegerExcel.js) --
 // student_report_grades cuma nyimpen subject+score.
 //
-// BATCH IMPORT (khusus Excel, ditambahin krn ini jalur yang paling sering
-// kepake -- lihat catatan di bawah): admin bisa pilih BANYAK file leger
-// sekaligus (mis. leger 7A-7F semester 1 dalam 1x proses), BUKAN cuma 1
-// file per proses kayak sebelumnya. Tiap file tetep 1 kelas 1 semester
-// (asumsi parseLegerExcel.js gak berubah), tapi kelasnya WAJIB kebaca
-// OTOMATIS dari tiap file (baris "KELAS :") -- gak ada lagi field "Kelas"
-// manual buat Excel, soalnya di mode batch beda file = beda kelas, gak
-// ada 1 nilai global yang masuk akal buat semuanya. Kalau kelas gagal
-// kedeteksi di salah satu file, file itu DILEWATIN (bukan bikin batch
-// gagal semua) dan namanya muncul di panel notice (bukan toast -- lihat
-// state `notices` di bawah) -- file lain yang berhasil tetep lanjut ke
-// preview.
-// PDF TETAP 1 file per proses (belum diubah ke batch) -- parsing PDF-nya
-// sendiri masih "BEST-EFFORT belum ditest ke file asli" (lihat
-// supabase/functions/extract-raport-pdf/index.ts), jadi belum pas buat
-// digeber banyak sekaligus sebelum itu diverifikasi dulu.
+// BATCH IMPORT: admin bisa pilih BANYAK file leger sekaligus (mis. leger
+// 7A-7F semester 1 dalam 1x proses). Tiap file tetep 1 kelas 1 semester
+// (asumsi parseLegerExcel.js gak berubah), dan kelasnya WAJIB kebaca
+// OTOMATIS dari tiap file (baris "KELAS :") -- gak ada field "Kelas"
+// manual, soalnya beda file = beda kelas, gak ada 1 nilai global yang
+// masuk akal buat semuanya. Kalau kelas gagal kedeteksi di salah satu
+// file, file itu DILEWATIN (bukan bikin batch gagal semua) dan namanya
+// muncul di panel notice (bukan toast -- lihat state `notices` di bawah)
+// -- file lain yang berhasil tetep lanjut ke preview.
 //
 // FILE INI GABUNGAN DARI 3 FILE SEBELUMNYA (refactor -- biar gak
 // berceceran, ketiganya cuma dipakai di alur Import ini doang):
@@ -91,7 +89,7 @@ function nisVariants(nis) {
   if (digitsOnly) variants.add(digitsOnly);
   if (digitsOnly.length === 9) {
     variants.add(
-      `${digitsOnly.slice(0, 2)}.${digitsOnly.slice(2, 4)}.${digitsOnly.slice(4, 6)}.${digitsOnly.slice(6, 9)}`,
+      `${digitsOnly.slice(0, 2)}.${digitsOnly.slice(2, 4)}.${digitsOnly.slice(4, 6)}.${digitsOnly.slice(6, 9)}`
     );
   }
   return Array.from(variants);
@@ -189,27 +187,23 @@ const PreviewImportTable = ({
   });
 
   const visibleSiswaList =
-    showAll || jumlahBermasalah === 0
-      ? sortedSiswaList
-      : sortedSiswaList.filter(isBermasalah);
+    showAll || jumlahBermasalah === 0 ? sortedSiswaList : sortedSiswaList.filter(isBermasalah);
 
   const handleChangeScore = (siswaId, subject, newScore) => {
     const siswa = siswaList.find((s) => s.id === siswaId);
     if (!siswa) return;
     const updatedGrades = siswa.grades.map((g) =>
-      g.subject === subject ? { ...g, score: newScore } : g,
+      g.subject === subject ? { ...g, score: newScore } : g
     );
     onUpdateSiswa?.(siswaId, { grades: updatedGrades });
   };
 
   // Konfirmasi dulu sebelum beneran dibuang dari preview -- klik tombol X
   // gak bisa di-undo di UI ini (kalau kepencet gak sengaja, mesti ulang
-  // dari upload PDF lagi buat munculin siswa itu ke daftar preview).
+  // dari upload file leger lagi buat munculin siswa itu ke daftar preview).
   const handleClickRemove = (siswa) => {
     if (
-      window.confirm(
-        `Buang "${siswa.name}" dari daftar import ini? Siswa ini TIDAK akan disimpan.`,
-      )
+      window.confirm(`Buang "${siswa.name}" dari daftar import ini? Siswa ini TIDAK akan disimpan.`)
     ) {
       onRemoveSiswa?.(siswa.id);
     }
@@ -223,7 +217,7 @@ const PreviewImportTable = ({
   const handleClickBatal = () => {
     if (
       window.confirm(
-        "Batalkan import ini? Semua data yang sudah di-extract akan hilang dan Anda perlu upload ulang.",
+        "Batalkan import ini? Semua data yang sudah di-extract akan hilang dan Anda perlu upload ulang."
       )
     ) {
       onBatal?.();
@@ -234,13 +228,9 @@ const PreviewImportTable = ({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <p className="text-gray-600 dark:text-gray-300">
-          <span className="font-semibold text-gray-800 dark:text-gray-100">
-            {siswaList.length}
-          </span>{" "}
+          <span className="font-semibold text-gray-800 dark:text-gray-100">{siswaList.length}</span>{" "}
           siswa terdeteksi —{" "}
-          <span className="text-emerald-600 dark:text-emerald-400">
-            {jumlahValid} valid
-          </span>
+          <span className="text-emerald-600 dark:text-emerald-400">{jumlahValid} valid</span>
           {jumlahBermasalah > 0 && (
             <>
               {", "}
@@ -257,7 +247,8 @@ const PreviewImportTable = ({
           <button
             type="button"
             onClick={() => setShowAll((prev) => !prev)}
-            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
             {showAll ? (
               <>
                 <EyeOff size={14} /> Sembunyikan yang valid
@@ -280,15 +271,13 @@ const PreviewImportTable = ({
                 <button
                   type="button"
                   onClick={() => setExpandedId(isExpanded ? null : siswa.id)}
-                  className="flex-1 flex items-center justify-between gap-3 min-w-0 text-left">
+                  className="flex-1 flex items-center justify-between gap-3 min-w-0 text-left"
+                >
                   <div className="flex items-center gap-3 min-w-0">
                     {isExpanded ? (
                       <ChevronUp size={16} className="text-gray-400 shrink-0" />
                     ) : (
-                      <ChevronDown
-                        size={16}
-                        className="text-gray-400 shrink-0"
-                      />
+                      <ChevronDown size={16} className="text-gray-400 shrink-0" />
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
@@ -305,8 +294,7 @@ const PreviewImportTable = ({
                           -- sebelumnya cuma ada badge tanpa penjelasan,
                           admin harus nebak sendiri padahal nilai yang
                           kelihatan di preview sama aja kayak siswa lain.
-                          issues[] datang dari parseLegerExcel.js /
-                          extract-raport-pdf. */}
+                          issues[] datang dari parseLegerExcel.js. */}
                       {siswa.issues?.length > 0 && (
                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                           {siswa.issues.join(" · ")}
@@ -320,7 +308,8 @@ const PreviewImportTable = ({
                   type="button"
                   onClick={() => handleClickRemove(siswa)}
                   title="Buang siswa ini dari daftar import (mis. sudah pernah diimport sebelumnya)"
-                  className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                  className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                >
                   <X size={16} />
                 </button>
               </div>
@@ -344,12 +333,14 @@ const PreviewImportTable = ({
       <div className="flex gap-3">
         <button
           onClick={handleClickBatal}
-          className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
+          className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        >
           Batal
         </button>
         <button
           onClick={() => onSimpan?.(siswaList)}
-          className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors active:scale-95">
+          className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors active:scale-95"
+        >
           Simpan Import
         </button>
       </div>
@@ -363,22 +354,12 @@ const PreviewImportTable = ({
 
 const ImportRaportForm = ({ showToast, onImportSelesai }) => {
   const [step, setStep] = useState("form"); // "form" | "progress" | "preview"
-  const [sumber, setSumber] = useState("excel"); // "pdf" | "excel"
   const [tahunAjaran, setTahunAjaran] = useState("");
   const [semester, setSemester] = useState("");
-  // Kelas diisi manual (teks bebas), BUKAN dropdown -- tabel `classes` cuma
-  // nyimpen kondisi kelas SEKARANG (id ditimpa ulang tiap Transisi Tahun
-  // Ajaran), jadi gak reliable buat raport arsip lama. Admin tinggal ketik
-  // sesuai yang tertulis di file raport, mis. "7F". Lihat RaportShared.js.
-  // Khusus Excel: kalau field ini dikosongin, bakal di-autofill dari nilai
-  // "Kelas" yang kebaca di file leger-nya (lihat handleUpload).
-  const [kelas, setKelas] = useState("");
-  const [file, setFile] = useState(null); // dipakai khusus sumber PDF (single file)
-  const [files, setFiles] = useState([]); // dipakai khusus sumber Excel (batch, bisa banyak)
+  const [files, setFiles] = useState([]); // batch, bisa banyak file leger sekaligus
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
   const [siswaList, setSiswaList] = useState([]);
-  const [storagePath, setStoragePath] = useState(null);
   // Pesan penting hasil proses import (file dilewati, baris perlu
   // diperiksa, dugaan NISN, dst) -- SENGAJA bukan showToast, soalnya toast
   // ilang sendiri sebelum admin sempat baca lengkap (terutama kalau
@@ -396,57 +377,9 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
         message,
       },
     ]);
-  const dismissNotice = (id) =>
-    setNotices((prev) => prev.filter((n) => n.id !== id));
+  const dismissNotice = (id) => setNotices((prev) => prev.filter((n) => n.id !== id));
 
-  // Ganti sumber -> file yang udah dipilih (kalau ada) kemungkinan besar
-  // gak nyambung lagi sama accept filter yang baru, jadi reset.
-  const handleGantiSumber = (next) => {
-    setSumber(next);
-    setFile(null);
-    setFiles([]);
-  };
-
-  const { years: academicYearsList, loading: loadingYears } =
-    useAcademicYears(showToast);
-
-  const handleUploadPdf = async () => {
-    setProgress(10);
-    setStatusText("Mengupload PDF...");
-
-    // 1. Upload PDF ke Storage bucket "raport-pdf"
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const path = `${tahunAjaran}/${semester}/${kelas}/${Date.now()}_${safeName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("raport-pdf")
-      .upload(path, file, { contentType: "application/pdf" });
-
-    if (uploadError) throw new Error(`Upload gagal: ${uploadError.message}`);
-
-    setStoragePath(path);
-    setProgress(40);
-    setStatusText(`Mengekstrak data raport kelas ${kelas}...`);
-
-    // 2. Invoke Edge Function buat extract & parse teks PDF
-    const { data, error: fnError } = await supabase.functions.invoke(
-      "extract-raport-pdf",
-      { body: { path } },
-    );
-
-    if (fnError) throw new Error(`Extract gagal: ${fnError.message}`);
-    if (data?.error) throw new Error(data.error);
-
-    setProgress(100);
-    setStatusText("Selesai");
-    // Tag tiap siswa dengan kelas (dari field form, PDF masih 1 file = 1
-    // kelas manual) & sourceFile -- bentuknya disamain sama hasil batch
-    // Excel di bawah, biar handleSimpan gak perlu tau siswa ini asalnya
-    // dari PDF atau Excel.
-    setSiswaList(
-      (data.siswaList || []).map((s) => ({ ...s, kelas, sourceFile: path })),
-    );
-  };
+  const { years: academicYearsList, loading: loadingYears } = useAcademicYears(showToast);
 
   // Batch: proses banyak file leger sekaligus (mis. 7A-7F semester 1 dalam
   // 1x jalan), satu-satu berurutan (bukan Promise.all -- biar statusText
@@ -498,16 +431,12 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
       if (!detectedKelas) {
         skipped.push({
           fileName: f.name,
-          reason:
-            'Kelas gak kebaca otomatis dari file ini (cek baris "KELAS :" di leger-nya).',
+          reason: 'Kelas gak kebaca otomatis dari file ini (cek baris "KELAS :" di leger-nya).',
         });
         continue;
       }
 
-      const normalizedKelas = detectedKelas
-        .trim()
-        .toUpperCase()
-        .replace(/\s+/g, " ");
+      const normalizedKelas = detectedKelas.trim().toUpperCase().replace(/\s+/g, " ");
       if (seenKelas.has(normalizedKelas)) {
         skipped.push({
           fileName: f.name,
@@ -518,17 +447,18 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
       seenKelas.set(normalizedKelas, f.name);
 
       // Upload file asli ke Storage buat arsip/source_file per file --
-      // sama kayak flow PDF, kalau gagal upload tetep lanjut (data hasil
-      // parse udah ada di tangan, jangan sampai gagal cuma gara2 arsip).
+      // kalau gagal upload tetep lanjut (data hasil parse udah ada di
+      // tangan, jangan sampai gagal cuma gara2 arsip).
+      // Nama bucket "raport-pdf" bersifat historis (dulu juga nampung PDF
+      // e-Raport Pemerintah sebelum jalur itu dicabut) -- tetap dipakai di
+      // sini biar file arsip lama & baru satu tempat, gak perlu migrasi
+      // bucket cuma buat rename.
       setStatusText(`Mengarsipkan ${f.name}...`);
       const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const path = `${tahunAjaran}/${semester}/${detectedKelas}/${Date.now()}_${i}_${safeName}`;
-      const { error: uploadError } = await supabase.storage
-        .from("raport-pdf")
-        .upload(path, f, {
-          contentType:
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
+      const { error: uploadError } = await supabase.storage.from("raport-pdf").upload(path, f, {
+        contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       if (uploadError) console.error(uploadError);
 
       combined = combined.concat(
@@ -540,11 +470,9 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
           id: `${detectedKelas}-${s.id}`,
           kelas: detectedKelas,
           sourceFile: uploadError ? null : path,
-        })),
+        }))
       );
-      allWarnings = allWarnings.concat(
-        warnings.map((w) => `[${detectedKelas}] ${w}`),
-      );
+      allWarnings = allWarnings.concat(warnings.map((w) => `[${detectedKelas}] ${w}`));
       setProgress(Math.round(((i + 1) / total) * 70));
     }
 
@@ -572,7 +500,7 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
     if (duplicateSiswa.length > 0) {
       addNotice(
         "warning",
-        `${duplicateSiswa.length} baris siswa terdeteksi dobel persis (NIS & kelas sama) dan otomatis di-skip -- cek file aslinya, kemungkinan ada baris ke-copy dobel: ${duplicateSiswa.map((s) => `${s.name} (${s.nis})`).join(", ")}.`,
+        `${duplicateSiswa.length} baris siswa terdeteksi dobel persis (NIS & kelas sama) dan otomatis di-skip -- cek file aslinya, kemungkinan ada baris ke-copy dobel: ${duplicateSiswa.map((s) => `${s.name} (${s.nis})`).join(", ")}.`
       );
     }
 
@@ -580,14 +508,12 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
       throw new Error(
         `Semua file gagal diproses:\n${skipped
           .map((s) => `- ${s.fileName}: ${s.reason}`)
-          .join("\n")}`,
+          .join("\n")}`
       );
     }
 
     if (skipped.length > 0) {
-      skipped.forEach((s) =>
-        addNotice("warning", `File "${s.fileName}" dilewati — ${s.reason}`),
-      );
+      skipped.forEach((s) => addNotice("warning", `File "${s.fileName}" dilewati — ${s.reason}`));
     }
     if (allWarnings.length > 0) {
       // Detail spesifik (siapa & kenapa) udah nempel langsung di tiap baris
@@ -598,7 +524,7 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
       // dicek).
       addNotice(
         "warning",
-        `${allWarnings.length} baris perlu diperiksa manual. Lihat teks kuning di bawah nama tiap siswa di daftar bawah buat tau siapa & kenapa (mis. nilai kosong, atau NIS tidak terbaca).`,
+        `${allWarnings.length} baris perlu diperiksa manual. Lihat teks kuning di bawah nama tiap siswa di daftar bawah buat tau siapa & kenapa (mis. nilai kosong, atau NIS tidak terbaca).`
       );
     }
 
@@ -620,7 +546,7 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
     if (looksLikeNisn.length > 0) {
       addNotice(
         "warning",
-        `${looksLikeNisn.length} siswa NIS-nya 10 digit polos — kemungkinan itu NISN (nomor nasional), BUKAN NIS lokal sekolah (polanya "25.26.07.079"). Kalau bener, siswa-siswa ini gak akan kesambung ke akunnya sendiri walau raport-nya dipublish. Cek dulu kolom di file leger sebelum lanjut simpan.`,
+        `${looksLikeNisn.length} siswa NIS-nya 10 digit polos — kemungkinan itu NISN (nomor nasional), BUKAN NIS lokal sekolah (polanya "25.26.07.079"). Kalau bener, siswa-siswa ini gak akan kesambung ke akunnya sendiri walau raport-nya dipublish. Cek dulu kolom di file leger sebelum lanjut simpan.`
       );
     }
 
@@ -630,18 +556,8 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
   };
 
   const handleUpload = async () => {
-    const fileLabel = sumber === "pdf" ? "file PDF" : "file Excel";
-    const fileMissing = sumber === "pdf" ? !file : files.length === 0;
-    if (
-      !tahunAjaran ||
-      !semester ||
-      fileMissing ||
-      (sumber === "pdf" && !kelas)
-    ) {
-      showToast?.(
-        `Lengkapi tahun ajaran, semester${sumber === "pdf" ? ", kelas," : ""} dan ${fileLabel} dulu`,
-        "error",
-      );
+    if (!tahunAjaran || !semester || files.length === 0) {
+      showToast?.("Lengkapi tahun ajaran, semester, dan file Excel dulu", "error");
       return;
     }
 
@@ -649,24 +565,18 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
     setNotices([]); // mulai proses baru -- buang pesan dari proses sebelumnya
 
     try {
-      if (sumber === "pdf") {
-        await handleUploadPdf();
-      } else {
-        await handleUploadExcel();
-      }
+      await handleUploadExcel();
       setStep("preview");
     } catch (err) {
       console.error(err);
-      addNotice("error", err.message || `Gagal memproses ${fileLabel}`);
-      showToast?.(err.message || `Gagal memproses ${fileLabel}`, "error");
+      addNotice("error", err.message || "Gagal memproses file Excel");
+      showToast?.(err.message || "Gagal memproses file Excel", "error");
       setStep("form");
     }
   };
 
   const handleUpdateSiswa = (id, updates) => {
-    setSiswaList((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
-    );
+    setSiswaList((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
   };
 
   // Buang 1 siswa dari daftar preview SEBELUM disimpan -- dipakai kalau
@@ -696,12 +606,11 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
         .eq("semester", Number(semester));
       if (checkError) throw checkError;
 
-      const normName = (n) =>
-        (n || "").trim().toUpperCase().replace(/\s+/g, " ");
+      const normName = (n) => (n || "").trim().toUpperCase().replace(/\s+/g, " ");
       const potentialDup = finalList.filter((s) => {
         const nameUp = normName(s.name);
         return (existingSameSemester || []).some(
-          (e) => normName(e.student_name) === nameUp && e.student_nis !== s.nis,
+          (e) => normName(e.student_name) === nameUp && e.student_nis !== s.nis
         );
       });
 
@@ -710,7 +619,7 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
           .map((s) => `- ${s.name} (NIS di file ini: ${s.nis || "(kosong)"})`)
           .join("\n");
         const lanjut = window.confirm(
-          `${potentialDup.length} siswa punya nama sama dengan raport yang UDAH ADA di ${tahunAjaran} semester ${semester}, tapi NIS-nya BEDA -- kemungkinan siswa yang sama tapi NIS-nya beda format/salah baca, dan bakal ke-import sebagai baris DUPLIKAT kalau dilanjut:\n\n${daftar}\n\nSaran: cek dulu NIS aslinya di tab Manajemen Nilai. Tetap lanjut simpan?`,
+          `${potentialDup.length} siswa punya nama sama dengan raport yang UDAH ADA di ${tahunAjaran} semester ${semester}, tapi NIS-nya BEDA -- kemungkinan siswa yang sama tapi NIS-nya beda format/salah baca, dan bakal ke-import sebagai baris DUPLIKAT kalau dilanjut:\n\n${daftar}\n\nSaran: cek dulu NIS aslinya di tab Manajemen Nilai. Tetap lanjut simpan?`
         );
         if (!lanjut) {
           showToast?.("Import dibatalkan", "info");
@@ -729,42 +638,33 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
       //    matching-nya pakai NIS yang dinormalisasi (angka doang) biar
       //    "25.26.07.203" ketemu sama "252607203".
       const nisList = finalList.map((s) => s.nis).filter(Boolean);
-      const allVariants = Array.from(
-        new Set(nisList.flatMap((n) => nisVariants(n))),
-      );
+      const allVariants = Array.from(new Set(nisList.flatMap((n) => nisVariants(n))));
       const { data: matchedStudents } = await supabase
         .from("students")
         .select("id, nis")
         .in("nis", allVariants.length > 0 ? allVariants : nisList);
 
       const normalizedToStudentId = new Map(
-        (matchedStudents || []).map((s) => [normalizeNis(s.nis), s.id]),
+        (matchedStudents || []).map((s) => [normalizeNis(s.nis), s.id])
       );
       const nisToStudentId = new Map(
-        finalList.map((s) => [
-          s.nis,
-          normalizedToStudentId.get(normalizeNis(s.nis)),
-        ]),
+        finalList.map((s) => [s.nis, normalizedToStudentId.get(normalizeNis(s.nis))])
       );
 
       // 2. Insert ke student_reports
       // class_name & source_file diambil PER SISWA (s.kelas / s.sourceFile,
-      // ditandain pas proses extract/parse -- lihat handleUploadPdf &
-      // handleUploadExcel) -- BUKAN dari field form global `kelas`/
-      // `storagePath` lagi, soalnya satu batch sekarang bisa nyampur
-      // banyak kelas & banyak file arsip sekaligus (import banyak leger
-      // sekaligus). Fallback ke `kelas`/`storagePath` form tetep dijaga
-      // buat jaga-jaga kalau ada siswa yang somehow gak ke-tag (harusnya
-      // gak kejadian di alur normal).
+      // ditandain pas parse -- lihat handleUploadExcel), soalnya satu
+      // batch bisa nyampur banyak kelas & banyak file arsip sekaligus
+      // (import banyak leger sekaligus).
       const reportsPayload = finalList.map((s) => ({
         student_id: nisToStudentId.get(s.nis) || null,
         student_name: s.name,
         student_nis: s.nis,
-        class_name: s.kelas || kelas,
+        class_name: s.kelas,
         academic_year: tahunAjaran,
         semester: Number(semester),
         status: "draft",
-        source_file: s.sourceFile || storagePath,
+        source_file: s.sourceFile,
       }));
 
       const { data: insertedReports, error: insertError } = await supabase
@@ -777,20 +677,18 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
         throw new Error(
           insertError.message.includes("duplicate")
             ? "Sebagian siswa sudah pernah diimport untuk semester & tahun ajaran ini."
-            : insertError.message,
+            : insertError.message
         );
       }
 
       // 3. Insert nilai per mapel, di-map balik ke report_id masing-masing siswa
-      const nisToReportId = new Map(
-        insertedReports.map((r) => [r.student_nis, r.id]),
-      );
+      const nisToReportId = new Map(insertedReports.map((r) => [r.student_nis, r.id]));
       const gradesPayload = finalList.flatMap((s) =>
         s.grades.map((g) => ({
           report_id: nisToReportId.get(s.nis),
           subject: g.subject,
           score: g.score,
-        })),
+        }))
       );
 
       const { error: gradesError } = await supabase
@@ -815,7 +713,6 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
   const handleBatal = () => {
     setStep("form");
     setSiswaList([]);
-    setFile(null);
     setFiles([]);
     setNotices([]);
   };
@@ -837,13 +734,15 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
             n.type === "error"
               ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
               : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300"
-          }`}>
+          }`}
+        >
           <span className="flex-1 whitespace-pre-line">{n.message}</span>
           <button
             type="button"
             onClick={() => dismissNotice(n.id)}
             title="Tutup pesan ini"
-            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+          >
             <X size={16} />
           </button>
         </div>
@@ -871,16 +770,10 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
         <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 text-sm text-teal-800 dark:text-teal-300">
           <span>
             Data di bawah akan disimpan ke{" "}
+            <span className="font-semibold">Tahun Ajaran {tahunAjaran || "(belum dipilih)"}</span>,
+            Semester{" "}
             <span className="font-semibold">
-              Tahun Ajaran {tahunAjaran || "(belum dipilih)"}
-            </span>
-            , Semester{" "}
-            <span className="font-semibold">
-              {semester === "1"
-                ? "1 (Ganjil)"
-                : semester === "2"
-                  ? "2 (Genap)"
-                  : "(belum dipilih)"}
+              {semester === "1" ? "1 (Ganjil)" : semester === "2" ? "2 (Genap)" : "(belum dipilih)"}
             </span>
             . Salah pilih? Klik "Batal" di bawah, lalu perbaiki di form.
           </span>
@@ -900,43 +793,14 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
     <div className="space-y-5">
       {noticePanel}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-          Sumber Data
-        </label>
-        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => handleGantiSumber("excel")}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              sumber === "excel"
-                ? "bg-teal-600 text-white"
-                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-            }`}>
-            File Excel (Leger)
-          </button>
-          <button
-            type="button"
-            onClick={() => handleGantiSumber("pdf")}
-            className={`px-4 py-2 text-sm font-medium transition-colors border-l border-gray-200 dark:border-gray-700 ${
-              sumber === "pdf"
-                ? "bg-teal-600 text-white"
-                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-            }`}>
-            File PDF
-          </button>
-        </div>
-        {sumber === "excel" && (
-          <p className="text-xs text-gray-400 mt-1.5">
-            Format leger: kolom NO, NAMA SISWA, NISN, lalu nilai per mapel,
-            dengan blok "KETERANGAN MAPEL" di bagian bawah. Bisa pilih BANYAK
-            file leger sekaligus (mis. 7A-7F semester ini barengan) -- kelas
-            tiap file dibaca otomatis, jadi gak perlu diisi manual satu-satu.
-          </p>
-        )}
+        <p className="text-xs text-gray-400 mt-1.5">
+          Format leger: kolom NO, NAMA SISWA, NISN, lalu nilai per mapel, dengan blok "KETERANGAN
+          MAPEL" di bagian bawah. Bisa pilih BANYAK file leger sekaligus (mis. 7A-7F semester ini
+          barengan) -- kelas tiap file dibaca otomatis, jadi gak perlu diisi manual satu-satu.
+        </p>
       </div>
 
-      <div
-        className={`grid grid-cols-1 ${sumber === "pdf" ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4`}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
             Tahun Ajaran
@@ -945,10 +809,9 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
             value={tahunAjaran}
             onChange={(e) => setTahunAjaran(e.target.value)}
             disabled={loadingYears}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 disabled:opacity-60">
-            <option value="">
-              {loadingYears ? "Memuat..." : "Pilih tahun ajaran"}
-            </option>
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 disabled:opacity-60"
+          >
+            <option value="">{loadingYears ? "Memuat..." : "Pilih tahun ajaran"}</option>
             {academicYearsList.map((ta) => (
               <option key={ta} value={ta}>
                 {ta}
@@ -964,59 +827,24 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
           <select
             value={semester}
             onChange={(e) => setSemester(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100">
+            className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100"
+          >
             <option value="">Pilih semester</option>
             <option value="1">Semester 1 (Ganjil)</option>
             <option value="2">Semester 2 (Genap)</option>
           </select>
         </div>
-
-        {/* Kelas cuma buat PDF (masih 1 file = 1 kelas, diisi manual).
-            Buat Excel udah gak ada field ini lagi -- kelas dibaca otomatis
-            per file di handleUploadExcel, soalnya 1 batch bisa nyampur
-            banyak kelas sekaligus, gak ada 1 nilai global yang cocok. */}
-        {sumber === "pdf" && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Kelas
-            </label>
-            <input
-              type="text"
-              value={kelas}
-              onChange={(e) => setKelas(e.target.value.toUpperCase())}
-              placeholder="Contoh: 7F"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Isi sesuai kelas yang tertulis di PDF raport saat itu.
-            </p>
-          </div>
-        )}
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-          {sumber === "pdf"
-            ? "File PDF Raport (satu kelas)"
-            : "File Excel Leger (bisa pilih banyak kelas sekaligus)"}
+          File Excel Leger (bisa pilih banyak kelas sekaligus)
         </label>
         <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl py-10 cursor-pointer hover:border-teal-300 dark:hover:border-teal-700 transition-colors">
           <UploadCloud className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-          {sumber === "pdf" ? (
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {file ? (
-                <span className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
-                  <FileText size={16} /> {file.name}
-                </span>
-              ) : (
-                "Klik untuk upload PDF, atau drag & drop"
-              )}
-            </span>
-          ) : files.length > 0 ? (
+          {files.length > 0 ? (
             <div className="w-full px-6 text-sm text-gray-700 dark:text-gray-200 space-y-1">
-              <p className="font-medium text-center mb-2">
-                {files.length} file dipilih
-              </p>
+              <p className="font-medium text-center mb-2">{files.length} file dipilih</p>
               <ul className="max-h-32 overflow-y-auto space-y-1">
                 {files.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 truncate">
@@ -1031,31 +859,24 @@ const ImportRaportForm = ({ showToast, onImportSelesai }) => {
             </div>
           ) : (
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Klik untuk upload Excel (.xlsx/.xls), bisa pilih banyak file
-              sekaligus, atau drag & drop
+              Klik untuk upload Excel (.xlsx/.xls), bisa pilih banyak file sekaligus, atau drag &
+              drop
             </span>
           )}
           <input
             type="file"
-            multiple={sumber === "excel"}
-            accept={
-              sumber === "pdf" ? "application/pdf" : EXCEL_EXTENSIONS.join(",")
-            }
+            multiple
+            accept={EXCEL_EXTENSIONS.join(",")}
             className="hidden"
-            onChange={(e) => {
-              if (sumber === "pdf") {
-                setFile(e.target.files?.[0] || null);
-              } else {
-                setFiles(Array.from(e.target.files || []));
-              }
-            }}
+            onChange={(e) => setFiles(Array.from(e.target.files || []))}
           />
         </label>
       </div>
 
       <button
         onClick={handleUpload}
-        className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors active:scale-95">
+        className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors active:scale-95"
+      >
         Extract & Preview
       </button>
     </div>
