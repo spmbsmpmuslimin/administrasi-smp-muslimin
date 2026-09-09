@@ -5,7 +5,6 @@ import {
   MapPin,
   Phone,
   Calendar,
-  Image as ImageIcon,
   Edit3,
   Save,
   Upload,
@@ -13,9 +12,14 @@ import {
   RotateCcw,
   Mail,
   Globe,
-  User,
   AlertTriangle,
   Check,
+  Layers,
+  Wallet,
+  Wrench,
+  Plus,
+  Trash2,
+  ShieldCheck,
 } from "lucide-react";
 
 const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
@@ -31,6 +35,11 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     school_logo: null,
     max_students_per_class: "45",
     npsn: "20240001",
+    grades: ["7", "8", "9"],
+    spp_nominal_per_ta: {},
+    maintenance_mode: false,
+    maintenance_message: "Aplikasi Sedang Dalam Maintenance. Kami Akan Kembali Segera!",
+    maintenance_whitelist: [],
   });
 
   const [editingSchoolSettings, setEditingSchoolSettings] = useState(false);
@@ -40,6 +49,14 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     isValid: true,
     message: "",
   });
+
+  // State bantu untuk form tambah data SPP & whitelist maintenance
+  const [newSppYear, setNewSppYear] = useState("");
+  const [newSppNominal, setNewSppNominal] = useState("");
+  const [newWhitelistUsername, setNewWhitelistUsername] = useState("");
+  const [newWhitelistFullName, setNewWhitelistFullName] = useState("");
+
+  const ALL_GRADE_OPTIONS = ["7", "8", "9", "10", "11", "12"];
 
   // ✅ AUTO-DETECTION SEMESTER
   const getExpectedSemester = () => {
@@ -98,8 +115,22 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
       if (settingsData && settingsData.length > 0) {
         const settings = {};
+        const jsonKeys = ["grades", "spp_nominal_per_ta", "maintenance_whitelist"];
+
         settingsData.forEach((item) => {
-          settings[item.setting_key] = item.setting_value;
+          let value = item.setting_value;
+
+          if (jsonKeys.includes(item.setting_key)) {
+            try {
+              value = JSON.parse(value);
+            } catch (e) {
+              value = item.setting_key === "spp_nominal_per_ta" ? {} : [];
+            }
+          } else if (item.setting_key === "maintenance_mode") {
+            value = value === true || value === "true";
+          }
+
+          settings[item.setting_key] = value;
         });
         setSchoolSettings((prev) => ({ ...prev, ...settings }));
       }
@@ -336,11 +367,20 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     try {
       setLoading(true);
 
-      const updatePromises = Object.entries(tempSchoolSettings).map(([key, value]) =>
-        supabase
+      const jsonKeys = ["grades", "spp_nominal_per_ta", "maintenance_whitelist"];
+
+      const updatePromises = Object.entries(tempSchoolSettings).map(([key, value]) => {
+        let storedValue = value;
+        if (jsonKeys.includes(key)) {
+          storedValue = JSON.stringify(value);
+        } else if (key === "maintenance_mode") {
+          storedValue = value ? "true" : "false";
+        }
+
+        return supabase
           .from("school_settings")
-          .upsert({ setting_key: key, setting_value: value }, { onConflict: "setting_key" })
-      );
+          .upsert({ setting_key: key, setting_value: storedValue }, { onConflict: "setting_key" });
+      });
 
       const results = await Promise.all(updatePromises);
       const hasError = results.some((result) => result.error);
@@ -369,308 +409,336 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     showToast("Form telah direset ke nilai semula", "info");
   };
 
-  return (
-    <div className="p-4 sm:p-6 bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex-1">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
-            Pengaturan Sekolah
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1">
-            Kelola informasi dan identitas SMP Muslimin Cililin
-          </p>
-        </div>
-        {!editingSchoolSettings && (
-          <button
-            onClick={() => {
-              setEditingSchoolSettings(true);
-              setTempSchoolSettings({ ...schoolSettings });
-            }}
-            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all duration-200 w-full sm:w-auto min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98]"
-          >
-            <Edit3 size={18} className="sm:size-[16px]" />
-            <span className="text-sm sm:text-base font-medium">Edit Pengaturan</span>
-          </button>
-        )}
-      </div>
+  // ✅ TINGKATAN KELAS (grades)
+  const toggleGrade = (grade) => {
+    setTempSchoolSettings((prev) => {
+      const current = prev.grades || [];
+      const updated = current.includes(grade)
+        ? current.filter((g) => g !== grade)
+        : [...current, grade].sort();
+      return { ...prev, grades: updated };
+    });
+  };
 
-      {/* ✅ SEMESTER MISMATCH WARNING */}
-      {!editingSchoolSettings && isSemesterMismatch() && (
-        <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-l-4 border-yellow-500 dark:border-yellow-600 p-4 rounded-xl shadow-sm">
-          <div className="flex items-start gap-3">
-            <AlertTriangle
-              className="text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"
-              size={20}
-            />
-            <div className="flex-1">
-              <h4 className="text-sm font-bold text-yellow-900 dark:text-yellow-300 mb-1">
-                ⚠️ Perhatian: Semester Mungkin Perlu Diupdate
-              </h4>
-              <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
-                Sekarang{" "}
-                <strong className="dark:text-yellow-100">
-                  {getCurrentMonthName()} {getCurrentYear()}
-                </strong>
-                , semester seharusnya{" "}
-                <strong className="text-yellow-900 dark:text-yellow-100">
-                  "{getExpectedSemester()}"
-                </strong>
-                <br />
-                Semester aktif saat ini:{" "}
-                <strong className="text-red-700 dark:text-red-300">
-                  "{schoolSettings.semester}"
-                </strong>
-              </p>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-yellow-700 dark:text-yellow-300 mb-3">
-                <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg">
-                  Juli-Des = Ganjil
-                </span>
-                <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg">
-                  Jan-Jun = Genap
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+  // ✅ NOMINAL SPP PER TAHUN AJARAN
+  const addOrUpdateSppNominal = () => {
+    if (!newSppYear.trim() || !newSppNominal) {
+      showToast("Tahun ajaran dan nominal SPP wajib diisi", "error");
+      return;
+    }
+
+    const yearRegex = /^\d{4}\/\d{4}$/;
+    if (!yearRegex.test(newSppYear.trim())) {
+      showToast("Format tahun ajaran harus: YYYY/YYYY (contoh: 2026/2027)", "error");
+      return;
+    }
+
+    setTempSchoolSettings((prev) => ({
+      ...prev,
+      spp_nominal_per_ta: {
+        ...(prev.spp_nominal_per_ta || {}),
+        [newSppYear.trim()]: Number(newSppNominal),
+      },
+    }));
+    setNewSppYear("");
+    setNewSppNominal("");
+  };
+
+  const removeSppNominal = (year) => {
+    setTempSchoolSettings((prev) => {
+      const updated = { ...(prev.spp_nominal_per_ta || {}) };
+      delete updated[year];
+      return { ...prev, spp_nominal_per_ta: updated };
+    });
+  };
+
+  // ✅ MODE MAINTENANCE
+  const toggleMaintenanceMode = () => {
+    setTempSchoolSettings((prev) => ({
+      ...prev,
+      maintenance_mode: !prev.maintenance_mode,
+    }));
+  };
+
+  const addWhitelistUser = () => {
+    if (!newWhitelistUsername.trim() || !newWhitelistFullName.trim()) {
+      showToast("Username dan nama lengkap wajib diisi", "error");
+      return;
+    }
+
+    setTempSchoolSettings((prev) => ({
+      ...prev,
+      maintenance_whitelist: [
+        ...(prev.maintenance_whitelist || []),
+        {
+          id: crypto.randomUUID(),
+          username: newWhitelistUsername.trim(),
+          full_name: newWhitelistFullName.trim(),
+        },
+      ],
+    }));
+    setNewWhitelistUsername("");
+    setNewWhitelistFullName("");
+  };
+
+  const removeWhitelistUser = (id) => {
+    setTempSchoolSettings((prev) => ({
+      ...prev,
+      maintenance_whitelist: (prev.maintenance_whitelist || []).filter((u) => u.id !== id),
+    }));
+  };
+
+  const formatRupiah = (value) => {
+    if (value === undefined || value === null || value === "") return "-";
+    return `Rp ${Number(value).toLocaleString("id-ID")}`;
+  };
+
+  // ── Style tokens (biar konsisten di semua section, ga acak-acakan) ──
+  const cardClass =
+    "bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-5 sm:p-6";
+  const sectionTitleClass =
+    "text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2.5";
+  const labelClass = "block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1.5";
+  const inputClass =
+    "w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900/40 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors min-h-[42px]";
+  const displayClass =
+    "w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white min-h-[42px] flex items-center";
+  const iconBadge = (colorClasses) =>
+    `w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses}`;
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-6xl mx-auto space-y-6 pb-24">
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+              Pengaturan Sekolah
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Kelola informasi dan identitas {schoolSettings.school_name}
+            </p>
+          </div>
+          {!editingSchoolSettings && (
+            <button
+              onClick={() => {
+                setEditingSchoolSettings(true);
+                setTempSchoolSettings({ ...schoolSettings });
+              }}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors w-full sm:w-auto min-h-[44px] touch-manipulation active:scale-[0.98]"
+            >
+              <Edit3 size={16} />
+              Edit Pengaturan
+            </button>
+          )}
+        </div>
+
+        {/* ── Semester mismatch alert ── */}
+        {!editingSchoolSettings && isSemesterMismatch() && (
+          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                className="text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                size={20}
+              />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">
+                  Semester mungkin perlu diupdate
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                  Sekarang{" "}
+                  <strong>
+                    {getCurrentMonthName()} {getCurrentYear()}
+                  </strong>
+                  , semester seharusnya <strong>"{getExpectedSemester()}"</strong>. Semester aktif
+                  saat ini:{" "}
+                  <strong className="text-red-600 dark:text-red-400">
+                    "{schoolSettings.semester}"
+                  </strong>
+                  .
+                </p>
                 <button
                   onClick={quickUpdateSemester}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 px-4 sm:px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-all duration-200 shadow-sm min-h-[44px] touch-manipulation active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[40px] touch-manipulation active:scale-[0.98]"
                 >
-                  <Check size={16} />
-                  {loading ? "Updating..." : `Update ke "${getExpectedSemester()}" Sekarang`}
+                  <Check size={15} />
+                  {loading ? "Updating..." : `Update ke "${getExpectedSemester()}" sekarang`}
                 </button>
-                <span className="text-xs text-yellow-700 dark:text-yellow-300 self-center text-center sm:text-left">
-                  atau abaikan jika semester sudah benar
-                </span>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Informasi Sekolah */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Building2 size={20} className="text-blue-600 dark:text-blue-400" />
-              </div>
-              Informasi Sekolah
-            </h3>
+        {/* ── Hero: Identitas & Logo Sekolah ── */}
+        <div className={cardClass}>
+          <h3 className={sectionTitleClass}>
+            <div
+              className={iconBadge(
+                "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+              )}
+            >
+              <Building2 size={18} />
+            </div>
+            Identitas Sekolah
+          </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Nama Sekolah *
-                </label>
+          <div className="flex flex-col sm:flex-row gap-6">
+            {/* Logo */}
+            <div className="sm:w-44 flex-shrink-0">
+              {editingSchoolSettings ? (
+                <div className="space-y-3">
+                  {tempSchoolSettings.school_logo || schoolSettings.school_logo ? (
+                    <div className="relative">
+                      <img
+                        src={tempSchoolSettings.school_logo || schoolSettings.school_logo}
+                        alt="Preview Logo"
+                        className="w-full aspect-square object-contain border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900/30 p-3"
+                      />
+                      <button
+                        onClick={removeLogo}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-sm transition-colors touch-manipulation active:scale-90"
+                        title="Hapus logo"
+                        aria-label="Hapus logo"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      className={`flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                        loading
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:border-blue-400 dark:hover:border-blue-500 border-gray-300 dark:border-gray-600"
+                      } bg-gray-50 dark:bg-gray-900/30 touch-manipulation`}
+                    >
+                      <Upload className="w-7 h-7 text-gray-400 dark:text-gray-500 mb-2" />
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center px-2">
+                        Klik untuk upload
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        disabled={loading}
+                      />
+                    </label>
+                  )}
+
+                  {uploadProgress > 0 && (
+                    <div className="space-y-1">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                        <div
+                          className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center">
+                        Mengupload... {uploadProgress}%
+                      </p>
+                    </div>
+                  )}
+
+                  {!imageValidation.isValid && (
+                    <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                      {imageValidation.message}
+                    </p>
+                  )}
+
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">
+                    JPG/PNG/WebP, maks 2MB. Otomatis dikompresi.
+                  </p>
+                </div>
+              ) : (
+                <div className="w-full aspect-square flex items-center justify-center bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-xl">
+                  {schoolSettings.school_logo ? (
+                    <img
+                      src={schoolSettings.school_logo}
+                      alt="School Logo"
+                      className="w-full h-full object-contain p-3"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white mx-auto mb-2">
+                        <span className="text-2xl">🏫</span>
+                      </div>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Logo belum diset</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Identity fields */}
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Nama Sekolah *</label>
                 {editingSchoolSettings ? (
                   <input
                     type="text"
                     value={tempSchoolSettings.school_name || ""}
                     onChange={(e) =>
-                      setTempSchoolSettings((prev) => ({
-                        ...prev,
-                        school_name: e.target.value,
-                      }))
+                      setTempSchoolSettings((prev) => ({ ...prev, school_name: e.target.value }))
                     }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation transition-all duration-200"
+                    className={inputClass}
                     placeholder="Masukkan nama sekolah"
                   />
                 ) : (
-                  <div className="w-full px-4 py-3 bg-blue-50/50 dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white min-h-[44px] flex items-center font-medium">
+                  <div className={`${displayClass} font-semibold`}>
                     {schoolSettings.school_name}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Tingkat Sekolah *
-                </label>
-                <div className="w-full px-4 py-3 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-900/20 dark:to-blue-900/10 border border-blue-200 dark:border-blue-700 rounded-xl font-bold text-blue-800 dark:text-blue-300 min-h-[44px] flex items-center">
+                <label className={labelClass}>Tingkat Sekolah *</label>
+                <div className="px-3.5 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg font-semibold text-blue-700 dark:text-blue-300 min-h-[42px] flex items-center text-sm">
                   {schoolSettings.school_level}
                 </div>
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Alamat Sekolah *
-                </label>
-                {editingSchoolSettings ? (
-                  <textarea
-                    value={tempSchoolSettings.school_address || ""}
-                    onChange={(e) =>
-                      setTempSchoolSettings((prev) => ({
-                        ...prev,
-                        school_address: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white dark:placeholder-gray-400 resize-vertical min-h-[100px] sm:min-h-[76px] touch-manipulation transition-all duration-200"
-                    rows="3"
-                    placeholder="Masukkan alamat lengkap sekolah"
-                  />
-                ) : (
-                  <div className="w-full px-4 py-3 bg-blue-50/50 dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white min-h-[100px] sm:min-h-[76px] flex items-start p-4 font-medium">
-                    {schoolSettings.school_address}
-                  </div>
-                )}
-              </div>
-
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  NPSN *
-                </label>
+                <label className={labelClass}>NPSN *</label>
                 {editingSchoolSettings ? (
                   <input
                     type="text"
                     value={tempSchoolSettings.npsn || ""}
                     onChange={(e) =>
-                      setTempSchoolSettings((prev) => ({
-                        ...prev,
-                        npsn: e.target.value,
-                      }))
+                      setTempSchoolSettings((prev) => ({ ...prev, npsn: e.target.value }))
                     }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation transition-all duration-200"
+                    className={inputClass}
                     placeholder="8 digit NPSN"
                     maxLength="8"
                   />
                 ) : (
-                  <div className="w-full px-4 py-3 bg-blue-50/50 dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white min-h-[44px] flex items-center font-medium">
-                    {schoolSettings.npsn}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Maks. Siswa per Kelas
-                </label>
-                {editingSchoolSettings ? (
-                  <input
-                    type="number"
-                    value={tempSchoolSettings.max_students_per_class || ""}
-                    onChange={(e) =>
-                      setTempSchoolSettings((prev) => ({
-                        ...prev,
-                        max_students_per_class: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation transition-all duration-200"
-                    placeholder="36"
-                    min="20"
-                    max="40"
-                  />
-                ) : (
-                  <div className="w-full px-4 py-3 bg-blue-50/50 dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white min-h-[44px] flex items-center font-medium">
-                    {schoolSettings.max_students_per_class} siswa
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Kontak Sekolah */}
-          <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Phone size={20} className="text-green-600 dark:text-green-400" />
-              </div>
-              Kontak Sekolah
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Nomor Telepon
-                </label>
-                {editingSchoolSettings ? (
-                  <input
-                    type="text"
-                    value={tempSchoolSettings.school_phone || ""}
-                    onChange={(e) =>
-                      setTempSchoolSettings((prev) => ({
-                        ...prev,
-                        school_phone: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation transition-all duration-200"
-                    placeholder="Contoh: 022-1234567"
-                  />
-                ) : (
-                  <div className="w-full px-4 py-3 bg-blue-50/50 dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white min-h-[44px] flex items-center font-medium">
-                    {schoolSettings.school_phone || "-"}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Email Sekolah
-                </label>
-                {editingSchoolSettings ? (
-                  <input
-                    type="email"
-                    value={tempSchoolSettings.school_email || ""}
-                    onChange={(e) =>
-                      setTempSchoolSettings((prev) => ({
-                        ...prev,
-                        school_email: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation transition-all duration-200"
-                    placeholder="email@sekolah.sch.id"
-                  />
-                ) : (
-                  <div className="w-full px-4 py-3 bg-blue-50/50 dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white min-h-[44px] flex items-center font-medium">
-                    {schoolSettings.school_email || "-"}
-                  </div>
-                )}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Website Sekolah
-                </label>
-                {editingSchoolSettings ? (
-                  <input
-                    type="url"
-                    value={tempSchoolSettings.school_website || ""}
-                    onChange={(e) =>
-                      setTempSchoolSettings((prev) => ({
-                        ...prev,
-                        school_website: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation transition-all duration-200"
-                    placeholder="https://example.sch.id"
-                  />
-                ) : (
-                  <div className="w-full px-4 py-3 bg-blue-50/50 dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white min-h-[44px] flex items-center font-medium">
-                    {schoolSettings.school_website || "-"}
-                  </div>
+                  <div className={displayClass}>{schoolSettings.npsn}</div>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tahun Ajaran dan Logo */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Calendar size={20} className="text-purple-600 dark:text-purple-400" />
+        {/* ── Akademik & Kontak (2 kolom) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Akademik */}
+          <div className={cardClass}>
+            <h3 className={sectionTitleClass}>
+              <div
+                className={iconBadge(
+                  "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
+                )}
+              >
+                <Calendar size={18} />
               </div>
-              Tahun Ajaran
+              Tahun Ajaran &amp; Akademik
             </h3>
 
-            <div className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Tahun Ajaran Aktif *
-                </label>
+                <label className={labelClass}>Tahun Ajaran Aktif *</label>
                 {editingSchoolSettings ? (
-                  <div className="space-y-2">
+                  <>
                     <input
                       type="text"
                       value={tempSchoolSettings.current_academic_year || ""}
@@ -681,206 +749,460 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                         }))
                       }
                       placeholder="2024/2025"
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white dark:placeholder-gray-400 min-h-[44px] touch-manipulation transition-all duration-200"
+                      className={inputClass}
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 px-1">
-                      Format: YYYY/YYYY (contoh: 2024/2025)
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                      Format: YYYY/YYYY
                     </p>
-                  </div>
+                  </>
                 ) : (
-                  <div className="w-full px-4 py-3 bg-gradient-to-r from-purple-100 to-purple-50 dark:from-purple-900/20 dark:to-purple-900/10 border border-purple-200 dark:border-purple-700 rounded-xl font-bold text-purple-800 dark:text-purple-300 min-h-[44px] flex items-center">
+                  <div className="px-3.5 py-2.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg font-semibold text-purple-700 dark:text-purple-300 min-h-[42px] flex items-center text-sm">
                     {schoolSettings.current_academic_year}
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Semester Aktif
+                <label className={labelClass}>Semester Aktif</label>
+                {editingSchoolSettings ? (
+                  <select
+                    value={tempSchoolSettings.semester || ""}
+                    onChange={(e) =>
+                      setTempSchoolSettings((prev) => ({ ...prev, semester: e.target.value }))
+                    }
+                    className={inputClass}
+                  >
+                    <option value="Ganjil">Ganjil</option>
+                    <option value="Genap">Genap</option>
+                  </select>
+                ) : (
+                  <div className={displayClass}>{schoolSettings.semester}</div>
+                )}
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                  Jul–Des: Ganjil · Jan–Jun: Genap
+                </p>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Maks. Siswa per Kelas</label>
+                {editingSchoolSettings ? (
+                  <input
+                    type="number"
+                    value={tempSchoolSettings.max_students_per_class || ""}
+                    onChange={(e) =>
+                      setTempSchoolSettings((prev) => ({
+                        ...prev,
+                        max_students_per_class: e.target.value,
+                      }))
+                    }
+                    className={inputClass}
+                    placeholder="36"
+                    min="20"
+                    max="40"
+                  />
+                ) : (
+                  <div className={displayClass}>{schoolSettings.max_students_per_class} siswa</div>
+                )}
+              </div>
+            </div>
+
+            {/* Tingkatan Kelas sub-section */}
+            <div className="mt-5 pt-5 border-t border-gray-100 dark:border-gray-700">
+              <label className={`${labelClass} flex items-center gap-2`}>
+                <Layers size={14} /> Tingkatan Kelas
+              </label>
+              {editingSchoolSettings ? (
+                <div className="flex flex-wrap gap-2">
+                  {ALL_GRADE_OPTIONS.map((grade) => {
+                    const active = (tempSchoolSettings.grades || []).includes(grade);
+                    return (
+                      <button
+                        key={grade}
+                        type="button"
+                        onClick={() => toggleGrade(grade)}
+                        className={`px-3.5 py-2 rounded-lg text-sm font-medium border transition-colors min-h-[40px] touch-manipulation active:scale-[0.98] ${
+                          active
+                            ? "bg-purple-600 text-white border-purple-600"
+                            : "bg-white dark:bg-gray-900/30 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-purple-400"
+                        }`}
+                      >
+                        Kelas {grade}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {(schoolSettings.grades || []).length > 0 ? (
+                    schoolSettings.grades.map((grade) => (
+                      <span
+                        key={grade}
+                        className="px-3.5 py-1.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg text-sm font-medium text-purple-700 dark:text-purple-300"
+                      >
+                        Kelas {grade}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Belum diset</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Kontak & Lokasi */}
+          <div className={cardClass}>
+            <h3 className={sectionTitleClass}>
+              <div
+                className={iconBadge(
+                  "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+                )}
+              >
+                <Phone size={18} />
+              </div>
+              Kontak &amp; Lokasi
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className={`${labelClass} flex items-center gap-1.5`}>
+                  <MapPin size={13} /> Alamat Sekolah *
                 </label>
                 {editingSchoolSettings ? (
-                  <div className="space-y-2">
-                    <select
-                      value={tempSchoolSettings.semester || ""}
-                      onChange={(e) =>
-                        setTempSchoolSettings((prev) => ({
-                          ...prev,
-                          semester: e.target.value,
-                        }))
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-3 focus:ring-blue-500/50 focus:border-blue-500 dark:focus:ring-blue-400/50 dark:focus:border-blue-400 bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white min-h-[44px] touch-manipulation transition-all duration-200"
-                    >
-                      <option value="Ganjil">Ganjil</option>
-                      <option value="Genap">Genap</option>
-                    </select>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800">
-                      📅 <strong>Info:</strong> Jul-Des = Ganjil | Jan-Jun = Genap
-                    </p>
-                  </div>
+                  <textarea
+                    value={tempSchoolSettings.school_address || ""}
+                    onChange={(e) =>
+                      setTempSchoolSettings((prev) => ({ ...prev, school_address: e.target.value }))
+                    }
+                    className={`${inputClass} resize-vertical min-h-[80px]`}
+                    rows="3"
+                    placeholder="Masukkan alamat lengkap sekolah"
+                  />
                 ) : (
-                  <div>
-                    <div className="w-full px-4 py-3 bg-blue-50/50 dark:bg-gray-700/50 border border-blue-100 dark:border-gray-600 rounded-xl mb-2 text-gray-900 dark:text-white min-h-[44px] flex items-center font-medium">
-                      {schoolSettings.semester}
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 px-1">
-                      Jul-Des: Ganjil | Jan-Jun: Genap
-                    </p>
+                  <div className={`${displayClass} min-h-[80px] items-start py-3`}>
+                    {schoolSettings.school_address}
                   </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Nomor Telepon</label>
+                  {editingSchoolSettings ? (
+                    <input
+                      type="text"
+                      value={tempSchoolSettings.school_phone || ""}
+                      onChange={(e) =>
+                        setTempSchoolSettings((prev) => ({ ...prev, school_phone: e.target.value }))
+                      }
+                      className={inputClass}
+                      placeholder="Contoh: 022-1234567"
+                    />
+                  ) : (
+                    <div className={displayClass}>{schoolSettings.school_phone || "-"}</div>
+                  )}
+                </div>
+
+                <div>
+                  <label className={`${labelClass} flex items-center gap-1.5`}>
+                    <Mail size={13} /> Email Sekolah
+                  </label>
+                  {editingSchoolSettings ? (
+                    <input
+                      type="email"
+                      value={tempSchoolSettings.school_email || ""}
+                      onChange={(e) =>
+                        setTempSchoolSettings((prev) => ({ ...prev, school_email: e.target.value }))
+                      }
+                      className={inputClass}
+                      placeholder="email@sekolah.sch.id"
+                    />
+                  ) : (
+                    <div className={displayClass}>{schoolSettings.school_email || "-"}</div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className={`${labelClass} flex items-center gap-1.5`}>
+                  <Globe size={13} /> Website Sekolah
+                </label>
+                {editingSchoolSettings ? (
+                  <input
+                    type="url"
+                    value={tempSchoolSettings.school_website || ""}
+                    onChange={(e) =>
+                      setTempSchoolSettings((prev) => ({ ...prev, school_website: e.target.value }))
+                    }
+                    className={inputClass}
+                    placeholder="https://example.sch.id"
+                  />
+                ) : (
+                  <div className={displayClass}>{schoolSettings.school_website || "-"}</div>
                 )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Logo Section */}
-          <div className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-5 flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <ImageIcon size={20} className="text-orange-600 dark:text-orange-400" />
-              </div>
-              Logo Sekolah
-            </h3>
+        {/* ── SPP Nominal ── */}
+        <div className={cardClass}>
+          <h3 className={sectionTitleClass}>
+            <div
+              className={iconBadge(
+                "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
+              )}
+            >
+              <Wallet size={18} />
+            </div>
+            Nominal SPP per Tahun Ajaran
+          </h3>
 
-            {editingSchoolSettings ? (
-              <div className="space-y-5">
-                {uploadProgress > 0 && (
-                  <div className="space-y-2">
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                      <div
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 h-2.5 rounded-full transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-                      Mengupload... {uploadProgress}%
-                    </p>
-                  </div>
-                )}
-
-                {!imageValidation.isValid && (
-                  <div className="p-3 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
-                    <p className="text-sm font-medium text-red-700 dark:text-red-300">
-                      {imageValidation.message}
-                    </p>
-                  </div>
-                )}
-
-                {(tempSchoolSettings.school_logo || schoolSettings.school_logo) && (
-                  <div className="relative p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-gray-700/50 dark:to-gray-700/30 rounded-xl border border-blue-200 dark:border-gray-600">
-                    <button
-                      onClick={removeLogo}
-                      className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-full p-2 transition-all duration-200 shadow-md touch-manipulation active:scale-90"
-                      title="Hapus logo"
-                      aria-label="Hapus logo"
-                    >
-                      <X size={16} />
-                    </button>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                      <img
-                        src={tempSchoolSettings.school_logo || schoolSettings.school_logo}
-                        alt="Preview Logo"
-                        className="h-20 w-20 object-contain border-2 border-white dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-2 mx-auto sm:mx-0 shadow-sm"
-                      />
-                      <div className="flex-1 text-center sm:text-left">
-                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                          Preview Logo
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Logo akan disimpan dalam format terkompresi
-                        </p>
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                          ✓ Gambar telah dioptimasi
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <label
-                  className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
-                    loading
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/30 dark:hover:bg-gray-700/70 border-gray-300 dark:border-gray-600"
-                  } bg-blue-50/20 dark:bg-gray-700/30 touch-manipulation active:scale-[0.98]`}
+          <div className="space-y-2 mb-4">
+            {Object.entries(
+              (editingSchoolSettings
+                ? tempSchoolSettings.spp_nominal_per_ta
+                : schoolSettings.spp_nominal_per_ta) || {}
+            )
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([year, nominal]) => (
+                <div
+                  key={year}
+                  className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg"
                 >
-                  <Upload className="w-10 h-10 text-gray-400 dark:text-gray-500 mb-3" />
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300 text-center mb-1">
-                    Klik untuk upload logo
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                    PNG, JPG, JPEG • Maks. 2MB • Minimal 100x100px
-                  </span>
-                  <span className="text-xs text-blue-600 dark:text-blue-400 mt-2 text-center font-medium">
-                    Gambar akan dikompresi otomatis
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/jpg, image/webp"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                    disabled={loading}
-                  />
-                </label>
+                  <span className="font-medium text-gray-800 dark:text-white text-sm">{year}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm">
+                      {formatRupiah(nominal)}
+                    </span>
+                    {editingSchoolSettings && (
+                      <button
+                        type="button"
+                        onClick={() => removeSppNominal(year)}
+                        className="text-red-500 hover:text-red-700 p-1 touch-manipulation active:scale-90"
+                        title="Hapus"
+                        aria-label={`Hapus nominal SPP ${year}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            {Object.keys(
+              (editingSchoolSettings
+                ? tempSchoolSettings.spp_nominal_per_ta
+                : schoolSettings.spp_nominal_per_ta) || {}
+            ).length === 0 && (
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                Belum ada nominal SPP diset
+              </p>
+            )}
+          </div>
 
-                <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/10 dark:to-blue-900/5 rounded-xl border border-blue-200 dark:border-blue-800">
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    <strong>Tips:</strong> Gunakan gambar dengan latar belakang transparan (PNG)
-                    untuk hasil terbaik. Logo akan otomatis dikompresi hingga 70% lebih kecil.
-                  </p>
-                </div>
+          {editingSchoolSettings && (
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+              <input
+                type="text"
+                value={newSppYear}
+                onChange={(e) => setNewSppYear(e.target.value)}
+                placeholder="2026/2027"
+                className={`${inputClass} flex-1 mt-3`}
+              />
+              <input
+                type="number"
+                value={newSppNominal}
+                onChange={(e) => setNewSppNominal(e.target.value)}
+                placeholder="Nominal SPP (Rp)"
+                className={`${inputClass} flex-1 mt-3`}
+              />
+              <button
+                type="button"
+                onClick={addOrUpdateSppNominal}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 mt-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors min-h-[42px] touch-manipulation active:scale-[0.98]"
+              >
+                <Plus size={16} />
+                Tambah/Update
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Mode Maintenance — Danger Zone, sengaja di paling bawah ── */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-red-100 dark:border-red-900/30 shadow-sm p-5 sm:p-6">
+          <h3 className={sectionTitleClass}>
+            <div
+              className={iconBadge("bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400")}
+            >
+              <Wrench size={18} />
+            </div>
+            Mode Maintenance
+            <span className="ml-auto text-[11px] font-medium uppercase tracking-wide text-red-400 dark:text-red-500">
+              Zona Sensitif
+            </span>
+          </h3>
+
+          <div className="space-y-5">
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div>
+                <p className="font-medium text-sm text-gray-800 dark:text-white">
+                  Status Maintenance
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Jika aktif, hanya user di whitelist yang bisa mengakses aplikasi
+                </p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-center p-6 bg-gradient-to-r from-blue-50 to-blue-100/30 dark:from-gray-700/50 dark:to-gray-700/30 rounded-xl border-2 border-dashed border-blue-200 dark:border-gray-600">
-                  {schoolSettings.school_logo ? (
-                    <img
-                      src={schoolSettings.school_logo}
-                      alt="School Logo"
-                      className="h-28 w-28 object-contain p-2 bg-white dark:bg-gray-800 rounded-2xl shadow-md"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <div className="w-28 h-28 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-3 shadow-md">
-                        <span className="text-3xl">🏫</span>
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                        Logo belum diset
-                      </p>
-                    </div>
-                  )}
+              {editingSchoolSettings ? (
+                <button
+                  type="button"
+                  onClick={toggleMaintenanceMode}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 touch-manipulation flex-shrink-0 ${
+                    tempSchoolSettings.maintenance_mode
+                      ? "bg-red-500"
+                      : "bg-gray-300 dark:bg-gray-600"
+                  }`}
+                  aria-label="Toggle mode maintenance"
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                      tempSchoolSettings.maintenance_mode ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              ) : (
+                <span
+                  className={`px-3 py-1 rounded-md text-xs font-bold flex-shrink-0 ${
+                    schoolSettings.maintenance_mode
+                      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                      : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                  }`}
+                >
+                  {schoolSettings.maintenance_mode ? "AKTIF" : "NONAKTIF"}
+                </span>
+              )}
+            </div>
+
+            <div>
+              <label className={labelClass}>Pesan Maintenance</label>
+              {editingSchoolSettings ? (
+                <textarea
+                  value={tempSchoolSettings.maintenance_message || ""}
+                  onChange={(e) =>
+                    setTempSchoolSettings((prev) => ({
+                      ...prev,
+                      maintenance_message: e.target.value,
+                    }))
+                  }
+                  className={`${inputClass} resize-vertical min-h-[76px]`}
+                  rows="2"
+                  placeholder="Pesan yang ditampilkan saat maintenance"
+                />
+              ) : (
+                <div className={`${displayClass} min-h-[44px]`}>
+                  {schoolSettings.maintenance_message || "-"}
                 </div>
-                {schoolSettings.school_logo && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
-                    Logo terpasang • Format terkompresi
+              )}
+            </div>
+
+            <div>
+              <label className={`${labelClass} flex items-center gap-1.5`}>
+                <ShieldCheck size={14} /> Whitelist Maintenance
+              </label>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2 -mt-1">
+                Tetap bisa akses saat maintenance aktif
+              </p>
+
+              <div className="space-y-2 mb-3">
+                {(
+                  (editingSchoolSettings
+                    ? tempSchoolSettings.maintenance_whitelist
+                    : schoolSettings.maintenance_whitelist) || []
+                ).map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-800 dark:text-white text-sm">
+                        {u.full_name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">@{u.username}</p>
+                    </div>
+                    {editingSchoolSettings && (
+                      <button
+                        type="button"
+                        onClick={() => removeWhitelistUser(u.id)}
+                        className="text-red-500 hover:text-red-700 p-1 touch-manipulation active:scale-90"
+                        title="Hapus dari whitelist"
+                        aria-label={`Hapus ${u.username} dari whitelist`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {(
+                  (editingSchoolSettings
+                    ? tempSchoolSettings.maintenance_whitelist
+                    : schoolSettings.maintenance_whitelist) || []
+                ).length === 0 && (
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    Belum ada user di whitelist
                   </p>
                 )}
               </div>
-            )}
+
+              {editingSchoolSettings && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    value={newWhitelistUsername}
+                    onChange={(e) => setNewWhitelistUsername(e.target.value)}
+                    placeholder="Username"
+                    className={`${inputClass} flex-1`}
+                  />
+                  <input
+                    type="text"
+                    value={newWhitelistFullName}
+                    onChange={(e) => setNewWhitelistFullName(e.target.value)}
+                    placeholder="Nama Lengkap"
+                    className={`${inputClass} flex-1`}
+                  />
+                  <button
+                    type="button"
+                    onClick={addWhitelistUser}
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors min-h-[42px] touch-manipulation active:scale-[0.98]"
+                  >
+                    <Plus size={16} />
+                    Tambah
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Enhanced Action Buttons */}
+      {/* ── Action bar (sticky di bawah saat edit) ── */}
       {editingSchoolSettings && (
-        <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 p-4 z-20">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-3">
             <button
               onClick={updateSchoolSettings}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-2 sm:order-1"
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-1"
             >
-              <Save size={18} className="sm:size-[16px]" />
-              <span className="text-sm sm:text-base font-medium">
-                {loading ? "Menyimpan..." : "Simpan Perubahan"}
-              </span>
+              <Save size={16} />
+              {loading ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
 
             <button
               onClick={resetForm}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-4 sm:py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-3 sm:order-2"
+              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-2"
             >
-              <RotateCcw size={18} className="sm:size-[16px]" />
-              <span className="text-sm sm:text-base font-medium">Reset</span>
+              <RotateCcw size={16} />
+              Reset
             </button>
 
             <button
@@ -890,7 +1212,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                 setImageValidation({ isValid: true, message: "" });
               }}
               disabled={loading}
-              className="px-6 py-4 sm:py-3 bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 dark:from-gray-600 dark:to-gray-700 dark:hover:from-gray-700 dark:hover:to-gray-800 text-gray-700 dark:text-gray-300 rounded-xl disabled:opacity-50 transition-all duration-200 min-h-[44px] touch-manipulation shadow-md hover:shadow-lg active:scale-[0.98] order-1 sm:order-3 font-medium"
+              className="px-6 py-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-3 sm:ml-auto"
             >
               Batal
             </button>

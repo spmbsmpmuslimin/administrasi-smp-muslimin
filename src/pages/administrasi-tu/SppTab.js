@@ -371,7 +371,6 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
     const isPartial = p.status === "partial";
     const isChecked = selected.has(p.key);
     const isAdvance = !isPaid && !p.isDue;
-    const isOverdue = !isPaid && !isPartial && !isAdvance; // udah lewat jatuh tempo, belum dibayar
     return (
       <button
         key={p.key}
@@ -393,14 +392,12 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
                     ? "bg-gray-800/60 border-gray-700 border-dashed text-gray-400 hover:border-blue-700"
                     : "bg-gray-50 border-gray-200 border-dashed text-gray-500 hover:border-blue-300"
                   : darkMode
-                    ? "bg-red-900/20 border-red-900/40 text-red-300 hover:border-red-700 font-medium"
-                    : "bg-red-50 border-red-200 text-red-700 hover:border-red-400 font-medium"
+                    ? "bg-gray-800 border-gray-700 text-gray-200 hover:border-blue-700"
+                    : "bg-white border-gray-200 text-gray-700 hover:border-blue-300"
         }`}
       >
         {isPaid || isChecked ? (
           <CheckCircle2 size={15} />
-        ) : isOverdue ? (
-          <AlertTriangle size={15} />
         ) : (
           <Circle size={15} className="text-gray-300" />
         )}
@@ -408,7 +405,6 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
           <span>{MONTH_NAMES[p.month - 1]}</span>
           {isPartial && !isChecked && <span className="text-[11px]">Cicilan</span>}
           {isAdvance && !isChecked && <span className="text-[11px]">Bayar di muka</span>}
-          {isOverdue && !isChecked && <span className="text-[11px]">Nunggak</span>}
         </span>
       </button>
     );
@@ -1095,7 +1091,11 @@ const RiwayatPanel = ({ classes, darkMode, notify }) => {
                   <tr key={r.id} className={darkMode ? "text-gray-200" : "text-gray-700"}>
                     <td className="px-4 py-2.5 whitespace-nowrap flex items-center gap-1.5">
                       <Clock size={13} className="text-gray-400" />
-                      {new Date(r.payment_date).toLocaleDateString("id-ID")}
+                      {new Date(r.payment_date).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })}
                     </td>
                     <td className="px-4 py-2.5">{r.students?.full_name}</td>
                     <td className="px-4 py-2.5">{r.students?.class_id}</td>

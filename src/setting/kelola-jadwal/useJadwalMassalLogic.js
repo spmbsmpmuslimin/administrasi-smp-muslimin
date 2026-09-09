@@ -77,6 +77,80 @@ export default function useJadwalMassalLogic() {
   const [previewMode, setPreviewMode] = useState("grid");
   const [gridClassId, setGridClassId] = useState("");
 
+  // Data MENTAH jadwal yang LAGI AKTIF di class_schedules (bukan hasil
+  // decode file yang lagi diupload -- ini data yang beneran udah kebaca
+  // sama wali kelas & siswa sekarang). Disimpen mentah (per baris) biar
+  // bisa dipake buat 2 hal sekaligus: ringkasan (liveSchedule, useMemo di
+  // bawah) DAN detail jadwal per kelas kalau admin klik salah satu kelas
+  // di kartu status -- tanpa perlu fetch ulang ke Supabase tiap klik.
+  const [liveScheduleRows, setLiveScheduleRows] = useState([]);
+  const [showLiveDetail, setShowLiveDetail] = useState(false);
+  // class_id yang lagi dibuka detail jadwalnya di kartu status (null =
+  // belum ada yang diklik / lagi ditutup).
+  const [selectedLiveClassId, setSelectedLiveClassId] = useState(null);
+
+  // Ambil ulang data class_schedules yang lagi aktif, di-scope ke classIds
+  // yang dikasih (biasanya seluruh kelas tahun ajaran aktif) biar gak
+  // kebawa data kelas tahun ajaran lama yang kebetulan belum kehapus.
+  const fetchLiveSchedule = async (classIds) => {
+    if (!classIds || classIds.length === 0) {
+      setLiveScheduleRows([]);
+      return;
+    }
+    const { data, error: liveErr } = await supabase
+      .from("class_schedules")
+      .select("class_id, day, subject, start_time, end_time, teacher_name, created_at")
+      .in("class_id", classIds);
+    if (liveErr) {
+      console.warn("Gagal memuat ringkasan jadwal aktif:", liveErr.message);
+      return;
+    }
+    setLiveScheduleRows(data || []);
+  };
+
+  // Ringkasan buat kartu status (jumlah kelas, total jam pelajaran, kapan
+  // terakhir dipublish) -- diturunin dari liveScheduleRows, gak nyimpen
+  // state sendiri biar selalu konsisten sama data mentahnya.
+  const liveSchedule = useMemo(() => {
+    const countMap = new Map();
+    let latest = null;
+    liveScheduleRows.forEach((row) => {
+      countMap.set(row.class_id, (countMap.get(row.class_id) || 0) + 1);
+      if (!latest || new Date(row.created_at) > new Date(latest)) {
+        latest = row.created_at;
+      }
+    });
+    const byClass = Array.from(countMap.entries())
+      .map(([class_id, slotCount]) => ({ class_id, slotCount }))
+      .sort((a, b) => a.class_id.localeCompare(b.class_id));
+    return {
+      classCount: byClass.length,
+      totalSlots: liveScheduleRows.length,
+      lastPublishedAt: latest,
+      byClass,
+    };
+  }, [liveScheduleRows]);
+
+  // Grid jadwal mingguan (Hari x Jam) buat 1 kelas yang lagi dipilih di
+  // kartu status. Beda sama gridCellMap/gridPeriods punya preview decode
+  // (yang keynya "day|period" dari JAM_SCHEDULE) -- class_schedules gak
+  // nyimpen nomor period, jadi di sini row-nya dikunci pake start_time
+  // mentah (diurutin ascending), key cell "day|start_time".
+  const liveClassGridCellMap = useMemo(() => {
+    const m = new Map();
+    if (!selectedLiveClassId) return m;
+    liveScheduleRows
+      .filter((r) => r.class_id === selectedLiveClassId)
+      .forEach((r) => m.set(`${r.day}|${r.start_time}`, r));
+    return m;
+  }, [liveScheduleRows, selectedLiveClassId]);
+
+  const liveClassGridRows = useMemo(() => {
+    if (!selectedLiveClassId) return [];
+    const rows = liveScheduleRows.filter((r) => r.class_id === selectedLiveClassId);
+    return Array.from(new Set(rows.map((r) => r.start_time))).sort();
+  }, [liveScheduleRows, selectedLiveClassId]);
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -137,6 +211,7 @@ export default function useJadwalMassalLogic() {
         setTeacherCodes(codeData || []);
         setTeacherAssignments(assignData || []);
         setTeacherUsers(userData || []);
+        fetchLiveSchedule((classData || []).map((c) => c.id));
       } catch (err) {
         setError("Gagal memuat data awal: " + err.message);
       } finally {
@@ -1038,6 +1113,7 @@ export default function useJadwalMassalLogic() {
           teacherScheduleMessage
       );
       setPublishedAt(new Date());
+      fetchLiveSchedule(classes.map((c) => c.id));
     } catch (err) {
       setError("Gagal publish: " + err.message);
     } finally {
@@ -1108,6 +1184,15 @@ export default function useJadwalMassalLogic() {
     handleExportPreview,
     handleResetPreview,
     hasData,
+
+    // ringkasan jadwal yang lagi aktif (buat kartu status di atas)
+    liveSchedule,
+    showLiveDetail,
+    setShowLiveDetail,
+    selectedLiveClassId,
+    setSelectedLiveClassId,
+    liveClassGridCellMap,
+    liveClassGridRows,
 
     // decode hasil & validasi silang
     decoded,

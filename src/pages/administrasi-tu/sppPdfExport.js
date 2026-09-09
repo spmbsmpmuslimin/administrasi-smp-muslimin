@@ -26,15 +26,27 @@ import { MONTH_NAMES, formatRupiah } from "./keuanganShared";
 const STATUS_LABEL = {
   paid: "Lunas",
   partial: "Cicilan",
-  unpaid: "Belum Bayar",
+  unpaid: "Blm Bayar",
 };
 
 function formatTanggal(dateStr) {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("id-ID", {
     day: "2-digit",
-    month: "2-digit",
+    month: "long",
     year: "numeric",
+  });
+}
+
+// Versi singkat (dd/mm/yy) -- dipake KHUSUS di dalam tabel 3-kolom yang
+// sempit (kolom "Tgl Bayar"), biar gak overflow. Format panjang
+// ("09 September 2026") cuma buat baris "Dicetak" di letterhead.
+function formatTanggalSingkat(dateStr) {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
   });
 }
 
@@ -65,7 +77,13 @@ export function exportKartuPembayaranSPP({
     return;
   }
 
-  const doc = createPdfDocument({ orientation: "portrait" });
+  // Landscape + TA disusun BERDAMPINGAN (bukan ditumpuk ke bawah) --
+  // tinggi tiap tabel cuma 12 baris (1 TA = 1 tahun ajaran), jadi lebar
+  // landscape (297mm) lebih dari cukup buat nampung sampe 3 TA sekaligus
+  // (kasus umum: siswa kelas 9 yang nunggak dari kelas 7) tanpa perlu
+  // ganti halaman -- iritin kertas dibanding versi lama yang nge-stack
+  // tabel ke bawah (2 halaman kalau TA-nya udah 3).
+  const doc = createPdfDocument({ orientation: "landscape" });
   let y = addLetterhead(doc, {
     title: "KARTU PEMBAYARAN SPP",
     metaLines: [`Dicetak: ${formatTanggal(new Date().toISOString())}`],
@@ -73,37 +91,56 @@ export function exportKartuPembayaranSPP({
 
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(10);
-  doc.text(`Nama    : ${student.full_name}`, 15, y);
-  y += 5;
-  doc.text(`NIS     : ${student.nis}`, 15, y);
-  y += 5;
-  doc.text(`Kelas   : ${student.class_id}`, 15, y);
+  doc.text(
+    `Nama: ${student.full_name}     NIS: ${student.nis}     Kelas: ${student.class_id}`,
+    15,
+    y
+  );
   y += 8;
 
-  Object.entries(groupedByTA).forEach(([ta, group]) => {
-    y = checkPageBreak(doc, y, { threshold: 255 });
-    addSectionLabel(doc, `TA ${ta} (Kelas ${group.grade})`, y);
-    y += 4;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  const gap = 6;
+  const colsPerRow = 3;
+  const colWidth = (pageWidth - margin * 2 - gap * (colsPerRow - 1)) / colsPerRow;
+
+  const taEntries = Object.entries(groupedByTA);
+  let rowMaxFinalY = y;
+
+  taEntries.forEach(([ta, group], idx) => {
+    const posInRow = idx % colsPerRow;
+    // Kalau kebetulan siswa punya lebih dari 3 TA yang belum lunas
+    // (jarang, tapi jaga-jaga), lanjut ke baris kolom berikutnya alih-alih
+    // numpuk di luar halaman.
+    if (posInRow === 0 && idx > 0) {
+      y = checkPageBreak(doc, rowMaxFinalY + 8, { threshold: 175, resetY: 25 });
+      rowMaxFinalY = y;
+    }
+    const colLeft = margin + posInRow * (colWidth + gap);
+
+    addSectionLabel(doc, `TA ${ta} (Kelas ${group.grade})`, y, colLeft);
 
     const body = group.items.map((p) => [
-      MONTH_NAMES[p.month - 1],
-      p.status === "paid" || p.status === "partial" ? formatTanggal(p.lastPaidDate) : "-",
-      p.status === "unpaid" && p.isDue === false
-        ? "Belum Jatuh Tempo"
-        : STATUS_LABEL[p.status] || p.status,
+      MONTH_NAMES[p.month - 1].slice(0, 3),
+      p.status === "paid" || p.status === "partial" ? formatTanggalSingkat(p.lastPaidDate) : "-",
+      p.status === "unpaid" && p.isDue === false ? "Blm JT" : STATUS_LABEL[p.status] || p.status,
     ]);
 
     autoTable(doc, {
-      ...tableTheme(y, { fontSize: 8.5 }),
-      head: [["Bulan", "Tgl Bayar", "Status"]],
+      ...tableTheme(y + 4, {
+        fontSize: 7.5,
+        margin: { left: colLeft, right: pageWidth - colLeft - colWidth },
+        styles: { cellPadding: 1.2 },
+      }),
+      head: [["Bln", "Tgl Bayar", "Status"]],
       body,
       columnStyles: { 1: { halign: "center" }, 2: { halign: "center" } },
     });
 
-    y = doc.lastAutoTable.finalY + 6;
+    rowMaxFinalY = Math.max(rowMaxFinalY, doc.lastAutoTable.finalY);
   });
 
-  y = checkPageBreak(doc, y, { threshold: 260 });
+  y = checkPageBreak(doc, rowMaxFinalY + 10, { threshold: 190, resetY: 25 });
   doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setFontSize(11);
   doc.setTextColor(...(totalTunggakan > 0 ? PDF_COLORS.danger : PDF_COLORS.success));

@@ -40,7 +40,7 @@ export async function exportRekapTunggakanKelas({ classId, rows, showToast }) {
     title: `REKAP TUNGGAKAN SPP - KELAS ${classId}`,
     mergeCols: 6,
     metaLines: [
-      `Dicetak: ${new Date().toLocaleDateString("id-ID")}`,
+      `Dicetak: ${new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}`,
       `Jumlah siswa menunggak: ${rows.length}`,
       `Total tunggakan kelas: Rp${totalTunggakanKelas.toLocaleString("id-ID")}`,
     ],

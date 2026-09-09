@@ -50,6 +50,9 @@ import {
   X,
   Loader2,
   FileSpreadsheet,
+  CalendarCheck,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { DAYS } from "../../utils/jamPelajaran";
 import useJadwalMassalLogic from "./useJadwalMassalLogic";
@@ -83,6 +86,13 @@ export default function AdminJadwalMassal() {
     handleExportPreview,
     handleResetPreview,
     hasData,
+    liveSchedule,
+    showLiveDetail,
+    setShowLiveDetail,
+    selectedLiveClassId,
+    setSelectedLiveClassId,
+    liveClassGridCellMap,
+    liveClassGridRows,
     decoded,
     syncPreview,
     sortedClassIds,
@@ -201,6 +211,152 @@ export default function AdminJadwalMassal() {
                   <span className="text-xs text-gray-400">File: {sourceFileName}</span>
                 )}
               </div>
+            </div>
+            {/* Kartu status: ringkasan jadwal yang LAGI AKTIF di
+                class_schedules sekarang (bukan hasil decode file yang lagi
+                diupload) -- biar halaman gak polos pas belum ada file
+                diupload, admin langsung liat "oh segini yang udah live". */}
+            <div className="bg-theme-bg rounded-2xl border border-gray-100 p-4 shadow-sm">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`p-2 rounded-xl shrink-0 ${
+                      liveSchedule.classCount > 0
+                        ? "bg-emerald-50 text-emerald-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    <CalendarCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-theme">Jadwal Aktif Saat Ini</p>
+                    <p className="text-xs text-theme-secondary mt-0.5">
+                      {liveSchedule.classCount > 0
+                        ? `${liveSchedule.classCount} kelas · ${liveSchedule.totalSlots} jam pelajaran aktif` +
+                          (liveSchedule.lastPublishedAt
+                            ? ` · terakhir dipublish ${new Date(
+                                liveSchedule.lastPublishedAt
+                              ).toLocaleString("id-ID", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}`
+                            : "")
+                        : "Belum ada jadwal yang dipublish untuk tahun ajaran ini."}
+                    </p>
+                  </div>
+                </div>
+                {liveSchedule.classCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLiveDetail(!showLiveDetail);
+                      setSelectedLiveClassId(null);
+                    }}
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline shrink-0"
+                  >
+                    {showLiveDetail ? "Sembunyikan" : "Lihat Detail"}
+                    {showLiveDetail ? (
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+              {showLiveDetail && liveSchedule.byClass.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex flex-wrap gap-1.5">
+                    {liveSchedule.byClass.map((c) => {
+                      const active = selectedLiveClassId === c.class_id;
+                      return (
+                        <button
+                          key={c.class_id}
+                          type="button"
+                          onClick={() => setSelectedLiveClassId(active ? null : c.class_id)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                            active
+                              ? "bg-blue-600 text-white"
+                              : "bg-theme-surface text-theme-secondary hover:bg-blue-50 hover:text-blue-700"
+                          }`}
+                        >
+                          Kelas {c.class_id}: {c.slotCount} jam
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedLiveClassId && (
+                    <div className="mt-3">
+                      <p className="text-xs font-bold text-theme mb-2">
+                        Jadwal Kelas {selectedLiveClassId}
+                      </p>
+                      {liveClassGridRows.length === 0 ? (
+                        <p className="text-xs text-theme-secondary">
+                          Gak ada data jadwal buat kelas ini.
+                        </p>
+                      ) : (
+                        <div className="bg-theme-surface rounded-xl border border-gray-100 overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-theme-secondary border-b border-gray-100">
+                                  <th className="py-2 px-3 font-semibold text-xs whitespace-nowrap">
+                                    Jam
+                                  </th>
+                                  {DAYS.map((day) => (
+                                    <th
+                                      key={day}
+                                      className="py-2 px-3 font-semibold text-xs whitespace-nowrap"
+                                    >
+                                      {day}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {liveClassGridRows.map((startTime) => (
+                                  <tr
+                                    key={startTime}
+                                    className="border-b border-gray-50 last:border-0 align-top"
+                                  >
+                                    <td className="py-2.5 px-3 font-semibold text-theme text-xs whitespace-nowrap">
+                                      {startTime?.slice(0, 5)}
+                                    </td>
+                                    {DAYS.map((day) => {
+                                      const item = liveClassGridCellMap.get(`${day}|${startTime}`);
+                                      return (
+                                        <td key={day} className="py-2 px-2 min-w-[130px]">
+                                          {item ? (
+                                            <div className="rounded-lg px-2 py-1 bg-theme-bg">
+                                              <p className="font-bold text-theme text-xs">
+                                                {item.subject}
+                                              </p>
+                                              <p className="text-[11px] text-theme-secondary mt-0.5">
+                                                {item.teacher_name}
+                                              </p>
+                                            </div>
+                                          ) : (
+                                            <span className="text-theme-secondary text-xs pl-2">
+                                              –
+                                            </span>
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Step 2: publish -- sengaja ditaruh persis di bawah Step 1 dan
