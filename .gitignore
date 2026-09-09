@@ -9,6 +9,13 @@ node_modules/
 # production
 /build
 
+# generated reports (Monitor Sistem: Code Audit / Struktur Project / Struktur Database)
+# opsional -- hapus 3 baris ini kalau lo justru MAU histori perubahan
+# laporan ini ke-track di git, bukan cuma di strukturfile.txt lokal.
+/public/audit-report.json
+/public/structure-report.json
+/public/db-structure-report.json
+
 # misc
 .DS_Store
 .env
@@ -27,6 +34,7 @@ yarn-error.log*
 
 # Editor cache
 .vscode/
+.idea/
 
 # Deploy scripts
 *.bat

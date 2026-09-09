@@ -46,7 +46,14 @@ function formatTanggal(dateStr) {
  * @param {number} params.totalTunggakan - total nominal semua bulan yang belum lunas
  * @param {Function} [params.showToast]  - signature (message, type), buat guard "belum ada data"
  */
-export function exportKartuPembayaranSPP({ student, groupedByTA, totalTunggakan, showToast }) {
+export function exportKartuPembayaranSPP({
+  student,
+  groupedByTA,
+  totalTunggakan,
+  totalPaidBulan = 0,
+  lastPaidLabel = null,
+  showToast,
+}) {
   const hasGroups = groupedByTA && Object.keys(groupedByTA).length > 0;
   if (
     !student ||
@@ -101,7 +108,9 @@ export function exportKartuPembayaranSPP({ student, groupedByTA, totalTunggakan,
   doc.setFontSize(11);
   doc.setTextColor(...(totalTunggakan > 0 ? PDF_COLORS.danger : PDF_COLORS.success));
   doc.text(
-    totalTunggakan > 0 ? `Total Tertunggak: ${formatRupiah(totalTunggakan)}` : "LUNAS SEMUA",
+    totalTunggakan > 0
+      ? `Total Tertunggak: ${formatRupiah(totalTunggakan)}`
+      : `Sudah Terbayar: ${totalPaidBulan} bulan${lastPaidLabel ? ` (s/d ${lastPaidLabel})` : ""}`,
     15,
     y
   );

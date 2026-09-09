@@ -125,7 +125,7 @@ const MENUS = [
   },
   {
     key: "keuangan",
-    title: "Info Pembayaran",
+    title: "Info Pembayaran SPP",
     subtitle: "Status & riwayat SPP",
     icon: Wallet,
     cardBgClass: "bg-emerald-100 dark:bg-emerald-900/30",

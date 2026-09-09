@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-09T07:02:42.853Z",
-  "executionTimeMs": 3472,
-  "filesScanned": 248,
+  "generatedAt": "2026-09-09T11:52:06.377Z",
+  "executionTimeMs": 3876,
+  "filesScanned": 254,
   "summary": {
-    "status": "warning",
-    "criticalCount": 0,
-    "warningCount": 3,
-    "infoCount": 5,
-    "totalIssues": 8
+    "status": "critical",
+    "criticalCount": 1,
+    "warningCount": 4,
+    "infoCount": 6,
+    "totalIssues": 11
   },
   "categories": [
     {
@@ -16,9 +16,10 @@
       "issues": [
         {
           "severity": "info",
-          "title": "1 file gak pernah di-import di mana pun (dead file candidate)",
+          "title": "2 file gak pernah di-import di mana pun (dead file candidate)",
           "description": "File-file ini gak ketemu di-import statis dari file lain. Kemungkinan sisa refactor / fitur lama. Cek manual dulu sebelum dihapus — bisa aja dipake lewat dynamic import atau string reference yang gak kebaca regex.",
           "details": [
+            "src/portal-siswa/StudentOrganigram.js",
             "src/setting/kelola-jadwal/AdminJadwalMassal-backup.js"
           ]
         }
@@ -35,7 +36,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5180 class warna (di 179 file) kemungkinan belum dark-mode-aware",
+          "title": "5221 class warna (di 182 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -43,6 +44,7 @@
             "src/spmb/ClassDivision.js — 124 class belum ada dark: variant",
             "src/spmb/StudentForm.js — 120 class belum ada dark: variant",
             "src/pages/CatatanSiswa.js — 118 class belum ada dark: variant",
+            "src/system/StrukturSistem.js — 111 class belum ada dark: variant",
             "src/pages/grades/Grades.js — 108 class belum ada dark: variant",
             "src/pages/grades/GradesKatrol.js — 88 class belum ada dark: variant",
             "src/spmb/StudentList.js — 87 class belum ada dark: variant",
@@ -56,7 +58,6 @@
             "src/components/TeacherDashboard.js — 71 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
             "src/attendance-teacher/reports/ITMReport.js — 67 class belum ada dark: variant",
-            "src/system/ProjectStructure.js — 67 class belum ada dark: variant",
             "src/reports/modals/AdminReportModal.js — 66 class belum ada dark: variant",
             "src/pages/kelola-raport/ManajemenRaportTable.js — 65 class belum ada dark: variant",
             "src/system/PerformanceMonitor.js — 65 class belum ada dark: variant",
@@ -64,7 +65,6 @@
             "src/setting/school-management/SiswaLulusTab.js — 62 class belum ada dark: variant",
             "src/pages/kelola-raport/RekapKelulusan.js — 60 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
-            "src/system/DatabaseStructure.js — 58 class belum ada dark: variant",
             "src/system/MonitorDashboard.js — 55 class belum ada dark: variant",
             "src/reports/AdminReports.js — 54 class belum ada dark: variant",
             "src/setting/school-management/StudentModals.js — 54 class belum ada dark: variant",
@@ -77,7 +77,8 @@
             "src/system/CodeAudit.js — 48 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
-            "src/spmb/DiagnostikPage.js — 47 class belum ada dark: variant"
+            "src/spmb/DiagnostikPage.js — 47 class belum ada dark: variant",
+            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant"
           ]
         }
       ]
@@ -88,7 +89,7 @@
       "issues": [
         {
           "severity": "warning",
-          "title": "21 embedded join TANPA disambiguation hint",
+          "title": "24 embedded join TANPA disambiguation hint",
           "description": "Query ini pake relational select (`select('*, table(...)')`) tanpa hint kayak `!inner`, `!nama_fk`, atau `alias:table`. Ini yang paling rawan kena PGRST200 kalau ada lebih dari satu foreign key antar 2 tabel itu. Worth di-cek satu-satu.",
           "details": [
             "src/components/StudentLogin.js:70 → select(\"*, students(id, full_name, nis, class_id, academic_year)\")",
@@ -98,13 +99,16 @@
             "src/e-raport/InputNilai.js:302 → select(\"id, student_id, nilai_akhir, deskripsi_capaian, nilai_eraport_detail ( id, tujuan_pembelaj\")",
             "src/e-raport/PreviewRaport.js:198 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
             "src/e-raport/PreviewRaport.js:217 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
-            "src/pages/administrasi-tu/KeuanganTab.js:200 → select(\"id, amount, due_date, status, students(id, full_name, nis)\")",
-            "src/pages/administrasi-tu/KeuanganTab.js:629 → select(\"id, amount, period_month, period_year, status, students(id, full_name, nis, class_id)\")",
-            "src/pages/administrasi-tu/KeuanganTab.js:738 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
+            "src/pages/administrasi-tu/SppTab.js:261 → select(\"id, period_month, period_year, amount, status, spp_payments(payment_date)\")",
+            "src/pages/administrasi-tu/SppTab.js:983 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
+            "src/pages/administrasi-tu/TagihanLainTab.js:132 → select(\"id, amount, due_date, status, students(id, full_name, nis)\")",
+            "src/pages/administrasi-tu/TagihanLainTab.js:537 → select(\"id, amount, academic_year, status, students(id, full_name, nis, class_id)\")",
+            "src/pages/administrasi-tu/TagihanLainTab.js:645 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
             "src/pages/attendance/AttendanceManagement.js:553 → select(\"id, student_id, status, notes, students ( id, full_name, nis )\")",
             "src/pages/kelola-raport/ManajemenRaportTable.js:608 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
             "src/pages/kelola-raport/RekapKelulusan.js:184 → select(\"id, student_nis, semester, academic_year, student_report_grades(id, subject, score)\")",
             "src/pages/kelola-raport/RekapMultiSemester.js:400 → select(\"student_name, student_nis, semester, student_report_grades(subject, score)\")",
+            "src/portal-siswa/StudentKeuangan.js:109 → select(\"id, period_month, period_year, amount, status, spp_payments(payment_date, amount_paid, pay\")",
             "src/portal-siswa/StudentRaport.js:137 → select(\"id, academic_year, semester, status, student_report_grades(subject, score)\")",
             "src/reports/AdminReports.js:481 → select(\"*, students(nis, full_name, class_id)\")",
             "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
@@ -155,16 +159,9 @@
       "issues": [
         {
           "severity": "info",
-          "title": "6 tabel di schema gak pernah dipanggil lewat .from() di kode",
-          "description": "Belum tentu masalah — bisa aja view, tabel yang diakses cuma dari Supabase function/edge function, atau memang belum dipakai. Sekedar info.",
-          "details": [
-            "academic_events",
-            "attendances_view",
-            "event_categories",
-            "kaldik_documents",
-            "teacher_attendance_view",
-            "tindaklanjut_homevisits"
-          ]
+          "title": "strukturfile.txt gak ketemu / gak ada daftar tabel",
+          "description": "Skip pengecekan table name drift.",
+          "details": []
         }
       ]
     },
@@ -226,6 +223,90 @@
           "description": "Sekadar FYI, BUKAN otomatis berarti salah. File ini filter query pakai academic_year_id tapi gak import academicYearService — ini sah-sah aja kalau ID-nya emang diterima dari luar (parameter fungsi / prop komponen) dan file ini cuma 'consumer', bukan yang nentuin tahun aktif. Cek manual satu-satu.",
           "details": [
             "src/pages/attendance/AttendancePDF.js:139 → filter pakai academic_year_id (cek: ID-nya didapat dari mana — kalau dikasih via parameter/prop, ini WAJAR & gak perlu import service)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "frontendBackendAlignment",
+      "label": "Frontend <-> Supabase Alignment",
+      "issues": [
+        {
+          "severity": "warning",
+          "title": "7 tabel di Supabase gak pernah dipanggil lewat .from() di frontend",
+          "description": "Ditarik langsung dari skema live Supabase (bukan strukturfile.txt), lalu dicocokin ke SEMUA file src/. Kandidat tabel 'mati' -- fitur yang udah dihapus/dipindah, atau tabel yang emang cuma diakses lewat Supabase Edge Function/RPC/database function (gak kelihatan dari static analysis kode frontend ini, jadi cek dulu manual sebelum drop tabelnya).",
+          "details": [
+            "academic_events",
+            "attendances_view",
+            "event_categories",
+            "kaldik_documents",
+            "spp_receipt_counters",
+            "teacher_attendance_view",
+            "tindaklanjut_homevisits"
+          ]
+        },
+        {
+          "severity": "info",
+          "title": "13 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
+          "description": "Tabelnya DIPAKE, tapi ada kolom yang gak pernah muncul di select/insert/update/filter manapun (dan gak ada select(\"*\") buat tabel ini yang bisa 'nyembunyiin' pemakaian implisit). Bisa jadi kolom peninggalan fitur lama, atau kolom yang emang cuma diisi lewat trigger/default value di DB. Cek manual, terutama kalau ada kolom NOT NULL tanpa default yang gak pernah di-insert dari frontend.",
+          "details": [
+            "pengumuman_siswa → kolom gak pernah disebut: updated_at",
+            "nilai_eraport_detail → kolom gak pernah disebut: created_at, updated_at",
+            "spp_bills → kolom gak pernah disebut: created_at, note, updated_at",
+            "spp_payments → kolom gak pernah disebut: created_at",
+            "other_fee_bills → kolom gak pernah disebut: created_by",
+            "other_fee_payments → kolom gak pernah disebut: created_at",
+            "student_reports → kolom gak pernah disebut: attendance, created_at, created_by, extracurricular, homeroom_note, updated_at",
+            "student_report_grades → kolom gak pernah disebut: created_at",
+            "kkm_mapel → kolom gak pernah disebut: id",
+            "class_schedules → kolom gak pernah disebut: created_at",
+            "buku → kolom gak pernah disebut: created_at, kategori, penerbit, rak, tahun, total_eksemplar, updated_at",
+            "teacher_codes → kolom gak pernah disebut: created_at",
+            "teacher_profiles → kolom gak pernah disebut: created_at, id, updated_at"
+          ]
+        },
+        {
+          "severity": "critical",
+          "title": "37 pemakaian kolom di frontend gak ketemu di skema Supabase",
+          "description": "Kolom ini disebut eksplisit di select/insert/update/filter tapi gak ada di skema live Supabase -- kemungkinan besar typo nama kolom, atau kolom udah direname/dihapus dari database tapi kodenya belum diupdate. Query ini bakal error (PGRST204 / 400) atau diem-diem gagal nyimpen data itu, tergantung method-nya.",
+          "details": [
+            "src/attendance-teacher/reports/DailySummary.js:70 → .from(\"teacher_attendance\").select(...) pake kolom \"users\" yang gak ada di skema Supabase",
+            "src/e-raport/CetakRaport.js:245 → .from(\"tujuan_pembelajaran\").eq(\"class_id\", ...) pake kolom yang gak ada di skema Supabase",
+            "src/e-raport/CetakRaport.js:459 → .from(\"users\").select(...) pake kolom \"nip\" yang gak ada di skema Supabase",
+            "src/e-raport/InputNilai.js:301 → .from(\"nilai_eraport\").select(...) pake kolom \"tujuan_pembelajaran_id\" yang gak ada di skema Supabase",
+            "src/e-raport/RaportConfig.js:124 → .from(\"raport_metadata\").eq(\"tahun_ajaran_id\", ...) pake kolom yang gak ada di skema Supabase",
+            "src/e-raport/RaportConfig.js:394 → .from(\"raport_metadata\").eq(\"tahun_ajaran_id\", ...) pake kolom yang gak ada di skema Supabase",
+            "src/e-raport/RaportConfig.js:411 → .from(\"raport_metadata\").insert(...) pake kolom \"tahun_ajaran_id\" yang gak ada di skema Supabase",
+            "src/pages/attendance/AttendanceManagement.js:552 → .from(\"attendances\").select(...) pake kolom \"full_name\" yang gak ada di skema Supabase",
+            "src/portal-siswa/StudentProfile.js:435 → .from(\"student_profile_details\").upsert(...) pake kolom \"null\" yang gak ada di skema Supabase",
+            "src/reports/DailyAttendanceSection.js:166 → .from(\"attendances\").select(...) pake kolom \"students\" yang gak ada di skema Supabase",
+            "src/reports/DailyAttendanceSection.js:166 → .from(\"attendances\").select(...) pake kolom \"full_name\" yang gak ada di skema Supabase",
+            "src/services/academicYearService.js:115 → .from(\"academic_years\").eq(\"academic_year_id\", ...) pake kolom yang gak ada di skema Supabase",
+            "src/services/academicYearService.js:115 → .from(\"academic_years\").eq(\"academic_year_id\", ...) pake kolom yang gak ada di skema Supabase",
+            "src/services/academicYearService.js:115 → .from(\"academic_years\").eq(\"academic_year\", ...) pake kolom yang gak ada di skema Supabase",
+            "src/services/academicYearService.js:115 → .from(\"academic_years\").eq(\"academic_year\", ...) pake kolom yang gak ada di skema Supabase",
+            "src/services/academicYearService.js:115 → .from(\"academic_years\").in(\"academic_year_id\", ...) pake kolom yang gak ada di skema Supabase",
+            "src/setting/academic/AcademicYearTab.js:166 → .from(\"students\").select(...) pake kolom \"grade\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"tempat_lahir\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"tanggal_lahir\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"agama\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"alamat\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"dusun\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"kode_pos\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nik\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"no_kk\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"no_akta_lahir\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nama_ayah\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"pekerjaan_ayah\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"pendidikan_ayah\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nik_ayah\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nama_ibu\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"pekerjaan_ibu\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"pendidikan_ibu\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nik_ibu\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"sekolah_asal\" yang gak ada di skema Supabase",
+            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"anak_ke\" yang gak ada di skema Supabase",
+            "src/setting/feedback/FeedbackGuruTab.js:22 → .from(\"feedback_guru\").select(...) pake kolom \"users\" yang gak ada di skema Supabase"
           ]
         }
       ]

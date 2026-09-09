@@ -3,15 +3,13 @@ import MonitorDashboard from "./MonitorDashboard";
 import DatabaseCleanupMonitor from "./DatabaseCleanupMonitor";
 import PerformanceMonitor from "./PerformanceMonitor";
 import CodeAudit from "./CodeAudit";
-import ProjectStructure from "./ProjectStructure";
-import DatabaseStructure from "./DatabaseStructure";
+import StrukturSistem from "./StrukturSistem";
 import {
   Activity,
   Database,
   Gauge,
   FileCode2,
-  FolderTree,
-  Table2,
+  Network,
   ChevronRight,
   ArrowRight,
   LayoutGrid,
@@ -122,20 +120,12 @@ function MonitorSistem({ user, onShowToast }) {
       component: CodeAudit,
     },
     {
-      id: "structure",
-      title: "Struktur Project",
-      description: "Lihat struktur folder dan file dalam project",
-      icon: FolderTree,
-      color: "emerald",
-      component: ProjectStructure,
-    },
-    {
-      id: "dbStructure",
-      title: "Struktur Database",
-      description: "Lihat struktur tabel dan relasi database",
-      icon: Table2,
+      id: "struktur",
+      title: "Struktur Sistem",
+      description: "Peta struktur project & database, plus download strukturfile.txt",
+      icon: Network,
       color: "indigo",
-      component: DatabaseStructure,
+      component: StrukturSistem,
     },
   ];
 

@@ -758,8 +758,378 @@ function checkAcademicYearServiceUsage(allFiles) {
 }
 
 // ---------------------------------------------------------------------
-// PROJECT STRUCTURE ANALYZER
+// 8: FRONTEND <-> BACKEND (SUPABASE LIVE SCHEMA) ALIGNMENT
 // -----------------------------------------------------------------------
+// Beda sama checkTableDrift (#6) yang bandingin ke strukturfile.txt (bisa
+// basi kalau lupa diupdate manual) -- checker ini narik skema ASLI
+// langsung dari Supabase (PostgREST OpenAPI introspection) tiap kali
+// audit dijalanin, terus dibandingin ke SEMUA pemakaian tabel & kolom di
+// frontend (.from/.select/.insert/.upsert/.update/.eq/.order/dst).
+//
+// Yang diflag:
+//   a) DEAD TABLE   : tabel ada di Supabase, tapi gak sekalipun muncul di
+//                      .from(...) manapun di src/ -- kandidat tabel yang
+//                      udah gak kepake (fitur dihapus/dipindah, atau
+//                      emang cuma dipakai lewat Supabase function/edge
+//                      function yang gak kelihatan dari sini).
+//   b) DEAD COLUMN  : tabel-nya DIPAKE, tapi ada kolom yang gak pernah
+//                      disebut di select/insert/update/filter manapun --
+//                      di-skip kalau ada select("*") buat tabel itu di
+//                      manapun (karena select("*") narik SEMUA kolom,
+//                      jadi "gak pernah disebut eksplisit" gak berarti
+//                      apa-apa).
+//   c) UNKNOWN COLUMN (critical): kolom yang DISEBUT di kode (select
+//                      eksplisit / insert / update / filter) tapi gak
+//                      ada di skema Supabase sama sekali -- kemungkinan
+//                      besar typo, atau kolom udah direname/dihapus.
+//
+// Ini semua REGEX HEURISTIC, bukan AST parser -- ada batasnya:
+//   - Kolom yang namanya dari VARIABLE (bukan string literal langsung)
+//     gak kebaca (misal .eq(dynamicColName, val)).
+//   - Embedded join columns (relasi lewat select("*, tabel_lain(kolom)"))
+//     coba di-strip biar gak numpuk salah ke tabel yang lagi diproses,
+//     tapi gak dicek balik ke tabel relasinya di sini.
+//   - .insert()/.update() dengan object hasil spread (...formData) gak
+//     kebaca key-nya.
+// Selalu review manual sebelum hapus tabel/kolom apapun berdasarkan hasil
+// checker ini.
+// ---------------------------------------------------------------------
+
+const ENV_FILES = [".env.local", ".env.development.local", ".env.production.local", ".env"];
+
+// Kandidat nama env var buat URL & API key Supabase, urutan = prioritas
+// (yang duluan ketemu yang dipake). Service role key didahuluin drpd anon
+// key kalau dua-duanya ada, karena service role bisa liat SEMUA tabel
+// kolom lewat introspection walau nanti RLS udah diaktifin -- anon key
+// cuma keliatan apa yang ke-grant ke role anon/authenticated.
+const SUPABASE_URL_ENV_CANDIDATES = [
+  "SUPABASE_URL",
+  "REACT_APP_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "VITE_SUPABASE_URL",
+];
+const SUPABASE_KEY_ENV_CANDIDATES = [
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "SUPABASE_SERVICE_KEY",
+  "SUPABASE_KEY",
+  "REACT_APP_SUPABASE_SERVICE_ROLE_KEY",
+  "REACT_APP_SUPABASE_ANON_KEY",
+  "REACT_APP_SUPABASE_KEY",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "VITE_SUPABASE_ANON_KEY",
+  "SUPABASE_ANON_KEY",
+];
+
+function parseEnvFile(filePath) {
+  const result = {};
+  if (!fs.existsSync(filePath)) return result;
+  const content = fs.readFileSync(filePath, "utf8");
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    result[key] = value;
+  }
+  return result;
+}
+
+// Gabungin semua .env* (prioritas rendah -> tinggi) + process.env (paling
+// tinggi, misal dari secret CI) jadi 1 sumber kandidat.
+function loadSupabaseCredentials() {
+  const merged = {};
+  for (const fname of ENV_FILES) {
+    Object.assign(merged, parseEnvFile(path.join(ROOT, fname)));
+  }
+  Object.assign(merged, process.env);
+
+  const url = SUPABASE_URL_ENV_CANDIDATES.map((k) => merged[k]).find(Boolean);
+  const key = SUPABASE_KEY_ENV_CANDIDATES.map((k) => merged[k]).find(Boolean);
+  const keySource = SUPABASE_KEY_ENV_CANDIDATES.find((k) => merged[k]);
+
+  if (!url || !key) return null;
+  return { url, key, keySource };
+}
+
+// Ambil skema live via PostgREST OpenAPI introspection (GET /rest/v1/).
+// Support 2 format (Swagger 2.0 "definitions" ATAU OpenAPI 3
+// "components.schemas") karena beda versi PostgREST/Supabase beda default.
+async function fetchLiveSchema(url, key) {
+  if (typeof fetch !== "function") {
+    throw new Error(
+      "global fetch() gak tersedia -- butuh Node 18+ buat checker alignment ini jalan tanpa dependency tambahan."
+    );
+  }
+  const endpoint = `${url.replace(/\/$/, "")}/rest/v1/`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Supabase REST introspection gagal: HTTP ${res.status} ${res.statusText}`);
+  }
+  const spec = await res.json();
+  const raw = spec.definitions || (spec.components && spec.components.schemas) || {};
+
+  const schema = new Map(); // table -> Set(columns)
+  for (const [tableName, def] of Object.entries(raw)) {
+    const props = def.properties || {};
+    schema.set(tableName, new Set(Object.keys(props)));
+  }
+  return schema;
+}
+
+// Ekstrak nama-nama kolom "top-level" dari isi select(...), buang dulu
+// embedded join `tabel_lain(kolom_a,kolom_b)` (nested parens) biar gak
+// numpuk salah ke tabel yang lagi diproses, lalu split by comma & bersihin
+// alias (`alias:kolom` -> `kolom`) serta hint (`kolom!inner` -> `kolom`).
+function extractSelectColumns(selectArg) {
+  const trimmed = selectArg.trim();
+  if (trimmed === "*") return { columns: [], usesStar: true };
+
+  // Strip pattern embedded join `(alias:)?tabel(!hint)?(kolom_a,kolom_b)`
+  // SEKALIAN identifier/alias/hint di depan tanda kurungnya -- bukan cuma
+  // isi kurungnya doang (kalau cuma isi kurung yang dibuang, nama
+  // tabel/alias join-nya ketinggalan & kebaca salah sebagai "kolom" tabel
+  // utama). Loop sampe stabil biar nested join ikut ke-handle.
+  let flattened = trimmed;
+  let prev;
+  const JOIN_RE =
+    /[a-zA-Z_][a-zA-Z0-9_]*(?::[a-zA-Z_][a-zA-Z0-9_]*)?(?:![a-zA-Z_][a-zA-Z0-9_]*)?\([^()]*\)/g;
+  do {
+    prev = flattened;
+    flattened = flattened.replace(JOIN_RE, "");
+  } while (flattened !== prev);
+
+  const columns = flattened
+    .split(",")
+    .map((tok) => tok.trim())
+    .filter(Boolean)
+    .map((tok) => tok.split(":").pop()) // alias:kolom -> kolom
+    .map((tok) => tok.split("!")[0]) // kolom!inner / kolom!fk_name -> kolom
+    .map((tok) => tok.trim())
+    .filter((tok) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tok));
+
+  return { columns, usesStar: trimmed.includes("*") };
+}
+
+// Cari object literal `{ ... }` (atau array `[ ... ]`) setelah posisi
+// `startIdx` di `content`, dengan bracket-matching manual (bukan regex
+// greedy) biar kebaca walau ada nested object di dalemnya. Return string
+// isi (exclusive bracket luar) atau null kalau gak ketemu closing-nya
+// dalam batas `maxLen` karakter.
+function extractBalancedBlock(content, startIdx, maxLen = 6000) {
+  let i = startIdx;
+  while (i < content.length && /\s/.test(content[i])) i++;
+  const openChar = content[i];
+  if (openChar !== "{" && openChar !== "[") return null;
+  const closeChar = openChar === "{" ? "}" : "]";
+  let depth = 0;
+  const end = Math.min(content.length, startIdx + maxLen);
+  for (let j = i; j < end; j++) {
+    if (content[j] === openChar) depth++;
+    else if (content[j] === closeChar) {
+      depth--;
+      if (depth === 0) return content.slice(i + 1, j);
+    }
+  }
+  return null; // gak ketemu closing dalem batas maxLen
+}
+
+function extractObjectKeys(blockContent) {
+  const keys = [];
+  const KEY_RE = /(?:^|[{,\s])([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g;
+  let m;
+  while ((m = KEY_RE.exec(blockContent)) !== null) {
+    keys.push(m[1]);
+  }
+  return keys;
+}
+
+const FILTER_METHOD_RE =
+  /\.(eq|neq|gt|gte|lt|lte|like|ilike|is|in|contains|order|not)\(\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]/g;
+
+async function checkFrontendBackendAlignment(allFiles) {
+  const issues = [];
+  const creds = loadSupabaseCredentials();
+
+  if (!creds) {
+    pushIssue(
+      issues,
+      "info",
+      "Skip cek alignment frontend<->Supabase: credential gak ketemu",
+      `Checker ini butuh URL + API key Supabase buat narik skema live. Gak ketemu satupun dari kombinasi env var berikut di .env*/.env.local/process.env: URL (${SUPABASE_URL_ENV_CANDIDATES.join(", ")}) / KEY (${SUPABASE_KEY_ENV_CANDIDATES.join(", ")}). Tambahin salah satu pasangan itu kalau mau checker ini aktif.`,
+      []
+    );
+    return { issues };
+  }
+
+  let liveSchema;
+  try {
+    liveSchema = await fetchLiveSchema(creds.url, creds.key);
+  } catch (err) {
+    pushIssue(
+      issues,
+      "warning",
+      "Gagal narik skema live dari Supabase -- cek alignment di-skip",
+      `Error: ${err.message}. Pastiin URL/key di .env bener dan project Supabase-nya lagi ACTIVE (bukan paused). Dipake: ${creds.keySource || "(unknown key source)"}.`,
+      []
+    );
+    return { issues };
+  }
+
+  if (liveSchema.size === 0) {
+    pushIssue(
+      issues,
+      "warning",
+      "Skema live Supabase kosong / gak ke-parse",
+      "Introspection endpoint /rest/v1/ berhasil di-fetch tapi gak ketemu definisi tabel apapun. Kemungkinan format response OpenAPI-nya beda dari yang diantisipasi checker ini, atau API key-nya gak punya akses ke skema public sama sekali.",
+      []
+    );
+    return { issues };
+  }
+
+  // usage[table] = { usedAsFrom: bool, columns: Set, usesStar: bool }
+  const usage = new Map();
+  const unknownColumnDetails = [];
+  const FROM_RE = /\.from\(\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]\s*\)/g;
+
+  for (const file of allFiles) {
+    const rel = toRel(file);
+    if (rel.includes("/system/") && rel.includes("checkers/")) continue;
+
+    const raw = fs.readFileSync(file, "utf8");
+    const content = stripComments(raw);
+
+    const fromMatches = [...content.matchAll(FROM_RE)];
+    for (let idx = 0; idx < fromMatches.length; idx++) {
+      const m = fromMatches[idx];
+      const table = m[1];
+      if (!usage.has(table))
+        usage.set(table, { usedAsFrom: true, columns: new Set(), usesStar: false });
+      usage.get(table).usedAsFrom = true;
+
+      const chainStart = m.index + m[0].length;
+      const nextFromIdx = fromMatches[idx + 1] ? fromMatches[idx + 1].index : content.length;
+      const chainEnd = Math.min(chainStart + 3000, nextFromIdx, content.length);
+      const window = content.slice(chainStart, chainEnd);
+      const upTo = content.slice(0, m.index);
+      const lineNo = upTo.split(/\r?\n/).length;
+
+      const entry = usage.get(table);
+      const schemaCols = liveSchema.get(table);
+
+      // --- select(...) ---
+      const selectRe = /\.select\(\s*([`"'])([\s\S]*?)\1/;
+      const selM = selectRe.exec(window);
+      if (selM) {
+        const { columns, usesStar } = extractSelectColumns(selM[2]);
+        if (usesStar) entry.usesStar = true;
+        columns.forEach((c) => {
+          entry.columns.add(c);
+          if (schemaCols && !schemaCols.has(c)) {
+            unknownColumnDetails.push(
+              `${rel}:${lineNo} → .from("${table}").select(...) pake kolom "${c}" yang gak ada di skema Supabase`
+            );
+          }
+        });
+      }
+
+      // --- insert(...) / upsert(...) / update(...) ---
+      const writeRe = /\.(insert|upsert|update)\(/g;
+      let wm;
+      while ((wm = writeRe.exec(window)) !== null) {
+        const block = extractBalancedBlock(window, wm.index + wm[0].length);
+        if (!block) continue;
+        const keys = extractObjectKeys(block);
+        keys.forEach((c) => {
+          entry.columns.add(c);
+          if (schemaCols && !schemaCols.has(c)) {
+            unknownColumnDetails.push(
+              `${rel}:${lineNo} → .from("${table}").${wm[1]}(...) pake kolom "${c}" yang gak ada di skema Supabase`
+            );
+          }
+        });
+      }
+
+      // --- filter/order methods: .eq('col', ...), .order('col'), dst ---
+      FILTER_METHOD_RE.lastIndex = 0;
+      let fm;
+      while ((fm = FILTER_METHOD_RE.exec(window)) !== null) {
+        const c = fm[2];
+        entry.columns.add(c);
+        if (schemaCols && !schemaCols.has(c)) {
+          unknownColumnDetails.push(
+            `${rel}:${lineNo} → .from("${table}").${fm[1]}("${c}", ...) pake kolom yang gak ada di skema Supabase`
+          );
+        }
+      }
+    }
+  }
+
+  // --- a) DEAD TABLES: ada di Supabase, gak pernah di .from() manapun ---
+  const deadTables = [...liveSchema.keys()].filter((t) => !usage.has(t)).sort();
+
+  // --- b) DEAD COLUMNS: tabel dipake, tapi kolom gak pernah disebut, dan
+  //        gak ada select("*") buat tabel itu di manapun ---
+  const deadColumnDetails = [];
+  for (const [table, entry] of usage.entries()) {
+    if (entry.usesStar) continue; // gak reliable dicek kalau ada select(*)
+    const schemaCols = liveSchema.get(table);
+    if (!schemaCols) continue; // tabel dipake tapi gak ada di skema -> udah kena checkTableDrift
+    const unused = [...schemaCols].filter((c) => !entry.columns.has(c)).sort();
+    if (unused.length > 0) {
+      deadColumnDetails.push(`${table} → kolom gak pernah disebut: ${unused.join(", ")}`);
+    }
+  }
+
+  if (deadTables.length > 0) {
+    pushIssue(
+      issues,
+      "warning",
+      `${deadTables.length} tabel di Supabase gak pernah dipanggil lewat .from() di frontend`,
+      "Ditarik langsung dari skema live Supabase (bukan strukturfile.txt), lalu dicocokin ke SEMUA file src/. Kandidat tabel 'mati' -- fitur yang udah dihapus/dipindah, atau tabel yang emang cuma diakses lewat Supabase Edge Function/RPC/database function (gak kelihatan dari static analysis kode frontend ini, jadi cek dulu manual sebelum drop tabelnya).",
+      deadTables.slice(0, 80)
+    );
+  }
+
+  if (deadColumnDetails.length > 0) {
+    pushIssue(
+      issues,
+      "info",
+      `${deadColumnDetails.length} tabel punya kolom yang gak pernah disebut eksplisit di frontend`,
+      "Tabelnya DIPAKE, tapi ada kolom yang gak pernah muncul di select/insert/update/filter manapun (dan gak ada select(\"*\") buat tabel ini yang bisa 'nyembunyiin' pemakaian implisit). Bisa jadi kolom peninggalan fitur lama, atau kolom yang emang cuma diisi lewat trigger/default value di DB. Cek manual, terutama kalau ada kolom NOT NULL tanpa default yang gak pernah di-insert dari frontend.",
+      deadColumnDetails.slice(0, 50)
+    );
+  }
+
+  if (unknownColumnDetails.length > 0) {
+    pushIssue(
+      issues,
+      "critical",
+      `${unknownColumnDetails.length} pemakaian kolom di frontend gak ketemu di skema Supabase`,
+      "Kolom ini disebut eksplisit di select/insert/update/filter tapi gak ada di skema live Supabase -- kemungkinan besar typo nama kolom, atau kolom udah direname/dihapus dari database tapi kodenya belum diupdate. Query ini bakal error (PGRST204 / 400) atau diem-diem gagal nyimpen data itu, tergantung method-nya.",
+      unknownColumnDetails.slice(0, 50)
+    );
+  }
+
+  return {
+    issues,
+    tablesInSchema: liveSchema.size,
+    tablesUsedInFrontend: usage.size,
+    deadTableCount: deadTables.length,
+    deadColumnGroupCount: deadColumnDetails.length,
+    unknownColumnCount: unknownColumnDetails.length,
+  };
+}
+
 // Bangun peta lengkap src/: tree folder, fungsi/component tiap file,
 // siapa-import-siapa (importsMap) dan siapa-diimport-oleh-siapa
 // (importedByMap). Ini dipisah dari checkImportsAndOrphans supaya reusable
@@ -913,7 +1283,7 @@ function buildProjectStructure(allFiles) {
 // MAIN
 // ---------------------------------------------------------------------
 
-function main() {
+async function main() {
   console.log("🔍 Audit kode dimulai...\n");
   const startTime = Date.now();
 
@@ -949,6 +1319,15 @@ function main() {
     `   → academicYearService usage check selesai (${academicYearResult.reimplementCount} reimplement langsung, ${academicYearResult.hardcodedCalendarCount} hardcode kalender, ${academicYearResult.fieldUsageCount} sekadar filter field, ${academicYearResult.bulkBackupExcludedCount} di-exclude karena bulk backup/restore)`
   );
 
+  const alignmentResult = await checkFrontendBackendAlignment(allFiles);
+  if (alignmentResult.tablesInSchema !== undefined) {
+    console.log(
+      `   → frontend<->Supabase alignment check selesai (${alignmentResult.tablesInSchema} tabel di skema live, ${alignmentResult.tablesUsedInFrontend} dipake di frontend, ${alignmentResult.deadTableCount} dead table, ${alignmentResult.deadColumnGroupCount} tabel punya dead column, ${alignmentResult.unknownColumnCount} kolom gak dikenal)`
+    );
+  } else {
+    console.log(`   → frontend<->Supabase alignment check di-skip`);
+  }
+
   const categories = [
     {
       id: "imports",
@@ -975,6 +1354,11 @@ function main() {
       id: "academicYearService",
       label: "Academic Year Service Usage",
       issues: academicYearResult.issues,
+    },
+    {
+      id: "frontendBackendAlignment",
+      label: "Frontend <-> Supabase Alignment",
+      issues: alignmentResult.issues,
     },
   ];
 
@@ -1038,4 +1422,21 @@ function main() {
   console.log(`   Buka app -> Monitor Sistem -> tab "Struktur Project" buat liat hasilnya.\n`);
 }
 
-main();
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("❌ Audit gagal jalan:", err);
+    process.exit(1);
+  });
+} else {
+  // Di-require (misal dari test) -- export fungsi-fungsi checker biar bisa
+  // ditest langsung tanpa nge-trigger CLI run penuh (yang butuh folder src/
+  // asli + nulis ke public/*.json).
+  module.exports = {
+    checkFrontendBackendAlignment,
+    fetchLiveSchema,
+    loadSupabaseCredentials,
+    extractSelectColumns,
+    extractBalancedBlock,
+    extractObjectKeys,
+  };
+}

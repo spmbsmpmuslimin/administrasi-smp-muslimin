@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import {
   Trash2,
   Database,
@@ -128,16 +130,64 @@ const DatabaseCleanupMonitor = () => {
     }
   };
 
-  // Cleanup health logs
-  const cleanupHealthLogs = async (retentionDays) => {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+  // Export data yang BAKAL DIHAPUS ke satu file Excel (2 sheet) SEBELUM
+  // delete-nya beneran jalan -- jadi walau kehapus dari database, datanya
+  // tetep ada dalam bentuk arsip. Dipanggil dari runManualCleanup(),
+  // bukan dari dalem cleanupHealthLogs/cleanupOldAttendances, biar bisa
+  // digabung jadi 1 file & 1 kali trigger download (bukan 2 file kepisah).
+  const exportCleanupArchive = async ({ healthRows, attendanceRows }) => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Monitor Sistem - Database Cleanup";
+    workbook.created = new Date();
 
+    const addSheet = (sheetName, rows) => {
+      if (!rows || rows.length === 0) return;
+      const sheet = workbook.addWorksheet(sheetName);
+      const columnKeys = Object.keys(rows[0]);
+      sheet.columns = columnKeys.map((key) => ({ header: key, key, width: 20 }));
+      rows.forEach((row) => sheet.addRow(row));
+      sheet.getRow(1).font = { bold: true };
+      sheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFDDEBF7" },
+      };
+    };
+
+    addSheet("System Health Logs", healthRows);
+    addSheet("Attendances", attendanceRows);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const now = new Date();
+    const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(
+      now.getDate()
+    ).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(
+      now.getMinutes()
+    ).padStart(2, "0")}`;
+
+    saveAs(blob, `arsip-cleanup-${stamp}.xlsx`);
+  };
+
+  // Cleanup health logs -- terima `rows` yang UDAH di-select & di-export
+  // duluan di runManualCleanup(), bukan query ulang pake retentionDays.
+  // Ini penting: kalau delete pake filter tanggal terpisah dari yang
+  // dipake buat export, ada celah waktu di mana row BARU (yang lolos dari
+  // export karena belum ada pas export jalan) bisa ikut kehapus tanpa
+  // sempet ke-arsip. Delete by id dari rows yang sama = dijamin konsisten.
+  const cleanupHealthLogs = async (rows) => {
+    if (!rows || rows.length === 0) {
+      return { success: true, deletedCount: 0, table: "system_health_logs" };
+    }
+    try {
+      const ids = rows.map((r) => r.id);
       const { data, error } = await supabase
         .from("system_health_logs")
         .delete()
-        .lt("created_at", cutoffDate.toISOString())
+        .in("id", ids)
         .select("id");
 
       if (error) throw error;
@@ -156,16 +206,17 @@ const DatabaseCleanupMonitor = () => {
     }
   };
 
-  // Cleanup old attendances
-  const cleanupOldAttendances = async (retentionDays) => {
+  // Cleanup old attendances -- sama pola-nya kayak cleanupHealthLogs di atas.
+  const cleanupOldAttendances = async (rows) => {
+    if (!rows || rows.length === 0) {
+      return { success: true, deletedCount: 0, table: "attendances" };
+    }
     try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-
+      const ids = rows.map((r) => r.id);
       const { data, error } = await supabase
         .from("attendances")
         .delete()
-        .lt("date", cutoffDate.toISOString().split("T")[0])
+        .in("id", ids)
         .select("id");
 
       if (error) throw error;
@@ -182,7 +233,11 @@ const DatabaseCleanupMonitor = () => {
 
   // Run manual cleanup
   const runManualCleanup = async () => {
-    if (!window.confirm("Yakin mau jalankan cleanup? Data lama akan dihapus permanent!")) {
+    if (
+      !window.confirm(
+        `Yakin mau jalankan cleanup?\n\nData lama (Health Logs > ${autoCleanup.healthLogsRetention} hari, Attendance > ${autoCleanup.attendanceRetention} hari) akan di-EXPORT dulu ke file Excel, baru dihapus PERMANEN dari database.`
+      )
+    ) {
       return;
     }
 
@@ -190,12 +245,42 @@ const DatabaseCleanupMonitor = () => {
     const results = [];
 
     try {
-      // Cleanup health logs
-      const healthResult = await cleanupHealthLogs(autoCleanup.healthLogsRetention);
+      // 1) Ambil dulu SEMUA row yang bakal kehapus (belum di-delete apapun
+      // di titik ini) -- ini jadi satu-satunya sumber data buat export
+      // MAUPUN delete, biar dua-duanya dijamin persis sama.
+      const healthCutoff = new Date();
+      healthCutoff.setDate(healthCutoff.getDate() - autoCleanup.healthLogsRetention);
+
+      const attendanceCutoff = new Date();
+      attendanceCutoff.setDate(attendanceCutoff.getDate() - autoCleanup.attendanceRetention);
+
+      const { data: healthRows, error: healthSelectError } = await supabase
+        .from("system_health_logs")
+        .select("*")
+        .lt("created_at", healthCutoff.toISOString());
+      if (healthSelectError) throw healthSelectError;
+
+      const { data: attendanceRows, error: attendanceSelectError } = await supabase
+        .from("attendances")
+        .select("*")
+        .lt("date", attendanceCutoff.toISOString().split("T")[0]);
+      if (attendanceSelectError) throw attendanceSelectError;
+
+      const hasDataToArchive = (healthRows?.length || 0) > 0 || (attendanceRows?.length || 0) > 0;
+
+      // 2) Export ke Excel DULU, sebelum delete apapun dijalankan. Kalau
+      // export-nya gagal (misal ExcelJS error), delete gak akan jalan --
+      // exception di sini otomatis loncat ke catch block di bawah.
+      if (hasDataToArchive) {
+        await exportCleanupArchive({ healthRows, attendanceRows });
+      }
+
+      // 3) Baru delete beneran, pake rows yang SAMA persis kayak yang
+      // barusan di-export.
+      const healthResult = await cleanupHealthLogs(healthRows);
       results.push(healthResult);
 
-      // Cleanup attendances
-      const attendanceResult = await cleanupOldAttendances(autoCleanup.attendanceRetention);
+      const attendanceResult = await cleanupOldAttendances(attendanceRows);
       results.push(attendanceResult);
 
       // Save to history
@@ -209,7 +294,11 @@ const DatabaseCleanupMonitor = () => {
       await fetchStats();
       await fetchCleanupHistory();
 
-      alert("✅ Cleanup berhasil dijalankan!");
+      alert(
+        hasDataToArchive
+          ? "✅ Cleanup berhasil! Data lama sudah di-export ke Excel & dihapus dari database."
+          : "✅ Cleanup selesai — gak ada data lama yang perlu dihapus."
+      );
     } catch (error) {
       console.error("Cleanup error:", error);
       alert("❌ Cleanup gagal: " + error.message);
@@ -592,7 +681,10 @@ const DatabaseCleanupMonitor = () => {
               <li>Jalankan cleanup manual setiap minggu atau setup auto-cleanup</li>
               <li>Keep health logs max 7-14 hari (cukup untuk debugging)</li>
               <li>Keep attendances 2-3 tahun (untuk keperluan historis)</li>
-              <li>Backup data ke Excel sebelum cleanup permanent</li>
+              <li>
+                ✅ Data otomatis di-export ke Excel dulu sebelum dihapus permanen — cek folder
+                Downloads tiap habis klik "Run Cleanup"
+              </li>
               {parseFloat(stats.percentUsed) > 60 && (
                 <li className="text-red-600 dark:text-red-400 font-semibold">
                   ⚠️ Storage usage tinggi! Consider upgrade atau aggressive cleanup
