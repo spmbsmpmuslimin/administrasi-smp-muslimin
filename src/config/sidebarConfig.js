@@ -1,5 +1,6 @@
 // [file name]: config/sidebarConfig.js
-// Single source of truth untuk struktur menu di Sidebar.js
+// Single source of truth untuk struktur menu di components/Sidebar.js --
+// murni data + aturan tampil (show), gak ada JSX/render di sini sama sekali.
 //
 // ctx yang dikirim ke setiap show()/label()/page() function:
 // { isAdmin, isTeacher, isGuruBK, isTU, isWaliKelas, isWakasekKurikulum, userRole, eraportActive }
@@ -67,6 +68,10 @@ export const sidebarGroups = [
         page: "teachers",
         label: "Data Guru & Staff",
         icon: ["M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"],
+        // ✅ FIX (Sep 2026): sebelumnya gak ada show() -> nongol ke SEMUA
+        // role termasuk Siswa. Siswa harusnya cuma liat data kelasnya
+        // sendiri lewat portal khusus siswa, bukan menu Master Data ini.
+        show: (ctx) => !ctx.isSiswa,
       },
       {
         page: "classes",
@@ -74,6 +79,9 @@ export const sidebarGroups = [
         icon: [
           "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
         ],
+        // ✅ FIX (Sep 2026): sama kayak "teachers" di atas -- dibatesin
+        // biar Siswa gak liat data kelas se-sekolah.
+        show: (ctx) => !ctx.isSiswa,
       },
       {
         page: "students",
@@ -81,6 +89,10 @@ export const sidebarGroups = [
         icon: [
           "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m9 5.197v1M13 7a4 4 0 11-8 0 4 4 0 018 0z",
         ],
+        // ✅ FIX (Sep 2026): sama kayak 2 item di atas -- dibatesin biar
+        // Siswa gak liat data seluruh siswa se-sekolah (dia cuma boleh
+        // liat data kelasnya sendiri, itupun lewat portal siswa terpisah).
+        show: (ctx) => !ctx.isSiswa,
       },
       {
         page: "data-induk-siswa",
@@ -216,14 +228,22 @@ export const sidebarGroups = [
     title: "E-RAPORT",
     // ⚠️ SENGAJA, BUKAN BUG: modul E-Raport internal ini dinonaktifkan
     // sementara karena sekolah sudah pindah pakai aplikasi e-rapor resmi
-    // dari pemerintah. Jangan aktifin lagi grup ini buat Admin/TU sebelum
-    // dikonfirmasi ulang -- kalau nanti mau diaktifkan lagi, cukup ubah
-    // baris show() di bawah ini (dan setting eraportActive di database).
+    // dari pemerintah. Struktur grup ini SENGAJA gak dihapus (cuma
+    // di-nonaktifin lewat eraportActive) biar gampang diaktifin lagi
+    // kalau sewaktu-waktu dibutuhkan -- tinggal toggle eraportActive di
+    // database, gak perlu tulis ulang menu-nya dari nol.
     //
-    // Perilaku asli: seluruh grup E-RAPORT disembunyikan dari Admin di sidebar
-    // (walaupun Admin tetap punya akses route era-dashboard-admin dkk via App.js).
-    // TU disamain kayak Admin -> ikut disembunyikan juga.
-    show: (ctx) => ctx.eraportActive && !ctx.isAdmin && !ctx.isTU,
+    // Scope akses: HANYA Guru (isTeacher) & Wali Kelas. Admin/TU sengaja
+    // gak ikut (mereka pakai e-rapor pemerintah, bukan modul internal
+    // ini -- meski tetap punya akses route era-dashboard-admin dkk lewat
+    // App.js, cuma gak muncul di sidebar). Guru BK, Petugas Perpus, dan
+    // Siswa BUKAN target modul ini, makanya juga gak dimasukin ke show().
+    //
+    // ✅ FIX (Sep 2026): sebelumnya kondisinya `!isAdmin && !isTU` doang
+    // (artinya "semua ROLE kecuali admin/tu"), jadi Guru BK, Petugas
+    // Perpus, dan Siswa ikut ke-include gak sengaja. Diganti jadi
+    // whitelist eksplisit isTeacher || isWaliKelas.
+    show: (ctx) => ctx.eraportActive && (ctx.isTeacher || ctx.isWaliKelas),
     items: [
       {
         // Target dinamis tergantung role yang login
@@ -398,22 +418,38 @@ export const sidebarGroups = [
 
   {
     id: "sistem",
-    title: "SISTEM",
+    // ✅ FIX (Sep 2026): rename "SISTEM" -> "Data & Sistem" -- bagian dari
+    // restrukturisasi grup ini. Cuma buat Admin/TU, role lain SAMA SEKALI
+    // gak kesentuh (lihat show() di bawah, gak diubah).
+    title: "Data & Sistem",
     show: (ctx) => ctx.isAdmin || ctx.isTU,
     items: [
-      {
-        page: "spmb",
-        label: "SPMB",
-        icon: [
-          "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-        ],
-      },
+      // ⚠️ FIX (Sep 2026) -- TAHAP 1 dari restrukturisasi grup ini, cuma
+      // sidebar + routing skeleton dulu, HALAMANNYA BELUM di-rework:
+      // - Item "SPMB" yang tadinya berdiri sendiri di sini DIHAPUS dari
+      //   sidebar -- rencananya nanti diakses lewat card "Manajemen SPMB"
+      //   di dalem halaman "Manajemen Data" (belum dibuat card-nya).
+      //   Route /spmb di menuConfig.js SENGAJA TETAP ADA, cuma gak ada
+      //   link sidebar langsung ke situ lagi.
+      // - "Pengaturan" di-rename jadi "Manajemen Data" (label doang buat
+      //   sekarang -- halaman di baliknya MASIH Setting.js yang lama,
+      //   belum di-rework jadi grid card kayak yang direncanain).
+      // - "Administrasi TU" item BARU, halamannya masih placeholder
+      //   (lihat komponen AdministrasiTU.js yang baru dibuat) sambil
+      //   nunggu isi card-grid beneran-nya digambar.
       {
         page: "settings",
-        label: "Pengaturan",
+        label: "Manajemen Data",
         icon: [
           "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
           "M15 12a3 3 0 11-6 0 3 3 0 016 0z",
+        ],
+      },
+      {
+        page: "administrasi-tu",
+        label: "Administrasi TU",
+        icon: [
+          "M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a1 1 0 00-1 1v10a2 2 0 002 2h14a2 2 0 002-2V8a1 1 0 00-1-1zM10 5h4v2h-4V5zm4 8h-4v-1H3v-1h6v-1h6v1h6v1h-7v1z",
         ],
       },
       {

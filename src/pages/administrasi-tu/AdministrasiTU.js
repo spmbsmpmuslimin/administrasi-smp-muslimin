@@ -1,37 +1,57 @@
-// pages/wakasek-kurikulum/KurikulumAdministrasi.js
-// Halaman "Administrasi" khusus Wakasek Kurikulum, route: /kurikulum-administrasi
-// (allowedRoles: ["admin","teacher"] + requireWakasekKurikulum: true, lihat
-// config/menuConfig.js). Sengaja dibikin halaman mandiri (BUKAN tab baru di
-// dalam Setting.js) supaya kedepannya semua menu tugas struktural Wakasek
-// Kurikulum bisa dikumpulin di 1 tempat, biar sidebar dia (yang juga guru
-// mapel biasa) gak numpuk.
+// [file name]: pages/administrasi-tu/AdministrasiTU.js
+// Halaman "Administrasi TU", route: /administrasi-tu (allowedRoles:
+// ["admin","tu"], lihat config/menuConfig.js & sidebarConfig.js grup
+// "Data & Sistem"). Nampung pekerjaan administrasi operasional TU yang
+// TRANSAKSIONAL/pengarsipan/pelaporan -- SENGAJA gak ngulang Manajemen Data
+// (Data Siswa/Guru/Kelas/Tahun Ajaran/Sekolah tetap di /settings). Lihat
+// dokumentasi rencana modul TU (dikasih user Sep 2026) buat scope lengkap
+// 5 kategori di bawah.
 //
-// Pola-nya sengaja disamain kayak setting/Setting.js (card-grid dashboard ->
-// klik card -> detail view single tab, persist via ?tab= di URL) biar
-// familiar buat yang udah biasa maintain Setting.js. Bedanya cuma di scope:
-// di sini scope-nya cuma Wakasek Kurikulum, bukan semua role sistem.
+// Pola-nya SENGAJA disamain kayak pages/wakasek-kurikulum/
+// KurikulumAdministrasi.js (card-grid dashboard -> klik card -> detail
+// view, persist via ?tab= di URL). Bedanya: card "Persuratan" di sini
+// nge-render komponen COMBINED yang punya sub-tab sendiri di dalemnya
+// (Surat Masuk/Surat Keluar/Disposisi) -- pola sub-tab ini disamain persis
+// kayak school-management/SchoolCombinedTab.js yang dipake di Setting.js,
+// lihat PersuratanTab.js.
 //
-// Card pertama & satu-satunya buat saat ini: "Manajemen Jadwal Pelajaran"
-// (id: "jadwal-guru"), reuse JadwalGuruTab yang sama persis dipakai di
-// Setting.js -- logic & data-fetching-nya gak diubah sama sekali di sini.
-//
-// ✅ Nambah card baru kedepannya: tinggal tambah 1 object di array
-// `menuCards` (title, description, icon, color) + 1 case baru di
-// `renderActiveTab()`. Gak perlu ubah apa-apa di menuConfig.js atau
-// sidebarConfig.js -- route & entry sidebar-nya udah ada, cuma nambah isi
-// di dalam halaman ini aja.
-
+// ✅ TAHAP AWAL (Sep 2026) -- urutan build sesuai dokumentasi rencana user
+// (paling urgent duluan: Persuratan -> Arsip -> SPP -> Inventaris ->
+// Laporan). Baru "Persuratan" yang punya skeleton sub-tab (isinya masih
+// ComingSoonPanel juga, nunggu skema tabel DB). 4 kategori lain masih
+// ComingSoonPanel polos di level card -- ganti `component` card yang
+// bersangkutan kalau modulnya udah mulai digarap, gak perlu ubah apapun
+// di switcher/render dashboard-nya.
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Home, ChevronRight, ArrowRight, CalendarClock, LayoutGrid } from "lucide-react";
-import JadwalGuruTab from "../../setting/kelola-jadwal/JadwalGuruTab";
+import {
+  Home,
+  ChevronRight,
+  ArrowRight,
+  LayoutGrid,
+  FileText,
+  Archive,
+  Wallet,
+  Package,
+  FileSpreadsheet,
+} from "lucide-react";
+import PersuratanTab from "./PersuratanTab";
+import ComingSoonPanel from "./ComingSoonPanel";
 
-// Palet pastel per kartu menu -- sama persis dengan CARD_COLOR_STYLES di
-// Setting.js (class Tailwind ditulis lengkap, bukan digabung template
-// string, supaya gak ke-purge pas build). Disalin apa adanya (bukan
-// di-import dari Setting.js) supaya halaman ini tetap berdiri sendiri dan
-// gak bikin Setting.js jadi dependency lintas-modul.
+// Palet pastel per kartu menu -- SENGAJA disalin apa adanya (bukan
+// di-import dari Setting.js/KurikulumAdministrasi.js) biar halaman ini
+// tetap berdiri sendiri, gak bikin dependency lintas-modul. Samain kalau
+// mau nambah warna baru di sini.
 const CARD_COLOR_STYLES = {
+  sky: {
+    bg: "bg-sky-50/80 dark:bg-sky-950/20",
+    border: "border-sky-100 dark:border-sky-900/40",
+    hoverBorder: "hover:border-sky-300 dark:hover:border-sky-700",
+    iconBg: "bg-sky-100 dark:bg-sky-900/40 group-hover:bg-sky-200 dark:group-hover:bg-sky-800/50",
+    iconColor: "text-sky-600 dark:text-sky-400",
+    titleHover: "group-hover:text-sky-700 dark:group-hover:text-sky-300",
+    header: "from-sky-400 to-sky-500 dark:from-sky-600 dark:to-sky-700",
+  },
   amber: {
     bg: "bg-amber-50/80 dark:bg-amber-950/20",
     border: "border-amber-100 dark:border-amber-900/40",
@@ -42,24 +62,15 @@ const CARD_COLOR_STYLES = {
     titleHover: "group-hover:text-amber-700 dark:group-hover:text-amber-300",
     header: "from-amber-400 to-amber-500 dark:from-amber-600 dark:to-amber-700",
   },
-  sky: {
-    bg: "bg-sky-50/80 dark:bg-sky-950/20",
-    border: "border-sky-100 dark:border-sky-900/40",
-    hoverBorder: "hover:border-sky-300 dark:hover:border-sky-700",
-    iconBg: "bg-sky-100 dark:bg-sky-900/40 group-hover:bg-sky-200 dark:group-hover:bg-sky-800/50",
-    iconColor: "text-sky-600 dark:text-sky-400",
-    titleHover: "group-hover:text-sky-700 dark:group-hover:text-sky-300",
-    header: "from-sky-400 to-sky-500 dark:from-sky-600 dark:to-sky-700",
-  },
-  teal: {
-    bg: "bg-teal-50/80 dark:bg-teal-950/20",
-    border: "border-teal-100 dark:border-teal-900/40",
-    hoverBorder: "hover:border-teal-300 dark:hover:border-teal-700",
+  emerald: {
+    bg: "bg-emerald-50/80 dark:bg-emerald-950/20",
+    border: "border-emerald-100 dark:border-emerald-900/40",
+    hoverBorder: "hover:border-emerald-300 dark:hover:border-emerald-700",
     iconBg:
-      "bg-teal-100 dark:bg-teal-900/40 group-hover:bg-teal-200 dark:group-hover:bg-teal-800/50",
-    iconColor: "text-teal-600 dark:text-teal-400",
-    titleHover: "group-hover:text-teal-700 dark:group-hover:text-teal-300",
-    header: "from-teal-400 to-teal-500 dark:from-teal-600 dark:to-teal-700",
+      "bg-emerald-100 dark:bg-emerald-900/40 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    titleHover: "group-hover:text-emerald-700 dark:group-hover:text-emerald-300",
+    header: "from-emerald-400 to-emerald-500 dark:from-emerald-600 dark:to-emerald-700",
   },
   slate: {
     bg: "bg-slate-50/80 dark:bg-slate-800/40",
@@ -71,21 +82,86 @@ const CARD_COLOR_STYLES = {
     titleHover: "group-hover:text-slate-700 dark:group-hover:text-slate-200",
     header: "from-slate-400 to-slate-500 dark:from-slate-600 dark:to-slate-700",
   },
+  cyan: {
+    bg: "bg-cyan-50/80 dark:bg-cyan-950/20",
+    border: "border-cyan-100 dark:border-cyan-900/40",
+    hoverBorder: "hover:border-cyan-300 dark:hover:border-cyan-700",
+    iconBg:
+      "bg-cyan-100 dark:bg-cyan-900/40 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-800/50",
+    iconColor: "text-cyan-600 dark:text-cyan-400",
+    titleHover: "group-hover:text-cyan-700 dark:group-hover:text-cyan-300",
+    header: "from-cyan-400 to-cyan-500 dark:from-cyan-600 dark:to-cyan-700",
+  },
 };
 
-// Menu cards configuration -- baru ada 1 sekarang, tambah di sini kalau
-// mau nambah card baru (lihat catatan panjang di atas).
+// Menu cards -- urutan SENGAJA sesuai prioritas build di dokumentasi
+// rencana user (Persuratan -> Arsip -> SPP -> Inventaris -> Laporan).
+// NOTE: cuma "component" yang berubah kalau modul udah digarap, "id"
+// jangan diubah-ubah -- dipake juga buat ?tab= di URL.
 const menuCards = [
   {
-    id: "jadwal-guru",
-    title: "Manajemen Jadwal Pelajaran",
-    description: "Import jadwal massal & master kode guru",
-    icon: CalendarClock,
+    id: "persuratan",
+    title: "Persuratan",
+    description: "Surat masuk, surat keluar, dan disposisi",
+    icon: FileText,
+    color: "sky",
+    component: PersuratanTab,
+  },
+  {
+    id: "arsip",
+    title: "Arsip & Dokumen",
+    description: "Simpan dan kelola dokumen administrasi sekolah",
+    icon: Archive,
     color: "amber",
+    component: () => (
+      <ComingSoonPanel
+        title="Arsip & Dokumen"
+        description="Modul arsip digital masih dalam pengembangan."
+      />
+    ),
+  },
+  {
+    id: "keuangan",
+    title: "Administrasi Keuangan",
+    description: "Pembayaran SPP, tunggakan, dan riwayat pembayaran",
+    icon: Wallet,
+    color: "emerald",
+    component: () => (
+      <ComingSoonPanel
+        title="Administrasi Keuangan"
+        description="Pengelolaan SPP masih dalam pengembangan. Ranah keuangan sekolah yang lebih luas tetap di Bendahara Sekolah."
+      />
+    ),
+  },
+  {
+    id: "inventaris",
+    title: "Inventaris",
+    description: "Data barang dan aset operasional sekolah",
+    icon: Package,
+    color: "slate",
+    component: () => (
+      <ComingSoonPanel
+        title="Inventaris"
+        description="Modul data barang & aset masih dalam pengembangan."
+      />
+    ),
+  },
+  {
+    id: "laporan",
+    title: "Laporan Administrasi",
+    description: "Rekap laporan dari seluruh modul TU",
+    icon: FileSpreadsheet,
+    color: "cyan",
+    component: () => (
+      <ComingSoonPanel
+        title="Laporan Administrasi"
+        description="Rekap laporan TU masih dalam pengembangan -- nunggu modul sumbernya (Persuratan/Keuangan/Inventaris/Arsip) jadi dulu."
+      />
+    ),
   },
 ];
 
-const KurikulumAdministrasi = ({ user }) => {
+const AdministrasiTU = (props) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -94,25 +170,17 @@ const KurikulumAdministrasi = ({ user }) => {
 
   const changeTab = (tabId) => {
     setActiveTab(tabId);
-    window.history.replaceState(null, "", `/kurikulum-administrasi?tab=${tabId}`);
+    window.history.replaceState(null, "", `/administrasi-tu?tab=${tabId}`);
   };
 
   const getCurrentCard = () => menuCards.find((card) => card.id === activeTab);
 
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case "jadwal-guru":
-        return <JadwalGuruTab />;
-      default:
-        return null;
-    }
-  };
-
-  // Detail View -- satu tab spesifik lagi dibuka
+  // Detail View -- satu kategori spesifik lagi dibuka
   if (activeTab && activeTab !== "dashboard") {
     const currentCard = getCurrentCard();
     const IconComponent = currentCard?.icon || LayoutGrid;
-    const colorStyle = CARD_COLOR_STYLES[currentCard?.color] || CARD_COLOR_STYLES.amber;
+    const ActiveComponent = currentCard?.component;
+    const colorStyle = CARD_COLOR_STYLES[currentCard?.color] || CARD_COLOR_STYLES.sky;
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-900 dark:to-gray-800">
@@ -134,7 +202,7 @@ const KurikulumAdministrasi = ({ user }) => {
               onClick={() => changeTab("dashboard")}
               className="hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap font-medium"
             >
-              Administrasi
+              Administrasi TU
             </button>
             <ChevronRight
               size={16}
@@ -177,7 +245,7 @@ const KurikulumAdministrasi = ({ user }) => {
             id={`${activeTab}-tab-content`}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/30 transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700"
           >
-            {renderActiveTab()}
+            {ActiveComponent && <ActiveComponent {...props} />}
           </div>
         </div>
       </div>
@@ -202,22 +270,22 @@ const KurikulumAdministrasi = ({ user }) => {
             className="text-gray-400 dark:text-gray-500 flex-shrink-0 sm:w-4 sm:h-4"
           />
           <span className="text-blue-600 dark:text-blue-400 font-semibold whitespace-nowrap">
-            Administrasi
+            Administrasi TU
           </span>
         </div>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 text-white rounded-xl shadow-md">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-xl shadow-md">
               <LayoutGrid className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">
-                Administrasi Kurikulum
+                Administrasi TU
               </h1>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-                Menu khusus tugas struktural Wakasek Kurikulum
+                Persuratan, arsip, keuangan, inventaris & laporan operasional TU
               </p>
             </div>
           </div>
@@ -227,7 +295,7 @@ const KurikulumAdministrasi = ({ user }) => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {menuCards.map((card) => {
             const IconComponent = card.icon;
-            const colorStyle = CARD_COLOR_STYLES[card.color] || CARD_COLOR_STYLES.amber;
+            const colorStyle = CARD_COLOR_STYLES[card.color] || CARD_COLOR_STYLES.sky;
 
             return (
               <button
@@ -261,4 +329,4 @@ const KurikulumAdministrasi = ({ user }) => {
   );
 };
 
-export default KurikulumAdministrasi;
+export default AdministrasiTU;

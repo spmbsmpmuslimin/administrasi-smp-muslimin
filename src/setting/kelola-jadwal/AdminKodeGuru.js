@@ -11,7 +11,7 @@
 // Dipakai sebagai kamus buat AdminJadwalMassal.js pas nge-decode kode
 // jadwal per kelas jadi Mapel + Nama Guru.
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import {
@@ -25,7 +25,7 @@ import {
   Upload,
   Search,
 } from "lucide-react";
-import { getActiveYearString } from "../services/academicYearService";
+import { getActiveYearString } from "../../services/academicYearService";
 
 const emptyForm = {
   code: "",
@@ -58,9 +58,7 @@ export default function AdminKodeGuru() {
       try {
         const year = await getActiveYearString();
         if (!year) {
-          setError(
-            "Tidak ada tahun ajaran aktif. Atur dulu di menu Pengaturan.",
-          );
+          setError("Tidak ada tahun ajaran aktif. Atur dulu di menu Pengaturan.");
           setLoading(false);
           return;
         }
@@ -138,16 +136,14 @@ export default function AdminKodeGuru() {
           (c) =>
             c.code.toLowerCase().includes(q) ||
             c.teacher_name.toLowerCase().includes(q) ||
-            c.subject.toLowerCase().includes(q),
+            c.subject.toLowerCase().includes(q)
         );
     // Suppress dihitung dari `codes` penuh (bukan hasil filter search),
     // biar kode dasarnya tetep "ngitung" walau lagi ke-filter out sama
     // pencarian -- jadi kode turunan yang nyantol di hasil search gak
     // tiba-tiba nampilin note-nya lagi cuma gara-gara kode dasarnya lagi
     // gak keliatan.
-    const visibleMap = new Map(
-      withVisibleNotes(codes).map((c) => [c.id, c.visibleNote]),
-    );
+    const visibleMap = new Map(withVisibleNotes(codes).map((c) => [c.id, c.visibleNote]));
     return base.map((c) => ({
       ...c,
       visibleNote: visibleMap.get(c.id) ?? c.note ?? "",
@@ -180,13 +176,9 @@ export default function AdminKodeGuru() {
   };
 
   const handleDelete = async (row) => {
-    if (!window.confirm(`Hapus kode "${row.code}" (${row.teacher_name})?`))
-      return;
+    if (!window.confirm(`Hapus kode "${row.code}" (${row.teacher_name})?`)) return;
     try {
-      const { error: err } = await supabase
-        .from("teacher_codes")
-        .delete()
-        .eq("id", row.id);
+      const { error: err } = await supabase.from("teacher_codes").delete().eq("id", row.id);
       if (err) throw err;
       setSuccess("Kode berhasil dihapus");
       fetchCodes(academicYear);
@@ -207,7 +199,7 @@ export default function AdminKodeGuru() {
     }
     if (teacher_id && !/^G-\d+$/.test(teacher_id)) {
       setError(
-        'Format ID Guru harus "G-" diikuti angka, mis. G-08 (atau kosongkan kalau belum tau)',
+        'Format ID Guru harus "G-" diikuti angka, mis. G-08 (atau kosongkan kalau belum tau)'
       );
       return;
     }
@@ -219,9 +211,7 @@ export default function AdminKodeGuru() {
     if (weeklyHoursRaw) {
       weekly_hours = parseInt(weeklyHoursRaw, 10);
       if (isNaN(weekly_hours) || weekly_hours < 0) {
-        setError(
-          "Jumlah Jam Mengajar harus angka (JP/minggu), atau kosongkan kalau belum ada",
-        );
+        setError("Jumlah Jam Mengajar harus angka (JP/minggu), atau kosongkan kalau belum ada");
         return;
       }
     }
@@ -256,9 +246,7 @@ export default function AdminKodeGuru() {
         });
         if (err) {
           if (err.code === "23505") {
-            throw new Error(
-              `Kode "${code}" sudah ada untuk tahun ajaran ${academicYear}`,
-            );
+            throw new Error(`Kode "${code}" sudah ada untuk tahun ajaran ${academicYear}`);
           }
           throw err;
         }
@@ -394,7 +382,7 @@ export default function AdminKodeGuru() {
       }
       if (headerRowIdx === -1) {
         setError(
-          "Format file gak dikenali: kolom header (Kode, Nama Guru, Mapel) gak ketemu. Pakai file hasil Export dari halaman ini.",
+          "Format file gak dikenali: kolom header (Kode, Nama Guru, Mapel) gak ketemu. Pakai file hasil Export dari halaman ini."
         );
         return;
       }
@@ -412,9 +400,7 @@ export default function AdminKodeGuru() {
         // Kolom Jumlah Jam & ID Guru opsional -- file lama (sebelum
         // fitur ini ada) gak bakal punya kolom ini, colMap[...] jadi
         // undefined dan otomatis kekosongan, gak bikin import gagal.
-        const weeklyHoursRaw = String(
-          row[colMap["Jumlah Jam (opsional)"]] ?? "",
-        ).trim();
+        const weeklyHoursRaw = String(row[colMap["Jumlah Jam (opsional)"]] ?? "").trim();
         const note = String(row[colMap["Keterangan (opsional)"]] ?? "").trim();
         const teacherIdRaw = String(row[colMap["ID Guru (opsional)"]] ?? "")
           .trim()
@@ -422,15 +408,11 @@ export default function AdminKodeGuru() {
 
         if (!code && !teacher_name && !subject) return; // baris kosong
         if (!code || !teacher_name || !subject) {
-          errors.push(
-            `Baris ${excelRowNumber}: Kode/Nama Guru/Mapel ada yang kosong`,
-          );
+          errors.push(`Baris ${excelRowNumber}: Kode/Nama Guru/Mapel ada yang kosong`);
           return;
         }
         if (seen.has(code)) {
-          errors.push(
-            `Baris ${excelRowNumber}: kode "${code}" duplikat di file ini`,
-          );
+          errors.push(`Baris ${excelRowNumber}: kode "${code}" duplikat di file ini`);
           return;
         }
         let weekly_hours = null;
@@ -438,14 +420,14 @@ export default function AdminKodeGuru() {
           weekly_hours = parseInt(weeklyHoursRaw, 10);
           if (isNaN(weekly_hours) || weekly_hours < 0) {
             errors.push(
-              `Baris ${excelRowNumber}: Jumlah Jam "${weeklyHoursRaw}" harus angka (atau kosongkan)`,
+              `Baris ${excelRowNumber}: Jumlah Jam "${weeklyHoursRaw}" harus angka (atau kosongkan)`
             );
             return;
           }
         }
         if (teacherIdRaw && !/^G-\d+$/.test(teacherIdRaw)) {
           errors.push(
-            `Baris ${excelRowNumber}: ID Guru "${teacherIdRaw}" formatnya salah (harus G-01, G-02, dst)`,
+            `Baris ${excelRowNumber}: ID Guru "${teacherIdRaw}" formatnya salah (harus G-01, G-02, dst)`
           );
           return;
         }
@@ -465,7 +447,7 @@ export default function AdminKodeGuru() {
         setError(
           `Import dibatalkan, ada ${errors.length} baris bermasalah:\n` +
             errors.slice(0, 6).join("\n") +
-            (errors.length > 6 ? `\n...dan ${errors.length - 6} lagi` : ""),
+            (errors.length > 6 ? `\n...dan ${errors.length - 6} lagi` : "")
         );
         return;
       }
@@ -475,7 +457,7 @@ export default function AdminKodeGuru() {
       }
       if (
         !window.confirm(
-          `Import akan MENGGANTI seluruh Master Kode Guru tahun ajaran ${academicYear} dengan ${parsed.length} baris dari file ini. Lanjutkan?`,
+          `Import akan MENGGANTI seluruh Master Kode Guru tahun ajaran ${academicYear} dengan ${parsed.length} baris dari file ini. Lanjutkan?`
         )
       )
         return;
@@ -487,9 +469,7 @@ export default function AdminKodeGuru() {
         .eq("academic_year", academicYear);
       if (delErr) throw delErr;
 
-      const { error: insErr } = await supabase
-        .from("teacher_codes")
-        .insert(parsed);
+      const { error: insErr } = await supabase.from("teacher_codes").insert(parsed);
       if (insErr) throw insErr;
 
       setSuccess(`${parsed.length} kode guru berhasil diimport`);
@@ -508,8 +488,7 @@ export default function AdminKodeGuru() {
           <div>
             <h1 className="text-lg font-bold text-theme">Master Kode Guru</h1>
             <p className="text-xs text-theme-secondary mt-0.5">
-              Tahun Ajaran {academicYear || "—"} · sumber: tabel kode guru dari
-              WKS. Kurikulum
+              Tahun Ajaran {academicYear || "—"} · sumber: tabel kode guru dari WKS. Kurikulum
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -522,20 +501,23 @@ export default function AdminKodeGuru() {
             />
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme text-theme-secondary rounded-xl text-sm font-semibold">
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme text-theme-secondary rounded-xl text-sm font-semibold"
+            >
               <Download className="w-4 h-4" />
               Export
             </button>
             <button
               onClick={handleImportClick}
               disabled={importing}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme disabled:opacity-40 text-theme-secondary rounded-xl text-sm font-semibold">
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme disabled:opacity-40 text-theme-secondary rounded-xl text-sm font-semibold"
+            >
               <Upload className="w-4 h-4" />
               {importing ? "Mengimport..." : "Import"}
             </button>
             <button
               onClick={openAddModal}
-              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold">
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold"
+            >
               <Plus className="w-4 h-4" />
               Tambah
             </button>
@@ -578,24 +560,16 @@ export default function AdminKodeGuru() {
                     <th className="py-2.5 px-3 font-semibold w-20">Kode</th>
                     <th className="py-2.5 px-3 font-semibold">Nama Guru</th>
                     <th className="py-2.5 px-3 font-semibold">Mapel</th>
-                    <th className="py-2.5 px-3 font-semibold w-24 text-center">
-                      Jam/Minggu
-                    </th>
-                    <th className="py-2.5 px-3 font-semibold hidden md:table-cell">
-                      Keterangan
-                    </th>
-                    <th className="py-2.5 px-3 font-semibold w-20 hidden sm:table-cell">
-                      ID Guru
-                    </th>
+                    <th className="py-2.5 px-3 font-semibold w-24 text-center">Jam/Minggu</th>
+                    <th className="py-2.5 px-3 font-semibold hidden md:table-cell">Keterangan</th>
+                    <th className="py-2.5 px-3 font-semibold w-20 hidden sm:table-cell">ID Guru</th>
                     <th className="py-2.5 px-3 font-semibold w-20"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="py-10 text-center text-gray-400">
+                      <td colSpan={7} className="py-10 text-center text-gray-400">
                         {codes.length === 0
                           ? "Belum ada data. Import dulu dari Excel tabel kode guru WKS. Kurikulum."
                           : "Gak ada yang cocok dengan pencarian."}
@@ -603,12 +577,8 @@ export default function AdminKodeGuru() {
                     </tr>
                   )}
                   {filtered.map((c) => (
-                    <tr
-                      key={c.id}
-                      className="border-t border-gray-50 hover:bg-gray-50/60">
-                      <td className="py-2 px-3 font-mono font-bold text-blue-700">
-                        {c.code}
-                      </td>
+                    <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50/60">
+                      <td className="py-2 px-3 font-mono font-bold text-blue-700">{c.code}</td>
                       <td className="py-2 px-3">{c.teacher_name}</td>
                       <td className="py-2 px-3">{c.subject}</td>
                       <td className="py-2 px-3 text-center font-semibold text-theme-secondary">
@@ -619,13 +589,12 @@ export default function AdminKodeGuru() {
                       </td>
                       <td className="py-2 px-3 text-xs hidden sm:table-cell">
                         {c.teacher_id ? (
-                          <span className="font-mono text-theme-secondary">
-                            {c.teacher_id}
-                          </span>
+                          <span className="font-mono text-theme-secondary">{c.teacher_id}</span>
                         ) : (
                           <span
                             className="text-amber-500"
-                            title="Belum diisi, validasi silang ke data pengampu gak bisa jalan buat kode ini">
+                            title="Belum diisi, validasi silang ke data pengampu gak bisa jalan buat kode ini"
+                          >
                             belum diisi
                           </span>
                         )}
@@ -634,12 +603,14 @@ export default function AdminKodeGuru() {
                         <div className="flex items-center gap-1 justify-end">
                           <button
                             onClick={() => openEditModal(c)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50">
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                          >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(c)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50">
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50"
+                          >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -659,9 +630,7 @@ export default function AdminKodeGuru() {
                 <h2 className="text-base font-bold text-theme">
                   {editingRow ? "Edit Kode Guru" : "Tambah Kode Guru"}
                 </h2>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-400 hover:text-theme-secondary">
+                <button onClick={closeModal} className="text-gray-400 hover:text-theme-secondary">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -672,9 +641,7 @@ export default function AdminKodeGuru() {
                   </label>
                   <input
                     value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                     placeholder="mis. 18 atau 8P"
                     className="w-full px-3 py-2 bg-theme-bg text-theme border border-theme rounded-xl text-sm font-mono"
                   />
@@ -685,9 +652,7 @@ export default function AdminKodeGuru() {
                   </label>
                   <input
                     value={formData.teacher_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, teacher_name: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, teacher_name: e.target.value })}
                     placeholder="mis. Jajang Hilman, S.Pd.I"
                     className="w-full px-3 py-2 bg-theme-bg text-theme border border-theme rounded-xl text-sm"
                   />
@@ -698,9 +663,7 @@ export default function AdminKodeGuru() {
                   </label>
                   <input
                     value={formData.subject}
-                    onChange={(e) =>
-                      setFormData({ ...formData, subject: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     placeholder="mis. PJOK"
                     className="w-full px-3 py-2 bg-theme-bg text-theme border border-theme rounded-xl text-sm"
                   />
@@ -713,16 +676,13 @@ export default function AdminKodeGuru() {
                     type="number"
                     min="0"
                     value={formData.weekly_hours}
-                    onChange={(e) =>
-                      setFormData({ ...formData, weekly_hours: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, weekly_hours: e.target.value })}
                     placeholder="mis. 24"
                     className="w-full px-3 py-2 bg-theme-bg text-theme border border-theme rounded-xl text-sm"
                   />
                   <p className="text-[11px] text-gray-400 mt-1">
-                    Sesuai kolom "JUMLAH JAM" di tabel kode guru WKS. Kurikulum.
-                    Kosongkan buat kode yang jamnya gak dihitung per-JP (mis.
-                    BP/BK).
+                    Sesuai kolom "JUMLAH JAM" di tabel kode guru WKS. Kurikulum. Kosongkan buat kode
+                    yang jamnya gak dihitung per-JP (mis. BP/BK).
                   </p>
                 </div>
                 <div>
@@ -731,9 +691,7 @@ export default function AdminKodeGuru() {
                   </label>
                   <input
                     value={formData.note}
-                    onChange={(e) =>
-                      setFormData({ ...formData, note: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                     placeholder="mis. Wali kelas 8A"
                     className="w-full px-3 py-2 bg-theme-bg text-theme border border-theme rounded-xl text-sm"
                   />
@@ -744,28 +702,28 @@ export default function AdminKodeGuru() {
                   </label>
                   <input
                     value={formData.teacher_id}
-                    onChange={(e) =>
-                      setFormData({ ...formData, teacher_id: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, teacher_id: e.target.value })}
                     placeholder="mis. G-08"
                     className="w-full px-3 py-2 bg-theme-bg text-theme border border-theme rounded-xl text-sm font-mono"
                   />
                   <p className="text-[11px] text-gray-400 mt-1">
-                    Isi ini kalau mau aktifin validasi silang ke data pengampu
-                    mapel (teacher_assignments) di Import Jadwal Massal.
+                    Isi ini kalau mau aktifin validasi silang ke data pengampu mapel
+                    (teacher_assignments) di Import Jadwal Massal.
                   </p>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-theme-secondary bg-theme-surface hover:bg-gray-200">
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-theme-secondary bg-theme-surface hover:bg-gray-200"
+                  >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300">
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300"
+                  >
                     {saving ? "Menyimpan..." : "Simpan"}
                   </button>
                 </div>

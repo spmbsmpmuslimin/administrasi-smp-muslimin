@@ -56,9 +56,13 @@ import DataSiswaIndukDetailPanel from "./DataSiswaIndukDetailPanel";
 // dan pattern isWaliKelas sempet dibuang total sebagai "dead code". Sekarang
 // dibalikin lagi (lihat menuConfig.js: allowedRoles udah include "teacher" +
 // requireWaliKelas: true), TAPI beda dari versi lama: wali kelas cuma boleh
-// LIAT & ISI DATA siswa di kelasnya sendiri (di-scope lewat query
-// `class_id` = currentUser.homeroom_class_id), gak bisa liat kelas lain
-// kayak Admin/TU. Guru BK TETAP gak dikasih akses ke halaman ini.
+// LIAT data siswa di kelasnya sendiri (di-scope lewat query `class_id` =
+// currentUser.homeroom_class_id) lewat tab "Data Siswa" & "Preview"
+// (read-only) -- gak bisa isi/edit sama sekali, tab "Isi Data" disembunyiin
+// total buat mereka (lihat gate `isAdmin || isTU` di bagian render tab, ~L767,
+// dan gate yang sama di DataSiswaIndukDetailPanel.js). Beda kelas juga tetep
+// gak bisa diliat kayak Admin/TU. Guru BK TETAP gak dikasih akses ke halaman
+// ini sama sekali.
 export default function KelengkapanDataSiswa({ currentUser }) {
   const isAdmin = currentUser?.role === "admin";
   const isTU = currentUser?.role === "tu";

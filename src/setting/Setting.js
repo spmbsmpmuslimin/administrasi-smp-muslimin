@@ -12,6 +12,14 @@
 // isinya RaportConfig.js) yang TETAP di sini -- itu setup template/format,
 // sedangkan kelola-raport isi datanya (import PDF nilai raport, manajemen
 // per siswa, rekap multi semester), makanya lebih pas jadi menu utama.
+//
+// ✅ FIX (Sep 2026) -- TAHAP 2 restrukturisasi grup "Data & Sistem" (lihat
+// juga sidebarConfig.js & menuConfig.js): halaman ini di-relabel dari
+// "Pengaturan" jadi "Manajemen Data" (title h1 + breadcrumb, TIDAK ada
+// yang berubah dari sisi routing/id/logic). Ditambahin 1 card baru
+// "Manajemen SPMB" (id: "spmb") yang reuse komponen SPMB.js yang sama
+// persis dipakai di route /spmb standalone -- link sidebar /spmb yang
+// lama udah dicabut, sekarang diakses lewat card ini.
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -32,6 +40,7 @@ import {
   FileBarChart,
   Wrench,
   CalendarClock,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import ProfileTab from "./teacher-profiles/ProfileTab";
@@ -44,7 +53,8 @@ import UserManagementTab from "./UserManagementTab";
 import FeedbackCombinedTab from "./feedback/FeedbackCombinedTab";
 import ActiveUsersTab from "./ActiveUsersTab";
 import PortalSiswaTab from "./portal-siswa/PortalSiswaTab";
-import JadwalGuruTab from "./JadwalGuruTab";
+import JadwalGuruTab from "./kelola-jadwal/JadwalGuruTab";
+import SPMB from "../spmb/SPMB";
 
 // Palet pastel per kartu menu. Ditulis lengkap per-kelas (bukan digabung
 // pake template string kayak `bg-${color}-50`) supaya Tailwind bisa nge-scan
@@ -367,6 +377,17 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       color: "violet",
       available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
+    // ✅ BARU (Sep 2026): reuse komponen SPMB.js yang sama persis dipakai
+    // di route /spmb standalone -- link sidebar-nya sendiri udah dicabut
+    // (lihat sidebarConfig.js), sekarang diakses lewat card ini.
+    {
+      id: "spmb",
+      title: "Manajemen SPMB",
+      description: "Kelola pendaftaran siswa baru (SPMB)",
+      icon: ClipboardList,
+      color: "orange",
+      available: user?.role === "admin" || user?.role === "tu",
+    },
   ];
 
   const availableCards = menuCards.filter((card) => card.available);
@@ -414,6 +435,8 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
         return <FeedbackCombinedTab {...commonProps} />;
       case "active-users":
         return <ActiveUsersTab {...commonProps} />;
+      case "spmb":
+        return <SPMB {...commonProps} />;
       default:
         return null;
     }
@@ -457,7 +480,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
               onClick={() => changeTab("dashboard")}
               className="hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap font-medium"
             >
-              Pengaturan
+              Manajemen Data
             </button>
             <ChevronRight
               size={16}
@@ -541,7 +564,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
             className="text-gray-400 dark:text-gray-500 flex-shrink-0 sm:w-4 sm:h-4"
           />
           <span className="text-blue-600 dark:text-blue-400 font-semibold whitespace-nowrap">
-            Pengaturan
+            Manajemen Data
           </span>
         </div>
 
@@ -553,7 +576,7 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">
-                Pengaturan Sistem
+                Manajemen Data
               </h1>
               {schoolConfig && (
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-0.5">

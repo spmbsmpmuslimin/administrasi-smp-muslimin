@@ -1,4 +1,9 @@
-//[file name]: Sidebar.js
+//[file name]: components/Sidebar.js
+// Komponen React yang render UI sidebar navigasi.
+// Cuma tugas: baca `sidebarGroups` dari config/sidebarConfig.js, resolve
+// ctx (role & flag user yang lagi login), terus map jadi menu/link beneran.
+// Semua daftar menu, urutan, dan aturan tampil/gaknya menu ADA DI
+// config/sidebarConfig.js -- file ini gak nyimpen data menu sama sekali.
 import React, { useState, useEffect } from "react";
 import { Database, BookOpen, BarChart3, CalendarClock, Library, Settings } from "lucide-react";
 import sekolahLogo from "../assets/logo_sekolah.png";
@@ -162,6 +167,14 @@ const Sidebar = ({
   // tetap kehitung sebagai staff di daftar "Data Guru & Staff", tapi diksh
   // akses sidebar selevel Admin.
   const isTU = normalizedRole === "tu";
+  // ⭐ Siswa: dipakai buat batasin grup MASTER DATA (Data Guru & Staff,
+  // Data Kelas, Data Siswa) -- siswa harusnya cuma bisa akses data
+  // kelasnya sendiri lewat portal khusus siswa, BUKAN lewat menu Master
+  // Data ini (yang isinya data semua guru/kelas/siswa se-sekolah).
+  // Fix Sep 2026: sebelumnya 3 item ini gak punya show() sama sekali,
+  // jadi otomatis nongol ke SEMUA role termasuk siswa -- lihat show() di
+  // sidebarConfig.js grup master-data.
+  const isSiswa = normalizedRole === "siswa";
   // ⭐ Wakasek Kurikulum: bukan role, tapi jabatan struktural tambahan di
   // tabel users (kolom jabatan_struktural). Guru biasa yang juga menjabat
   // wakasek tetap punya role "teacher", jadi ini flag terpisah dari role.
@@ -202,6 +215,7 @@ const Sidebar = ({
     isTeacher,
     isGuruBK,
     isTU,
+    isSiswa,
     isWaliKelas,
     isWakasekKurikulum,
     userRole: normalizedRole,

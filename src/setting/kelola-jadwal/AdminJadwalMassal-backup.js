@@ -32,7 +32,7 @@
 // jalan. Ini buat nangkep kasus kode ke-baca "valid" (ada di master) tapi
 // sebenernya salah ketik/ketuker pas nyalin dari PDF WKS. Kurikulum.
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import {
@@ -48,8 +48,8 @@ import {
   ClipboardList,
   Users,
 } from "lucide-react";
-import { getActiveYearString } from "../services/academicYearService";
-import { JAM_SCHEDULE, DAYS, getAvailablePeriods } from "../utils/jamPelajaran";
+import { getActiveYearString } from "../../services/academicYearService";
+import { JAM_SCHEDULE, DAYS, getAvailablePeriods } from "../../utils/jamPelajaran";
 
 // Warna pill nama hari di preview per kelas — samain nuansa sama warna
 // band hari di Template Excel (dayColors di handleDownloadTemplate),
@@ -134,9 +134,7 @@ export default function AdminJadwalMassal() {
       try {
         const year = await getActiveYearString();
         if (!year) {
-          setError(
-            "Tidak ada tahun ajaran aktif. Atur dulu di menu Pengaturan.",
-          );
+          setError("Tidak ada tahun ajaran aktif. Atur dulu di menu Pengaturan.");
           setLoading(false);
           return;
         }
@@ -162,10 +160,7 @@ export default function AdminJadwalMassal() {
             .from("teacher_assignments")
             .select("teacher_id, class_id, subject")
             .eq("academic_year", year),
-          supabase
-            .from("users")
-            .select("id, teacher_id, full_name")
-            .not("teacher_id", "is", null),
+          supabase.from("users").select("id, teacher_id, full_name").not("teacher_id", "is", null),
         ]);
         if (classErr) throw classErr;
         if (codeErr) throw codeErr;
@@ -175,7 +170,7 @@ export default function AdminJadwalMassal() {
         if (assignErr) {
           console.warn(
             "Gagal memuat teacher_assignments, validasi silang dimatikan:",
-            assignErr.message,
+            assignErr.message
           );
         }
         // users (buat mapping teacher_id -> akun login) juga "nice to
@@ -184,7 +179,7 @@ export default function AdminJadwalMassal() {
         if (userErr) {
           console.warn(
             "Gagal memuat users, auto-sync teacher_schedules dimatikan:",
-            userErr.message,
+            userErr.message
           );
         }
 
@@ -379,28 +374,22 @@ export default function AdminJadwalMassal() {
     });
 
     const existingKeySet = new Set(
-      teacherAssignments.map(
-        (a) => `${a.teacher_id}|${a.class_id}|${canonicalSubject(a.subject)}`,
-      ),
+      teacherAssignments.map((a) => `${a.teacher_id}|${a.class_id}|${canonicalSubject(a.subject)}`)
     );
     const toAdd = candidateRows.filter(
-      (r) => !existingKeySet.has(`${r.teacher_id}|${r.class_id}|${r.subject}`),
+      (r) => !existingKeySet.has(`${r.teacher_id}|${r.class_id}|${r.subject}`)
     );
 
     const decodedKeys = new Set(
-      candidateRows.map((r) => `${r.teacher_id}|${r.class_id}|${r.subject}`),
+      candidateRows.map((r) => `${r.teacher_id}|${r.class_id}|${r.subject}`)
     );
     const filedClassIds = new Set(Object.keys(decoded.byClass));
     const stale = teacherAssignments
       .filter(
         (a) =>
           filedClassIds.has(a.class_id) &&
-          !SUBJECTS_EXCLUDED_FROM_STALE_CHECK.has(
-            canonicalSubject(a.subject),
-          ) &&
-          !decodedKeys.has(
-            `${a.teacher_id}|${a.class_id}|${canonicalSubject(a.subject)}`,
-          ),
+          !SUBJECTS_EXCLUDED_FROM_STALE_CHECK.has(canonicalSubject(a.subject)) &&
+          !decodedKeys.has(`${a.teacher_id}|${a.class_id}|${canonicalSubject(a.subject)}`)
       )
       .map((a) => ({
         ...a,
@@ -457,13 +446,7 @@ export default function AdminJadwalMassal() {
     ws.getRow(3).height = 34;
 
     const header = ws.getRow(5);
-    header.values = [
-      "Hari",
-      "Jam Ke",
-      "Jam Mulai",
-      "Jam Selesai",
-      ...classCols,
-    ];
+    header.values = ["Hari", "Jam Ke", "Jam Mulai", "Jam Selesai", ...classCols];
     header.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
       cell.fill = {
@@ -525,13 +508,9 @@ export default function AdminJadwalMassal() {
   // Cuma kelas yang lagi dicentang buat publish yang di-export, biar
   // filenya nyambung sama apa yang bakal beneran ke-publish.
   const handleExportPreview = async () => {
-    const classIdsToExport = sortedClassIds.filter((id) =>
-      selectedClassIds.has(id),
-    );
+    const classIdsToExport = sortedClassIds.filter((id) => selectedClassIds.has(id));
     if (classIdsToExport.length === 0) {
-      setError(
-        "Gak ada kelas yang dicentang buat di-export. Centang minimal 1 kelas di preview.",
-      );
+      setError("Gak ada kelas yang dicentang buat di-export. Centang minimal 1 kelas di preview.");
       return;
     }
 
@@ -543,7 +522,7 @@ export default function AdminJadwalMassal() {
       const cellMap = new Map();
       items.forEach((it) => cellMap.set(`${it.day}|${it.period}`, it));
       const periods = Array.from(new Set(items.map((it) => it.period))).sort(
-        (a, b) => Number(a) - Number(b),
+        (a, b) => Number(a) - Number(b)
       );
 
       // Nama sheet Excel maksimal 31 karakter & gak boleh ada karakter
@@ -762,24 +741,22 @@ export default function AdminJadwalMassal() {
       }
       if (headerRowIdx === -1) {
         setError(
-          "Format file gak dikenali: kolom header (Hari, Jam Ke, dst) gak ketemu. Pakai file hasil Download Template.",
+          "Format file gak dikenali: kolom header (Hari, Jam Ke, dst) gak ketemu. Pakai file hasil Download Template."
         );
         return;
       }
 
       const knownClassIds = new Set(classes.map((c) => c.id));
-      const classColumns = Object.entries(colMap).filter(([label]) =>
-        knownClassIds.has(label),
-      );
+      const classColumns = Object.entries(colMap).filter(([label]) => knownClassIds.has(label));
       const unknownColumns = Object.keys(colMap).filter(
         (label) =>
           !["Hari", "Jam Ke", "Jam Mulai", "Jam Selesai"].includes(label) &&
-          !knownClassIds.has(label),
+          !knownClassIds.has(label)
       );
 
       if (classColumns.length === 0) {
         setError(
-          "Gak ada kolom kelas yang cocok sama data kelas aktif di sistem. Pastikan header kolom (7A, 7B, dst) gak diubah.",
+          "Gak ada kolom kelas yang cocok sama data kelas aktif di sistem. Pastikan header kolom (7A, 7B, dst) gak diubah."
         );
         return;
       }
@@ -793,15 +770,11 @@ export default function AdminJadwalMassal() {
         if (!day && !period) return;
 
         if (!DAYS.includes(day)) {
-          structErrors.push(
-            `Baris ${excelRowNumber}: hari "${day}" tidak dikenali`,
-          );
+          structErrors.push(`Baris ${excelRowNumber}: hari "${day}" tidak dikenali`);
           return;
         }
         if (!JAM_SCHEDULE[day]?.[period]?.start) {
-          structErrors.push(
-            `Baris ${excelRowNumber}: jam ke "${period}" tidak valid untuk ${day}`,
-          );
+          structErrors.push(`Baris ${excelRowNumber}: jam ke "${period}" tidak valid untuk ${day}`);
           return;
         }
 
@@ -816,9 +789,7 @@ export default function AdminJadwalMassal() {
         setError(
           `Import dibatalkan, ada ${structErrors.length} baris bermasalah:\n` +
             structErrors.slice(0, 6).join("\n") +
-            (structErrors.length > 6
-              ? `\n...dan ${structErrors.length - 6} lagi`
-              : ""),
+            (structErrors.length > 6 ? `\n...dan ${structErrors.length - 6} lagi` : "")
         );
         return;
       }
@@ -842,7 +813,7 @@ export default function AdminJadwalMassal() {
           dedupMap.set(key, cell);
         } else if (existing.code !== cell.code) {
           conflictRows.push(
-            `Kelas ${cell.class_id}, ${cell.day} jam ke-${cell.period}: kode "${existing.code}" vs "${cell.code}"`,
+            `Kelas ${cell.class_id}, ${cell.day} jam ke-${cell.period}: kode "${existing.code}" vs "${cell.code}"`
           );
         }
         // kalau kodenya sama persis, diem-diem di-skip (duplikat aman)
@@ -852,10 +823,8 @@ export default function AdminJadwalMassal() {
         setError(
           `Import dibatalkan, ada ${conflictRows.length} baris duplikat dengan kode BEDA di file (kemungkinan salah ketik):\n` +
             conflictRows.slice(0, 6).join("\n") +
-            (conflictRows.length > 6
-              ? `\n...dan ${conflictRows.length - 6} lagi`
-              : "") +
-            "\nBenerin dulu file Excel-nya (hapus baris duplikat/salah satu kodenya), baru import ulang.",
+            (conflictRows.length > 6 ? `\n...dan ${conflictRows.length - 6} lagi` : "") +
+            "\nBenerin dulu file Excel-nya (hapus baris duplikat/salah satu kodenya), baru import ulang."
         );
         return;
       }
@@ -864,9 +833,7 @@ export default function AdminJadwalMassal() {
       const duplicateCount = cells.length - dedupedCells.length;
 
       if (dedupedCells.length === 0) {
-        setError(
-          "Tidak ada kode yang bisa dibaca dari file ini (semua sel kelas kosong).",
-        );
+        setError("Tidak ada kode yang bisa dibaca dari file ini (semua sel kelas kosong).");
         return;
       }
 
@@ -874,18 +841,18 @@ export default function AdminJadwalMassal() {
       setRawCells(dedupedCells);
       if (duplicateCount > 0) {
         setSuccess(
-          `File berhasil dibaca. ${duplicateCount} baris duplikat (kode sama persis) otomatis digabung jadi 1.`,
+          `File berhasil dibaca. ${duplicateCount} baris duplikat (kode sama persis) otomatis digabung jadi 1.`
         );
       }
       setSourceFileName(file.name);
       if (unknownColumns.length > 0) {
         setSuccess(
           `File dibaca: ${cells.length} sel terisi dari ${classColumns.length} kelas. ` +
-            `Kolom diabaikan (gak dikenali): ${unknownColumns.join(", ")}`,
+            `Kolom diabaikan (gak dikenali): ${unknownColumns.join(", ")}`
         );
       } else {
         setSuccess(
-          `File dibaca: ${cells.length} sel terisi dari ${classColumns.length} kelas. Cek preview di bawah.`,
+          `File dibaca: ${cells.length} sel terisi dari ${classColumns.length} kelas. Cek preview di bawah.`
         );
       }
     } catch (err) {
@@ -918,14 +885,10 @@ export default function AdminJadwalMassal() {
         subject,
       });
       if (err) {
-        if (err.code === "23505")
-          throw new Error(`Kode "${quickMapCode}" sudah ada di master`);
+        if (err.code === "23505") throw new Error(`Kode "${quickMapCode}" sudah ada di master`);
         throw err;
       }
-      setTeacherCodes((prev) => [
-        ...prev,
-        { code: quickMapCode, teacher_name, subject },
-      ]);
+      setTeacherCodes((prev) => [...prev, { code: quickMapCode, teacher_name, subject }]);
       setQuickMapCode(null);
       setSuccess(`Kode "${quickMapCode}" berhasil dipetakan`);
     } catch (err) {
@@ -940,9 +903,7 @@ export default function AdminJadwalMassal() {
     // Cuma kelas yang dicentang admin di preview yang diproses -- kelas
     // yang ada di file tapi di-uncheck (mis. karena jadwal manualnya
     // udah bener & gak mau ketimpa) dilewatin sama sekali, gak disentuh.
-    const classIds = Object.keys(decoded.byClass).filter((id) =>
-      selectedClassIds.has(id),
-    );
+    const classIds = Object.keys(decoded.byClass).filter((id) => selectedClassIds.has(id));
     if (classIds.length === 0) return;
 
     // Bukan langsung publish -- buka modal konfirmasi custom dulu (lihat
@@ -985,9 +946,7 @@ export default function AdminJadwalMassal() {
         });
       });
 
-      const { error: insErr } = await supabase
-        .from("class_schedules")
-        .insert(rows);
+      const { error: insErr } = await supabase.from("class_schedules").insert(rows);
       if (insErr) throw insErr;
 
       // ===== AUTO-SYNC teacher_assignments =====
@@ -1031,15 +990,11 @@ export default function AdminJadwalMassal() {
             semester: String(activeYearRow.semester),
           }));
 
-        const staleAssignments = syncPreview.stale.filter((a) =>
-          classIds.includes(a.class_id),
-        );
+        const staleAssignments = syncPreview.stale.filter((a) => classIds.includes(a.class_id));
 
         let syncedCount = 0;
         if (toInsert.length > 0) {
-          const { error: syncErr } = await supabase
-            .from("teacher_assignments")
-            .insert(toInsert);
+          const { error: syncErr } = await supabase.from("teacher_assignments").insert(toInsert);
           if (syncErr) throw syncErr;
           syncedCount = toInsert.length;
 
@@ -1113,9 +1068,7 @@ export default function AdminJadwalMassal() {
         if (delTsErr) throw delTsErr;
 
         if (teacherRows.length > 0) {
-          const { error: insTsErr } = await supabase
-            .from("teacher_schedules")
-            .insert(teacherRows);
+          const { error: insTsErr } = await supabase.from("teacher_schedules").insert(teacherRows);
           if (insTsErr) throw insTsErr;
         }
 
@@ -1132,7 +1085,7 @@ export default function AdminJadwalMassal() {
       setSuccess(
         `Berhasil publish ${rows.length} jadwal ke ${classIds.length} kelas. Wali kelas & portal siswa sudah terupdate.` +
           syncMessage +
-          teacherScheduleMessage,
+          teacherScheduleMessage
       );
       setPublishedAt(new Date());
     } catch (err) {
@@ -1142,36 +1095,25 @@ export default function AdminJadwalMassal() {
     }
   };
 
-  const sortedClassIds = useMemo(
-    () => Object.keys(decoded.byClass).sort(),
-    [decoded.byClass],
-  );
+  const sortedClassIds = useMemo(() => Object.keys(decoded.byClass).sort(), [decoded.byClass]);
 
   // Kelas yang lagi ditampilin di mode "Tabel Mingguan". Kalau kelas yang
   // kesimpen di state udah gak ada lagi di file (mis. abis upload file
   // baru), fallback ke kelas pertama biar dropdown gak nampilin kelas
   // yang gak ada datanya.
   const activeGridClassId =
-    gridClassId && sortedClassIds.includes(gridClassId)
-      ? gridClassId
-      : sortedClassIds[0] || "";
+    gridClassId && sortedClassIds.includes(gridClassId) ? gridClassId : sortedClassIds[0] || "";
 
   const gridCellMap = useMemo(() => {
     const m = new Map();
-    const items = activeGridClassId
-      ? decoded.byClass[activeGridClassId] || []
-      : [];
+    const items = activeGridClassId ? decoded.byClass[activeGridClassId] || [] : [];
     items.forEach((it) => m.set(`${it.day}|${it.period}`, it));
     return m;
   }, [decoded, activeGridClassId]);
 
   const gridPeriods = useMemo(() => {
-    const items = activeGridClassId
-      ? decoded.byClass[activeGridClassId] || []
-      : [];
-    return Array.from(new Set(items.map((it) => it.period))).sort(
-      (a, b) => Number(a) - Number(b),
-    );
+    const items = activeGridClassId ? decoded.byClass[activeGridClassId] || [] : [];
+    return Array.from(new Set(items.map((it) => it.period))).sort((a, b) => Number(a) - Number(b));
   }, [decoded, activeGridClassId]);
 
   const toggleClassSelection = (classId) => {
@@ -1200,12 +1142,10 @@ export default function AdminJadwalMassal() {
     <div className="w-full overflow-x-hidden">
       <div className="max-w-6xl mx-auto space-y-4 p-3 sm:p-4 md:p-6">
         <div>
-          <h1 className="text-lg font-bold text-theme">
-            Import Jadwal Pelajaran (Massal)
-          </h1>
+          <h1 className="text-lg font-bold text-theme">Import Jadwal Pelajaran (Massal)</h1>
           <p className="text-xs text-theme-secondary mt-0.5">
-            Tahun Ajaran {academicYear || "—"} · Olah PDF Dari Wakasek Kurikulum
-            Jadi Jadwal Per Kelas, Lalu Publish Sekaligus Ke Semua Kelas.
+            Tahun Ajaran {academicYear || "—"} · Olah PDF Dari Wakasek Kurikulum Jadi Jadwal Per
+            Kelas, Lalu Publish Sekaligus Ke Semua Kelas.
           </p>
         </div>
 
@@ -1243,14 +1183,16 @@ export default function AdminJadwalMassal() {
                 />
                 <button
                   onClick={handleDownloadTemplate}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme text-theme-secondary rounded-xl text-sm font-semibold">
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme text-theme-secondary rounded-xl text-sm font-semibold"
+                >
                   <Download className="w-4 h-4" />
                   Download Template ({classes.length} kelas)
                 </button>
                 <button
                   onClick={handleImportClick}
                   disabled={importing}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl text-sm font-semibold">
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl text-sm font-semibold"
+                >
                   {importing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
@@ -1266,7 +1208,8 @@ export default function AdminJadwalMassal() {
                       ? "Export hasil decode (kelas yang dicentang) ke Excel"
                       : "Upload file dulu buat bisa export"
                   }
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme text-theme-secondary rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed">
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme text-theme-secondary rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   <FileSpreadsheet className="w-4 h-4" />
                   Export Preview
                 </button>
@@ -1274,15 +1217,14 @@ export default function AdminJadwalMassal() {
                   <button
                     onClick={handleResetPreview}
                     title="Bersihin preview ini (tanpa upload ulang file)"
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme text-theme-secondary rounded-xl text-sm font-semibold">
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme text-theme-secondary rounded-xl text-sm font-semibold"
+                  >
                     <X className="w-4 h-4" />
                     Mulai Baru
                   </button>
                 )}
                 {sourceFileName && (
-                  <span className="text-xs text-gray-400">
-                    File: {sourceFileName}
-                  </span>
+                  <span className="text-xs text-gray-400">File: {sourceFileName}</span>
                 )}
               </div>
             </div>
@@ -1331,11 +1273,10 @@ export default function AdminJadwalMassal() {
                     !!publishedAt
                   }
                   title={
-                    publishedAt
-                      ? "Sudah dipublish. Upload file baru buat publish lagi."
-                      : undefined
+                    publishedAt ? "Sudah dipublish. Upload file baru buat publish lagi." : undefined
                   }
-                  className="flex items-center gap-1.5 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl text-sm font-semibold">
+                  className="flex items-center gap-1.5 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl text-sm font-semibold"
+                >
                   {publishing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : publishedAt ? (
@@ -1368,7 +1309,8 @@ export default function AdminJadwalMassal() {
                         decoded.errors.length > 0
                           ? "text-red-600 font-semibold"
                           : "text-green-600 font-semibold"
-                      }>
+                      }
+                    >
                       {decoded.errors.length > 0
                         ? `${decoded.errors.length} kode belum dikenali`
                         : "Semua kode dikenali ✓"}
@@ -1393,22 +1335,24 @@ export default function AdminJadwalMassal() {
 
                 <div className="flex items-center justify-between flex-wrap gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
                   <p className="text-xs text-blue-800 font-medium">
-                    {selectedClassIds.size} dari {sortedClassIds.length} kelas
-                    dipilih buat di-publish. Uncheck kelas yang gak mau ketimpa
-                    (mis. udah ada jadwal manual yang bener).
+                    {selectedClassIds.size} dari {sortedClassIds.length} kelas dipilih buat
+                    di-publish. Uncheck kelas yang gak mau ketimpa (mis. udah ada jadwal manual yang
+                    bener).
                   </p>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={selectAllClasses}
-                      className="text-xs font-semibold text-blue-700 hover:underline">
+                      className="text-xs font-semibold text-blue-700 hover:underline"
+                    >
                       Pilih semua
                     </button>
                     <span className="text-blue-200">|</span>
                     <button
                       type="button"
                       onClick={deselectAllClasses}
-                      className="text-xs font-semibold text-blue-700 hover:underline">
+                      className="text-xs font-semibold text-blue-700 hover:underline"
+                    >
                       Batalkan semua
                     </button>
                   </div>
@@ -1417,18 +1361,17 @@ export default function AdminJadwalMassal() {
                 {decoded.mismatches.length > 0 && (
                   <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 space-y-2">
                     <p className="text-xs font-semibold text-orange-800">
-                      Kode-kode ini dikenali di Master Kode Guru, tapi kombinasi
-                      guru + mapel + kelasnya gak ketemu di data pengampu mapel
-                      (teacher_assignments) -- coba cek lagi, siapa tau salah
-                      ketik kode pas nyalin dari PDF WKS. Kurikulum. Ini cuma
+                      Kode-kode ini dikenali di Master Kode Guru, tapi kombinasi guru + mapel +
+                      kelasnya gak ketemu di data pengampu mapel (teacher_assignments) -- coba cek
+                      lagi, siapa tau salah ketik kode pas nyalin dari PDF WKS. Kurikulum. Ini cuma
                       peringatan, publish tetep bisa jalan.
                     </p>
                     <ul className="text-xs text-orange-700 space-y-0.5 list-disc list-inside">
                       {decoded.mismatches.map((m, idx) => (
                         <li key={idx}>
                           Kelas {m.class_id}, {m.day} jam ke-{m.period}: kode{" "}
-                          <span className="font-mono font-bold">{m.code}</span>{" "}
-                          &rarr; {m.teacher_name} ({m.subject})
+                          <span className="font-mono font-bold">{m.code}</span> &rarr;{" "}
+                          {m.teacher_name} ({m.subject})
                         </li>
                       ))}
                     </ul>
@@ -1438,13 +1381,11 @@ export default function AdminJadwalMassal() {
                 {syncPreview.stale.length > 0 && (
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
                     <p className="text-xs font-semibold text-slate-700">
-                      Kombinasi ini ADA di data pengampu mapel
-                      (teacher_assignments), tapi gak ketemu lagi di file yang
-                      barusan diupload -- kemungkinan guru itu udah gak ngajar
-                      mapel/kelas ini lagi. Publish TIDAK akan menghapus ini
-                      otomatis (assignment lama bisa nempel histori jurnal
-                      harian) -- cek &amp; hapus manual lewat menu Penugasan
-                      Guru kalau memang udah gak berlaku.
+                      Kombinasi ini ADA di data pengampu mapel (teacher_assignments), tapi gak
+                      ketemu lagi di file yang barusan diupload -- kemungkinan guru itu udah gak
+                      ngajar mapel/kelas ini lagi. Publish TIDAK akan menghapus ini otomatis
+                      (assignment lama bisa nempel histori jurnal harian) -- cek &amp; hapus manual
+                      lewat menu Penugasan Guru kalau memang udah gak berlaku.
                     </p>
                     <ul className="text-xs text-slate-600 space-y-0.5 list-disc list-inside">
                       {syncPreview.stale.map((s, idx) => (
@@ -1459,16 +1400,16 @@ export default function AdminJadwalMassal() {
                 {decoded.errors.length > 0 && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
                     <p className="text-xs font-semibold text-amber-800">
-                      Kode berikut belum ada di Master Kode Guru — petakan
-                      langsung di sini, atau tambahkan lewat halaman Master Kode
-                      Guru lalu upload ulang:
+                      Kode berikut belum ada di Master Kode Guru — petakan langsung di sini, atau
+                      tambahkan lewat halaman Master Kode Guru lalu upload ulang:
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {decoded.errorCodes.map((code) => (
                         <button
                           key={code}
                           onClick={() => openQuickMap(code)}
-                          className="px-2.5 py-1 bg-theme-bg border border-amber-300 text-amber-800 rounded-lg text-xs font-mono font-bold hover:bg-amber-100">
+                          className="px-2.5 py-1 bg-theme-bg border border-amber-300 text-amber-800 rounded-lg text-xs font-mono font-bold hover:bg-amber-100"
+                        >
                           {code} ?
                         </button>
                       ))}
@@ -1484,7 +1425,8 @@ export default function AdminJadwalMassal() {
                       previewMode === "grid"
                         ? "bg-blue-600 text-white"
                         : "bg-theme-surface text-theme-secondary hover:bg-gray-200"
-                    }`}>
+                    }`}
+                  >
                     Tabel Mingguan
                   </button>
                   <button
@@ -1494,7 +1436,8 @@ export default function AdminJadwalMassal() {
                       previewMode === "accordion"
                         ? "bg-blue-600 text-white"
                         : "bg-theme-surface text-theme-secondary hover:bg-gray-200"
-                    }`}>
+                    }`}
+                  >
                     Per Kelas (semua kelas)
                   </button>
                 </div>
@@ -1506,25 +1449,23 @@ export default function AdminJadwalMassal() {
                 {previewMode === "grid" && (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <label className="text-xs font-semibold text-theme-secondary">
-                        Kelas:
-                      </label>
+                      <label className="text-xs font-semibold text-theme-secondary">Kelas:</label>
                       <select
                         value={activeGridClassId}
                         onChange={(e) => setGridClassId(e.target.value)}
-                        className="px-3 py-1.5 rounded-lg border border-theme bg-theme-bg text-sm font-semibold text-blue-700">
+                        className="px-3 py-1.5 rounded-lg border border-theme bg-theme-bg text-sm font-semibold text-blue-700"
+                      >
                         {sortedClassIds.map((id) => (
                           <option key={id} value={id}>
                             Kelas {id}
                           </option>
                         ))}
                       </select>
-                      {activeGridClassId &&
-                        !selectedClassIds.has(activeGridClassId) && (
-                          <span className="text-[10px] font-normal text-gray-400">
-                            (kelas ini gak dipublish)
-                          </span>
-                        )}
+                      {activeGridClassId && !selectedClassIds.has(activeGridClassId) && (
+                        <span className="text-[10px] font-normal text-gray-400">
+                          (kelas ini gak dipublish)
+                        </span>
+                      )}
                     </div>
 
                     {gridPeriods.length === 0 ? (
@@ -1543,7 +1484,8 @@ export default function AdminJadwalMassal() {
                                 {DAYS.map((day) => (
                                   <th
                                     key={day}
-                                    className="py-2.5 px-3 font-semibold text-xs whitespace-nowrap">
+                                    className="py-2.5 px-3 font-semibold text-xs whitespace-nowrap"
+                                  >
                                     {day}
                                   </th>
                                 ))}
@@ -1553,36 +1495,28 @@ export default function AdminJadwalMassal() {
                               {gridPeriods.map((period) => (
                                 <tr
                                   key={period}
-                                  className="border-b border-gray-50 last:border-0 align-top">
-                                  <td className="py-3 px-3 font-semibold text-theme">
-                                    {period}
-                                  </td>
+                                  className="border-b border-gray-50 last:border-0 align-top"
+                                >
+                                  <td className="py-3 px-3 font-semibold text-theme">{period}</td>
                                   {DAYS.map((day) => {
-                                    const item = gridCellMap.get(
-                                      `${day}|${period}`,
-                                    );
+                                    const item = gridCellMap.get(`${day}|${period}`);
                                     return (
-                                      <td
-                                        key={day}
-                                        className="py-2.5 px-2.5 min-w-[150px]">
+                                      <td key={day} className="py-2.5 px-2.5 min-w-[150px]">
                                         {item ? (
                                           <div
                                             className={`rounded-lg px-2.5 py-1.5 ${
-                                              item.mismatch
-                                                ? "bg-orange-50"
-                                                : "bg-theme-surface"
+                                              item.mismatch ? "bg-orange-50" : "bg-theme-surface"
                                             }`}
                                             title={
                                               item.mismatch
                                                 ? "Kombinasi guru+mapel+kelas gak ketemu di teacher_assignments"
                                                 : undefined
-                                            }>
+                                            }
+                                          >
                                             <p className="font-bold text-theme text-sm">
                                               {item.subject}
                                               {item.mismatch && (
-                                                <span className="text-orange-500 ml-1">
-                                                  ⚠
-                                                </span>
+                                                <span className="text-orange-500 ml-1">⚠</span>
                                               )}
                                             </p>
                                             <p className="text-xs text-theme-secondary mt-0.5">
@@ -1616,27 +1550,24 @@ export default function AdminJadwalMassal() {
                 {previewMode === "accordion" && (
                   <div className="space-y-3">
                     {sortedClassIds.map((classId) => {
-                      const items = [...decoded.byClass[classId]].sort(
-                        (a, b) => {
-                          const dayDiff =
-                            DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
-                          if (dayDiff !== 0) return dayDiff;
-                          return Number(a.period) - Number(b.period);
-                        },
-                      );
+                      const items = [...decoded.byClass[classId]].sort((a, b) => {
+                        const dayDiff = DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
+                        if (dayDiff !== 0) return dayDiff;
+                        return Number(a.period) - Number(b.period);
+                      });
                       const isSelected = selectedClassIds.has(classId);
                       return (
                         <details
                           key={classId}
                           className={`border rounded-xl overflow-hidden ${
-                            isSelected
-                              ? "border-gray-100"
-                              : "border-theme opacity-60"
-                          }`}>
+                            isSelected ? "border-gray-100" : "border-theme opacity-60"
+                          }`}
+                        >
                           <summary className="cursor-pointer px-3 py-2 bg-theme-surface text-sm font-semibold text-theme-secondary flex items-center justify-between">
                             <label
                               className="flex items-center gap-2"
-                              onClick={(e) => e.stopPropagation()}>
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <input
                                 type="checkbox"
                                 checked={isSelected}
@@ -1657,23 +1588,20 @@ export default function AdminJadwalMassal() {
                             </span>
                           </summary>
                           <div className="p-3 space-y-3 bg-theme-bg">
-                            {DAYS.filter((day) =>
-                              items.some((it) => it.day === day),
-                            ).map((day) => {
+                            {DAYS.filter((day) => items.some((it) => it.day === day)).map((day) => {
                               const dayItems = items
                                 .filter((it) => it.day === day)
-                                .sort(
-                                  (a, b) => Number(a.period) - Number(b.period),
-                                );
+                                .sort((a, b) => Number(a.period) - Number(b.period));
                               return (
                                 <div
                                   key={day}
-                                  className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                                  className="rounded-xl border border-gray-100 overflow-hidden shadow-sm"
+                                >
                                   <div
                                     className={`px-3 py-1.5 text-xs font-bold tracking-wide ${
-                                      DAY_BADGE_COLORS[day] ||
-                                      "bg-gray-50 text-gray-600"
-                                    }`}>
+                                      DAY_BADGE_COLORS[day] || "bg-gray-50 text-gray-600"
+                                    }`}
+                                  >
                                     {day}
                                   </div>
                                   <div className="overflow-x-auto">
@@ -1686,12 +1614,8 @@ export default function AdminJadwalMassal() {
                                           <th className="py-2 px-3 font-semibold text-xs whitespace-nowrap">
                                             Waktu
                                           </th>
-                                          <th className="py-2 px-3 font-semibold text-xs">
-                                            Mapel
-                                          </th>
-                                          <th className="py-2 px-3 font-semibold text-xs">
-                                            Guru
-                                          </th>
+                                          <th className="py-2 px-3 font-semibold text-xs">Mapel</th>
+                                          <th className="py-2 px-3 font-semibold text-xs">Guru</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -1699,15 +1623,14 @@ export default function AdminJadwalMassal() {
                                           <tr
                                             key={idx}
                                             className={`border-b border-gray-50 last:border-0 ${
-                                              item.mismatch
-                                                ? "bg-orange-50"
-                                                : ""
+                                              item.mismatch ? "bg-orange-50" : ""
                                             }`}
                                             title={
                                               item.mismatch
                                                 ? "Kombinasi guru+mapel+kelas gak ketemu di teacher_assignments"
                                                 : undefined
-                                            }>
+                                            }
+                                          >
                                             <td className="py-2 px-3 font-semibold text-theme">
                                               {item.period}
                                             </td>
@@ -1717,9 +1640,7 @@ export default function AdminJadwalMassal() {
                                             <td className="py-2 px-3 font-semibold text-theme">
                                               {item.subject}
                                               {item.mismatch && (
-                                                <span className="text-orange-500 ml-1">
-                                                  ⚠
-                                                </span>
+                                                <span className="text-orange-500 ml-1">⚠</span>
                                               )}
                                             </td>
                                             <td className="py-2 px-3 font-semibold text-blue-600">
@@ -1758,9 +1679,7 @@ export default function AdminJadwalMassal() {
                   <h2 className="text-xl font-bold text-white leading-tight">
                     Konfirmasi Publish Jadwal
                   </h2>
-                  <p className="text-sm text-orange-50">
-                    File: {sourceFileName}
-                  </p>
+                  <p className="text-sm text-orange-50">File: {sourceFileName}</p>
                 </div>
               </div>
 
@@ -1768,14 +1687,14 @@ export default function AdminJadwalMassal() {
               <div className="p-6 space-y-4">
                 <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900 rounded-2xl p-4">
                   <p className="text-base font-semibold text-orange-800 dark:text-orange-300">
-                    Ini akan MENGGANTI jadwal aktif untuk{" "}
-                    {pendingPublishClassIds.length} kelas:
+                    Ini akan MENGGANTI jadwal aktif untuk {pendingPublishClassIds.length} kelas:
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-2.5">
                     {pendingPublishClassIds.map((id) => (
                       <span
                         key={id}
-                        className="px-2.5 py-1 rounded-lg bg-orange-200/70 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 text-sm font-semibold">
+                        className="px-2.5 py-1 rounded-lg bg-orange-200/70 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 text-sm font-semibold"
+                      >
                         {id}
                       </span>
                     ))}
@@ -1793,8 +1712,7 @@ export default function AdminJadwalMassal() {
                       Jadwal Kelas
                     </p>
                     <p className="text-sm text-blue-700 dark:text-blue-400 mt-0.5">
-                      Wali kelas & portal siswa langsung liat perubahan ini,
-                      real-time.
+                      Wali kelas & portal siswa langsung liat perubahan ini, real-time.
                     </p>
                   </div>
                 </div>
@@ -1806,8 +1724,8 @@ export default function AdminJadwalMassal() {
                       Penugasan Guru (teacher_assignments)
                     </p>
                     <p className="text-sm text-purple-700 dark:text-purple-400 mt-0.5">
-                      Kombinasi guru + kelas + mapel baru otomatis ditambahin --
-                      gak perlu isi manual lagi.
+                      Kombinasi guru + kelas + mapel baru otomatis ditambahin -- gak perlu isi
+                      manual lagi.
                     </p>
                   </div>
                 </div>
@@ -1817,13 +1735,15 @@ export default function AdminJadwalMassal() {
               <div className="flex gap-3 px-6 pb-6">
                 <button
                   onClick={() => setConfirmPublishOpen(false)}
-                  className="flex-1 px-4 py-3 rounded-2xl text-base font-semibold text-theme-secondary bg-theme-surface hover:bg-gray-200">
+                  className="flex-1 px-4 py-3 rounded-2xl text-base font-semibold text-theme-secondary bg-theme-surface hover:bg-gray-200"
+                >
                   Batal
                 </button>
                 <button
                   onClick={runPublish}
                   disabled={publishing}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-base font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:from-orange-300 disabled:to-amber-300 disabled:cursor-not-allowed shadow-lg shadow-orange-500/30">
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-base font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:from-orange-300 disabled:to-amber-300 disabled:cursor-not-allowed shadow-lg shadow-orange-500/30"
+                >
                   {publishing ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -1846,12 +1766,11 @@ export default function AdminJadwalMassal() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-theme-bg rounded-2xl shadow-xl w-full max-w-sm p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-theme">
-                  Petakan kode "{quickMapCode}"
-                </h2>
+                <h2 className="text-base font-bold text-theme">Petakan kode "{quickMapCode}"</h2>
                 <button
                   onClick={() => setQuickMapCode(null)}
-                  className="text-gray-400 hover:text-theme-secondary">
+                  className="text-gray-400 hover:text-theme-secondary"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -1891,13 +1810,15 @@ export default function AdminJadwalMassal() {
                   <button
                     type="button"
                     onClick={() => setQuickMapCode(null)}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-theme-secondary bg-theme-surface hover:bg-gray-200">
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-theme-secondary bg-theme-surface hover:bg-gray-200"
+                  >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={quickMapSaving}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300">
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300"
+                  >
                     {quickMapSaving ? "Menyimpan..." : "Simpan & Decode Ulang"}
                   </button>
                 </div>

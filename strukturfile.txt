@@ -1,4 +1,5 @@
 # Struktur File & Database — Administrasi SMP Muslimin Cililin
+
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
 academic_years : id,year,semester,start_date,end_date,is_active,created_at,updated_at
@@ -42,11 +43,12 @@ ruang_belajar : id,title,category,description,content,resource_type,thumbnail,ur
 saran_masukan : id,student_id,class_id,message,status,created_at
 school_settings : id,setting_key,setting_value,created_at,updated_at
 seating_charts : id,class_id,academic_year,semester,rows,cols,seats_per_desk,layout,updated_at
-siswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos,skor_akademik,kategori_baca_latin,kategori_mengaji,input_by,input_by_id,updated_by,updated_by_id
+siswa_baru : id,no_pendaftaran,nama_lengkap,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,asal_sekolah,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,no_hp,alamat,academic_year,status,is_transferred,tanggal_daftar,created_at,updated_at,transferred_at,transferred_by,kelas,nis,agama,nik,no_kk,no_akta_lahir,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,kode_pos,skor_akademik,input_by,input_by_id,updated_by,updated_by_id,skor_baca_latin,skor_baca_quran
 spmb_settings : id,target_academic_year,is_active,registration_start_date,registration_end_date,created_at,updated_at
 student_auth : id,student_id,username,password,is_active,last_login,created_at,updated_at
 student_development_notes : id,student_id,teacher_id,class_id,academic_year,semester,category,label,note_content,action_taken,created_at,updated_at,academic_year_id
 student_devices : id,student_id,device_id,brand,model,platform,browser,last_login_at,created_at
+student_graduations : id,nama,nis,nisn,jenis_kelamin,tempat_lahir,tanggal_lahir,agama,alamat,dusun,kode_pos,nik,no_kk,no_akta_lahir,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nik_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,nik_ibu,sekolah_asal,anak_ke,no_kip,no_ijazah,no_peserta_ujian,kelas_terakhir,tahun_lulus,tanggal_lulus,keterangan,created_by,created_at,academic_year_id
 student_mutations : id,student_id,type,mutation_date,sekolah_asal,sekolah_tujuan,keterangan,created_by,created_at,class_id
 student_profile_details : student_id,alamat,no_hp,nama_ortu,no_hp_ortu,sekolah_asal,updated_at,jenis_kelamin,tempat_lahir,tanggal_lahir,nisn,nama_ayah,pekerjaan_ayah,pendidikan_ayah,nama_ibu,pekerjaan_ibu,pendidikan_ibu,agama,no_kk,nik,no_akta_lahir,no_ijazah,no_peserta_ujian,dusun,kode_pos,nik_ayah,nik_ibu,tempat_tgl_lahir_ayah,tempat_tgl_lahir_ibu,no_kip,anak_ke,keterangan,no_daftar,verified_at
 student_report_grades : id,report_id,subject,score,created_at
@@ -54,18 +56,17 @@ student_reports : id,student_id,student_name,student_nis,class_name,academic_yea
 students : id,full_name,nis,gender,class_id,academic_year,is_active,created_at,updated_at,academic_year_id,user_id,nisn
 system_health_logs : id,checked_at,checked_by,total_issues,critical_count,warning_count,info_count,issues_detail,execution_time,status,created_at
 teacher_assignments : id,teacher_id,class_id,subject,academic_year,semester,created_at,academic_year_id,updated_at
-teacher_attendance : id,teacher_id,attendance_date,status,clock_in,check_in_method,notes,created_at,updated_at,gps_location,is_suspicious,full_name,admin_info
+teacher_attendance : id,teacher_id,attendance_date,status,clock_in,check_in_method,notes,created_at,updated_at,gps_location,is_suspicious,full_name,admin_info,academic_year_id
 teacher_attendance_view : teacher_id,full_name,status,attendance_date,clock_in,check_in_method
 teacher_codes : id,academic_year,code,teacher_name,subject,note,created_at,updated_at,teacher_id,weekly_hours
+teacher_profiles : id,teacher_id,nuptk,jenis_kelamin,tempat_lahir,tanggal_lahir,alamat,pendidikan_terakhir,foto_url,created_at,updated_at
 teacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,created_at,updated_at,academic_year_id,subject,source
 tindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at
 tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
-users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count
+users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count,jabatan_struktural
 
 ========================================================================================
-
-## Struktur Folder & File Project
 
 |-- src
 |   |-- assets
@@ -104,7 +105,6 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- AnnouncementPopup.js
 |   |   |-- BottomNav.js
 |   |   |-- CatatanWalikelasBk.js
-|   |   |-- ConnectedDevices.js
 |   |   |-- Dashboard.js
 |   |   |-- FeedbackGuru.js
 |   |   |-- GuruBKDashboard.js
@@ -120,6 +120,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- TeacherDashboard.js
 |   |   `-- WaliKelasWidgetTab.js
 |   |-- config
+|   |   |-- SidebarVisual.html
 |   |   |-- menuConfig.js
 |   |   |-- ruangBelajarAccess.js
 |   |   `-- sidebarConfig.js
@@ -157,6 +158,10 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- KonselingTable.js
 |   |   `-- StatsCards.js
 |   |-- pages
+|   |   |-- administrasi-tu
+|   |   |   |-- AdministrasiTU.js
+|   |   |   |-- ComingSoonPanel.js
+|   |   |   `-- PersuratanTab.js
 |   |   |-- attendance
 |   |   |   |-- AdminAttendance.js
 |   |   |   |-- Attendance.js
@@ -171,7 +176,9 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- datasiswa-induk
 |   |   |   |-- DataSiswaInduk.js
 |   |   |   |-- DataSiswaIndukConfig.js
+|   |   |   |-- DataSiswaIndukDetailPanel.js
 |   |   |   |-- DataSiswaIndukExcel.js
+|   |   |   |-- DataSiswaIndukListTab.js
 |   |   |   `-- DataSiswaIndukPDF.js
 |   |   |-- grades
 |   |   |   |-- GradeMain.js
@@ -190,6 +197,8 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   |-- RekapKelulusan.js
 |   |   |   |-- RekapMultiSemester.js
 |   |   |   `-- parseLegerExcel.js
+|   |   |-- wakasek-kurikulum
+|   |   |   `-- KurikulumAdministrasi.js
 |   |   |-- CatatanSiswa.js
 |   |   |-- CatatanSiswaExport.js
 |   |   |-- Classes.js
@@ -211,12 +220,6 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- Pengembalian.js
 |   |   `-- PerpusMain.js
 |   |-- portal-siswa
-|   |   |-- belajar
-|   |   |   `-- bahasa-inggris
-|   |   |       |-- data
-|   |   |       |   `-- chapterData.js
-|   |   |       |-- ChapterDetail.js
-|   |   |       `-- ChapterList.js
 |   |   |-- ruang-belajar-admin
 |   |   |   |-- RuangBelajarAdmin.js
 |   |   |   `-- RuangBelajarForm.js
@@ -247,11 +250,8 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   `-- useStudentProfile.js
 |   |-- reports
 |   |   |-- modals
-|   |   |   |-- AcademicGradesView.js
 |   |   |   |-- AdminReportModal.js
-|   |   |   |-- BKReportModal.js
-|   |   |   |-- HomeroomReportModal.js
-|   |   |   `-- TeacherReportModal.js
+|   |   |   `-- BKReportModal.js
 |   |   |-- AdminReports.js
 |   |   |-- BKReports.js
 |   |   |-- DailyAttendanceSection.js
@@ -261,8 +261,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- Reports.js
 |   |   `-- TeacherReports.js
 |   |-- services
-|   |   |-- academicYearService.js
-|   |   `-- semesterService.js
+|   |   `-- academicYearService.js
 |   |-- setting
 |   |   |-- academic
 |   |   |   |-- AcademicYearTab.js
@@ -276,6 +275,13 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   |-- FeedbackCombinedTab.js
 |   |   |   |-- FeedbackGuruTab.js
 |   |   |   `-- FeedbackSiswaTab.js
+|   |   |-- kelola-jadwal
+|   |   |   |-- AdminJadwalMassal-backup.js
+|   |   |   |-- AdminJadwalMassal.js
+|   |   |   |-- AdminKodeGuru.js
+|   |   |   |-- JadwalGuruTab.js
+|   |   |   |-- JadwalMassalModals.js
+|   |   |   `-- useJadwalMassalLogic.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
 |   |   |   `-- PortalSiswaTab.js
@@ -284,20 +290,25 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   |-- SchoolCombinedTab.js
 |   |   |   |-- SchoolManagementTab.js
 |   |   |   |-- SchoolSettingsTab.js
+|   |   |   |-- SiswaLulusTab.js
 |   |   |   |-- StudentManagement.js
 |   |   |   |-- StudentModals.js
 |   |   |   `-- TeacherAssignmentTab.js
+|   |   |-- teacher-profiles
+|   |   |   |-- AdminTeacherDataTab.js
+|   |   |   |-- EditProfileSection.js
+|   |   |   |-- PersonalInfoSection.js
+|   |   |   |-- ProfileHeader.js
+|   |   |   |-- ProfileTab.js
+|   |   |   |-- SecuritySection.js
+|   |   |   `-- TeachingAssignmentsSection.js
 |   |   |-- ActiveUsersTab.js
-|   |   |-- AdminJadwalMassal.js
-|   |   |-- AdminKodeGuru.js
 |   |   |-- AdminPanel.js
 |   |   |-- AuditLogPanel.js
 |   |   |-- ChangePasswordSection.js
 |   |   |-- ConnectedDevicesAdminTab.js
-|   |   |-- JadwalGuruTab.js
 |   |   |-- MaintenanceModeTab.js
 |   |   |-- MaintenancePage.js
-|   |   |-- ProfileTab.js
 |   |   |-- Setting.js
 |   |   |-- StudentConnectedDevicesAdminTab.js
 |   |   |-- SystemTab.js
@@ -308,6 +319,7 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- ClassDivision.js
 |   |   |-- ClassOperations.js
 |   |   |-- DiagnostikPage.js
+|   |   |-- ImportClassDivisionModal.js
 |   |   |-- SPMB.js
 |   |   |-- SpmbExcel.js
 |   |   |-- Statistics.js
@@ -319,15 +331,11 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |   |-- BusinessLogicChecker.js
 |   |   |   |-- DataValidator.js
 |   |   |   `-- DatabaseChecker.js
-|   |   |-- lib
-|   |   |   `-- fetchSupabaseSchema.js
 |   |   |-- CodeAudit.js
 |   |   |-- DatabaseCleanupMonitor.js
 |   |   |-- DatabaseStructure.js
 |   |   |-- HealthChecker.js
 |   |   |-- MonitorDashboard.js
-|   |   |-- MonitorHistory.js
-|   |   |-- MonitorResults.js
 |   |   |-- MonitorSistem.js
 |   |   |-- PerformanceMonitor.js
 |   |   `-- ProjectStructure.js
@@ -340,7 +348,6 @@ users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_acti
 |   |   |-- studentDevices.js
 |   |   |-- studentProfileCompletion.js
 |   |   |-- studentSession.js
-|   |   |-- systemHelpers.js
 |   |   `-- userDevices.js
 |   |-- App.js
 |   |-- constants.js

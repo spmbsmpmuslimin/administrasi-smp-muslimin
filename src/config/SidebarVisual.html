@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sidebar per Role - Aplikasi Sekolah</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css"
+    />
+    <style>
+      :root {
+        --bg: #f7f6f2;
+        --card: #ffffff;
+        --border: #e2e0d8;
+        --border-strong: #c9c6ba;
+        --text-primary: #26221c;
+        --text-secondary: #6b6759;
+        --text-muted: #99958a;
+        --accent-bg: #e6f1fb;
+        --accent-text: #0c447c;
+        --accent-border: #378add;
+        --success-bg: #eaf3de;
+        --success-text: #27500a;
+        --warning-text: #854f0b;
+        --radius: 8px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 2rem 1rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text-primary);
+      }
+      .wrap {
+        max-width: 920px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+      p.sub {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin: 0 0 1.5rem;
+      }
+      #role-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 1.5rem;
+      }
+      #role-tabs button {
+        font-size: 13px;
+        padding: 7px 14px;
+        border-radius: var(--radius);
+        border: 0.5px solid var(--border-strong);
+        background: var(--card);
+        color: var(--text-primary);
+        cursor: pointer;
+        font-family: inherit;
+      }
+      #role-tabs button:hover {
+        background: #f0efe9;
+      }
+      #role-tabs button.active {
+        background: var(--accent-bg);
+        color: var(--accent-text);
+        border-color: var(--accent-border);
+        font-weight: 500;
+      }
+      .layout {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .sidebar-panel {
+        width: 270px;
+        flex-shrink: 0;
+        background: var(--card);
+        border: 0.5px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .sidebar-header {
+        padding: 14px 16px;
+        border-bottom: 0.5px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .sidebar-header i {
+        font-size: 16px;
+        color: var(--text-secondary);
+      }
+      .sidebar-header span {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .sidebar-body {
+        padding: 10px 10px 14px;
+      }
+      .group-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin: 16px 0 6px;
+        padding: 0 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .group-head:first-child {
+        margin-top: 2px;
+      }
+      .group-head i.warn {
+        margin-left: auto;
+        color: var(--warning-text);
+        font-size: 13px;
+      }
+      .item-row {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 7px 8px;
+        margin: 1px 0;
+        font-size: 14px;
+        border-radius: 6px;
+        color: var(--text-primary);
+      }
+      .item-row i {
+        font-size: 16px;
+        flex-shrink: 0;
+        color: var(--text-muted);
+      }
+      .item-row.plus {
+        background: var(--accent-bg);
+        color: var(--accent-text);
+      }
+      .item-row.plus i {
+        color: inherit;
+      }
+      .badge {
+        margin-left: auto;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+      .badge-new {
+        background: var(--accent-bg);
+        color: var(--accent-text);
+      }
+      .badge-plan {
+        background: #faeeda;
+        color: var(--warning-text);
+      }
+      .notes {
+        flex: 1;
+        min-width: 240px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        padding-top: 4px;
+      }
+      .notes p.title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 8px;
+        font-size: 14px;
+      }
+      .notes ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .notes li {
+        margin-bottom: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Sidebar per role - Aplikasi Sekolah</h1>
+      <p class="sub">
+        Hasil trace dari sidebarConfig.js / Sidebar.js. Semua menu terkait E-Raport (termasuk menu
+        wali kelas) disembunyikan karena sedang dinonaktifkan.
+      </p>
+      <div id="role-tabs"></div>
+      <div class="layout">
+        <div class="sidebar-panel">
+          <div class="sidebar-header">
+            <i class="ti ti-layout-sidebar"></i><span id="role-title"></span>
+          </div>
+          <div class="sidebar-body" id="sidebar-list"></div>
+        </div>
+        <div class="notes" id="notes"></div>
+      </div>
+    </div>
+
+    <script>
+      const data = {
+        admin: {
+          label: "Admin",
+          groups: [
+            { name: "Main", items: ["Profile saya", "Dashboard"] },
+            {
+              name: "Master data",
+              items: ["Data guru dan staff", "Data kelas", "Data siswa", "Data siswa induk"],
+            },
+            {
+              name: "Akademik",
+              items: [
+                "Monitor presensi guru",
+                "Monitor presensi siswa",
+                "Nilai raport siswa",
+                "Laporan",
+              ],
+            },
+            {
+              name: "Data & Sistem",
+              items: ["~ Manajemen Data (dulu: Pengaturan)", "+ Administrasi TU", "Monitor Sistem"],
+            },
+          ],
+          notes: [
+            "Grup Data & Sistem gantiin grup Sistem lama.",
+            "Manajemen Data: rename dari Pengaturan, ke halaman grid card 'Manajemen X' + card baru Manajemen SPMB.",
+            "Administrasi TU: menu baru, belum dibuat, rencananya grid card juga.",
+            "Monitor Sistem: link langsung, bukan card di dalam grid Manajemen Data.",
+          ],
+        },
+        tu: {
+          label: "TU",
+          groups: [
+            { name: "Main", items: ["Profile saya", "Dashboard"] },
+            {
+              name: "Master data",
+              items: ["Data guru dan staff", "Data kelas", "Data siswa", "Data siswa induk"],
+            },
+            {
+              name: "Akademik",
+              items: [
+                "Monitor presensi guru",
+                "Monitor presensi siswa",
+                "Nilai raport siswa",
+                "Laporan",
+              ],
+            },
+            {
+              name: "Data & Sistem",
+              items: ["~ Manajemen Data (dulu: Pengaturan)", "+ Administrasi TU", "Monitor Sistem"],
+            },
+          ],
+          notes: ["Akses TU disamakan dengan Admin, termasuk grup Data & Sistem ini."],
+        },
+        guru: {
+          label: "Guru",
+          groups: [
+            { name: "Main", items: ["Profile saya", "Dashboard"] },
+            { name: "Master data", items: ["Data guru dan staff", "Data kelas", "Data siswa"] },
+            {
+              name: "Akademik",
+              items: [
+                "Presensi guru",
+                "Presensi siswa",
+                "Nilai siswa",
+                "Jadwal mengajar",
+                "Jurnal mengajar",
+                "Laporan",
+              ],
+            },
+          ],
+          notes: [],
+        },
+        wali: {
+          label: "Guru + wali kelas",
+          groups: [
+            { name: "Main", items: ["Profile saya", "Dashboard"] },
+            {
+              name: "Master data",
+              items: ["Data guru dan staff", "Data kelas", "Data siswa", "+ Data siswa induk"],
+            },
+            {
+              name: "Akademik",
+              items: [
+                "Presensi guru",
+                "Presensi siswa",
+                "Nilai siswa",
+                "Jadwal mengajar",
+                "Jurnal mengajar",
+                "+ Portal siswa",
+                "Laporan",
+              ],
+            },
+          ],
+          notes: [
+            "Menu wali kelas (input kehadiran, catatan, kokurikuler, dll) dihapus karena termasuk bagian E-Raport yang nonaktif.",
+          ],
+        },
+        wakasek: {
+          label: "Guru + wakasek kurikulum",
+          groups: [
+            { name: "Main", items: ["Profile saya", "Dashboard"] },
+            { name: "Master data", items: ["Data guru dan staff", "Data kelas", "Data siswa"] },
+            {
+              name: "Akademik",
+              items: [
+                "Presensi guru",
+                "Presensi siswa",
+                "Nilai siswa",
+                "Jadwal mengajar",
+                "Jurnal mengajar",
+                "Laporan",
+              ],
+            },
+            {
+              name: "Kurikulum",
+              items: ["Monitor presensi guru", "Monitor presensi siswa", "Administrasi"],
+            },
+          ],
+          notes: [
+            "Monitor presensi guru dan siswa dobel dengan yang di Akademik — sengaja per komentar kode.",
+          ],
+        },
+        bk: {
+          label: "Guru BK",
+          groups: [
+            { name: "Main", items: ["Profile saya", "Dashboard"] },
+            { name: "Master data", items: ["Data guru dan staff", "Data kelas", "Data siswa"] },
+            {
+              name: "Akademik",
+              items: [
+                "Presensi guru",
+                "Presensi siswa",
+                "Monitor presensi siswa",
+                "Nilai siswa",
+                "Data konseling",
+                "Home visit",
+                "Laporan",
+              ],
+            },
+          ],
+          notes: ["Jadwal mengajar dan jurnal mengajar sengaja dihapus untuk role ini."],
+        },
+        perpus: {
+          label: "Petugas perpus",
+          groups: [
+            { name: "Main", items: ["Profile saya", "Dashboard"] },
+            { name: "Master data", items: ["Data guru dan staff", "Data kelas", "Data siswa"] },
+            { name: "Perpustakaan", items: ["Katalog buku", "Peminjaman", "Pengembalian"] },
+          ],
+          notes: ["Grup akademik kosong total sehingga ke-hide otomatis."],
+        },
+        siswa: {
+          label: "Siswa",
+          groups: [
+            { name: "Main", items: ["Profile saya", "Dashboard"] },
+            {
+              name: "Master data (celah)",
+              items: ["Data guru dan staff", "Data kelas", "Data siswa"],
+            },
+          ],
+          notes: [
+            "Tidak ada flag ctx.isSiswa di Sidebar.js.",
+            "Master data kemungkinan gak sengaja ikut muncul untuk siswa.",
+            "Grup akademik kosong sehingga ke-hide.",
+          ],
+        },
+      };
+
+      const tabsEl = document.getElementById("role-tabs");
+      const titleEl = document.getElementById("role-title");
+      const listEl = document.getElementById("sidebar-list");
+      const notesEl = document.getElementById("notes");
+      let active = "admin";
+
+      function iconForGroup(name) {
+        const g = name.toLowerCase();
+        if (g.includes("main")) return "ti-home";
+        if (g.includes("master")) return "ti-database";
+        if (g.includes("akademik")) return "ti-school";
+        if (g.includes("data & sistem")) return "ti-adjustments";
+        if (g.includes("kurikulum")) return "ti-clipboard-list";
+        if (g.includes("perpus")) return "ti-books";
+        return "ti-folder";
+      }
+      function iconForItem(name) {
+        const n = name.toLowerCase();
+        if (n.includes("profile")) return "ti-user-circle";
+        if (n.includes("dashboard")) return "ti-layout-dashboard";
+        if (n.includes("guru dan staff")) return "ti-users";
+        if (n.includes("kelas")) return "ti-door";
+        if (n.includes("siswa induk")) return "ti-users-group";
+        if (n.includes("siswa")) return "ti-school";
+        if (n.includes("presensi")) return "ti-calendar-check";
+        if (n.includes("nilai")) return "ti-chart-bar";
+        if (n.includes("jadwal")) return "ti-calendar-time";
+        if (n.includes("jurnal")) return "ti-notebook";
+        if (n.includes("laporan")) return "ti-file-report";
+        if (n.includes("portal")) return "ti-door-enter";
+        if (n.includes("manajemen data")) return "ti-grid-dots";
+        if (n.includes("administrasi tu")) return "ti-briefcase";
+        if (n.includes("monitor sistem")) return "ti-activity";
+        if (n.includes("konseling")) return "ti-message-heart";
+        if (n.includes("home visit")) return "ti-home-check";
+        if (n.includes("katalog")) return "ti-books";
+        if (n.includes("peminjaman")) return "ti-arrow-up-right";
+        if (n.includes("pengembalian")) return "ti-arrow-back";
+        if (n.includes("spmb")) return "ti-user-plus";
+        if (n.includes("pengaturan")) return "ti-settings";
+        if (n.includes("monitor sistem")) return "ti-activity";
+        return "ti-point";
+      }
+
+      function render() {
+        tabsEl.innerHTML = "";
+        Object.keys(data).forEach((key) => {
+          const btn = document.createElement("button");
+          btn.textContent = data[key].label;
+          if (key === active) btn.classList.add("active");
+          btn.onclick = () => {
+            active = key;
+            render();
+          };
+          tabsEl.appendChild(btn);
+        });
+
+        const role = data[active];
+        titleEl.textContent = role.label;
+        listEl.innerHTML = "";
+        role.groups.forEach((group) => {
+          const isAnomaly = group.name.includes("celah");
+          const gname = group.name.replace(" (celah)", "");
+          const head = document.createElement("div");
+          head.className = "group-head";
+          head.innerHTML =
+            '<i class="ti ' +
+            iconForGroup(group.name) +
+            '"></i><span>' +
+            gname +
+            "</span>" +
+            (isAnomaly ? '<i class="ti ti-alert-triangle warn"></i>' : "");
+          listEl.appendChild(head);
+          group.items.forEach((item) => {
+            const isPlus = item.startsWith("+");
+            const isPlan = item.startsWith("~");
+            const clean = item.replace(/^\+ /, "").replace(/^~ /, "");
+            const row = document.createElement("div");
+            row.className = "item-row" + (isPlus || isPlan ? " plus" : "");
+            const badge = isPlan
+              ? '<span class="badge badge-plan">rencana</span>'
+              : isPlus
+                ? '<span class="badge badge-new">baru</span>'
+                : "";
+            row.innerHTML =
+              '<i class="ti ' + iconForItem(clean) + '"></i><span>' + clean + "</span>" + badge;
+            listEl.appendChild(row);
+          });
+        });
+
+        notesEl.innerHTML = "";
+        if (role.notes.length) {
+          const title = document.createElement("p");
+          title.className = "title";
+          title.textContent = "Catatan";
+          notesEl.appendChild(title);
+          const ul = document.createElement("ul");
+          role.notes.forEach((n) => {
+            const li = document.createElement("li");
+            li.textContent = n;
+            ul.appendChild(li);
+          });
+          notesEl.appendChild(ul);
+        } else {
+          notesEl.innerHTML = '<p style="margin:0;">Tidak ada catatan anomali untuk role ini.</p>';
+        }
+      }
+      render();
+    </script>
+  </body>
+</html>

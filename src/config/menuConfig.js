@@ -83,6 +83,7 @@ import PerpusMain from "../perpustakaan/PerpusMain";
 import RuangBelajarAdmin from "../portal-siswa/ruang-belajar-admin/RuangBelajarAdmin";
 
 import KurikulumAdministrasi from "../pages/wakasek-kurikulum/KurikulumAdministrasi";
+import AdministrasiTU from "../pages/administrasi-tu/AdministrasiTU";
 
 // ========== HELPER: default props buat kebanyakan komponen ==========
 // ctx = { user, onShowToast, darkMode, handleLogout, handleToggleDarkMode }
@@ -268,16 +269,42 @@ export const menuConfig = [
   },
   { path: "/reports", title: "Laporan", component: Reports },
 
-  // ===== SISTEM (ADMIN ONLY) =====
+  // ===== DATA & SISTEM (ADMIN/TU) =====
+  // ✅ FIX (Sep 2026) -- TAHAP 1 restrukturisasi grup ini (skeleton
+  // sidebar + routing dulu, halaman "Manajemen Data" & "Administrasi TU"
+  // MASIH belum di-rework/dibikin beneran, lihat komentar di masing2
+  // entry di bawah + komentar di sidebarConfig.js grup "sistem"):
   { path: "/spmb", title: "SPMB", component: SPMB },
+  // ⚠️ Route ini SENGAJA dipertahankan meski link sidebar-nya udah
+  // dihapus (lihat sidebarConfig.js) -- rencananya nanti diakses lewat
+  // card "Manajemen SPMB" di dalem halaman /settings (setelah direwrite
+  // jadi grid), bukan link langsung di sidebar lagi.
   {
     path: "/settings",
-    title: "Pengaturan",
+    // ✅ FIX (Sep 2026): title di-rename dari "Pengaturan" -> "Manajemen
+    // Data" (samain sama label baru di sidebarConfig.js). Komponen di
+    // baliknya (Setting.js) BELUM di-rework -- masih tampilan lama, cuma
+    // title/breadcrumb yang berubah dulu. Rework jadi grid card + card
+    // baru "Manajemen SPMB" nyusul kalau desainnya udah fix.
+    title: "Manajemen Data",
     component: Setting,
     getProps: (ctx) => ({
       ...defaultProps(ctx),
       onToggleDarkMode: ctx.handleToggleDarkMode,
     }),
+  },
+  {
+    path: "/administrasi-tu",
+    title: "Administrasi TU",
+    // ✅ FIX (Sep 2026) -- update dari placeholder "coming soon" polos
+    // jadi card-grid 5 kategori beneran (Persuratan, Arsip & Dokumen,
+    // Administrasi Keuangan, Inventaris, Laporan Administrasi), pola sama
+    // kayak KurikulumAdministrasi.js. Baru "Persuratan" yang punya skeleton
+    // sub-tab (Surat Masuk/Keluar/Disposisi) -- lihat komentar lengkap di
+    // AdministrasiTU.js buat urutan build & kategori yang masih
+    // ComingSoonPanel.
+    component: AdministrasiTU,
+    allowedRoles: ["admin", "tu"],
   },
   { path: "/monitor-sistem", title: "Monitor Sistem", component: MonitorSistem },
 
