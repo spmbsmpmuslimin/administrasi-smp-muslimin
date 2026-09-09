@@ -9,7 +9,8 @@
 // keuangan sekolah secara umum.
 //
 // Sub-tab (disamain pola sama PersuratanTab.js -- komponen dengan
-// sub-tab sendiri di dalemnya):
+// sub-tab sendiri di dalemnya, TANPA header/judul sendiri karena header
+// kategori udah di-render sama AdministrasiTU.js di Detail View):
 // 1. Tagihan     -> generate tagihan SPP per kelas+bulan, lihat status
 // 2. Pembayaran  -> cari siswa, catat pembayaran/cicilan
 // 3. Tunggakan   -> rekap siswa yang belum lunas
@@ -21,7 +22,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "../../supabaseClient";
 import {
-  Wallet,
   FileText,
   Search,
   AlertTriangle,
@@ -115,22 +115,6 @@ const KeuanganTab = ({ user, darkMode, onShowToast }) => {
 
   return (
     <div className="p-4 sm:p-5">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="p-2.5 bg-gradient-to-br from-emerald-400 to-emerald-500 dark:from-emerald-600 dark:to-emerald-700 text-white rounded-xl shadow-md">
-          <Wallet className="w-5 h-5" />
-        </div>
-        <div>
-          <h2
-            className={`text-base sm:text-lg font-bold ${darkMode ? "text-gray-100" : "text-gray-800"}`}
-          >
-            Administrasi Keuangan
-          </h2>
-          <p className={`text-xs sm:text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-            Tagihan SPP, pembayaran, tunggakan, dan riwayat
-          </p>
-        </div>
-      </div>
-
       <div className="flex gap-2 overflow-x-auto pb-1 mb-5">
         {SUB_TABS.map((t) => (
           <button key={t.id} onClick={() => setSubTab(t.id)} className={tabBtnClass(t.id)}>
