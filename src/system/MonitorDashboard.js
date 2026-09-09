@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import HealthChecker from "./HealthChecker";
 import { supabase } from "../supabaseClient";
+import { debugLog } from "./debugLog";
+
+// Label singkat per checker buat subtitle card "Checks Run" -- dipisah
+// dari daftar `checkers` di dalem komponen biar kalau nanti ada checker
+// baru ditambahin dan lupa ditambahin ke sini juga, subtitle-nya cuma
+// jatuh balik ke nama lengkap (checker.name), BUKAN bikin hitungannya
+// salah. Angka value-nya sendiri udah gak hardcode lagi -- dihitung dari
+// checkers.filter(status === "done").length, jadi otomatis ikut nambah.
+const CHECKER_SHORT_LABEL = {
+  database: "Database",
+  validation: "Validation",
+  businessLogic: "Logic",
+  appHealth: "Health",
+  raport: "Raport",
+};
 
 const AnimatedCounter = ({ value, duration = 1000 }) => {
   const [count, setCount] = useState(0);
@@ -231,7 +246,7 @@ const StatsCard = ({ icon, title, value, subtitle, color = "blue", isAnimating }
   );
 };
 
-const MonitorDashboard = ({ user }) => {
+const MonitorDashboard = ({ user, onShowToast }) => {
   const userId = user?.id;
   const [isChecking, setIsChecking] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -259,6 +274,36 @@ const MonitorDashboard = ({ user }) => {
     { id: "appHealth", name: "App Health", status: "pending", time: null },
     { id: "raport", name: "Raport Check", status: "pending", time: null },
   ]);
+
+  // Modal konfirmasi custom + toast, gantiin window.confirm()/alert() bawaan
+  // browser buat aksi "Clear All" history di bawah -- pattern & styling-nya
+  // sama persis kayak yang dipake di DatabaseCleanupMonitor.js biar
+  // konsisten se-aplikasi.
+  const [confirmState, setConfirmState] = useState({ open: false, message: "" });
+  const confirmResolverRef = useRef(null);
+
+  const askConfirm = (message) => {
+    return new Promise((resolve) => {
+      confirmResolverRef.current = resolve;
+      setConfirmState({ open: true, message });
+    });
+  };
+
+  const respondToConfirm = (result) => {
+    setConfirmState({ open: false, message: "" });
+    if (confirmResolverRef.current) {
+      confirmResolverRef.current(result);
+      confirmResolverRef.current = null;
+    }
+  };
+
+  const notify = (message, type = "info") => {
+    if (onShowToast) {
+      onShowToast(message, type);
+    } else {
+      alert(message);
+    }
+  };
 
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -292,18 +337,18 @@ const MonitorDashboard = ({ user }) => {
 
   const saveResultsToDatabase = async (finalResults) => {
     // Log stack trace to see who's calling this
-    console.log("🔍 STACK TRACE:", new Error().stack);
-    console.log("🔍 isSavingRef.current:", isSavingRef.current);
+    debugLog("🔍 STACK TRACE:", new Error().stack);
+    debugLog("🔍 isSavingRef.current:", isSavingRef.current);
 
     // Prevent duplicate saves
     if (isSavingRef.current) {
-      console.log("⚠️ Save already in progress, skipping...");
+      debugLog("⚠️ Save already in progress, skipping...");
       return;
     }
 
     try {
       isSavingRef.current = true;
-      console.log("🔒 Locking save operation at:", new Date().toISOString());
+      debugLog("🔒 Locking save operation at:", new Date().toISOString());
 
       // Map status to valid database values (healthy, warning, critical ONLY)
       let dbStatus = String(finalResults.summary?.status || "healthy").toLowerCase();
@@ -312,7 +357,7 @@ const MonitorDashboard = ({ user }) => {
       const validStatuses = ["healthy", "warning", "critical"];
 
       if (!validStatuses.includes(dbStatus)) {
-        console.log(`ℹ️ Mapping invalid status "${dbStatus}" to "healthy" for database constraint`);
+        debugLog(`ℹ️ Mapping invalid status "${dbStatus}" to "healthy" for database constraint`);
         dbStatus = "healthy"; // Default to 'healthy' for 'info', 'unknown', etc.
       }
 
@@ -334,7 +379,7 @@ const MonitorDashboard = ({ user }) => {
         execution_time: parseInt(finalResults.executionTime) || null,
       };
 
-      console.log("📤 Saving to database at:", new Date().toISOString(), logEntry);
+      debugLog("📤 Saving to database at:", new Date().toISOString(), logEntry);
 
       const { data, error } = await supabase.from("system_health_logs").insert([logEntry]).select();
 
@@ -343,14 +388,14 @@ const MonitorDashboard = ({ user }) => {
         throw error;
       }
 
-      console.log("✅ Saved to database successfully at:", new Date().toISOString(), data);
+      debugLog("✅ Saved to database successfully at:", new Date().toISOString(), data);
     } catch (error) {
       console.error("💥 Error saving to database:", error);
     } finally {
       // Reset flag after a delay to prevent immediate re-saves
       setTimeout(() => {
         isSavingRef.current = false;
-        console.log("🔓 Unlocking save operation at:", new Date().toISOString());
+        debugLog("🔓 Unlocking save operation at:", new Date().toISOString());
       }, 2000);
     }
   };
@@ -512,13 +557,13 @@ const MonitorDashboard = ({ user }) => {
         errors: checkResult.errors,
       };
 
-      console.log("✅ Final Results:", finalResults);
-      console.log("✅ Summary:", finalResults.summary);
+      debugLog("✅ Final Results:", finalResults);
+      debugLog("✅ Summary:", finalResults.summary);
 
       // Save to database (with duplicate prevention)
-      console.log("📝 Calling saveResultsToDatabase...");
+      debugLog("📝 Calling saveResultsToDatabase...");
       await saveResultsToDatabase(finalResults);
-      console.log("📝 saveResultsToDatabase completed");
+      debugLog("📝 saveResultsToDatabase completed");
 
       if (isMountedRef.current) {
         setProgress(100);
@@ -651,20 +696,23 @@ const MonitorDashboard = ({ user }) => {
                 </button>
                 <button
                   onClick={async () => {
-                    if (window.confirm("Clear all history from database? This cannot be undone.")) {
-                      try {
-                        const { error } = await supabase
-                          .from("system_health_logs")
-                          .delete()
-                          .neq("id", "00000000-0000-0000-0000-000000000000");
+                    const confirmed = await askConfirm(
+                      "Clear all history from database?\n\nAksi ini gak bisa dibatalin."
+                    );
+                    if (!confirmed) return;
 
-                        if (error) throw error;
+                    try {
+                      const { error } = await supabase
+                        .from("system_health_logs")
+                        .delete()
+                        .neq("id", "00000000-0000-0000-0000-000000000000");
 
-                        setHistory([]);
-                        alert("History cleared successfully!");
-                      } catch (err) {
-                        alert("Error clearing history: " + err.message);
-                      }
+                      if (error) throw error;
+
+                      setHistory([]);
+                      notify("History berhasil dihapus.", "success");
+                    } catch (err) {
+                      notify(`Gagal menghapus history: ${err.message}`, "error");
                     }
                   }}
                   className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
@@ -795,8 +843,13 @@ const MonitorDashboard = ({ user }) => {
               <StatsCard
                 icon="🔧"
                 title="Checks Run"
-                value={4}
-                subtitle="Database, Validation, Logic, Health"
+                value={checkers.filter((c) => c.status === "done").length}
+                subtitle={
+                  checkers
+                    .filter((c) => c.status === "done")
+                    .map((c) => CHECKER_SHORT_LABEL[c.id] || c.name)
+                    .join(", ") || "-"
+                }
                 color="gray"
                 isAnimating={true}
               />
@@ -913,7 +966,7 @@ const MonitorDashboard = ({ user }) => {
                 </h3>
                 <div className="space-y-3">
                   {(() => {
-                    console.log("🔍 DEBUG - Results structure:", results.results);
+                    debugLog("🔍 DEBUG - Results structure:", results.results);
 
                     const allIssues = [];
 
@@ -923,10 +976,10 @@ const MonitorDashboard = ({ user }) => {
 
                         if (!Array.isArray(issues) || issues.length === 0) return;
 
-                        console.log(`🔍 DEBUG - ${checkerName} issues:`, issues);
+                        debugLog(`🔍 DEBUG - ${checkerName} issues:`, issues);
 
                         issues.forEach((issue, idx) => {
-                          console.log(`🔍 DEBUG - Issue ${idx}:`, issue, "Type:", typeof issue);
+                          debugLog(`🔍 DEBUG - Issue ${idx}:`, issue, "Type:", typeof issue);
 
                           // Handle different issue formats - ensure everything is a string or null
                           let issueMessage = "Unknown issue";
@@ -1089,6 +1142,45 @@ const MonitorDashboard = ({ user }) => {
           </div>
         )}
       </div>
+
+      {/* Confirm Modal -- pengganti window.confirm() bawaan browser */}
+      {confirmState.open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4"
+          onClick={() => respondToConfirm(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-md w-full p-5 sm:p-6"
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex-shrink-0">
+                <span className="text-lg">⚠️</span>
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">Konfirmasi</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
+                  {confirmState.message}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 mt-5">
+              <button
+                onClick={() => respondToConfirm(false)}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => respondToConfirm(true)}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

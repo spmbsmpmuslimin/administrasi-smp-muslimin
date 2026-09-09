@@ -178,7 +178,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
   // 🔥 FIX: Get sidebar width untuk content shifting
   const getSidebarWidthClass = () => {
     if (isLaptop && isSidebarOpen) {
-      return isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64";
+      return isSidebarCollapsed ? "lg:ml-20" : "lg:ml-72";
     }
     return "lg:ml-0";
   };
@@ -387,7 +387,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
       {/* 🔥 FIX: Sidebar Desktop dengan 3 state */}
       <div
         className={`fixed inset-y-0 left-0 z-50 hidden lg:block transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? (isSidebarCollapsed ? "w-20" : "w-64") : "w-0"
+          isSidebarOpen ? (isSidebarCollapsed ? "w-20" : "w-72") : "w-0"
         }`}
       >
         {isSidebarOpen && (
@@ -412,7 +412,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
 
       {/* Sidebar Mobile */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 transform ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 transform ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } transition-transform duration-300 ease-in-out lg:hidden`}
       >

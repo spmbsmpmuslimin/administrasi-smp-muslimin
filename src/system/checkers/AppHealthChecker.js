@@ -1,5 +1,6 @@
 // src/system/checkers/AppHealthChecker.js
 import { supabase } from "../../supabaseClient";
+import { debugLog, debugWarn } from "../debugLog";
 
 /**
  * AppHealthChecker - Application health and system monitoring
@@ -7,50 +8,50 @@ import { supabase } from "../../supabaseClient";
  */
 
 export const checkAppHealth = async () => {
-  console.log("🔍 AppHealthChecker: Starting comprehensive check...");
+  debugLog("🔍 AppHealthChecker: Starting comprehensive check...");
 
   const issues = [];
   const startTime = Date.now();
 
   try {
     // 1. Check Inactive Records (Zombie Data)
-    console.log("👻 Checking inactive/zombie records...");
+    debugLog("👻 Checking inactive/zombie records...");
     const inactiveIssues = await checkInactiveRecords();
     issues.push(...inactiveIssues);
 
     // 2. Check Recent Activity
-    console.log("📈 Checking recent activity patterns...");
+    debugLog("📈 Checking recent activity patterns...");
     const activityIssues = await checkRecentActivity();
     issues.push(...activityIssues);
 
     // 3. Check System Settings
-    console.log("⚙️ Checking system settings completeness...");
+    debugLog("⚙️ Checking system settings completeness...");
     const settingsIssues = await checkSystemSettings();
     issues.push(...settingsIssues);
 
     // 4. Check User Account Health
-    console.log("👥 Checking user account status...");
+    debugLog("👥 Checking user account status...");
     const userIssues = await checkUserAccounts();
     issues.push(...userIssues);
 
     // 5. Check Data Growth & Volume
-    console.log("📊 Checking data volume and growth...");
+    debugLog("📊 Checking data volume and growth...");
     const volumeIssues = await checkDataVolume();
     issues.push(...volumeIssues);
 
     // 6. Check System Performance Indicators
-    console.log("⚡ Checking system performance indicators...");
+    debugLog("⚡ Checking system performance indicators...");
     const performanceIssues = await checkPerformanceIndicators();
     issues.push(...performanceIssues);
 
     // 7. Check Data Freshness
-    console.log("🕐 Checking data freshness...");
+    debugLog("🕐 Checking data freshness...");
     const freshnessIssues = await checkDataFreshness();
     issues.push(...freshnessIssues);
 
     const executionTime = Date.now() - startTime;
-    console.log(`✅ AppHealthChecker completed in ${executionTime}ms`);
-    console.log(`📊 Found ${issues.length} app health issues`);
+    debugLog(`✅ AppHealthChecker completed in ${executionTime}ms`);
+    debugLog(`📊 Found ${issues.length} app health issues`);
 
     return {
       success: true,

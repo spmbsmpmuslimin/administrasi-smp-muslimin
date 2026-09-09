@@ -47,7 +47,7 @@ const MenuLink = ({ page, label, icon, isCollapsed, isActive, indent, onClick, a
   <a
     href={`#${page}`}
     className={`
-      relative flex items-center gap-3 ${indent ? "px-6 sm:px-8 ml-2" : "px-4 sm:px-6"} py-2 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-white/10 dark:hover:bg-gray-800 rounded-r-full mr-4
+      relative flex items-center gap-3 ${indent ? "px-6 sm:px-8 ml-2" : "px-4 sm:px-6"} py-2 text-white dark:text-gray-200 font-medium transition-all duration-200 cursor-pointer hover:bg-white/10 dark:hover:bg-gray-800 rounded-r-full mr-3
       touch-manipulation min-h-[38px]
       ${isCollapsed ? "justify-center" : ""}
       ${indent ? "border-l-2 border-white/10" : ""}
@@ -80,7 +80,11 @@ const MenuLink = ({ page, label, icon, isCollapsed, isActive, indent, onClick, a
       </svg>
     </span>
     {!isCollapsed && (
-      <span className={`flex-1 ${indent ? "text-[13px] text-white/85" : "text-sm"}`}>{label}</span>
+      <span
+        className={`flex-1 truncate whitespace-nowrap ${indent ? "text-[13px] text-white/85" : "text-sm"}`}
+      >
+        {label}
+      </span>
     )}
   </a>
 );
@@ -227,7 +231,7 @@ const Sidebar = ({
       <div
         className={`
         h-full transition-all duration-300 flex flex-col
-        ${isCollapsed ? "w-20" : "w-64"}
+        ${isCollapsed ? "w-20" : "w-72"}
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
         sm:translate-x-0 sm:relative
         bg-blue-900 dark:bg-gray-900 text-white border-r border-blue-800 dark:border-gray-800

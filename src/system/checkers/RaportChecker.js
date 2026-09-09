@@ -1,5 +1,6 @@
 // src/system/checkers/RaportChecker.js
 import { supabase } from "../../supabaseClient";
+import { debugLog, debugWarn } from "../debugLog";
 
 /**
  * RaportChecker - Validasi domain Nilai Raport
@@ -18,7 +19,7 @@ import { supabase } from "../../supabaseClient";
  */
 
 export const checkRaport = async () => {
-  console.log("🔍 RaportChecker: Starting check...");
+  debugLog("🔍 RaportChecker: Starting check...");
 
   const issues = [];
   const startTime = Date.now();
@@ -34,8 +35,8 @@ export const checkRaport = async () => {
     issues.push(...graduationIssues);
 
     const executionTime = Date.now() - startTime;
-    console.log(`✅ RaportChecker completed in ${executionTime}ms`);
-    console.log(`📊 Found ${issues.length} raport issues`);
+    debugLog(`✅ RaportChecker completed in ${executionTime}ms`);
+    debugLog(`📊 Found ${issues.length} raport issues`);
 
     return {
       success: true,

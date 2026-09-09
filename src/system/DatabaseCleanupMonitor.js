@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -12,16 +12,80 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
+import { debugLog, debugWarn } from "./debugLog";
 
-const DatabaseCleanupMonitor = () => {
+// Browser gak bisa jalanin cleanup terjadwal beneran di background (gak
+// ada server yang nungguin) -- "auto cleanup" yang paling realistis
+// dikerjain di sisi client cuma REMINDER: pas halaman ini dibuka, cek
+// kapan terakhir kali cleanup dijalanin, dan kasih tau kalau udah lewat
+// dari N hari. Auto cleanup beneran (jalan sendiri tanpa ada yang buka
+// halaman) butuh Supabase Edge Function + pg_cron di sisi server.
+const REMINDER_INTERVAL_DAYS = 7;
+
+const DatabaseCleanupMonitor = ({ user, onShowToast }) => {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [cleanupHistory, setCleanupHistory] = useState([]);
   const [autoCleanup, setAutoCleanup] = useState({
     enabled: true,
     healthLogsRetention: 7,
-    attendanceRetention: 730,
+    // 1100 hari = 3 tahun ajaran (3x365 + 1 hari buat jaga-jaga tahun
+    // kabisat) -- biar presensi siswa yang masuk kelas 7 tetep ada
+    // datanya sampe dia lulus kelas 9, gak kehapus di tengah jalan.
+    attendanceRetention: 1100,
   });
+
+  // Modal konfirmasi custom (pastel, konsisten sama gaya card lain),
+  // gantiin window.confirm() bawaan browser yang kesannya kurang
+  // "meyakinkan" buat aksi delete permanen. window.confirm() itu
+  // sinkron & blocking, jadi buat gantiinnya di dalem alur async kita
+  // pakai pattern Promise + resolver disimpen di ref: askConfirm()
+  // nge-buka modal & nge-return Promise yang baru resolve pas user
+  // klik salah satu tombol di modal.
+  const [confirmState, setConfirmState] = useState({ open: false, message: "" });
+  const confirmResolverRef = useRef(null);
+
+  const askConfirm = (message) => {
+    return new Promise((resolve) => {
+      confirmResolverRef.current = resolve;
+      setConfirmState({ open: true, message });
+    });
+  };
+
+  const respondToConfirm = (result) => {
+    setConfirmState({ open: false, message: "" });
+    if (confirmResolverRef.current) {
+      confirmResolverRef.current(result);
+      confirmResolverRef.current = null;
+    }
+  };
+
+  // Notifikasi hasil aksi -- pakai toast dari parent (MonitorSistem) kalau
+  // ada, biar konsisten sama card lain. Fallback ke alert() cuma buat
+  // jaga-jaga kalau suatu saat komponen ini dipanggil dari tempat lain
+  // yang gak nyediain onShowToast.
+  const notify = (message, type = "info") => {
+    if (onShowToast) {
+      onShowToast(message, type);
+    } else {
+      alert(message);
+    }
+  };
+
+  // `enabled` sekarang beneran ngontrol sesuatu: nyala/matiin reminder
+  // banner di bawah. cleanupHistory[0] = entri terbaru (query-nya udah
+  // di-order descending di fetchCleanupHistory), jadi dipake sebagai
+  // "kapan terakhir kali cleanup jalan".
+  const daysSinceLastCleanup = useMemo(() => {
+    if (!cleanupHistory || cleanupHistory.length === 0) return null;
+    const lastRun = new Date(cleanupHistory[0].timestamp);
+    const diffMs = Date.now() - lastRun.getTime();
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  }, [cleanupHistory]);
+
+  const isCleanupOverdue =
+    autoCleanup.enabled &&
+    (daysSinceLastCleanup === null || daysSinceLastCleanup >= REMINDER_INTERVAL_DAYS);
 
   // Fetch database statistics
   const fetchStats = async () => {
@@ -97,7 +161,7 @@ const DatabaseCleanupMonitor = () => {
           percentUsed = detailedData.percent_used;
           totalRecords = detailedData.total_rows;
           isRealSize = true;
-          console.log(
+          debugLog(
             "✅ Using REAL database size & total rows from PostgreSQL:",
             estimatedSizeMB,
             "MB /",
@@ -111,7 +175,7 @@ const DatabaseCleanupMonitor = () => {
         // Fallback ke estimasi dari 9 tabel yang di-track manual di atas
         // (kurang akurat karena tidak mencakup semua tabel, tapi lebih baik
         // daripada tidak ada angka sama sekali kalau RPC belum ter-deploy)
-        console.warn("⚠️ RPC function not available, using estimation from tracked tables only");
+        debugWarn("⚠️ RPC function not available, using estimation from tracked tables only");
         totalRecords = Object.values(tableStats).reduce((sum, count) => sum + count, 0);
         estimatedSizeMB = totalRecords * 0.00433;
         percentUsed = ((estimatedSizeMB / 500) * 100).toFixed(1);
@@ -130,7 +194,62 @@ const DatabaseCleanupMonitor = () => {
     }
   };
 
-  // Export data yang BAKAL DIHAPUS ke satu file Excel (2 sheet) SEBELUM
+  // Cari student_id dari semua siswa yang udah lulus, buat dipake nyaring
+  // attendances mereka -- match lewat NIS, karena student_graduations
+  // TERNYATA gak punya kolom student_id yang FK langsung ke `students`
+  // (isinya snapshot data siswa pas lulus, independen dari tabel students).
+  //
+  // Di-chunk per 150 NIS/ID biar query .in() gak kepanjangan kalau jumlah
+  // alumni-nya banyak (PostgREST punya batas panjang query string).
+  const CHUNK_SIZE = 150;
+  const chunkArray = (arr, size) => {
+    const chunks = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
+
+  const fetchGraduatedStudentIds = async () => {
+    const { data: graduations, error: gradError } = await supabase
+      .from("student_graduations")
+      .select("nis")
+      .not("nis", "is", null);
+    if (gradError) throw gradError;
+
+    const graduatedNis = [...new Set((graduations || []).map((g) => g.nis).filter(Boolean))];
+    if (graduatedNis.length === 0) return [];
+
+    const nisChunks = chunkArray(graduatedNis, CHUNK_SIZE);
+    const chunkResults = await Promise.all(
+      nisChunks.map(async (chunk) => {
+        const { data, error } = await supabase.from("students").select("id").in("nis", chunk);
+        if (error) throw error;
+        return data || [];
+      })
+    );
+
+    return [...new Set(chunkResults.flat().map((s) => s.id))];
+  };
+
+  // Ambil attendances milik sekumpulan student_id, di-chunk juga sama
+  // alasannya kayak di atas.
+  const fetchAttendancesByStudentIds = async (studentIds) => {
+    if (!studentIds || studentIds.length === 0) return [];
+    const idChunks = chunkArray(studentIds, CHUNK_SIZE);
+    const chunkResults = await Promise.all(
+      idChunks.map(async (chunk) => {
+        const { data, error } = await supabase
+          .from("attendances")
+          .select("*")
+          .in("student_id", chunk);
+        if (error) throw error;
+        return data || [];
+      })
+    );
+    return chunkResults.flat();
+  };
+
   // delete-nya beneran jalan -- jadi walau kehapus dari database, datanya
   // tetep ada dalam bentuk arsip. Dipanggil dari runManualCleanup(),
   // bukan dari dalem cleanupHealthLogs/cleanupOldAttendances, biar bisa
@@ -233,13 +352,10 @@ const DatabaseCleanupMonitor = () => {
 
   // Run manual cleanup
   const runManualCleanup = async () => {
-    if (
-      !window.confirm(
-        `Yakin mau jalankan cleanup?\n\nData lama (Health Logs > ${autoCleanup.healthLogsRetention} hari, Attendance > ${autoCleanup.attendanceRetention} hari) akan di-EXPORT dulu ke file Excel, baru dihapus PERMANEN dari database.`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await askConfirm(
+      `Yakin mau jalankan cleanup?\n\nData lama (Health Logs > ${autoCleanup.healthLogsRetention} hari, Attendance > ${autoCleanup.attendanceRetention} hari, ATAU attendance siswa yang udah lulus) akan di-EXPORT dulu ke file Excel, baru dihapus PERMANEN dari database.`
+    );
+    if (!confirmed) return;
 
     setLoading(true);
     const results = [];
@@ -260,13 +376,39 @@ const DatabaseCleanupMonitor = () => {
         .lt("created_at", healthCutoff.toISOString());
       if (healthSelectError) throw healthSelectError;
 
-      const { data: attendanceRows, error: attendanceSelectError } = await supabase
+      // Attendance yang di-archive = UNION dari 2 kondisi:
+      //   a) lebih tua dari attendanceRetention hari (safety net umum,
+      //      biar data yang gak nyambung ke siswa manapun tetep kebersihin)
+      //   b) attendance milik siswa yang UDAH LULUS -- langsung eligible
+      //      begitu ada record-nya di student_graduations, gak nunggu
+      //      umur hari-nya lewat retention (sesuai keputusan: no grace
+      //      period).
+      const { data: oldAttendanceRows, error: oldAttendanceError } = await supabase
         .from("attendances")
         .select("*")
         .lt("date", attendanceCutoff.toISOString().split("T")[0]);
-      if (attendanceSelectError) throw attendanceSelectError;
+      if (oldAttendanceError) throw oldAttendanceError;
 
-      const hasDataToArchive = (healthRows?.length || 0) > 0 || (attendanceRows?.length || 0) > 0;
+      const graduatedStudentIds = await fetchGraduatedStudentIds();
+      const graduatedAttendanceRows = await fetchAttendancesByStudentIds(graduatedStudentIds);
+
+      // Gabung + dedupe by id (bisa aja 1 row masuk 2 kondisi sekaligus),
+      // sambil nandain alasan penghapusannya buat transparansi di arsip
+      // Excel -- kolom ini murni buat dokumentasi, gak ngaruh ke delete.
+      const attendanceRowsMap = new Map();
+      (oldAttendanceRows || []).forEach((row) => {
+        attendanceRowsMap.set(row.id, { ...row, alasan_dihapus: "retensi_hari_terlewati" });
+      });
+      graduatedAttendanceRows.forEach((row) => {
+        const existing = attendanceRowsMap.get(row.id);
+        attendanceRowsMap.set(row.id, {
+          ...row,
+          alasan_dihapus: existing ? "retensi_hari_terlewati + siswa_lulus" : "siswa_lulus",
+        });
+      });
+      const attendanceRows = Array.from(attendanceRowsMap.values());
+
+      const hasDataToArchive = (healthRows?.length || 0) > 0 || attendanceRows.length > 0;
 
       // 2) Export ke Excel DULU, sebelum delete apapun dijalankan. Kalau
       // export-nya gagal (misal ExcelJS error), delete gak akan jalan --
@@ -283,10 +425,12 @@ const DatabaseCleanupMonitor = () => {
       const attendanceResult = await cleanupOldAttendances(attendanceRows);
       results.push(attendanceResult);
 
-      // Save to history
+      // Save to history -- pakai identitas user yang beneran ngejalanin
+      // (kalau ada), bukan string statis "manual" terus, biar ada audit
+      // trail: siapa yang mencet Run Cleanup.
       await supabase.from("cleanup_history").insert({
         results: results,
-        triggered_by: "manual",
+        triggered_by: user?.email || user?.username || user?.name || "manual",
         timestamp: new Date().toISOString(),
       });
 
@@ -294,14 +438,15 @@ const DatabaseCleanupMonitor = () => {
       await fetchStats();
       await fetchCleanupHistory();
 
-      alert(
+      notify(
         hasDataToArchive
-          ? "✅ Cleanup berhasil! Data lama sudah di-export ke Excel & dihapus dari database."
-          : "✅ Cleanup selesai — gak ada data lama yang perlu dihapus."
+          ? "Cleanup berhasil! Data lama sudah di-export ke Excel & dihapus dari database."
+          : "Cleanup selesai — gak ada data lama yang perlu dihapus.",
+        "success"
       );
     } catch (error) {
       console.error("Cleanup error:", error);
-      alert("❌ Cleanup gagal: " + error.message);
+      notify(`Cleanup gagal: ${error.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -394,6 +539,30 @@ const DatabaseCleanupMonitor = () => {
           {loading ? "Running..." : "Run Cleanup"}
         </button>
       </div>
+
+      {/* Reminder Banner -- ini yang bikin toggle "enabled" di Cleanup
+          Settings beneran ngefek. Cuma muncul pas halaman ini dibuka &
+          udah lewat >= REMINDER_INTERVAL_DAYS sejak cleanup terakhir. */}
+      {isCleanupOverdue && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 sm:p-4 flex items-start sm:items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-3 min-w-0">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              {daysSinceLastCleanup === null
+                ? "Belum pernah dijalankan cleanup sama sekali."
+                : `Udah ${daysSinceLastCleanup} hari sejak cleanup terakhir.`}{" "}
+              Disaranin jalanin cleanup tiap {REMINDER_INTERVAL_DAYS} hari biar storage gak numpuk.
+            </p>
+          </div>
+          <button
+            onClick={runManualCleanup}
+            disabled={loading}
+            className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white transition-colors"
+          >
+            Run Cleanup Sekarang
+          </button>
+        </div>
+      )}
 
       {/* Database Usage Overview */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -523,10 +692,35 @@ const DatabaseCleanupMonitor = () => {
 
       {/* Cleanup Settings */}
       <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md dark:shadow-none border border-gray-200 dark:border-gray-700">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
-          <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-          Cleanup Settings
-        </h3>
+        <div className="flex items-center justify-between gap-3 mb-3 sm:mb-4 flex-wrap">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+            Cleanup Settings
+          </h3>
+
+          {/* Toggle reminder -- ini yang bikin autoCleanup.enabled beneran
+              ngontrol sesuatu (banner di atas), bukan variabel nganggur. */}
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              Reminder cleanup mingguan
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoCleanup.enabled}
+              onClick={() => setAutoCleanup({ ...autoCleanup, enabled: !autoCleanup.enabled })}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                autoCleanup.enabled ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  autoCleanup.enabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </label>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -588,8 +782,12 @@ const DatabaseCleanupMonitor = () => {
               max="3650"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Hapus presensi lebih dari N hari (~
-              {Math.floor(autoCleanup.attendanceRetention / 365)} tahun)
+              Hapus presensi lebih dari N hari (≈{Math.floor(autoCleanup.attendanceRetention / 365)}{" "}
+              tahun ajaran — 1100 hari = pas 3 tahun ajaran, kelas 7 sampai lulus kelas 9)
+            </p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+              + attendance siswa yang UDAH LULUS ikut dihapus juga, gak peduli umurnya (dicek lewat
+              data di Student Graduations, tanpa masa tunggu)
             </p>
           </div>
         </div>
@@ -639,7 +837,7 @@ const DatabaseCleanupMonitor = () => {
                           minute: "2-digit",
                         })}
                       </td>
-                      <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 capitalize whitespace-nowrap">
+                      <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                         {item.triggered_by}
                       </td>
                       <td className="py-2 px-2 sm:px-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
@@ -678,9 +876,20 @@ const DatabaseCleanupMonitor = () => {
               Recommendations:
             </h4>
             <ul className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
-              <li>Jalankan cleanup manual setiap minggu atau setup auto-cleanup</li>
+              <li>
+                Reminder cleanup mingguan otomatis muncul di sini kalau udah lewat{" "}
+                {REMINDER_INTERVAL_DAYS} hari sejak terakhir jalan (bisa dimatiin di Cleanup
+                Settings)
+              </li>
               <li>Keep health logs max 7-14 hari (cukup untuk debugging)</li>
-              <li>Keep attendances 2-3 tahun (untuk keperluan historis)</li>
+              <li>
+                Default attendance retention 1100 hari (3 tahun ajaran) — kelas 7 sampai lulus kelas
+                9 tetep ada datanya
+              </li>
+              <li>
+                Attendance siswa yang udah lulus (tercatat di Student Graduations) langsung ikut
+                dihapus juga pas cleanup jalan, gak nunggu 1100 hari
+              </li>
               <li>
                 ✅ Data otomatis di-export ke Excel dulu sebelum dihapus permanen — cek folder
                 Downloads tiap habis klik "Run Cleanup"
@@ -694,6 +903,46 @@ const DatabaseCleanupMonitor = () => {
           </div>
         </div>
       </div>
+      {/* Confirm Modal -- pengganti window.confirm() bawaan browser */}
+      {confirmState.open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4"
+          onClick={() => respondToConfirm(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-w-md w-full p-5 sm:p-6"
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                  Konfirmasi Cleanup
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
+                  {confirmState.message}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 mt-5">
+              <button
+                onClick={() => respondToConfirm(false)}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => respondToConfirm(true)}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Ya, Jalankan Cleanup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -91,12 +91,25 @@ export function exportKartuPembayaranSPP({
 
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(10);
-  doc.text(
-    `Nama: ${student.full_name}     NIS: ${student.nis}     Kelas: ${student.class_id}`,
-    15,
-    y
-  );
-  y += 8;
+
+  // Kotak info siswa -- biar keliatan kayak kartu (ada bingkainya), bukan
+  // cuma teks polos numpang lewat.
+  const infoBoxX = 15;
+  const infoBoxY = y - 5;
+  const infoBoxWidth = 115;
+  const infoBoxHeight = 24;
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.3);
+  doc.rect(infoBoxX, infoBoxY, infoBoxWidth, infoBoxHeight);
+
+  let infoY = infoBoxY + 7;
+  doc.text(`Nama  : ${student.full_name}`, infoBoxX + 4, infoY);
+  infoY += 6;
+  doc.text(`NIS   : ${student.nis}`, infoBoxX + 4, infoY);
+  infoY += 6;
+  doc.text(`Kelas : ${student.class_id}`, infoBoxX + 4, infoY);
+
+  y = infoBoxY + infoBoxHeight + 8;
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;

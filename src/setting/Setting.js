@@ -41,6 +41,7 @@ import {
   Wrench,
   CalendarClock,
   ClipboardList,
+  ClipboardCheck,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import ProfileTab from "./teacher-profiles/ProfileTab";
@@ -55,6 +56,12 @@ import ActiveUsersTab from "./ActiveUsersTab";
 import PortalSiswaTab from "./portal-siswa/PortalSiswaTab";
 import JadwalGuruTab from "./kelola-jadwal/JadwalGuruTab";
 import SPMB from "../spmb/SPMB";
+// ✅ BARU (Sep 2026): reuse AttendanceManagement.js yang sama persis
+// dipakai di route /attendance-management standalone -- link sidebar-nya
+// dicabut lagi (kepenuhan di grup AKADEMIK), sekarang diakses lewat card
+// ini aja. Rute /attendance-management di menuConfig.js TETAP dibiarin
+// ada (jangan dihapus) sebagai fallback akses langsung via URL.
+import AttendanceManagement from "../pages/attendance/AttendanceManagement";
 
 // Palet pastel per kartu menu. Ditulis lengkap per-kelas (bukan digabung
 // pake template string kayak `bg-${color}-50`) supaya Tailwind bisa nge-scan
@@ -388,6 +395,20 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       color: "orange",
       available: user?.role === "admin" || user?.role === "tu",
     },
+    // ✅ BARU (Sep 2026): reuse komponen AttendanceManagement.js -- dulu
+    // orphan route "/attendance-management" (gak ke-link dari sidebar
+    // manapun), sekarang masuk sini biar gak numpuk-numpukin sidebar.
+    // Dipake buat koreksi data presensi siswa yang salah input tanggal
+    // dari guru (edit status, ubah tanggal, atau hapus recap presensi 1
+    // hari penuh) -- admin pilih guru dulu, baru kelola presensinya.
+    {
+      id: "attendance-management",
+      title: "Management Presensi Siswa",
+      description: "Edit, ubah tanggal, atau hapus data presensi siswa yang sudah tersimpan",
+      icon: ClipboardCheck,
+      color: "blue",
+      available: user?.role === "admin",
+    },
   ];
 
   const availableCards = menuCards.filter((card) => card.available);
@@ -437,6 +458,12 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
         return <ActiveUsersTab {...commonProps} />;
       case "spmb":
         return <SPMB {...commonProps} />;
+      case "attendance-management":
+        // ⚠️ AttendanceManagement.js minta prop "onShowToast", sedangkan
+        // commonProps ngirim "showToast" (nama beda) -- di-passing manual
+        // di sini biar toast notif di dalemnya (sukses/gagal simpan edit,
+        // dst) beneran kepanggil, bukan diem-diem gak muncul.
+        return <AttendanceManagement {...commonProps} onShowToast={onShowToast} />;
       default:
         return null;
     }

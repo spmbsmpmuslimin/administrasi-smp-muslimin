@@ -1,5 +1,6 @@
 // src/system/checkers/DatabaseChecker.js
 import { supabase } from "../../supabaseClient";
+import { debugLog, debugWarn } from "../debugLog";
 
 /**
  * DatabaseChecker - Comprehensive database health checking
@@ -27,7 +28,7 @@ const CRITICAL_TABLES = [
 
 // Main export function
 export const checkDatabase = async () => {
-  console.log("🔍 DatabaseChecker: Starting comprehensive check...");
+  debugLog("🔍 DatabaseChecker: Starting comprehensive check...");
 
   const issues = [];
   const startTime = Date.now();
@@ -54,7 +55,7 @@ export const checkDatabase = async () => {
     }
 
     // ✅ RUN CHECKS IN PARALLEL for 3x speed boost
-    console.log("📋 Running parallel checks...");
+    debugLog("📋 Running parallel checks...");
     const [tableChecks, orphanedChecks, constraintChecks, duplicateChecks] = await Promise.all([
       checkTablesExist(),
       checkOrphanedRecords(),
@@ -68,8 +69,8 @@ export const checkDatabase = async () => {
     issues.push(...duplicateChecks);
 
     const executionTime = Date.now() - startTime;
-    console.log(`✅ DatabaseChecker completed in ${executionTime}ms`);
-    console.log(`📊 Found ${issues.length} issues`);
+    debugLog(`✅ DatabaseChecker completed in ${executionTime}ms`);
+    debugLog(`📊 Found ${issues.length} issues`);
 
     return {
       success: true,

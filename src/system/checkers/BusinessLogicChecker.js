@@ -1,5 +1,6 @@
 // src/system/checkers/BusinessLogicChecker.js
 import { supabase } from "../../supabaseClient";
+import { debugLog, debugWarn } from "../debugLog";
 
 /**
  * BusinessLogicChecker - Comprehensive business logic validation
@@ -7,65 +8,65 @@ import { supabase } from "../../supabaseClient";
  */
 
 export const checkBusinessLogic = async () => {
-  console.log("🔍 BusinessLogicChecker: Starting comprehensive check...");
+  debugLog("🔍 BusinessLogicChecker: Starting comprehensive check...");
 
   const issues = [];
   const startTime = Date.now();
 
   try {
     // 1. Check Academic Year Rules
-    console.log("📚 Checking academic year business rules...");
+    debugLog("📚 Checking academic year business rules...");
     const academicYearIssues = await checkAcademicYearRules();
     issues.push(...academicYearIssues);
 
     // 2. Check Attendance Business Logic
-    console.log("📅 Checking attendance business logic...");
+    debugLog("📅 Checking attendance business logic...");
     const attendanceIssues = await checkAttendanceLogic();
     issues.push(...attendanceIssues);
 
     // 3. Check Grade Business Logic
-    console.log("📊 Checking grade business logic...");
+    debugLog("📊 Checking grade business logic...");
     const gradeIssues = await checkGradeLogic();
     issues.push(...gradeIssues);
 
     // 4. Check Class Capacity and Assignment
-    console.log("🏫 Checking class capacity and assignments...");
+    debugLog("🏫 Checking class capacity and assignments...");
     const classIssues = await checkClassLogic();
     issues.push(...classIssues);
 
     // 5. Check Teacher Schedule Conflicts
-    console.log("👨‍🏫 Checking teacher schedule conflicts...");
+    debugLog("👨‍🏫 Checking teacher schedule conflicts...");
     const scheduleIssues = await checkTeacherScheduleConflicts();
     issues.push(...scheduleIssues);
 
     // 6. Check Teacher Assignment Logic
-    console.log("📝 Checking teacher assignment logic...");
+    debugLog("📝 Checking teacher assignment logic...");
     const assignmentIssues = await checkTeacherAssignmentLogic();
     issues.push(...assignmentIssues);
 
     // 6b. Check Stale Teacher Assignments (guru gak kejadwal lagi di kelas itu)
-    console.log("🗓️ Checking stale teacher assignments...");
+    debugLog("🗓️ Checking stale teacher assignments...");
     const staleAssignmentIssues = await checkStaleTeacherAssignments();
     issues.push(...staleAssignmentIssues);
 
     // 7. Check Konseling Business Rules
-    console.log("💬 Checking konseling business rules...");
+    debugLog("💬 Checking konseling business rules...");
     const konselingIssues = await checkKonselingLogic();
     issues.push(...konselingIssues);
 
     // 8. Check Student Status Consistency
-    console.log("👨‍🎓 Checking student status consistency...");
+    debugLog("👨‍🎓 Checking student status consistency...");
     const studentStatusIssues = await checkStudentStatusLogic();
     issues.push(...studentStatusIssues);
 
     // 9. Check Siswa Baru Pipeline (SPMB -> NIS -> transfer ke Students)
-    console.log("🧾 Checking siswa baru pipeline...");
+    debugLog("🧾 Checking siswa baru pipeline...");
     const siswaBaruPipelineIssues = await checkSiswaBaruPipeline();
     issues.push(...siswaBaruPipelineIssues);
 
     const executionTime = Date.now() - startTime;
-    console.log(`✅ BusinessLogicChecker completed in ${executionTime}ms`);
-    console.log(`📊 Found ${issues.length} business logic issues`);
+    debugLog(`✅ BusinessLogicChecker completed in ${executionTime}ms`);
+    debugLog(`📊 Found ${issues.length} business logic issues`);
 
     return {
       success: true,

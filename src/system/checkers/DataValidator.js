@@ -1,5 +1,6 @@
 // src/system/checkers/DataValidator.js
 import { supabase } from "../../supabaseClient";
+import { debugLog, debugWarn } from "../debugLog";
 
 /**
  * DataValidator - Comprehensive data validation checking
@@ -7,62 +8,58 @@ import { supabase } from "../../supabaseClient";
  */
 
 export const checkDataValidation = async () => {
-  console.log("🔍 DataValidator: Starting comprehensive validation...");
+  debugLog("🔍 DataValidator: Starting comprehensive validation...");
 
   const issues = [];
   const startTime = Date.now();
 
   try {
     // 1. Validate Student Data
-    console.log("👨‍🎓 Validating student data...");
+    debugLog("👨‍🎓 Validating student data...");
     const studentIssues = await validateStudents();
     issues.push(...studentIssues);
 
     // 2. Validate User Data
-    console.log("👤 Validating user data...");
+    debugLog("👤 Validating user data...");
     const userIssues = await validateUsers();
     issues.push(...userIssues);
 
     // 3. Validate Attendance Data
-    console.log("📅 Validating attendance data...");
+    debugLog("📅 Validating attendance data...");
     const attendanceIssues = await validateAttendances();
     issues.push(...attendanceIssues);
 
     // 4. Validate Grade Data
-    console.log("📊 Validating grade data...");
+    debugLog("📊 Validating grade data...");
     const gradeIssues = await validateGrades();
     issues.push(...gradeIssues);
 
     // 5. Validate Academic Year Data
-    console.log("📚 Validating academic year data...");
+    debugLog("📚 Validating academic year data...");
     const academicYearIssues = await validateAcademicYears();
     issues.push(...academicYearIssues);
 
     // 6. Validate Teacher Assignments
-    console.log("👨‍🏫 Validating teacher assignments...");
+    debugLog("👨‍🏫 Validating teacher assignments...");
     const assignmentIssues = await validateTeacherAssignments();
     issues.push(...assignmentIssues);
 
     // 7. Validate Konseling Data
-    console.log("💬 Validating konseling data...");
+    debugLog("💬 Validating konseling data...");
     const konselingIssues = await validateKonseling();
     issues.push(...konselingIssues);
 
     // 8. Validate Siswa Baru Data
-    console.log("🆕 Validating siswa baru data...");
+    debugLog("🆕 Validating siswa baru data...");
     const siswaBaruIssues = await validateSiswaBaru();
     issues.push(...siswaBaruIssues);
 
     const executionTime = Date.now() - startTime;
-    console.log(`✅ DataValidator completed in ${executionTime}ms`);
-    console.log(`📊 Found ${issues.length} validation issues:`);
+    debugLog(`✅ DataValidator completed in ${executionTime}ms`);
+    debugLog(`📊 Found ${issues.length} validation issues:`);
     issues.forEach((issue, index) => {
-      console.log(
-        `   ${index + 1}. ${issue.severity === "critical" ? "🚨" : "⚠️"} ${
-          issue.message
-        }`,
-      );
-      console.log(`      📝 ${issue.details}`);
+      debugLog(`   ${index + 1}. ${issue.severity === "critical" ? "🚨" : "⚠️"} ${issue.message}`);
+      debugLog(`      📝 ${issue.details}`);
     });
 
     return {
@@ -107,9 +104,7 @@ const validateStudents = async () => {
         category: "data",
         severity: "warning",
         message: "Students with invalid gender values",
-        details: `Found ${
-          invalidGender.length
-        } students with gender not 'L' or 'P': ${invalidGender
+        details: `Found ${invalidGender.length} students with gender not 'L' or 'P': ${invalidGender
           .map((s) => `${s.full_name} (${s.gender})`)
           .slice(0, 5)
           .join(", ")}`,
@@ -155,18 +150,14 @@ const validateStudents = async () => {
         }
       });
 
-      const duplicates = Array.from(nisMap.entries()).filter(
-        ([_, names]) => names.length > 1,
-      );
+      const duplicates = Array.from(nisMap.entries()).filter(([_, names]) => names.length > 1);
 
       if (duplicates.length > 0) {
         issues.push({
           category: "data",
           severity: "critical",
           message: "Duplicate NIS in same academic year",
-          details: `Found ${
-            duplicates.length
-          } NIS duplicates. Examples: ${duplicates
+          details: `Found ${duplicates.length} NIS duplicates. Examples: ${duplicates
             .slice(0, 3)
             .map(([key, names]) => `${key.split("-")[0]} (${names.join(", ")})`)
             .join("; ")}`,
@@ -183,9 +174,7 @@ const validateStudents = async () => {
       .limit(1000);
 
     if (shortNames) {
-      const tooShort = shortNames.filter(
-        (s) => s.full_name && s.full_name.trim().length < 3,
-      );
+      const tooShort = shortNames.filter((s) => s.full_name && s.full_name.trim().length < 3);
       if (tooShort.length > 0) {
         issues.push({
           category: "data",
@@ -263,9 +252,7 @@ const validateUsers = async () => {
         category: "data",
         severity: "warning",
         message: "Users with invalid role values",
-        details: `Found ${
-          invalidRoles.length
-        } users with invalid roles: ${invalidRoles
+        details: `Found ${invalidRoles.length} users with invalid roles: ${invalidRoles
           .map((u) => `${u.username} (${u.role})`)
           .slice(0, 5)
           .join(", ")}`,
@@ -357,12 +344,8 @@ const validateUsers = async () => {
       .eq("is_active", true)
       .not("homeroom_class_id", "is", null);
 
-    const assignedClassIds = new Set(
-      (homeroomAssignments || []).map((u) => u.homeroom_class_id),
-    );
-    const classesWithoutWali = (activeClasses || []).filter(
-      (c) => !assignedClassIds.has(c.id),
-    );
+    const assignedClassIds = new Set((homeroomAssignments || []).map((u) => u.homeroom_class_id));
+    const classesWithoutWali = (activeClasses || []).filter((c) => !assignedClassIds.has(c.id));
 
     if (classesWithoutWali.length > 0) {
       issues.push({
@@ -467,9 +450,7 @@ const validateAttendances = async () => {
         attendanceKeys.set(key, (attendanceKeys.get(key) || 0) + 1);
       });
 
-      const duplicates = Array.from(attendanceKeys.values()).filter(
-        (count) => count > 1,
-      );
+      const duplicates = Array.from(attendanceKeys.values()).filter((count) => count > 1);
       if (duplicates.length > 0) {
         issues.push({
           category: "data",
@@ -523,11 +504,7 @@ const validateGrades = async () => {
     const { data: invalidTypes } = await supabase
       .from("grades")
       .select("id, assignment_type, subject")
-      .not(
-        "assignment_type",
-        "in",
-        `(${validTypes.map((t) => `"${t}"`).join(",")})`,
-      )
+      .not("assignment_type", "in", `(${validTypes.map((t) => `"${t}"`).join(",")})`)
       .limit(50);
 
     if (invalidTypes && invalidTypes.length > 0) {
@@ -565,7 +542,7 @@ const validateGrades = async () => {
         id,
         student_id,
         students!inner(is_active, full_name)
-      `,
+      `
       )
       .eq("students.is_active", false)
       .limit(100);
@@ -694,9 +671,7 @@ const validateTeacherAssignments = async () => {
     }
 
     // 2. Assignments for non-existent academic year
-    const { data: validYears } = await supabase
-      .from("academic_years")
-      .select("year");
+    const { data: validYears } = await supabase.from("academic_years").select("year");
 
     if (validYears) {
       const validYearSet = new Set(validYears.map((y) => y.year));
@@ -706,9 +681,7 @@ const validateTeacherAssignments = async () => {
         .limit(200);
 
       if (assignments) {
-        const invalidYears = assignments.filter(
-          (a) => !validYearSet.has(a.academic_year),
-        );
+        const invalidYears = assignments.filter((a) => !validYearSet.has(a.academic_year));
         if (invalidYears.length > 0) {
           issues.push({
             category: "data",
@@ -775,10 +748,7 @@ const validateKonseling = async () => {
           .eq("id", record.student_id)
           .single();
 
-        if (
-          student &&
-          (student.nis !== record.nis || student.full_name !== record.full_name)
-        ) {
+        if (student && (student.nis !== record.nis || student.full_name !== record.full_name)) {
           mismatchCount++;
         }
       }

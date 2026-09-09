@@ -9,7 +9,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
   const [attendanceDates, setAttendanceDates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [teacherId, setTeacherId] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [teacherOptions, setTeacherOptions] = useState([]);
+  const [teacherListLoading, setTeacherListLoading] = useState(true);
   const [isHomeroomTeacher, setIsHomeroomTeacher] = useState(false);
   const [homeroomClass, setHomeroomClass] = useState(null);
 
@@ -73,35 +74,59 @@ const AttendanceManagement = ({ user, onShowToast }) => {
   };
 
   // Check auth
+  // 🔄 REVISI (Sep 2026): Halaman ini di-mount di route admin-only
+  // ("/attendance-management", allowedRoles: ["admin"] di menuConfig.js),
+  // BUKAN buat guru ngelola presensi diri sendiri. Sebelumnya di sini
+  // nyari teacher_id dari AKUN YANG LOGIN (`user.username`) -- itu salah,
+  // karena akun admin gak punya teacher_id sama sekali, jadi filter
+  // Semester/Mapel/Kelas gak akan PERNAH kebuka (selalu disabled nunggu
+  // teacherId yang gak bakal keisi). Sekarang admin PILIH guru dulu lewat
+  // dropdown baru "Pilih Guru" -- teacherId, isHomeroomTeacher, &
+  // homeroomClass diturunin dari GURU YANG DIPILIH, bukan dari akun admin.
   useEffect(() => {
-    const checkAuth = async () => {
+    const fetchTeacherOptions = async () => {
       try {
-        if (user) {
-          const { data: teacherData, error: teacherError } = await supabase
-            .from("users")
-            .select("teacher_id, homeroom_class_id")
-            .eq("username", user.username)
-            .single();
+        const { data, error } = await supabase
+          .from("users")
+          .select("teacher_id, full_name, homeroom_class_id, role")
+          .in("role", ["teacher", "guru_bk", "homeroom_teacher"])
+          .eq("is_active", true)
+          .not("teacher_id", "is", null)
+          .order("full_name", { ascending: true });
 
-          if (teacherError) {
-            console.error("Error fetching teacher data:", teacherError);
-          } else if (teacherData) {
-            setTeacherId(teacherData.teacher_id);
-            if (teacherData.homeroom_class_id) {
-              setIsHomeroomTeacher(true);
-              setHomeroomClass(teacherData.homeroom_class_id);
-            }
-          }
+        if (error) {
+          console.error("Error fetching teacher list:", error);
+          return;
         }
+
+        setTeacherOptions(data || []);
       } catch (error) {
-        console.error("Auth check error:", error);
+        console.error("Exception fetching teacher list:", error);
       } finally {
-        setAuthLoading(false);
+        setTeacherListLoading(false);
       }
     };
 
-    checkAuth();
-  }, [user]);
+    fetchTeacherOptions();
+  }, []);
+
+  // Dipanggil pas admin milih guru dari dropdown "Pilih Guru". Reset semua
+  // filter di bawahnya (mapel/kelas/tanggal) -- SAMA kayak pola reset yang
+  // udah dipake di onChange Semester/Mapel di bawah, biar gak nyisain
+  // kombinasi filter yang gak valid dari guru sebelumnya.
+  const handleTeacherChange = (e) => {
+    const newTeacherId = e.target.value || null;
+    setTeacherId(newTeacherId);
+
+    const selected = teacherOptions.find((t) => t.teacher_id === newTeacherId);
+    setIsHomeroomTeacher(!!(selected && selected.homeroom_class_id));
+    setHomeroomClass(selected?.homeroom_class_id || null);
+
+    setSelectedSubject("");
+    setSelectedClass("");
+    setAttendanceDates([]);
+    setCurrentPage(1);
+  };
 
   // Fetch academic years and semesters
   useEffect(() => {
@@ -225,7 +250,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
         const { data: classData, error: classError } = await supabase
           .from("classes")
           .select("id, grade")
-          .in("id", classIds);
+          .in("id", classIds)
+          .order("id", { ascending: true });
 
         if (classError) throw classError;
 
@@ -853,10 +879,10 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                                 ? status === "Hadir"
                                   ? "bg-green-500 text-white"
                                   : status === "Sakit"
-                                  ? "bg-yellow-500 text-white"
-                                  : status === "Izin"
-                                  ? "bg-blue-500 text-white"
-                                  : "bg-red-500 text-white"
+                                    ? "bg-yellow-500 text-white"
+                                    : status === "Izin"
+                                      ? "bg-blue-500 text-white"
+                                      : "bg-red-500 text-white"
                                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                             }`}
                             onClick={() =>
@@ -869,10 +895,10 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                             {status === "Hadir"
                               ? "✓"
                               : status === "Sakit"
-                              ? "🏥"
-                              : status === "Izin"
-                              ? "📋"
-                              : "✖"}{" "}
+                                ? "🏥"
+                                : status === "Izin"
+                                  ? "📋"
+                                  : "✖"}{" "}
                             {status}
                           </button>
                         ))}
@@ -952,7 +978,9 @@ const AttendanceManagement = ({ user, onShowToast }) => {
 
           <div className="p-6">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-theme-secondary mb-2">Tanggal Lama</label>
+              <label className="block text-sm font-medium text-theme-secondary mb-2">
+                Tanggal Lama
+              </label>
               <input
                 type="text"
                 value={formatDateToIndonesian(selectedDateData?.date)}
@@ -962,7 +990,9 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-theme-secondary mb-2">Tanggal Baru</label>
+              <label className="block text-sm font-medium text-theme-secondary mb-2">
+                Tanggal Baru
+              </label>
               <input
                 type="date"
                 value={newDate}
@@ -1198,11 +1228,11 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     );
   };
 
-  if (authLoading) {
+  if (teacherListLoading) {
     return (
       <div className="p-4 sm:p-6">
         <div className="flex justify-center items-center h-64">
-          <div className="text-blue-500 text-lg">Memeriksa autentikasi...</div>
+          <div className="text-blue-500 text-lg">Memuat daftar guru...</div>
         </div>
       </div>
     );
@@ -1236,7 +1266,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               <div className="text-slate-800 font-medium text-sm sm:text-base">
                 {user?.full_name || user?.username}
               </div>
-              <div className="flex gap-2 mt-2">
+              {teacherId && (
+                <div className="text-xs sm:text-sm text-slate-500">
+                  Mengelola:{" "}
+                  {teacherOptions.find((t) => t.teacher_id === teacherId)?.full_name || teacherId}
+                </div>
+              )}
+              <div className="flex gap-2 mt-2 justify-end">
                 {isHomeroomTeacher && (
                   <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
                     Wali Kelas {homeroomClass}
@@ -1251,6 +1287,23 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       {/* Filters */}
       <div className="bg-theme-bg p-4 sm:p-6 rounded-xl shadow-sm mb-4 sm:mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Pilih Guru</label>
+            <select
+              value={teacherId || ""}
+              onChange={handleTeacherChange}
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            >
+              <option value="">-- Pilih Guru --</option>
+              {teacherOptions.map((t) => (
+                <option key={t.teacher_id} value={t.teacher_id}>
+                  {t.full_name}
+                  {t.homeroom_class_id ? ` (Wali Kelas ${t.homeroom_class_id})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">Semester</label>
             <select

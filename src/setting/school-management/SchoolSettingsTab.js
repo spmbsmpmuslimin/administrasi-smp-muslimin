@@ -508,7 +508,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto space-y-6 pb-24">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -720,9 +720,9 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
         </div>
 
         {/* ── Akademik & Kontak (2 kolom) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
           {/* Akademik */}
-          <div className={cardClass}>
+          <div className={`${cardClass} h-full flex flex-col`}>
             <h3 className={sectionTitleClass}>
               <div
                 className={iconBadge(
@@ -851,7 +851,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           </div>
 
           {/* Kontak & Lokasi */}
-          <div className={cardClass}>
+          <div className={`${cardClass} h-full flex flex-col`}>
             <h3 className={sectionTitleClass}>
               <div
                 className={iconBadge(
@@ -1181,44 +1181,44 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Action bar (sticky di bawah saat edit) ── */}
-      {editingSchoolSettings && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 p-4 z-20">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={updateSchoolSettings}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-1"
-            >
-              <Save size={16} />
-              {loading ? "Menyimpan..." : "Simpan Perubahan"}
-            </button>
+        {/* ── Action bar (sticky di bawah, ngikutin lebar konten — bukan fixed ke viewport, jadi ga nabrak sidebar) ── */}
+        {editingSchoolSettings && (
+          <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 p-4 z-20">
+            <div className="flex flex-col sm:flex-row gap-3 px-4 sm:px-6 lg:px-8">
+              <button
+                onClick={updateSchoolSettings}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-1"
+              >
+                <Save size={16} />
+                {loading ? "Menyimpan..." : "Simpan Perubahan"}
+              </button>
 
-            <button
-              onClick={resetForm}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-2"
-            >
-              <RotateCcw size={16} />
-              Reset
-            </button>
+              <button
+                onClick={resetForm}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-2"
+              >
+                <RotateCcw size={16} />
+                Reset
+              </button>
 
-            <button
-              onClick={() => {
-                setEditingSchoolSettings(false);
-                setTempSchoolSettings({});
-                setImageValidation({ isValid: true, message: "" });
-              }}
-              disabled={loading}
-              className="px-6 py-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-3 sm:ml-auto"
-            >
-              Batal
-            </button>
+              <button
+                onClick={() => {
+                  setEditingSchoolSettings(false);
+                  setTempSchoolSettings({});
+                  setImageValidation({ isValid: true, message: "" });
+                }}
+                disabled={loading}
+                className="px-6 py-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors min-h-[44px] touch-manipulation active:scale-[0.98] order-3"
+              >
+                Batal
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

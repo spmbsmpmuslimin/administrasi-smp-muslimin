@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-09T11:52:06.377Z",
-  "executionTimeMs": 3876,
-  "filesScanned": 254,
+  "generatedAt": "2026-09-09T22:07:39.421Z",
+  "executionTimeMs": 4578,
+  "filesScanned": 255,
   "summary": {
     "status": "critical",
     "criticalCount": 1,
@@ -36,7 +36,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5221 class warna (di 182 file) kemungkinan belum dark-mode-aware",
+          "title": "5217 class warna (di 182 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -51,9 +51,8 @@
             "src/setting/UserManagementTab.js — 86 class belum ada dark: variant",
             "src/components/HomeroomTeacherDashboard.js — 82 class belum ada dark: variant",
             "src/pages/TeacherSchedule.js — 82 class belum ada dark: variant",
-            "src/pages/attendance/AttendanceManagement.js — 78 class belum ada dark: variant",
+            "src/pages/attendance/AttendanceManagement.js — 81 class belum ada dark: variant",
             "src/pages/datasiswa-induk/DataSiswaIndukListTab.js — 76 class belum ada dark: variant",
-            "src/setting/school-management/SchoolSettingsTab.js — 76 class belum ada dark: variant",
             "src/pages/datasiswa-induk/DataSiswaIndukDetailPanel.js — 75 class belum ada dark: variant",
             "src/components/TeacherDashboard.js — 71 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
@@ -62,13 +61,13 @@
             "src/pages/kelola-raport/ManajemenRaportTable.js — 65 class belum ada dark: variant",
             "src/system/PerformanceMonitor.js — 65 class belum ada dark: variant",
             "src/setting/school-management/SchoolManagementTab.js — 64 class belum ada dark: variant",
+            "src/system/DatabaseCleanupMonitor.js — 64 class belum ada dark: variant",
+            "src/system/MonitorDashboard.js — 63 class belum ada dark: variant",
             "src/setting/school-management/SiswaLulusTab.js — 62 class belum ada dark: variant",
             "src/pages/kelola-raport/RekapKelulusan.js — 60 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
-            "src/system/MonitorDashboard.js — 55 class belum ada dark: variant",
             "src/reports/AdminReports.js — 54 class belum ada dark: variant",
             "src/setting/school-management/StudentModals.js — 54 class belum ada dark: variant",
-            "src/system/DatabaseCleanupMonitor.js — 53 class belum ada dark: variant",
             "src/e-raport/CetakRaport.js — 51 class belum ada dark: variant",
             "src/setting/academic/Simulator.js — 51 class belum ada dark: variant",
             "src/pages/attendance/AdminAttendance.js — 50 class belum ada dark: variant",
@@ -78,7 +77,8 @@
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
             "src/spmb/DiagnostikPage.js — 47 class belum ada dark: variant",
-            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant"
+            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant",
+            "src/pages/DenahDuduk.js — 45 class belum ada dark: variant"
           ]
         }
       ]
@@ -100,11 +100,11 @@
             "src/e-raport/PreviewRaport.js:198 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
             "src/e-raport/PreviewRaport.js:217 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
             "src/pages/administrasi-tu/SppTab.js:261 → select(\"id, period_month, period_year, amount, status, spp_payments(payment_date)\")",
-            "src/pages/administrasi-tu/SppTab.js:983 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
+            "src/pages/administrasi-tu/SppTab.js:979 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
             "src/pages/administrasi-tu/TagihanLainTab.js:132 → select(\"id, amount, due_date, status, students(id, full_name, nis)\")",
             "src/pages/administrasi-tu/TagihanLainTab.js:537 → select(\"id, amount, academic_year, status, students(id, full_name, nis, class_id)\")",
             "src/pages/administrasi-tu/TagihanLainTab.js:645 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
-            "src/pages/attendance/AttendanceManagement.js:553 → select(\"id, student_id, status, notes, students ( id, full_name, nis )\")",
+            "src/pages/attendance/AttendanceManagement.js:579 → select(\"id, student_id, status, notes, students ( id, full_name, nis )\")",
             "src/pages/kelola-raport/ManajemenRaportTable.js:608 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
             "src/pages/kelola-raport/RekapKelulusan.js:184 → select(\"id, student_nis, semester, academic_year, student_report_grades(id, subject, score)\")",
             "src/pages/kelola-raport/RekapMultiSemester.js:400 → select(\"student_name, student_nis, semester, student_report_grades(subject, score)\")",
@@ -146,9 +146,9 @@
             "src/setting/academic/AcademicYearTab.js:167 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
             "src/setting/academic/AcademicYearTab.js:211 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
             "src/setting/feedback/FeedbackGuruTab.js:23 → select(\"*, guru:users!feedback_guru_guru_id_fkey ( full_name, username )\")",
-            "src/system/checkers/BusinessLogicChecker.js:240 → select(\"id, date, students!inner(is_active, full_name)\")",
-            "src/system/checkers/BusinessLogicChecker.js:301 → select(\"id, created_at, students!inner(is_active, full_name)\")",
-            "src/system/checkers/DataValidator.js:563 → select(\"id, student_id, students!inner(is_active, full_name)\")"
+            "src/system/checkers/BusinessLogicChecker.js:241 → select(\"id, date, students!inner(is_active, full_name)\")",
+            "src/system/checkers/BusinessLogicChecker.js:302 → select(\"id, created_at, students!inner(is_active, full_name)\")",
+            "src/system/checkers/DataValidator.js:540 → select(\"id, student_id, students!inner(is_active, full_name)\")"
           ]
         }
       ]
@@ -180,8 +180,8 @@
             "src/e-raport/RaportPage.js:94 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/konseling/Konseling.js:90 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/attendance/AttendanceMain.js:104 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
-            "src/pages/attendance/AttendanceManagement.js:111 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
-            "src/pages/attendance/AttendanceManagement.js:128 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
+            "src/pages/attendance/AttendanceManagement.js:136 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
+            "src/pages/attendance/AttendanceManagement.js:153 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/CatatanSiswa.js:891 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/datasiswa-induk/DataSiswaInduk.js:189 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/DenahDuduk.js:83 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
@@ -247,7 +247,7 @@
         },
         {
           "severity": "info",
-          "title": "13 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
+          "title": "12 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
           "description": "Tabelnya DIPAKE, tapi ada kolom yang gak pernah muncul di select/insert/update/filter manapun (dan gak ada select(\"*\") buat tabel ini yang bisa 'nyembunyiin' pemakaian implisit). Bisa jadi kolom peninggalan fitur lama, atau kolom yang emang cuma diisi lewat trigger/default value di DB. Cek manual, terutama kalau ada kolom NOT NULL tanpa default yang gak pernah di-insert dari frontend.",
           "details": [
             "pengumuman_siswa → kolom gak pernah disebut: updated_at",
@@ -259,7 +259,6 @@
             "student_reports → kolom gak pernah disebut: attendance, created_at, created_by, extracurricular, homeroom_note, updated_at",
             "student_report_grades → kolom gak pernah disebut: created_at",
             "kkm_mapel → kolom gak pernah disebut: id",
-            "class_schedules → kolom gak pernah disebut: created_at",
             "buku → kolom gak pernah disebut: created_at, kategori, penerbit, rak, tahun, total_eksemplar, updated_at",
             "teacher_codes → kolom gak pernah disebut: created_at",
             "teacher_profiles → kolom gak pernah disebut: created_at, id, updated_at"
@@ -267,46 +266,14 @@
         },
         {
           "severity": "critical",
-          "title": "37 pemakaian kolom di frontend gak ketemu di skema Supabase",
+          "title": "5 pemakaian kolom di frontend gak ketemu di skema Supabase",
           "description": "Kolom ini disebut eksplisit di select/insert/update/filter tapi gak ada di skema live Supabase -- kemungkinan besar typo nama kolom, atau kolom udah direname/dihapus dari database tapi kodenya belum diupdate. Query ini bakal error (PGRST204 / 400) atau diem-diem gagal nyimpen data itu, tergantung method-nya.",
           "details": [
-            "src/attendance-teacher/reports/DailySummary.js:70 → .from(\"teacher_attendance\").select(...) pake kolom \"users\" yang gak ada di skema Supabase",
             "src/e-raport/CetakRaport.js:245 → .from(\"tujuan_pembelajaran\").eq(\"class_id\", ...) pake kolom yang gak ada di skema Supabase",
             "src/e-raport/CetakRaport.js:459 → .from(\"users\").select(...) pake kolom \"nip\" yang gak ada di skema Supabase",
-            "src/e-raport/InputNilai.js:301 → .from(\"nilai_eraport\").select(...) pake kolom \"tujuan_pembelajaran_id\" yang gak ada di skema Supabase",
             "src/e-raport/RaportConfig.js:124 → .from(\"raport_metadata\").eq(\"tahun_ajaran_id\", ...) pake kolom yang gak ada di skema Supabase",
             "src/e-raport/RaportConfig.js:394 → .from(\"raport_metadata\").eq(\"tahun_ajaran_id\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/e-raport/RaportConfig.js:411 → .from(\"raport_metadata\").insert(...) pake kolom \"tahun_ajaran_id\" yang gak ada di skema Supabase",
-            "src/pages/attendance/AttendanceManagement.js:552 → .from(\"attendances\").select(...) pake kolom \"full_name\" yang gak ada di skema Supabase",
-            "src/portal-siswa/StudentProfile.js:435 → .from(\"student_profile_details\").upsert(...) pake kolom \"null\" yang gak ada di skema Supabase",
-            "src/reports/DailyAttendanceSection.js:166 → .from(\"attendances\").select(...) pake kolom \"students\" yang gak ada di skema Supabase",
-            "src/reports/DailyAttendanceSection.js:166 → .from(\"attendances\").select(...) pake kolom \"full_name\" yang gak ada di skema Supabase",
-            "src/services/academicYearService.js:115 → .from(\"academic_years\").eq(\"academic_year_id\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/services/academicYearService.js:115 → .from(\"academic_years\").eq(\"academic_year_id\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/services/academicYearService.js:115 → .from(\"academic_years\").eq(\"academic_year\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/services/academicYearService.js:115 → .from(\"academic_years\").eq(\"academic_year\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/services/academicYearService.js:115 → .from(\"academic_years\").in(\"academic_year_id\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/setting/academic/AcademicYearTab.js:166 → .from(\"students\").select(...) pake kolom \"grade\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"tempat_lahir\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"tanggal_lahir\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"agama\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"alamat\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"dusun\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"kode_pos\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nik\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"no_kk\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"no_akta_lahir\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nama_ayah\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"pekerjaan_ayah\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"pendidikan_ayah\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nik_ayah\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nama_ibu\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"pekerjaan_ibu\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"pendidikan_ibu\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"nik_ibu\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"sekolah_asal\" yang gak ada di skema Supabase",
-            "src/setting/academic/YearTransition.js:369 → .from(\"students\").select(...) pake kolom \"anak_ke\" yang gak ada di skema Supabase",
-            "src/setting/feedback/FeedbackGuruTab.js:22 → .from(\"feedback_guru\").select(...) pake kolom \"users\" yang gak ada di skema Supabase"
+            "src/e-raport/RaportConfig.js:411 → .from(\"raport_metadata\").insert(...) pake kolom \"tahun_ajaran_id\" yang gak ada di skema Supabase"
           ]
         }
       ]

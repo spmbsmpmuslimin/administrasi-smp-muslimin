@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * audit-kode.js
  * -----------------------------------------------------------------------
@@ -902,7 +901,7 @@ function extractSelectColumns(selectArg) {
   let flattened = trimmed;
   let prev;
   const JOIN_RE =
-    /[a-zA-Z_][a-zA-Z0-9_]*(?::[a-zA-Z_][a-zA-Z0-9_]*)?(?:![a-zA-Z_][a-zA-Z0-9_]*)?\([^()]*\)/g;
+    /[a-zA-Z_][a-zA-Z0-9_]*(?::[a-zA-Z_][a-zA-Z0-9_]*)?(?:![a-zA-Z_][a-zA-Z0-9_]*)?\s*\([^()]*\)/g;
   do {
     prev = flattened;
     flattened = flattened.replace(JOIN_RE, "");
@@ -943,12 +942,18 @@ function extractBalancedBlock(content, startIdx, maxLen = 6000) {
   return null; // gak ketemu closing dalem batas maxLen
 }
 
+// Reserved word JS yang SECARA SINTAKS bisa nyasar ketangkep regex key
+// (misal ternary "kondisi ? null : Number(x)" -- "null" diikuti ":" persis
+// kayak pola "key:"), tapi hampir mustahil beneran jadi nama kolom
+// Supabase. Di-exclude biar gak jadi false positive "unknown column".
+const JS_RESERVED_NON_KEYS = new Set(["null", "true", "false", "undefined", "this", "NaN"]);
+
 function extractObjectKeys(blockContent) {
   const keys = [];
   const KEY_RE = /(?:^|[{,\s])([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g;
   let m;
   while ((m = KEY_RE.exec(blockContent)) !== null) {
-    keys.push(m[1]);
+    if (!JS_RESERVED_NON_KEYS.has(m[1])) keys.push(m[1]);
   }
   return keys;
 }
@@ -1018,7 +1023,21 @@ async function checkFrontendBackendAlignment(allFiles) {
 
       const chainStart = m.index + m[0].length;
       const nextFromIdx = fromMatches[idx + 1] ? fromMatches[idx + 1].index : content.length;
-      const chainEnd = Math.min(chainStart + 3000, nextFromIdx, content.length);
+      // Potong window di titik mana pun yang PALING DEKAT duluan: .from()
+      // berikutnya, semicolon pertama (= akhir statement chain ini), atau
+      // cap 3000 karakter (fallback kalau gak ada ";" -- misal gaya kode
+      // tanpa semicolon). Tanpa batas semicolon ini, fungsi pendek (early
+      // return / helper kecil) bisa "nyerempet" ke fungsi LAIN sesudahnya
+      // yang gak ada hubungannya sama sekali (lihat kasus academicYearService.js
+      // -- filterBySemester() dkk nge-filter `query` PARAMETER dari caller,
+      // bukan chained dari .from() manapun di file ini, tapi kebaca ketarik
+      // gara-gara window yang kelewat lebar).
+      const semicolonIdx = content.indexOf(";", chainStart);
+      const chainEnd = Math.min(
+        chainStart + 3000,
+        nextFromIdx,
+        semicolonIdx === -1 ? Infinity : semicolonIdx + 1
+      );
       const window = content.slice(chainStart, chainEnd);
       const upTo = content.slice(0, m.index);
       const lineNo = upTo.split(/\r?\n/).length;

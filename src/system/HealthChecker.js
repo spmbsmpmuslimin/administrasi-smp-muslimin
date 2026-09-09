@@ -4,6 +4,7 @@ import { checkDataValidation } from "./checkers/DataValidator";
 import { checkBusinessLogic } from "./checkers/BusinessLogicChecker";
 import { checkAppHealth } from "./checkers/AppHealthChecker";
 import { checkRaport } from "./checkers/RaportChecker";
+import { debugLog, debugWarn } from "./debugLog";
 
 class HealthChecker {
   constructor() {
@@ -42,7 +43,7 @@ class HealthChecker {
 
       // ❌ DISABLED: Save is now handled by MonitorDashboard to prevent duplicates
       // await this.saveResults(userId, summary, executionTime);
-      console.log("ℹ️ Note: Save to database is handled by MonitorDashboard component");
+      debugLog("ℹ️ Note: Save to database is handled by MonitorDashboard component");
 
       return {
         success: true,
@@ -62,10 +63,10 @@ class HealthChecker {
   }
 
   async runDatabaseCheck() {
-    console.log("🔍 Running database checks...");
+    debugLog("🔍 Running database checks...");
     try {
       const result = await checkDatabase();
-      console.log("✅ Database check completed:", result);
+      debugLog("✅ Database check completed:", result);
       return this.transformResult(result, "database");
     } catch (error) {
       console.error("❌ Database check failed:", error);
@@ -80,10 +81,10 @@ class HealthChecker {
   }
 
   async runDataValidationCheck() {
-    console.log("🔍 Running data validation checks...");
+    debugLog("🔍 Running data validation checks...");
     try {
       const result = await checkDataValidation();
-      console.log("✅ Data validation check completed:", result);
+      debugLog("✅ Data validation check completed:", result);
       return this.transformResult(result, "validation");
     } catch (error) {
       console.error("❌ Data validation check failed:", error);
@@ -98,10 +99,10 @@ class HealthChecker {
   }
 
   async runBusinessLogicCheck() {
-    console.log("🔍 Running business logic checks...");
+    debugLog("🔍 Running business logic checks...");
     try {
       const result = await checkBusinessLogic();
-      console.log("✅ Business logic check completed:", result);
+      debugLog("✅ Business logic check completed:", result);
       return this.transformResult(result, "businessLogic");
     } catch (error) {
       console.error("❌ Business logic check failed:", error);
@@ -116,10 +117,10 @@ class HealthChecker {
   }
 
   async runAppHealthCheck() {
-    console.log("🔍 Running app health checks...");
+    debugLog("🔍 Running app health checks...");
     try {
       const result = await checkAppHealth();
-      console.log("✅ App health check completed:", result);
+      debugLog("✅ App health check completed:", result);
       return this.transformResult(result, "appHealth");
     } catch (error) {
       console.error("❌ App health check failed:", error);
@@ -134,10 +135,10 @@ class HealthChecker {
   }
 
   async runRaportCheck() {
-    console.log("🔍 Running raport checks...");
+    debugLog("🔍 Running raport checks...");
     try {
       const result = await checkRaport();
-      console.log("✅ Raport check completed:", result);
+      debugLog("✅ Raport check completed:", result);
       return this.transformResult(result, "raport");
     } catch (error) {
       console.error("❌ Raport check failed:", error);
@@ -256,7 +257,7 @@ class HealthChecker {
       overallStatus = "healthy";
     }
 
-    console.log("📊 Summary calculated:", {
+    debugLog("📊 Summary calculated:", {
       totalIssues,
       criticalCount,
       warningCount,
@@ -276,7 +277,7 @@ class HealthChecker {
   // ⚠️ This method is kept for backward compatibility but not used anymore
   // Save is now handled by MonitorDashboard component to prevent duplicate inserts
   async saveResults(userId, summary, executionTime) {
-    console.warn("⚠️ saveResults() is deprecated. Save is handled by MonitorDashboard.");
+    debugWarn("⚠️ saveResults() is deprecated. Save is handled by MonitorDashboard.");
     try {
       const { data, error } = await supabase
         .from("system_health_logs")
@@ -296,7 +297,7 @@ class HealthChecker {
 
       if (error) throw error;
 
-      console.log("✅ Results saved:", data.id);
+      debugLog("✅ Results saved:", data.id);
       return data;
     } catch (error) {
       console.error("❌ Error saving results:", error);
