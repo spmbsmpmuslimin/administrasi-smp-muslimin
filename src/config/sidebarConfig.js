@@ -105,7 +105,7 @@ export const sidebarGroups = [
         // Admin & TU. Disamain sama allowedRoles+requireWaliKelas di
         // /data-induk-siswa (menuConfig.js): guru mapel biasa TETAP gak
         // liat menu ini, cuma yang emang wali kelas (isWaliKelas).
-        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isWaliKelas,
+        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isWaliKelas || ctx.userRole === "developer",
       },
     ],
   },
@@ -123,7 +123,8 @@ export const sidebarGroups = [
         // true buat dia. Entry ini emang SENGAJA dobel tampil di AKADEMIK
         // (selain di grup KURIKULUM di bawah) karena Wakasek Kurikulum
         // tetap guru mapel biasa juga.
-        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isTeacher || ctx.isGuruBK,
+        show: (ctx) =>
+          ctx.isAdmin || ctx.isTU || ctx.isTeacher || ctx.isGuruBK || ctx.userRole === "developer",
       },
       {
         page: "attendance",
@@ -131,7 +132,7 @@ export const sidebarGroups = [
         icon: [
           "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
         ],
-        show: (ctx) => ctx.isTeacher || ctx.isGuruBK,
+        show: (ctx) => ctx.isTeacher || ctx.isGuruBK || ctx.userRole === "developer",
       },
       {
         page: "admin-attendance",
@@ -146,7 +147,7 @@ export const sidebarGroups = [
         // Wakasek Kurikulum jadi liat menu ini 2x (AKADEMIK + KURIKULUM) --
         // padahal Wakasek Kurikulum udah punya entry sendiri di grup
         // KURIKULUM (lihat di bawah).
-        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isGuruBK,
+        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isGuruBK || ctx.userRole === "developer",
       },
       {
         // ✅ FIX (Sep 2026): Admin/TU dulu nyasar ke GradeMain (halaman
@@ -161,7 +162,8 @@ export const sidebarGroups = [
         icon: [
           "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
         ],
-        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isTeacher || ctx.isGuruBK,
+        show: (ctx) =>
+          ctx.isAdmin || ctx.isTU || ctx.isTeacher || ctx.isGuruBK || ctx.userRole === "developer",
       },
       {
         page: "jadwal-saya",
@@ -177,7 +179,7 @@ export const sidebarGroups = [
         // teacher, guru_bk, petugas_perpus, siswa). Status Wali Kelas
         // ditentukan dari homeroom_class_id terisi, bukan dari nilai role,
         // dan itu udah otomatis kecover lewat isTeacher. Dead code, no-op.
-        show: (ctx) => ctx.isTeacher,
+        show: (ctx) => ctx.isTeacher || ctx.userRole === "developer",
       },
       {
         page: "jurnal-harian",
@@ -187,13 +189,13 @@ export const sidebarGroups = [
         ],
         // ✅ FIX: Guru BK/BP dihilangkan dari menu ini -- jurnal mengajar
         // harian cuma relevan buat guru yang punya jam KBM reguler.
-        show: (ctx) => ctx.isTeacher,
+        show: (ctx) => ctx.isTeacher || ctx.userRole === "developer",
       },
       {
         page: "portal-siswa-guru",
         label: "Portal Siswa",
         icon: ["M4 4h6v6H4V4zM14 4h6v6h-6V4zM4 14h6v6H4v-6zM14 14h6v6h-6v-6z"],
-        show: (ctx) => ctx.isWaliKelas,
+        show: (ctx) => ctx.isWaliKelas || ctx.userRole === "developer",
       },
       {
         page: "konseling",
@@ -201,7 +203,7 @@ export const sidebarGroups = [
         icon: [
           "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
         ],
-        show: (ctx) => ctx.isGuruBK,
+        show: (ctx) => ctx.isGuruBK || ctx.userRole === "developer",
         sectionHeader: "Konseling",
       },
       {
@@ -210,7 +212,7 @@ export const sidebarGroups = [
         icon: [
           "M3 12l2-2m0 0l7-7 7 7m-14 0v8a2 2 0 002 2h3m6-10l2 2m-2-2v10a2 2 0 01-2 2h-3m0 0v-6h-4v6m4 0H9",
         ],
-        show: (ctx) => ctx.isGuruBK,
+        show: (ctx) => ctx.isGuruBK || ctx.userRole === "developer",
       },
       {
         page: "reports",
@@ -218,7 +220,13 @@ export const sidebarGroups = [
         icon: [
           "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
         ],
-        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.isWaliKelas || ctx.isTeacher || ctx.isGuruBK,
+        show: (ctx) =>
+          ctx.isAdmin ||
+          ctx.isTU ||
+          ctx.isWaliKelas ||
+          ctx.isTeacher ||
+          ctx.isGuruBK ||
+          ctx.userRole === "developer",
       },
     ],
   },
@@ -339,7 +347,7 @@ export const sidebarGroups = [
   {
     id: "perpustakaan",
     title: "PERPUSTAKAAN",
-    show: (ctx) => ctx.userRole === "petugas_perpus",
+    show: (ctx) => ctx.userRole === "petugas_perpus" || ctx.userRole === "developer",
     items: [
       {
         page: "katalog-buku",
@@ -372,7 +380,7 @@ export const sidebarGroups = [
     // alias "settings-jadwal-guru" di Layout.js.
     id: "kurikulum",
     title: "KURIKULUM",
-    show: (ctx) => ctx.isWakasekKurikulum,
+    show: (ctx) => ctx.isWakasekKurikulum || ctx.userRole === "developer",
     items: [
       // ===== Monitoring (Sep 2026) =====
       // Reuse page yang sama persis dengan yang dipakai Admin/TU/Guru BK
@@ -422,7 +430,7 @@ export const sidebarGroups = [
     // restrukturisasi grup ini. Cuma buat Admin/TU, role lain SAMA SEKALI
     // gak kesentuh (lihat show() di bawah, gak diubah).
     title: "Data & Sistem",
-    show: (ctx) => ctx.isAdmin || ctx.isTU,
+    show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.userRole === "developer",
     items: [
       // ⚠️ FIX (Sep 2026) -- TAHAP 1 dari restrukturisasi grup ini, cuma
       // sidebar + routing skeleton dulu, HALAMANNYA BELUM di-rework:
@@ -458,6 +466,13 @@ export const sidebarGroups = [
         icon: [
           "M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z",
         ],
+        // ✅ FIX (Sep 2026): di-hide dari Admin & TU (per permintaan) --
+        // sebelumnya gak ada show() jadi otomatis ikut nongol ke Admin/TU
+        // lewat show() grup "sistem" di atas. Sekarang cuma nongol buat
+        // role developer. Role lain emang udah gak pernah kesentuh grup
+        // ini (grup "sistem" cuma tampil buat isAdmin/isTU/developer),
+        // jadi gak ada dampak ke role lain.
+        show: (ctx) => ctx.userRole === "developer",
       },
     ],
   },

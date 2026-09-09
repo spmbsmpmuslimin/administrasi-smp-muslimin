@@ -411,7 +411,11 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
     },
   ];
 
-  const availableCards = menuCards.filter((card) => card.available);
+  // ✅ Developer bypass (Sep 2026): role "developer" liat SEMUA card di
+  // sini, gak peduli kondisi `available` masing-masing card di atas --
+  // dipakai buat QA lintas menu (Admin/TU/Wakasek Kurikulum dkk) tanpa
+  // perlu gonta-ganti akun.
+  const availableCards = menuCards.filter((card) => card.available || user?.role === "developer");
 
   const getCurrentCard = () => {
     return availableCards.find((card) => card.id === activeTab);

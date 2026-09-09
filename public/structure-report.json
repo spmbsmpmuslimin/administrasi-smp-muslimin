@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-09T22:07:39.690Z",
-  "executionTimeMs": 266,
+  "generatedAt": "2026-09-09T22:24:45.386Z",
+  "executionTimeMs": 170,
   "tree": {
     "name": "src",
     "path": "src",
@@ -5459,7 +5459,7 @@
             "file": {
               "path": "src/system/DatabaseCleanupMonitor.js",
               "type": "system",
-              "lines": 856,
+              "lines": 951,
               "functions": [
                 "DatabaseCleanupMonitor"
               ],
@@ -10582,7 +10582,7 @@
     "src/system/DatabaseCleanupMonitor.js": {
       "path": "src/system/DatabaseCleanupMonitor.js",
       "type": "system",
-      "lines": 856,
+      "lines": 951,
       "functions": [
         "DatabaseCleanupMonitor"
       ],

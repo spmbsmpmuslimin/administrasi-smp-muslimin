@@ -75,6 +75,15 @@ const Dashboard = ({ user, darkMode }) => {
       return <AdminDashboard user={memoizedUser} darkMode={darkMode} />;
     }
 
+    // 1c. DEVELOPER -- role internal buat QA lintas menu (bypass semua
+    // pengecekan akses di ProtectedRoute/sidebarConfig.js). Gak punya
+    // dashboard sendiri, dipinjemin AdminDashboard aja karena paling
+    // lengkap -- yang penting akses ke semua menu/halaman lain (lewat
+    // sidebar & URL langsung) udah kebuka semua buat role ini.
+    if (userRole === "developer") {
+      return <AdminDashboard user={memoizedUser} darkMode={darkMode} />;
+    }
+
     // 2. GURU BK/BP
     if (userRole === "guru_bk") {
       return <GuruBKDashboard user={memoizedUser} darkMode={darkMode} />;

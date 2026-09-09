@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 9 Sep 2026, 18.22
+Di-download dari UI: 10 Sep 2026, 05.29
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 9 Sep 2026, 18.21
+Terakhir di-generate: 10 Sep 2026, 05.24
 ======================================================================
 |-- src
 |   |-- assets
@@ -283,7 +283,8 @@ Terakhir di-generate: 9 Sep 2026, 18.21
 |   |   |-- MonitorDashboard.js
 |   |   |-- MonitorSistem.js
 |   |   |-- PerformanceMonitor.js
-|   |   `-- StrukturSistem.js
+|   |   |-- StrukturSistem.js
+|   |   `-- debugLog.js
 |   |-- utils
 |   |   |-- deviceInfo.js
 |   |   |-- excelExportKit.js
@@ -303,7 +304,7 @@ Terakhir di-generate: 9 Sep 2026, 18.21
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 9 Sep 2026, 18.22
+Terakhir di-generate: 10 Sep 2026, 05.24
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at

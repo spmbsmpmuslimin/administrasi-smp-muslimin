@@ -876,11 +876,11 @@ export const autoFixDataIntegrity = async () => {
 // scope tab "Cek Kesinambungan" yang secara eksplisit diposisikan sebagai
 // pre-check SEBELUM transisi (lihat komentar header PreflightCheck.js).
 //
-// 6 tabel lain yang BENERAN kesentuh transisi (siswa_baru, spmb_settings,
-// school_settings, student_auth, student_graduations, student_profile_details)
-// SENGAJA gak dimasukkan ke sini juga - soalnya mereka gak punya kolom
-// academic_year_id (jadi gak cocok sama pola cek generic orphan/mismatch di
-// bawah). Kesiapan tabel-tabel itu dicek dengan cara yang beda-beda (lebih
+// 5 tabel lain yang BENERAN kesentuh transisi (siswa_baru, spmb_settings,
+// school_settings, student_auth, student_profile_details) SENGAJA gak
+// dimasukkan ke sini - soalnya mereka gak punya kolom academic_year_id
+// (jadi gak cocok sama pola cek generic orphan/mismatch di bawah).
+// Kesiapan tabel-tabel itu dicek dengan cara yang beda-beda (lebih
 // spesifik per-kasus) di runTransitionReadinessCheck() / TransitionReadiness.js.
 //
 // textColumn diisi kalau tabel itu JUGA punya kolom teks "academic_year" yang
@@ -890,6 +890,22 @@ const TABLES_WITH_ACADEMIC_YEAR_ID = [
   { table: "classes", label: "Kelas", textColumn: "academic_year" },
   { table: "students", label: "Data Siswa", textColumn: "academic_year" },
   { table: "teacher_assignments", label: "Penugasan Guru", textColumn: "academic_year" },
+  // ✅ DITAMBAHKAN (10 Sep 2026): dulu komentar di sini nulis
+  // student_graduations "gak punya kolom academic_year_id" -- itu SALAH.
+  // Ketauan pas admin coba hapus baris academic_years lama (2023/2024 sem 2)
+  // dan kena error 23503 foreign key constraint
+  // "student_graduations_academic_year_id_fkey", nunjukin tabel ini beneran
+  // punya FK ke academic_years yang gak ke-cover sama sekali sama Cek
+  // Kesinambungan sebelum ini. Ditambahin biar orphan FK ke tabel ini
+  // kedeteksi duluan di sini, SEBELUM admin coba hapus/ubah baris
+  // academic_years dan baru ketauan lewat error database mentah.
+  //
+  // Catatan: beda sama classes/students/teacher_assignments, baris di tabel
+  // ini SECARA WAJAR nunjuk ke tahun ajaran yang UDAH BERAKHIR (siswa lulus
+  // dari tahun yang ditinggalkan), bukan tahun ajaran aktif sekarang. Jadi
+  // "activeYearRowCount" buat tabel ini biasanya bakal 0 - itu normal, BUKAN
+  // indikasi masalah.
+  { table: "student_graduations", label: "Arsip Kelulusan Siswa", textColumn: null },
 ];
 
 // Diekspor biar UI (PreflightCheck.js) bisa nampilin jumlah tabel yang
@@ -1117,7 +1133,7 @@ export const runTransitionReadinessCheck = async (schoolConfig = {}) => {
     // 2. Siswa baru dari SPMB yang siap ditransfer
     const { data: siswaBaruAll, error: siswaBaruError } = await supabase
       .from("siswa_baru")
-      .select("id, nama_lengkap, nisn, kelas")
+      .select("id, nama_lengkap, nis, kelas")
       .eq("academic_year", targetYear)
       .eq("is_transferred", false);
 
@@ -1145,7 +1161,7 @@ export const runTransitionReadinessCheck = async (schoolConfig = {}) => {
         details: belumKelas.slice(0, 10).map((s) => s.nama_lengkap),
       });
 
-      // 3. Konflik NIS/NISN siswa baru vs siswa aktif
+      // 3. Konflik NIS siswa baru vs siswa aktif
       const { data: existingStudents, error: existingError } = await supabase
         .from("students")
         .select("nis")
@@ -1159,8 +1175,16 @@ export const runTransitionReadinessCheck = async (schoolConfig = {}) => {
           message: `Gagal cek NIS siswa aktif: ${existingError.message}`,
         });
       } else {
+        // ✅ FIX: dulu bandingin s.nisn (NISN, nomor dari pemerintah) ke
+        // existingNIS (isinya NIS sekolah, format beda total) -- persis bug
+        // yang sama yang udah diperbaiki di YearTransition.js (lihat komentar
+        // "✅ FIX" di generateYearTransitionPreview() sana). Akibatnya deteksi
+        // konflik di sini nyaris gak pernah kena walau kelihatan kayak ada
+        // pengamanan. Sekarang bandingin NIS ke NIS, jenis nomor yang sama,
+        // biar hasil check ini beneran nyerminin apa yang bakal kejadian pas
+        // transisi asli dijalankan.
         const existingNIS = new Set((existingStudents || []).map((s) => s.nis).filter(Boolean));
-        const conflicts = siapMasuk.filter((s) => s.nisn && existingNIS.has(s.nisn));
+        const conflicts = siapMasuk.filter((s) => s.nis && existingNIS.has(s.nis));
 
         items.push({
           id: "nis_conflict",
@@ -1170,7 +1194,7 @@ export const runTransitionReadinessCheck = async (schoolConfig = {}) => {
             conflicts.length > 0
               ? `${conflicts.length} siswa baru punya NIS yang udah kepake siswa aktif - bakal DILEWATIN otomatis, betulin manual dulu di SPMB.`
               : "Gak ada konflik NIS.",
-          details: conflicts.slice(0, 10).map((s) => `${s.nama_lengkap} (NIS: ${s.nisn})`),
+          details: conflicts.slice(0, 10).map((s) => `${s.nama_lengkap} (NIS: ${s.nis})`),
         });
       }
     }

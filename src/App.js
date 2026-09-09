@@ -249,6 +249,16 @@ const ProtectedRoute = ({
     return <Navigate to="/" />;
   }
 
+  // ✅ Developer bypass (Sep 2026): role "developer" dipakai buat QA
+  // lintas role -- harus bisa akses SEMUA route yang di-generate dari
+  // menuConfig.js tanpa kena satupun pengecekan di bawah (maintenance
+  // mode, allowedRoles, requireWaliKelas, requireWakasekKurikulum,
+  // teacherRequiresWakasekKurikulum, requireRuangBelajarAccess), biar gak
+  // perlu gonta-ganti akun cuma buat ngecek halaman guru/wali kelas/tu/dst.
+  if (userRole === "developer") {
+    return children;
+  }
+
   // 🔥 MAINTENANCE MODE CHECK
   const isWhitelisted = whitelistUsers.some((u) => u.id === user?.id);
 
