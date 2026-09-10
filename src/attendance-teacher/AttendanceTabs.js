@@ -15,7 +15,9 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
 
   // Conditional tabs based on role
-  const isAdmin = currentUser?.role === "admin";
+  // ✅ FIX: developer disamain kayak admin -- sebelumnya cuma cek "admin"
+  // doang, jadi developer gak keliatan tab "Generate QR" (admin only).
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "developer";
 
   // Check today's attendance saat component mount
   useEffect(() => {

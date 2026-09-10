@@ -35,7 +35,9 @@ const Reports = ({ user, onShowToast }) => {
   // grup "akademik" > "Laporan" show()-nya isAdmin||isTU), tapi role check
   // manual di file ini sebelumnya cuma cek "admin" doang, jadi TU jatuh ke
   // fallback "Role Tidak Dikenali" di paling bawah.
-  if (user.role === "admin" || user.role === "tu") {
+  // ✅ FIX 2: developer ditambahin juga -- sama kejadiannya kayak TU, role
+  // "developer" gak ada di kondisi manapun jadi jatuh ke fallback juga.
+  if (user.role === "admin" || user.role === "tu" || user.role === "developer") {
     return <AdminReports user={user} onShowToast={onShowToast} />;
   }
 
@@ -136,7 +138,8 @@ const Reports = ({ user, onShowToast }) => {
         </p>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
           <p className="text-sm md:text-base text-red-700 dark:text-red-300">
-            Role yang didukung: admin, teacher, counselor/bk/bp/guru_bk, student, parent
+            Role yang didukung: admin, developer, tu, teacher, counselor/bk/bp/guru_bk, student,
+            parent
           </p>
         </div>
         <p className="text-sm md:text-base text-slate-500 dark:text-gray-400 mb-4 md:mb-6">
