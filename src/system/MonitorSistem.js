@@ -4,6 +4,13 @@ import DatabaseCleanupMonitor from "./DatabaseCleanupMonitor";
 import PerformanceMonitor from "./PerformanceMonitor";
 import CodeAudit from "./CodeAudit";
 import StrukturSistem from "./StrukturSistem";
+// ✅ BARU (Sep 2026): reuse MaintenanceModeTab.js & ActiveUsersTab.js yang
+// dulu ada di grup "Data & Sistem" (Setting.js) -- sekarang dipindah ke
+// sini biar ngumpul sama menu monitoring/maintenance sistem lainnya.
+// Kedua komponen ini cuma butuh prop "showToast" (bukan "onShowToast"),
+// makanya pas render di bawah kita passing dua-duanya sekalian.
+import MaintenanceModeTab from "./MaintenanceModeTab";
+import ActiveUsersTab from "./ActiveUsersTab";
 import {
   Activity,
   Database,
@@ -13,6 +20,8 @@ import {
   ChevronRight,
   ArrowRight,
   LayoutGrid,
+  Wrench,
+  UserCheck,
 } from "lucide-react";
 
 // Palet pastel per kartu menu, sama persis pendekatannya kayak di
@@ -79,12 +88,29 @@ const CARD_COLOR_STYLES = {
     titleHover: "group-hover:text-indigo-700 dark:group-hover:text-indigo-300",
     header: "from-indigo-400 to-indigo-500 dark:from-indigo-600 dark:to-indigo-700",
   },
+  red: {
+    bg: "bg-red-50/80 dark:bg-red-950/20",
+    border: "border-red-100 dark:border-red-900/40",
+    hoverBorder: "hover:border-red-300 dark:hover:border-red-700",
+    iconBg: "bg-red-100 dark:bg-red-900/40 group-hover:bg-red-200 dark:group-hover:bg-red-800/50",
+    iconColor: "text-red-600 dark:text-red-400",
+    titleHover: "group-hover:text-red-700 dark:group-hover:text-red-300",
+    header: "from-red-400 to-red-500 dark:from-red-600 dark:to-red-700",
+  },
 };
 
 function MonitorSistem({ user, onShowToast }) {
   // "activeCard": null artinya lagi di grid view (dashboard menu), kalau
   // udah diisi id salah satu card berarti lagi di detail view.
   const [activeCard, setActiveCard] = useState(null);
+
+  // ✅ Role gating (Sep 2026): dulu di Setting.js, card Maintenance &
+  // Aktive User dibatasin available: role admin/tu. Sekarang dipindah ke
+  // sini, ditambah role "developer" (buat QA lintas menu). Card lain di
+  // Monitor Sistem gak punya batasan role sama sekali (field "available"
+  // di-omit = selalu tampil), jadi cuma 2 card baru ini yang dicek.
+  const isMaintenanceOrActiveUserAllowed =
+    user?.role === "developer" || user?.role === "admin" || user?.role === "tu";
 
   const cards = [
     {
@@ -127,7 +153,31 @@ function MonitorSistem({ user, onShowToast }) {
       color: "indigo",
       component: StrukturSistem,
     },
+    // ✅ BARU (Sep 2026): pindahan dari Setting.js grup "Data & Sistem".
+    {
+      id: "maintenance",
+      title: "Maintenance",
+      description: "Mode pemeliharaan dan backup",
+      icon: Wrench,
+      color: "red",
+      component: MaintenanceModeTab,
+      available: isMaintenanceOrActiveUserAllowed,
+    },
+    {
+      id: "active-users",
+      title: "Manajemen Aktive User",
+      description: "Pantau aktivitas login dan engagement guru",
+      icon: UserCheck,
+      color: "teal",
+      component: ActiveUsersTab,
+      available: isMaintenanceOrActiveUserAllowed,
+    },
   ];
+
+  // Card yang punya field "available" bakal difilter sesuai role; card
+  // lama yang gak punya field ini (available === undefined) tetap selalu
+  // tampil, gak kepengaruh sama pengecekan role di atas.
+  const visibleCards = cards.filter((card) => card.available === undefined || card.available);
 
   const currentCard = cards.find((card) => card.id === activeCard);
   const ActiveComponent = currentCard?.component;
@@ -192,7 +242,11 @@ function MonitorSistem({ user, onShowToast }) {
 
           {/* Card Content */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/30 transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700">
-            <ActiveComponent user={user} onShowToast={onShowToast} />
+            {/* showToast (selain onShowToast) dikirim juga karena
+                MaintenanceModeTab & ActiveUsersTab destructure "showToast",
+                bukan "onShowToast" -- tanpa ini toast notif di dalemnya diem
+                aja gak muncul. */}
+            <ActiveComponent user={user} onShowToast={onShowToast} showToast={onShowToast} />
           </div>
         </div>
       </div>
@@ -222,7 +276,7 @@ function MonitorSistem({ user, onShowToast }) {
 
         {/* Cards Grid: 2 kolom di HP, 3 kolom di tablet, 4 kolom di desktop */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {cards.map((card) => {
+          {visibleCards.map((card) => {
             const IconComponent = card.icon;
             const colorStyle = CARD_COLOR_STYLES[card.color] || CARD_COLOR_STYLES.sky;
 

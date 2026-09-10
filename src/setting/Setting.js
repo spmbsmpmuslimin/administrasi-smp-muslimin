@@ -35,10 +35,8 @@ import {
   ArrowRight,
   MessageSquare,
   UserPlus,
-  UserCheck,
   ShieldCheck,
   FileBarChart,
-  Wrench,
   CalendarClock,
   ClipboardList,
   ClipboardCheck,
@@ -48,11 +46,9 @@ import ProfileTab from "./teacher-profiles/ProfileTab";
 import SchoolCombinedTab from "./school-management/SchoolCombinedTab";
 import AcademicYearTab from "./academic/AcademicYearTab";
 import SystemTab from "./SystemTab";
-import MaintenanceModeTab from "./MaintenanceModeTab";
 import RaportConfig from "../e-raport/RaportConfig";
 import UserManagementTab from "./UserManagementTab";
 import FeedbackCombinedTab from "./feedback/FeedbackCombinedTab";
-import ActiveUsersTab from "./ActiveUsersTab";
 import PortalSiswaTab from "./portal-siswa/PortalSiswaTab";
 import JadwalGuruTab from "./kelola-jadwal/JadwalGuruTab";
 import SPMB from "../spmb/SPMB";
@@ -337,14 +333,6 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       available: true,
     },
     {
-      id: "active-users",
-      title: "Manajemen Aktive User",
-      description: "Pantau aktivitas login dan engagement guru",
-      icon: UserCheck,
-      color: "teal",
-      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
-    },
-    {
       id: "user-management",
       title: "Manajemen User",
       description: "Kelola akun pengguna dan hak akses",
@@ -366,23 +354,11 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       description: "Setup template dan format raport",
       icon: FileBarChart,
       color: "cyan",
-      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
-    },
-    {
-      id: "maintenance",
-      title: "Maintenance",
-      description: "Mode pemeliharaan dan backup",
-      icon: Wrench,
-      color: "red",
-      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
-    },
-    {
-      id: "feedback-guru",
-      title: "Feedback Guru & Siswa",
-      description: "Kelola masukan, saran, dan laporan bug dari guru & siswa",
-      icon: MessageSquare,
-      color: "violet",
-      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
+      // 🔒 NON-AKTIF (Sep 2026): fitur E-Raport lagi gak dipake secara
+      // keseluruhan. Sengaja di-hardcode false (bukan dihapus) biar kalau
+      // sewaktu-waktu diperlukan lagi, tinggal balikin ke:
+      // available: user?.role === "admin" || user?.role === "tu",
+      available: false,
     },
     // ✅ BARU (Sep 2026): reuse komponen SPMB.js yang sama persis dipakai
     // di route /spmb standalone -- link sidebar-nya sendiri udah dicabut
@@ -408,6 +384,15 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       icon: ClipboardCheck,
       color: "blue",
       available: user?.role === "admin",
+    },
+    // ✅ FIX (Sep 2026): dipindah ke posisi PALING TERAKHIR di grid.
+    {
+      id: "feedback-guru",
+      title: "Feedback Guru & Siswa",
+      description: "Kelola masukan, saran, dan laporan bug dari guru & siswa",
+      icon: MessageSquare,
+      color: "violet",
+      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
   ];
 
@@ -450,16 +435,12 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
         return <AcademicYearTab {...commonProps} />;
       case "raport":
         return <RaportConfig {...commonProps} />;
-      case "maintenance":
-        return <MaintenanceModeTab {...commonProps} />;
       case "system":
         return <SystemTab {...commonProps} />;
       case "jadwal-guru":
         return <JadwalGuruTab {...commonProps} />;
       case "feedback-guru":
         return <FeedbackCombinedTab {...commonProps} />;
-      case "active-users":
-        return <ActiveUsersTab {...commonProps} />;
       case "spmb":
         return <SPMB {...commonProps} />;
       case "attendance-management":

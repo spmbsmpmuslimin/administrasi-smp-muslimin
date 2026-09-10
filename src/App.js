@@ -8,7 +8,7 @@ import Layout from "./components/Layout";
 
 // Import komponen non-menu (route khusus di luar menuConfig)
 import AdminPanel from "./setting/AdminPanel";
-import MaintenancePage from "./setting/MaintenancePage";
+import MaintenancePage from "./system/MaintenancePage";
 
 // ⭐ Menu config — single source of truth untuk semua route "biasa"
 import { menuConfig } from "./config/menuConfig";
@@ -261,9 +261,12 @@ const ProtectedRoute = ({
   }
 
   // 🔥 MAINTENANCE MODE CHECK
+  // Developer udah lolos duluan di atas (early return). Admin TIDAK lagi
+  // otomatis bypass -- kalau admin butuh akses pas maintenance, harus
+  // ditambahin manual ke whitelist lewat MaintenanceModeTab.
   const isWhitelisted = whitelistUsers.some((u) => u.id === user?.id);
 
-  if (maintenanceMode && userRole !== "admin" && !isWhitelisted) {
+  if (maintenanceMode && !isWhitelisted) {
     return <MaintenancePage message={maintenanceMessage} />;
   }
 

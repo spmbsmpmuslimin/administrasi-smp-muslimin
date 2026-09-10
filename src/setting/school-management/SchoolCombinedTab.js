@@ -8,9 +8,10 @@
 // cuma dibungkus switcher tab.
 //
 // ⚠️ Catatan role: card ini sendiri available buat admin & guru_bk (lihat
-// Setting.js), tapi tab "Penugasan Guru" SENGAJA cuma dimunculin buat admin
-// -- nyamain access control yang sebelumnya berlaku pas ini masih card
-// terpisah ("assignment", available: admin doang).
+// Setting.js), tapi tab "Penugasan Guru" cuma dimunculin buat admin &
+// developer -- nyamain access control yang sebelumnya berlaku pas ini masih
+// card terpisah ("assignment", available: admin), ditambah developer biar
+// tetap bisa akses buat keperluan maintenance/debug.
 
 import React, { useState, useMemo } from "react";
 import { Users, Building2, UserCog } from "lucide-react";
@@ -43,10 +44,15 @@ const ALL_SUB_TABS = [
   },
 ];
 
-const SchoolCombinedTab = (props) => {
-  const isAdmin = props?.user?.role === "admin";
+const CAN_SEE_TEACHER_ASSIGNMENT_ROLES = ["admin", "developer"];
 
-  const subTabs = useMemo(() => ALL_SUB_TABS.filter((tab) => !tab.adminOnly || isAdmin), [isAdmin]);
+const SchoolCombinedTab = (props) => {
+  const canSeeTeacherAssignment = CAN_SEE_TEACHER_ASSIGNMENT_ROLES.includes(props?.user?.role);
+
+  const subTabs = useMemo(
+    () => ALL_SUB_TABS.filter((tab) => !tab.adminOnly || canSeeTeacherAssignment),
+    [canSeeTeacherAssignment]
+  );
 
   const [activeSubTab, setActiveSubTab] = useState(subTabs[0].id);
 

@@ -66,17 +66,21 @@ const TagihanLainTab = ({ classes = [], darkMode, user, onShowToast, feeType, gr
   );
 
   const tabBtnClass = (id) =>
-    `flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+    `flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 ${
       subTab === id
-        ? "bg-emerald-600 text-white"
+        ? "bg-emerald-600 text-white shadow-md"
         : darkMode
-          ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-          : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+          ? "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+          : "text-gray-500 hover:bg-white hover:text-gray-800 hover:shadow-sm"
     }`;
 
   return (
     <div>
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-5">
+      <div
+        className={`flex gap-1.5 overflow-x-auto p-1.5 rounded-2xl mb-6 ${
+          darkMode ? "bg-gray-800/60" : "bg-gray-100/80"
+        }`}
+      >
         {SUB_TABS.map((t) => (
           <button key={t.id} onClick={() => setSubTab(t.id)} className={tabBtnClass(t.id)}>
             <t.icon size={16} />
@@ -212,9 +216,9 @@ const TagihanLainPanel = ({ classes, darkMode, user, notify, feeType }) => {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div
-        className={`rounded-xl border p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 items-end ${
+        className={`rounded-2xl border p-5 grid grid-cols-2 sm:grid-cols-3 gap-4 items-end shadow-sm ${
           darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
         }`}
       >
@@ -254,22 +258,28 @@ const TagihanLainPanel = ({ classes, darkMode, user, notify, feeType }) => {
       <button
         onClick={handleGenerate}
         disabled={generating}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-60"
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
       >
         {generating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
         Generate Tagihan buat Kelas Ini
       </button>
 
       <div
-        className={`rounded-xl border overflow-hidden ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+        className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
       >
         <table className="w-full text-sm">
-          <thead className={darkMode ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"}>
+          <thead
+            className={
+              darkMode
+                ? "bg-gray-800 text-gray-400 border-b border-gray-700"
+                : "bg-gray-50 text-gray-500 border-b border-gray-200"
+            }
+          >
             <tr>
-              <th className="px-4 py-2.5 text-left font-semibold">NIS</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Nama</th>
-              <th className="px-4 py-2.5 text-right font-semibold">Nominal</th>
-              <th className="px-4 py-2.5 text-center font-semibold">Status</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">NIS</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Nama</th>
+              <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide">Nominal</th>
+              <th className="px-5 py-3 text-center text-xs font-semibold tracking-wide">Status</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
@@ -281,11 +291,18 @@ const TagihanLainPanel = ({ classes, darkMode, user, notify, feeType }) => {
               <EmptyRow darkMode={darkMode}>Belum ada tagihan buat kelas ini.</EmptyRow>
             ) : (
               bills.map((b) => (
-                <tr key={b.id} className={darkMode ? "text-gray-200" : "text-gray-700"}>
-                  <td className="px-4 py-2.5 font-mono">{b.students?.nis}</td>
-                  <td className="px-4 py-2.5">{b.students?.full_name}</td>
-                  <td className="px-4 py-2.5 text-right">{formatRupiah(b.amount)}</td>
-                  <td className="px-4 py-2.5 text-center">
+                <tr
+                  key={b.id}
+                  className={`transition-colors ${
+                    darkMode
+                      ? "text-gray-200 hover:bg-gray-800/50"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <td className="px-5 py-3 font-mono text-xs">{b.students?.nis}</td>
+                  <td className="px-5 py-3 font-medium">{b.students?.full_name}</td>
+                  <td className="px-5 py-3 text-right font-medium">{formatRupiah(b.amount)}</td>
+                  <td className="px-5 py-3 text-center">
                     <StatusBadge status={b.status} />
                   </td>
                 </tr>
@@ -377,7 +394,7 @@ const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div>
         <Field label="Cari siswa (nama / NIS)" darkMode={darkMode}>
           <div className="relative">
@@ -396,13 +413,13 @@ const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
 
         {students.length > 0 && (
           <div
-            className={`mt-2 rounded-lg border divide-y ${darkMode ? "border-gray-700 divide-gray-700" : "border-gray-200 divide-gray-100"}`}
+            className={`mt-2 rounded-xl border divide-y overflow-hidden shadow-sm ${darkMode ? "border-gray-700 divide-gray-700" : "border-gray-200 divide-gray-100"}`}
           >
             {students.map((s) => (
               <button
                 key={s.id}
                 onClick={() => pickStudent(s)}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 ${darkMode ? "text-gray-200" : "text-gray-700"}`}
+                className={`w-full text-left px-3.5 py-2.5 text-sm transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/20 ${darkMode ? "text-gray-200" : "text-gray-700"}`}
               >
                 <span className="font-medium">{s.full_name}</span>{" "}
                 <span className="text-gray-400 font-mono text-xs">
@@ -414,20 +431,20 @@ const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
         )}
 
         {selectedStudent && (
-          <div className="mt-4">
+          <div className="mt-5">
             <p
-              className={`text-xs font-semibold mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+              className={`text-xs font-semibold mb-2.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
             >
               Tagihan belum lunas — {selectedStudent.full_name}
             </p>
             {outstandingBills.length === 0 ? (
               <div
-                className={`flex items-center gap-2 text-sm px-3 py-3 rounded-lg ${darkMode ? "bg-emerald-900/20 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}
+                className={`flex items-center gap-2 text-sm px-3.5 py-3 rounded-xl ${darkMode ? "bg-emerald-900/20 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}
               >
                 <CheckCircle2 size={16} /> Semua tagihan siswa ini udah lunas.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {outstandingBills.map((b) => (
                   <button
                     key={b.id}
@@ -435,7 +452,7 @@ const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
                       setSelectedBill(b);
                       setAmountPaid("");
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-colors ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition-colors ${
                       selectedBill?.id === b.id
                         ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
                         : darkMode
@@ -456,7 +473,7 @@ const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
       </div>
 
       <div
-        className={`rounded-xl border p-4 space-y-3 ${darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"}`}
+        className={`rounded-2xl border p-5 space-y-4 shadow-sm ${darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"}`}
       >
         <p className={`text-sm font-semibold ${darkMode ? "text-gray-200" : "text-gray-700"}`}>
           Detail Pembayaran
@@ -506,7 +523,7 @@ const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
             >
               {submitting ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -560,22 +577,28 @@ const TunggakanLainPanel = ({ classes, darkMode, feeType }) => {
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-        <Field label="Filter kelas" darkMode={darkMode}>
-          <select
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            className={inputClass(darkMode)}
-          >
-            <option value="">Semua kelas</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.id}
-              </option>
-            ))}
-          </select>
-        </Field>
+    <div className="space-y-6">
+      <div
+        className={`rounded-2xl border p-5 flex flex-col sm:flex-row sm:items-end gap-4 shadow-sm ${
+          darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
+        }`}
+      >
+        <div className="sm:w-56">
+          <Field label="Filter kelas" darkMode={darkMode}>
+            <select
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              className={inputClass(darkMode)}
+            >
+              <option value="">Semua kelas</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.id}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
         <div
           className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-red-900/20 text-red-300" : "bg-red-50 text-red-700"}`}
         >
@@ -584,16 +607,24 @@ const TunggakanLainPanel = ({ classes, darkMode, feeType }) => {
       </div>
 
       <div
-        className={`rounded-xl border overflow-hidden ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+        className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
       >
         <table className="w-full text-sm">
-          <thead className={darkMode ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"}>
+          <thead
+            className={
+              darkMode
+                ? "bg-gray-800 text-gray-400 border-b border-gray-700"
+                : "bg-gray-50 text-gray-500 border-b border-gray-200"
+            }
+          >
             <tr>
-              <th className="px-4 py-2.5 text-left font-semibold">Nama</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Kelas</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Tahun Ajaran</th>
-              <th className="px-4 py-2.5 text-right font-semibold">Nominal</th>
-              <th className="px-4 py-2.5 text-center font-semibold">Status</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Nama</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Kelas</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">
+                Tahun Ajaran
+              </th>
+              <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide">Nominal</th>
+              <th className="px-5 py-3 text-center text-xs font-semibold tracking-wide">Status</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
@@ -607,12 +638,19 @@ const TunggakanLainPanel = ({ classes, darkMode, feeType }) => {
               </EmptyRow>
             ) : (
               rows.map((r) => (
-                <tr key={r.id} className={darkMode ? "text-gray-200" : "text-gray-700"}>
-                  <td className="px-4 py-2.5">{r.students?.full_name}</td>
-                  <td className="px-4 py-2.5">{r.students?.class_id}</td>
-                  <td className="px-4 py-2.5">{r.academic_year || "-"}</td>
-                  <td className="px-4 py-2.5 text-right">{formatRupiah(r.amount)}</td>
-                  <td className="px-4 py-2.5 text-center">
+                <tr
+                  key={r.id}
+                  className={`transition-colors ${
+                    darkMode
+                      ? "text-gray-200 hover:bg-gray-800/50"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <td className="px-5 py-3 font-medium">{r.students?.full_name}</td>
+                  <td className="px-5 py-3">{r.students?.class_id}</td>
+                  <td className="px-5 py-3">{r.academic_year || "-"}</td>
+                  <td className="px-5 py-3 text-right font-medium">{formatRupiah(r.amount)}</td>
+                  <td className="px-5 py-3 text-center">
                     <StatusBadge status={r.status} />
                   </td>
                 </tr>
@@ -672,8 +710,12 @@ const RiwayatLainPanel = ({ classes, darkMode, feeType }) => {
   const METHOD_LABEL = { cash: "Tunai", transfer: "Transfer", other: "Lainnya" };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
+    <div className="space-y-6">
+      <div
+        className={`rounded-2xl border p-5 flex flex-wrap items-end gap-4 shadow-sm ${
+          darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
+        }`}
+      >
         <Field label="Filter kelas" darkMode={darkMode}>
           <select
             value={classId}
@@ -707,18 +749,26 @@ const RiwayatLainPanel = ({ classes, darkMode, feeType }) => {
       </div>
 
       <div
-        className={`rounded-xl border overflow-hidden ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+        className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
       >
         <table className="w-full text-sm">
-          <thead className={darkMode ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"}>
+          <thead
+            className={
+              darkMode
+                ? "bg-gray-800 text-gray-400 border-b border-gray-700"
+                : "bg-gray-50 text-gray-500 border-b border-gray-200"
+            }
+          >
             <tr>
-              <th className="px-4 py-2.5 text-left font-semibold">Tanggal</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Nama</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Kelas</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Tahun Ajaran</th>
-              <th className="px-4 py-2.5 text-right font-semibold">Nominal</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Metode</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Catatan</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Tanggal</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Nama</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Kelas</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">
+                Tahun Ajaran
+              </th>
+              <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide">Nominal</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Metode</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Catatan</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
@@ -728,19 +778,30 @@ const RiwayatLainPanel = ({ classes, darkMode, feeType }) => {
               <EmptyRow darkMode={darkMode}>Belum ada riwayat pembayaran.</EmptyRow>
             ) : (
               rows.map((r) => (
-                <tr key={r.id} className={darkMode ? "text-gray-200" : "text-gray-700"}>
-                  <td className="px-4 py-2.5 whitespace-nowrap flex items-center gap-1.5">
-                    <Clock size={13} className="text-gray-400" />
-                    {new Date(r.payment_date).toLocaleDateString("id-ID")}
+                <tr
+                  key={r.id}
+                  className={`transition-colors ${
+                    darkMode
+                      ? "text-gray-200 hover:bg-gray-800/50"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <td className="px-5 py-3 whitespace-nowrap">
+                    <span className="flex items-center gap-1.5 text-xs">
+                      <Clock size={13} className="text-gray-400 shrink-0" />
+                      {new Date(r.payment_date).toLocaleDateString("id-ID")}
+                    </span>
                   </td>
-                  <td className="px-4 py-2.5">{r.students?.full_name}</td>
-                  <td className="px-4 py-2.5">{r.students?.class_id}</td>
-                  <td className="px-4 py-2.5">{r.other_fee_bills?.academic_year || "-"}</td>
-                  <td className="px-4 py-2.5 text-right">{formatRupiah(r.amount_paid)}</td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-5 py-3 font-medium">{r.students?.full_name}</td>
+                  <td className="px-5 py-3">{r.students?.class_id}</td>
+                  <td className="px-5 py-3">{r.other_fee_bills?.academic_year || "-"}</td>
+                  <td className="px-5 py-3 text-right font-medium">
+                    {formatRupiah(r.amount_paid)}
+                  </td>
+                  <td className="px-5 py-3">
                     {METHOD_LABEL[r.payment_method] || r.payment_method}
                   </td>
-                  <td className={`px-4 py-2.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  <td className={`px-5 py-3 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                     {r.note || "-"}
                   </td>
                 </tr>

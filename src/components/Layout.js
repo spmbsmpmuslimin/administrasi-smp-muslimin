@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   Calendar,
   Clock,
-  Settings,
   LogOut,
   Menu,
   X,
@@ -599,28 +598,6 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                           <User size={16} className="flex-shrink-0" />
                           <span className="font-medium">Profile</span>
                         </button>
-
-                        {(user?.role === "admin" || user?.role === "tu") && (
-                          // ✅ FIX: TU ditambahin -- route /settings emang
-                          // kebuka buat semua role (gak ada allowedRoles di
-                          // menuConfig.js) dan sidebar juga nunjukin
-                          // "Pengaturan" ke TU (grup SISTEM: isAdmin||isTU),
-                          // jadi shortcut di dropdown profile ini disamain.
-                          <button
-                            onClick={() => {
-                              handleNavigate("settings");
-                              setProfileDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors duration-150 touch-manipulation ${
-                              darkMode
-                                ? "text-gray-300 hover:bg-gray-700 hover:text-blue-400"
-                                : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                            }`}
-                          >
-                            <Settings size={16} className="flex-shrink-0" />
-                            <span className="font-medium">Pengaturan</span>
-                          </button>
-                        )}
 
                         <button
                           onClick={onToggleDarkMode}

@@ -51,20 +51,25 @@ const KeuanganTab = (props) => {
   }, []);
 
   const mainTabBtnClass = (id) =>
-    `flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 touch-manipulation active:scale-[0.98] ${
+    `flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 touch-manipulation active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 ${
       mainTab === id
-        ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-md"
+        ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-md shadow-emerald-900/10"
         : darkMode
-          ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          ? "text-gray-300 hover:bg-gray-800 hover:text-gray-100"
+          : "text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm"
     }`;
 
   return (
     <div className="p-4 sm:p-5">
-      {/* Switcher 3 kategori pembayaran -- dibikin lebih "tebal" dari
-          sub-tab switcher di dalam masing-masing tab, biar jelas ini
-          level yang beda (kategori pembayaran, bukan sub-aksi). */}
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-5">
+      {/* Switcher 3 kategori pembayaran -- dibikin sebagai rail
+          segmented-control (bg netral + pill aktif yang "ngambang"
+          dengan shadow) biar keliatan jelas ini 1 grup pilihan, bukan
+          sekadar deretan tombol lepas. */}
+      <div
+        className={`flex gap-1.5 overflow-x-auto p-1.5 rounded-2xl mb-6 ${
+          darkMode ? "bg-gray-900/50" : "bg-gray-100"
+        }`}
+      >
         {MAIN_TABS.map((t) => (
           <button key={t.id} onClick={() => setMainTab(t.id)} className={mainTabBtnClass(t.id)}>
             <t.icon size={16} />

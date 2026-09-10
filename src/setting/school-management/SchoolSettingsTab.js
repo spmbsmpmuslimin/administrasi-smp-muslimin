@@ -16,10 +16,8 @@ import {
   Check,
   Layers,
   Wallet,
-  Wrench,
   Plus,
   Trash2,
-  ShieldCheck,
 } from "lucide-react";
 
 const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
@@ -37,9 +35,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     npsn: "20240001",
     grades: ["7", "8", "9"],
     spp_nominal_per_ta: {},
-    maintenance_mode: false,
-    maintenance_message: "Aplikasi Sedang Dalam Maintenance. Kami Akan Kembali Segera!",
-    maintenance_whitelist: [],
   });
 
   const [editingSchoolSettings, setEditingSchoolSettings] = useState(false);
@@ -50,11 +45,9 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     message: "",
   });
 
-  // State bantu untuk form tambah data SPP & whitelist maintenance
+  // State bantu untuk form tambah data SPP
   const [newSppYear, setNewSppYear] = useState("");
   const [newSppNominal, setNewSppNominal] = useState("");
-  const [newWhitelistUsername, setNewWhitelistUsername] = useState("");
-  const [newWhitelistFullName, setNewWhitelistFullName] = useState("");
 
   const ALL_GRADE_OPTIONS = ["7", "8", "9", "10", "11", "12"];
 
@@ -115,7 +108,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
       if (settingsData && settingsData.length > 0) {
         const settings = {};
-        const jsonKeys = ["grades", "spp_nominal_per_ta", "maintenance_whitelist"];
+        const jsonKeys = ["grades", "spp_nominal_per_ta"];
 
         settingsData.forEach((item) => {
           let value = item.setting_value;
@@ -126,8 +119,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
             } catch (e) {
               value = item.setting_key === "spp_nominal_per_ta" ? {} : [];
             }
-          } else if (item.setting_key === "maintenance_mode") {
-            value = value === true || value === "true";
           }
 
           settings[item.setting_key] = value;
@@ -367,14 +358,12 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     try {
       setLoading(true);
 
-      const jsonKeys = ["grades", "spp_nominal_per_ta", "maintenance_whitelist"];
+      const jsonKeys = ["grades", "spp_nominal_per_ta"];
 
       const updatePromises = Object.entries(tempSchoolSettings).map(([key, value]) => {
         let storedValue = value;
         if (jsonKeys.includes(key)) {
           storedValue = JSON.stringify(value);
-        } else if (key === "maintenance_mode") {
-          storedValue = value ? "true" : "false";
         }
 
         return supabase
@@ -450,42 +439,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
       delete updated[year];
       return { ...prev, spp_nominal_per_ta: updated };
     });
-  };
-
-  // ✅ MODE MAINTENANCE
-  const toggleMaintenanceMode = () => {
-    setTempSchoolSettings((prev) => ({
-      ...prev,
-      maintenance_mode: !prev.maintenance_mode,
-    }));
-  };
-
-  const addWhitelistUser = () => {
-    if (!newWhitelistUsername.trim() || !newWhitelistFullName.trim()) {
-      showToast("Username dan nama lengkap wajib diisi", "error");
-      return;
-    }
-
-    setTempSchoolSettings((prev) => ({
-      ...prev,
-      maintenance_whitelist: [
-        ...(prev.maintenance_whitelist || []),
-        {
-          id: crypto.randomUUID(),
-          username: newWhitelistUsername.trim(),
-          full_name: newWhitelistFullName.trim(),
-        },
-      ],
-    }));
-    setNewWhitelistUsername("");
-    setNewWhitelistFullName("");
-  };
-
-  const removeWhitelistUser = (id) => {
-    setTempSchoolSettings((prev) => ({
-      ...prev,
-      maintenance_whitelist: (prev.maintenance_whitelist || []).filter((u) => u.id !== id),
-    }));
   };
 
   const formatRupiah = (value) => {
@@ -1026,160 +979,6 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
               </button>
             </div>
           )}
-        </div>
-
-        {/* ── Mode Maintenance — Danger Zone, sengaja di paling bawah ── */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-red-100 dark:border-red-900/30 shadow-sm p-5 sm:p-6">
-          <h3 className={sectionTitleClass}>
-            <div
-              className={iconBadge("bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400")}
-            >
-              <Wrench size={18} />
-            </div>
-            Mode Maintenance
-            <span className="ml-auto text-[11px] font-medium uppercase tracking-wide text-red-400 dark:text-red-500">
-              Zona Sensitif
-            </span>
-          </h3>
-
-          <div className="space-y-5">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div>
-                <p className="font-medium text-sm text-gray-800 dark:text-white">
-                  Status Maintenance
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Jika aktif, hanya user di whitelist yang bisa mengakses aplikasi
-                </p>
-              </div>
-              {editingSchoolSettings ? (
-                <button
-                  type="button"
-                  onClick={toggleMaintenanceMode}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 touch-manipulation flex-shrink-0 ${
-                    tempSchoolSettings.maintenance_mode
-                      ? "bg-red-500"
-                      : "bg-gray-300 dark:bg-gray-600"
-                  }`}
-                  aria-label="Toggle mode maintenance"
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                      tempSchoolSettings.maintenance_mode ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              ) : (
-                <span
-                  className={`px-3 py-1 rounded-md text-xs font-bold flex-shrink-0 ${
-                    schoolSettings.maintenance_mode
-                      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                      : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                  }`}
-                >
-                  {schoolSettings.maintenance_mode ? "AKTIF" : "NONAKTIF"}
-                </span>
-              )}
-            </div>
-
-            <div>
-              <label className={labelClass}>Pesan Maintenance</label>
-              {editingSchoolSettings ? (
-                <textarea
-                  value={tempSchoolSettings.maintenance_message || ""}
-                  onChange={(e) =>
-                    setTempSchoolSettings((prev) => ({
-                      ...prev,
-                      maintenance_message: e.target.value,
-                    }))
-                  }
-                  className={`${inputClass} resize-vertical min-h-[76px]`}
-                  rows="2"
-                  placeholder="Pesan yang ditampilkan saat maintenance"
-                />
-              ) : (
-                <div className={`${displayClass} min-h-[44px]`}>
-                  {schoolSettings.maintenance_message || "-"}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className={`${labelClass} flex items-center gap-1.5`}>
-                <ShieldCheck size={14} /> Whitelist Maintenance
-              </label>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2 -mt-1">
-                Tetap bisa akses saat maintenance aktif
-              </p>
-
-              <div className="space-y-2 mb-3">
-                {(
-                  (editingSchoolSettings
-                    ? tempSchoolSettings.maintenance_whitelist
-                    : schoolSettings.maintenance_whitelist) || []
-                ).map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-800 dark:text-white text-sm">
-                        {u.full_name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">@{u.username}</p>
-                    </div>
-                    {editingSchoolSettings && (
-                      <button
-                        type="button"
-                        onClick={() => removeWhitelistUser(u.id)}
-                        className="text-red-500 hover:text-red-700 p-1 touch-manipulation active:scale-90"
-                        title="Hapus dari whitelist"
-                        aria-label={`Hapus ${u.username} dari whitelist`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {(
-                  (editingSchoolSettings
-                    ? tempSchoolSettings.maintenance_whitelist
-                    : schoolSettings.maintenance_whitelist) || []
-                ).length === 0 && (
-                  <p className="text-sm text-gray-400 dark:text-gray-500">
-                    Belum ada user di whitelist
-                  </p>
-                )}
-              </div>
-
-              {editingSchoolSettings && (
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="text"
-                    value={newWhitelistUsername}
-                    onChange={(e) => setNewWhitelistUsername(e.target.value)}
-                    placeholder="Username"
-                    className={`${inputClass} flex-1`}
-                  />
-                  <input
-                    type="text"
-                    value={newWhitelistFullName}
-                    onChange={(e) => setNewWhitelistFullName(e.target.value)}
-                    placeholder="Nama Lengkap"
-                    className={`${inputClass} flex-1`}
-                  />
-                  <button
-                    type="button"
-                    onClick={addWhitelistUser}
-                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors min-h-[42px] touch-manipulation active:scale-[0.98]"
-                  >
-                    <Plus size={16} />
-                    Tambah
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* ── Action bar (sticky di bawah, ngikutin lebar konten — bukan fixed ke viewport, jadi ga nabrak sidebar) ── */}

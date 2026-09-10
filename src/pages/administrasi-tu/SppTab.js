@@ -44,6 +44,7 @@ import {
   History,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   CheckCircle2,
   Circle,
   BadgeCheck,
@@ -127,6 +128,17 @@ const SppTab = ({ classes = [], darkMode, user, onShowToast }) => {
   const [subTab, setSubTab] = useState("pembayaran");
   const [nominalPerTA, setNominalPerTA] = useState({});
   const [settingsLoading, setSettingsLoading] = useState(true);
+  // Dipake buat nyambungin klik nama siswa di tab Tunggakan -> langsung
+  // lompat ke tab Catat Pembayaran dengan Jenjang/Kelas/Nama Siswa udah
+  // ke-isi otomatis. PembayaranPanel yang nge-apply preset ini begitu
+  // data siswanya kefetch, terus panggil onPresetApplied buat nge-clear
+  // biar gak ke-apply ulang pas TU ganti-ganti pilihan sendiri.
+  const [pembayaranPreset, setPembayaranPreset] = useState(null);
+
+  const goToPembayaran = useCallback((preset) => {
+    setPembayaranPreset(preset);
+    setSubTab("pembayaran");
+  }, []);
 
   useEffect(() => {
     const fetchNominal = async () => {
@@ -159,18 +171,22 @@ const SppTab = ({ classes = [], darkMode, user, onShowToast }) => {
 
   const tabBtnClass = (id) => {
     const meta = SUB_TABS.find((t) => t.id === id);
-    return `flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+    return `flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-blue-500/50 ${
       subTab === id
-        ? `${meta.activeClass} text-white`
+        ? `${meta.activeClass} text-white shadow-md`
         : darkMode
-          ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-          : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+          ? "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+          : "text-gray-500 hover:bg-white hover:text-gray-800 hover:shadow-sm"
     }`;
   };
 
   return (
     <div>
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-5">
+      <div
+        className={`flex gap-1.5 overflow-x-auto p-1.5 rounded-2xl mb-6 ${
+          darkMode ? "bg-gray-800/60" : "bg-gray-100/80"
+        }`}
+      >
         {SUB_TABS.map((t) => (
           <button key={t.id} onClick={() => setSubTab(t.id)} className={tabBtnClass(t.id)}>
             <t.icon size={16} />
@@ -192,6 +208,8 @@ const SppTab = ({ classes = [], darkMode, user, onShowToast }) => {
               user={user}
               notify={notify}
               nominalPerTA={nominalPerTA}
+              preset={pembayaranPreset}
+              onPresetApplied={() => setPembayaranPreset(null)}
             />
           )}
           {subTab === "tunggakan" && (
@@ -200,6 +218,14 @@ const SppTab = ({ classes = [], darkMode, user, onShowToast }) => {
               darkMode={darkMode}
               nominalPerTA={nominalPerTA}
               notify={notify}
+              onPilihSiswa={(row, classId) => {
+                const cls = classes.find((c) => c.id === classId);
+                goToPembayaran({
+                  jenjang: cls?.grade != null ? String(cls.grade) : "",
+                  classId,
+                  studentId: row.id,
+                });
+              }}
             />
           )}
           {subTab === "riwayat" && (
@@ -214,7 +240,15 @@ const SppTab = ({ classes = [], darkMode, user, onShowToast }) => {
 // ============================================================
 // 1. Catat Pembayaran -- Jenjang -> Kelas -> Nama Siswa -> rincian
 // ============================================================
-const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
+const PembayaranPanel = ({
+  classes,
+  darkMode,
+  user,
+  notify,
+  nominalPerTA,
+  preset,
+  onPresetApplied,
+}) => {
   const [jenjang, setJenjang] = useState("");
   const [classId, setClassId] = useState("");
   const [students, setStudents] = useState([]);
@@ -275,6 +309,29 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
     setOpenTA(null);
     if (id) fetchBills(id);
   };
+
+  // Langkah 1 dari preset (dateng dari klik nama di tab Tunggakan):
+  // isi Jenjang & Kelas duluan -- ini bakal mancing fetch daftar siswa
+  // kelas itu lewat effect di atas.
+  useEffect(() => {
+    if (!preset) return;
+    if (preset.jenjang) setJenjang(preset.jenjang);
+    if (preset.classId) setClassId(preset.classId);
+  }, [preset]);
+
+  // Langkah 2: begitu classId di state udah nyusul preset.classId DAN
+  // daftar siswa kelas itu udah kefetch (jadi studentId-nya beneran
+  // valid buat dipilih), baru siswanya di-pickStudent. Preset di-clear
+  // (via onPresetApplied) abis dipake, biar gak ke-apply ulang lagi
+  // kalau TU ganti-ganti Jenjang/Kelas manual sesudahnya.
+  useEffect(() => {
+    if (!preset?.studentId) return;
+    if (classId !== preset.classId) return;
+    if (!students.some((s) => s.id === preset.studentId)) return;
+    pickStudent(preset.studentId);
+    onPresetApplied?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset, classId, students]);
 
   const periods = useMemo(() => {
     if (!student) return [];
@@ -376,13 +433,13 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
         key={p.key}
         disabled={isPaid}
         onClick={() => toggleMonth(p.key)}
-        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm border text-left ${
+        className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm border text-left transition-colors duration-150 ${
           isPaid
             ? darkMode
               ? "bg-emerald-900/20 border-emerald-900/40 text-emerald-300 cursor-default"
               : "bg-emerald-50 border-emerald-100 text-emerald-700 cursor-default"
             : isChecked
-              ? "bg-blue-600 border-blue-600 text-white"
+              ? "bg-blue-600 border-blue-600 text-white shadow-sm"
               : isPartial
                 ? darkMode
                   ? "bg-amber-900/20 border-amber-900/40 text-amber-300"
@@ -482,9 +539,9 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div
-        className={`rounded-xl border p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 ${
+        className={`rounded-2xl border p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 shadow-sm ${
           darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
         }`}
       >
@@ -543,11 +600,13 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
 
       {!student && (
         <div
-          className={`rounded-xl border py-10 text-center text-sm flex flex-col items-center gap-2 ${
-            darkMode ? "border-gray-700 text-gray-500" : "border-gray-200 text-gray-400"
+          className={`rounded-2xl border border-dashed py-16 text-center text-sm flex flex-col items-center gap-3 ${
+            darkMode ? "border-gray-700 text-gray-500" : "border-gray-300 text-gray-400"
           }`}
         >
-          <Search size={20} />
+          <div className={`p-3 rounded-full ${darkMode ? "bg-gray-800" : "bg-gray-100"}`}>
+            <Search size={20} />
+          </div>
           Pilih jenjang → kelas → nama siswa buat lihat tagihan SPP-nya.
         </div>
       )}
@@ -561,8 +620,8 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
       )}
 
       {student && !loadingBills && periods === null && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 flex items-center gap-2">
-          <AlertTriangle size={16} />
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 flex items-center gap-3">
+          <AlertTriangle size={16} className="shrink-0" />
           NIS siswa ini ({student.nis}) gak sesuai pola standar kelas 7, jadi gak bisa dihitung
           otomatis. Perlu dicek manual bre.
         </div>
@@ -570,10 +629,10 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
 
       {student && !loadingBills && periods && (
         <div
-          className={`rounded-xl border overflow-hidden ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+          className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
         >
           <div
-            className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${
+            className={`p-5 border-b flex flex-wrap items-center justify-between gap-4 ${
               darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
             }`}
           >
@@ -581,13 +640,13 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
               <p className={`font-semibold ${darkMode ? "text-gray-100" : "text-gray-800"}`}>
                 {student.full_name}
               </p>
-              <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+              <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                 NIS {student.nis} · Kelas {student.class_id}
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <div
-                className={`px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
+                className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
                   totalBelumBayar > 0
                     ? darkMode
                       ? "bg-red-900/20 text-red-300"
@@ -607,7 +666,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
               <button
                 onClick={handleCetakKartu}
                 title="Cetak Kartu Pembayaran SPP (PDF)"
-                className={`px-3.5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 border transition-colors ${
+                className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 border transition-colors active:scale-[0.98] ${
                   darkMode
                     ? "border-gray-700 text-gray-200 hover:bg-gray-800"
                     : "border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -620,7 +679,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
           </div>
 
           <div
-            className={`px-4 py-2 border-b flex items-center justify-between gap-2 ${
+            className={`px-5 py-3 border-b flex items-center justify-between gap-3 ${
               darkMode ? "bg-gray-800/40 border-gray-700" : "bg-gray-50/60 border-gray-100"
             }`}
           >
@@ -629,7 +688,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
                 ? `${selected.size} bulan dipilih`
                 : "Centang bulan yang mau dicatat pembayarannya"}
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button
                 onClick={selectAllUnpaid}
                 disabled={!anyUnpaid}
@@ -658,7 +717,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
                 <div key={ta}>
                   <button
                     onClick={() => setOpenTA(isOpen ? null : ta)}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-left ${
+                    className={`w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors ${
                       darkMode ? "hover:bg-gray-800/60" : "hover:bg-gray-50"
                     }`}
                   >
@@ -667,7 +726,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
                     >
                       TA {ta} (Kelas {group.grade})
                     </span>
-                    <span className="flex items-center gap-2 text-xs">
+                    <span className="flex items-center gap-2.5 text-xs">
                       <span
                         className={
                           nunggak > 0 ? "text-red-500 font-medium" : "text-emerald-500 font-medium"
@@ -691,17 +750,17 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
                   </button>
 
                   {isOpen && (
-                    <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="px-5 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
                       {splitBySemester(group.items).map((semItems, semIdx) => (
                         <div key={SEMESTERS[semIdx].label}>
                           <p
-                            className={`text-xs font-semibold mb-2 ${
+                            className={`text-xs font-semibold mb-2.5 ${
                               darkMode ? "text-gray-400" : "text-gray-500"
                             }`}
                           >
                             {SEMESTERS[semIdx].label}
                           </p>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-2.5">
                             {semItems.map((p) => renderMonthButton(p))}
                           </div>
                         </div>
@@ -715,7 +774,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
 
           {selectedPeriods.length > 0 && (
             <div
-              className={`p-4 border-t space-y-3 ${darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"}`}
+              className={`p-5 border-t space-y-4 ${darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"}`}
             >
               <p
                 className={`text-sm font-semibold ${darkMode ? "text-gray-200" : "text-gray-700"}`}
@@ -726,7 +785,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
                 </span>
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Field label="Tanggal bayar" darkMode={darkMode}>
                   <div className="relative">
                     <Calendar
@@ -770,7 +829,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm disabled:opacity-60"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
               >
                 {saving ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -792,7 +851,7 @@ const PembayaranPanel = ({ classes, darkMode, user, notify, nominalPerTA }) => {
 // (bukan cuma dari row spp_bills yang udah ada, karena bulan yang
 // belum pernah dibayar sama sekali gak punya row)
 // ============================================================
-const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify }) => {
+const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) => {
   const [classId, setClassId] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -870,24 +929,30 @@ const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify }) => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-        <Field label="Filter kelas" darkMode={darkMode}>
-          <select
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            className={inputClass(darkMode)}
-          >
-            <option value="">Pilih kelas</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.id}
-              </option>
-            ))}
-          </select>
-        </Field>
+    <div className="space-y-6">
+      <div
+        className={`rounded-2xl border p-5 flex flex-col sm:flex-row sm:items-end gap-4 shadow-sm ${
+          darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
+        }`}
+      >
+        <div className="sm:w-56">
+          <Field label="Pilih Kelas" darkMode={darkMode}>
+            <select
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              className={inputClass(darkMode)}
+            >
+              <option value="">Pilih kelas</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.id}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
         {classId && (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <div
               className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-red-900/20 text-red-300" : "bg-red-50 text-red-700"}`}
             >
@@ -897,7 +962,7 @@ const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify }) => {
               onClick={handleExportExcel}
               disabled={exporting || rows.length === 0}
               title="Export Rekap Tunggakan Kelas (Excel)"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-60"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
             >
               {exporting ? (
                 <Loader2 size={15} className="animate-spin" />
@@ -910,16 +975,33 @@ const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify }) => {
         )}
       </div>
 
+      {rows.length > 0 && (
+        <p className={`text-xs -mt-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+          Klik nama siswa buat langsung catat pembayarannya.
+        </p>
+      )}
+
       <div
-        className={`rounded-xl border overflow-hidden ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+        className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
       >
         <table className="w-full text-sm">
-          <thead className={darkMode ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"}>
+          <thead
+            className={
+              darkMode
+                ? "bg-gray-800 text-gray-400 border-b border-gray-700"
+                : "bg-gray-50 text-gray-500 border-b border-gray-200"
+            }
+          >
             <tr>
-              <th className="px-4 py-2.5 text-left font-semibold">NIS</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Nama</th>
-              <th className="px-4 py-2.5 text-left font-semibold">Bulan Belum Bayar</th>
-              <th className="px-4 py-2.5 text-right font-semibold">Total Tunggakan</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">NIS</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Nama</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">
+                Bulan Belum Bayar
+              </th>
+              <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide">
+                Total Tunggakan
+              </th>
+              <th className="w-10" />
             </tr>
           </thead>
           <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
@@ -936,11 +1018,20 @@ const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify }) => {
               </EmptyRow>
             ) : (
               rows.map((r) => (
-                <tr key={r.id} className={darkMode ? "text-gray-200" : "text-gray-700"}>
-                  <td className="px-4 py-2.5 font-mono">{r.nis}</td>
-                  <td className="px-4 py-2.5">{r.full_name}</td>
+                <tr
+                  key={r.id}
+                  onClick={() => onPilihSiswa?.(r, classId)}
+                  title="Klik buat langsung catat pembayaran siswa ini"
+                  className={`group cursor-pointer transition-colors ${
+                    darkMode
+                      ? "text-gray-200 hover:bg-gray-800/70"
+                      : "text-gray-700 hover:bg-amber-50/70"
+                  }`}
+                >
+                  <td className="px-5 py-3.5 font-mono text-xs">{r.nis}</td>
+                  <td className="px-5 py-3.5 font-medium">{r.full_name}</td>
                   <td
-                    className={`px-4 py-2.5 text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                    className={`px-5 py-3.5 text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
                   >
                     {r.unresolved
                       ? "NIS gak sesuai pola, cek manual"
@@ -949,7 +1040,17 @@ const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify }) => {
                           .map((p) => `${MONTH_NAMES[p.month - 1].slice(0, 3)} ${p.year}`)
                           .join(", ")}${r.belumBulan.length > 3 ? ", ..." : ""})`}
                   </td>
-                  <td className="px-4 py-2.5 text-right">{formatRupiah(r.totalTunggakan)}</td>
+                  <td className="px-5 py-3.5 text-right font-medium">
+                    {formatRupiah(r.totalTunggakan)}
+                  </td>
+                  <td className="pr-4">
+                    <ChevronRight
+                      size={16}
+                      className={`transition-transform group-hover:translate-x-0.5 ${
+                        darkMode ? "text-gray-600" : "text-gray-300"
+                      }`}
+                    />
+                  </td>
                 </tr>
               ))
             )}
@@ -964,14 +1065,20 @@ const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify }) => {
 // 3. Riwayat -- log semua pembayaran (gak berubah dari versi lama)
 // ============================================================
 const RiwayatPanel = ({ classes, darkMode, notify }) => {
+  const [jenjang, setJenjang] = useState("");
   const [classId, setClassId] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [rows, setRows] = useState([]);
+  const [rawRows, setRawRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const { confirm, confirmDialogProps } = useConfirmDialog();
 
+  // Query ke Supabase cuma difilter tanggal (data yang lain, ~200 baris
+  // terakhir, ditarik semua). Filter Jenjang / Kelas / Nama-NIS
+  // dikerjain di client (useMemo di bawah) -- lebih responsif buat TU
+  // yang lagi ngetik-ngetik di kolom cari, gak perlu nge-fetch ulang.
   const fetchRiwayat = useCallback(async () => {
     setLoading(true);
     let query = supabase
@@ -988,19 +1095,40 @@ const RiwayatPanel = ({ classes, darkMode, notify }) => {
     const { data, error } = await query;
     if (error) {
       console.error("Error fetching riwayat:", error);
-      setRows([]);
+      setRawRows([]);
     } else {
-      const filtered = classId
-        ? (data || []).filter((r) => r.students?.class_id === classId)
-        : data || [];
-      setRows(filtered);
+      setRawRows(data || []);
     }
     setLoading(false);
-  }, [classId, startDate, endDate]);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchRiwayat();
   }, [fetchRiwayat]);
+
+  // Kelas ikut jenjang -- ganti Jenjang, kelas yang kepilih sebelumnya
+  // (mungkin dari jenjang lain) direset biar gak nyangkut.
+  useEffect(() => {
+    setClassId("");
+  }, [jenjang]);
+
+  const rows = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return rawRows.filter((r) => {
+      if (classId) {
+        if (r.students?.class_id !== classId) return false;
+      } else if (jenjang) {
+        const cls = classes.find((c) => c.id === r.students?.class_id);
+        if (String(cls?.grade) !== String(jenjang)) return false;
+      }
+      if (term) {
+        const name = (r.students?.full_name || "").toLowerCase();
+        const nis = (r.students?.nis || "").toLowerCase();
+        if (!name.includes(term) && !nis.includes(term)) return false;
+      }
+      return true;
+    });
+  }, [rawRows, classId, jenjang, classes, searchTerm]);
 
   const METHOD_LABEL = { cash: "Tunai", transfer: "Transfer", other: "Lainnya" };
 
@@ -1026,26 +1154,59 @@ const RiwayatPanel = ({ classes, darkMode, notify }) => {
       return;
     }
     notify?.("Pembayaran dihapus, status bulan itu balik jadi belum lunas", "success");
-    setRows((prev) => prev.filter((r) => r.id !== row.id));
+    setRawRows((prev) => prev.filter((r) => r.id !== row.id));
   };
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <Field label="Filter kelas" darkMode={darkMode}>
+      <div className="space-y-6">
+        <div
+          className={`rounded-2xl border p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 shadow-sm ${
+            darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
+          }`}
+        >
+          <Field label="Pilih Jenjang" darkMode={darkMode}>
+            <select
+              value={jenjang}
+              onChange={(e) => setJenjang(e.target.value)}
+              className={inputClass(darkMode)}
+            >
+              <option value="">Semua jenjang</option>
+              {getJenjangOptions(classes).map((g) => (
+                <option key={g} value={g}>
+                  Kelas {g}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Pilih Kelas" darkMode={darkMode}>
             <select
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
               className={inputClass(darkMode)}
             >
               <option value="">Semua kelas</option>
-              {classes.map((c) => (
+              {getKelasByJenjang(classes, jenjang).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.id}
                 </option>
               ))}
             </select>
+          </Field>
+          <Field label="Pilih Nama Siswa" darkMode={darkMode}>
+            <div className="relative">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cari Nama / NIS"
+                className={`${inputClass(darkMode)} w-full pl-9`}
+              />
+            </div>
           </Field>
           <Field label="Dari tanggal" darkMode={darkMode}>
             <input
@@ -1066,19 +1227,29 @@ const RiwayatPanel = ({ classes, darkMode, notify }) => {
         </div>
 
         <div
-          className={`rounded-xl border overflow-hidden ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+          className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
         >
           <table className="w-full text-sm">
-            <thead className={darkMode ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"}>
+            <thead
+              className={
+                darkMode
+                  ? "bg-gray-800 text-gray-400 border-b border-gray-700"
+                  : "bg-gray-50 text-gray-500 border-b border-gray-200"
+              }
+            >
               <tr>
-                <th className="px-4 py-2.5 text-left font-semibold">Tanggal</th>
-                <th className="px-4 py-2.5 text-left font-semibold">Nama</th>
-                <th className="px-4 py-2.5 text-left font-semibold">Kelas</th>
-                <th className="px-4 py-2.5 text-left font-semibold">Periode SPP</th>
-                <th className="px-4 py-2.5 text-right font-semibold">Nominal</th>
-                <th className="px-4 py-2.5 text-left font-semibold">Metode</th>
-                <th className="px-4 py-2.5 text-left font-semibold">Catatan</th>
-                <th className="px-4 py-2.5 text-center font-semibold">Aksi</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Tanggal</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Nama</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Kelas</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">
+                  Periode SPP
+                </th>
+                <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide">
+                  Nominal
+                </th>
+                <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Metode</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Catatan</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold tracking-wide">Aksi</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
@@ -1088,35 +1259,46 @@ const RiwayatPanel = ({ classes, darkMode, notify }) => {
                 <EmptyRow darkMode={darkMode}>Belum ada riwayat pembayaran.</EmptyRow>
               ) : (
                 rows.map((r) => (
-                  <tr key={r.id} className={darkMode ? "text-gray-200" : "text-gray-700"}>
-                    <td className="px-4 py-2.5 whitespace-nowrap flex items-center gap-1.5">
-                      <Clock size={13} className="text-gray-400" />
-                      {new Date(r.payment_date).toLocaleDateString("id-ID", {
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                  <tr
+                    key={r.id}
+                    className={`transition-colors ${
+                      darkMode
+                        ? "text-gray-200 hover:bg-gray-800/50"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <span className="flex items-center gap-1.5 text-xs">
+                        <Clock size={13} className="text-gray-400 shrink-0" />
+                        {new Date(r.payment_date).toLocaleDateString("id-ID", {
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </span>
                     </td>
-                    <td className="px-4 py-2.5">{r.students?.full_name}</td>
-                    <td className="px-4 py-2.5">{r.students?.class_id}</td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3 font-medium">{r.students?.full_name}</td>
+                    <td className="px-5 py-3">{r.students?.class_id}</td>
+                    <td className="px-5 py-3">
                       {r.spp_bills
                         ? `${MONTH_NAMES[r.spp_bills.period_month - 1]} ${r.spp_bills.period_year}`
                         : "-"}
                     </td>
-                    <td className="px-4 py-2.5 text-right">{formatRupiah(r.amount_paid)}</td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3 text-right font-medium">
+                      {formatRupiah(r.amount_paid)}
+                    </td>
+                    <td className="px-5 py-3">
                       {METHOD_LABEL[r.payment_method] || r.payment_method}
                     </td>
-                    <td className={`px-4 py-2.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    <td className={`px-5 py-3 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                       {r.note || "-"}
                     </td>
-                    <td className="px-4 py-2.5 text-center">
+                    <td className="px-5 py-3 text-center">
                       <button
                         onClick={() => handleDelete(r)}
                         disabled={deletingId === r.id}
                         title="Hapus pembayaran ini"
-                        className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                        className={`p-2 rounded-lg transition-colors active:scale-[0.95] disabled:opacity-50 ${
                           darkMode
                             ? "text-red-400 hover:bg-red-900/20"
                             : "text-red-500 hover:bg-red-50"
