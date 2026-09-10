@@ -11,8 +11,16 @@ import StrukturSistem from "./StrukturSistem";
 // makanya pas render di bawah kita passing dua-duanya sekalian.
 import MaintenanceModeTab from "./MaintenanceModeTab";
 import ActiveUsersTab from "./ActiveUsersTab";
+// ✅ BARU (Sep 2026): SystemTab.js (export CSV, backup/restore database)
+// dipindah ke sini juga dari Setting.js grup "Data & Sistem", nyusul
+// MaintenanceModeTab & ActiveUsersTab. Beda dari 2 komponen itu, SystemTab
+// butuh prop "loading"/"setLoading" sendiri (dipakai buat disable
+// tombol-tombol export & nampilin progress), makanya ditambahin state khusus
+// di bawah dan di-passing pas render ActiveComponent.
+import SystemTab from "./SystemTab";
 import {
   Activity,
+  Archive,
   Database,
   Gauge,
   FileCode2,
@@ -103,12 +111,15 @@ function MonitorSistem({ user, onShowToast }) {
   // "activeCard": null artinya lagi di grid view (dashboard menu), kalau
   // udah diisi id salah satu card berarti lagi di detail view.
   const [activeCard, setActiveCard] = useState(null);
+  // Dipakai SystemTab buat disable tombol export/backup & nampilin teks
+  // progress selagi proses jalan.
+  const [loading, setLoading] = useState(false);
 
-  // ✅ Role gating (Sep 2026): dulu di Setting.js, card Maintenance &
-  // Aktive User dibatasin available: role admin/tu. Sekarang dipindah ke
-  // sini, ditambah role "developer" (buat QA lintas menu). Card lain di
-  // Monitor Sistem gak punya batasan role sama sekali (field "available"
-  // di-omit = selalu tampil), jadi cuma 2 card baru ini yang dicek.
+  // ✅ Role gating (Sep 2026): dulu di Setting.js, card Maintenance,
+  // Aktive User, & System dibatasin available: role admin/tu. Sekarang
+  // dipindah ke sini, ditambah role "developer" (buat QA lintas menu).
+  // Card lain di Monitor Sistem gak punya batasan role sama sekali (field
+  // "available" di-omit = selalu tampil), jadi cuma 3 card ini yang dicek.
   const isMaintenanceOrActiveUserAllowed =
     user?.role === "developer" || user?.role === "admin" || user?.role === "tu";
 
@@ -154,6 +165,15 @@ function MonitorSistem({ user, onShowToast }) {
       component: StrukturSistem,
     },
     // ✅ BARU (Sep 2026): pindahan dari Setting.js grup "Data & Sistem".
+    {
+      id: "system",
+      title: "Manajemen System",
+      description: "Export data, backup, dan restore database",
+      icon: Archive,
+      color: "emerald",
+      component: SystemTab,
+      available: isMaintenanceOrActiveUserAllowed,
+    },
     {
       id: "maintenance",
       title: "Maintenance",
@@ -246,7 +266,13 @@ function MonitorSistem({ user, onShowToast }) {
                 MaintenanceModeTab & ActiveUsersTab destructure "showToast",
                 bukan "onShowToast" -- tanpa ini toast notif di dalemnya diem
                 aja gak muncul. */}
-            <ActiveComponent user={user} onShowToast={onShowToast} showToast={onShowToast} />
+            <ActiveComponent
+              user={user}
+              onShowToast={onShowToast}
+              showToast={onShowToast}
+              loading={loading}
+              setLoading={setLoading}
+            />
           </div>
         </div>
       </div>

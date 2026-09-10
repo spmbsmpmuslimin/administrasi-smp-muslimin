@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 10 Sep 2026, 05.29
+Di-download dari UI: 10 Sep 2026, 20.52
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 10 Sep 2026, 05.24
+Terakhir di-generate: 10 Sep 2026, 20.50
 ======================================================================
 |-- src
 |   |-- assets
@@ -43,6 +43,7 @@ Terakhir di-generate: 10 Sep 2026, 05.24
 |   |   |-- BottomNav.js
 |   |   |-- CatatanWalikelasBk.js
 |   |   |-- Dashboard.js
+|   |   |-- DeveloperDashboard.js
 |   |   |-- FeedbackGuru.js
 |   |   |-- GuruBKDashboard.js
 |   |   |-- HomeroomTeacherDashboard.js
@@ -206,7 +207,10 @@ Terakhir di-generate: 10 Sep 2026, 05.24
 |   |   |-- Reports.js
 |   |   `-- TeacherReports.js
 |   |-- services
-|   |   `-- academicYearService.js
+|   |   |-- JamPelajaranProvider.js
+|   |   |-- academicYearService.js
+|   |   |-- jamPelajaran.js
+|   |   `-- jamPelajaranService.js
 |   |-- setting
 |   |   |-- academic
 |   |   |   |-- AcademicYearTab.js
@@ -221,11 +225,11 @@ Terakhir di-generate: 10 Sep 2026, 05.24
 |   |   |   |-- FeedbackGuruTab.js
 |   |   |   `-- FeedbackSiswaTab.js
 |   |   |-- kelola-jadwal
-|   |   |   |-- AdminJadwalMassal-backup.js
 |   |   |   |-- AdminJadwalMassal.js
 |   |   |   |-- AdminKodeGuru.js
 |   |   |   |-- JadwalGuruTab.js
 |   |   |   |-- JadwalMassalModals.js
+|   |   |   |-- KelolaJamPelajaran.js
 |   |   |   `-- useJadwalMassalLogic.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
@@ -277,18 +281,23 @@ Terakhir di-generate: 10 Sep 2026, 05.24
 |   |   |   |-- DataValidator.js
 |   |   |   |-- DatabaseChecker.js
 |   |   |   `-- RaportChecker.js
+|   |   |-- ActiveUsersTab.js
 |   |   |-- CodeAudit.js
+|   |   |-- ConnectedDevicesAdminTab.js
 |   |   |-- DatabaseCleanupMonitor.js
 |   |   |-- HealthChecker.js
+|   |   |-- MaintenanceModeTab.js
+|   |   |-- MaintenancePage-backup.js
+|   |   |-- MaintenancePage.js
 |   |   |-- MonitorDashboard.js
 |   |   |-- MonitorSistem.js
 |   |   |-- PerformanceMonitor.js
 |   |   |-- StrukturSistem.js
+|   |   |-- StudentConnectedDevicesAdminTab.js
 |   |   `-- debugLog.js
 |   |-- utils
 |   |   |-- deviceInfo.js
 |   |   |-- excelExportKit.js
-|   |   |-- jamPelajaran.js
 |   |   |-- offlineHelper.js
 |   |   |-- pdfExportKit.js
 |   |   |-- studentDevices.js
@@ -304,7 +313,7 @@ Terakhir di-generate: 10 Sep 2026, 05.24
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 10 Sep 2026, 05.24
+Terakhir di-generate: 10 Sep 2026, 20.50
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
@@ -345,6 +354,7 @@ other_fee_bills : id,student_id,class_id,fee_type,academic_year,amount,due_date,
 other_fee_payments : id,bill_id,student_id,amount_paid,payment_date,payment_method,note,recorded_by,created_at
 peminjaman : id,buku_id,judul_buku_snapshot,nama_peminjam,no_anggota,tanggal_pinjam,tanggal_jatuh_tempo,tanggal_kembali,status,denda,kondisi_buku,catatan,petugas_id,created_at,updated_at,peminjam_student_id
 pengumuman_siswa : id,title,content,target_class,created_by,is_pinned,created_at,updated_at
+period_schedules : id,academic_year_id,day,period,start_time,end_time,session_type,label,created_at,updated_at
 raport_config : id,class_id,mata_pelajaran,academic_year_id,kkm,created_at,updated_at,jenjang,semester,is_jenjang_default
 raport_metadata : id,academic_year_id,semester,tanggal_raport,tempat,nama_kepala_sekolah,nip_kepala_sekolah,ttd_kepala_sekolah,created_at,updated_at
 ruang_belajar : id,title,category,description,content,resource_type,thumbnail,url,estimated_minutes,is_featured,is_active,created_by,created_at,updated_at

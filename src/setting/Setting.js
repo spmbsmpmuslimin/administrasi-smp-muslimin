@@ -28,7 +28,6 @@ import {
   User,
   School,
   Calendar,
-  Database,
   Home,
   ChevronRight,
   AlertCircle,
@@ -45,7 +44,6 @@ import { supabase } from "../supabaseClient";
 import ProfileTab from "./teacher-profiles/ProfileTab";
 import SchoolCombinedTab from "./school-management/SchoolCombinedTab";
 import AcademicYearTab from "./academic/AcademicYearTab";
-import SystemTab from "./SystemTab";
 import RaportConfig from "../e-raport/RaportConfig";
 import UserManagementTab from "./UserManagementTab";
 import FeedbackCombinedTab from "./feedback/FeedbackCombinedTab";
@@ -340,14 +338,11 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
       color: "fuchsia",
       available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
     },
-    {
-      id: "system",
-      title: "Manajemen System",
-      description: "Pengaturan sistem dan database",
-      icon: Database,
-      color: "slate",
-      available: user?.role === "admin" || user?.role === "tu", // ✅ FIX
-    },
+    // ✅ PINDAH (Sep 2026): card "Manajemen System" (SystemTab.js -- export
+    // CSV, backup/restore JSON) udah dipindah ke Monitor Sistem
+    // (MonitorSistem.js), ngumpul sama Maintenance & Active User yang
+    // sebelumnya juga udah pindah dari sini. File SystemTab.js sendiri
+    // udah dipindah fisik keluar dari folder ini.
     {
       id: "raport",
       title: "Manajemen E-Raport",
@@ -435,8 +430,6 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
         return <AcademicYearTab {...commonProps} />;
       case "raport":
         return <RaportConfig {...commonProps} />;
-      case "system":
-        return <SystemTab {...commonProps} />;
       case "jadwal-guru":
         return <JadwalGuruTab {...commonProps} />;
       case "feedback-guru":
