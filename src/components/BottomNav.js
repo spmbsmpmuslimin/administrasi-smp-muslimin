@@ -13,6 +13,8 @@ import {
   Moon,
   BookUp,
   BookDown,
+  Code2,
+  Database,
 } from "lucide-react";
 
 // ✅ NEW: Bottom navbar khusus mobile (lg:hidden) untuk app ini.
@@ -49,6 +51,9 @@ export default function BottomNav({
   // fallback teacherItems (nav bar guru: Presensi Siswa, Jurnal, dst yang
   // ga relevan buat mereka) dan roleLabel fallback "User".
   const isPetugasPerpus = userRole === "petugas_perpus";
+  // ✅ NEW: role developer -- navbar sendiri (Home, Manajemen Data, Monitor
+  // Sistem, Akun), gak numpang teacherItems/adminItems.
+  const isDeveloper = userRole === "developer";
   const [accountOpen, setAccountOpen] = useState(false);
   const accountDropdownRef = useRef(null);
 
@@ -71,11 +76,13 @@ export default function BottomNav({
           ? "Guru BK/BP"
           : userRole === "petugas_perpus"
             ? "Petugas Perpustakaan"
-            : userRole === "teacher" && user?.homeroom_class_id
-              ? `Wali Kelas ${user.homeroom_class_id}`
-              : userRole === "teacher"
-                ? "Guru Mata Pelajaran"
-                : "User";
+            : userRole === "developer"
+              ? "Developer"
+              : userRole === "teacher" && user?.homeroom_class_id
+                ? `Wali Kelas ${user.homeroom_class_id}`
+                : userRole === "teacher"
+                  ? "Guru Mata Pelajaran"
+                  : "User";
 
   const teacherItems = [
     {
@@ -178,6 +185,33 @@ export default function BottomNav({
     },
   ];
 
+  const developerItems = [
+    {
+      id: "dashboard",
+      label: "Home",
+      icon: Home,
+      bg: darkMode ? "bg-indigo-900/50" : "bg-indigo-100",
+      iconColor: darkMode ? "text-indigo-300" : "text-indigo-600",
+      activeBg: "bg-indigo-500",
+    },
+    {
+      id: "settings",
+      label: "Manajemen Data",
+      icon: Code2,
+      bg: darkMode ? "bg-violet-900/50" : "bg-violet-100",
+      iconColor: darkMode ? "text-violet-300" : "text-violet-600",
+      activeBg: "bg-violet-500",
+    },
+    {
+      id: "monitor-sistem",
+      label: "Monitor Sistem",
+      icon: Database,
+      bg: darkMode ? "bg-slate-700/50" : "bg-slate-100",
+      iconColor: darkMode ? "text-slate-300" : "text-slate-600",
+      activeBg: "bg-slate-600",
+    },
+  ];
+
   const petugasPerpusItems = [
     {
       id: "dashboard",
@@ -212,7 +246,9 @@ export default function BottomNav({
         ? guruBkItems
         : isPetugasPerpus
           ? petugasPerpusItems
-          : teacherItems;
+          : isDeveloper
+            ? developerItems
+            : teacherItems;
 
   return (
     <nav

@@ -54,7 +54,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { DAYS } from "../../utils/jamPelajaran";
+import { DAYS } from "../../services/JamPelajaranProvider";
 import useJadwalMassalLogic from "./useJadwalMassalLogic";
 import JadwalMassalModals from "./JadwalMassalModals";
 
@@ -69,6 +69,57 @@ const DAY_BADGE_COLORS = {
   Kamis: "bg-amber-50 text-amber-700 dark:bg-amber-950/30",
   Jumat: "bg-purple-50 text-purple-700 dark:bg-purple-950/30",
 };
+
+// Palet pastel per jenjang -- dipake buat bedain baris "Kelas 7/8/9" di
+// kartu "Jadwal Aktif Saat Ini" secara visual. `chip` = warna tombol kelas
+// pas gak aktif, `chipActive` = pas kelas itu lagi dipilih (Lihat Detail).
+const GRADE_COLORS = {
+  7: {
+    card: "bg-amber-50 border-amber-100",
+    label: "text-amber-700",
+    chip: "bg-white/80 text-amber-700 border-amber-200 hover:bg-amber-100",
+    chipActive: "bg-amber-500 text-white border-amber-500",
+  },
+  8: {
+    card: "bg-violet-50 border-violet-100",
+    label: "text-violet-700",
+    chip: "bg-white/80 text-violet-700 border-violet-200 hover:bg-violet-100",
+    chipActive: "bg-violet-500 text-white border-violet-500",
+  },
+  9: {
+    card: "bg-emerald-50 border-emerald-100",
+    label: "text-emerald-700",
+    chip: "bg-white/80 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+    chipActive: "bg-emerald-500 text-white border-emerald-500",
+  },
+};
+const DEFAULT_GRADE_COLOR = {
+  card: "bg-gray-50 border-gray-100",
+  label: "text-gray-700",
+  chip: "bg-white/80 text-gray-700 border-gray-200 hover:bg-gray-100",
+  chipActive: "bg-gray-500 text-white border-gray-500",
+};
+
+// Kelompokin daftar kelas berdasarkan jenjang (7/8/9), diurutin ascending
+// per jenjang -- dipake buat 2 tempat: tombol pilih-kelas di kartu
+// "Jadwal Aktif Saat Ini" & checkbox kelas di modal Export Jadwal Aktif.
+// `getGrade` fleksibel karena 2 sumber datanya beda bentuk (liveSchedule.
+// byClass punya field `grade`, `classes` juga punya `grade` tapi field id
+// kelasnya bernama beda: `class_id` vs `id`).
+function groupByGrade(items, getGrade) {
+  const groups = new Map();
+  items.forEach((item) => {
+    const grade = getGrade(item) ?? "Lainnya";
+    if (!groups.has(grade)) groups.set(grade, []);
+    groups.get(grade).push(item);
+  });
+  return Array.from(groups.entries()).sort((a, b) => {
+    const na = Number(a[0]);
+    const nb = Number(b[0]);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+    return String(a[0]).localeCompare(String(b[0]));
+  });
+}
 
 export default function AdminJadwalMassal() {
   const {
@@ -93,6 +144,15 @@ export default function AdminJadwalMassal() {
     setSelectedLiveClassId,
     liveClassGridCellMap,
     liveClassGridRows,
+    exportLiveModalOpen,
+    setExportLiveModalOpen,
+    exportLiveClassIds,
+    exportingLive,
+    openExportLiveModal,
+    toggleExportLiveClass,
+    selectAllExportLiveClasses,
+    deselectAllExportLiveClasses,
+    handleExportLiveSchedule,
     decoded,
     syncPreview,
     sortedClassIds,
@@ -216,21 +276,23 @@ export default function AdminJadwalMassal() {
                 class_schedules sekarang (bukan hasil decode file yang lagi
                 diupload) -- biar halaman gak polos pas belum ada file
                 diupload, admin langsung liat "oh segini yang udah live". */}
-            <div className="bg-theme-bg rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2.5">
+            <div className="bg-theme-bg rounded-3xl border border-gray-100 p-5 sm:p-6 shadow-md">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3.5">
                   <div
-                    className={`p-2 rounded-xl shrink-0 ${
+                    className={`p-3 rounded-2xl shrink-0 ${
                       liveSchedule.classCount > 0
                         ? "bg-emerald-50 text-emerald-600"
                         : "bg-gray-100 text-gray-400"
                     }`}
                   >
-                    <CalendarCheck className="w-4 h-4" />
+                    <CalendarCheck className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-theme">Jadwal Aktif Saat Ini</p>
-                    <p className="text-xs text-theme-secondary mt-0.5">
+                    <p className="text-base sm:text-lg font-bold text-theme">
+                      Jadwal Aktif Saat Ini
+                    </p>
+                    <p className="text-xs sm:text-sm text-theme-secondary mt-0.5">
                       {liveSchedule.classCount > 0
                         ? `${liveSchedule.classCount} kelas · ${liveSchedule.totalSlots} jam pelajaran aktif` +
                           (liveSchedule.lastPublishedAt
@@ -249,45 +311,63 @@ export default function AdminJadwalMassal() {
                   </div>
                 </div>
                 {liveSchedule.classCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowLiveDetail(!showLiveDetail);
-                      setSelectedLiveClassId(null);
-                    }}
-                    className="flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline shrink-0"
-                  >
-                    {showLiveDetail ? "Sembunyikan" : "Lihat Detail"}
-                    {showLiveDetail ? (
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={openExportLiveModal}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Export
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowLiveDetail(!showLiveDetail);
+                        setSelectedLiveClassId(null);
+                      }}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-theme-surface text-theme-secondary text-xs font-semibold hover:bg-gray-200 transition-colors"
+                    >
+                      {showLiveDetail ? "Sembunyikan" : "Lihat Detail"}
+                      {showLiveDetail ? (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
               {showLiveDetail && liveSchedule.byClass.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex flex-wrap gap-1.5">
-                    {liveSchedule.byClass.map((c) => {
-                      const active = selectedLiveClassId === c.class_id;
-                      return (
-                        <button
-                          key={c.class_id}
-                          type="button"
-                          onClick={() => setSelectedLiveClassId(active ? null : c.class_id)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                            active
-                              ? "bg-blue-600 text-white"
-                              : "bg-theme-surface text-theme-secondary hover:bg-blue-50 hover:text-blue-700"
-                          }`}
-                        >
-                          Kelas {c.class_id}: {c.slotCount} jam
-                        </button>
-                      );
-                    })}
-                  </div>
-
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                  {groupByGrade(liveSchedule.byClass, (c) => c.grade).map(([grade, items]) => {
+                    const colors = GRADE_COLORS[grade] || DEFAULT_GRADE_COLOR;
+                    return (
+                      <div
+                        key={grade}
+                        className={`rounded-2xl border p-3.5 sm:p-4 transition-shadow hover:shadow-sm ${colors.card}`}
+                      >
+                        <p className={`text-xs font-bold mb-2.5 ${colors.label}`}>Kelas {grade}</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                          {items.map((c) => {
+                            const active = selectedLiveClassId === c.class_id;
+                            return (
+                              <button
+                                key={c.class_id}
+                                type="button"
+                                onClick={() => setSelectedLiveClassId(active ? null : c.class_id)}
+                                className={`px-3 py-3.5 rounded-xl text-sm font-semibold border transition-all hover:scale-[1.03] ${
+                                  active ? colors.chipActive : colors.chip
+                                }`}
+                              >
+                                {c.class_id} - {c.slotCount} Jam
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                   {selectedLiveClassId && (
                     <div className="mt-3">
                       <p className="text-xs font-bold text-theme mb-2">
@@ -317,16 +397,16 @@ export default function AdminJadwalMassal() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {liveClassGridRows.map((startTime) => (
+                                {liveClassGridRows.map((period) => (
                                   <tr
-                                    key={startTime}
+                                    key={period}
                                     className="border-b border-gray-50 last:border-0 align-top"
                                   >
                                     <td className="py-2.5 px-3 font-semibold text-theme text-xs whitespace-nowrap">
-                                      {startTime?.slice(0, 5)}
+                                      Jam {period}
                                     </td>
                                     {DAYS.map((day) => {
-                                      const item = liveClassGridCellMap.get(`${day}|${startTime}`);
+                                      const item = liveClassGridCellMap.get(`${day}|${period}`);
                                       return (
                                         <td key={day} className="py-2 px-2 min-w-[130px]">
                                           {item ? (
@@ -336,6 +416,10 @@ export default function AdminJadwalMassal() {
                                               </p>
                                               <p className="text-[11px] text-theme-secondary mt-0.5">
                                                 {item.teacher_name}
+                                              </p>
+                                              <p className="text-[10px] text-blue-500 font-medium mt-0.5">
+                                                {item.start_time?.slice(0, 5)}–
+                                                {item.end_time?.slice(0, 5)}
                                               </p>
                                             </div>
                                           ) : (
@@ -793,6 +877,110 @@ export default function AdminJadwalMassal() {
               </div>
             )}
           </>
+        )}
+
+        {/* Modal export jadwal aktif: pilih kelas mana yang mau di-export
+            (checkbox per kelas, dikelompokin per jenjang biar gampang
+            di-scan, + "Pilih Semua Kelas"). Cuma jadwal yang UDAH aktif/
+            published di class_schedules yang di-export -- bukan hasil
+            decode file yang lagi diupload (itu ada di "Export Preview"
+            terpisah). */}
+        {exportLiveModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-theme-bg rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-bold text-theme">Export Jadwal Aktif</h2>
+                <button
+                  onClick={() => setExportLiveModalOpen(false)}
+                  className="text-gray-400 hover:text-theme-secondary"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-theme-secondary mb-3">
+                Pilih kelas yang mau di-export ke Excel (1 sheet per kelas). Kelas yang belum punya
+                jadwal aktif ditandai <span className="font-semibold">(kosong)</span>.
+              </p>
+
+              <div className="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-gray-100">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-theme cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={classes.length > 0 && exportLiveClassIds.size === classes.length}
+                    onChange={(e) =>
+                      e.target.checked
+                        ? selectAllExportLiveClasses()
+                        : deselectAllExportLiveClasses()
+                    }
+                    className="w-4 h-4 rounded border-theme accent-blue-600"
+                  />
+                  Pilih Semua Kelas
+                </label>
+                <span className="text-xs text-gray-400">
+                  {exportLiveClassIds.size} dari {classes.length} kelas dipilih
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {groupByGrade(classes, (c) => c.grade).map(([grade, items]) => (
+                  <div key={grade}>
+                    <p className="text-xs font-bold text-theme-secondary mb-1.5">Kelas {grade}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {items.map((c) => {
+                        const checked = exportLiveClassIds.has(c.id);
+                        const hasSchedule = liveSchedule.byClass.some((b) => b.class_id === c.id);
+                        return (
+                          <label
+                            key={c.id}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer ${
+                              checked
+                                ? "bg-blue-50 border-blue-200 text-blue-700"
+                                : "bg-theme-surface border-theme text-theme-secondary"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleExportLiveClass(c.id)}
+                              className="w-3.5 h-3.5 rounded border-theme accent-blue-600"
+                            />
+                            {c.id}
+                            {!hasSchedule && (
+                              <span className="text-gray-400 font-normal">(kosong)</span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 pt-4 mt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setExportLiveModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-theme-secondary bg-theme-surface hover:bg-gray-200"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportLiveSchedule}
+                  disabled={exportingLive || exportLiveClassIds.size === 0}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300"
+                >
+                  {exportingLive ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  {exportingLive ? "Meng-export..." : `Export ${exportLiveClassIds.size} Kelas`}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         <JadwalMassalModals

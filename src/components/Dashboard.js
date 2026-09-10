@@ -7,6 +7,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Navigate } from "react-router-dom";
 import { AlertTriangle, User, School, Home } from "lucide-react";
 import AdminDashboard from "./AdminDashboard";
+import DeveloperDashboard from "./DeveloperDashboard";
 import HomeroomTeacherDashboard from "./HomeroomTeacherDashboard";
 import TeacherDashboard from "./TeacherDashboard";
 import GuruBKDashboard from "./GuruBKDashboard";
@@ -76,12 +77,11 @@ const Dashboard = ({ user, darkMode }) => {
     }
 
     // 1c. DEVELOPER -- role internal buat QA lintas menu (bypass semua
-    // pengecekan akses di ProtectedRoute/sidebarConfig.js). Gak punya
-    // dashboard sendiri, dipinjemin AdminDashboard aja karena paling
-    // lengkap -- yang penting akses ke semua menu/halaman lain (lewat
-    // sidebar & URL langsung) udah kebuka semua buat role ini.
+    // pengecekan akses di ProtectedRoute/sidebarConfig.js). Dashboard
+    // sendiri: hub navigasi cepat ke semua modul, bukan numpang
+    // AdminDashboard lagi.
     if (userRole === "developer") {
-      return <AdminDashboard user={memoizedUser} darkMode={darkMode} />;
+      return <DeveloperDashboard user={memoizedUser} darkMode={darkMode} />;
     }
 
     // 2. GURU BK/BP

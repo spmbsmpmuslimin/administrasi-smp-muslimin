@@ -1,20 +1,25 @@
 // setting/JadwalGuruTab.js
-// Gabungan 2 fitur admin jadwal jadi 1 halaman di menu Setting:
+// Gabungan 3 fitur admin jadwal jadi 1 halaman di menu Setting:
 // - "Import Jadwal Massal" (AdminJadwalMassal.js): olah PDF jadwal WKS.
 //   Kurikulum -> class_schedules, publish sekaligus ke semua kelas.
 // - "Master Kode Guru" (AdminKodeGuru.js): kamus kode -> Nama Guru +
 //   Mapel yang dipakai AdminJadwalMassal buat nge-decode.
+// - "Jam Pelajaran" (KelolaJamPelajaran.js): Batch 3 migrasi jam
+//   pelajaran -- CRUD period_schedules per semester + salin dari semester
+//   lain (lihat migrasi-jam-pelajaran.md).
 //
 // Ini cuma wrapper navigasi (sub-tab). Logic & data-fetching tetap ada
 // masing-masing di file aslinya, gak diubah.
 import React, { useState } from "react";
-import { UploadCloud, BookUser } from "lucide-react";
+import { UploadCloud, BookUser, Clock } from "lucide-react";
 import AdminJadwalMassal from "./AdminJadwalMassal";
 import AdminKodeGuru from "./AdminKodeGuru";
+import KelolaJamPelajaran from "./KelolaJamPelajaran";
 
 const SUB_TABS = [
   { id: "kode-guru", label: "Master Kode Guru", icon: BookUser },
   { id: "import", label: "Import Jadwal Massal", icon: UploadCloud },
+  { id: "jam-pelajaran", label: "Jam Pelajaran", icon: Clock },
 ];
 
 export default function JadwalGuruTab() {
@@ -45,6 +50,7 @@ export default function JadwalGuruTab() {
 
       {subTab === "import" && <AdminJadwalMassal />}
       {subTab === "kode-guru" && <AdminKodeGuru />}
+      {subTab === "jam-pelajaran" && <KelolaJamPelajaran />}
     </div>
   );
 }

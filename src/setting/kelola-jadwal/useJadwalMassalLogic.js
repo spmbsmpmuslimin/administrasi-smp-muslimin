@@ -10,9 +10,18 @@ import { supabase } from "../../supabaseClient";
 import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import { getActiveYearString } from "../../services/academicYearService";
-import { JAM_SCHEDULE, DAYS, getAvailablePeriods } from "../../utils/jamPelajaran";
+import { useJamPelajaran } from "../../services/JamPelajaranProvider";
 
 export default function useJadwalMassalLogic() {
+  const {
+    JAM_SCHEDULE,
+    DAYS,
+    ALL_PERIODS,
+    getAvailablePeriods,
+    findPeriod,
+    loading: jamLoading,
+  } = useJamPelajaran();
+
   const [academicYear, setAcademicYear] = useState("");
   const [classes, setClasses] = useState([]); // [{id, grade}]
   const [teacherCodes, setTeacherCodes] = useState([]); // dari tabel teacher_codes
@@ -89,6 +98,14 @@ export default function useJadwalMassalLogic() {
   // belum ada yang diklik / lagi ditutup).
   const [selectedLiveClassId, setSelectedLiveClassId] = useState(null);
 
+  // Modal "Export Jadwal Aktif": export class_schedules yang LAGI AKTIF
+  // (bukan hasil decode file yang lagi diupload) ke Excel, kelas mana aja
+  // yang mau di-export dipilih manual lewat checkbox (bisa "Pilih Semua
+  // Kelas" atau uncheck yang gak perlu).
+  const [exportLiveModalOpen, setExportLiveModalOpen] = useState(false);
+  const [exportLiveClassIds, setExportLiveClassIds] = useState(new Set());
+  const [exportingLive, setExportingLive] = useState(false);
+
   // Ambil ulang data class_schedules yang lagi aktif, di-scope ke classIds
   // yang dikasih (biasanya seluruh kelas tahun ajaran aktif) biar gak
   // kebawa data kelas tahun ajaran lama yang kebetulan belum kehapus.
@@ -111,6 +128,9 @@ export default function useJadwalMassalLogic() {
   // Ringkasan buat kartu status (jumlah kelas, total jam pelajaran, kapan
   // terakhir dipublish) -- diturunin dari liveScheduleRows, gak nyimpen
   // state sendiri biar selalu konsisten sama data mentahnya.
+  // `grade` di-join dari `classes` (tabel classes punya kolom grade) biar
+  // AdminJadwalMassal.js bisa ngelompokin tombol pilih-kelas per jenjang
+  // (7/8/9) tanpa perlu ngoprek string class_id di komponen.
   const liveSchedule = useMemo(() => {
     const countMap = new Map();
     let latest = null;
@@ -120,8 +140,13 @@ export default function useJadwalMassalLogic() {
         latest = row.created_at;
       }
     });
+    const gradeByClassId = new Map(classes.map((c) => [c.id, c.grade]));
     const byClass = Array.from(countMap.entries())
-      .map(([class_id, slotCount]) => ({ class_id, slotCount }))
+      .map(([class_id, slotCount]) => ({
+        class_id,
+        slotCount,
+        grade: gradeByClassId.get(class_id) ?? null,
+      }))
       .sort((a, b) => a.class_id.localeCompare(b.class_id));
     return {
       classCount: byClass.length,
@@ -129,27 +154,41 @@ export default function useJadwalMassalLogic() {
       lastPublishedAt: latest,
       byClass,
     };
-  }, [liveScheduleRows]);
+  }, [liveScheduleRows, classes]);
 
   // Grid jadwal mingguan (Hari x Jam) buat 1 kelas yang lagi dipilih di
-  // kartu status. Beda sama gridCellMap/gridPeriods punya preview decode
-  // (yang keynya "day|period" dari JAM_SCHEDULE) -- class_schedules gak
-  // nyimpen nomor period, jadi di sini row-nya dikunci pake start_time
-  // mentah (diurutin ascending), key cell "day|start_time".
+  // kartu status.
+  // ✅ FIX: sebelumnya row/key di sini dikunci pake start_time MENTAH
+  // ("day|start_time"). Itu keliru karena jam mulai tiap hari beda-beda
+  // (mis. Senin jam ke-1 mulai 06:30, Selasa-Kamis jam ke-1 mulai 07:00,
+  // Jumat beda lagi) -- akibatnya baris grid jadi union semua start_time
+  // se-minggu, dan buat tiap baris cuma hari yang start_time-nya PERSIS
+  // sama yang keisi, sisanya keliatan kosong padahal datanya ada (cuma
+  // "jam ke-1" Senin & "jam ke-1" Selasa gak pernah nyatu di baris sama).
+  // Sekarang disamain sama logic KelolaJadwalPelajaran.js (wali kelas):
+  // dikunci pake NOMOR PERIOD hasil findPeriod(), bukan string waktu.
   const liveClassGridCellMap = useMemo(() => {
     const m = new Map();
     if (!selectedLiveClassId) return m;
     liveScheduleRows
       .filter((r) => r.class_id === selectedLiveClassId)
-      .forEach((r) => m.set(`${r.day}|${r.start_time}`, r));
+      .forEach((r) => {
+        const period = findPeriod(r.day, r.start_time, r.end_time);
+        if (period) m.set(`${r.day}|${period}`, r);
+      });
     return m;
-  }, [liveScheduleRows, selectedLiveClassId]);
+  }, [liveScheduleRows, selectedLiveClassId, findPeriod]);
 
   const liveClassGridRows = useMemo(() => {
     if (!selectedLiveClassId) return [];
     const rows = liveScheduleRows.filter((r) => r.class_id === selectedLiveClassId);
-    return Array.from(new Set(rows.map((r) => r.start_time))).sort();
-  }, [liveScheduleRows, selectedLiveClassId]);
+    const periods = new Set();
+    rows.forEach((r) => {
+      const period = findPeriod(r.day, r.start_time, r.end_time);
+      if (period) periods.add(period);
+    });
+    return ALL_PERIODS.filter((p) => periods.has(p));
+  }, [liveScheduleRows, selectedLiveClassId, findPeriod, ALL_PERIODS]);
 
   useEffect(() => {
     const init = async () => {
@@ -345,7 +384,7 @@ export default function useJadwalMassalLogic() {
       totalOk: rawCells.length - errors.length,
       classCount: Object.keys(byClass).length,
     };
-  }, [rawCells, codeMap, assignmentSet]);
+  }, [rawCells, codeMap, assignmentSet, JAM_SCHEDULE]);
 
   // teacher_id -> teacher_name, dari Master Kode Guru. Beberapa kode bisa
   // punya teacher_id yang sama (mis. kode "6" & "6P" guru yang sama ngajar
@@ -735,6 +774,215 @@ export default function useJadwalMassalLogic() {
   const handleImportClick = () => {
     if (importing) return;
     fileInputRef.current?.click();
+  };
+
+  // ===== Export JADWAL AKTIF (published) per kelas terpilih =====
+  const openExportLiveModal = () => {
+    // Default: semua kelas yang MEMANG udah punya jadwal aktif kecentang.
+    // Kelas yang belum ada jadwalnya sengaja gak ikut default dicentang
+    // (biar admin gak nge-export sheet kosong tanpa sadar), tapi tetep
+    // bisa dicentang manual/pake "Pilih Semua Kelas" kalau mau.
+    setExportLiveClassIds(new Set(liveSchedule.byClass.map((c) => c.class_id)));
+    setExportLiveModalOpen(true);
+  };
+
+  const toggleExportLiveClass = (classId) => {
+    setExportLiveClassIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(classId)) next.delete(classId);
+      else next.add(classId);
+      return next;
+    });
+  };
+
+  const selectAllExportLiveClasses = () => setExportLiveClassIds(new Set(classes.map((c) => c.id)));
+  const deselectAllExportLiveClasses = () => setExportLiveClassIds(new Set());
+
+  // Export ke Excel, 1 sheet per kelas -- polanya SAMA PERSIS kayak
+  // handleExportPreview (kop sekolah, header hari, cell richText Mapel/
+  // Guru/Waktu, catatan kaki istirahat), tapi sumber datanya
+  // liveScheduleRows (jadwal yang BENERAN aktif di class_schedules),
+  // bukan hasil decode file yang lagi diupload. Karena liveScheduleRows
+  // cuma nyimpen start_time/end_time mentah (gak ada kolom period), tiap
+  // baris di-translate dulu ke nomor period pake findPeriod() -- sama
+  // kayak fix yang dipake di liveClassGridCellMap/liveClassGridRows.
+  const handleExportLiveSchedule = async () => {
+    const classIdsToExport = classes.map((c) => c.id).filter((id) => exportLiveClassIds.has(id));
+    if (classIdsToExport.length === 0) {
+      setError("Gak ada kelas yang dicentang buat di-export. Centang minimal 1 kelas.");
+      return;
+    }
+
+    setExportingLive(true);
+    setError(null);
+    try {
+      const wb = new ExcelJS.Workbook();
+      const lastColLetter = XLSX.utils.encode_col(DAYS.length);
+      const thinBorder = { style: "thin", color: { argb: "FF94A3B8" } };
+
+      classIdsToExport.forEach((classId) => {
+        const rows = liveScheduleRows.filter((r) => r.class_id === classId);
+        const cellMap = new Map();
+        const periodsSet = new Set();
+        rows.forEach((r) => {
+          const period = findPeriod(r.day, r.start_time, r.end_time);
+          if (period) {
+            cellMap.set(`${r.day}|${period}`, r);
+            periodsSet.add(period);
+          }
+        });
+        const periods = ALL_PERIODS.filter((p) => periodsSet.has(p));
+
+        const sheetName = String(classId)
+          .slice(0, 31)
+          .replace(/[\\/*?:[\]]/g, "-");
+        const ws = wb.addWorksheet(sheetName);
+        ws.columns = [{ width: 7 }, ...DAYS.map(() => ({ width: 26 }))];
+
+        ws.mergeCells(`A1:${lastColLetter}1`);
+        const schoolCell = ws.getCell("A1");
+        schoolCell.value = "SMP MUSLIMIN CILILIN";
+        schoolCell.font = { bold: true, size: 18, color: { argb: "FF111827" } };
+        schoolCell.alignment = { vertical: "middle", horizontal: "center" };
+        ws.getRow(1).height = 26;
+
+        ws.mergeCells(`A2:${lastColLetter}2`);
+        const classCell = ws.getCell("A2");
+        classCell.value = `JADWAL PELAJARAN KELAS ${classId}`;
+        classCell.font = { bold: true, size: 14, color: { argb: "FF1D4ED8" } };
+        classCell.alignment = { vertical: "middle", horizontal: "center" };
+        ws.getRow(2).height = 22;
+
+        ws.mergeCells(`A3:${lastColLetter}3`);
+        const yearCell = ws.getCell("A3");
+        yearCell.value = `TAHUN AJARAN ${academicYear}`;
+        yearCell.font = { bold: true, size: 12, color: { argb: "FF6B7280" } };
+        yearCell.alignment = { vertical: "middle", horizontal: "center" };
+        ws.getRow(3).height = 20;
+
+        const header = ws.getRow(5);
+        header.values = ["Jam", ...DAYS];
+        header.eachCell((cell) => {
+          cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF2563EB" },
+            bgColor: { argb: "FF2563EB" },
+          };
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+        });
+        header.height = 20;
+
+        let rowIdx = 6;
+        periods.forEach((period) => {
+          const row = ws.getRow(rowIdx);
+
+          const jamCell = row.getCell(1);
+          jamCell.value = period;
+          jamCell.font = { bold: true };
+          jamCell.alignment = { vertical: "middle", horizontal: "center" };
+          jamCell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFF8FAFC" },
+            bgColor: { argb: "FFF8FAFC" },
+          };
+          jamCell.border = {
+            top: thinBorder,
+            left: thinBorder,
+            bottom: thinBorder,
+            right: thinBorder,
+          };
+
+          DAYS.forEach((day, dayIdx) => {
+            const cell = row.getCell(2 + dayIdx);
+            const item = cellMap.get(`${day}|${period}`);
+
+            if (item) {
+              cell.value = {
+                richText: [
+                  { font: { bold: true, size: 11 }, text: `${item.subject}\n` },
+                  {
+                    font: { size: 9, color: { argb: "FF6B7280" } },
+                    text: `${item.teacher_name || "-"}\n`,
+                  },
+                  {
+                    font: { size: 9, bold: true, color: { argb: "FF2563EB" } },
+                    text: `${item.start_time?.slice(0, 5)}–${item.end_time?.slice(0, 5)}`,
+                  },
+                ],
+              };
+              cell.alignment = { wrapText: true, vertical: "middle", horizontal: "left" };
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFFFFFF" },
+                bgColor: { argb: "FFFFFFFF" },
+              };
+            } else {
+              cell.value = "–";
+              cell.font = { color: { argb: "FFD1D5DB" } };
+              cell.alignment = { vertical: "middle", horizontal: "center" };
+            }
+            cell.border = {
+              top: thinBorder,
+              left: thinBorder,
+              bottom: thinBorder,
+              right: thinBorder,
+            };
+          });
+
+          row.height = 55;
+          rowIdx++;
+        });
+
+        if (periods.length === 0) {
+          ws.mergeCells(`A6:${lastColLetter}6`);
+          const emptyCell = ws.getCell("A6");
+          emptyCell.value = "Belum ada jadwal aktif buat kelas ini.";
+          emptyCell.font = { italic: true, color: { argb: "FF9CA3AF" } };
+          emptyCell.alignment = { vertical: "middle", horizontal: "center" };
+        }
+
+        let noteRowIdx = rowIdx + 1;
+        const noteLines = [
+          "Catatan:",
+          "1. Istirahat ke 1 (09.40 - 10.30)",
+          "    Istirahat ke 2 (12.15 - 13.00)",
+          "2. Khusus untuk Hari Jumat :",
+          "    Masuk Jam 06.30 (1 jam pelajarannya 30 Menit)",
+          "    Istirahat setelah Jam ke 5 (09.10-09.40), Pulang Jam 10.40",
+        ];
+        noteLines.forEach((line, i) => {
+          ws.mergeCells(`A${noteRowIdx}:${lastColLetter}${noteRowIdx}`);
+          const noteCell = ws.getCell(`A${noteRowIdx}`);
+          noteCell.value = line;
+          noteCell.font = { bold: i === 0, size: 10, color: { argb: "FF374151" } };
+          noteCell.alignment = { vertical: "middle", horizontal: "left" };
+          ws.getRow(noteRowIdx).height = 16;
+          noteRowIdx++;
+        });
+      });
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Jadwal_Aktif_${academicYear.replace("/", "-")}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setExportLiveModalOpen(false);
+    } catch (err) {
+      setError("Gagal export jadwal aktif: " + err.message);
+    } finally {
+      setExportingLive(false);
+    }
   };
 
   // Baca file -> rawCells (MENTAH, belum ditranslate). Validasi cuma di
@@ -1168,7 +1416,7 @@ export default function useJadwalMassalLogic() {
     // data awal & status
     academicYear,
     classes,
-    loading,
+    loading: loading || jamLoading,
     error,
     setError,
     success,
@@ -1193,6 +1441,17 @@ export default function useJadwalMassalLogic() {
     setSelectedLiveClassId,
     liveClassGridCellMap,
     liveClassGridRows,
+
+    // export jadwal aktif (published) ke Excel, pilih kelas via modal
+    exportLiveModalOpen,
+    setExportLiveModalOpen,
+    exportLiveClassIds,
+    exportingLive,
+    openExportLiveModal,
+    toggleExportLiveClass,
+    selectAllExportLiveClasses,
+    deselectAllExportLiveClasses,
+    handleExportLiveSchedule,
 
     // decode hasil & validasi silang
     decoded,

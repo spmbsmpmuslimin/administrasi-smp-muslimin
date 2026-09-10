@@ -250,37 +250,52 @@ export default function StudentKeuangan({ student }) {
                 {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               {isOpen && (
-                <div className="grid grid-cols-3 gap-2 p-3">
-                  {items.map((p) => {
-                    const isPaid = p.status === "paid";
-                    const isPartial = p.status === "partial";
-                    const isOverdue = !isPaid && !isPartial && p.isDue;
-                    return (
-                      <div
-                        key={p.key}
-                        className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs border ${
-                          isPaid
-                            ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                            : isPartial
-                              ? "bg-amber-50 border-amber-200 text-amber-700"
-                              : isOverdue
-                                ? "bg-red-50 border-red-200 text-red-700 font-semibold"
-                                : "bg-gray-50 border-gray-200 border-dashed text-gray-400"
-                        }`}
-                      >
-                        {isPaid ? (
-                          <CheckCircle2 size={13} />
-                        ) : isPartial ? (
-                          <Clock size={13} />
-                        ) : isOverdue ? (
-                          <AlertTriangle size={13} />
-                        ) : (
-                          <Circle size={13} />
-                        )}
-                        {MONTH_NAMES[p.month - 1].slice(0, 3)}
+                <div className="grid grid-cols-2 gap-3 p-3">
+                  {[
+                    { label: "Semester 1", range: "Juli - Desember", items: items.slice(0, 6) },
+                    { label: "Semester 2", range: "Januari - Juni", items: items.slice(6, 12) },
+                  ].map((sem) => (
+                    <div key={sem.label} className="space-y-1.5">
+                      <div className="px-1 pb-1">
+                        <p className="text-xs font-bold text-theme uppercase tracking-wide">
+                          {sem.label}
+                        </p>
+                        <p className="text-[11px] text-theme-secondary">{sem.range}</p>
                       </div>
-                    );
-                  })}
+                      {sem.items.map((p) => {
+                        const isPaid = p.status === "paid";
+                        const isPartial = p.status === "partial";
+                        const isOverdue = !isPaid && !isPartial && p.isDue;
+                        return (
+                          <div
+                            key={p.key}
+                            className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border ${
+                              isPaid
+                                ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                                : isPartial
+                                  ? "bg-amber-50 border-amber-200 text-amber-700"
+                                  : isOverdue
+                                    ? "bg-red-50 border-red-200 text-red-700"
+                                    : "bg-gray-50 border-gray-200 border-dashed text-gray-400"
+                            }`}
+                          >
+                            {isPaid ? (
+                              <CheckCircle2 size={14} className="shrink-0" />
+                            ) : isPartial ? (
+                              <Clock size={14} className="shrink-0" />
+                            ) : isOverdue ? (
+                              <AlertTriangle size={14} className="shrink-0" />
+                            ) : (
+                              <Circle size={14} className="shrink-0" />
+                            )}
+                            <span className="text-sm font-semibold">
+                              {MONTH_NAMES[p.month - 1]}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

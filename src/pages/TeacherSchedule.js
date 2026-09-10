@@ -17,18 +17,15 @@ import {
 } from "lucide-react";
 import TeacherScheduleExcel from "./TeacherScheduleExcel";
 import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academicYearService";
-// ✅ FIX: sebelumnya JAM_SCHEDULE didefinisiin ULANG di file ini secara
-// lokal, terpisah dari "../utils/jamPelajaran" yang jadi single source
-// of truth. Definisi lokal itu udah usang -- period 3-5 hari Jumat
-// beda 5-10 menit dari yang di utils/jamPelajaran.js. Akibatnya, guru
-// yang input jadwal manual lewat file ini kesimpen jam yang beda sama
-// jadwal yang di-publish massal oleh admin (yang pake utils/jamPelajaran.js),
-// bikin BusinessLogicChecker nemuin "overlapping schedules" padahal itu
-// cuma beda definisi jam, bukan bentrok jadwal beneran. Sekarang import
-// dari sumber yang sama biar konsisten satu aplikasi.
-import { JAM_SCHEDULE } from "../utils/jamPelajaran";
+// ✅ FIX: JAM_SCHEDULE sekarang datang dari period_schedules via
+// JamPelajaranProvider (useJamPelajaran()), bukan lagi konstanta statis
+// di utils/jamPelajaran.js -- itu udah dihapus. Konsekuensinya JAM_SCHEDULE
+// gak lagi selalu ready pas render pertama (async fetch), jadi semua
+// pemakaiannya di bawah ikut digerbang sama `jamLoading`.
+import { useJamPelajaran } from "../services/JamPelajaranProvider";
 
 const TeacherSchedule = ({ user }) => {
+  const { JAM_SCHEDULE, loading: jamLoading } = useJamPelajaran();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -483,7 +480,7 @@ const TeacherSchedule = ({ user }) => {
 
   const scheduleGrid = generateScheduleGrid();
 
-  if (academicLoading) {
+  if (academicLoading || jamLoading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex items-center justify-center transition-colors duration-300">
         <div className="text-center">
@@ -689,7 +686,7 @@ const TeacherSchedule = ({ user }) => {
                           {time.start} - {time.end}
                           {period === "1" && (
                             <div className="text-[10px] mt-1 text-yellow-600">
-                              Senin: {JAM_SCHEDULE.Senin[1].start}-{JAM_SCHEDULE.Senin[1].end}
+                              Senin: {JAM_SCHEDULE.Senin?.[1]?.start}-{JAM_SCHEDULE.Senin?.[1]?.end}
                             </div>
                           )}
                         </td>

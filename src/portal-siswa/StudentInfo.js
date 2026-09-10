@@ -128,12 +128,12 @@ const MENUS = [
     title: "Info Pembayaran SPP",
     subtitle: "Status & riwayat SPP",
     icon: Wallet,
-    cardBgClass: "bg-emerald-100 dark:bg-emerald-900/30",
-    cardBorderClass: "border-emerald-200",
-    titleColorClass: "text-emerald-900 dark:text-emerald-300",
-    subtitleColorClass: "text-emerald-700/70 dark:text-emerald-400/70",
+    cardBgClass: "bg-teal-100 dark:bg-teal-900/30",
+    cardBorderClass: "border-teal-200",
+    titleColorClass: "text-teal-900 dark:text-teal-300",
+    subtitleColorClass: "text-teal-700/70 dark:text-teal-400/70",
     iconBgClass: "bg-white/80",
-    iconColorClass: "text-emerald-600",
+    iconColorClass: "text-teal-600",
   },
 ];
 

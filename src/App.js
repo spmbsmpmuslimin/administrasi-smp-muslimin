@@ -15,6 +15,7 @@ import { menuConfig } from "./config/menuConfig";
 
 // ⭐ Whitelist akses "Kelola Ruang Belajar" (sementara, by user id)
 import { canAccessRuangBelajarRoute } from "./config/ruangBelajarAccess";
+import { JamPelajaranProvider } from "./services/JamPelajaranProvider";
 
 // ========== HELPER FUNCTIONS FOR ROLE CHECK ==========
 
@@ -716,23 +717,25 @@ function App() {
   const currentPath = window.location.pathname;
   if (currentPath === "/secret-admin-panel-2024") {
     return (
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <Routes>
-          <Route
-            path="/secret-admin-panel-2024"
-            element={
-              <ProtectedRoute user={user} isLoading={loading} allowedRoles={["admin"]}>
-                <AdminPanel darkMode={darkMode} />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
+      <JamPelajaranProvider>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <Routes>
+            <Route
+              path="/secret-admin-panel-2024"
+              element={
+                <ProtectedRoute user={user} isLoading={loading} allowedRoles={["admin"]}>
+                  <AdminPanel darkMode={darkMode} />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </JamPelajaranProvider>
     );
   }
 
@@ -775,105 +778,107 @@ function App() {
   };
 
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      {/* ✅ Toast Notification dengan Dark Mode & Responsive */}
-      {showToast && (
-        <div className={getToastStyle()}>
-          <div className="flex items-center gap-2">
-            <span className="text-base sm:text-lg flex-shrink-0">
-              {toastType === "success" && "✅"}
-              {toastType === "error" && "❌"}
-              {toastType === "warning" && "⚠️"}
-              {toastType === "info" && "ℹ️"}
-            </span>
-            <span className="font-medium text-sm sm:text-base break-words">{toastMessage}</span>
+    <JamPelajaranProvider>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        {/* ✅ Toast Notification dengan Dark Mode & Responsive */}
+        {showToast && (
+          <div className={getToastStyle()}>
+            <div className="flex items-center gap-2">
+              <span className="text-base sm:text-lg flex-shrink-0">
+                {toastType === "success" && "✅"}
+                {toastType === "error" && "❌"}
+                {toastType === "warning" && "⚠️"}
+                {toastType === "info" && "ℹ️"}
+              </span>
+              <span className="font-medium text-sm sm:text-base break-words">{toastMessage}</span>
+            </div>
           </div>
-        </div>
-      )}
-
-      <Routes>
-        {/* ========== PUBLIC ROUTES (hardcoded, bukan bagian menuConfig) ========== */}
-        <Route
-          path="/"
-          element={
-            user ? (
-              <Navigate to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"} replace />
-            ) : (
-              <Login
-                onLogin={handleLogin}
-                onShowToast={handleShowToast}
-                darkMode={darkMode}
-                onToggleDarkMode={handleToggleDarkMode}
-              />
-            )
-          }
-        />
-
-        <Route
-          path="/login-siswa"
-          element={
-            user ? (
-              <Navigate to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"} replace />
-            ) : (
-              <StudentLogin onLogin={handleLogin} onShowToast={handleShowToast} />
-            )
-          }
-        />
-
-        {/* ========== SEMUA ROUTE "BIASA" DI-GENERATE DARI menuConfig ========== */}
-        {menuConfig.map(
-          ({
-            path,
-            component: Component,
-            allowedRoles = [],
-            requireWaliKelas = false,
-            requireWakasekKurikulum = false,
-            teacherRequiresWakasekKurikulum = false,
-            requireRuangBelajarAccess = false,
-            layout = true,
-            getProps = (ctx) => ({
-              user: ctx.user,
-              onShowToast: ctx.onShowToast,
-              darkMode: ctx.darkMode,
-            }),
-          }) => (
-            <Route
-              key={path}
-              path={path}
-              element={
-                <ProtectedRoute
-                  user={user}
-                  loading={loading}
-                  darkMode={darkMode}
-                  onShowToast={handleShowToast}
-                  allowedRoles={allowedRoles}
-                  requireWaliKelas={requireWaliKelas}
-                  requireWakasekKurikulum={requireWakasekKurikulum}
-                  teacherRequiresWakasekKurikulum={teacherRequiresWakasekKurikulum}
-                  requireRuangBelajarAccess={requireRuangBelajarAccess}
-                >
-                  {layout ? (
-                    <LayoutWrapper>
-                      <Component {...getProps(menuCtx)} />
-                    </LayoutWrapper>
-                  ) : (
-                    <Component {...getProps(menuCtx)} />
-                  )}
-                </ProtectedRoute>
-              }
-            />
-          )
         )}
 
-        {/* ========== CATCH-ALL ROUTE ========== */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+        <Routes>
+          {/* ========== PUBLIC ROUTES (hardcoded, bukan bagian menuConfig) ========== */}
+          <Route
+            path="/"
+            element={
+              user ? (
+                <Navigate to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"} replace />
+              ) : (
+                <Login
+                  onLogin={handleLogin}
+                  onShowToast={handleShowToast}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                />
+              )
+            }
+          />
+
+          <Route
+            path="/login-siswa"
+            element={
+              user ? (
+                <Navigate to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"} replace />
+              ) : (
+                <StudentLogin onLogin={handleLogin} onShowToast={handleShowToast} />
+              )
+            }
+          />
+
+          {/* ========== SEMUA ROUTE "BIASA" DI-GENERATE DARI menuConfig ========== */}
+          {menuConfig.map(
+            ({
+              path,
+              component: Component,
+              allowedRoles = [],
+              requireWaliKelas = false,
+              requireWakasekKurikulum = false,
+              teacherRequiresWakasekKurikulum = false,
+              requireRuangBelajarAccess = false,
+              layout = true,
+              getProps = (ctx) => ({
+                user: ctx.user,
+                onShowToast: ctx.onShowToast,
+                darkMode: ctx.darkMode,
+              }),
+            }) => (
+              <Route
+                key={path}
+                path={path}
+                element={
+                  <ProtectedRoute
+                    user={user}
+                    loading={loading}
+                    darkMode={darkMode}
+                    onShowToast={handleShowToast}
+                    allowedRoles={allowedRoles}
+                    requireWaliKelas={requireWaliKelas}
+                    requireWakasekKurikulum={requireWakasekKurikulum}
+                    teacherRequiresWakasekKurikulum={teacherRequiresWakasekKurikulum}
+                    requireRuangBelajarAccess={requireRuangBelajarAccess}
+                  >
+                    {layout ? (
+                      <LayoutWrapper>
+                        <Component {...getProps(menuCtx)} />
+                      </LayoutWrapper>
+                    ) : (
+                      <Component {...getProps(menuCtx)} />
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+            )
+          )}
+
+          {/* ========== CATCH-ALL ROUTE ========== */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </JamPelajaranProvider>
   );
 }
 

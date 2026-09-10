@@ -12,14 +12,14 @@ import { supabase } from "../../supabaseClient";
 import { exportITMReportToExcel } from "./ITMReportExcel";
 import { getActiveAcademicYear } from "../../services/academicYearService";
 // ✅ FIX: JAM_SCHEDULE & getJamKe() sebelumnya di-hardcode lokal di file
-// ini, terpisah dari "../../utils/jamPelajaran" yang jadi single source
+// ini, terpisah dari period_schedules (DB) yang jadi single source
 // of truth (dipake KelolaJadwalPelajaran.js & AdminJadwalMassal.js).
 // Definisi lokal itu udah usang -- Senin & Jumat beda 20-30 menit dari
 // jam yang sekarang berlaku, dan Jumat jam 7 sama sekali gak ke-mapping
 // (mapping lama cuma sampe jam 6). Akibatnya laporan tatap muka gak
-// sesuai jadwal terbaru. Sekarang pake findPeriod() dari sumber yang
-// sama biar konsisten satu aplikasi.
-import { findPeriod } from "../../utils/jamPelajaran";
+// sesuai jadwal terbaru. Sekarang pake findPeriod() dari useJamPelajaran()
+// (services/JamPelajaranProvider) biar konsisten satu aplikasi.
+import { useJamPelajaran } from "../../services/JamPelajaranProvider";
 
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 const FULL_DAY_NAMES = ["Senin", "Selasa", "Rabu", "Kamis", "Jum'at"];
@@ -39,6 +39,7 @@ const MONTHS = [
 ];
 
 const ITMReport = ({ currentUser } = {}) => {
+  const { findPeriod, loading: jamLoading } = useJamPelajaran();
   // ✅ SCOPE: kalau dipanggil tanpa currentUser (pemakaian lama di sisi admin),
   // tetap full-picker. Kalau dipanggil dari sisi guru, dropdown di-lock ke diri sendiri.
   const isAdmin = !currentUser || currentUser.role === "admin";
@@ -595,7 +596,7 @@ const ITMReport = ({ currentUser } = {}) => {
           <div className="flex items-end">
             <button
               onClick={generateReport}
-              disabled={loading || !selectedTeacher}
+              disabled={loading || !selectedTeacher || jamLoading}
               className="w-full px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] active:scale-[0.98] text-sm sm:text-base"
             >
               {loading ? (

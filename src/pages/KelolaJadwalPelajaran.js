@@ -3,14 +3,15 @@
 // wali kelas (bukan admin/TU), supaya wali kelas bisa atur sendiri jadwal
 // kelasnya tanpa nunggu admin.
 // Ditampilin di portal siswa lewat StudentJadwal.js.
-// JAM_SCHEDULE dipindah ke utils/jamPelajaran.js (dipakai bareng sama
-// AdminJadwalMassal.js) biar gak dobel definisi di beberapa file.
+// JAM_SCHEDULE sekarang datang dari period_schedules via useJamPelajaran()
+// (services/JamPelajaranProvider.js), dipakai bareng AdminJadwalMassal.js
+// biar gak dobel definisi di beberapa file.
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "../supabaseClient";
 import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import { Plus, Trash2, X, AlertCircle, CheckCircle, Download, Upload } from "lucide-react";
-import { JAM_SCHEDULE, DAYS, ALL_PERIODS, getAvailablePeriods, findPeriod } from "../utils/jamPelajaran";
+import { useJamPelajaran } from "../services/JamPelajaranProvider";
 
 const emptyForm = {
   day: "Senin",
@@ -28,6 +29,15 @@ export default function JadwalPelajaran({ user }) {
   // fetch itu gak pernah dioper ke komponen ini. Jadi di sini kita fetch
   // ULANG sendiri homeroom_class_id yang bener, langsung dari DB pakai
   // user.id — gak percaya ke prop user.homeroom_class_id begitu aja.
+  const {
+    JAM_SCHEDULE,
+    DAYS,
+    ALL_PERIODS,
+    getAvailablePeriods,
+    findPeriod,
+    loading: jamLoading,
+  } = useJamPelajaran();
+
   const [classId, setClassId] = useState("");
   const [resolvingUser, setResolvingUser] = useState(true);
   const [userError, setUserError] = useState(null);
@@ -132,7 +142,7 @@ export default function JadwalPelajaran({ user }) {
       if (period) g[s.day][period] = s;
     });
     return g;
-  }, [schedules]);
+  }, [schedules, JAM_SCHEDULE, findPeriod]);
 
   const openAddModal = (day, period) => {
     setEditingSchedule(null);
@@ -555,7 +565,7 @@ export default function JadwalPelajaran({ user }) {
             />
             <button
               onClick={handleExport}
-              disabled={!classId}
+              disabled={!classId || jamLoading}
               title="Download jadwal kelas ini sebagai Excel (kosong = jadi template)"
               className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme disabled:opacity-40 text-theme-secondary rounded-xl text-sm font-semibold"
             >
@@ -564,7 +574,7 @@ export default function JadwalPelajaran({ user }) {
             </button>
             <button
               onClick={handleImportClick}
-              disabled={!classId || importing}
+              disabled={!classId || importing || jamLoading}
               title="Upload Excel untuk mengganti jadwal kelas ini"
               className="flex items-center gap-1.5 px-3.5 py-2 bg-theme-bg border border-theme hover:border-theme disabled:opacity-40 text-theme-secondary rounded-xl text-sm font-semibold"
             >
@@ -573,7 +583,7 @@ export default function JadwalPelajaran({ user }) {
             </button>
             <button
               onClick={() => openAddModal(formData.day || "Senin", null)}
-              disabled={!classId}
+              disabled={!classId || jamLoading}
               className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-xl text-sm font-semibold"
             >
               <Plus className="w-4 h-4" />
@@ -607,7 +617,7 @@ export default function JadwalPelajaran({ user }) {
         </div>
 
         {/* Grid jadwal */}
-        {resolvingUser || loading ? (
+        {resolvingUser || loading || jamLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
@@ -719,7 +729,9 @@ export default function JadwalPelajaran({ user }) {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-theme-secondary mb-1.5">Hari</label>
+                  <label className="block text-xs font-semibold text-theme-secondary mb-1.5">
+                    Hari
+                  </label>
                   <select
                     value={formData.day}
                     disabled={!!editingSchedule}
@@ -770,7 +782,9 @@ export default function JadwalPelajaran({ user }) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-theme-secondary mb-1.5">Mapel</label>
+                  <label className="block text-xs font-semibold text-theme-secondary mb-1.5">
+                    Mapel
+                  </label>
                   <input
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
