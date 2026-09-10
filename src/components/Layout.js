@@ -682,10 +682,10 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             <div className="flex flex-col items-center text-center">
               <div
                 className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
-                  darkMode ? "bg-blue-900/30" : "bg-blue-100"
+                  darkMode ? "bg-red-900/30" : "bg-red-100"
                 }`}
               >
-                <LogOut className={`w-8 h-8 ${darkMode ? "text-blue-400" : "text-blue-600"}`} />
+                <LogOut className={`w-8 h-8 ${darkMode ? "text-red-400" : "text-red-600"}`} />
               </div>
 
               <h3
@@ -716,7 +716,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
                 </button>
                 <button
                   onClick={handleConfirmLogout}
-                  className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg shadow-blue-600/30"
+                  className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 active:bg-red-800 transition-colors shadow-lg shadow-red-600/30"
                 >
                   Keluar
                 </button>

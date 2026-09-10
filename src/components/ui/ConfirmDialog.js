@@ -37,6 +37,7 @@ export default function ConfirmDialog({
   confirmText = "OK",
   cancelText = "Batal",
   variant = "default",
+  hideCancel = false,
   onConfirm,
   onCancel,
 }) {
@@ -65,12 +66,14 @@ export default function ConfirmDialog({
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors min-h-[44px]"
-          >
-            {cancelText}
-          </button>
+          {!hideCancel && (
+            <button
+              onClick={onCancel}
+              className="flex-1 px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors min-h-[44px]"
+            >
+              {cancelText}
+            </button>
+          )}
           <button
             onClick={onConfirm}
             className={`flex-1 px-4 py-2.5 rounded-lg text-white font-medium transition-colors min-h-[44px] ${style.confirmBtn}`}

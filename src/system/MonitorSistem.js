@@ -9,7 +9,11 @@ import StrukturSistem from "./StrukturSistem";
 // sini biar ngumpul sama menu monitoring/maintenance sistem lainnya.
 // Kedua komponen ini cuma butuh prop "showToast" (bukan "onShowToast"),
 // makanya pas render di bawah kita passing dua-duanya sekalian.
-import MaintenanceModeTab from "./MaintenanceModeTab";
+// ✅ UPDATE: card "maintenance" sekarang render MaintenanceTab.js (wrapper
+// 2 tab: "Mode Maintenance" [isinya MaintenanceModeTab.js, tetap sama]
+// dan "Blokir User" [BlockUserTab.js, baru] ), bukan langsung
+// MaintenanceModeTab.js lagi.
+import MaintenanceTab from "./MaintenanceTab";
 import ActiveUsersTab from "./ActiveUsersTab";
 // ✅ BARU (Sep 2026): SystemTab.js (export CSV, backup/restore database)
 // dipindah ke sini juga dari Setting.js grup "Data & Sistem", nyusul
@@ -177,10 +181,10 @@ function MonitorSistem({ user, onShowToast }) {
     {
       id: "maintenance",
       title: "Maintenance",
-      description: "Mode pemeliharaan dan backup",
+      description: "Mode pemeliharaan & blokir user",
       icon: Wrench,
       color: "red",
-      component: MaintenanceModeTab,
+      component: MaintenanceTab,
       available: isMaintenanceOrActiveUserAllowed,
     },
     {

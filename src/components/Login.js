@@ -6,6 +6,8 @@ import { supabase } from "../supabaseClient";
 import { recordDeviceLogin } from "../utils/userDevices";
 import Logo from "./Logo";
 import backgroundImage from "../assets/Background.webp";
+import ConfirmDialog from "./ui/ConfirmDialog";
+import { useConfirmDialog } from "./ui/useConfirmDialog";
 
 export const Login = ({ onLogin, onShowToast }) => {
   const navigate = useNavigate();
@@ -15,6 +17,7 @@ export const Login = ({ onLogin, onShowToast }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const { confirm, confirmDialogProps } = useConfirmDialog();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,6 +52,9 @@ export const Login = ({ onLogin, onShowToast }) => {
       if (data) {
         if (data.password !== password) {
           throw new Error("Password salah");
+        }
+        if (data.is_blocked) {
+          throw new Error("Terjadi Kendala Pada Sistem Anda");
         }
         // ✅ UPDATE: Track login activity
         const currentLoginCount = data.login_count || 0;
@@ -89,11 +95,13 @@ export const Login = ({ onLogin, onShowToast }) => {
         "Username tidak ditemukan. Kalau kamu siswa, silakan login lewat halaman Portal Siswa."
       );
     } catch (error) {
-      setErrors({ general: error.message });
-
-      if (onShowToast) {
-        onShowToast(error.message, "error");
-      }
+      confirm({
+        title: "Tidak Bisa Masuk",
+        message: error.message,
+        variant: "warning",
+        confirmText: "OK",
+        hideCancel: true,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -341,14 +349,6 @@ export const Login = ({ onLogin, onShowToast }) => {
                 </button>
               </div>
 
-              {/* Error Message */}
-              {errors.general && (
-                <div className="p-3 bg-red-500/20 backdrop-blur-sm border border-red-500/40 text-red-200 rounded-xl text-xs flex items-start">
-                  <span className="mr-2 mt-0.5">⚠</span>
-                  <span className="font-medium">{errors.general}</span>
-                </div>
-              )}
-
               {/* Submit Button */}
               <button
                 type="submit"
@@ -383,6 +383,8 @@ export const Login = ({ onLogin, onShowToast }) => {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   );
 };
