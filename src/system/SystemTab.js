@@ -38,6 +38,22 @@ import {
 // dibaca/export CSV, tapi TIDAK bisa dipakai buat restore/insert (lihat
 // catatan di exportDatabaseBackup/executeRestore, yang masih terpisah
 // dan belum ikut di-sinkronin ke 62 tabel ini).
+//
+// ✅ FIX (Sep 2026 - highlight ganda pas export/backup/restore): dulu
+// tombol "Export {tabel}" per-tabel, "Export Semua Tabel ke ZIP", "Download
+// Backup Database", dan "Execute Restore" SEMUANYA baca `loading` yang sama
+// (state global punya parent, dipassing lewat props). Klik SATU tombol
+// bikin `loading` jadi true, terus tombol-tombol LAIN ikut ganti teks jadi
+// teks loading masing-masing dan ke-disable/dim bareng -- keliatan kayak
+// dua tombol nyala bareng padahal cuma 1 yang jalan. Sekarang:
+// - `activeAction` (state lokal: nama tabel / "all" / "backup" / "restore")
+//   nentuin tombol MANA yang nampilin teks/spinner aktifnya sendiri.
+// - Export per-tabel itu ringan & independen (baca 1 tabel doang), jadi
+//   tombol tabel lain TIDAK ikut ke-disable/dim sama sekali selagi tabel
+//   lain lagi di-export -- cuma tombol yang diklik yang berubah tampilan.
+// - Export Semua / Backup / Restore tetep saling blokir satu sama lain
+//   lewat `loading` (bulk operation berat, mending gak numpuk bareng),
+//   tapi gak keblokir gara-gara ada 1 export tabel kecil yang lagi jalan.
 const TABLE_GROUPS = [
   {
     id: "akademik",
@@ -289,6 +305,18 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
   // collapsed biar gak langsung numpuk panjang pas halaman dibuka.
   const [tableSearch, setTableSearch] = useState("");
   const [openGroupIds, setOpenGroupIds] = useState(() => new Set(["akademik"]));
+  // ✅ FIX (Sep 2026 - highlight ganda pas export/backup): dulu tombol
+  // "Export {tabel}" per-tabel, "Export Semua Tabel ke ZIP", "Download
+  // Backup Database", dan "Execute Restore" SEMUANYA baca `loading` yang
+  // sama (state punya parent, di-passing lewat props), jadi klik SATU
+  // tombol bikin tombol-tombol LAIN ikut ganti teks & ke-disable/dim bareng.
+  // `activeAction` (state lokal) nyimpen AKSI yang beneran lagi jalan: nama
+  // tabel (export per-tabel), "all", "backup", atau "restore" -- cuma
+  // tombol yang cocok yang nampilin teks/style aktifnya. Export per-tabel
+  // sengaja TIDAK saling blokir sesama tombol tabel (baca 1 tabel doang,
+  // ringan) -- yang saling blokir cuma Export Semua/Backup/Restore lewat
+  // `loading`, karena itu bulk operation berat.
+  const [activeAction, setActiveAction] = useState(null);
 
   const toggleGroup = (id) => {
     setOpenGroupIds((prev) => {
@@ -409,7 +437,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
   const exportTableToCSV = async (tableName, displayName) => {
     try {
-      setLoading(true);
+      setActiveAction(tableName);
       setExportProgress(`Mengambil data ${displayName}...`);
 
       const { data, error } = await supabase.from(tableName).select("*");
@@ -456,7 +484,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       console.error(`Error exporting ${tableName}:`, error);
       showToast(`Error exporting ${displayName}: ${error.message}`, "error");
     } finally {
-      setLoading(false);
+      setActiveAction(null);
       setExportProgress("");
     }
   };
@@ -474,6 +502,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
   const exportAllTablesToCSV = async () => {
     try {
       setLoading(true);
+      setActiveAction("all");
 
       // Dipakai exportAllTablesToCSV -- 1 sumber data flat, gak ada lagi
       // daftar hardcode kedua yang bisa kesasar beda sama TABLE_GROUPS.
@@ -553,6 +582,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       showToast("Error exporting data", "error");
     } finally {
       setLoading(false);
+      setActiveAction(null);
       setExportProgress("");
     }
   };
@@ -560,6 +590,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
   const exportDatabaseBackup = async () => {
     try {
       setLoading(true);
+      setActiveAction("backup");
 
       const data = {};
       const failedTables = [];
@@ -633,6 +664,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       showToast("❌ Error membuat database backup: " + error.message, "error");
     } finally {
       setLoading(false);
+      setActiveAction(null);
       setExportProgress("");
     }
   };
@@ -692,6 +724,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
     try {
       setLoading(true);
+      setActiveAction("restore");
       setExportProgress("Membaca file backup...");
 
       const reader = new FileReader();
@@ -747,6 +780,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           showToast("❌ Error restoring database: " + error.message, "error");
         } finally {
           setLoading(false);
+          setActiveAction(null);
           setExportProgress("");
         }
       };
@@ -756,6 +790,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
       console.error("Error reading restore file:", error);
       showToast("Error membaca file backup", "error");
       setLoading(false);
+      setActiveAction(null);
       setExportProgress("");
     }
   };
@@ -855,17 +890,40 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
 
                 {isOpen && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 p-3">
-                    {group.tables.map((t) => (
-                      <button
-                        key={t.name}
-                        onClick={() => exportTableToCSV(t.name, t.display)}
-                        disabled={loading}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg disabled:opacity-50 font-medium transition-colors min-h-[44px] ${style.button}`}
-                      >
-                        <Table size={16} />
-                        <span className="truncate">Export {t.display}</span>
-                      </button>
-                    ))}
+                    {group.tables.map((t) => {
+                      // Cuma tombol yang beneran diklik (isActive) yang
+                      // berubah tampilan (spinner + ring). Export per-tabel
+                      // itu ringan & independen -- baca 1 tabel doang --
+                      // jadi tombol tabel LAIN gak perlu ikut ke-disable/dim
+                      // sama sekali selama gak ada BULK op (Export Semua /
+                      // Backup / Restore, ditandai `loading`) yang jalan.
+                      const isActive = activeAction === t.name;
+                      const isDisabled = isActive || loading;
+
+                      return (
+                        <button
+                          key={t.name}
+                          onClick={() => exportTableToCSV(t.name, t.display)}
+                          disabled={isDisabled}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors min-h-[44px] ${
+                            isActive
+                              ? `${style.button} ring-2 ring-current`
+                              : loading
+                                ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-900/30 text-gray-400 dark:text-gray-600"
+                                : style.button
+                          }`}
+                        >
+                          {isActive ? (
+                            <RefreshCw size={16} className="animate-spin" />
+                          ) : (
+                            <Table size={16} />
+                          )}
+                          <span className="truncate">
+                            {isActive ? `Mengexport ${t.display}...` : `Export ${t.display}`}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -881,7 +939,9 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         >
           <FileText size={20} />
           <span className="text-base">
-            {loading ? "Membuat ZIP..." : `Export Semua Tabel ke ZIP (${TOTAL_TABLE_COUNT} Tabel)`}
+            {activeAction === "all"
+              ? "Membuat ZIP..."
+              : `Export Semua Tabel ke ZIP (${TOTAL_TABLE_COUNT} Tabel)`}
           </span>
         </button>
 
@@ -912,7 +972,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         >
           <Download size={20} />
           <span className="text-base">
-            {loading ? "Membuat Backup..." : "Download Backup Database (JSON)"}
+            {activeAction === "backup" ? "Membuat Backup..." : "Download Backup Database (JSON)"}
           </span>
         </button>
 
@@ -1011,7 +1071,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
                       disabled={loading}
                       className="flex items-center justify-center gap-3 px-5 py-3.5 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 font-bold transition-colors min-h-[44px]"
                     >
-                      {loading ? (
+                      {activeAction === "restore" ? (
                         <>
                           <RefreshCw className="animate-spin" size={18} />
                           <span>Restoring...</span>

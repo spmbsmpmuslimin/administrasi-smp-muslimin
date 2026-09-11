@@ -11,7 +11,12 @@
 // Grup E-RAPORT SENGAJA gak dimasukin -- modul itu lagi dinonaktifkan
 // (eraportActive: false), jadi gak ditaro di sini juga (konsisten sama
 // sidebarConfig.js yang nge-hide grup itu buat semua role termasuk developer).
-import React from "react";
+//
+// REVISI: nambahin search/filter modul + quick-jump antar kategori, dan
+// nampilin path route di tiap card (bukan cuma label) -- soalnya dashboard
+// ini fungsinya emang buat developer ngecek/loncat ke route, jadi path-nya
+// sendiri itu informasi yang kepake, bukan cuma dekorasi.
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Code2,
@@ -44,6 +49,9 @@ import {
   GraduationCap,
   DoorOpen,
   Smartphone,
+  Search,
+  X,
+  SearchX,
 } from "lucide-react";
 import PageContainer from "./ui/PageContainer";
 import Card from "./ui/Card";
@@ -147,8 +155,35 @@ const MODULE_GROUPS = [
   },
 ];
 
+// Slug id buat tiap grup, dipakai buat anchor scroll-to dari quick-jump nav.
+const groupSlug = (title) => `dev-group-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+const totalModuleCount = MODULE_GROUPS.reduce((sum, g) => sum + g.items.length, 0);
+
 const DeveloperDashboard = ({ user, darkMode }) => {
   const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+
+  // Filter grup+item berdasarkan query (cocok di label ATAU path, biar
+  // developer yang inget nama route-nya doang tetep ketemu).
+  const filteredGroups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return MODULE_GROUPS;
+    return MODULE_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => item.label.toLowerCase().includes(q) || item.path.toLowerCase().includes(q)
+      ),
+    })).filter((group) => group.items.length > 0);
+  }, [query]);
+
+  const isFiltering = query.trim().length > 0;
+  const matchCount = filteredGroups.reduce((sum, g) => sum + g.items.length, 0);
+
+  const scrollToGroup = (title) => {
+    const el = document.getElementById(groupSlug(title));
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <PageContainer darkMode={darkMode}>
@@ -166,9 +201,68 @@ const DeveloperDashboard = ({ user, darkMode }) => {
               Login sebagai <span className="font-medium">{user?.full_name || user?.username}</span>{" "}
               -- akses penuh ke semua menu, tanpa pembatasan role.
             </Text>
+            <Muted darkMode={darkMode} className="mt-0.5">
+              {totalModuleCount} modul di {MODULE_GROUPS.length} kategori
+            </Muted>
           </div>
         </div>
       </Card>
+
+      {/* Search bar -- buat loncat cepat tanpa scroll-scroll nyari card */}
+      <Card darkMode={darkMode} className="mb-4 sm:mb-6">
+        <div className="relative">
+          <Search
+            className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${
+              darkMode ? "text-gray-500" : "text-gray-400"
+            }`}
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Cari modul, misal 'presensi' atau '/nilai-siswa'..."
+            className={`w-full pl-9 pr-9 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 ${
+              darkMode
+                ? "bg-gray-900 border-gray-700 text-gray-100 placeholder-gray-500"
+                : "bg-white border-gray-200 text-gray-800 placeholder-gray-400"
+            }`}
+          />
+          {isFiltering && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+              aria-label="Hapus pencarian"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {isFiltering && (
+          <Muted darkMode={darkMode} className="mt-2">
+            {matchCount} modul cocok dengan "{query}"
+          </Muted>
+        )}
+      </Card>
+
+      {/* Quick-jump antar kategori -- disembunyiin pas lagi searching biar
+          gak dobel sama hasil filter yang udah ke-scope sendiri */}
+      {!isFiltering && (
+        <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
+          {MODULE_GROUPS.map((group) => (
+            <button
+              key={group.title}
+              onClick={() => scrollToGroup(group.title)}
+              className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-colors hover:opacity-90 ${
+                darkMode
+                  ? "border-gray-700 text-gray-300 bg-gray-800"
+                  : "border-gray-200 text-gray-600 bg-white"
+              }`}
+            >
+              {group.title}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Notice: E-Raport gak dimasukin karena lagi off */}
       <Card darkMode={darkMode} className="mb-4 sm:mb-6">
@@ -178,35 +272,58 @@ const DeveloperDashboard = ({ user, darkMode }) => {
         </Muted>
       </Card>
 
-      {/* Grup modul */}
-      <div className="space-y-4 sm:space-y-6">
-        {MODULE_GROUPS.map((group) => (
-          <Card key={group.title} darkMode={darkMode}>
-            <SectionTitle darkMode={darkMode} className="mb-3 sm:mb-4">
-              {group.title}
-            </SectionTitle>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className="group flex items-center gap-2 sm:gap-3 rounded-lg p-3 border border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md transition-all text-left active:scale-95 bg-white dark:bg-gray-800"
-                  >
-                    <div className={`p-2 rounded-lg flex-shrink-0 ${GROUP_COLORS[group.color]}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 leading-tight">
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
-        ))}
-      </div>
+      {/* Grup modul (atau hasil filter) */}
+      {filteredGroups.length === 0 ? (
+        <Card darkMode={darkMode} className="text-center py-10">
+          <SearchX
+            className={`w-8 h-8 mx-auto mb-2 ${darkMode ? "text-gray-600" : "text-gray-300"}`}
+          />
+          <Text darkMode={darkMode} className="font-medium">
+            Gak ada modul yang cocok
+          </Text>
+          <Muted darkMode={darkMode}>Coba kata kunci lain, atau cek ejaan path-nya.</Muted>
+        </Card>
+      ) : (
+        <div className="space-y-4 sm:space-y-6">
+          {filteredGroups.map((group) => (
+            <Card key={group.title} id={groupSlug(group.title)} darkMode={darkMode}>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <SectionTitle darkMode={darkMode}>{group.title}</SectionTitle>
+                <span
+                  className={`text-xs font-medium ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                >
+                  {group.items.length} modul
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className="group flex items-start gap-2 sm:gap-3 rounded-lg p-3 border border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md transition-all text-left active:scale-95 bg-white dark:bg-gray-800"
+                    >
+                      <div className={`p-2 rounded-lg flex-shrink-0 ${GROUP_COLORS[group.color]}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 leading-tight">
+                          {item.label}
+                        </span>
+                        {/* Path route -- info yang kepake buat developer, bukan dekorasi */}
+                        <span className="block text-[10px] sm:text-xs font-mono text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                          {item.path}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </PageContainer>
   );
 };

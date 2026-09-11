@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-11T02:34:48.060Z",
-  "executionTimeMs": 4102,
-  "filesScanned": 268,
+  "generatedAt": "2026-09-11T03:59:10.251Z",
+  "executionTimeMs": 3506,
+  "filesScanned": 263,
   "summary": {
     "status": "critical",
     "criticalCount": 1,
@@ -16,14 +16,11 @@
       "issues": [
         {
           "severity": "info",
-          "title": "6 file gak pernah di-import di mana pun (dead file candidate)",
+          "title": "3 file gak pernah di-import di mana pun (dead file candidate)",
           "description": "File-file ini gak ketemu di-import statis dari file lain. Kemungkinan sisa refactor / fitur lama. Cek manual dulu sebelum dihapus — bisa aja dipake lewat dynamic import atau string reference yang gak kebaca regex.",
           "details": [
             "src/components/StudentLogin=bak.js",
             "src/portal-siswa/StudentOrganigram.js",
-            "src/setting/ActiveUsersTab.js",
-            "src/setting/MaintenanceModeTab.js",
-            "src/setting/MaintenancePage.js",
             "src/system/MaintenancePage-backup.js"
           ]
         }
@@ -40,7 +37,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5336 class warna (di 192 file) kemungkinan belum dark-mode-aware",
+          "title": "5249 class warna (di 187 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",

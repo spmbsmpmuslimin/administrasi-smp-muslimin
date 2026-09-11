@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 10 Sep 2026, 20.52
+Di-download dari UI: 11 Sep 2026, 10.59
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 10 Sep 2026, 20.50
+Terakhir di-generate: 11 Sep 2026, 10.59
 ======================================================================
 |-- src
 |   |-- assets
@@ -55,6 +55,7 @@ Terakhir di-generate: 10 Sep 2026, 20.50
 |   |   |-- SaranMasukanSiswa.js
 |   |   |-- Sidebar.js
 |   |   |-- StudentLogin.js
+|   |   |-- StudentLogin=bak.js
 |   |   |-- TeacherDashboard.js
 |   |   `-- WaliKelasWidgetTab.js
 |   |-- config
@@ -251,16 +252,10 @@ Terakhir di-generate: 10 Sep 2026, 20.50
 |   |   |   |-- ProfileTab.js
 |   |   |   |-- SecuritySection.js
 |   |   |   `-- TeachingAssignmentsSection.js
-|   |   |-- ActiveUsersTab.js
 |   |   |-- AdminPanel.js
 |   |   |-- AuditLogPanel.js
 |   |   |-- ChangePasswordSection.js
-|   |   |-- ConnectedDevicesAdminTab.js
-|   |   |-- MaintenanceModeTab.js
-|   |   |-- MaintenancePage.js
 |   |   |-- Setting.js
-|   |   |-- StudentConnectedDevicesAdminTab.js
-|   |   |-- SystemTab.js
 |   |   |-- TeacherAssignmentExcel.js
 |   |   `-- UserManagementTab.js
 |   |-- spmb
@@ -282,6 +277,7 @@ Terakhir di-generate: 10 Sep 2026, 20.50
 |   |   |   |-- DatabaseChecker.js
 |   |   |   `-- RaportChecker.js
 |   |   |-- ActiveUsersTab.js
+|   |   |-- BlockUserTab.js
 |   |   |-- CodeAudit.js
 |   |   |-- ConnectedDevicesAdminTab.js
 |   |   |-- DatabaseCleanupMonitor.js
@@ -289,11 +285,14 @@ Terakhir di-generate: 10 Sep 2026, 20.50
 |   |   |-- MaintenanceModeTab.js
 |   |   |-- MaintenancePage-backup.js
 |   |   |-- MaintenancePage.js
+|   |   |-- MaintenanceTab.js
 |   |   |-- MonitorDashboard.js
 |   |   |-- MonitorSistem.js
 |   |   |-- PerformanceMonitor.js
+|   |   |-- RoleAccessAudit.js
 |   |   |-- StrukturSistem.js
 |   |   |-- StudentConnectedDevicesAdminTab.js
+|   |   |-- SystemTab.js
 |   |   `-- debugLog.js
 |   |-- utils
 |   |   |-- deviceInfo.js
@@ -313,7 +312,7 @@ Terakhir di-generate: 10 Sep 2026, 20.50
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 10 Sep 2026, 20.50
+Terakhir di-generate: 11 Sep 2026, 10.59
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
@@ -385,4 +384,4 @@ teacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,c
 tindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at
 tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
-users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count,jabatan_struktural
+users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count,jabatan_struktural,is_blocked
