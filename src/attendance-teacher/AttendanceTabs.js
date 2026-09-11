@@ -17,7 +17,13 @@ const AttendanceTabs = ({ currentUser, onSuccess }) => {
   // Conditional tabs based on role
   // ✅ FIX: developer disamain kayak admin -- sebelumnya cuma cek "admin"
   // doang, jadi developer gak keliatan tab "Generate QR" (admin only).
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "developer";
+  // ✅ FIX (Sep 2026): sebelumnya cuma cek "admin" & "developer" -- role
+  // "tu" gak ke-cover, jadinya tab "Generate QR" gak muncul buat TU.
+  // Disamain sama pola isAdmin di Reports.js / TeacherAttendance.js.
+  const isAdmin =
+    currentUser?.role === "admin" ||
+    currentUser?.role === "tu" ||
+    currentUser?.role === "developer";
 
   // Check today's attendance saat component mount
   useEffect(() => {

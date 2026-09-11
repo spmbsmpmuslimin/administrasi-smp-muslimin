@@ -169,7 +169,12 @@ const TeacherAttendance = ({ user }) => {
   }
 
   // ✅ ROLE-BASED RENDERING
-  const isAdmin = currentUser.role === "admin";
+  // ✅ FIX (Sep 2026): sebelumnya cuma cek "admin" -- role "tu" dan
+  // "developer" ikut kejatuh ke TEACHER VIEW (form presensi sendiri)
+  // padahal seharusnya liat AdminAttendanceView, sama kayak admin.
+  // Disamain sama pola isAdmin di Reports.js.
+  const isAdmin =
+    currentUser.role === "admin" || currentUser.role === "tu" || currentUser.role === "developer";
 
   // ========== ADMIN VIEW ==========
   if (isAdmin) {

@@ -15,6 +15,10 @@ import StrukturSistem from "./StrukturSistem";
 // MaintenanceModeTab.js lagi.
 import MaintenanceTab from "./MaintenanceTab";
 import ActiveUsersTab from "./ActiveUsersTab";
+// ✅ BARU (Sep 2026): halaman audit matriks akses role vs route, biar gak
+// perlu grep manual tiap kali ketemu bug "role X kelewat di allowedRoles
+// / role-check manual" kayak developer/tu kemarin.
+import RoleAccessAudit from "./RoleAccessAudit";
 // ✅ BARU (Sep 2026): SystemTab.js (export CSV, backup/restore database)
 // dipindah ke sini juga dari Setting.js grup "Data & Sistem", nyusul
 // MaintenanceModeTab & ActiveUsersTab. Beda dari 2 komponen itu, SystemTab
@@ -34,6 +38,7 @@ import {
   LayoutGrid,
   Wrench,
   UserCheck,
+  ShieldCheck,
 } from "lucide-react";
 
 // Palet pastel per kartu menu, sama persis pendekatannya kayak di
@@ -194,6 +199,18 @@ function MonitorSistem({ user, onShowToast }) {
       icon: UserCheck,
       color: "teal",
       component: ActiveUsersTab,
+      available: isMaintenanceOrActiveUserAllowed,
+    },
+    // ✅ BARU (Sep 2026): matriks akses role vs route, plus daftar
+    // komponen dengan role-check manual yang rawan kelewat nambahin role
+    // baru (kasus developer/tu di Reports.js, TeacherAttendance.js, dst).
+    {
+      id: "role-audit",
+      title: "Audit Akses Role",
+      description: "Cek role apa aja yang bisa akses tiap halaman",
+      icon: ShieldCheck,
+      color: "indigo",
+      component: RoleAccessAudit,
       available: isMaintenanceOrActiveUserAllowed,
     },
   ];
