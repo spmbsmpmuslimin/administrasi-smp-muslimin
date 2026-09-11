@@ -340,13 +340,11 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
   const getCurrentAcademicYear = () => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
 
-    if (currentMonth >= 7) {
-      return `${currentYear + 1}/${currentYear + 2}`;
-    } else {
-      return `${currentYear}/${currentYear + 1}`;
-    }
+    // Tahun ajaran dimulai pada bulan Juli (getMonth() 6).
+    return now.getMonth() >= 6
+      ? `${currentYear}/${currentYear + 1}`
+      : `${currentYear - 1}/${currentYear}`;
   };
 
   useEffect(() => {
@@ -386,7 +384,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         // homeroom_class_id, bukan role terpisah) -- sebelumnya query ini
         // gak pernah match satupun guru, jadi "Total Guru" di halaman ini
         // selalu ke-underscount parah.
-        supabase.from("users").select("id").in("role", ["admin", "teacher", "guru_bk"]),
+        supabase.from("users").select("id").in("role", ["teacher", "guru_bk"]),
         supabase.from("students").select("id").eq("is_active", true),
       ]);
 
@@ -413,7 +411,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
     const validData = data.filter((item) => item !== null && typeof item === "object");
     if (validData.length === 0) return "";
 
-    const headers = Object.keys(validData[0]);
+    const headers = [...new Set(validData.flatMap((item) => Object.keys(item)))];
     const csvHeaders = headers.join(",");
 
     const csvRows = validData.map((row) => {
@@ -610,6 +608,10 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         data[table.name] = rows || [];
       }
 
+      if (failedTables.length > 0) {
+        throw new Error(`Gagal mengambil tabel: ${failedTables.join(", ")}`);
+      }
+
       setExportProgress("Membuat file backup...");
 
       // Key di `stats` dan `data` sama-sama pakai nama tabel asli (bukan
@@ -732,6 +734,17 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
         try {
           const backupData = JSON.parse(e.target.result);
 
+          const missingTables = BACKUP_TABLES.filter(
+            (table) => !Array.isArray(backupData.data?.[table.name])
+          );
+          if (missingTables.length > 0) {
+            throw new Error(
+              `Backup tidak lengkap. Tabel yang hilang: ${missingTables
+                .map((table) => table.name)
+                .join(", ")}`
+            );
+          }
+
           // ✅ FIX (Sep 2026 - sinkronisasi ke BACKUP_TABLES/62 tabel):
           // dulu delete & insert ditulis manual satu-satu untuk 21 tabel.
           // Sekarang generik: urutan DELETE = kebalikan urutan
@@ -744,6 +757,7 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
           // ada error FK di tabel tertentu, errornya kelihatan di console
           // dan TIDAK ngehentiin proses delete/insert tabel lain.
           const deleteOrder = [...BACKUP_TABLES].reverse();
+          const restoreErrors = [];
 
           for (let i = 0; i < deleteOrder.length; i++) {
             const table = deleteOrder[i];
@@ -754,7 +768,10 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
               .from(table.name)
               .delete()
               .neq("id", "00000000-0000-0000-0000-000000000000");
-            if (error) console.error(`Error deleting ${table.name}:`, error);
+            if (error) {
+              console.error(`Error deleting ${table.name}:`, error);
+              restoreErrors.push(`hapus ${table.name}: ${error.message}`);
+            }
           }
 
           let insertedTables = 0;
@@ -765,8 +782,17 @@ const SystemTab = ({ user, loading, setLoading, showToast }) => {
             if (rows?.length > 0) {
               setExportProgress(`Restore ${table.display} (${++insertedTables}/${totalTables})...`);
               const { error } = await supabase.from(table.name).insert(rows);
-              if (error) console.error(`Error inserting ${table.name}:`, error);
+              if (error) {
+                console.error(`Error inserting ${table.name}:`, error);
+                restoreErrors.push(`insert ${table.name}: ${error.message}`);
+              }
             }
+          }
+
+          if (restoreErrors.length > 0) {
+            throw new Error(
+              `Restore selesai sebagian dengan ${restoreErrors.length} error. Periksa console.`
+            );
           }
 
           showToast("✅ Database berhasil di-restore!", "success");

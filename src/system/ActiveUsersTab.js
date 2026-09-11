@@ -18,6 +18,7 @@ export default function ActiveUsersTab({ showToast }) {
   const [siswaList, setSiswaList] = useState([]);
   const [allSiswaList, setAllSiswaList] = useState([]);
   const [siswaFilter, setSiswaFilter] = useState("all");
+  const [siswaClassFilter, setSiswaClassFilter] = useState("all");
   const [siswaSearch, setSiswaSearch] = useState("");
   const [siswaLoading, setSiswaLoading] = useState(true);
 
@@ -32,7 +33,7 @@ export default function ActiveUsersTab({ showToast }) {
 
   useEffect(() => {
     applySiswaFilters();
-  }, [siswaFilter, siswaSearch, allSiswaList]);
+  }, [siswaFilter, siswaClassFilter, siswaSearch, allSiswaList]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -128,6 +129,11 @@ export default function ActiveUsersTab({ showToast }) {
       filtered = filtered.filter((s) => !s.last_login || new Date(s.last_login) < sevenDaysAgo);
     }
 
+    // Filter by kelas (dropdown)
+    if (siswaClassFilter !== "all") {
+      filtered = filtered.filter((s) => s.students?.class_id === siswaClassFilter);
+    }
+
     // Search by nama / kelas / username
     const q = siswaSearch.trim().toLowerCase();
     if (q) {
@@ -141,6 +147,11 @@ export default function ActiveUsersTab({ showToast }) {
 
     setSiswaList(filtered);
   };
+
+  // Daftar kelas unik dari data siswa aktif, buat isi dropdown filter kelas
+  const uniqueClasses = [
+    ...new Set(allSiswaList.map((s) => s.students?.class_id).filter(Boolean)),
+  ].sort();
 
   const siswaStats = {
     total: allSiswaList.length,
@@ -338,6 +349,24 @@ export default function ActiveUsersTab({ showToast }) {
                       <option value="today">🟢 Login Hari Ini</option>
                       <option value="week">🟡 Login Minggu Ini</option>
                       <option value="inactive">🔴 Tidak Aktif (&gt;7 hari)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Filter Kelas
+                    </label>
+                    <select
+                      value={siswaClassFilter}
+                      onChange={(e) => setSiswaClassFilter(e.target.value)}
+                      className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="all">Semua Kelas</option>
+                      {uniqueClasses.map((kelas) => (
+                        <option key={kelas} value={kelas}>
+                          🏫 Kelas {kelas}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
