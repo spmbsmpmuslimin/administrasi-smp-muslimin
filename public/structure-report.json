@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-11T02:03:12.055Z",
-  "executionTimeMs": 218,
+  "generatedAt": "2026-09-11T02:34:48.281Z",
+  "executionTimeMs": 219,
   "tree": {
     "name": "src",
     "path": "src",
@@ -5889,7 +5889,7 @@
             "file": {
               "path": "src/system/SystemTab.js",
               "type": "system",
-              "lines": 1300,
+              "lines": 1108,
               "functions": [
                 "SystemTab"
               ],
@@ -11210,7 +11210,7 @@
     "src/system/SystemTab.js": {
       "path": "src/system/SystemTab.js",
       "type": "system",
-      "lines": 1300,
+      "lines": 1108,
       "functions": [
         "SystemTab"
       ],
