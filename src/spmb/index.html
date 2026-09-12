@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pendaftaran Siswa Baru - SMP Muslimin Cililin</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #10b981 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%);
+        color: white;
+        padding: 40px 40px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        animation: float 15s infinite ease-in-out;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+        50% {
+          transform: translate(-20px, -20px) rotate(180deg);
+        }
+      }
+
+      .header .organization {
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        letter-spacing: 2px;
+        position: relative;
+        z-index: 1;
+        text-transform: uppercase;
+        opacity: 0.9;
+      }
+
+      .header .school-name {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 28px;
+        letter-spacing: 1px;
+        position: relative;
+        z-index: 1;
+        line-height: 1.4;
+      }
+
+      .header h1 {
+        font-size: 28px;
+        margin-bottom: 10px;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+        line-height: 1.3;
+      }
+
+      .header .academic-year {
+        font-size: 16px;
+        font-weight: 500;
+        opacity: 0.95;
+        position: relative;
+        z-index: 1;
+        letter-spacing: 0.5px;
+      }
+
+      .loading-overlay {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-radius: 12px;
+        margin: 20px;
+      }
+
+      .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #3b82f6;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .form-container {
+        padding: 50px;
+        background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);
+      }
+
+      .section-title {
+        font-size: 22px;
+        color: #1e40af;
+        margin: 40px 0 25px 0;
+        padding: 18px 24px;
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-radius: 16px;
+        border-left: 5px solid #1e40af;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 4px 6px rgba(30, 64, 175, 0.1);
+      }
+
+      .section-title:first-child {
+        margin-top: 0;
+      }
+
+      .form-group {
+        margin-bottom: 24px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      label .required {
+        color: #ef4444;
+        font-weight: 700;
+      }
+
+      label small {
+        display: block;
+        color: #64748b;
+        font-weight: 400;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 14px 18px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        font-size: 15px;
+        transition: all 0.3s;
+        font-family: inherit;
+        background: white;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+        background: #eff6ff;
+      }
+
+      input:hover,
+      select:hover,
+      textarea:hover {
+        border-color: #60a5fa;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 120px;
+        line-height: 1.6;
+      }
+
+      .input-lainnya {
+        display: none;
+        margin-top: 10px;
+        animation: slideDown 0.3s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .btn-container {
+        display: flex;
+        gap: 16px;
+        margin-top: 40px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 18px 40px;
+        border: none;
+        border-radius: 14px;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
+        letter-spacing: 0.5px;
+      }
+
+      .btn-submit {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        color: white;
+      }
+
+      .btn-reset {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        color: white;
+      }
+
+      .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px rgba(30, 64, 175, 0.35);
+      }
+
+      .btn:active {
+        transform: translateY(-1px);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .success-message,
+      .error-message {
+        display: none;
+        padding: 20px;
+        border-radius: 14px;
+        margin-bottom: 30px;
+        font-weight: 600;
+        animation: slideDown 0.3s ease;
+      }
+
+      .success-message {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border: 2px solid #10b981;
+        color: #065f46;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+      }
+
+      .success-message .nis-info {
+        display: block;
+        margin-top: 8px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #047857;
+      }
+
+      .error-message {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border: 2px solid #ef4444;
+        color: #991b1b;
+        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+      }
+
+      .info-box {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-left: 5px solid #3b82f6;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 12px;
+        font-size: 14px;
+        color: #1e40af;
+        font-weight: 500;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
+      }
+
+      .info-box strong {
+        color: #1e3a8a;
+        font-size: 15px;
+      }
+
+      .card-section {
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .modal-content {
+        background: white;
+        margin: 10% auto;
+        padding: 40px;
+        border-radius: 20px;
+        max-width: 500px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .modal-header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .modal-header h2 {
+        color: #1e40af;
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      .modal-body {
+        text-align: center;
+        color: #475569;
+        font-size: 16px;
+        margin-bottom: 30px;
+        line-height: 1.6;
+      }
+
+      .modal-buttons {
+        display: flex;
+        gap: 16px;
+      }
+
+      .modal-btn {
+        flex: 1;
+        padding: 14px 24px;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .modal-btn-confirm {
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        color: white;
+      }
+
+      .modal-btn-cancel {
+        background: #e2e8f0;
+        color: #475569;
+      }
+
+      .modal-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        .container {
+          border-radius: 16px;
+        }
+
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+
+        .form-container {
+          padding: 25px 20px;
+        }
+
+        .header {
+          padding: 30px 20px;
+        }
+
+        .header .organization {
+          font-size: 10px;
+          letter-spacing: 2px;
+          margin-bottom: 8px;
+        }
+
+        .header .school-name {
+          font-size: 16px;
+          margin-bottom: 24px;
+          line-height: 1.5;
+        }
+
+        .header h1 {
+          font-size: 19px;
+          margin-bottom: 8px;
+        }
+
+        .header .academic-year {
+          font-size: 14px;
+        }
+
+        .section-title {
+          font-size: 16px;
+          padding: 12px 16px;
+          margin: 30px 0 20px 0;
+        }
+
+        .card-section {
+          padding: 20px 16px;
+        }
+
+        input,
+        select,
+        textarea {
+          padding: 12px 14px;
+          font-size: 16px;
+        }
+
+        label {
+          font-size: 13px;
+        }
+
+        .btn-container {
+          flex-direction: column;
+          gap: 12px;
+          margin-top: 30px;
+        }
+
+        .btn {
+          padding: 16px 24px;
+          font-size: 16px;
+        }
+
+        .modal-content {
+          margin: 20% 15px;
+          padding: 30px 20px;
+        }
+
+        .modal-header h2 {
+          font-size: 20px;
+        }
+
+        .modal-body {
+          font-size: 14px;
+        }
+
+        .modal-buttons {
+          flex-direction: column;
+        }
+
+        .info-box {
+          padding: 16px;
+          font-size: 13px;
+        }
+      }
+
+      @media (min-width: 769px) and (max-width: 1024px) {
+        .container {
+          max-width: 750px;
+        }
+
+        .header {
+          padding: 38px 35px;
+        }
+
+        .form-container {
+          padding: 40px 35px;
+        }
+
+        .form-row {
+          gap: 20px;
+        }
+      }
+
+      @media (min-width: 1025px) {
+        .container {
+          max-width: 900px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="organization">YAYASAN PENDIDIKAN NURUL ULUM (YPNU)</div>
+        <div class="school-name">SEKOLAH MENENGAH PERTAMA MUSLIMIN CILILIN</div>
+        <h1>Formulir Pendaftaran Siswa Baru</h1>
+        <div class="academic-year" id="headerAcademicYear">
+          <div
+            class="loading-spinner"
+            style="
+              display: inline-block;
+              width: 16px;
+              height: 16px;
+              border-width: 2px;
+              vertical-align: middle;
+              margin-right: 8px;
+            "
+          ></div>
+          Memuat tahun ajaran...
+        </div>
+      </div>
+
+      <div class="form-container" id="formContainer">
+        <!-- Loading indicator -->
+        <div class="loading-overlay" id="loadingOverlay">
+          <div class="loading-spinner"></div>
+          <span style="margin-left: 12px; color: #1e40af; font-weight: 600"
+            >Memuat data tahun ajaran...</span
+          >
+        </div>
+
+        <!-- Form akan muncul setelah data loaded -->
+        <div id="mainForm" style="display: none">
+          <div class="info-box">
+            <strong>📋 Petunjuk Pengisian:</strong>
+            <ol style="margin: 10px 0 0 20px; padding: 0; line-height: 1.8">
+              <li>
+                Semua data yang bertanda (<span style="color: #ef4444; font-weight: 700">*</span>)
+                <strong>Wajib diisi</strong>.
+              </li>
+              <li>Pastikan data yang Anda masukkan sudah benar dan sesuai dengan dokumen resmi.</li>
+            </ol>
+          </div>
+
+          <div class="success-message" id="successMessage"></div>
+
+          <div class="error-message" id="errorMessage"></div>
+
+          <form id="registrationForm">
+            <!-- Data Siswa -->
+            <div class="card-section">
+              <div class="section-title">👤 Data Calon Siswa</div>
+
+              <div class="form-group">
+                <label
+                  >Nama Lengkap <span class="required">*</span>
+                  <small>Sesuai dengan akta kelahiran</small>
+                </label>
+                <input
+                  type="text"
+                  id="nama_lengkap"
+                  name="nama_lengkap"
+                  required
+                  placeholder="Masukkan nama lengkap sesuai akta kelahiran"
+                />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label
+                    >Jenis Kelamin <span class="required">*</span>
+                    <small>Pilih jenis kelamin siswa</small>
+                  </label>
+                  <select id="jenis_kelamin" name="jenis_kelamin" required>
+                    <option value="">Pilih Jenis Kelamin</option>
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label
+                    >NISN (Opsional)
+                    <small>Kosongkan jika belum memiliki NISN</small>
+                  </label>
+                  <input
+                    type="text"
+                    id="nisn"
+                    name="nisn"
+                    placeholder="10 digit NISN"
+                    maxlength="10"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tempat Lahir <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="tempat_lahir"
+                    name="tempat_lahir"
+                    required
+                    placeholder="Kota kelahiran"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Tanggal Lahir <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    id="tanggal_lahir"
+                    name="tanggal_lahir"
+                    required
+                    placeholder="DD-MM-YYYY"
+                    maxlength="10"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label
+                  >Asal Sekolah Dasar (SD)
+                  <small>Nama SD asal calon siswa</small>
+                </label>
+                <input
+                  type="text"
+                  id="asal_sekolah"
+                  name="asal_sekolah"
+                  placeholder="Nama SD asal"
+                />
+              </div>
+            </div>
+
+            <!-- Data Orang Tua -->
+            <div class="card-section">
+              <div class="section-title">👨‍👦 Data Orang Tua/Wali</div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nama Ayah</label>
+                  <input
+                    type="text"
+                    id="nama_ayah"
+                    name="nama_ayah"
+                    placeholder="Nama lengkap ayah"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Nama Ibu</label>
+                  <input type="text" id="nama_ibu" name="nama_ibu" placeholder="Nama lengkap ibu" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Pekerjaan Ayah</label>
+                  <select id="pekerjaan_ayah" name="pekerjaan_ayah">
+                    <option value="">Pilih Pekerjaan</option>
+                    <option value="PNS/TNI/Polri">PNS/TNI/Polri</option>
+                    <option value="Karyawan Swasta">Karyawan Swasta</option>
+                    <option value="Wiraswasta/Pedagang">Wiraswasta/Pedagang</option>
+                    <option value="Petani">Petani</option>
+                    <option value="Buruh">Buruh</option>
+                    <option value="Guru/Dosen">Guru/Dosen</option>
+                    <option value="Dokter/Tenaga Kesehatan">Dokter/Tenaga Kesehatan</option>
+                    <option value="Sopir/Driver">Sopir/Driver</option>
+                    <option value="Pensiunan">Pensiunan</option>
+                    <option value="Tidak Bekerja">Tidak Bekerja</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="pekerjaan_ayah_lainnya"
+                    name="pekerjaan_ayah_lainnya"
+                    class="input-lainnya"
+                    placeholder="Sebutkan pekerjaan lainnya"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>Pekerjaan Ibu</label>
+                  <select id="pekerjaan_ibu" name="pekerjaan_ibu">
+                    <option value="">Pilih Pekerjaan</option>
+                    <option value="Ibu Rumah Tangga">Ibu Rumah Tangga</option>
+                    <option value="PNS/TNI/Polri">PNS/TNI/Polri</option>
+                    <option value="Karyawan Swasta">Karyawan Swasta</option>
+                    <option value="Wiraswasta/Pedagang">Wiraswasta/Pedagang</option>
+                    <option value="Petani">Petani</option>
+                    <option value="Buruh">Buruh</option>
+                    <option value="Guru/Dosen">Guru/Dosen</option>
+                    <option value="Dokter/Tenaga Kesehatan">Dokter/Tenaga Kesehatan</option>
+                    <option value="Pensiunan">Pensiunan</option>
+                    <option value="Tidak Bekerja">Tidak Bekerja</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="pekerjaan_ibu_lainnya"
+                    name="pekerjaan_ibu_lainnya"
+                    class="input-lainnya"
+                    placeholder="Sebutkan pekerjaan lainnya"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Pendidikan Ayah</label>
+                  <select id="pendidikan_ayah" name="pendidikan_ayah">
+                    <option value="">Pilih Pendidikan</option>
+                    <option value="SD/Sederajat">SD/Sederajat</option>
+                    <option value="SMP/Sederajat">SMP/Sederajat</option>
+                    <option value="SMA/Sederajat">SMA/Sederajat</option>
+                    <option value="D3">D3</option>
+                    <option value="S1">S1</option>
+                    <option value="S2">S2</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Pendidikan Ibu</label>
+                  <select id="pendidikan_ibu" name="pendidikan_ibu">
+                    <option value="">Pilih Pendidikan</option>
+                    <option value="SD/Sederajat">SD/Sederajat</option>
+                    <option value="SMP/Sederajat">SMP/Sederajat</option>
+                    <option value="SMA/Sederajat">SMA/Sederajat</option>
+                    <option value="D3">D3</option>
+                    <option value="S1">S1</option>
+                    <option value="S2">S2</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>No. HP Orang Tua <span class="required">*</span></label>
+                <input
+                  type="text"
+                  id="no_hp"
+                  name="no_hp"
+                  required
+                  placeholder="Contoh: 081234567890"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Alamat Lengkap <span class="required">*</span></label>
+                <textarea
+                  id="alamat"
+                  name="alamat"
+                  required
+                  rows="3"
+                  placeholder="Alamat lengkap tempat tinggal"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="btn-container">
+              <button type="button" class="btn btn-reset" onclick="resetForm()">
+                🔄 Reset Form
+              </button>
+              <button type="submit" class="btn btn-submit">📝 Daftar Sekarang</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Konfirmasi -->
+    <div id="confirmModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>⚠️ Konfirmasi Data</h2>
+        </div>
+        <div class="modal-body">
+          <p>
+            Apakah Anda yakin semua data yang diisi sudah
+            <strong>benar dan sesuai</strong>?
+          </p>
+          <p style="margin-top: 10px; font-size: 14px; color: #64748b">
+            Pastikan Nama, tanggal lahir, dan data lainnya sudah sesuai dengan dokumen resmi.
+          </p>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="modal-btn modal-btn-cancel" onclick="closeModal()">
+            ❌ Periksa Lagi
+          </button>
+          <button type="button" class="modal-btn modal-btn-confirm" onclick="confirmSubmit()">
+            ✅ Ya, Sudah Benar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // =====================================================
+      // 🎓 CONFIG
+      // =====================================================
+      const SUPABASE_URL = "https://enzohhulskcwniosqtnt.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuem9oaHVsc2tjd25pb3NxdG50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyNjY4OTgsImV4cCI6MjA3Mzg0Mjg5OH0.32dpWJR55BA_ROrGAd9KxE22X4wVGLRWQ2VGUFG0NKQ";
+
+      // 🎯 Fetch Tahun Ajaran Target dari Database
+      let CURRENT_ACADEMIC_YEAR = "2026/2027"; // Default fallback
+
+      // Fetch target academic year saat page load
+      async function loadTargetAcademicYear() {
+        try {
+          const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/spmb_settings?is_active=eq.true&select=target_academic_year`,
+            {
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.length > 0) {
+              CURRENT_ACADEMIC_YEAR = data[0].target_academic_year;
+              document.getElementById("headerAcademicYear").textContent =
+                `Penerimaan Tahun Ajaran ${CURRENT_ACADEMIC_YEAR}`;
+            }
+          }
+        } catch (error) {
+          console.error("Error loading target academic year:", error);
+          // Gunakan fallback
+          document.getElementById("headerAcademicYear").textContent =
+            `Penerimaan Tahun Ajaran ${CURRENT_ACADEMIC_YEAR}`;
+        } finally {
+          // Hide loading, show form
+          document.getElementById("loadingOverlay").style.display = "none";
+          document.getElementById("mainForm").style.display = "block";
+        }
+      }
+
+      // Load saat page ready
+      loadTargetAcademicYear();
+
+      // =====================================================
+      // INPUT FORMATTING & VALIDATION
+      // =====================================================
+
+      // Format tanggal input otomatis
+      document.getElementById("tanggal_lahir").addEventListener("input", function (e) {
+        let value = e.target.value.replace(/\D/g, "");
+        if (value.length > 2 && value.length <= 4) {
+          value = value.substring(0, 2) + "-" + value.substring(2);
+        } else if (value.length > 4) {
+          value = value.substring(0, 2) + "-" + value.substring(2, 4) + "-" + value.substring(4, 8);
+        }
+        e.target.value = value;
+      });
+
+      // Handle pekerjaan ayah lainnya
+      document.getElementById("pekerjaan_ayah").addEventListener("change", function (e) {
+        const lainnyaInput = document.getElementById("pekerjaan_ayah_lainnya");
+        if (e.target.value === "Lainnya") {
+          lainnyaInput.style.display = "block";
+          lainnyaInput.required = true;
+        } else {
+          lainnyaInput.style.display = "none";
+          lainnyaInput.required = false;
+          lainnyaInput.value = "";
+        }
+      });
+
+      // Handle pekerjaan ibu lainnya
+      document.getElementById("pekerjaan_ibu").addEventListener("change", function (e) {
+        const lainnyaInput = document.getElementById("pekerjaan_ibu_lainnya");
+        if (e.target.value === "Lainnya") {
+          lainnyaInput.style.display = "block";
+          lainnyaInput.required = true;
+        } else {
+          lainnyaInput.style.display = "none";
+          lainnyaInput.required = false;
+          lainnyaInput.value = "";
+        }
+      });
+
+      // NISN hanya angka
+      document.getElementById("nisn").addEventListener("input", function (e) {
+        e.target.value = e.target.value.replace(/\D/g, "");
+      });
+
+      // No HP hanya angka
+      document.getElementById("no_hp").addEventListener("input", function (e) {
+        e.target.value = e.target.value.replace(/\D/g, "");
+      });
+
+      // =====================================================
+      // FORM SUBMIT
+      // =====================================================
+
+      document.getElementById("registrationForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const successMsg = document.getElementById("successMessage");
+        const errorMsg = document.getElementById("errorMessage");
+
+        successMsg.style.display = "none";
+        errorMsg.style.display = "none";
+
+        // Validasi nama lengkap minimal 2 kata
+        const namaLengkap = document.getElementById("nama_lengkap").value.trim();
+        const namaWords = namaLengkap.split(" ").filter((word) => word.length > 0);
+        if (namaWords.length < 2) {
+          errorMsg.textContent = "❌ Nama harus terdiri dari minimal 2 kata!";
+          errorMsg.style.display = "block";
+          errorMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+
+        // Validasi nama hanya huruf
+        if (!/^[a-zA-Z\s]+$/.test(namaLengkap)) {
+          errorMsg.textContent = "❌ Nama hanya boleh mengandung huruf dan spasi!";
+          errorMsg.style.display = "block";
+          errorMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+
+        // Validasi tanggal lahir format DD-MM-YYYY
+        const tanggalLahir = document.getElementById("tanggal_lahir").value;
+        if (!/^\d{2}-\d{2}-\d{4}$/.test(tanggalLahir)) {
+          errorMsg.textContent = "❌ Format tanggal lahir harus DD-MM-YYYY!";
+          errorMsg.style.display = "block";
+          errorMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+
+        // Validasi NISN jika diisi
+        const nisn = document.getElementById("nisn").value;
+        if (nisn && (nisn.length !== 10 || !/^\d{10}$/.test(nisn))) {
+          errorMsg.textContent = "❌ NISN harus berisi tepat 10 digit angka!";
+          errorMsg.style.display = "block";
+          errorMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+
+        // Validasi no HP
+        const noHp = document.getElementById("no_hp").value;
+        if (!/^(\+62|62|0)[0-9]{9,13}$/.test(noHp.replace(/\s+/g, ""))) {
+          errorMsg.textContent = "❌ Format nomor HP tidak valid!";
+          errorMsg.style.display = "block";
+          errorMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+
+        // Tampilkan modal konfirmasi
+        document.getElementById("confirmModal").style.display = "block";
+      });
+
+      function closeModal() {
+        document.getElementById("confirmModal").style.display = "none";
+      }
+
+      async function confirmSubmit() {
+        closeModal();
+
+        const submitBtn = document.querySelector(".btn-submit");
+        const successMsg = document.getElementById("successMessage");
+        const errorMsg = document.getElementById("errorMessage");
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "⏳ Sedang Memproses...";
+
+        // Konversi tanggal dari DD-MM-YYYY ke YYYY-MM-DD
+        const tanggalLahir = document.getElementById("tanggal_lahir").value;
+        const [day, month, year] = tanggalLahir.split("-");
+        const isoDate = `${year}-${month}-${day}`;
+
+        const pekerjaanAyah = document.getElementById("pekerjaan_ayah").value;
+        const pekerjaanIbu = document.getElementById("pekerjaan_ibu").value;
+
+        const formData = {
+          nama_lengkap: document.getElementById("nama_lengkap").value.trim(),
+          nisn: document.getElementById("nisn").value || "-",
+          jenis_kelamin: document.getElementById("jenis_kelamin").value,
+          tempat_lahir: document.getElementById("tempat_lahir").value.trim(),
+          tanggal_lahir: isoDate,
+          asal_sekolah: document.getElementById("asal_sekolah").value.trim(),
+          nama_ayah: document.getElementById("nama_ayah").value.trim(),
+          pekerjaan_ayah:
+            pekerjaanAyah === "Lainnya"
+              ? document.getElementById("pekerjaan_ayah_lainnya").value.trim()
+              : pekerjaanAyah,
+          pendidikan_ayah: document.getElementById("pendidikan_ayah").value,
+          nama_ibu: document.getElementById("nama_ibu").value.trim(),
+          pekerjaan_ibu:
+            pekerjaanIbu === "Lainnya"
+              ? document.getElementById("pekerjaan_ibu_lainnya").value.trim()
+              : pekerjaanIbu,
+          pendidikan_ibu: document.getElementById("pendidikan_ibu").value,
+          no_hp: document.getElementById("no_hp").value.trim(),
+          alamat: document.getElementById("alamat").value.trim(),
+          tanggal_daftar: new Date().toISOString().split("T")[0],
+          academic_year: CURRENT_ACADEMIC_YEAR,
+          status: "diterima",
+          is_transferred: false,
+          kelas: null,
+          nis: null,
+          transferred_at: null,
+          transferred_by: null,
+        };
+
+        try {
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/siswa_baru`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              Prefer: "return=representation",
+            },
+            body: JSON.stringify(formData),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Terjadi kesalahan saat menyimpan data");
+          }
+
+          const data = await response.json();
+          const savedData = data[0];
+
+          // Success message dengan no_pendaftaran
+          successMsg.innerHTML = `
+            ✅ Pendaftaran berhasil! Data <strong>${formData.nama_lengkap}</strong> telah tersimpan.
+            <span class="nis-info">📋 No. Pendaftaran: ${
+              savedData.no_pendaftaran || "Sedang diproses"
+            }</span>
+          `;
+          successMsg.style.display = "block";
+          successMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          // Reset form
+          document.getElementById("registrationForm").reset();
+
+          console.log("Data berhasil disimpan:", savedData);
+        } catch (error) {
+          console.error("Error:", error);
+          errorMsg.textContent = "❌ Terjadi kesalahan! " + error.message;
+          errorMsg.style.display = "block";
+          errorMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "📝 Daftar Sekarang";
+        }
+      }
+
+      function resetForm() {
+        if (confirm("Apakah Anda yakin ingin mereset semua data?")) {
+          document.getElementById("registrationForm").reset();
+          document.getElementById("successMessage").style.display = "none";
+          document.getElementById("errorMessage").style.display = "none";
+          document.getElementById("pekerjaan_ayah_lainnya").style.display = "none";
+          document.getElementById("pekerjaan_ibu_lainnya").style.display = "none";
+        }
+      }
+
+      // Close modal ketika klik di luar modal
+      window.onclick = function (event) {
+        const modal = document.getElementById("confirmModal");
+        if (event.target === modal) {
+          closeModal();
+        }
+      };
+    </script>
+  </body>
+</html>

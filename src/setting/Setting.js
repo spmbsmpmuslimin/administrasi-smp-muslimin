@@ -39,6 +39,7 @@ import {
   CalendarClock,
   ClipboardList,
   ClipboardCheck,
+  GraduationCap,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import ProfileTab from "./teacher-profiles/ProfileTab";
@@ -56,6 +57,10 @@ import SPMB from "../spmb/SPMB";
 // ini aja. Rute /attendance-management di menuConfig.js TETAP dibiarin
 // ada (jangan dihapus) sebagai fallback akses langsung via URL.
 import AttendanceManagement from "../pages/attendance/AttendanceManagement";
+// ✅ BARU (Sep 2026): Modul Manajemen Ujian (PSAS/PSAT/PSAJ) -- pembagian
+// ruangan, kartu ujian, jadwal pengawas, dan laporan pelaksanaan.
+// Masih tahap dummy/placeholder, dibangun bertahap per sub-fitur.
+import KelolaUjianTab from "./kelola-ujian/KelolaUjianTab";
 
 // Palet pastel per kartu menu. Ditulis lengkap per-kelas (bukan digabung
 // pake template string kayak `bg-${color}-50`) supaya Tailwind bisa nge-scan
@@ -310,6 +315,18 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
         user?.role === "tu" ||
         user?.jabatan_struktural === "wakasek_kurikulum",
     },
+    // ✅ BARU (Sep 2026): Modul Ujian Sumatif (PSAS/PSAT/PSAJ) -- pembagian
+    // ruangan, kartu ujian, jadwal pengawas, laporan pelaksanaan.
+    // 🔧 DUMMY: komponen KelolaUjianTab.js masih placeholder, dibangun
+    // bertahap per sub-fitur (pembagian ruangan duluan).
+    {
+      id: "kelola-ujian",
+      title: "Manajemen Ujian",
+      description: "Pembagian ruangan, kartu ujian, dan laporan PSAS/PSAT/PSAJ",
+      icon: GraduationCap,
+      color: "indigo",
+      available: user?.role === "admin" || user?.role === "tu",
+    },
     {
       id: "portal-siswa",
       title: "Manajemen Portal Siswa",
@@ -432,6 +449,8 @@ const Setting = ({ user, onShowToast, darkMode, onToggleDarkMode }) => {
         return <RaportConfig {...commonProps} />;
       case "jadwal-guru":
         return <JadwalGuruTab {...commonProps} />;
+      case "kelola-ujian":
+        return <KelolaUjianTab {...commonProps} />;
       case "feedback-guru":
         return <FeedbackCombinedTab {...commonProps} />;
       case "spmb":
