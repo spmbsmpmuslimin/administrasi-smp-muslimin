@@ -21,6 +21,7 @@ const AttendanceFilters = ({
   availableSemesters,
   onSemesterChange,
   isReadOnlyMode,
+  activeYearHolidays = {},
 }) => {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState(date);
@@ -78,6 +79,10 @@ const AttendanceFilters = ({
     const dayOfWeek = date.getDay();
     return dayOfWeek === 0 || dayOfWeek === 6; // 0 = Minggu, 6 = Sabtu
   };
+
+  // ✅ FUNCTION: Check if date libur nasional (dari prop activeYearHolidays,
+  // sudah otomatis disaring sesuai tahun ajaran aktif di Attendance.js)
+  const getHolidayName = (dateString) => activeYearHolidays[dateString] || null;
 
   const validateSelectedDate = (selectedDate) => {
     if (!selectedDate || !selectedSemesterId) return true;
@@ -243,12 +248,15 @@ const AttendanceFilters = ({
       const isSelected = tempDate === dayString;
       const isValid = validateSelectedDate(dayString);
       const isWeekendDay = isWeekend(dayString); // ✅ CHECK WEEKEND
+      const holidayName = getHolidayName(dayString); // ✅ CHECK LIBUR NASIONAL
+      const isHolidayDay = !!holidayName;
 
       days.push(
         <button
           key={day}
           onClick={() => handleDayClick(day)}
-          disabled={!isValid || isReadOnlyMode || isWeekendDay} // ✅ DISABLE WEEKEND
+          disabled={!isValid || isReadOnlyMode || isWeekendDay || isHolidayDay} // ✅ DISABLE WEEKEND & LIBUR NASIONAL
+          title={holidayName || undefined}
           className={`
           h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium
           transition-all duration-200 active:scale-95 touch-manipulation
@@ -256,13 +264,15 @@ const AttendanceFilters = ({
           ${
             isWeekendDay
               ? "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-red-400 dark:text-red-700 cursor-not-allowed" // ✅ WEEKEND STYLE (clean)
-              : !isValid
-                ? "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
-                : isSelected
-                  ? "border-blue-500 bg-blue-500 text-white"
-                  : isToday
-                    ? "border-blue-400 dark:border-blue-500 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                    : "border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-slate-800"
+              : isHolidayDay
+                ? "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 text-amber-500 dark:text-amber-600 cursor-not-allowed" // ✅ LIBUR NASIONAL STYLE
+                : !isValid
+                  ? "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                  : isSelected
+                    ? "border-blue-500 bg-blue-500 text-white"
+                    : isToday
+                      ? "border-blue-400 dark:border-blue-500 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                      : "border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-slate-800"
           }
         `}>
           {day}

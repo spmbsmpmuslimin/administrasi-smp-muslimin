@@ -105,7 +105,7 @@ const menuCards = [
   {
     id: "keuangan",
     title: "Administrasi Keuangan",
-    description: "Pembayaran SPP, tunggakan, dan riwayat pembayaran",
+    description: "Pembayaran SPP, Uang Awal Tahun dan Uang Akhir Tahun",
     icon: Wallet,
     color: "emerald",
     component: KeuanganTab,

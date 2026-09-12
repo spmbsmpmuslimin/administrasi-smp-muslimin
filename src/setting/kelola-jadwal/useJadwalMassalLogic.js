@@ -1421,6 +1421,11 @@ export default function useJadwalMassalLogic() {
     setError,
     success,
 
+    // jadwal jam pelajaran (buat kolom Waktu & baris Istirahat di tabel
+    // "Jadwal Aktif Saat Ini", biar tampilannya konsisten sama Jadwal
+    // Mengajar Guru)
+    JAM_SCHEDULE,
+
     // upload / file
     rawCells,
     sourceFileName,

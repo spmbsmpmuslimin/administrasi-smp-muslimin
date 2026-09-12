@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import { validateAttendance } from "./LocationValidator";
+import { getActiveYearHolidays } from "../services/holidayService";
 
 const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   // ✅ GET TANGGAL & JAM SESUAI TIMEZONE INDONESIA (WIB)
@@ -44,6 +45,9 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [teachersList, setTeachersList] = useState([]);
+  const [showWeekendModal, setShowWeekendModal] = useState(false);
+  const [holidayName, setHolidayName] = useState(null);
+  const [activeYearHolidays, setActiveYearHolidays] = useState({});
 
   const statusOptions = [
     { value: "Hadir", label: "Hadir", color: "bg-green-500 dark:bg-green-600" },
@@ -59,6 +63,11 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
   useEffect(() => {
     checkAdminStatus();
   }, [currentUser]);
+
+  useEffect(() => {
+    // 🗓️ Load libur nasional yang relevan sama tahun ajaran aktif
+    getActiveYearHolidays().then(setActiveYearHolidays);
+  }, []);
 
   useEffect(() => {
     if (isAdmin) {
@@ -135,12 +144,41 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
     setCheckingLocation(false);
   };
 
+  // 📅 Cek apakah tanggal jatuh di hari Sabtu/Minggu (hari libur sekolah)
+  const isWeekend = (dateString) => {
+    const [y, m, d] = dateString.split("-").map(Number);
+    const day = new Date(y, m - 1, d).getDay(); // 0 = Minggu, 6 = Sabtu
+    return day === 0 || day === 6;
+  };
+
+  // 🎉 Cek apakah tanggal libur nasional (sesuai tahun ajaran aktif)
+  const getHolidayName = (dateString) => {
+    return activeYearHolidays[dateString] || null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
     try {
+      // ========================================
+      // VALIDASI HARI AKTIF (SENIN - JUMAT)
+      // Berlaku untuk admin maupun guru, tidak ada pengecualian
+      // ========================================
+      // ========================================
+      // VALIDASI HARI AKTIF (SENIN - JUMAT, BUKAN LIBUR NASIONAL)
+      // Berlaku untuk admin maupun guru, tidak ada pengecualian
+      // ========================================
+      const holiday = getHolidayName(formData.date);
+
+      if (isWeekend(formData.date) || holiday) {
+        setHolidayName(holiday); // null kalau weekend biasa, nama libur kalau libur nasional
+        setShowWeekendModal(true);
+        setLoading(false);
+        return;
+      }
+
       // ========================================
       // VALIDASI MENGGUNAKAN MASTER VALIDATOR
       // ========================================
@@ -414,7 +452,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         </h3>
         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
           {isAdmin
-            ? "Mode Admin: Dapat input presensi kapan saja untuk semua guru"
+            ? "Mode Admin: Dapat input presensi untuk semua guru (hari aktif Senin-Jumat)"
             : "Isi form di bawah untuk mencatat presensi"}
         </p>
       </div>
@@ -479,7 +517,7 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
           showInfo={true}
           infoText={
             isAdmin
-              ? "Admin dapat memilih tanggal kapan saja"
+              ? "Admin dapat memilih tanggal kapan saja, kecuali Sabtu/Minggu (hari libur)"
               : "Bisa pilih tanggal mundur untuk input presensi yang terlupa"
           }
         />
@@ -584,10 +622,40 @@ const ManualCheckIn = ({ currentUser, onSuccess, onBeforeSubmit }) => {
         <p className="text-sm sm:text-base text-gray-800 dark:text-gray-300">
           <strong>💡</strong>{" "}
           {isAdmin
-            ? "Sebagai Admin, Anda dapat input presensi kapan saja tanpa batasan waktu. Pastikan mengisi catatan untuk audit trail."
+            ? "Sebagai Admin, Anda dapat input presensi kapan saja (kecuali Sabtu/Minggu) tanpa batasan jam. Pastikan mengisi catatan untuk audit trail."
             : "⏰ Jam Operasional Presensi Hanya Dapat Dilakukan Pada Pukul 07:00 - 14:00 WIB"}
         </p>
       </div>
+
+      {/* 🚫 MODAL POPUP: HARI LIBUR (SABTU/MINGGU) */}
+      {showWeekendModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in">
+            <div className="mx-auto mb-4 flex items-center justify-center w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30">
+              <XCircle className="text-red-600 dark:text-red-400" size={32} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+              Tidak Bisa Input Presensi
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+              {holidayName
+                ? `Tanggal yang dipilih adalah libur nasional: ${holidayName}.`
+                : "Tanggal yang dipilih jatuh pada hari Sabtu/Minggu (hari libur)."}{" "}
+              Sekolah aktif Senin - Jumat.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowWeekendModal(false);
+                setHolidayName(null);
+              }}
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold transition-all"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes fade-in {

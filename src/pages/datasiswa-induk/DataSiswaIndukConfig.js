@@ -63,7 +63,7 @@ export const DETAIL_ROWS = [
   { key: "no_kk", label: "No. Kartu Keluarga (KK)" },
   { key: "no_akta_lahir", label: "No. Akta Lahir" },
   { key: "agama", label: "Agama" },
-  { key: "anak_ke", label: "Anak ke-" },
+  { key: "anak_ke", label: "Anak Ke-" },
   { key: "sekolah_asal", label: "Sekolah Asal" },
   { key: "no_peserta_ujian", label: "No. Peserta Ujian" },
   { key: "no_ijazah", label: "No. Ijazah" },

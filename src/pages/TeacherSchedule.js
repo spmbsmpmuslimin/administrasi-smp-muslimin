@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import {
-  Plus,
   Edit,
   Trash2,
   Calendar,
@@ -14,6 +13,7 @@ import {
   LayoutGrid,
   List,
   Save,
+  Lock,
 } from "lucide-react";
 import TeacherScheduleExcel from "./TeacherScheduleExcel";
 import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academicYearService";
@@ -361,6 +361,35 @@ const TeacherSchedule = ({ user }) => {
       const startTime = daySchedule[formData.start_period].start;
       const endTime = daySchedule[formData.end_period].end;
 
+      // Guard utama: cek dulu apakah jam yang dipilih di form ini
+      // (baik nambah baru maupun edit) udah ketiban jadwal massal dari
+      // Admin (source === 'admin'). Sebelumnya cuma dicek kalau lagi
+      // edit baris admin itu sendiri -- celahnya, tombol "Tambah Jadwal"
+      // buat INSERT baru gak ada pengecekan sama sekali, jadi bisa
+      // numpuk/tabrakan sama slot Admin yang udah ada.
+      const requestedPeriods = [];
+      for (let p = parseInt(formData.start_period); p <= parseInt(formData.end_period); p++) {
+        requestedPeriods.push(String(p));
+      }
+
+      const adminConflict = schedules.find(
+        (s) =>
+          s.id !== editingId &&
+          s.day === formData.day &&
+          s.source === "admin" &&
+          findPeriodsByTimeRange(s.day, s.start_time, s.end_time).some((per) =>
+            requestedPeriods.includes(per)
+          )
+      );
+
+      if (adminConflict) {
+        setError(
+          `Jam ${requestedPeriods.join(", ")} di hari ${formData.day} sudah terisi jadwal Admin (Kelas ${adminConflict.class_id}). Tidak bisa ditambah/diubah manual di sini -- hubungi Admin kalau ada perubahan.`
+        );
+        setLoading(false);
+        return;
+      }
+
       // Guard tambahan: jangan sampai baris source='admin' ke-update dari
       // sini juga (harusnya udah gak mungkin ke-trigger karena tombol
       // Edit-nya disembunyikan di list view, tapi dijaga dobel biar aman).
@@ -532,16 +561,9 @@ const TeacherSchedule = ({ user }) => {
         <div className="mb-8 bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700 transition-colors duration-300 p-4">
           {/* MOBILE: 2 Rows x 2 Kolom (hidden di desktop) */}
           <div className="block sm:hidden space-y-2">
-            {/* Row 1: Aksi utama -- Tambah & Export */}
+            {/* Row 1: Export (tombol Tambah dihapus -- jadwal manual sekarang
+                cukup lewat klik-sel di tampilan Grid) */}
             <div className="flex gap-2">
-              <button
-                onClick={() => handleOpenModal()}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 justify-center transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                Tambah
-              </button>
-
               <button
                 onClick={handleExportToExcel}
                 disabled={schedules.length === 0}
@@ -606,15 +628,9 @@ const TeacherSchedule = ({ user }) => {
               Tampilan List
             </button>
 
-            <button
-              onClick={() => handleOpenModal()}
-              className="flex-1 min-w-[120px] sm:min-w-[140px] bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/40 text-green-700 dark:text-green-300 px-3 py-2.5 rounded-lg text-sm sm:text-base font-medium flex items-center gap-2 justify-center border border-green-300 dark:border-green-700 transition-all"
-              title="Untuk jadwal 2+ jam berturut-turut (misal: Jam 2-4)"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Tambah Multi-Jam</span>
-              <span className="sm:hidden">Multi-Jam</span>
-            </button>
+            {/* Tombol "Tambah Multi-Jam" dihapus -- jadwal sekarang otomatis
+                dari Admin, jadi entry manual cukup lewat klik-sel di Grid
+                (buat 1 jam) tanpa perlu form tambah-baru multi-jam lagi. */}
 
             <button
               onClick={handleExportToExcel}
@@ -648,21 +664,21 @@ const TeacherSchedule = ({ user }) => {
 
         {/* Schedule Grid */}
         {viewMode === "grid" && (
-          <div className="bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-sm border border-slate-200 p-4">
+          <div className="bg-white dark:bg-gray-800 transition-colors duration-300 rounded-lg shadow-sm border border-slate-200 p-2 sm:p-4">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse min-w-max">
                 <thead>
-                  <tr className="bg-blue-800 text-white text-xs sm:text-sm">
-                    <th className="p-3 border border-slate-600 text-center font-semibold">
+                  <tr className="bg-blue-800 text-white text-xs">
+                    <th className="py-1.5 px-2 border border-slate-600 text-center font-semibold">
                       JAM KE
                     </th>
-                    <th className="p-3 border border-slate-600 text-center font-semibold">
+                    <th className="py-1.5 px-2 border border-slate-600 text-center font-semibold">
                       WAKTU*
                     </th>
                     {days.map((day) => (
                       <th
                         key={day}
-                        className="p-3 border border-slate-600 text-center font-semibold"
+                        className="py-1.5 px-2 border border-slate-600 text-center font-semibold"
                       >
                         {day.toUpperCase()}
                       </th>
@@ -673,22 +689,17 @@ const TeacherSchedule = ({ user }) => {
                   {Object.entries(JAM_SCHEDULE.Selasa || {}).map(([period, time]) => (
                     <React.Fragment key={period}>
                       <tr className="hover:bg-slate-50 dark:hover:bg-gray-700/50 text-sm">
-                        <td className="p-2 border border-slate-300 dark:border-gray-600 text-center font-semibold bg-slate-100 dark:bg-gray-700 dark:text-gray-200">
+                        <td className="py-1 px-2 border border-slate-300 dark:border-gray-600 text-center font-semibold bg-slate-100 dark:bg-gray-700 dark:text-gray-200">
                           {period}
                         </td>
                         <td
-                          className={`p-2 border border-slate-300 dark:border-gray-600 text-center text-xs ${
+                          className={`py-1 px-2 border border-slate-300 dark:border-gray-600 text-center text-xs ${
                             period === "1"
                               ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
                               : "bg-slate-100 dark:bg-gray-700 dark:text-gray-200"
                           }`}
                         >
                           {time.start} - {time.end}
-                          {period === "1" && (
-                            <div className="text-[10px] mt-1 text-yellow-600">
-                              Senin: {JAM_SCHEDULE.Senin?.[1]?.start}-{JAM_SCHEDULE.Senin?.[1]?.end}
-                            </div>
-                          )}
                         </td>
                         {days.map((day) => {
                           // Check if this period exists for this day
@@ -697,7 +708,7 @@ const TeacherSchedule = ({ user }) => {
                           return (
                             <td
                               key={day}
-                              className={`p-2 border border-slate-300 text-center ${
+                              className={`py-1 px-2 border border-slate-300 text-center ${
                                 periodExists
                                   ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                   : "bg-gray-100 dark:bg-gray-800"
@@ -751,33 +762,36 @@ const TeacherSchedule = ({ user }) => {
                                       {scheduleGrid[day] && scheduleGrid[day][period] ? (
                                         <>
                                           <div className="flex items-center gap-1">
-                                            <span className="font-bold text-slate-800 dark:text-gray-100 text-base sm:text-xl">
+                                            <span className="font-bold text-slate-800 dark:text-gray-100 text-base sm:text-lg">
                                               {scheduleGrid[day][period].class_id}
                                             </span>
+                                            {scheduleGrid[day][period].source === "admin" && (
+                                              <Lock className="w-2.5 h-2.5 text-slate-400 dark:text-gray-500" />
+                                            )}
                                           </div>
-                                          <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                                          <div className="text-[11px] sm:text-xs leading-tight mt-0.5 text-blue-600 dark:text-blue-400 font-semibold">
                                             {JAM_SCHEDULE.Jumat[period]?.start}-
                                             {JAM_SCHEDULE.Jumat[period]?.end}
                                           </div>
                                           {period === "5" && (
-                                            <div className="text-[10px] mt-1 text-orange-600 dark:text-orange-400 font-bold">
-                                              🕛 ISTIRAHAT {JAM_SCHEDULE.Jumat[5]?.end}-
+                                            <div className="text-xs sm:text-sm leading-tight mt-0.5 text-orange-600 dark:text-orange-400 font-bold">
+                                              ISTIRAHAT {JAM_SCHEDULE.Jumat[5]?.end}-
                                               {JAM_SCHEDULE.Jumat[6]?.start}
                                             </div>
                                           )}
                                         </>
                                       ) : (
                                         <>
-                                          <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
+                                          <span className="text-slate-400 dark:text-gray-600 text-xs sm:text-sm">
                                             -
                                           </span>
-                                          <div className="text-[10px] mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                                          <div className="text-[11px] sm:text-xs leading-tight mt-0.5 text-blue-600 dark:text-blue-400 font-semibold">
                                             {JAM_SCHEDULE.Jumat[period]?.start}-
                                             {JAM_SCHEDULE.Jumat[period]?.end}
                                           </div>
                                           {period === "5" && (
-                                            <div className="text-[10px] mt-1 text-orange-600 dark:text-orange-400 font-bold">
-                                              🕛 ISTIRAHAT {JAM_SCHEDULE.Jumat[5]?.end}-
+                                            <div className="text-xs sm:text-sm leading-tight mt-0.5 text-orange-600 dark:text-orange-400 font-bold">
+                                              ISTIRAHAT {JAM_SCHEDULE.Jumat[5]?.end}-
                                               {JAM_SCHEDULE.Jumat[6]?.start}
                                             </div>
                                           )}
@@ -787,21 +801,24 @@ const TeacherSchedule = ({ user }) => {
                                   ) : scheduleGrid[day] && scheduleGrid[day][period] ? (
                                     <div className="flex flex-col items-center">
                                       <div className="flex items-center gap-1">
-                                        <span className="font-bold text-slate-800 dark:text-gray-100 text-base sm:text-xl">
+                                        <span className="font-bold text-slate-800 dark:text-gray-100 text-base sm:text-lg">
                                           {scheduleGrid[day][period].class_id}
                                         </span>
+                                        {scheduleGrid[day][period].source === "admin" && (
+                                          <Lock className="w-2.5 h-2.5 text-slate-400 dark:text-gray-500" />
+                                        )}
                                       </div>
                                     </div>
                                   ) : day === "Senin" && period === "1" ? (
-                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-sm sm:text-lg">
+                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-xs sm:text-sm">
                                       UPACARA
                                     </span>
                                   ) : day === "Kamis" && period === "4" ? (
-                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-xs sm:text-base text-center">
+                                    <span className="font-bold text-slate-800 dark:text-gray-100 text-[10px] sm:text-xs text-center">
                                       SHOLAT DHUHA
                                     </span>
                                   ) : (
-                                    <span className="text-slate-400 dark:text-gray-600 text-sm sm:text-lg">
+                                    <span className="text-slate-400 dark:text-gray-600 text-xs sm:text-sm">
                                       -
                                     </span>
                                   )}
@@ -813,65 +830,48 @@ const TeacherSchedule = ({ user }) => {
                       </tr>
 
                       {/* ISTIRAHAT */}
-                      {/* Istirahat setelah Jam 4 - KECUALI JUMAT */}
+                      {/* Istirahat setelah Jam 4 - KECUALI JUMAT. Format
+                          disamain sama Jadwal Aktif di Admin: kolom Jam
+                          kosong, kolom Waktu isi rentang jam, Senin-Kamis
+                          digabung 1 sel "ISTIRAHAT", Jumat dikosongin. */}
                       {period === "4" && (
                         <tr>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            ISTIRAHAT
-                          </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                          <td className="py-1 px-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800"></td>
+                          <td className="py-1 px-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs">
                             {time.end} - {JAM_SCHEDULE.Senin[5]?.start || "10:30"}
                           </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            🕛
+                          <td
+                            colSpan={4}
+                            className="py-1 px-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs"
+                          >
+                            ISTIRAHAT
                           </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            🕛
-                          </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            🕛
-                          </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            🕛
-                          </td>
-                          <td className="p-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-center text-slate-500 dark:text-gray-500 font-semibold text-xs sm:text-sm">
-                            -
-                          </td>
+                          <td className="py-1 px-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600"></td>
                         </tr>
                       )}
 
                       {/* Istirahat setelah Jam 7 - KECUALI JUMAT */}
                       {period === "7" && (
                         <tr>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            ISTIRAHAT
-                          </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
+                          <td className="py-1 px-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800"></td>
+                          <td className="py-1 px-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs">
                             {time.end} - {JAM_SCHEDULE.Senin[8]?.start || "13:00"}
                           </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            🕛
+                          <td
+                            colSpan={4}
+                            className="py-1 px-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs"
+                          >
+                            ISTIRAHAT
                           </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            🕛
-                          </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            🕛
-                          </td>
-                          <td className="p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-center text-orange-800 dark:text-orange-300 font-semibold text-xs sm:text-sm">
-                            🕛
-                          </td>
-                          <td className="p-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600 text-center text-slate-500 dark:text-gray-500 font-semibold text-xs sm:text-sm">
-                            -
-                          </td>
+                          <td className="py-1 px-2 bg-slate-100 dark:bg-gray-700 border border-slate-300 dark:border-gray-600"></td>
                         </tr>
                       )}
                     </React.Fragment>
                   ))}
                 </tbody>
               </table>
-              <div className="p-3 bg-slate-50 dark:bg-gray-800 border-t border-slate-200 dark:border-gray-700">
-                <p className="text-xs md:text-sm text-slate-600 dark:text-gray-400 text-center font-bold italic">
+              <div className="py-1.5 px-3 bg-slate-50 dark:bg-gray-800 border-t border-slate-200 dark:border-gray-700">
+                <p className="text-[10px] sm:text-xs text-slate-600 dark:text-gray-400 text-center font-bold italic">
                   *Waktu Mengikuti Jadwal Masing-Masing Hari. Senin & Jumat Memiliki Waktu Khusus.
                 </p>
               </div>
@@ -896,7 +896,9 @@ const TeacherSchedule = ({ user }) => {
               <div className="p-8 text-center text-slate-500 dark:text-gray-500">
                 <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-400 dark:text-gray-600" />
                 <p className="mb-2 dark:text-gray-400">Belum ada jadwal</p>
-                <p className="text-sm dark:text-gray-500">Klik "Tambah Jadwal" untuk memulai</p>
+                <p className="text-sm dark:text-gray-500">
+                  Buka tampilan Grid dan klik jam yang kosong untuk mengisi manual
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">

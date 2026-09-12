@@ -128,6 +128,7 @@ export default function AdminJadwalMassal() {
     loading,
     error,
     success,
+    JAM_SCHEDULE,
     sourceFileName,
     importing,
     fileInputRef,
@@ -386,6 +387,9 @@ export default function AdminJadwalMassal() {
                                   <th className="py-2 px-3 font-semibold text-xs whitespace-nowrap">
                                     Jam
                                   </th>
+                                  <th className="py-2 px-3 font-semibold text-xs whitespace-nowrap">
+                                    Waktu*
+                                  </th>
                                   {DAYS.map((day) => (
                                     <th
                                       key={day}
@@ -397,44 +401,105 @@ export default function AdminJadwalMassal() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {liveClassGridRows.map((period) => (
-                                  <tr
-                                    key={period}
-                                    className="border-b border-gray-50 last:border-0 align-top"
-                                  >
-                                    <td className="py-2.5 px-3 font-semibold text-theme text-xs whitespace-nowrap">
-                                      Jam {period}
-                                    </td>
-                                    {DAYS.map((day) => {
-                                      const item = liveClassGridCellMap.get(`${day}|${period}`);
-                                      return (
-                                        <td key={day} className="py-2 px-2 min-w-[130px]">
-                                          {item ? (
-                                            <div className="rounded-lg px-2 py-1 bg-theme-bg">
-                                              <p className="font-bold text-theme text-xs">
-                                                {item.subject}
-                                              </p>
-                                              <p className="text-[11px] text-theme-secondary mt-0.5">
-                                                {item.teacher_name}
-                                              </p>
-                                              <p className="text-[10px] text-blue-500 font-medium mt-0.5">
-                                                {item.start_time?.slice(0, 5)}–
-                                                {item.end_time?.slice(0, 5)}
-                                              </p>
-                                            </div>
-                                          ) : (
-                                            <span className="text-theme-secondary text-xs pl-2">
-                                              –
-                                            </span>
-                                          )}
+                                {liveClassGridRows.map((period) => {
+                                  // Waktu dipatok dari jadwal hari Selasa sebagai
+                                  // acuan umum (Senin & Jumat punya jam khusus
+                                  // sendiri), sama kayak kolom WAKTU* di tampilan
+                                  // Jadwal Mengajar Guru.
+                                  const baseTime = JAM_SCHEDULE?.Selasa?.[period];
+                                  return (
+                                    <React.Fragment key={period}>
+                                      <tr className="border-b border-gray-50 last:border-0 align-top">
+                                        <td className="py-2.5 px-3 font-semibold text-theme text-xs whitespace-nowrap">
+                                          Jam {period}
                                         </td>
-                                      );
-                                    })}
-                                  </tr>
-                                ))}
+                                        <td className="py-2.5 px-3 text-theme-secondary text-xs whitespace-nowrap">
+                                          {baseTime ? `${baseTime.start}–${baseTime.end}` : "–"}
+                                        </td>
+                                        {DAYS.map((day) => {
+                                          const item = liveClassGridCellMap.get(`${day}|${period}`);
+                                          // Jumat KBM-nya lebih pendek, istirahatnya
+                                          // cuma 1x dan posisinya setelah Jam ke-5
+                                          // (beda sama Senin-Kamis yang istirahat
+                                          // setelah Jam 4 & 7) -- catatannya
+                                          // ditempel langsung di sel Jumat jam
+                                          // ke-5 ini, bukan baris terpisah, biar
+                                          // gak nabrak sama baris ISTIRAHAT umum
+                                          // di bawah yang cuma berlaku Senin-Kamis.
+                                          const isJumatBreakCell =
+                                            day === "Jumat" && period === "5";
+                                          const jumatBreakEnd = JAM_SCHEDULE?.Jumat?.["5"]?.end;
+                                          const jumatBreakStart = JAM_SCHEDULE?.Jumat?.["6"]?.start;
+                                          return (
+                                            <td key={day} className="py-2 px-2 min-w-[130px]">
+                                              {item ? (
+                                                <div className="rounded-lg px-2 py-1 bg-theme-bg">
+                                                  <p className="font-bold text-theme text-xs">
+                                                    {item.subject}
+                                                  </p>
+                                                  <p className="text-[11px] text-theme-secondary mt-0.5">
+                                                    {item.teacher_name}
+                                                  </p>
+                                                </div>
+                                              ) : (
+                                                <span className="text-theme-secondary text-xs pl-2">
+                                                  –
+                                                </span>
+                                              )}
+                                              {isJumatBreakCell &&
+                                                jumatBreakEnd &&
+                                                jumatBreakStart && (
+                                                  <p className="text-xs text-orange-600 font-semibold mt-1 text-center">
+                                                    Istirahat {jumatBreakEnd}–{jumatBreakStart}
+                                                  </p>
+                                                )}
+                                            </td>
+                                          );
+                                        })}
+                                      </tr>
+
+                                      {/* Istirahat setelah Jam 4 & Jam 7 -- ini
+                                          cuma berlaku buat Senin-Kamis. Kolom
+                                          Jumat sengaja dikosongin di baris ini
+                                          karena istirahat Jumat udah ditempel
+                                          terpisah di sel Jam ke-5 Jumat (lihat
+                                          isJumatBreakCell di atas), soalnya
+                                          posisinya beda (setelah Jam 5, bukan
+                                          4/7). */}
+                                      {(period === "4" || period === "7") && (
+                                        <tr className="bg-orange-50 border-b border-orange-100">
+                                          <td className="py-1.5 px-3 whitespace-nowrap"></td>
+                                          <td className="py-1.5 px-3 text-center text-[11px] font-semibold text-orange-700 whitespace-nowrap">
+                                            {baseTime &&
+                                            JAM_SCHEDULE?.Selasa?.[String(Number(period) + 1)]
+                                              ? `${baseTime.end}–${
+                                                  JAM_SCHEDULE.Selasa[String(Number(period) + 1)]
+                                                    .start
+                                                }`
+                                              : ""}
+                                          </td>
+                                          {/* Digabung 1 sel buat Senin-Kamis (asumsi
+                                              Jumat selalu kolom terakhir di DAYS,
+                                              sesuai urutan header tabel di atas). */}
+                                          <td
+                                            colSpan={Math.max(DAYS.length - 1, 1)}
+                                            className="py-1.5 px-2 text-center text-[11px] font-semibold text-orange-600"
+                                          >
+                                            ISTIRAHAT
+                                          </td>
+                                          <td className="py-1.5 px-2"></td>
+                                        </tr>
+                                      )}
+                                    </React.Fragment>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>
+                          <p className="text-[10px] text-theme-secondary text-center italic px-3 py-2 border-t border-gray-100">
+                            *Waktu mengikuti jadwal masing-masing hari. Senin & Jumat punya jam
+                            khusus.
+                          </p>
                         </div>
                       )}
                     </div>

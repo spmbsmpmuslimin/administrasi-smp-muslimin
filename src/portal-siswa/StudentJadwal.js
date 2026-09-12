@@ -25,20 +25,14 @@ function getDefaultAcademicYear() {
 }
 
 export default function StudentJadwal() {
-  const {
-    student,
-    loading: profileLoading,
-    error: profileError,
-  } = useStudentProfile();
+  const { student, loading: profileLoading, error: profileError } = useStudentProfile();
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   // Kalau hari ini bukan hari sekolah (mis. Sabtu/Minggu), default balik
   // ke Senin biar gak nyangkut ke hari lain yang gak jelas asal-usulnya.
   const today = getDayName();
-  const [activeDay, setActiveDay] = useState(
-    SCHOOL_DAYS.includes(today) ? today : "Senin",
-  );
+  const [activeDay, setActiveDay] = useState(SCHOOL_DAYS.includes(today) ? today : "Senin");
 
   // Swipe buat pindah hari (geser kiri = hari berikutnya, geser kanan =
   // hari sebelumnya). Threshold 50px biar gak ke-trigger cuma karena
@@ -146,7 +140,8 @@ export default function StudentJadwal() {
               activeDay === day
                 ? "bg-blue-600 border-blue-600 text-white"
                 : "bg-theme-bg border-theme text-theme-secondary"
-            }`}>
+            }`}
+          >
             {day}
           </button>
         ))}
@@ -183,34 +178,53 @@ export default function StudentJadwal() {
                     // override manual kayak dulu (FRIDAY_TIMES).
                     const startTime = item.start_time;
                     const endTime = item.end_time;
+                    const nextItem = daySchedule[idx + 1];
 
-                    const ongoing =
-                      activeDay === getDayName() &&
-                      isOngoing(startTime, endTime);
+                    const ongoing = activeDay === getDayName() && isOngoing(startTime, endTime);
 
                     return (
-                      <tr
-                        key={item.id}
-                        className={`border-b border-gray-300 dark:border-gray-600 last:border-b-0 transition ${
-                          ongoing ? "bg-blue-50 dark:bg-blue-950/30" : ""
-                        }`}>
-                        <td className="text-sm font-medium text-theme px-4 py-1.5">
-                          {period}
-                        </td>
-                        <td className="text-base font-extrabold text-theme px-4 py-1.5 tabular-nums whitespace-nowrap">
-                          {startTime && endTime
-                            ? `${startTime.slice(0, 5)}–${endTime.slice(0, 5)}`
-                            : "-"}
-                        </td>
-                        <td className="px-4 py-1.5">
-                          <p className="text-sm font-medium text-theme">
-                            {item.subject}
-                          </p>
-                          <p className="text-xs text-blue-600 font-normal mt-0.5">
-                            {item.teacher_name || "-"}
-                          </p>
-                        </td>
-                      </tr>
+                      <React.Fragment key={item.id}>
+                        <tr
+                          className={`border-b border-gray-300 dark:border-gray-600 last:border-b-0 transition ${
+                            ongoing ? "bg-blue-50 dark:bg-blue-950/30" : ""
+                          }`}
+                        >
+                          <td className="text-sm font-medium text-theme px-4 py-1.5">{period}</td>
+                          <td className="text-base font-extrabold text-theme px-4 py-1.5 tabular-nums whitespace-nowrap">
+                            {startTime && endTime
+                              ? `${startTime.slice(0, 5)}–${endTime.slice(0, 5)}`
+                              : "-"}
+                          </td>
+                          <td className="px-4 py-1.5">
+                            <p className="text-sm font-medium text-theme">{item.subject}</p>
+                            <p className="text-xs text-blue-600 font-normal mt-0.5">
+                              {item.teacher_name || "-"}
+                            </p>
+                          </td>
+                        </tr>
+
+                        {/* Istirahat setelah Jam ke-4 & Jam ke-7 buat
+                            Senin-Kamis, tapi khusus Jumat cuma 1x istirahat
+                            dan posisinya setelah Jam ke-5 (KBM Jumat lebih
+                            pendek) -- samain sama tampilan Jadwal Mengajar
+                            Guru & Jadwal Aktif Admin. Waktunya diambil dari
+                            celah beneran antara jam ini & jam berikutnya
+                            di data yang sama (bukan patokan tetap).
+                        */}
+                        {((activeDay === "Jumat" && period === 5) ||
+                          (activeDay !== "Jumat" && (period === 4 || period === 7))) &&
+                          nextItem && (
+                            <tr className="bg-orange-50 dark:bg-orange-950/20 border-b border-orange-100 dark:border-orange-900/40">
+                              <td
+                                colSpan={3}
+                                className="text-center text-xs font-semibold text-orange-700 dark:text-orange-400 px-4 py-1.5"
+                              >
+                                🕛 ISTIRAHAT ({endTime?.slice(0, 5)}–
+                                {nextItem.start_time?.slice(0, 5)})
+                              </td>
+                            </tr>
+                          )}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>

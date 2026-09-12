@@ -25,6 +25,7 @@ import {
   setupPrintOptions,
   downloadWorkbook,
 } from "../utils/excelExportKit";
+import { isNationalHoliday } from "../services/nationalHolidays";
 
 const MyMonthlyHistory = ({ currentUser }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -50,26 +51,6 @@ const MyMonthlyHistory = ({ currentUser }) => {
   ];
 
   // ========================================
-  // 🗓️ LIBUR NASIONAL 2025
-  // ========================================
-  const nationalHolidays2025 = {
-    "2025-01-01": "Tahun Baru Masehi",
-    "2025-01-25": "Tahun Baru Imlek 2576",
-    "2025-03-02": "Isra Miraj Nabi Muhammad SAW",
-    "2025-03-12": "Hari Raya Nyepi (Tahun Baru Saka 1947)",
-    "2025-03-31": "Idul Fitri 1446 H",
-    "2025-04-01": "Idul Fitri 1446 H",
-    "2025-04-18": "Wafat Yesus Kristus (Jumat Agung)",
-    "2025-05-01": "Hari Buruh Internasional",
-    "2025-05-29": "Kenaikan Yesus Kristus",
-    "2025-06-07": "Idul Adha 1446 H",
-    "2025-06-28": "Tahun Baru Islam 1447 H",
-    "2025-08-17": "Hari Kemerdekaan RI",
-    "2025-09-05": "Maulid Nabi Muhammad SAW",
-    "2025-12-25": "Hari Raya Natal",
-  };
-
-  // ========================================
   // 🔧 HELPER FUNCTIONS
   // ========================================
 
@@ -84,10 +65,8 @@ const MyMonthlyHistory = ({ currentUser }) => {
     return methodMap[method] || method || "-";
   };
 
-  // Helper: Check if date is national holiday
-  const isNationalHoliday = (dateStr) => {
-    return nationalHolidays2025[dateStr] || null;
-  };
+  // isNationalHoliday sekarang diimport dari src/services/nationalHolidays.js
+  // (sumber tunggal, jangan hardcode di sini lagi)
 
   // Helper: Check if day is weekend (Saturday = 6, Sunday = 0)
   const isWeekend = (year, month, day) => {

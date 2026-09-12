@@ -11,6 +11,9 @@ import AttendanceStats from "./AttendanceStats";
 // ✅ IMPORT ACADEMIC YEAR SERVICE
 import { getActiveAcademicInfo, filterBySemester } from "../../services/academicYearService";
 
+// ✅ IMPORT LIBUR NASIONAL (otomatis nyesuain tahun ajaran aktif)
+import { getActiveYearHolidays } from "../../services/holidayService";
+
 // ✅ OFFLINE SUPPORT
 import offlineHelper from "../../utils/offlineHelper";
 
@@ -47,21 +50,6 @@ const isWeekend = (dateString) => {
   const date = parseDate(dateString);
   const dayOfWeek = date.getDay();
   return dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
-};
-
-// ✅ UTILITY: Get next weekday if selected date is weekend
-const getNextWeekday = (dateString) => {
-  let date = parseDate(dateString);
-
-  while (date.getDay() === 0 || date.getDay() === 6) {
-    date.setDate(date.getDate() + 1);
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
 };
 
 // ✅ REMINDER PRESENSI: Nama hari (Indonesia) sesuai kolom `day` di tabel teacher_schedules
@@ -163,25 +151,24 @@ const Attendance = ({ user, onShowToast }) => {
   const [unfinishedReminderClasses, setUnfinishedReminderClasses] = useState([]); // Array of { classId, subject }
   const [reminderChecked, setReminderChecked] = useState(false);
 
-  // ✅ WEEKEND VALIDATION: Auto-skip to next weekday if weekend selected
+  // ✅ LIBUR NASIONAL: dimuat sekali saat komponen mount, disaring otomatis
+  // sesuai rentang tahun ajaran aktif (lihat services/holidayService.js)
+  const [activeYearHolidays, setActiveYearHolidays] = useState({});
+  const [showBlockedDateModal, setShowBlockedDateModal] = useState(false);
+  const [blockedHolidayName, setBlockedHolidayName] = useState(null);
+
+  const getHolidayName = (dateString) => activeYearHolidays[dateString] || null;
+
+  useEffect(() => {
+    getActiveYearHolidays().then(setActiveYearHolidays);
+  }, []);
+
+  // ✅ PEMILIHAN TANGGAL: sekarang bebas dipilih (Sabtu/Minggu/libur nasional
+  // sudah didisable duluan di kalender AttendanceFilters). Pengecekan keras
+  // (block + popup) dilakukan di processAttendanceSubmission, persis kayak
+  // pola di presensi guru (ManualCheckIn.js) — bukan auto-skip lagi.
   const handleDateChange = (newDate) => {
-    if (isWeekend(newDate)) {
-      const nextWeekday = getNextWeekday(newDate);
-      console.log(`⚠️ Weekend detected (${newDate}), auto-skipping to ${nextWeekday}`);
-
-      if (onShowToast) {
-        const dateObj = parseDate(newDate);
-        const dayName = dateObj.getDay() === 0 ? "Minggu" : "Sabtu";
-        onShowToast(
-          `Hari ${dayName} bukan hari efektif. Auto-skip ke hari kerja berikutnya.`,
-          "warning"
-        );
-      }
-
-      setDate(nextWeekday);
-    } else {
-      setDate(newDate);
-    }
+    setDate(newDate);
   };
 
   // ========== UTILITY FUNCTIONS ==========
@@ -197,14 +184,9 @@ const Attendance = ({ user, onShowToast }) => {
 
   // ========== CORE HANDLERS ==========
 
-  // ✅ VALIDATE DEFAULT DATE: Skip weekend on mount
-  useEffect(() => {
-    if (date && isWeekend(date)) {
-      const nextWeekday = getNextWeekday(date);
-      console.log(`⚠️ Initial date is weekend (${date}), auto-skipping to ${nextWeekday}`);
-      setDate(nextWeekday);
-    }
-  }, []); // Only run on mount
+  // ✅ Catatan: dulu ada auto-skip weekend pas mount di sini. Sekarang
+  // ngga lagi — biar konsisten sama pola presensi guru, tanggal default
+  // dibiarkan apa adanya, block cuma terjadi pas coba Simpan.
 
   // ✅ OFFLINE INITIALIZATION
   useEffect(() => {
@@ -1196,6 +1178,15 @@ const Attendance = ({ user, onShowToast }) => {
   };
 
   const processAttendanceSubmission = async () => {
+    // ✅ VALIDASI HARI AKTIF (SENIN-JUMAT, BUKAN LIBUR NASIONAL)
+    // Sama persis polanya kayak ManualCheckIn.js di presensi guru
+    const holidayName = getHolidayName(date);
+    if (isWeekend(date) || holidayName) {
+      setBlockedHolidayName(holidayName);
+      setShowBlockedDateModal(true);
+      return;
+    }
+
     const dateValidation = validateDate();
     if (!dateValidation.valid) {
       if (onShowToast) {
@@ -1577,6 +1568,7 @@ const Attendance = ({ user, onShowToast }) => {
         onSemesterChange={handleSemesterChange}
         isReadOnlyMode={isReadOnlyMode}
         teacherAssignment={teacherAssignment}
+        activeYearHolidays={activeYearHolidays}
       />
 
       {/* Conditional Rendering */}
@@ -1733,6 +1725,37 @@ const Attendance = ({ user, onShowToast }) => {
       {!selectedSubject && (
         <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 text-center transition-colors duration-200">
           <div className="text-5xl mb-4 text-slate-300 dark:text-slate-600">📚</div>
+        </div>
+      )}
+
+      {/* 🚫 MODAL: TANGGAL LIBUR (SABTU/MINGGU ATAU LIBUR NASIONAL) */}
+      {showBlockedDateModal && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🚫</span>
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                Tidak Bisa Input Presensi
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                {blockedHolidayName
+                  ? `Tanggal yang dipilih adalah libur nasional: ${blockedHolidayName}.`
+                  : "Tanggal yang dipilih jatuh pada hari Sabtu/Minggu (hari libur)."}{" "}
+                Sekolah aktif Senin - Jumat.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowBlockedDateModal(false);
+                setBlockedHolidayName(null);
+              }}
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-semibold transition-all"
+            >
+              Mengerti
+            </button>
+          </div>
         </div>
       )}
 
