@@ -22,6 +22,7 @@
 // ========================================================================
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicYear } from "../services/academicYearService";
 import { Network } from "lucide-react";
 
 export default function StudentOrganigram({ student }) {
@@ -46,12 +47,8 @@ export default function StudentOrganigram({ student }) {
       setLoading(true);
       setError(null);
       try {
-        const { data: activeYear, error: yearError } = await supabase
-          .from("academic_years")
-          .select("year")
-          .eq("is_active", true)
-          .single();
-        if (yearError) throw yearError;
+        const activeYear = await getActiveAcademicYear();
+        if (!activeYear) throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
         if (cancelled) return;
         setAcademicYear(activeYear.year);
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicYear } from "../services/academicYearService";
 import { exportToExcel, exportToPDF } from "./CatatanSiswaExport";
 import {
   Plus,
@@ -887,22 +888,18 @@ const CatatanSiswa = ({ user, onShowToast }) => {
       // di-set duluan, loadDashboardData() akan jalan pakai nilai default state
       // ("2025/2026" / "Ganjil") yang salah, bukan tahun ajaran aktif yang sebenarnya
       // dari database — akibatnya RPC tidak menemukan siswa manapun (dropdown kosong).
-      const { data: activeYear, error: yearError } = await supabase
-        .from("academic_years")
-        .select("year, semester")
-        .eq("is_active", true)
-        .single();
+      const activeYear = await getActiveAcademicYear();
 
-      if (yearError) {
+      if (!activeYear) {
         console.warn("⚠️ No active academic year found, using default");
-      } else if (activeYear) {
+      } else {
         console.log("📅 Active academic year:", activeYear);
         setAcademicYear(activeYear.year);
-        // FIX: pakai == bukan === karena activeYear.semester dari Supabase
+        // FIX: pakai == bukan === karena activeSemester dari Supabase
         // bisa balik sebagai string ("1") atau number (1) tergantung tipe kolom.
         // Strict equality (===) bikin ini gagal match kalau ternyata string,
         // dan semester diam-diam ke-set jadi "Genap" walau sebenarnya "Ganjil".
-        setSemester(String(activeYear.semester) === "1" ? "Ganjil" : "Genap");
+        setSemester(String(activeYear.activeSemester) === "1" ? "Ganjil" : "Genap");
       }
 
       // FIX: Untuk admin, biarkan currentClass = null (lihat semua kelas)

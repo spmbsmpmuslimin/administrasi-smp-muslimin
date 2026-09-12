@@ -47,6 +47,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "../../supabaseClient";
+import { getAllAcademicYears } from "../../services/academicYearService";
 import { Search, GraduationCap, Loader2, X, Eye, Pencil, Save, XCircle } from "lucide-react";
 
 function formatTanggal(dateStr) {
@@ -575,10 +576,9 @@ const SiswaLulusTab = () => {
   // (mis. 2027/2028) sudah siap tampil duluan walau siswanya belum lulus.
   const loadAcademicYears = async () => {
     try {
-      const { data, error } = await supabase
-        .from("academic_years")
-        .select("id, year, semester, start_date");
-      if (error) throw error;
+      // ✅ Diambil lewat academicYearService (bukan query langsung) biar
+      // konsisten sama tempat lain yang baca academic_years.
+      const data = await getAllAcademicYears();
       setAcademicYears(data || []);
     } catch (err) {
       console.error("Error loading academic_years:", err);

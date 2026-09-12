@@ -37,6 +37,7 @@ import { supabase } from "../../supabaseClient";
 import { exportStudentProfilePDF } from "./DataSiswaIndukPDF";
 import { exportStudentProfileExcel } from "./DataSiswaIndukExcel";
 import { getCompletionStatus, resolveCompletion } from "../../utils/studentProfileCompletion";
+import { getActiveYearString } from "../../services/academicYearService";
 // ✅ SPLIT (lihat DataSiswaIndukConfig.js): semua konstanta & helper murni
 // (STATUS_META, DETAIL_ROWS, opsi dropdown, ADMIN_EDIT_FIELDS, dll) udah
 // dipindah ke file terpisah supaya bisa di-share juga sama
@@ -162,7 +163,7 @@ export default function KelengkapanDataSiswa({ currentUser }) {
         const [
           { data: students, error: studentErr },
           { data: details, error: detailErr },
-          { data: activeYear },
+          activeYearString,
         ] = await Promise.all([
           studentQuery,
           supabase
@@ -186,13 +187,15 @@ export default function KelengkapanDataSiswa({ currentUser }) {
             .select(
               "student_id, jenis_kelamin, tempat_lahir, tanggal_lahir, nisn, nik, no_kk, no_akta_lahir, agama, anak_ke, sekolah_asal, no_peserta_ujian, no_ijazah, no_kip, no_daftar, alamat, kode_pos, no_hp, no_hp_ortu, nama_ayah, nik_ayah, tempat_tgl_lahir_ayah, pekerjaan_ayah, pendidikan_ayah, nama_ibu, nik_ibu, tempat_tgl_lahir_ibu, pekerjaan_ibu, pendidikan_ibu, keterangan, updated_at, verified_at"
             ),
-          supabase.from("academic_years").select("year").eq("is_active", true).limit(1),
+          // ✅ Diambil lewat academicYearService (bukan query langsung) biar
+          // ikut sinkron kalau logic "tahun aktif" berubah di masa depan.
+          getActiveYearString(),
         ]);
 
         if (studentErr) throw studentErr;
         if (detailErr) throw detailErr;
 
-        setAcademicYear(activeYear?.[0]?.year || null);
+        setAcademicYear(activeYearString || null);
 
         const detailMap = {};
         (details || []).forEach((d) => {

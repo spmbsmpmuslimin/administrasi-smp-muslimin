@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { getAllSemestersInYear } from "../services/academicYearService";
 import { Printer, Download, RefreshCw } from "lucide-react";
 
 // ✅ URUTAN MAPEL STANDAR
@@ -177,16 +178,16 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
 
       if (siswaError) throw new Error("Siswa tidak ditemukan atau tidak aktif");
 
-      // ✅ Cari semester ID yang sesuai dengan year + semester yang dipilih user
-      const { data: correctSemester, error: semesterError } = await supabase
-        .from("academic_years")
-        .select("id")
-        .eq("year", academicYear?.year || "2025/2026")
-        .eq("semester", parseInt(semester))
-        .single();
+      // ✅ Cari semester ID yang sesuai dengan year + semester yang dipilih
+      // user, lewat academicYearService (bukan query langsung) biar
+      // konsisten sama cara lain di app nge-resolve baris academic_years.
+      const targetYear = academicYear?.year || "2025/2026";
+      const targetSemester = parseInt(semester);
+      const semestersInYear = await getAllSemestersInYear(targetYear);
+      const correctSemester = semestersInYear.find((s) => s.semester === targetSemester);
 
-      if (semesterError) {
-        console.error("❌ Error finding semester:", semesterError);
+      if (!correctSemester) {
+        console.error("❌ Semester tidak ditemukan:", { targetYear, targetSemester });
         throw new Error("Semester tidak ditemukan untuk tahun dan semester yang dipilih");
       }
 

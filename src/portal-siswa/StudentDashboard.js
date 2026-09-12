@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicYear } from "../services/academicYearService";
 import useStudentProfile from "./useStudentProfile";
 import { DAY_NAMES, getDayName, getStatusMeta, isOngoing } from "./StudentHelpers";
 import { ANNOUNCEMENTS_TABLE } from "../constants";
@@ -195,15 +196,13 @@ export default function StudentDashboard({ onPageChange }) {
           // dibungkus IIFE async biar tetep jalan paralel di Promise.all.
           (async () => {
             try {
-              const { data: activeYear, error: yearErr } = await supabase
-                .from("academic_years")
-                .select("year, semester")
-                .eq("is_active", true)
-                .single();
-              if (yearErr) return { data: null, error: yearErr };
+              const activeYear = await getActiveAcademicYear();
+              if (!activeYear) {
+                return { data: null, error: new Error("Tidak ada tahun ajaran aktif ditemukan.") };
+              }
 
               const yearStr = activeYear.year;
-              const semesterStr = Number(activeYear.semester) === 1 ? "ganjil" : "genap";
+              const semesterStr = Number(activeYear.activeSemester) === 1 ? "ganjil" : "genap";
 
               const { data: chart, error: chartErr } = await supabase
                 .from("duty_schedules")

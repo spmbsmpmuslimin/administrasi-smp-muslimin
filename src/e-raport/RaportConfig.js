@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import {
+  getAllAcademicYears,
+  getActiveAcademicYear,
+} from "../services/academicYearService";
+import {
   CheckCircle,
   XCircle,
   Save,
@@ -94,18 +98,17 @@ export default function RaportConfig({ user, showToast, darkMode }) {
 
       if (settings) setEraportSettings(settings);
 
-      // Fetch Academic Years
-      const { data: ayData } = await supabase
-        .from("academic_years")
-        .select("*")
-        .order("year", { ascending: false });
+      // Ambil semua tahun ajaran buat dropdown, lewat academicYearService.
+      const ayData = await getAllAcademicYears();
+      setAcademicYears(ayData);
 
-      setAcademicYears(ayData || []);
-
-      const activeYear = ayData?.find((y) => y.is_active);
+      // Default pilihan ke semester yang lagi aktif (lewat service, biar
+      // auto-fix duplikat is_active & aturan "mana yang aktif" konsisten
+      // sama seluruh app, bukan .find() manual per file).
+      const activeYear = await getActiveAcademicYear();
       if (activeYear) {
-        setSelectedAcademicYear(activeYear.id);
-        setSelectedSemester(activeYear.semester);
+        setSelectedAcademicYear(activeYear.activeSemesterId);
+        setSelectedSemester(activeYear.activeSemester);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -149,14 +152,16 @@ export default function RaportConfig({ user, showToast, darkMode }) {
   // ==================== FUNGSI KKM JENJANG (dari KKMConfig.js) ====================
   const loadAcademicYear = async () => {
     try {
-      const { data, error } = await supabase
-        .from("academic_years")
-        .select("*")
-        .eq("is_active", true)
-        .single();
+      const activeYear = await getActiveAcademicYear();
+      if (!activeYear) throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
 
-      if (error) throw error;
-      setAcademicYear(data);
+      // Bentuk objeknya disamain kayak row academic_years asli (id/year/
+      // semester) karena academicYear.id dipakai di query KKM di bawah.
+      setAcademicYear({
+        id: activeYear.activeSemesterId,
+        year: activeYear.year,
+        semester: activeYear.activeSemester,
+      });
     } catch (error) {
       console.error("Error loading academic year:", error);
       showToast("Gagal memuat tahun ajaran", "error");

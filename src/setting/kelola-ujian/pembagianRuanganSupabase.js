@@ -1,4 +1,5 @@
 import { bagiRuangan } from "./bagiRuangan";
+import { getAllAcademicYears } from "../../services/academicYearService";
 
 /**
  * Konfigurasi per jenis ujian: jenjang (grade) mana yang ikut, dan
@@ -15,19 +16,16 @@ const KONFIGURASI_JENIS_UJIAN = {
 };
 
 /**
- * Ambil daftar tahun ajaran dari tabel academic_years.
- * Sengaja select("*") karena kita belum pasti nama kolom label-nya
- * (bisa "year", "tahun_ajaran", "name", dll) -- jadi ambil semua kolom,
- * baru di sisi komponen UI kita cari kolom mana yang enak ditampilkan.
+ * Ambil daftar tahun ajaran, lewat academicYearService (bukan query
+ * langsung ke academic_years) biar konsisten & ikut sinkron kalau logic
+ * academic_years berubah di masa depan. select("*") sebelumnya udah
+ * dipenuhi oleh getAllAcademicYears() (return semua kolom juga).
+ * Urutan berubah dari `created_at DESC` jadi `year DESC, semester ASC`
+ * (default academicYearService) -- lebih masuk akal buat dropdown tahun
+ * ajaran, tapi tandain di sini kalau-kalau ada yang gantungin urutan lama.
  */
-async function ambilDaftarTahunAjaran(supabase) {
-  const { data, error } = await supabase
-    .from("academic_years")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+async function ambilDaftarTahunAjaran() {
+  return getAllAcademicYears();
 }
 
 /**

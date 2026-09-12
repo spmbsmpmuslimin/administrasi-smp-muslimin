@@ -5,6 +5,7 @@ import AttendanceModals from "./AttendanceModals";
 import { exportAttendanceToExcel, exportSemesterRecapFromComponent } from "./AttendanceExcel";
 import { exportStudentAttendancePDF } from "./AttendancePDF";
 import { supabase } from "../../supabaseClient";
+import { getAllAcademicYears, getActiveSemesterId } from "../../services/academicYearService";
 
 const AttendanceMain = ({ user, onShowToast, darkMode }) => {
   const [activeTab, setActiveTab] = useState("input");
@@ -100,24 +101,23 @@ const AttendanceMain = ({ user, onShowToast, darkMode }) => {
       try {
         console.log("🔍 Fetching academic years...");
 
-        const { data, error } = await supabase
-          .from("academic_years")
-          .select("*")
-          .order("year", { ascending: true })
-          .order("semester", { ascending: true });
-
-        if (error) {
-          console.error("❌ Supabase error:", error);
-          throw error;
-        }
+        // ✅ Diambil lewat academicYearService (bukan query langsung) biar
+        // ikut sinkron kalau logic "tahun aktif" berubah di masa depan.
+        // Service ini order-nya year DESC + semester ASC, jadi di-sort
+        // ulang di sini biar urutan dropdown tetap year ASC + semester ASC
+        // kayak sebelumnya (bukan sekadar di-reverse, biar semester dalam
+        // 1 tahun gak ikut kebalik).
+        const data = [...(await getAllAcademicYears())].sort(
+          (a, b) => a.year.localeCompare(b.year) || a.semester - b.semester
+        );
 
         console.log("✅ Academic years fetched:", data);
 
         setAcademicYears(data || []);
         if (data && data.length > 0) {
-          const activeYear = data.find((y) => y.is_active) || data[0];
-          console.log("📌 Selected academic year:", activeYear);
-          setSelectedAcademicYear(activeYear.id);
+          const activeSemesterId = await getActiveSemesterId();
+          console.log("📌 Selected academic year id:", activeSemesterId);
+          setSelectedAcademicYear(activeSemesterId || data[0].id);
         } else {
           console.warn("⚠️ No academic years found");
         }

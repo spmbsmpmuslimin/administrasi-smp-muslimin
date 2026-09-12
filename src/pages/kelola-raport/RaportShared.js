@@ -25,6 +25,7 @@
 import React, { useState, useEffect } from "react";
 import { Check, AlertTriangle, X, FileEdit, Globe, AlertCircle, Search } from "lucide-react";
 import { supabase } from "../../supabaseClient";
+import { getAllAcademicYears } from "../../services/academicYearService";
 
 // ============================================================
 // StatusBadge
@@ -335,11 +336,12 @@ export function useAcademicYears(showToast) {
     const load = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("academic_years")
-          .select("year")
-          .order("year", { ascending: false });
-        if (error) throw error;
+        // ✅ Diambil lewat academicYearService (bukan query langsung) biar
+        // konsisten sama tempat lain yang baca academic_years. Service-nya
+        // return semua baris (per year+semester), jadi di-dedupe ke unique
+        // year di sini -- urutannya udah year DESC dari service, sama
+        // kayak `.order("year", { ascending: false })` yang lama.
+        const data = await getAllAcademicYears();
         if (mounted) setYears(Array.from(new Set((data || []).map((r) => r.year))));
       } catch (err) {
         console.error("[useAcademicYears] Gagal ambil daftar tahun ajaran:", err);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicYear } from "../services/academicYearService";
 import { Plus, Search, Edit3, Trash2, Eye, Users, Clock, CheckCircle, XCircle } from "lucide-react";
 import StatsCards from "./StatsCards";
 import FilterBar from "./FilterBar";
@@ -86,20 +87,16 @@ const Konseling = ({ user, onShowToast }) => {
       // Ini dijalankan PALING DULU, sebelum loadClasses() dipanggil, biar
       // filter academic_year di loadClasses selalu pakai nilai yang benar
       // dan otomatis ikut berubah kalau tahun ajaran aktif di database diganti.
-      const { data: activeYear, error: yearError } = await supabase
-        .from("academic_years")
-        .select("year, semester")
-        .eq("is_active", true)
-        .single();
+      const activeYear = await getActiveAcademicYear();
 
-      let currentYear = "2025/2026"; // fallback kalau query gagal
+      let currentYear = "2025/2026"; // fallback kalau belum ada tahun aktif
       let currentSemester = "1";
 
-      if (yearError) {
-        console.warn("⚠️ Gagal mengambil tahun ajaran aktif, pakai fallback:", yearError);
-      } else if (activeYear) {
+      if (!activeYear) {
+        console.warn("⚠️ Gagal mengambil tahun ajaran aktif, pakai fallback");
+      } else {
         currentYear = activeYear.year;
-        currentSemester = String(activeYear.semester);
+        currentSemester = String(activeYear.activeSemester);
       }
 
       setAcademicYear(currentYear);

@@ -21,6 +21,7 @@
 // ========================================================================
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicYear } from "../services/academicYearService";
 import { LayoutGrid, User } from "lucide-react";
 
 export default function StudentDenahDuduk({ student }) {
@@ -50,15 +51,11 @@ export default function StudentDenahDuduk({ student }) {
       setLoading(true);
       setError(null);
       try {
-        const { data: activeYear, error: yearError } = await supabase
-          .from("academic_years")
-          .select("year, semester")
-          .eq("is_active", true)
-          .single();
-        if (yearError) throw yearError;
+        const activeYear = await getActiveAcademicYear();
+        if (!activeYear) throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
 
         const yearStr = activeYear.year;
-        const semesterStr = Number(activeYear.semester) === 1 ? "ganjil" : "genap";
+        const semesterStr = Number(activeYear.activeSemester) === 1 ? "ganjil" : "genap";
         if (cancelled) return;
         setAcademicYear(yearStr);
 

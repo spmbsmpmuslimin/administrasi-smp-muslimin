@@ -1,6 +1,7 @@
 // UserManagementTab.js - FULL User Management dengan Fitur Wali Kelas ✅
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveYearString } from "../services/academicYearService";
 import AuditLogPanel from "./AuditLogPanel";
 import {
   Users,
@@ -130,12 +131,9 @@ const UserManagementTab = ({ user: currentUser, showToast, loading, setLoading }
   // ✅ FUNGSI BARU: Load Available Classes untuk Wali Kelas
   const loadAvailableClasses = useCallback(async () => {
     try {
-      // Get active academic year first
-      const { data: activeYear } = await supabase
-        .from("academic_years")
-        .select("year")
-        .eq("is_active", true)
-        .maybeSingle();
+      // ✅ Diambil lewat academicYearService (bukan query langsung) biar
+      // ikut sinkron kalau logic "tahun aktif" berubah di masa depan.
+      const activeYear = await getActiveYearString();
 
       if (!activeYear) {
         console.warn("No active academic year found");
@@ -146,7 +144,7 @@ const UserManagementTab = ({ user: currentUser, showToast, loading, setLoading }
       const { data: classesData, error } = await supabase
         .from("classes")
         .select("id, grade, academic_year")
-        .eq("academic_year", activeYear.year)
+        .eq("academic_year", activeYear)
         .order("grade")
         .order("id");
 

@@ -19,6 +19,7 @@
 //     JAM_SCHEDULE). Disiapin buat UI masa depan yang mau nampilin
 //     jeda istirahat di grid (mis. halaman "Kelola Jam Pelajaran").
 import { supabase } from "../supabaseClient";
+import { getActiveSemesterId } from "./academicYearService";
 
 export async function fetchJamPelajaran(academicYearId) {
   if (!academicYearId) {
@@ -54,20 +55,19 @@ export async function fetchJamPelajaran(academicYearId) {
   return { JAM_SCHEDULE, BREAK_SCHEDULE };
 }
 
-// Resolve academic_year_id dari academic_years yang is_active = true.
-// Dipakai JamPelajaranProvider kalau gak dikasih academicYearId eksplisit
-// lewat prop, biar provider bisa langsung dipasang tanpa perlu tau
-// gimana academicYearService.js nyimpen active year di tempat lain.
+// Resolve academic_year_id yang lagi aktif. Dipakai JamPelajaranProvider
+// kalau gak dikasih academicYearId eksplisit lewat prop, biar provider
+// bisa langsung dipasang tanpa perlu tau gimana academicYearService.js
+// nyimpen/nentuin active year di tempat lain -- provider cuma tau
+// "jamPelajaranService bisa resolve active year id", bukan detail
+// implementasinya. Makanya function ini dipertahankan sebagai wrapper
+// di sini (bukan JamPelajaranProvider import academicYearService
+// langsung), tapi implementasinya sendiri didelegasikan ke
+// academicYearService.getActiveSemesterId() biar gak duplikat query
+// `is_active` + gak ketinggalan kalau logic auto-fix/fallback-nya
+// (lihat getActiveAcademicYear()) berubah di masa depan.
 export async function fetchActiveAcademicYearId() {
-  const { data, error } = await supabase
-    .from("academic_years")
-    .select("id")
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data?.id ?? null;
+  return getActiveSemesterId();
 }
 
 // ========================================

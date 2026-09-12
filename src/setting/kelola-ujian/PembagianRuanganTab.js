@@ -61,7 +61,7 @@ const PembagianRuanganTab = ({ showToast, onBack }) => {
   useEffect(() => {
     (async () => {
       try {
-        const data = await ambilDaftarTahunAjaran(supabase);
+        const data = await ambilDaftarTahunAjaran();
         setDaftarTahunAjaran(data);
       } catch (err) {
         console.error(err);

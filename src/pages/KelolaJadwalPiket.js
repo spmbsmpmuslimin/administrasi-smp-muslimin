@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicYear } from "../services/academicYearService";
 import ExcelJS from "exceljs";
 import {
   ClipboardCheck,
@@ -86,17 +87,14 @@ export default function DutySchedule({ currentUser }) {
     setLoading(true);
     setError(null);
     try {
-      // 1. Ambil tahun ajaran aktif
-      const { data: activeYear, error: yearError } = await supabase
-        .from("academic_years")
-        .select("year, semester")
-        .eq("is_active", true)
-        .single();
-
-      if (yearError) throw yearError;
+      // 1. Ambil tahun ajaran aktif (lewat academicYearService, bukan query
+      // manual, biar auto-fix duplikat is_active & fallback-nya konsisten
+      // sama halaman lain).
+      const activeYear = await getActiveAcademicYear();
+      if (!activeYear) throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
 
       const yearStr = activeYear.year;
-      const semesterStr = Number(activeYear.semester) === 1 ? "ganjil" : "genap";
+      const semesterStr = Number(activeYear.activeSemester) === 1 ? "ganjil" : "genap";
       setAcademicYear(yearStr);
       setSemester(semesterStr);
 

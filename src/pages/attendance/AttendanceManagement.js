@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
+import {
+  getAllAcademicYears,
+  getActiveAcademicYear,
+} from "../../services/academicYearService";
 
 const AttendanceManagement = ({ user, onShowToast }) => {
   const [classes, setClasses] = useState([]);
@@ -132,13 +136,12 @@ const AttendanceManagement = ({ user, onShowToast }) => {
   useEffect(() => {
     const fetchAcademicData = async () => {
       try {
-        const { data: academicData, error } = await supabase
-          .from("academic_years")
-          .select("year, semester")
-          .order("year", { ascending: false })
-          .order("semester", { ascending: false });
-
-        if (error) throw error;
+        // Ambil semua tahun ajaran buat dropdown filter, lewat
+        // academicYearService. Catatan: urutan semester dalam 1 tahun yang
+        // sama ikut aturan service (semester ASCENDING), beda dikit dari
+        // query lama di sini yang descending -- kalau urutan dropdown-nya
+        // kebalik dari sebelumnya, ini penyebabnya.
+        const academicData = await getAllAcademicYears();
 
         if (academicData && academicData.length > 0) {
           const uniqueSemesters = academicData.map((item) => ({
@@ -149,14 +152,10 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           setSemesters(uniqueSemesters);
 
           // Set default to current active semester
-          const { data: activeYear } = await supabase
-            .from("academic_years")
-            .select("year, semester")
-            .eq("is_active", true)
-            .single();
+          const activeYear = await getActiveAcademicYear();
 
           if (activeYear) {
-            const activeSemester = `${activeYear.year}-${activeYear.semester}`;
+            const activeSemester = `${activeYear.year}-${activeYear.activeSemester}`;
             setSelectedSemester(activeSemester);
             setAcademicYear(activeYear.year);
           }

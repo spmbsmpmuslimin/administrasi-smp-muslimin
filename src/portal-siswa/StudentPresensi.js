@@ -7,6 +7,11 @@ import { formatDateShort, getStatusMeta } from "./StudentHelpers";
 // Reuse langsung generator PDF yang dipake sisi guru, biar hasil export
 // "persis" sama formatnya se-aplikasi (bukan duplikat logic jsPDF di sini).
 import { exportStudentAttendancePDF } from "../pages/attendance/AttendancePDF";
+import {
+  getActiveAcademicInfo,
+  getCurrentAcademicYearFallback,
+  parseAcademicYearString,
+} from "../services/academicYearService";
 import { Download, AlertTriangle, FileText, Sparkles, ThumbsUp, ChevronDown } from "lucide-react";
 
 const MONTH_NAMES = [
@@ -67,21 +72,6 @@ const ATTENDANCE_TIERS = [
   },
 ];
 
-// Tahun ajaran berjalan dihitung otomatis dari tanggal hari ini.
-// Juli-Desember -> startYear = tahun berjalan.
-// Januari-Juni  -> startYear = tahun berjalan - 1 (masih tahun ajaran lama).
-function getCurrentAcademicYear() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth() + 1;
-  const startYear = m >= 7 ? y : y - 1;
-  return {
-    startYear,
-    endYear: startYear + 1,
-    label: `${startYear}/${startYear + 1}`,
-  };
-}
-
 // Daftar 12 bulan dalam satu tahun ajaran, lengkap sama tahun kalender &
 // semester masing-masing (buat dipake di dropdown "Bulanan").
 function getAcademicMonthOptions(startYear) {
@@ -111,7 +101,46 @@ export default function StudentPresensi() {
   // defaultSemester udah kehitung (lihat bawah).
   const [historyFilterMode, setHistoryFilterMode] = useState("bulan"); // "bulan" | "semester"
 
-  const academicYear = useMemo(() => getCurrentAcademicYear(), []);
+  // ✅ Nilai awal cuma FALLBACK (tebakan dari tanggal hari ini) -- dipakai
+  // sebentar sebelum koreksi dari DB kelar (lihat useEffect di bawah).
+  // Fallback-nya sendiri manggil getCurrentAcademicYearFallback() dari
+  // academicYearService (bukan reimplement logic kalender di sini) biar
+  // satu sumber kebenaran sama tempat lain yang butuh fallback serupa.
+  const [academicYear, setAcademicYear] = useState(() => {
+    const parsed = parseAcademicYearString(getCurrentAcademicYearFallback());
+    return {
+      startYear: parsed.startYear,
+      endYear: parsed.endYear,
+      label: `${parsed.startYear}/${parsed.endYear}`,
+    };
+  });
+
+  // ✅ Koreksi ke tahun ajaran yang BENERAN aktif di DB (lewat
+  // academicYearService), bukan cuma tebakan kalender. Kalau transisi
+  // tahun ajaran sekolah nggak pas tanggal 1 Juli (mis. diundur manual
+  // lewat menu Transisi Tahun Ajaran), nilai ini yang akhirnya dipakai --
+  // fallback di atas cuma buat first render / kalau memang belum ada
+  // tahun ajaran aktif ke-set di DB sama sekali.
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const info = await getActiveAcademicInfo();
+      if (!mounted || !info?.isActive) return;
+
+      const parsed = parseAcademicYearString(info.year);
+      if (!parsed) return;
+
+      setAcademicYear({
+        startYear: parsed.startYear,
+        endYear: parsed.endYear,
+        label: info.year,
+      });
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const monthOptions = useMemo(
     () => getAcademicMonthOptions(academicYear.startYear),
     [academicYear]

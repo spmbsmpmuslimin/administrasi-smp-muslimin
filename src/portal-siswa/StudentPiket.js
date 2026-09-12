@@ -14,6 +14,7 @@
 // muncul di portal siswa.
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicYear } from "../services/academicYearService";
 import { DAY_NAMES, getDayName } from "./StudentHelpers";
 
 // Ikutin jadwal KBM: Senin-Jumat (samain sama SCHOOL_DAYS di StudentJadwal.js)
@@ -60,19 +61,15 @@ export default function StudentPiket({ student }) {
       setLoading(true);
       setError(null);
       try {
-        // 1. Ambil tahun ajaran + semester yang lagi aktif (sama kayak
-        // yang dipakai JadwalPiket.js di sisi Walikelas).
-        const { data: activeYear, error: yearError } = await supabase
-          .from("academic_years")
-          .select("year, semester")
-          .eq("is_active", true)
-          .single();
-
-        if (yearError) throw yearError;
+        // 1. Ambil tahun ajaran + semester yang lagi aktif (lewat
+        // academicYearService, sama kayak yang dipakai JadwalPiket.js di
+        // sisi Walikelas).
+        const activeYear = await getActiveAcademicYear();
+        if (!activeYear) throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
 
         const yearStr = activeYear.year;
         const semesterStr =
-          Number(activeYear.semester) === 1 ? "ganjil" : "genap";
+          Number(activeYear.activeSemester) === 1 ? "ganjil" : "genap";
 
         // 2. Ambil jadwal piket kelas ini untuk tahun ajaran & semester
         // yang aktif. layout jsonb-nya bentuknya { "Senin": [student_id, ...], ... }.

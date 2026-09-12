@@ -1,5 +1,6 @@
 // src/pages/DataExcel.js
 import ExcelJS from "exceljs";
+import { getActiveYearString, getCurrentAcademicYearFallback } from "../services/academicYearService";
 import {
   SCHOOL_NAME,
   EXCEL_COLORS,
@@ -14,17 +15,13 @@ import {
 } from "../utils/excelExportKit";
 
 export class DataExcel {
-  // Helper untuk mendapatkan tahun ajaran aktif
-  static getTahunAjaranAktif() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-
-    if (month >= 7) {
-      return `${year}/${year + 1}`;
-    } else {
-      return `${year - 1}/${year}`;
-    }
+  // Helper untuk mendapatkan tahun ajaran aktif -- lewat academicYearService
+  // (bukan hitung dari kalender lagi) biar ikut sinkron kalau admin
+  // override tahun ajaran aktif manual. Fallback ke tebakan kalender cuma
+  // dipakai kalau memang belum ada tahun ajaran ke-mark aktif di DB.
+  static async getTahunAjaranAktif() {
+    const active = await getActiveYearString();
+    return active || getCurrentAcademicYearFallback();
   }
 
   // Setup page A4 portrait + print options standar (pakai kit), lalu tempel
@@ -37,12 +34,15 @@ export class DataExcel {
   }
 
   // Tulis letterhead + table header standar, return baris pertama yang
-  // siap dipakai buat data (baris setelah table header).
-  static _writeLetterhead(worksheet, { title, mergeCols, headers }) {
+  // siap dipakai buat data (baris setelah table header). `tahunAjaran`
+  // WAJIB dikasih dari pemanggil (sudah di-resolve lewat
+  // getTahunAjaranAktif() di awal method async-nya) -- biar helper ini
+  // sendiri tetap sync/gak perlu ikut-ikutan jadi async.
+  static _writeLetterhead(worksheet, { title, mergeCols, headers, tahunAjaran }) {
     const tableHeaderRowNumber = addLetterhead(worksheet, {
       title,
       mergeCols,
-      metaLines: [`TAHUN AJARAN ${this.getTahunAjaranAktif()}`],
+      metaLines: [`TAHUN AJARAN ${tahunAjaran}`],
     });
 
     const tableHeaderRow = worksheet.getRow(tableHeaderRowNumber);
@@ -61,6 +61,7 @@ export class DataExcel {
     if (!guardHasData(classesData)) return;
 
     try {
+      const tahunAjaran = await this.getTahunAjaranAktif();
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Data Kelas");
 
@@ -90,6 +91,7 @@ export class DataExcel {
         title: "DATA KELAS",
         mergeCols: headers.length,
         headers,
+        tahunAjaran,
       });
 
       // DATA KELAS
@@ -144,7 +146,7 @@ export class DataExcel {
 
       await downloadWorkbook(
         workbook,
-        `Data_Kelas_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+        `Data_Kelas_${SCHOOL_NAME.replace(/\s+/g, "_")}_${tahunAjaran}.xlsx`
       );
     } catch (error) {
       console.error("Error exporting Kelas Excel:", error);
@@ -160,7 +162,7 @@ export class DataExcel {
     return ["No.", "NIS", "Nama", "Kelas", "Jenis Kelamin", "Status"];
   }
 
-  static _writeStudentsSheet(worksheet, { title, studentsData }) {
+  static _writeStudentsSheet(worksheet, { title, studentsData, tahunAjaran }) {
     this._setupPage(worksheet);
 
     // ✅ COLUMN WIDTHS UNTUK PORTRAIT
@@ -178,6 +180,7 @@ export class DataExcel {
       title,
       mergeCols: headers.length,
       headers,
+      tahunAjaran,
     });
 
     studentsData.forEach((student, index) => {
@@ -206,14 +209,15 @@ export class DataExcel {
     if (!guardHasData(studentsData)) return;
 
     try {
+      const tahunAjaran = await this.getTahunAjaranAktif();
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Data Siswa");
 
-      this._writeStudentsSheet(worksheet, { title: "DATA SISWA", studentsData });
+      this._writeStudentsSheet(worksheet, { title: "DATA SISWA", studentsData, tahunAjaran });
 
       await downloadWorkbook(
         workbook,
-        `Data_Siswa_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+        `Data_Siswa_${SCHOOL_NAME.replace(/\s+/g, "_")}_${tahunAjaran}.xlsx`
       );
     } catch (error) {
       console.error("Error exporting Excel:", error);
@@ -225,17 +229,19 @@ export class DataExcel {
     const filteredData = studentsData.filter((student) => student.class_id?.startsWith(jenjang));
     if (!guardHasData(filteredData)) return;
 
+    const tahunAjaran = await this.getTahunAjaranAktif();
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(`Kelas ${jenjang}`);
 
     this._writeStudentsSheet(worksheet, {
       title: `DATA SISWA KELAS ${jenjang}`,
       studentsData: filteredData,
+      tahunAjaran,
     });
 
     await downloadWorkbook(
       workbook,
-      `Data_Siswa_Kelas_${jenjang}_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+      `Data_Siswa_Kelas_${jenjang}_${SCHOOL_NAME.replace(/\s+/g, "_")}_${tahunAjaran}.xlsx`
     );
   }
 
@@ -243,17 +249,19 @@ export class DataExcel {
     const filteredData = studentsData.filter((student) => student.class_id === kelas);
     if (!guardHasData(filteredData)) return;
 
+    const tahunAjaran = await this.getTahunAjaranAktif();
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(kelas);
 
     this._writeStudentsSheet(worksheet, {
       title: `DATA SISWA KELAS ${kelas}`,
       studentsData: filteredData,
+      tahunAjaran,
     });
 
     await downloadWorkbook(
       workbook,
-      `Data_Siswa_${kelas}_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+      `Data_Siswa_${kelas}_${SCHOOL_NAME.replace(/\s+/g, "_")}_${tahunAjaran}.xlsx`
     );
   }
 
@@ -267,14 +275,15 @@ export class DataExcel {
       title = `DATA SISWA KELAS ${selectedJenjang}`;
     }
 
+    const tahunAjaran = await this.getTahunAjaranAktif();
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data Siswa");
 
-    this._writeStudentsSheet(worksheet, { title, studentsData: filteredData });
+    this._writeStudentsSheet(worksheet, { title, studentsData: filteredData, tahunAjaran });
 
     await downloadWorkbook(
       workbook,
-      `Data_Siswa_Filter_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+      `Data_Siswa_Filter_${SCHOOL_NAME.replace(/\s+/g, "_")}_${tahunAjaran}.xlsx`
     );
   }
 
@@ -284,6 +293,7 @@ export class DataExcel {
     if (!guardHasData(teachersData)) return;
 
     try {
+      const tahunAjaran = await this.getTahunAjaranAktif();
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Data Guru");
 
@@ -304,6 +314,7 @@ export class DataExcel {
         title: "DATA GURU",
         mergeCols: headers.length,
         headers,
+        tahunAjaran,
       });
 
       teachersData.forEach((guru, index) => {
@@ -329,7 +340,7 @@ export class DataExcel {
 
       await downloadWorkbook(
         workbook,
-        `Data_Guru_${SCHOOL_NAME.replace(/\s+/g, "_")}_${this.getTahunAjaranAktif()}.xlsx`
+        `Data_Guru_${SCHOOL_NAME.replace(/\s+/g, "_")}_${tahunAjaran}.xlsx`
       );
     } catch (error) {
       console.error("Error exporting Guru Excel:", error);

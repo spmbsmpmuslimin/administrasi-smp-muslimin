@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicYear } from "../services/academicYearService";
 import PreviewNilai from "./PreviewNilai";
 import PreviewRaport from "./PreviewRaport";
 import CetakRaport from "./CetakRaport";
@@ -90,12 +91,20 @@ function RaportPage({ user, onShowToast, darkMode }) {
 
   const loadActiveAcademicYear = async () => {
     try {
-      const { data } = await supabase
-        .from("academic_years")
-        .select("*")
-        .eq("is_active", true)
-        .single();
-      setAcademicYear(data);
+      const activeYear = await getActiveAcademicYear();
+      if (!activeYear) {
+        console.warn("Tidak ada tahun ajaran aktif ditemukan.");
+        setAcademicYear(null);
+        return;
+      }
+      // Bentuk objeknya disamain kayak row academic_years asli (dipakai
+      // sebagai prop academicYear ke RaportConfig/PreviewRaport, yang
+      // ngandelin academicYear.id dan academicYear.year).
+      setAcademicYear({
+        id: activeYear.activeSemesterId,
+        year: activeYear.year,
+        semester: activeYear.activeSemester,
+      });
     } catch (error) {
       console.error("Gagal memuat tahun ajaran:", error);
     }
