@@ -17,13 +17,15 @@
 // - ImportRaportForm.js       -> pilih tahun ajaran/semester/kelas + upload PDF
 // - ManajemenRaportTable.js   -> list raport tersimpan + filter + publish
 // - RekapMultiSemester.js     -> matrix nilai siswa x semester + export excel
-// - RekapKelulusan.js         -> rekap nilai semester 1-6 kelas 9 (roster saat ini, bukan class_name historis) + edit nilai langsung buat proses kelulusan
+// - InputNilaiSiswa.js        -> khusus kelas 9: klik nama siswa -> input/edit nilai semester 1-6 dia (manual, buat lengkapi data sebelum kelulusan)
+// - RekapKelulusan.js         -> rekap NR + Nilai Akhir + status kelulusan kelas 9 (read-only soal nilai mapel; NASAJ+finalisasi masih di sini)
 
 import React, { useState } from "react";
-import { Upload, ListChecks, BarChart3, GraduationCap, Settings } from "lucide-react";
+import { Upload, ListChecks, BarChart3, GraduationCap, Settings, PencilLine } from "lucide-react";
 import ImportRaportForm from "./ImportRaportForm";
 import ManajemenRaportTable from "./ManajemenRaportTable";
 import RekapMultiSemester from "./RekapMultiSemester";
+import InputNilaiSiswa from "./InputNilaiSiswa";
 import RekapKelulusan from "./RekapKelulusan";
 import KelolaKKM from "./KelolaKKM";
 
@@ -36,6 +38,7 @@ const SUB_TABS = [
   { id: "manajemen", label: "Manajemen Nilai", icon: ListChecks },
   { id: "rekap", label: "Rekap Multi Semester", icon: BarChart3 },
   { id: "kkm", label: "KKM dan Kelulusan", icon: Settings },
+  { id: "input-nilai", label: "Input Nilai Siswa", icon: PencilLine },
   { id: "kelulusan", label: "Rekap Kelulusan", icon: GraduationCap },
 ];
 
@@ -52,6 +55,8 @@ const RaportNilaiTab = (props) => {
         return <RekapMultiSemester {...props} />;
       case "kkm":
         return <KelolaKKM {...props} />;
+      case "input-nilai":
+        return <InputNilaiSiswa {...props} />;
       case "kelulusan":
         return <RekapKelulusan {...props} />;
       default:

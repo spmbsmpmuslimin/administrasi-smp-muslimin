@@ -18,6 +18,9 @@
 //   - SemesterFilterBar    : filter tahun ajaran/semester/kelas/search
 //   - useAcademicYears     : hook daftar tahun ajaran (tabel academic_years)
 //   - useReportedClasses   : hook daftar kelas yang SUDAH PERNAH diimport
+//   - Kelulusan shared logic (dipakai bareng InputNilaiSiswa.js +
+//     RekapKelulusan.js): useKelasSembilanList, useKriteriaKelulusan,
+//     fetchKelulusanRoster, compute*() rumus NR/Nilai Akhir/status
 
 import React, { useState, useEffect } from "react";
 import { Check, AlertTriangle, X, FileEdit, Globe, AlertCircle, Search } from "lucide-react";
@@ -371,6 +374,311 @@ export function useAcademicYears(showToast) {
 //     nilai class_name yang SUDAH PERNAH diimport ke student_reports
 //     (useReportedClasses di bawah) -- ini mencerminkan data yang beneran
 //     ada, bukan kondisi kelas saat ini.
+// ============================================================
+// Kelulusan (kelas 9) shared logic
+// Dipakai bareng oleh InputNilaiSiswa.js (input/edit nilai per siswa,
+// semester 1-6) dan RekapKelulusan.js (rekap NR + Nilai Akhir + status
+// Lulus/Tidak -- read-only soal nilai, cuma NASAJ+finalisasi yang masih
+// bisa diisi di sana). Ditarik ke sini biar 2 tab itu SELALU make roster
+// dan rumus yang sama persis, gak dobel logic.
+// ============================================================
+
+export const KELULUSAN_SEMESTERS = [1, 2, 3, 4, 5, 6];
+
+// Fallback KKM kalau mapel belum diisi di tab "KKM dan Kelulusan"
+// (KelolaKKM.js).
+export const KELULUSAN_KKM_FALLBACK_DEFAULT = 75;
+
+// Bobot Nilai Akhir kelulusan = (BOBOT_NR x rata-rata NR) + (BOBOT_NASAJ x NASAJ)
+// PLACEHOLDER SEMENTARA (lihat catatan asli di RekapKelulusan.js) --
+// belum dikonfirmasi ke sekolah persisnya berapa.
+export const KELULUSAN_BOBOT_NR = 0.6;
+export const KELULUSAN_BOBOT_NASAJ = 0.4;
+
+// Daftar kelas 9 yang AKTIF SEKARANG (bukan dari histori raport) --
+// dipakai buat dropdown pemilih kelas di InputNilaiSiswa.js & RekapKelulusan.js.
+export function useKelasSembilanList(showToast) {
+  const [kelasList, setKelasList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("students")
+          .select("class_id")
+          .eq("is_active", true)
+          .ilike("class_id", "9%");
+        if (error) throw error;
+        const unique = Array.from(new Set((data || []).map((d) => d.class_id))).sort();
+        if (mounted) setKelasList(unique);
+      } catch (err) {
+        console.error("[useKelasSembilanList] Gagal ambil daftar kelas 9:", err);
+        showToast?.("Gagal memuat daftar kelas 9", "error");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [showToast]);
+
+  return { kelasList, loading };
+}
+
+// KKM per mapel + batas minimum Nilai Akhir -- diisi TU di "KKM dan
+// Kelulusan" (KelolaKKM.js). Settingan global, bukan per-kelas.
+export function useKriteriaKelulusan(showToast) {
+  const [kkmMap, setKkmMap] = useState({});
+  const [nilaiAkhirMinimum, setNilaiAkhirMinimum] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [{ data: kkmRows, error: kkmErr }, { data: configRow, error: configErr }] =
+          await Promise.all([
+            supabase.from("kkm_mapel").select("mata_pelajaran, kkm"),
+            supabase
+              .from("kelulusan_config")
+              .select("nilai_akhir_minimum")
+              .eq("id", 1)
+              .maybeSingle(),
+          ]);
+        if (kkmErr) throw kkmErr;
+        if (configErr) throw configErr;
+        if (!mounted) return;
+
+        const map = {};
+        (kkmRows || []).forEach((r) => {
+          map[r.mata_pelajaran] = Number(r.kkm);
+        });
+        setKkmMap(map);
+        setNilaiAkhirMinimum(configRow ? Number(configRow.nilai_akhir_minimum) : null);
+      } catch (err) {
+        console.error("[useKriteriaKelulusan] Gagal ambil kriteria kelulusan:", err);
+        showToast?.("Gagal memuat kriteria kelulusan (KKM/batas Nilai Akhir)", "error");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [showToast]);
+
+  return { kkmMap, nilaiAkhirMinimum, loading };
+}
+
+// Roster kelas 9 SAAT INI + SEMUA histori nilai NIS-NIS itu (semester 1-6,
+// TANPA filter class_name -- sengaja, biar semester 1-4 yang dulu
+// class_name-nya masih "7F"/"8F" tetep ke-tarik biarpun siswanya
+// sekarang udah di kelas 9). Dipanggil dari efek fetch di kedua tab.
+// Balikin: { students, prefillAcademicYearBySemester }
+export async function fetchKelulusanRoster(kelas) {
+  const { data: roster, error: rosterErr } = await supabase
+    .from("students")
+    .select("id, nis, full_name")
+    .eq("class_id", kelas)
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
+  if (rosterErr) throw rosterErr;
+
+  const nisList = (roster || []).map((r) => r.nis);
+  if (nisList.length === 0) {
+    return { students: [], prefillAcademicYearBySemester: {} };
+  }
+
+  const { data: reports, error: reportsErr } = await supabase
+    .from("student_reports")
+    .select("id, student_nis, semester, academic_year, student_report_grades(id, subject, score)")
+    .in("student_nis", nisList);
+  if (reportsErr) throw reportsErr;
+
+  const students = roster.map((s) => {
+    const gradesBySemester = {};
+    const reportMetaBySemester = {};
+    (reports || [])
+      .filter((r) => r.student_nis === s.nis)
+      .forEach((r) => {
+        gradesBySemester[r.semester] = r.student_report_grades || [];
+        reportMetaBySemester[r.semester] = { id: r.id, academicYear: r.academic_year };
+      });
+    return {
+      nis: s.nis,
+      studentId: s.id,
+      name: s.full_name,
+      gradesBySemester,
+      reportMetaBySemester,
+    };
+  });
+
+  // Prefill "Tahun Ajaran" tiap semester dari data yang UDAH ADA (siswa
+  // pertama yang ketemu aja per semester -- asumsi 1 kelas 1 semester =
+  // 1 tahun ajaran yang sama utk semua siswanya).
+  const prefillAcademicYearBySemester = {};
+  KELULUSAN_SEMESTERS.forEach((sem) => {
+    const withData = students.find((s) => s.reportMetaBySemester[sem]);
+    if (withData)
+      prefillAcademicYearBySemester[sem] = withData.reportMetaBySemester[sem].academicYear;
+  });
+
+  return { students, prefillAcademicYearBySemester };
+}
+
+// Rata-rata nilai dalam 1 semester (semua mapel digabung)
+export function computeRataRata(grades) {
+  if (!grades || grades.length === 0) return null;
+  const sum = grades.reduce((acc, g) => acc + (g.score ?? 0), 0);
+  return Math.round((sum / grades.length) * 10) / 10;
+}
+
+export function computeRataRataSemester(gradesBySemester, sem) {
+  return computeRataRata(gradesBySemester[sem]);
+}
+
+// Daftar mapel lintas SEMUA semester (1-6) dari sekumpulan siswa --
+// dipake buat kolom tabel NR & buat computeStatusKelulusan.
+export function computeAllSubjectsAcrossSemesters(students) {
+  const set = new Set();
+  students.forEach((s) =>
+    KELULUSAN_SEMESTERS.forEach((sem) =>
+      (s.gradesBySemester[sem] || []).forEach((g) => set.add(g.subject))
+    )
+  );
+  return Array.from(set).sort();
+}
+
+// NR (Nilai Rapor) per mapel = rata-rata nilai mapel itu dari semester
+// 1-6 yang ADA datanya (Permendikbudristek No. 21/2022 -- NR dihitung
+// per mapel, bukan digabung rata-rata semua mapel dulu).
+export function computeNRPerMapel(gradesBySemester, subject) {
+  const scores = KELULUSAN_SEMESTERS.map((sem) =>
+    (gradesBySemester[sem] || []).find((g) => g.subject === subject)
+  )
+    .filter((g) => g && g.score !== null && g.score !== undefined)
+    .map((g) => g.score);
+  if (scores.length === 0) return null;
+  const sum = scores.reduce((acc, v) => acc + v, 0);
+  return Math.round((sum / scores.length) * 100) / 100;
+}
+
+// Rata-rata dari SEMUA NR per mapel (bukan rata-rata semester) -- gambaran
+// umum NR siswa lintas mapel, TETAP BUKAN Nilai Ijazah final (belum
+// digabung NASAJ + bobot).
+export function computeNRRataRataKeseluruhan(gradesBySemester, allSubjectsAcrossSemesters) {
+  const nrList = allSubjectsAcrossSemesters
+    .map((subj) => computeNRPerMapel(gradesBySemester, subj))
+    .filter((nr) => nr !== null);
+  if (nrList.length === 0) return null;
+  const sum = nrList.reduce((acc, v) => acc + v, 0);
+  return Math.round((sum / nrList.length) * 100) / 100;
+}
+
+// Rata-rata dari rata-rata tiap semester (S1-S6) yang ADA datanya -- "NR
+// keseluruhan" versi sederhana (bukan per-mapel), dipake sebagai komponen
+// NR di rumus Nilai Akhir.
+export function computeRataRataSemesterKeseluruhan(gradesBySemester) {
+  const semesterAverages = KELULUSAN_SEMESTERS.map((sem) =>
+    computeRataRataSemester(gradesBySemester, sem)
+  ).filter((avg) => avg !== null);
+  if (semesterAverages.length === 0) return null;
+  const sum = semesterAverages.reduce((acc, v) => acc + v, 0);
+  return Math.round((sum / semesterAverages.length) * 100) / 100;
+}
+
+// Nilai Akhir = (BOBOT_NR x rata-rata rapor) + (BOBOT_NASAJ x NASAJ).
+// Kalau NASAJ belum diisi, balikin null (ditampilin "—"), BUKAN dianggap
+// 0, biar gak salah baca seolah-olah nilai ujiannya 0.
+export function computeNilaiAkhir(gradesBySemester, nasaj) {
+  const rataRataRapor = computeRataRataSemesterKeseluruhan(gradesBySemester);
+  if (rataRataRapor === null || nasaj === undefined || nasaj === null || nasaj === "") return null;
+  const nasajNum = Number(nasaj);
+  if (Number.isNaN(nasajNum)) return null;
+  return (
+    Math.round((KELULUSAN_BOBOT_NR * rataRataRapor + KELULUSAN_BOBOT_NASAJ * nasajNum) * 100) / 100
+  );
+}
+
+// Status kelulusan = gabungan AND dari 2 syarat: (1) NR tiap mapel di
+// atas KKM mapel itu, (2) Nilai Akhir di atas batas minimum. Mapel yang
+// datanya belum lengkap TIDAK digugurkan sebagai "gagal KKM" -- statusnya
+// "belum_lengkap", biar gak salah baca data kosong sebagai siswa gagal.
+export function computeStatusKelulusan(
+  gradesBySemester,
+  nasaj,
+  { allSubjectsAcrossSemesters, kkmMap, nilaiAkhirMinimum }
+) {
+  const alasanGagal = [];
+  const alasanBelumLengkap = [];
+
+  allSubjectsAcrossSemesters.forEach((subj) => {
+    const nr = computeNRPerMapel(gradesBySemester, subj);
+    if (nr === null) {
+      alasanBelumLengkap.push(`Nilai ${subj} belum lengkap`);
+      return;
+    }
+    const kkm = kkmMap[subj] ?? KELULUSAN_KKM_FALLBACK_DEFAULT;
+    if (nr < kkm) alasanGagal.push(`${subj}: ${nr} (KKM ${kkm})`);
+  });
+
+  const nilaiAkhir = computeNilaiAkhir(gradesBySemester, nasaj);
+  if (nilaiAkhir === null) {
+    alasanBelumLengkap.push("NASAJ belum diisi");
+  } else if (nilaiAkhirMinimum !== null && nilaiAkhir < nilaiAkhirMinimum) {
+    alasanGagal.push(`Nilai Akhir ${nilaiAkhir} di bawah batas minimum ${nilaiAkhirMinimum}`);
+  }
+
+  if (alasanGagal.length > 0) return { status: "tidak_lulus", alasan: alasanGagal };
+  if (alasanBelumLengkap.length > 0) return { status: "belum_lengkap", alasan: alasanBelumLengkap };
+  return { status: "lulus", alasan: [] };
+}
+
+// Daftar mata pelajaran unik yang UDAH PERNAH ada di student_report_grades
+// (bukan tabel master mapel tersendiri -- proyek ini emang gak punya itu,
+// nama mapel sumbernya dari legenda "KETERANGAN MAPEL" tiap file leger,
+// lihat catatan yang sama di KelolaKKM.js). Dipakai buat dropdown "Tambah
+// Mapel" di InputNilaiSiswa.js, biar TU milih dari mapel yang udah pernah
+// tercatat di sistem, bukan ngetik manual (rawan typo/beda ejaan bikin NR
+// mapel yang sama kepecah jadi 2 baris beda).
+export function useAllReportedSubjects(showToast) {
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.from("student_report_grades").select("subject");
+        if (error) throw error;
+        const unique = Array.from(
+          new Set((data || []).map((r) => r.subject).filter(Boolean))
+        ).sort();
+        if (mounted) setSubjects(unique);
+      } catch (err) {
+        console.error("[useAllReportedSubjects] Gagal ambil daftar mapel:", err);
+        showToast?.("Gagal memuat daftar mata pelajaran", "error");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [showToast]);
+
+  return { subjects, loading };
+}
+
 export function useReportedClasses(tahunAjaran, showToast) {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
