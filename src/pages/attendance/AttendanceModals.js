@@ -1204,10 +1204,10 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                                     : "text-gray-800"
                               }`}
                             >
-                              <div className="text-[10px] font-normal opacity-80">
+                              <div className="text-[9px] font-normal opacity-70 leading-none">
                                 {getDayAbbr(date)}
                               </div>
-                              <div>{formatDateHeader(date)}</div>
+                              <div className="leading-tight">{formatDateHeader(date)}</div>
                             </th>
                           );
                         })}

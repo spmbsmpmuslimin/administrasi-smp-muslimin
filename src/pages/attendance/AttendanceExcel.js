@@ -694,6 +694,17 @@ export const exportAttendanceToExcel = async (
         bottom: { style: "thin" },
         right: { style: "thin" },
       };
+
+      // ✅ Font hari (Sen/Sel/dst) dibikin lebih kecil daripada tanggal,
+      // pakai richText biar 1 cell bisa punya 2 ukuran font
+      if (dateInfo) {
+        cell.value = {
+          richText: [
+            { font: { name: "Arial", size: 8, bold: true }, text: `${dateInfo.dayAbbr}\n` },
+            { font: { name: "Arial", size: 10, bold: true }, text: dateInfo.display },
+          ],
+        };
+      }
     }
     tableHeaderRow.height = 28;
 
