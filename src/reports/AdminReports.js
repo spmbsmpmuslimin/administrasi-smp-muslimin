@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import { getActiveAcademicInfo } from "../services/academicYearService";
 import {
   FileText,
   CheckCircle,
@@ -468,11 +469,26 @@ const AdminReports = ({ user, onShowToast }) => {
 
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth();
-      const currentAcademicYear =
-        currentMonth >= 7
-          ? `${currentYear}/${currentYear + 1}`
-          : `${currentYear - 1}/${currentYear}`;
+      const currentMonth = currentDate.getMonth() + 1; // ✅ FIX: getMonth() 0-indexed, harus +1 dulu
+
+      // ✅ FIX: sebelumnya dihitung manual dari tanggal doang (dan salah
+      // hitung bulan juga - Agustus dianggap awal tahun ajaran, harusnya
+      // Juli), jadi ngga pernah nyambung ke tahun ajaran aktif yang
+      // di-set admin di DB. Sekarang coba ambil dari academicYearService
+      // dulu, baru fallback ke kalkulasi kalender kalau service gagal.
+      let currentAcademicYear;
+      try {
+        const activeInfo = await getActiveAcademicInfo();
+        currentAcademicYear = activeInfo?.year;
+      } catch (e) {
+        console.error("Gagal ambil tahun ajaran aktif, fallback ke kalender:", e);
+      }
+      if (!currentAcademicYear) {
+        currentAcademicYear =
+          currentMonth >= 7
+            ? `${currentYear}/${currentYear + 1}`
+            : `${currentYear - 1}/${currentYear}`;
+      }
 
       const [attendanceResult, gradesResult, konselingResult] = await Promise.all([
         supabase.from("attendances").select("status").eq("date", today),

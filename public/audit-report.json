@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-11T03:59:10.251Z",
-  "executionTimeMs": 3506,
-  "filesScanned": 263,
+  "generatedAt": "2026-09-12T10:07:49.792Z",
+  "executionTimeMs": 2158,
+  "filesScanned": 266,
   "summary": {
-    "status": "critical",
-    "criticalCount": 1,
+    "status": "warning",
+    "criticalCount": 0,
     "warningCount": 4,
     "infoCount": 6,
-    "totalIssues": 11
+    "totalIssues": 10
   },
   "categories": [
     {
@@ -20,8 +20,8 @@
           "description": "File-file ini gak ketemu di-import statis dari file lain. Kemungkinan sisa refactor / fitur lama. Cek manual dulu sebelum dihapus — bisa aja dipake lewat dynamic import atau string reference yang gak kebaca regex.",
           "details": [
             "src/components/StudentLogin=bak.js",
-            "src/portal-siswa/StudentOrganigram.js",
-            "src/system/MaintenancePage-backup.js"
+            "src/pages/administrasi-tu/SppTab-Backup.js",
+            "src/portal-siswa/StudentOrganigram.js"
           ]
         }
       ]
@@ -37,7 +37,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5249 class warna (di 187 file) kemungkinan belum dark-mode-aware",
+          "title": "5334 class warna (di 188 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -65,11 +65,10 @@
             "src/system/DatabaseCleanupMonitor.js — 64 class belum ada dark: variant",
             "src/system/MonitorDashboard.js — 63 class belum ada dark: variant",
             "src/setting/school-management/SiswaLulusTab.js — 62 class belum ada dark: variant",
-            "src/pages/kelola-raport/RekapKelulusan.js — 60 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
+            "src/system/ActiveUsersTab.js — 57 class belum ada dark: variant",
             "src/reports/AdminReports.js — 54 class belum ada dark: variant",
             "src/setting/school-management/StudentModals.js — 54 class belum ada dark: variant",
-            "src/system/ActiveUsersTab.js — 53 class belum ada dark: variant",
             "src/e-raport/CetakRaport.js — 51 class belum ada dark: variant",
             "src/setting/academic/Simulator.js — 51 class belum ada dark: variant",
             "src/pages/attendance/AdminAttendance.js — 50 class belum ada dark: variant",
@@ -79,7 +78,8 @@
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
             "src/spmb/DiagnostikPage.js — 47 class belum ada dark: variant",
-            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant"
+            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant",
+            "src/pages/DenahDuduk.js — 45 class belum ada dark: variant"
           ]
         }
       ]
@@ -90,29 +90,31 @@
       "issues": [
         {
           "severity": "warning",
-          "title": "25 embedded join TANPA disambiguation hint",
+          "title": "27 embedded join TANPA disambiguation hint",
           "description": "Query ini pake relational select (`select('*, table(...)')`) tanpa hint kayak `!inner`, `!nama_fk`, atau `alias:table`. Ini yang paling rawan kena PGRST200 kalau ada lebih dari satu foreign key antar 2 tabel itu. Worth di-cek satu-satu.",
           "details": [
             "src/components/StudentLogin.js:70 → select(\"*, students(id, full_name, nis, class_id, academic_year)\")",
             "src/components/StudentLogin=bak.js:70 → select(\"*, students(id, full_name, nis, class_id, academic_year)\")",
             "src/e-raport/CekStatusNilai.js:329 → select(\"id, student_id, nilai_akhir, deskripsi_capaian, nilai_eraport_detail(id, status_tercapai),\")",
-            "src/e-raport/CetakRaport.js:239 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
-            "src/e-raport/CetakRaport.js:366 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
+            "src/e-raport/CetakRaport.js:246 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
+            "src/e-raport/CetakRaport.js:373 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
             "src/e-raport/InputNilai.js:302 → select(\"id, student_id, nilai_akhir, deskripsi_capaian, nilai_eraport_detail ( id, tujuan_pembelaj\")",
             "src/e-raport/PreviewRaport.js:198 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
             "src/e-raport/PreviewRaport.js:217 → select(\"*, nilai_eraport_detail(*, tujuan_pembelajaran(*))\")",
+            "src/pages/administrasi-tu/SppTab-Backup.js:295 → select(\"id, period_month, period_year, amount, status, spp_payments(payment_date)\")",
+            "src/pages/administrasi-tu/SppTab-Backup.js:1086 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
             "src/pages/administrasi-tu/SppTab.js:295 → select(\"id, period_month, period_year, amount, status, spp_payments(payment_date)\")",
             "src/pages/administrasi-tu/SppTab.js:1086 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
-            "src/pages/administrasi-tu/TagihanLainTab.js:136 → select(\"id, amount, due_date, status, students(id, full_name, nis)\")",
-            "src/pages/administrasi-tu/TagihanLainTab.js:554 → select(\"id, amount, academic_year, status, students(id, full_name, nis, class_id)\")",
-            "src/pages/administrasi-tu/TagihanLainTab.js:683 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
+            "src/pages/administrasi-tu/TagihanLainTab.js:541 → select(\"id, item_name, amount, status, other_fee_payments(amount_paid)\")",
+            "src/pages/administrasi-tu/TagihanLainTab.js:924 → select(\"student_id, item_name, amount, status, other_fee_payments(amount_paid)\")",
+            "src/pages/administrasi-tu/TagihanLainTab.js:1141 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
             "src/pages/attendance/AttendanceManagement.js:579 → select(\"id, student_id, status, notes, students ( id, full_name, nis )\")",
             "src/pages/kelola-raport/ManajemenRaportTable.js:608 → select(\"id, student_id, student_name, student_nis, class_name, academic_year, semester, status, st\")",
-            "src/pages/kelola-raport/RekapKelulusan.js:184 → select(\"id, student_nis, semester, academic_year, student_report_grades(id, subject, score)\")",
+            "src/pages/kelola-raport/RaportShared.js:501 → select(\"id, student_nis, semester, academic_year, student_report_grades(id, subject, score)\")",
             "src/pages/kelola-raport/RekapMultiSemester.js:400 → select(\"student_name, student_nis, semester, student_report_grades(subject, score)\")",
             "src/portal-siswa/StudentKeuangan.js:109 → select(\"id, period_month, period_year, amount, status, spp_payments(payment_date, amount_paid, pay\")",
             "src/portal-siswa/StudentRaport.js:137 → select(\"id, academic_year, semester, status, student_report_grades(subject, score)\")",
-            "src/reports/AdminReports.js:481 → select(\"*, students(nis, full_name, class_id)\")",
+            "src/reports/AdminReports.js:497 → select(\"*, students(nis, full_name, class_id)\")",
             "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
             "src/setting/academic/YearTransition.js:370 → select(\"id, full_name, nis, nisn, class_id, student_profile_details ( jenis_kelamin, tempat_lahir,\")",
             "src/setting/school-management/SiswaLulusTab.js:548 → select(\"id, tahun_lulus, kelas_terakhir, academic_year_id, academic_years(id, year, semester, star\")",
@@ -136,9 +138,9 @@
             "src/e-raport/CekNilai.js:184 → select(\"*, students!inner(full_name, nis, is_active)\")",
             "src/pages/CatatanSiswa.js:1025 → select(\"*, teacher:users(full_name)\")",
             "src/pages/CatatanSiswa.js:1169 → select(\"id, student:students(full_name)\")",
-            "src/reports/AdminReports.js:38 → select(\"student_id, status, students!inner(nis, full_name, class_id)\")",
-            "src/reports/AdminReports.js:83 → select(\"*, students!inner(nis, full_name, class_id)\")",
-            "src/reports/AdminReports.js:163 → select(\"*, students!inner(nis, full_name, class_id), users!konseling_counselor_id_fkey(full_name)\")",
+            "src/reports/AdminReports.js:39 → select(\"student_id, status, students!inner(nis, full_name, class_id)\")",
+            "src/reports/AdminReports.js:84 → select(\"*, students!inner(nis, full_name, class_id)\")",
+            "src/reports/AdminReports.js:164 → select(\"*, students!inner(nis, full_name, class_id), users!konseling_counselor_id_fkey(full_name)\")",
             "src/reports/DailyAttendanceSection.js:142 → select(\"*, users:teacher_id ( full_name )\")",
             "src/reports/DailyAttendanceSection.js:167 → select(\"*, students!inner ( nis, full_name, class_id )\")",
             "src/reports/HomeroomTeacherReports.js:495 → select(\"*, classes!inner(id)\")",
@@ -148,7 +150,7 @@
             "src/setting/academic/AcademicYearTab.js:167 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
             "src/setting/academic/AcademicYearTab.js:211 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
             "src/setting/feedback/FeedbackGuruTab.js:23 → select(\"*, guru:users!feedback_guru_guru_id_fkey ( full_name, username )\")",
-            "src/system/ActiveUsersTab.js:95 → select(\"id, username, is_active, last_login, students:student_id(full_name, nis, nisn, class_id, a\")",
+            "src/system/ActiveUsersTab.js:96 → select(\"id, username, is_active, last_login, students:student_id(full_name, nis, nisn, class_id, a\")",
             "src/system/checkers/BusinessLogicChecker.js:241 → select(\"id, date, students!inner(is_active, full_name)\")",
             "src/system/checkers/BusinessLogicChecker.js:302 → select(\"id, created_at, students!inner(is_active, full_name)\")",
             "src/system/checkers/DataValidator.js:540 → select(\"id, student_id, students!inner(is_active, full_name)\")"
@@ -178,8 +180,8 @@
           "description": "File ini query tabel academic_years sendiri (biasanya buat ambil daftar tahun ajaran dan/atau nentuin mana yang aktif) tanpa lewat academicYearService. Kalau logic 'tahun ajaran aktif itu yang mana' berubah di masa depan, tempat ini gampang kelewat sinkron. Worth dipertimbangkan buat dipindah ke service.",
           "details": [
             "src/e-raport/PreviewRaport.js:182 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
-            "src/e-raport/RaportConfig.js:102 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
-            "src/e-raport/RaportConfig.js:156 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
+            "src/e-raport/RaportConfig.js:99 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
+            "src/e-raport/RaportConfig.js:153 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/e-raport/RaportPage.js:94 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/konseling/Konseling.js:90 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/attendance/AttendanceMain.js:104 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
@@ -188,7 +190,7 @@
             "src/pages/CatatanSiswa.js:891 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/datasiswa-induk/DataSiswaInduk.js:189 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/DenahDuduk.js:83 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
-            "src/pages/kelola-raport/RaportShared.js:336 → query tabel academic_years langsung",
+            "src/pages/kelola-raport/RaportShared.js:339 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/KelolaJadwalPiket.js:91 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/pages/Organigram.js:75 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
             "src/portal-siswa/StudentDashboard.js:199 → query tabel academic_years langsung (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)",
@@ -202,23 +204,21 @@
         },
         {
           "severity": "warning",
-          "title": "14 lokasi kemungkinan hardcode tahun ajaran dari kalender, bukan dari DB/service",
+          "title": "12 lokasi kemungkinan hardcode tahun ajaran dari kalender, bukan dari DB/service",
           "description": "File ini ngitung tahun ajaran sendiri dari tanggal hari ini (pola `.getMonth()` + template literal semacam `${currentYear}/${currentYear + 1}`), gak pernah nyentuh tabel academic_years atau academicYearService sama sekali. Ini lebih riskan daripada sekadar 'belum pake service' — kalau tahun ajaran aktif di database di-override manual (misal kalender akademik meleset dari asumsi kode), nilai di file ini gak bakal pernah ikut berubah. Cek manual apakah ini emang disengaja (misal fallback pas query gagal) atau beneran jadi sumber utama.",
           "details": [
             "src/pages/DataExcel.js:24 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/pages/DataExcel.js:26 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/portal-siswa/StudentJadwal.js:24 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/portal-siswa/StudentPresensi.js:81 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/reports/AdminReports.js:474 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/reports/AdminReports.js:475 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/spmb/SPMB.js:53 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/spmb/SPMB.js:55 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/spmb/SPMB.js:76 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/spmb/SPMB.js:78 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/spmb/SpmbExcel.js:46 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
             "src/spmb/SpmbExcel.js:48 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/system/SystemTab.js:318 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/system/SystemTab.js:320 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual"
+            "src/system/SystemTab.js:346 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
+            "src/system/SystemTab.js:347 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual"
           ]
         },
         {
@@ -259,7 +259,7 @@
             "nilai_eraport_detail → kolom gak pernah disebut: created_at, updated_at",
             "spp_bills → kolom gak pernah disebut: created_at, note, updated_at",
             "spp_payments → kolom gak pernah disebut: created_at",
-            "other_fee_bills → kolom gak pernah disebut: created_by",
+            "other_fee_bills → kolom gak pernah disebut: created_at",
             "other_fee_payments → kolom gak pernah disebut: created_at",
             "student_reports → kolom gak pernah disebut: attendance, created_at, created_by, extracurricular, homeroom_note, updated_at",
             "student_report_grades → kolom gak pernah disebut: created_at",
@@ -268,18 +268,6 @@
             "period_schedules → kolom gak pernah disebut: created_at, updated_at",
             "teacher_codes → kolom gak pernah disebut: created_at",
             "teacher_profiles → kolom gak pernah disebut: created_at, id, updated_at"
-          ]
-        },
-        {
-          "severity": "critical",
-          "title": "5 pemakaian kolom di frontend gak ketemu di skema Supabase",
-          "description": "Kolom ini disebut eksplisit di select/insert/update/filter tapi gak ada di skema live Supabase -- kemungkinan besar typo nama kolom, atau kolom udah direname/dihapus dari database tapi kodenya belum diupdate. Query ini bakal error (PGRST204 / 400) atau diem-diem gagal nyimpen data itu, tergantung method-nya.",
-          "details": [
-            "src/e-raport/CetakRaport.js:245 → .from(\"tujuan_pembelajaran\").eq(\"class_id\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/e-raport/CetakRaport.js:459 → .from(\"users\").select(...) pake kolom \"nip\" yang gak ada di skema Supabase",
-            "src/e-raport/RaportConfig.js:124 → .from(\"raport_metadata\").eq(\"tahun_ajaran_id\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/e-raport/RaportConfig.js:394 → .from(\"raport_metadata\").eq(\"tahun_ajaran_id\", ...) pake kolom yang gak ada di skema Supabase",
-            "src/e-raport/RaportConfig.js:411 → .from(\"raport_metadata\").insert(...) pake kolom \"tahun_ajaran_id\" yang gak ada di skema Supabase"
           ]
         }
       ]

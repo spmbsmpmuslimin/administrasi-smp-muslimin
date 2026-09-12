@@ -5,6 +5,13 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academicYearService";
 
+// ✅ FUNGSI UNTUK MENDAPATKAN TINGKAT DARI KELAS (7F → 7) - sama kayak di InputNilai.js
+// (tujuan_pembelajaran disimpan per tingkat, bukan per class_id)
+const getTingkatFromKelas = (kelas) => {
+  const match = kelas?.match(/\d+/);
+  return match ? parseInt(match[0]) : null;
+};
+
 // ✅ URUTAN MAPEL STANDAR
 const getMapelOrder = (mapel) => {
   const order = [
@@ -244,7 +251,7 @@ function CetakRaport() {
       const { data: tpData, error: tpError } = await supabase
         .from("tujuan_pembelajaran")
         .select("*")
-        .eq("class_id", classId)
+        .eq("tingkat", getTingkatFromKelas(classId)) // ✅ FIX: tujuan_pembelajaran disusun per tingkat (7/8/9), bukan class_id
         .eq("academic_year_id", correctSemester.id) // ✅ Pakai ID yang bener
         .order("mata_pelajaran")
         .order("urutan");
@@ -457,11 +464,11 @@ function CetakRaport() {
       try {
         const { data: waliKelasData } = await supabase
           .from("users")
-          .select("full_name, nip")
+          .select("full_name") // ✅ FIX: kolom "nip" ngga ada di skema users, sekolah pakai teacher_id
           .eq("id", currentUser?.id)
           .maybeSingle();
 
-        if (waliKelasData) waliKelas = waliKelasData;
+        if (waliKelasData) waliKelas = { ...waliKelas, full_name: waliKelasData.full_name };
       } catch (error) {
         console.warn("Gunakan localStorage untuk wali kelas");
       }
@@ -909,7 +916,9 @@ function CetakRaport() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Akses Dibatasi</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Akses Dibatasi
+          </h3>
           <p className="text-gray-600 mb-6">{errorMessage}</p>
         </div>
       </div>
@@ -935,7 +944,9 @@ function CetakRaport() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Akses Terbatas</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Akses Terbatas
+          </h3>
           <p className="text-gray-600">Hanya wali kelas yang dapat mengakses fitur ini.</p>
         </div>
       </div>

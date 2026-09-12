@@ -90,10 +90,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
   const fetchData = async () => {
     try {
       // Fetch E-Raport Settings
-      const { data: settings } = await supabase
-        .from("eraport_settings")
-        .select("*")
-        .single();
+      const { data: settings } = await supabase.from("eraport_settings").select("*").single();
 
       if (settings) setEraportSettings(settings);
 
@@ -123,7 +120,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
       const { data } = await supabase
         .from("raport_metadata")
         .select("*")
-        .eq("tahun_ajaran_id", selectedAcademicYear)
+        .eq("academic_year_id", selectedAcademicYear)
         .eq("semester", selectedSemester)
         .single();
 
@@ -190,9 +187,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
         }) || [];
 
       // Ambil unique mata pelajaran
-      const uniqueMapel = [
-        ...new Set(filteredData.map((item) => item.mata_pelajaran)),
-      ];
+      const uniqueMapel = [...new Set(filteredData.map((item) => item.mata_pelajaran))];
 
       const sortedMapel = uniqueMapel.sort();
       setMapelOptions(sortedMapel);
@@ -318,10 +313,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
     if (!window.confirm("Yakin hapus KKM ini?")) return;
 
     try {
-      const { error } = await supabase
-        .from("raport_config")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("raport_config").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -354,9 +346,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
 
       setEraportSettings((prev) => ({ ...prev, is_active: !prev.is_active }));
       showToast(
-        `E-Raport ${
-          !eraportSettings.is_active ? "diaktifkan" : "dinonaktifkan"
-        }`,
+        `E-Raport ${!eraportSettings.is_active ? "diaktifkan" : "dinonaktifkan"}`,
         "success"
       );
     } catch (error) {
@@ -393,7 +383,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
       const { data: existing } = await supabase
         .from("raport_metadata")
         .select("id")
-        .eq("tahun_ajaran_id", selectedAcademicYear)
+        .eq("academic_year_id", selectedAcademicYear)
         .eq("semester", selectedSemester)
         .single();
 
@@ -409,7 +399,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
         if (error) throw error;
       } else {
         const { error } = await supabase.from("raport_metadata").insert({
-          tahun_ajaran_id: selectedAcademicYear,
+          academic_year_id: selectedAcademicYear,
           semester: selectedSemester,
           ...metadata,
         });
@@ -449,7 +439,8 @@ export default function RaportConfig({ user, showToast, darkMode }) {
       <div
         className={`min-h-screen flex items-center justify-center ${
           darkMode ? "bg-theme-bg" : "bg-theme-surface"
-        }`}>
+        }`}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className={`mt-3 ${darkMode ? "text-gray-300" : "text-theme-secondary"}`}>
@@ -467,22 +458,18 @@ export default function RaportConfig({ user, showToast, darkMode }) {
   const inputBg = darkMode ? "bg-gray-700 border-gray-600" : "";
 
   return (
-    <div
-      className={`min-h-screen p-4 ${darkMode ? "bg-theme-bg" : "bg-theme-surface"}`}>
+    <div className={`min-h-screen p-4 ${darkMode ? "bg-theme-bg" : "bg-theme-surface"}`}>
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-white">
-          Konfigurasi E-Raport
-        </h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Konfigurasi E-Raport</h1>
 
         {/* Tabs */}
         <div className={`flex space-x-2 mb-6 border-b ${borderColor}`}>
           <button
             onClick={() => setActiveTab("toggle")}
             className={`px-4 py-2 font-medium ${
-              activeTab === "toggle"
-                ? "border-b-2 border-blue-500 text-blue-600"
-                : textSecondary
-            }`}>
+              activeTab === "toggle" ? "border-b-2 border-blue-500 text-blue-600" : textSecondary
+            }`}
+          >
             🔧 Status E-Raport
           </button>
           <button
@@ -491,16 +478,16 @@ export default function RaportConfig({ user, showToast, darkMode }) {
               activeTab === "kkm-jenjang"
                 ? "border-b-2 border-blue-500 text-blue-600"
                 : textSecondary
-            }`}>
+            }`}
+          >
             🎯 KKM Per Jenjang
           </button>
           <button
             onClick={() => setActiveTab("metadata")}
             className={`px-4 py-2 font-medium ${
-              activeTab === "metadata"
-                ? "border-b-2 border-blue-500 text-blue-600"
-                : textSecondary
-            }`}>
+              activeTab === "metadata" ? "border-b-2 border-blue-500 text-blue-600" : textSecondary
+            }`}
+          >
             📝 Metadata Raport
           </button>
         </div>
@@ -511,9 +498,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-semibold mb-2">
-                    Status Fitur E-Raport
-                  </h2>
+                  <h2 className="text-xl font-semibold mb-2">Status Fitur E-Raport</h2>
                   <p className={textSecondary}>
                     Aktifkan fitur ini saat periode input nilai raport
                   </p>
@@ -525,9 +510,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                       {eraportSettings.is_active ? "Aktif" : "Nonaktif"}
                     </div>
                     <div className={`text-xs ${textSecondary}`}>
-                      {eraportSettings.is_active
-                        ? "Fitur dapat diakses"
-                        : "Fitur ditutup"}
+                      {eraportSettings.is_active ? "Fitur dapat diakses" : "Fitur ditutup"}
                     </div>
                   </div>
 
@@ -535,12 +518,11 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                     onClick={handleToggleEraport}
                     className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-300 ${
                       eraportSettings.is_active ? "bg-green-500" : "bg-gray-300"
-                    }`}>
+                    }`}
+                  >
                     <span
                       className={`inline-block h-6 w-6 transform rounded-full bg-theme-bg transition-transform duration-300 ${
-                        eraportSettings.is_active
-                          ? "translate-x-9"
-                          : "translate-x-1"
+                        eraportSettings.is_active ? "translate-x-9" : "translate-x-1"
                       }`}
                     />
                   </button>
@@ -548,10 +530,9 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                   <div className="flex flex-col items-start">
                     <div
                       className={`text-sm font-medium ${
-                        eraportSettings.is_active
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }`}>
+                        eraportSettings.is_active ? "text-green-600" : "text-gray-400"
+                      }`}
+                    >
                       {eraportSettings.is_active ? (
                         <div className="flex items-center">
                           <CheckCircle size={20} className="mr-1" />
@@ -570,9 +551,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Periode Aktif
-                  </label>
+                  <label className="block text-sm font-medium mb-2">Periode Aktif</label>
                   <input
                     type="text"
                     value={eraportSettings.active_period}
@@ -588,9 +567,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Pesan (saat non-aktif)
-                  </label>
+                  <label className="block text-sm font-medium mb-2">Pesan (saat non-aktif)</label>
                   <textarea
                     value={eraportSettings.message}
                     onChange={(e) =>
@@ -608,7 +585,8 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                 <div className="flex space-x-3">
                   <button
                     onClick={handleSaveMessage}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center space-x-2">
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center space-x-2"
+                  >
                     <Save size={18} />
                     <span>Simpan Pesan</span>
                   </button>
@@ -619,7 +597,8 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                       eraportSettings.is_active
                         ? "bg-red-500 hover:bg-red-600 text-white"
                         : "bg-green-500 hover:bg-green-600 text-white"
-                    }`}>
+                    }`}
+                  >
                     {eraportSettings.is_active ? (
                       <>
                         <XCircle size={18} />
@@ -639,18 +618,14 @@ export default function RaportConfig({ user, showToast, darkMode }) {
 
           {activeTab === "kkm-jenjang" && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">
-                Kelola KKM Per Jenjang
-              </h2>
+              <h2 className="text-xl font-semibold mb-4">Kelola KKM Per Jenjang</h2>
               <p className={`mb-6 ${textSecondary}`}>
-                KKM akan berlaku untuk semua kelas paralel dalam jenjang yang
-                sama
+                KKM akan berlaku untuk semua kelas paralel dalam jenjang yang sama
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${textColor}`}>
+                  <label className={`block text-sm font-medium mb-2 ${textColor}`}>
                     Tahun Ajaran
                   </label>
                   <div
@@ -658,20 +633,19 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                       darkMode
                         ? "bg-gray-700 text-gray-300"
                         : "bg-theme-surface text-theme-secondary"
-                    }`}>
+                    }`}
+                  >
                     {academicYear?.year || "-"}
                   </div>
                 </div>
 
                 <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${textColor}`}>
-                    Semester
-                  </label>
+                  <label className={`block text-sm font-medium mb-2 ${textColor}`}>Semester</label>
                   <select
                     value={semester}
                     onChange={(e) => setSemester(e.target.value)}
-                    className={`w-full p-3 rounded-lg border ${inputBg}`}>
+                    className={`w-full p-3 rounded-lg border ${inputBg}`}
+                  >
                     {semesterOptions.map((s) => (
                       <option key={s.value} value={s.value}>
                         {s.label}
@@ -681,14 +655,14 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                 </div>
 
                 <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${textColor}`}>
+                  <label className={`block text-sm font-medium mb-2 ${textColor}`}>
                     Jenjang Kelas
                   </label>
                   <select
                     value={jenjang}
                     onChange={(e) => setJenjang(e.target.value)}
-                    className={`w-full p-3 rounded-lg border ${inputBg}`}>
+                    className={`w-full p-3 rounded-lg border ${inputBg}`}
+                  >
                     <option value="">Pilih Jenjang</option>
                     {jenjangList.map((j) => (
                       <option key={j} value={j}>
@@ -699,13 +673,10 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                 </div>
 
                 <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${textColor}`}>
+                  <label className={`block text-sm font-medium mb-2 ${textColor}`}>
                     Mata Pelajaran
                     {loadingMapel && (
-                      <span className="text-xs text-theme-secondary ml-2">
-                        (loading...)
-                      </span>
+                      <span className="text-xs text-theme-secondary ml-2">(loading...)</span>
                     )}
                   </label>
                   <select
@@ -714,10 +685,9 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                     disabled={!jenjang || loadingMapel}
                     className={`w-full p-3 rounded-lg border ${inputBg} ${
                       !jenjang ? "opacity-50 cursor-not-allowed" : ""
-                    }`}>
-                    <option value="">
-                      {jenjang ? "Pilih Mapel" : "Pilih jenjang dulu"}
-                    </option>
+                    }`}
+                  >
+                    <option value="">{jenjang ? "Pilih Mapel" : "Pilih jenjang dulu"}</option>
                     {mapelOptions.map((m) => (
                       <option key={m} value={m}>
                         {m}
@@ -729,29 +699,18 @@ export default function RaportConfig({ user, showToast, darkMode }) {
 
               {jenjang && mapel && (
                 <div
-                  className={`p-4 rounded-lg mb-6 ${
-                    darkMode ? "bg-blue-900/30" : "bg-blue-50"
-                  }`}>
+                  className={`p-4 rounded-lg mb-6 ${darkMode ? "bg-blue-900/30" : "bg-blue-50"}`}
+                >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3
-                        className={`font-semibold ${
-                          darkMode ? "text-white" : "text-blue-900"
-                        }`}>
+                      <h3 className={`font-semibold ${darkMode ? "text-white" : "text-blue-900"}`}>
                         KKM untuk {mapel}
                       </h3>
-                      <p
-                        className={`text-sm ${
-                          darkMode ? "text-blue-300" : "text-blue-700"
-                        }`}>
-                        Kelas {jenjang} • Semester{" "}
-                        {semester === "1" ? "Ganjil" : "Genap"} •{" "}
+                      <p className={`text-sm ${darkMode ? "text-blue-300" : "text-blue-700"}`}>
+                        Kelas {jenjang} • Semester {semester === "1" ? "Ganjil" : "Genap"} •{" "}
                         {academicYear?.year}
                       </p>
-                      <p
-                        className={`text-sm mt-2 ${
-                          darkMode ? "text-blue-300" : "text-blue-700"
-                        }`}>
+                      <p className={`text-sm mt-2 ${darkMode ? "text-blue-300" : "text-blue-700"}`}>
                         Berlaku untuk semua kelas {jenjang}A sampai {jenjang}F
                       </p>
                     </div>
@@ -784,49 +743,34 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                     saving || !jenjang || !mapel
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700"
-                  } text-white`}>
+                  } text-white`}
+                >
                   <Save size={18} />
                   {saving ? "Menyimpan..." : "Simpan KKM"}
                 </button>
 
                 <button
                   onClick={handleResetKKMJenjang}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-gray-500 hover:bg-gray-600 text-white transition-colors">
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-gray-500 hover:bg-gray-600 text-white transition-colors"
+                >
                   Reset Filter
                 </button>
               </div>
 
               {kkmList.length > 0 && (
                 <div className="mt-8">
-                  <h3 className={`text-lg font-semibold mb-4 ${textColor}`}>
-                    Riwayat KKM
-                  </h3>
+                  <h3 className={`text-lg font-semibold mb-4 ${textColor}`}>Riwayat KKM</h3>
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="min-w-full">
-                      <thead
-                        className={darkMode ? "bg-gray-700" : "bg-theme-surface"}>
+                      <thead className={darkMode ? "bg-gray-700" : "bg-theme-surface"}>
                         <tr>
-                          <th className="p-3 text-left text-sm font-medium">
-                            No
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium">
-                            Mapel
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium">
-                            Jenjang
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium">
-                            Semester
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium">
-                            KKM
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium">
-                            Update Terakhir
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium">
-                            Aksi
-                          </th>
+                          <th className="p-3 text-left text-sm font-medium">No</th>
+                          <th className="p-3 text-left text-sm font-medium">Mapel</th>
+                          <th className="p-3 text-left text-sm font-medium">Jenjang</th>
+                          <th className="p-3 text-left text-sm font-medium">Semester</th>
+                          <th className="p-3 text-left text-sm font-medium">KKM</th>
+                          <th className="p-3 text-left text-sm font-medium">Update Terakhir</th>
+                          <th className="p-3 text-left text-sm font-medium">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -837,24 +781,22 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                               darkMode
                                 ? "border-theme hover:bg-gray-800/50"
                                 : "border-theme hover:bg-theme-surface"
-                            }`}>
+                            }`}
+                          >
                             <td className="p-3">{index + 1}</td>
                             <td className="p-3">{item.mata_pelajaran}</td>
                             <td className="p-3">Kelas {item.jenjang}</td>
-                            <td className="p-3">
-                              {item.semester === "1" ? "Ganjil" : "Genap"}
-                            </td>
+                            <td className="p-3">{item.semester === "1" ? "Ganjil" : "Genap"}</td>
                             <td className="p-3 font-bold">{item.kkm}</td>
                             <td className="p-3 text-sm">
-                              {new Date(item.updated_at).toLocaleDateString(
-                                "id-ID"
-                              )}
+                              {new Date(item.updated_at).toLocaleDateString("id-ID")}
                             </td>
                             <td className="p-3">
                               <button
                                 onClick={() => handleDeleteKKMJenjang(item.id)}
                                 className="p-2 text-red-500 hover:text-red-700 rounded hover:bg-red-50"
-                                title="Hapus">
+                                title="Hapus"
+                              >
                                 <Trash2 size={18} />
                               </button>
                             </td>
@@ -874,13 +816,12 @@ export default function RaportConfig({ user, showToast, darkMode }) {
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Tahun Ajaran
-                  </label>
+                  <label className="block text-sm font-medium mb-2">Tahun Ajaran</label>
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg ${inputBg}`}>
+                    className={`w-full px-3 py-2 border rounded-lg ${inputBg}`}
+                  >
                     {academicYears.map((ay) => (
                       <option key={ay.id} value={ay.id}>
                         {ay.year}
@@ -889,13 +830,12 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Semester
-                  </label>
+                  <label className="block text-sm font-medium mb-2">Semester</label>
                   <select
                     value={selectedSemester}
                     onChange={(e) => setSelectedSemester(e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg ${inputBg}`}>
+                    className={`w-full px-3 py-2 border rounded-lg ${inputBg}`}
+                  >
                     <option value="Ganjil">Ganjil</option>
                     <option value="Genap">Genap</option>
                   </select>
@@ -905,9 +845,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Tanggal Raport *
-                    </label>
+                    <label className="block text-sm font-medium mb-2">Tanggal Raport *</label>
                     <input
                       type="date"
                       value={metadata.tanggal_raport}
@@ -921,9 +859,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Tempat *
-                    </label>
+                    <label className="block text-sm font-medium mb-2">Tempat *</label>
                     <input
                       type="text"
                       value={metadata.tempat}
@@ -941,9 +877,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Nama Kepala Sekolah *
-                    </label>
+                    <label className="block text-sm font-medium mb-2">Nama Kepala Sekolah *</label>
                     <input
                       type="text"
                       value={metadata.nama_kepala_sekolah}
@@ -958,9 +892,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      NIP Kepala Sekolah
-                    </label>
+                    <label className="block text-sm font-medium mb-2">NIP Kepala Sekolah</label>
                     <input
                       type="text"
                       value={metadata.nip_kepala_sekolah}
@@ -999,7 +931,8 @@ export default function RaportConfig({ user, showToast, darkMode }) {
 
                 <button
                   onClick={handleSaveMetadata}
-                  className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center space-x-2">
+                  className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center space-x-2"
+                >
                   <Save size={18} />
                   <span>Simpan Metadata</span>
                 </button>
