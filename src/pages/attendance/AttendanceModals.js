@@ -2,6 +2,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../supabaseClient";
 import { filterBySemester, getActiveAcademicInfo } from "../../services/academicYearService";
+// ✅ LIBUR NASIONAL (otomatis nyesuain tahun ajaran aktif) - biar tanggal
+// Sabtu/Minggu & libur nasional kelihatan di Preview, sama kayak Laporan
+// Bulanan Guru
+import { getActiveYearHolidays } from "../../services/holidayService";
+
+const DAY_ABBR_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 // ==============================================
 // UTILITY FUNCTIONS
@@ -22,6 +28,27 @@ const formatDateHeader = (dateStr) => {
     return `${day}/${month}`;
   } catch {
     return dateStr;
+  }
+};
+
+// ✅ Cek Sabtu(6)/Minggu(0) dari string tanggal "YYYY-MM-DD"
+const isWeekendDate = (dateStr) => {
+  try {
+    const date = new Date(dateStr + "T00:00:00");
+    const dow = date.getDay();
+    return dow === 0 || dow === 6;
+  } catch {
+    return false;
+  }
+};
+
+// ✅ Ambil singkatan nama hari ("Sen", "Sab", dst) dari string tanggal
+const getDayAbbr = (dateStr) => {
+  try {
+    const date = new Date(dateStr + "T00:00:00");
+    return DAY_ABBR_ID[date.getDay()];
+  } catch {
+    return "";
   }
 };
 
@@ -102,6 +129,15 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
   const [rekapData, setRekapData] = useState([]);
   const [attendanceDates, setAttendanceDates] = useState([]);
   const [tableLoading, setTableLoading] = useState(false);
+
+  // ✅ LIBUR NASIONAL: dimuat sekali, disaring otomatis sesuai tahun ajaran
+  // aktif (lihat services/holidayService.js) — dipakai buat kasih tanda
+  // Sabtu/Minggu & libur nasional di tabel Preview
+  const [activeYearHolidays, setActiveYearHolidays] = useState({});
+
+  useEffect(() => {
+    getActiveYearHolidays().then(setActiveYearHolidays);
+  }, []);
 
   // Teacher Info
   const [teacherId, setTeacherId] = useState(null);
@@ -552,8 +588,13 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
           return;
         }
 
-        // Get unique dates
-        const uniqueDates = [...new Set(attendanceData.map((r) => r.date))].sort();
+        // ✅ SEMUA TANGGAL DI BULAN INI (bukan cuma yang ada datanya) — biar
+        // Sabtu/Minggu & libur nasional ikut kelihatan di Preview, sama
+        // kayak Laporan Bulanan Guru
+        const uniqueDates = Array.from({ length: lastDay }, (_, i) => {
+          const dayNum = i + 1;
+          return `${year}-${String(month).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+        });
         setAttendanceDates(uniqueDates);
 
         console.log("📅 Unique dates found:", uniqueDates.length);
@@ -1143,18 +1184,33 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                           Nama Siswa
                         </th>
 
-                        {attendanceDates.map((date, index) => (
-                          <th
-                            key={date}
-                            className={`p-2 text-center font-bold ${
-                              darkMode ? "text-white" : "text-gray-800" // ❌ GANTI JADI text-white
-                            } min-w-[45px] border-r ${
-                              darkMode ? "border-slate-600" : "border-gray-300"
-                            }`}
-                          >
-                            {formatDateHeader(date)}
-                          </th>
-                        ))}
+                        {attendanceDates.map((date, index) => {
+                          const isWknd = isWeekendDate(date);
+                          const holidayName = activeYearHolidays[date] || null;
+                          const isBlockedDay = isWknd || !!holidayName;
+                          return (
+                            <th
+                              key={date}
+                              title={holidayName || undefined}
+                              className={`p-1 text-center font-bold min-w-[45px] border-r ${
+                                darkMode ? "border-slate-600" : "border-gray-300"
+                              } ${
+                                isBlockedDay
+                                  ? darkMode
+                                    ? "bg-red-900/40 text-red-300"
+                                    : "bg-red-50 text-red-600"
+                                  : darkMode
+                                    ? "text-white"
+                                    : "text-gray-800"
+                              }`}
+                            >
+                              <div className="text-[10px] font-normal opacity-80">
+                                {getDayAbbr(date)}
+                              </div>
+                              <div>{formatDateHeader(date)}</div>
+                            </th>
+                          );
+                        })}
 
                         {/* H - Hadir */}
                         <th
@@ -1252,16 +1308,26 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
                               {student.name}
                             </td>
 
-                            {attendanceDates.map((date, index) => (
-                              <td
-                                key={date}
-                                className={`p-2 text-center border-r ${
-                                  darkMode ? "border-slate-700" : "border-gray-200"
-                                }`}
-                              >
-                                {getStatusBadge(student.dailyStatus?.[date])}
-                              </td>
-                            ))}
+                            {attendanceDates.map((date, index) => {
+                              const isBlockedDay =
+                                isWeekendDate(date) || !!activeYearHolidays[date];
+                              return (
+                                <td
+                                  key={date}
+                                  className={`p-2 text-center border-r ${
+                                    darkMode ? "border-slate-700" : "border-gray-200"
+                                  } ${
+                                    isBlockedDay
+                                      ? darkMode
+                                        ? "bg-red-950/30"
+                                        : "bg-red-50/70"
+                                      : ""
+                                  }`}
+                                >
+                                  {getStatusBadge(student.dailyStatus?.[date])}
+                                </td>
+                              );
+                            })}
 
                             <td
                               className={`p-2 text-center font-bold border-r ${
@@ -1566,7 +1632,9 @@ const AttendanceModals = ({ user, onShowToast, darkMode }) => {
             📊 Total {rekapData.length} siswa
             {viewMode === "monthly" &&
               attendanceDates.length > 0 &&
-              ` • ${attendanceDates.length} hari aktif`}
+              ` • ${attendanceDates.length} hari dalam bulan ini (${
+                attendanceDates.filter((d) => !isWeekendDate(d) && !activeYearHolidays[d]).length
+              } hari aktif)`}
           </p>
         </div>
       )}

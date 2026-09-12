@@ -4,74 +4,108 @@
 // Rapor, Foto, dsb) & "Uang Akhir Tahun" (buat kelas 9). Dua-duanya
 // SENGAJA 1 komponen yang sama (bukan dipisah 2 file) karena polanya
 // identik banget -- bedanya cuma:
-// - feeType: 'awal_tahun' | 'akhir_tahun' (kolom pembeda di tabel)
+// - feeType: 'awal_tahun' | 'akhir_tahun' (kolom pembeda di tabel +
+//   key school_settings `other_fee_items_${feeType}`)
 // - gradeFilter: 7 | 9 (buat filter dropdown kelas jadi cuma nampilin
 //   7A-7F atau 9A-9F, sesuai request user: simpel, gak usah filter
 //   angkatan/tahun masuk segala)
 //
-// REVISI (itemized -- kayak nota tulis tangan TU): dulu 1 siswa = 1 row
-// tagihan dengan 1 nominal flat. SEKARANG 1 siswa bisa punya BANYAK
-// item (Kaos OR 150rb, Batik 130rb, Atribut 110rb, Map Rapor 70rb,
-// Foto 40rb -> total 500rb), masing-masing 1 row di other_fee_bills
-// dibedain kolom `item_name`. Nominal per item SENGAJA diinput manual
-// TU pas generate (bukan dari master data item), soalnya daftar & harga
-// itemnya suka beda tiap tahun ajaran/kelas -- lihat sql/003.
+// REVISI BESAR (ngikutin pola SppTab.js persis -- TIDAK ADA TOMBOL
+// GENERATE LAGI):
+// - Dulu: TU generate manual per kelas -> bikin row other_fee_bills
+//   buat SEMUA siswa kelas itu di muka.
+// - SEKARANG: TU cukup atur SEKALI daftar item + nominal per Tahun
+//   Ajaran di tab "Item & Nominal", disimpen di school_settings key
+//   `other_fee_items_awal_tahun` / `other_fee_items_akhir_tahun`,
+//   format JSON per TA, contoh:
+//     { "2026/2027": { "due_date": "2026-08-01", "items": [
+//         { "name": "Kaos OR", "amount": 150000 },
+//         { "name": "Batik", "amount": 130000 } ] } }
+//   Row di other_fee_bills BARU beneran dibikin ON-THE-FLY (lazy
+//   insert) pas TU nyatet pembayaran pertama buat item itu -- sama
+//   persis kayak spp_bills di SppTab.js. Jadi gak ada lagi konsep
+//   "generate buat kelas ini", tinggal atur nominalnya 1x, siswa mana
+//   aja otomatis bisa langsung dibayarin itemnya.
+// - Tahun ajaran yang dipake buat nyari setting item = academic_year
+//   dari KELAS siswa itu sekarang (field `academic_year` di tabel
+//   classes), BUKAN dihitung dari NIS kayak SPP -- soalnya ini fee
+//   sekali-bayar yang nempel ke tahun ajaran BERJALAN siswa itu,
+//   bukan bulan-bulan yang bisa nunggak lintas tahun.
 //
-// Alur bayar ngikutin pola SppTab.js: checklist item (kayak checklist
-// bulan SPP) --
+// Alur bayar: checklist item (kayak checklist bulan SPP) --
 // - Centang BEBERAPA item sekaligus -> dianggap lunas PENUH per item
 //   yang dicentang (gak ada input nominal manual).
 // - Centang cuma 1 item -> boleh nyicil, nominalnya bisa diedit manual
 //   (kadang ortu cuma nitip duit sekian, belum tentu pas 1 item).
 //
-// BEDA dari SppTab.js (SPP):
-// - Bukan bulanan/berulang tiap tahun ajaran -- item digenerate sekali
-//   per siswa per tahun ajaran, gak ada logic tunggakan lintas tahun
-//   kayak SPP (siswa naik kelas dari 7->9 gak "nunggak" Uang Awal Tahun
-//   kelas 7 kalau emang belum pernah digenerate dari awal).
-// - Daftar item + nominalnya diinput manual tiap generate (BEDA dari
-//   SPP yang nominalnya dari school_settings), soalnya "Kaos OR" dkk
-//   suka ganti nominal & bahkan ganti jenis item tiap tahun ajaran.
-// - "academic_year" di-ambil otomatis dari kelas yang dipilih (field
-//   `academic_year` yang udah ada di tabel classes, lihat KeuanganTab.js)
-//   dan disimpen langsung di tiap baris item (denormalized) -- biar
-//   gampang di-query buat Riwayat/Laporan tanpa join balik ke classes.
-//
-// Nempel ke tabel public.other_fee_bills & public.other_fee_payments
-// (lihat sql/002_other_fee_schema.sql + sql/003_other_fee_bill_items.sql)
-// -- SENGAJA 1 pasang tabel general (bukan 4 tabel terpisah kayak
-// spp_bills/spp_payments x2) dengan kolom `fee_type` buat bedain Awal
-// Tahun vs Akhir Tahun + kolom `item_name` buat bedain item dalem 1
-// fee_type yang sama, biar gak duplikasi skema. status di
-// other_fee_bills dihitung OTOMATIS lewat trigger DB dari total
-// other_fee_payments PER ROW (per item) -- komponen ini TIDAK PERNAH
-// update kolom status manual, cukup insert ke other_fee_payments.
+// status di other_fee_bills dihitung OTOMATIS lewat trigger DB dari
+// total other_fee_payments PER ROW (per item) -- komponen ini TIDAK
+// PERNAH update kolom status manual, cukup insert ke
+// other_fee_payments (dan insert ke other_fee_bills kalau row-nya
+// belom ada sama sekali -- lazy insert).
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "../../supabaseClient";
 import {
-  FileText,
+  Settings,
   Search,
   AlertTriangle,
   History,
   Plus,
   Trash2,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Clock,
+  BadgeCheck,
   Loader2,
+  ClipboardList,
 } from "lucide-react";
 import { formatRupiah, Field, inputClass, StatusBadge, EmptyRow } from "./keuanganShared";
 
 const SUB_TABS = [
-  { id: "tagihan", label: "Tagihan", icon: FileText },
+  { id: "item", label: "Item & Nominal", icon: Settings },
   { id: "pembayaran", label: "Catat Pembayaran", icon: Plus },
-  { id: "tunggakan", label: "Tunggakan", icon: AlertTriangle },
+  { id: "rekap", label: "Rekap Pembayaran", icon: ClipboardList },
   { id: "riwayat", label: "Riwayat", icon: History },
 ];
 
 const TagihanLainTab = ({ classes = [], darkMode, user, onShowToast, feeType, gradeFilter }) => {
-  const [subTab, setSubTab] = useState("tagihan");
+  const [subTab, setSubTab] = useState("item");
+  const [itemsSettings, setItemsSettings] = useState({});
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  // Dipake buat nyambungin klik nama siswa di tab Tunggakan -> langsung
+  // lompat ke tab Catat Pembayaran dengan Kelas/Nama Siswa udah ke-isi
+  // otomatis (sama persis pola preset di SppTab.js).
+  const [pembayaranPreset, setPembayaranPreset] = useState(null);
+
+  const settingsKey = `other_fee_items_${feeType}`;
+
+  const fetchSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    const { data, error } = await supabase
+      .from("school_settings")
+      .select("setting_value")
+      .eq("setting_key", settingsKey)
+      .maybeSingle();
+    if (error) {
+      console.error(`Error fetching ${settingsKey}:`, error);
+    } else if (data?.setting_value) {
+      try {
+        setItemsSettings(JSON.parse(data.setting_value));
+      } catch (e) {
+        console.error(`${settingsKey} bukan JSON valid:`, e);
+      }
+    } else {
+      setItemsSettings({});
+    }
+    setSettingsLoading(false);
+  }, [settingsKey]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  const goToPembayaran = useCallback((preset) => {
+    setPembayaranPreset(preset);
+    setSubTab("pembayaran");
+  }, []);
 
   const notify = useCallback(
     (msg, type = "success") => {
@@ -112,36 +146,61 @@ const TagihanLainTab = ({ classes = [], darkMode, user, onShowToast, feeType, gr
         ))}
       </div>
 
-      {subTab === "tagihan" && (
-        <TagihanLainPanel
-          classes={relevantClasses}
-          darkMode={darkMode}
-          user={user}
-          notify={notify}
-          feeType={feeType}
-        />
-      )}
-      {subTab === "pembayaran" && (
-        <PembayaranLainPanel darkMode={darkMode} user={user} notify={notify} feeType={feeType} />
-      )}
-      {subTab === "tunggakan" && (
-        <TunggakanLainPanel classes={relevantClasses} darkMode={darkMode} feeType={feeType} />
-      )}
-      {subTab === "riwayat" && (
-        <RiwayatLainPanel classes={relevantClasses} darkMode={darkMode} feeType={feeType} />
+      {settingsLoading ? (
+        <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+          Memuat pengaturan item...
+        </div>
+      ) : (
+        <>
+          {subTab === "item" && (
+            <ItemSettingsPanel
+              classes={relevantClasses}
+              darkMode={darkMode}
+              notify={notify}
+              settingsKey={settingsKey}
+              itemsSettings={itemsSettings}
+              onSaved={setItemsSettings}
+              feeType={feeType}
+            />
+          )}
+          {subTab === "pembayaran" && (
+            <PembayaranLainPanel
+              classes={relevantClasses}
+              darkMode={darkMode}
+              user={user}
+              notify={notify}
+              feeType={feeType}
+              itemsSettings={itemsSettings}
+              preset={pembayaranPreset}
+              onPresetApplied={() => setPembayaranPreset(null)}
+            />
+          )}
+          {subTab === "rekap" && (
+            <RekapLainPanel
+              classes={relevantClasses}
+              darkMode={darkMode}
+              feeType={feeType}
+              itemsSettings={itemsSettings}
+              onPilihSiswa={(studentId, classId) => goToPembayaran({ classId, studentId })}
+            />
+          )}
+          {subTab === "riwayat" && (
+            <RiwayatLainPanel classes={relevantClasses} darkMode={darkMode} feeType={feeType} />
+          )}
+        </>
       )}
     </div>
   );
 };
 
 // ============================================================
-// Util kecil: total & status gabungan dari sekumpulan item bill
+// Util bareng
 // ============================================================
 const sumAmount = (items) => items.reduce((sum, it) => sum + Number(it.amount || 0), 0);
 
-// Status gabungan buat 1 siswa dari beberapa item:
-// - semua item "paid" -> paid
-// - ada yang udah ada progress (partial/paid) tapi belum semua -> partial
+// Status gabungan dari sekumpulan item per siswa (buat badge ringkasan):
+// - semua "paid" -> paid
+// - ada progress (partial/paid) tapi belum semua -> partial
 // - belum ada progress sama sekali -> unpaid
 const combinedStatus = (items) => {
   if (items.length === 0) return "unpaid";
@@ -150,60 +209,110 @@ const combinedStatus = (items) => {
   return "unpaid";
 };
 
+// Gabungin daftar item dari setting (nama+nominal standar TA itu) sama
+// row other_fee_bills yang UDAH PERNAH kebikin buat siswa itu (kalo
+// ada -- biasanya karena udah pernah dibayar sebagian/lunas). Row yang
+// belom pernah ada dianggap unpaid, billId null (bakal di-insert
+// on-the-fly pas disimpen pembayarannya).
+function mergeStudentItems(itemsForYear, existingBills) {
+  if (!itemsForYear?.items) return [];
+  const billMap = new Map((existingBills || []).map((b) => [b.item_name, b]));
+  return itemsForYear.items.map((it) => {
+    const existing = billMap.get(it.name);
+    const paid = (existing?.other_fee_payments || []).reduce(
+      (sum, p) => sum + Number(p.amount_paid || 0),
+      0
+    );
+    // Kalo row-nya udah ada, pake nominal yang KESIMPEN di row itu
+    // (biar konsisten sama kuitansi lama walau setting nominal
+    // kebetulan udah diubah TU belakangan). Kalo belom ada row, pake
+    // nominal dari setting saat ini.
+    const amount = existing ? Number(existing.amount) : Number(it.amount);
+    return {
+      item_name: it.name,
+      amount,
+      billId: existing?.id || null,
+      status: existing?.status || "unpaid",
+      remaining: Math.max(0, amount - paid),
+    };
+  });
+}
+
 let itemRowSeq = 0;
-const newItemRow = () => ({ rowId: `new-${++itemRowSeq}`, name: "", amount: "" });
+const newItemRow = (name = "", amount = "") => ({ rowId: `row-${++itemRowSeq}`, name, amount });
+
+// Default bawaan buat "Uang Awal Tahun" kelas 7 -- persis nota tulis
+// tangan TU (Kaos OR, Batik, Atribut, Map Rapor, Foto). Ini CUMA
+// dipakein pas belum ada rincian TERSIMPAN buat Tahun Ajaran yang lagi
+// dipilih, biar TU gak perlu ngetik ulang dari nol -- nominalnya
+// TETEP bisa diedit/dihapus sebelum diklik Simpan (misal buat TA
+// depan nominalnya naik). Iuran SPP bulanan (Rp 12.500/bln) SENGAJA
+// TIDAK dimasukin ke sini, itu diatur lewat SppTab.js.
+const DEFAULT_ITEMS = {
+  awal_tahun: [
+    { name: "Kaos OR", amount: 150000 },
+    { name: "Batik", amount: 130000 },
+    { name: "Atribut", amount: 110000 },
+    { name: "Map Rapor", amount: 70000 },
+    { name: "Foto", amount: 40000 },
+  ],
+  akhir_tahun: [
+    { name: "Uang Akhir Tahun", amount: 200000 },
+    { name: "Map Ijazah", amount: 50000 },
+    { name: "Foto", amount: 50000 },
+  ],
+};
 
 // ============================================================
-// 1. Tagihan -- generate itemized (nama item + nominal, bisa lebih
-//    dari 1 baris) + lihat rincian per siswa
+// 1. Item & Nominal -- atur SEKALI daftar item + nominal per Tahun
+//    Ajaran (disimpen di school_settings, bukan bikin row per siswa)
 // ============================================================
-const TagihanLainPanel = ({ classes, darkMode, user, notify, feeType }) => {
-  const [classId, setClassId] = useState("");
+const ItemSettingsPanel = ({
+  classes,
+  darkMode,
+  notify,
+  settingsKey,
+  itemsSettings,
+  onSaved,
+  feeType,
+}) => {
+  // Tebakan default: Tahun Ajaran yang lagi kepake di kelas-kelas
+  // jenjang ini sekarang (paling gede/terbaru di antara classes.academic_year).
+  const currentYearGuess = useMemo(() => {
+    const years = classes.map((c) => c.academic_year).filter(Boolean);
+    if (years.length === 0) return "";
+    return years.sort().slice(-1)[0];
+  }, [classes]);
+
+  const [academicYear, setAcademicYear] = useState(currentYearGuess);
   const [dueDate, setDueDate] = useState("");
   const [itemRows, setItemRows] = useState([newItemRow()]);
-  const [bills, setBills] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [openStudent, setOpenStudent] = useState(null);
-
-  const selectedClass = classes.find((c) => c.id === classId);
-
-  const fetchBills = useCallback(async () => {
-    if (!classId) {
-      setBills([]);
-      return;
-    }
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("other_fee_bills")
-      .select("id, item_name, amount, due_date, status, student_id, students(id, full_name, nis)")
-      .eq("class_id", classId)
-      .eq("fee_type", feeType)
-      .order("created_at", { ascending: true });
-    if (error) {
-      console.error("Error fetching bills:", error);
-    } else {
-      setBills(data || []);
-    }
-    setLoading(false);
-  }, [classId, feeType]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchBills();
-  }, [fetchBills]);
+    if (!academicYear && currentYearGuess) setAcademicYear(currentYearGuess);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentYearGuess]);
 
-  // Kelompokin item per siswa buat ditampilin di tabel (1 baris = 1
-  // siswa, expand buat lihat rincian itemnya).
-  const groupedByStudent = useMemo(() => {
-    const map = new Map();
-    for (const b of bills) {
-      if (!map.has(b.student_id)) {
-        map.set(b.student_id, { student: b.students, items: [] });
-      }
-      map.get(b.student_id).items.push(b);
+  // Begitu Tahun Ajaran diketik/dipilih, load rincian item yang UDAH
+  // pernah disimpen buat tahun itu (kalo ada), biar TU tinggal edit,
+  // bukan ngetik ulang dari nol tiap buka tab ini. Kalo BELUM pernah
+  // disimpen sama sekali, prefill pake DEFAULT_ITEMS (nota tulis
+  // tangan TU) biar tinggal cek & klik Simpan.
+  useEffect(() => {
+    const existing = itemsSettings[academicYear];
+    if (existing?.items?.length) {
+      setItemRows(existing.items.map((it) => newItemRow(it.name, String(it.amount))));
+      setDueDate(existing.due_date || "");
+    } else if (DEFAULT_ITEMS[feeType]) {
+      setItemRows(DEFAULT_ITEMS[feeType].map((it) => newItemRow(it.name, String(it.amount))));
+      setDueDate("");
+    } else {
+      setItemRows([newItemRow()]);
+      setDueDate("");
     }
-    return Array.from(map.values());
-  }, [bills]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [academicYear]);
 
   const addItemRow = () => setItemRows((prev) => [...prev, newItemRow()]);
   const removeItemRow = (rowId) =>
@@ -212,85 +321,40 @@ const TagihanLainPanel = ({ classes, darkMode, user, notify, feeType }) => {
     setItemRows((prev) => prev.map((r) => (r.rowId === rowId ? { ...r, [field]: value } : r)));
 
   const validItems = itemRows.filter((r) => r.name.trim() && Number(r.amount) > 0);
-  const totalPerSiswa = sumAmount(validItems);
+  const total = sumAmount(validItems);
 
-  const handleGenerate = async () => {
-    if (!classId || validItems.length === 0) {
-      notify("Pilih kelas & isi minimal 1 item + nominal dulu bre", "error");
+  const handleSave = async () => {
+    if (!academicYear.trim() || validItems.length === 0) {
+      notify("Isi Tahun Ajaran & minimal 1 item + nominal dulu bre", "error");
       return;
     }
-    setGenerating(true);
+    setSaving(true);
     try {
-      // Ambil siswa aktif di kelas ini
-      const { data: students, error: studentErr } = await supabase
-        .from("students")
-        .select("id")
-        .eq("class_id", classId)
-        .eq("is_active", true);
-      if (studentErr) throw studentErr;
-
-      if (!students || students.length === 0) {
-        notify("Gak ada siswa aktif di kelas ini", "error");
-        setGenerating(false);
-        return;
-      }
-
-      // Skip kombinasi siswa+item yang udah ada (biar bisa nambah item
-      // BARU belakangan -- misal ketinggalan "Foto" -- tanpa
-      // nge-duplikat item yang udah digenerate duluan). Unique
-      // constraint (student_id, fee_type, academic_year, item_name) di
-      // DB juga bakal nolak, tapi di-filter dulu di sini biar gak
-      // insert error massal.
-      const itemNames = validItems.map((it) => it.name.trim());
-      const { data: existing, error: existingErr } = await supabase
-        .from("other_fee_bills")
-        .select("student_id, item_name")
-        .eq("fee_type", feeType)
-        .in("item_name", itemNames)
-        .in(
-          "student_id",
-          students.map((s) => s.id)
+      const updated = {
+        ...itemsSettings,
+        [academicYear.trim()]: {
+          due_date: dueDate || null,
+          items: validItems.map((it) => ({ name: it.name.trim(), amount: Number(it.amount) })),
+        },
+      };
+      const { error } = await supabase
+        .from("school_settings")
+        .upsert(
+          { setting_key: settingsKey, setting_value: JSON.stringify(updated) },
+          { onConflict: "setting_key" }
         );
-      if (existingErr) throw existingErr;
-
-      const existingSet = new Set((existing || []).map((e) => `${e.student_id}::${e.item_name}`));
-      const toInsert = [];
-      for (const s of students) {
-        for (const it of validItems) {
-          const name = it.name.trim();
-          if (existingSet.has(`${s.id}::${name}`)) continue;
-          toInsert.push({
-            student_id: s.id,
-            class_id: classId,
-            fee_type: feeType,
-            item_name: name,
-            academic_year: selectedClass?.academic_year || null,
-            amount: Number(it.amount),
-            due_date: dueDate || null,
-            created_by: user?.id || null,
-          });
-        }
-      }
-
-      if (toInsert.length === 0) {
-        notify("Semua siswa udah punya semua item ini", "error");
-        setGenerating(false);
-        return;
-      }
-
-      const { error: insertErr } = await supabase.from("other_fee_bills").insert(toInsert);
-      if (insertErr) throw insertErr;
-
-      notify(`Tagihan dibuat: ${toInsert.length} item buat ${students.length} siswa`, "success");
-      setItemRows([newItemRow()]);
-      fetchBills();
+      if (error) throw error;
+      onSaved(updated);
+      notify(`Rincian item TA ${academicYear} tersimpan`, "success");
     } catch (err) {
-      console.error("Error generating bills:", err);
-      notify("Gagal generate tagihan", "error");
+      console.error("Error saving item settings:", err);
+      notify("Gagal menyimpan rincian item", "error");
     } finally {
-      setGenerating(false);
+      setSaving(false);
     }
   };
+
+  const savedYears = Object.keys(itemsSettings).sort().reverse();
 
   return (
     <div className="space-y-6">
@@ -300,21 +364,21 @@ const TagihanLainPanel = ({ classes, darkMode, user, notify, feeType }) => {
         }`}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Kelas" darkMode={darkMode}>
-            <select
-              value={classId}
-              onChange={(e) => setClassId(e.target.value)}
+          <Field label="Tahun Ajaran" darkMode={darkMode}>
+            <input
+              value={academicYear}
+              onChange={(e) => setAcademicYear(e.target.value)}
+              placeholder="mis. 2026/2027"
+              list="ta-options"
               className={inputClass(darkMode)}
-            >
-              <option value="">Pilih kelas</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.id}
-                </option>
+            />
+            <datalist id="ta-options">
+              {savedYears.map((y) => (
+                <option key={y} value={y} />
               ))}
-            </select>
+            </datalist>
           </Field>
-          <Field label="Jatuh tempo (opsional, berlaku semua item)" darkMode={darkMode}>
+          <Field label="Jatuh tempo (opsional)" darkMode={darkMode}>
             <input
               type="date"
               value={dueDate}
@@ -369,188 +433,167 @@ const TagihanLainPanel = ({ classes, darkMode, user, notify, feeType }) => {
 
         {validItems.length > 0 && (
           <p className={`text-sm font-semibold ${darkMode ? "text-gray-200" : "text-gray-700"}`}>
-            Total per siswa: {formatRupiah(totalPerSiswa)} ({validItems.length} item)
+            Total per siswa: {formatRupiah(total)} ({validItems.length} item)
           </p>
         )}
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
+        >
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+          Simpan Rincian TA {academicYear || "-"}
+        </button>
       </div>
 
-      <button
-        onClick={handleGenerate}
-        disabled={generating}
-        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
-      >
-        {generating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-        Generate Tagihan buat Kelas Ini
-      </button>
-
-      <div
-        className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
-      >
-        <table className="w-full text-sm">
-          <thead
-            className={
-              darkMode
-                ? "bg-gray-800 text-gray-400 border-b border-gray-700"
-                : "bg-gray-50 text-gray-500 border-b border-gray-200"
-            }
+      {savedYears.length > 0 && (
+        <div
+          className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+        >
+          <div
+            className={`px-5 py-3 text-xs font-semibold ${darkMode ? "bg-gray-800 text-gray-400 border-b border-gray-700" : "bg-gray-50 text-gray-500 border-b border-gray-200"}`}
           >
-            <tr>
-              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">NIS</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Nama</th>
-              <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide">
-                Total ({">"} klik buat rincian)
-              </th>
-              <th className="px-5 py-3 text-center text-xs font-semibold tracking-wide">Status</th>
-            </tr>
-          </thead>
-          <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
-            {loading ? (
-              <EmptyRow darkMode={darkMode}>Memuat...</EmptyRow>
-            ) : !classId ? (
-              <EmptyRow darkMode={darkMode}>Pilih kelas dulu buat lihat tagihan.</EmptyRow>
-            ) : groupedByStudent.length === 0 ? (
-              <EmptyRow darkMode={darkMode}>Belum ada tagihan buat kelas ini.</EmptyRow>
-            ) : (
-              groupedByStudent.map(({ student, items }) => {
-                const isOpen = openStudent === student?.id;
-                const total = sumAmount(items);
-                const status = combinedStatus(items);
-                return (
-                  <React.Fragment key={student?.id}>
-                    <tr
-                      onClick={() => setOpenStudent(isOpen ? null : student?.id)}
-                      className={`cursor-pointer transition-colors ${
-                        darkMode
-                          ? "text-gray-200 hover:bg-gray-800/50"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      <td className="px-5 py-3 font-mono text-xs">{student?.nis}</td>
-                      <td className="px-5 py-3 font-medium">
-                        <span className="flex items-center gap-1.5">
-                          {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                          {student?.full_name}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-right font-medium">
-                        {formatRupiah(total)}{" "}
-                        <span className="text-gray-400">({items.length})</span>
-                      </td>
-                      <td className="px-5 py-3 text-center">
-                        <StatusBadge status={status} />
-                      </td>
-                    </tr>
-                    {isOpen && (
-                      <tr>
-                        <td colSpan={4} className={darkMode ? "bg-gray-800/40" : "bg-gray-50/60"}>
-                          <div className="px-5 py-3 space-y-1.5">
-                            {items.map((it) => (
-                              <div
-                                key={it.id}
-                                className="flex items-center justify-between text-xs px-2 py-1.5"
-                              >
-                                <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
-                                  {it.item_name}
-                                </span>
-                                <span className="flex items-center gap-2.5">
-                                  <span className="font-medium">{formatRupiah(it.amount)}</span>
-                                  <StatusBadge status={it.status} />
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+            Tahun ajaran yang udah punya rincian
+          </div>
+          <div className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
+            {savedYears.map((y) => (
+              <button
+                key={y}
+                onClick={() => setAcademicYear(y)}
+                className={`w-full flex items-center justify-between px-5 py-3 text-sm text-left transition-colors ${
+                  darkMode ? "text-gray-200 hover:bg-gray-800/50" : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span>
+                  TA {y} · {itemsSettings[y].items.length} item
+                </span>
+                <span className="font-medium">
+                  {formatRupiah(sumAmount(itemsSettings[y].items))}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // ============================================================
-// 2. Catat Pembayaran -- cari siswa -> checklist item (kayak
-//    checklist bulan di SppTab.js). Centang > 1 item = lunas penuh
-//    per item. Centang cuma 1 item = boleh nyicil (nominal manual).
+// 2. Catat Pembayaran -- Kelas -> Nama Siswa -> checklist item (kayak
+//    checklist bulan di SppTab.js), dihitung langsung dari setting
+//    Item & Nominal, TANPA butuh generate duluan.
 // ============================================================
-const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
-  const [searchTerm, setSearchTerm] = useState("");
+const PembayaranLainPanel = ({
+  classes,
+  darkMode,
+  user,
+  notify,
+  feeType,
+  itemsSettings,
+  preset,
+  onPresetApplied,
+}) => {
+  const [classId, setClassId] = useState("");
   const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [items, setItems] = useState([]);
-  const [loadingItems, setLoadingItems] = useState(false);
+  const [studentId, setStudentId] = useState("");
+  const [bills, setBills] = useState([]);
+  const [loadingBills, setLoadingBills] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [amountPaid, setAmountPaid] = useState("");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [method, setMethod] = useState("cash");
   const [note, setNote] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const selectedClass = classes.find((c) => c.id === classId);
+  const student = students.find((s) => s.id === studentId) || null;
+  const academicYear = selectedClass?.academic_year || null;
+  const itemsForYear = academicYear ? itemsSettings[academicYear] : null;
 
   useEffect(() => {
-    const timeout = setTimeout(async () => {
-      if (searchTerm.trim().length < 2) {
-        setStudents([]);
-        return;
-      }
+    if (!classId) {
+      setStudents([]);
+      return;
+    }
+    const fetchStudents = async () => {
       const { data, error } = await supabase
         .from("students")
         .select("id, full_name, nis, class_id")
+        .eq("class_id", classId)
         .eq("is_active", true)
-        .or(`full_name.ilike.%${searchTerm}%,nis.ilike.%${searchTerm}%`)
-        .limit(10);
-      if (!error) setStudents(data || []);
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [searchTerm]);
+        .order("full_name", { ascending: true });
+      if (error) {
+        console.error("Error fetching students:", error);
+        return;
+      }
+      setStudents(data || []);
+    };
+    fetchStudents();
+  }, [classId]);
 
-  const pickStudent = async (s) => {
-    setSelectedStudent(s);
+  const fetchBills = useCallback(
+    async (sid) => {
+      setLoadingBills(true);
+      const { data, error } = await supabase
+        .from("other_fee_bills")
+        .select("id, item_name, amount, status, other_fee_payments(amount_paid)")
+        .eq("student_id", sid)
+        .eq("fee_type", feeType);
+      if (error) {
+        console.error("Error fetching other_fee_bills:", error);
+        setBills([]);
+      } else {
+        setBills(data || []);
+      }
+      setLoadingBills(false);
+    },
+    [feeType]
+  );
+
+  const pickStudent = (id) => {
+    setStudentId(id);
     setSelected(new Set());
     setAmountPaid("");
-    setStudents([]);
-    setSearchTerm(s.full_name);
-    setLoadingItems(true);
-    const { data, error } = await supabase
-      .from("other_fee_bills")
-      .select("id, item_name, amount, academic_year, status, other_fee_payments(amount_paid)")
-      .eq("student_id", s.id)
-      .eq("fee_type", feeType)
-      .order("created_at", { ascending: true });
-    if (!error) {
-      const withRemaining = (data || []).map((b) => {
-        const paid = (b.other_fee_payments || []).reduce(
-          (sum, p) => sum + Number(p.amount_paid || 0),
-          0
-        );
-        return { ...b, remaining: Math.max(0, Number(b.amount) - paid) };
-      });
-      setItems(withRemaining);
-    }
-    setLoadingItems(false);
+    if (id) fetchBills(id);
   };
 
+  // Preset dari klik nama siswa di tab Tunggakan.
+  useEffect(() => {
+    if (!preset) return;
+    if (preset.classId) setClassId(preset.classId);
+  }, [preset]);
+
+  useEffect(() => {
+    if (!preset?.studentId) return;
+    if (classId !== preset.classId) return;
+    if (!students.some((s) => s.id === preset.studentId)) return;
+    pickStudent(preset.studentId);
+    onPresetApplied?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset, classId, students]);
+
+  const items = useMemo(() => mergeStudentItems(itemsForYear, bills), [itemsForYear, bills]);
+
   const toggleItem = (item) => {
-    if (item.remaining <= 0) return; // udah lunas, gak usah bisa dicentang
+    if (item.remaining <= 0) return;
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(item.id) ? next.delete(item.id) : next.add(item.id);
+      next.has(item.item_name) ? next.delete(item.item_name) : next.add(item.item_name);
       return next;
     });
   };
 
-  const selectedItems = items.filter((it) => selected.has(it.id));
+  const selectedItems = items.filter((it) => selected.has(it.item_name));
   const isSingleSelect = selectedItems.length === 1;
   const totalDipilih = isSingleSelect
     ? Number(amountPaid) || 0
     : selectedItems.reduce((sum, it) => sum + it.remaining, 0);
 
-  // Prefill nominal manual pas cuma 1 item yang dicentang (default =
-  // sisa tagihan item itu, tapi tetep bisa diedit buat nyicil).
+  const belumBayar = items.filter((it) => it.status !== "paid");
+  const totalTunggakan = belumBayar.reduce((sum, it) => sum + it.remaining, 0);
+
   useEffect(() => {
     if (selectedItems.length === 1) {
       setAmountPaid(String(selectedItems[0].remaining));
@@ -569,20 +612,42 @@ const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
       notify("Isi nominal bayar dulu bre", "error");
       return;
     }
-    setSubmitting(true);
+    setSaving(true);
     try {
-      const rows = selectedItems.map((it) => ({
-        bill_id: it.id,
-        student_id: selectedStudent.id,
-        amount_paid: isSingleSelect ? Number(amountPaid) : it.remaining,
-        payment_date: paymentDate,
-        payment_method: method,
-        note: note || null,
-        recorded_by: user?.id || null,
-      }));
-      const { error } = await supabase.from("other_fee_payments").insert(rows);
-      if (error) throw error;
-
+      for (const it of selectedItems) {
+        let billId = it.billId;
+        // Lazy insert: row other_fee_bills buat item ini belom pernah
+        // ada -- bikin sekarang, PAS mau dibayar (sama pola kayak
+        // spp_bills di SppTab.js).
+        if (!billId) {
+          const { data: newBill, error: billErr } = await supabase
+            .from("other_fee_bills")
+            .insert({
+              student_id: student.id,
+              class_id: student.class_id,
+              fee_type: feeType,
+              item_name: it.item_name,
+              academic_year: academicYear,
+              amount: it.amount,
+              due_date: itemsForYear?.due_date || null,
+              created_by: user?.id || null,
+            })
+            .select("id")
+            .single();
+          if (billErr) throw billErr;
+          billId = newBill.id;
+        }
+        const { error: payErr } = await supabase.from("other_fee_payments").insert({
+          bill_id: billId,
+          student_id: student.id,
+          amount_paid: isSingleSelect ? Number(amountPaid) : it.remaining,
+          payment_date: paymentDate,
+          payment_method: method,
+          note: note || null,
+          recorded_by: user?.id || null,
+        });
+        if (payErr) throw payErr;
+      }
       notify(
         isSingleSelect
           ? "Pembayaran berhasil dicatat"
@@ -590,240 +655,310 @@ const PembayaranLainPanel = ({ darkMode, user, notify, feeType }) => {
         "success"
       );
       setNote("");
-      // refresh item list buat siswa ini
-      pickStudent(selectedStudent);
+      fetchBills(student.id);
     } catch (err) {
       console.error("Error recording payment:", err);
       notify("Gagal mencatat pembayaran", "error");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div>
-        <Field label="Cari siswa (nama / NIS)" darkMode={darkMode}>
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setSelectedStudent(null);
-              }}
-              placeholder="Ketik nama atau NIS..."
-              className={`${inputClass(darkMode)} w-full pl-9`}
-            />
-          </div>
-        </Field>
-
-        {students.length > 0 && (
-          <div
-            className={`mt-2 rounded-xl border divide-y overflow-hidden shadow-sm ${darkMode ? "border-gray-700 divide-gray-700" : "border-gray-200 divide-gray-100"}`}
-          >
-            {students.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => pickStudent(s)}
-                className={`w-full text-left px-3.5 py-2.5 text-sm transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-900/20 ${darkMode ? "text-gray-200" : "text-gray-700"}`}
-              >
-                <span className="font-medium">{s.full_name}</span>{" "}
-                <span className="text-gray-400 font-mono text-xs">
-                  ({s.nis}) · {s.class_id}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {selectedStudent && (
-          <div className="mt-5">
-            <p
-              className={`text-xs font-semibold mb-2.5 flex items-center justify-between ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-            >
-              <span>Rincian tagihan — {selectedStudent.full_name}</span>
-              {selected.size > 0 && <span>{selected.size} item dicentang</span>}
-            </p>
-            {loadingItems ? (
-              <div
-                className={`flex items-center gap-2 text-sm px-3.5 py-3 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-              >
-                <Loader2 size={14} className="animate-spin" /> Memuat...
-              </div>
-            ) : items.length === 0 ? (
-              <p className={`text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                Belum ada tagihan buat siswa ini.
-              </p>
-            ) : (
-              <div className="space-y-2.5">
-                {items.map((it) => {
-                  const isPaid = it.remaining <= 0;
-                  const isChecked = selected.has(it.id);
-                  return (
-                    <button
-                      key={it.id}
-                      onClick={() => toggleItem(it)}
-                      disabled={isPaid}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                        isChecked
-                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
-                          : darkMode
-                            ? "border-gray-700 hover:bg-gray-800"
-                            : "border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      <span className={darkMode ? "text-gray-200" : "text-gray-700"}>
-                        {it.item_name}
-                        {it.status === "partial" && (
-                          <span className="text-amber-500 text-xs ml-1.5">
-                            (sisa {formatRupiah(it.remaining)})
-                          </span>
-                        )}
-                      </span>
-                      <span className="flex items-center gap-2.5">
-                        {!isPaid && <span className="font-medium">{formatRupiah(it.amount)}</span>}
-                        <StatusBadge status={it.status} />
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
+    <div className="space-y-6">
       <div
-        className={`rounded-2xl border p-5 space-y-4 shadow-sm ${darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"}`}
+        className={`rounded-2xl border p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 shadow-sm ${
+          darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
+        }`}
       >
-        <p className={`text-sm font-semibold ${darkMode ? "text-gray-200" : "text-gray-700"}`}>
-          Detail Pembayaran
-        </p>
-        {selectedItems.length === 0 ? (
-          <p className={`text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-            Pilih siswa & centang item di sebelah kiri dulu.
-          </p>
-        ) : (
-          <>
-            {isSingleSelect ? (
-              <Field label="Nominal dibayar (bisa dicicil)" darkMode={darkMode}>
-                <input
-                  type="number"
-                  value={amountPaid}
-                  onChange={(e) => setAmountPaid(e.target.value)}
-                  placeholder={`maks. ${formatRupiah(selectedItems[0].remaining)}`}
-                  className={`${inputClass(darkMode)} w-full`}
-                />
-              </Field>
-            ) : (
-              <div
-                className={`px-4 py-3 rounded-xl text-sm font-semibold ${darkMode ? "bg-blue-900/20 text-blue-300" : "bg-blue-50 text-blue-700"}`}
-              >
-                {selectedItems.length} item dicentang, dianggap lunas penuh masing-masing ={" "}
-                {formatRupiah(totalDipilih)}
-              </div>
-            )}
-            <Field label="Tanggal bayar" darkMode={darkMode}>
-              <input
-                type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
-                className={`${inputClass(darkMode)} w-full`}
-              />
-            </Field>
-            <Field label="Metode" darkMode={darkMode}>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value)}
-                className={`${inputClass(darkMode)} w-full`}
-              >
-                <option value="cash">Tunai</option>
-                <option value="transfer">Transfer</option>
-                <option value="other">Lainnya</option>
-              </select>
-            </Field>
-            <Field label="Catatan (opsional)" darkMode={darkMode}>
-              <input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="mis. cicilan ke-2"
-                className={`${inputClass(darkMode)} w-full`}
-              />
-            </Field>
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
-            >
-              {submitting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <CheckCircle2 size={16} />
-              )}
-              Simpan Pembayaran
-            </button>
-          </>
-        )}
+        <Field label="Kelas" darkMode={darkMode}>
+          <select
+            value={classId}
+            onChange={(e) => {
+              setClassId(e.target.value);
+              pickStudent("");
+            }}
+            className={inputClass(darkMode)}
+          >
+            <option value="">Pilih kelas</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.id}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Nama Siswa" darkMode={darkMode}>
+          <select
+            value={studentId}
+            onChange={(e) => pickStudent(e.target.value)}
+            className={inputClass(darkMode)}
+            disabled={!classId}
+          >
+            <option value="">Pilih siswa</option>
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.full_name} ({s.nis})
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
+
+      {!student && (
+        <div
+          className={`rounded-2xl border border-dashed py-16 text-center text-sm flex flex-col items-center gap-3 ${
+            darkMode ? "border-gray-700 text-gray-500" : "border-gray-300 text-gray-400"
+          }`}
+        >
+          <div className={`p-3 rounded-full ${darkMode ? "bg-gray-800" : "bg-gray-100"}`}>
+            <Search size={20} />
+          </div>
+          Pilih kelas lalu nama siswa buat lihat rincian tagihannya.
+        </div>
+      )}
+
+      {student && loadingBills && (
+        <div
+          className={`text-sm flex items-center gap-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+        >
+          <Loader2 size={14} className="animate-spin" /> Memuat...
+        </div>
+      )}
+
+      {student && !loadingBills && !itemsForYear && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 flex items-center gap-3">
+          <AlertTriangle size={16} className="shrink-0" />
+          Belum ada rincian item buat Tahun Ajaran {academicYear || "kelas ini"}. Atur dulu di tab
+          "Item & Nominal".
+        </div>
+      )}
+
+      {student && !loadingBills && itemsForYear && (
+        <div
+          className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+        >
+          <div
+            className={`p-5 border-b flex flex-wrap items-center justify-between gap-4 ${
+              darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            }`}
+          >
+            <div>
+              <p className={`font-semibold ${darkMode ? "text-gray-100" : "text-gray-800"}`}>
+                {student.full_name}
+              </p>
+              <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                NIS {student.nis} · Kelas {student.class_id} · TA {academicYear}
+              </p>
+            </div>
+            <div
+              className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 ${
+                belumBayar.length > 0
+                  ? darkMode
+                    ? "bg-red-900/20 text-red-300"
+                    : "bg-red-50 text-red-700"
+                  : darkMode
+                    ? "bg-emerald-900/20 text-emerald-300"
+                    : "bg-emerald-50 text-emerald-700"
+              }`}
+            >
+              {belumBayar.length > 0 ? <AlertTriangle size={15} /> : <BadgeCheck size={15} />}
+              {belumBayar.length > 0
+                ? `Tertunggak ${formatRupiah(totalTunggakan)} (${belumBayar.length} dari ${items.length} item)`
+                : `Lunas semua (${items.length} item)`}
+            </div>
+          </div>
+
+          <div className="p-5 space-y-2.5">
+            {items.map((it) => {
+              const isPaid = it.remaining <= 0;
+              const isChecked = selected.has(it.item_name);
+              return (
+                <button
+                  key={it.item_name}
+                  onClick={() => toggleItem(it)}
+                  disabled={isPaid}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                    isChecked
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                      : darkMode
+                        ? "border-gray-700 hover:bg-gray-800"
+                        : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className={darkMode ? "text-gray-200" : "text-gray-700"}>
+                    {it.item_name}
+                    {it.status === "partial" && (
+                      <span className="text-amber-500 text-xs ml-1.5">
+                        (sisa {formatRupiah(it.remaining)})
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-2.5">
+                    {!isPaid && <span className="font-medium">{formatRupiah(it.amount)}</span>}
+                    <StatusBadge status={it.status} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedItems.length > 0 && (
+            <div
+              className={`p-5 border-t space-y-4 ${darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"}`}
+            >
+              {isSingleSelect ? (
+                <Field label="Nominal dibayar (bisa dicicil)" darkMode={darkMode}>
+                  <input
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                    placeholder={`maks. ${formatRupiah(selectedItems[0].remaining)}`}
+                    className={`${inputClass(darkMode)} w-full`}
+                  />
+                </Field>
+              ) : (
+                <p
+                  className={`text-sm font-semibold ${darkMode ? "text-gray-200" : "text-gray-700"}`}
+                >
+                  {selectedItems.length} item dicentang, dianggap lunas penuh masing-masing ={" "}
+                  <span className="text-blue-600 dark:text-blue-400">
+                    {formatRupiah(totalDipilih)}
+                  </span>
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="Tanggal bayar" darkMode={darkMode}>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className={inputClass(darkMode)}
+                  />
+                </Field>
+                <Field label="Metode" darkMode={darkMode}>
+                  <select
+                    value={method}
+                    onChange={(e) => setMethod(e.target.value)}
+                    className={inputClass(darkMode)}
+                  >
+                    <option value="cash">Tunai</option>
+                    <option value="transfer">Transfer</option>
+                    <option value="other">Lainnya</option>
+                  </select>
+                </Field>
+                <Field label="Catatan (opsional)" darkMode={darkMode}>
+                  <input
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="mis. cicilan ke-2"
+                    className={inputClass(darkMode)}
+                  />
+                </Field>
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                disabled={saving}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
+              >
+                {saving ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={16} />
+                )}
+                Catat Pembayaran
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 // ============================================================
-// 3. Tunggakan -- rekap siswa yang masih ada item belum lunas
+// 3. Rekap Pembayaran -- per kelas, tampilin SEMUA siswa (Lunas /
+//    Belum Lunas / Semua), klik nama buat expand rincian tiap item
+//    per status. Dihitung dari setting Item & Nominal + row
+//    other_fee_bills yang udah ada (item yang belom pernah dibayar
+//    sama sekali dianggap unpaid walau belom punya row).
 // ============================================================
-const TunggakanLainPanel = ({ classes, darkMode, feeType }) => {
+const STATUS_FILTERS = [
+  { id: "semua", label: "Semua" },
+  { id: "lunas", label: "Lunas" },
+  { id: "belum", label: "Belum Lunas" },
+];
+
+const RekapLainPanel = ({ classes, darkMode, feeType, itemsSettings, onPilihSiswa }) => {
   const [classId, setClassId] = useState("");
-  const [rows, setRows] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("belum");
+  const [allRows, setAllRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchTunggakan = useCallback(async () => {
-    setLoading(true);
-    let query = supabase
-      .from("other_fee_bills")
-      .select(
-        "id, item_name, amount, academic_year, status, student_id, students(id, full_name, nis, class_id), other_fee_payments(amount_paid)"
-      )
-      .eq("fee_type", feeType)
-      .neq("status", "paid");
-    if (classId) query = query.eq("class_id", classId);
+  const selectedClass = classes.find((c) => c.id === classId);
+  const academicYear = selectedClass?.academic_year || null;
+  const itemsForYear = academicYear ? itemsSettings[academicYear] : null;
 
-    const { data, error } = await query;
-    if (error) {
-      console.error("Error fetching tunggakan:", error);
-      setRows([]);
-    } else {
-      const byStudent = new Map();
-      for (const b of data || []) {
-        const paid = (b.other_fee_payments || []).reduce(
-          (sum, p) => sum + Number(p.amount_paid || 0),
-          0
-        );
-        const remaining = Math.max(0, Number(b.amount) - paid);
-        if (remaining <= 0) continue;
-        if (!byStudent.has(b.student_id)) {
-          byStudent.set(b.student_id, {
-            student: b.students,
-            academic_year: b.academic_year,
-            items: [],
-            total: 0,
-          });
-        }
-        const g = byStudent.get(b.student_id);
-        g.items.push({ item_name: b.item_name, remaining });
-        g.total += remaining;
-      }
-      setRows(Array.from(byStudent.values()));
+  const fetchRekap = useCallback(async () => {
+    if (!classId || !itemsForYear) {
+      setAllRows([]);
+      return;
     }
-    setLoading(false);
-  }, [classId, feeType]);
+    setLoading(true);
+    try {
+      const { data: studentsInClass, error: studErr } = await supabase
+        .from("students")
+        .select("id, full_name, nis, class_id")
+        .eq("class_id", classId)
+        .eq("is_active", true)
+        .order("full_name", { ascending: true });
+      if (studErr) throw studErr;
+
+      const ids = (studentsInClass || []).map((s) => s.id);
+      let billsByStudent = new Map();
+      if (ids.length > 0) {
+        const { data: allBills, error: billsErr } = await supabase
+          .from("other_fee_bills")
+          .select("student_id, item_name, amount, status, other_fee_payments(amount_paid)")
+          .eq("fee_type", feeType)
+          .in("student_id", ids);
+        if (billsErr) throw billsErr;
+        billsByStudent = (allBills || []).reduce((map, b) => {
+          if (!map.has(b.student_id)) map.set(b.student_id, []);
+          map.get(b.student_id).push(b);
+          return map;
+        }, new Map());
+      }
+
+      const result = (studentsInClass || []).map((s) => {
+        const items = mergeStudentItems(itemsForYear, billsByStudent.get(s.id) || []);
+        const remaining = items.reduce((sum, it) => sum + it.remaining, 0);
+        return { ...s, items, status: combinedStatus(items), remaining };
+      });
+
+      setAllRows(result);
+    } catch (err) {
+      console.error("Error fetching rekap:", err);
+      setAllRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [classId, feeType, itemsForYear]);
 
   useEffect(() => {
-    fetchTunggakan();
-  }, [fetchTunggakan]);
+    fetchRekap();
+  }, [fetchRekap]);
 
-  const totalTunggakan = useMemo(() => rows.reduce((sum, r) => sum + r.total, 0), [rows]);
+  const rows = useMemo(() => {
+    if (statusFilter === "lunas") return allRows.filter((r) => r.status === "paid");
+    if (statusFilter === "belum") return allRows.filter((r) => r.status !== "paid");
+    return allRows;
+  }, [allRows, statusFilter]);
+
+  const totalTunggakanKelas = allRows.reduce((sum, r) => sum + r.remaining, 0);
+  const jumlahLunas = allRows.filter((r) => r.status === "paid").length;
 
   return (
     <div className="space-y-6">
@@ -833,13 +968,13 @@ const TunggakanLainPanel = ({ classes, darkMode, feeType }) => {
         }`}
       >
         <div className="sm:w-56">
-          <Field label="Filter kelas" darkMode={darkMode}>
+          <Field label="Pilih Kelas" darkMode={darkMode}>
             <select
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
               className={inputClass(darkMode)}
             >
-              <option value="">Semua kelas</option>
+              <option value="">Pilih kelas</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.id}
@@ -848,15 +983,58 @@ const TunggakanLainPanel = ({ classes, darkMode, feeType }) => {
             </select>
           </Field>
         </div>
-        <div
-          className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-red-900/20 text-red-300" : "bg-red-50 text-red-700"}`}
-        >
-          Total tunggakan: {formatRupiah(totalTunggakan)} ({rows.length} siswa)
-        </div>
+        {classId && itemsForYear && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-emerald-900/20 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}
+            >
+              {jumlahLunas} dari {allRows.length} siswa lunas
+            </div>
+            <div
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-red-900/20 text-red-300" : "bg-red-50 text-red-700"}`}
+            >
+              Total tunggakan: {formatRupiah(totalTunggakanKelas)}
+            </div>
+          </div>
+        )}
       </div>
 
+      {classId && !itemsForYear && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 flex items-center gap-3">
+          <AlertTriangle size={16} className="shrink-0" />
+          Belum ada rincian item buat Tahun Ajaran {academicYear}. Atur dulu di tab "Item &
+          Nominal".
+        </div>
+      )}
+
+      {classId && itemsForYear && (
+        <div className="flex items-center gap-1.5">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setStatusFilter(f.id)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                statusFilter === f.id
+                  ? "bg-emerald-600 text-white"
+                  : darkMode
+                    ? "bg-gray-800 text-gray-400 hover:text-gray-200"
+                    : "bg-gray-100 text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+          Klik baris siswa buat langsung catat pembayarannya.
+        </p>
+      )}
+
       <div
-        className={`rounded-2xl border overflow-hidden shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+        className={`rounded-2xl border overflow-x-auto shadow-sm ${darkMode ? "border-gray-700" : "border-gray-200"}`}
       >
         <table className="w-full text-sm">
           <thead
@@ -867,47 +1045,71 @@ const TunggakanLainPanel = ({ classes, darkMode, feeType }) => {
             }
           >
             <tr>
-              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Nama</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">Kelas</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">
-                Tahun Ajaran
+              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap">
+                Nama Siswa
               </th>
-              <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide">
-                Item Belum Lunas
-              </th>
-              <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide">
+              {(itemsForYear?.items || []).map((it) => (
+                <th
+                  key={it.name}
+                  className="px-3 py-3 text-center text-xs font-semibold tracking-wide whitespace-nowrap"
+                >
+                  {it.name}
+                </th>
+              ))}
+              <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide whitespace-nowrap">
                 Sisa Tagihan
+              </th>
+              <th className="px-5 py-3 text-center text-xs font-semibold tracking-wide whitespace-nowrap">
+                Status
               </th>
             </tr>
           </thead>
           <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
             {loading ? (
               <EmptyRow darkMode={darkMode}>Memuat...</EmptyRow>
+            ) : !classId ? (
+              <EmptyRow darkMode={darkMode}>Pilih kelas dulu.</EmptyRow>
             ) : rows.length === 0 ? (
               <EmptyRow darkMode={darkMode}>
                 <span className="flex items-center justify-center gap-2">
-                  <CheckCircle2 size={16} className="text-emerald-500" /> Gak ada tunggakan.
+                  <CheckCircle2 size={16} className="text-emerald-500" />
+                  {statusFilter === "lunas"
+                    ? "Belum ada yang lunas."
+                    : statusFilter === "belum"
+                      ? "Gak ada tunggakan."
+                      : "Belum ada siswa aktif di kelas ini."}
                 </span>
               </EmptyRow>
             ) : (
               rows.map((r) => (
                 <tr
-                  key={r.student?.id}
-                  className={`transition-colors ${
+                  key={r.id}
+                  onClick={() => onPilihSiswa?.(r.id, r.class_id)}
+                  className={`cursor-pointer transition-colors ${
                     darkMode
                       ? "text-gray-200 hover:bg-gray-800/50"
                       : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  <td className="px-5 py-3 font-medium">{r.student?.full_name}</td>
-                  <td className="px-5 py-3">{r.student?.class_id}</td>
-                  <td className="px-5 py-3">{r.academic_year || "-"}</td>
-                  <td
-                    className={`px-5 py-3 text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-                  >
-                    {r.items.map((it) => it.item_name).join(", ")}
+                  <td className="px-5 py-3 font-medium whitespace-nowrap">
+                    {r.full_name}
+                    <span
+                      className={`block font-mono text-[11px] font-normal ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                    >
+                      {r.nis}
+                    </span>
                   </td>
-                  <td className="px-5 py-3 text-right font-medium">{formatRupiah(r.total)}</td>
+                  {r.items.map((it) => (
+                    <td key={it.item_name} className="px-3 py-3 text-center">
+                      <StatusBadge status={it.status} />
+                    </td>
+                  ))}
+                  <td className="px-5 py-3 text-right font-medium whitespace-nowrap">
+                    {r.remaining > 0 ? formatRupiah(r.remaining) : "-"}
+                  </td>
+                  <td className="px-5 py-3 text-center">
+                    <StatusBadge status={r.status} />
+                  </td>
                 </tr>
               ))
             )}
@@ -919,7 +1121,8 @@ const TunggakanLainPanel = ({ classes, darkMode, feeType }) => {
 };
 
 // ============================================================
-// 4. Riwayat -- log semua pembayaran (per item)
+// 4. Riwayat -- log semua pembayaran (per item) -- gak berubah dari
+//    versi sebelumnya, tetep baca dari other_fee_payments.
 // ============================================================
 const RiwayatLainPanel = ({ classes, darkMode, feeType }) => {
   const [classId, setClassId] = useState("");
@@ -1044,7 +1247,6 @@ const RiwayatLainPanel = ({ classes, darkMode, feeType }) => {
                 >
                   <td className="px-5 py-3 whitespace-nowrap">
                     <span className="flex items-center gap-1.5 text-xs">
-                      <Clock size={13} className="text-gray-400 shrink-0" />
                       {new Date(r.payment_date).toLocaleDateString("id-ID")}
                     </span>
                   </td>

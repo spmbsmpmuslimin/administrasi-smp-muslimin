@@ -5,6 +5,11 @@ import ReactDOM from "react-dom/client";
 import { supabase } from "../../supabaseClient";
 // ✅ TAMBAH IMPORT FILTER BY SEMESTER
 import { filterBySemester, getSemesterById } from "../../services/academicYearService";
+// ✅ LIBUR NASIONAL (otomatis nyesuain tahun ajaran aktif) - biar Sabtu/Minggu
+// & libur nasional kelihatan di export, sama kayak Laporan Bulanan Guru
+import { getActiveYearHolidays } from "../../services/holidayService";
+
+const DAY_ABBR_ID = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 /**
  * Modal component for export selection
@@ -484,16 +489,30 @@ export const exportAttendanceToExcel = async (
       return { success: false, message: "Tidak ada data kehadiran" };
     }
 
-    // Get unique dates and sort them
-    const uniqueDates = [...new Set(attendanceRecords?.map((record) => record.date) || [])]
-      .sort()
-      .map((dateStr) => {
-        const [year, month, day] = dateStr.split("-");
-        return {
-          original: dateStr,
-          display: `${day}-${month}`,
-        };
-      });
+    // ✅ LOAD LIBUR NASIONAL (sesuai tahun ajaran aktif)
+    const activeYearHolidays = await getActiveYearHolidays();
+
+    // ✅ SEMUA TANGGAL DI BULAN INI (bukan cuma yang ada datanya) — biar
+    // Sabtu/Minggu & libur nasional ikut kelihatan, sama kayak Laporan
+    // Bulanan Guru. Sebelumnya cuma nampilin tanggal yang ada presensinya.
+    const allDates = Array.from({ length: lastDay }, (_, i) => {
+      const dayNum = i + 1;
+      const dateStr = `${year}-${month}-${String(dayNum).padStart(2, "0")}`;
+      const dateObj = new Date(parseInt(year), parseInt(month) - 1, dayNum);
+      const dow = dateObj.getDay(); // 0 = Minggu, 6 = Sabtu
+      const isWeekendDay = dow === 0 || dow === 6;
+      const holidayName = activeYearHolidays[dateStr] || null;
+
+      return {
+        original: dateStr,
+        display: `${String(dayNum).padStart(2, "0")}-${month}`,
+        dayAbbr: DAY_ABBR_ID[dow],
+        isWeekendDay,
+        holidayName,
+        isBlocked: isWeekendDay || !!holidayName,
+      };
+    });
+    const uniqueDates = allDates;
 
     // ✅ Helper function untuk normalize status - SAMA SEPERTI DI AttendanceModals.js
     const normalizeStatus = (status) => {
@@ -597,7 +616,7 @@ export const exportAttendanceToExcel = async (
       [
         "No.",
         "Nama Siswa",
-        ...uniqueDates.map((d) => d.display),
+        ...uniqueDates.map((d) => `${d.dayAbbr}\n${d.display}`),
         "Hadir",
         "Izin",
         "Sakit",
@@ -656,11 +675,18 @@ export const exportAttendanceToExcel = async (
     for (let col = 1; col <= totalCols; col++) {
       const cell = tableHeaderRow.getCell(col);
       cell.font = { name: "Arial", size: 10, bold: true };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+
+      // ✅ Kolom tanggal (index baseCols+1 .. baseCols+dateCols) yang jatuh
+      // di Sabtu/Minggu atau libur nasional dikasih warna beda (pink),
+      // sisanya (No, Nama, ringkasan) tetap biru muda seperti biasa.
+      const dateInfo = uniqueDates[col - baseCols - 1];
+      const isBlockedCol = dateInfo && dateInfo.isBlocked;
+
       cell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FFE8F4FD" },
+        fgColor: { argb: isBlockedCol ? "FFF7C6C7" : "FFE8F4FD" },
       };
       cell.border = {
         top: { style: "thin" },
@@ -669,7 +695,7 @@ export const exportAttendanceToExcel = async (
         right: { style: "thin" },
       };
     }
-    tableHeaderRow.height = 20;
+    tableHeaderRow.height = 28;
 
     // Style data rows
     const dataStartRow = 6;
@@ -697,9 +723,23 @@ export const exportAttendanceToExcel = async (
         } else if (col >= 3 && col <= 2 + dateCols) {
           // Date columns
           cell.alignment = { horizontal: "center", vertical: "middle" };
-          // Color coding for attendance
           const value = cell.value;
-          if (value === "H") {
+          const dateInfo = uniqueDates[col - 3];
+
+          if (dateInfo && dateInfo.isBlocked) {
+            // ✅ SABTU/MINGGU ATAU LIBUR NASIONAL — pink, prioritas di atas status
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFF7C6C7" },
+            };
+            cell.font = { name: "Arial", size: 9, color: { argb: "FF8B1E1E" } };
+            if (dateInfo.holidayName) {
+              cell.note = dateInfo.holidayName;
+            } else if (dateInfo.isWeekendDay) {
+              cell.note = dateInfo.dayAbbr === "Sab" ? "Hari Sabtu" : "Hari Minggu";
+            }
+          } else if (value === "H") {
             cell.fill = {
               type: "pattern",
               pattern: "solid",
@@ -746,6 +786,25 @@ export const exportAttendanceToExcel = async (
     for (let i = 0; i < summaryCols; i++) {
       worksheet.getColumn(summaryStartCol + i).width = i === 5 ? 12 : 8; // Persentase wider
     }
+
+    // ✅ PAGE SETUP: landscape + muat semua kolom dalam 1 halaman lebar
+    // (kolom tanggal sekarang bisa sampai 31, jadi wajib di-scale biar
+    // tetap muat 1 halaman pas di-print/preview PDF)
+    worksheet.pageSetup = {
+      orientation: "landscape",
+      paperSize: 9, // A4
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0, // biarkan tinggi menyesuaikan (bisa >1 halaman ke bawah kalau siswa banyak)
+      margins: {
+        left: 0.3,
+        right: 0.3,
+        top: 0.4,
+        bottom: 0.4,
+        header: 0.2,
+        footer: 0.2,
+      },
+    };
 
     // ✅ FOOTER WITH TEACHER NAME - IMPROVED
     const footerStartRow = dataStartRow + students.length + 2;
