@@ -6,7 +6,7 @@
 // dsb. Semua editing itu tetep punya wali kelas doang (lewat
 // Organigram.js aslinya, di menuConfig.js path "/organigram").
 //
-// Kenapa dipisah jadi file sendiri (bukan reuse Organigram.js apa
+// Kenapa Dipisah jadi file sendiri (bukan reuse Organigram.js apa
 // adanya): sama kayak alasan StudentDenahDuduk.js —
 // 1. Organigram.js pake `currentUser?.homeroom_class_id`, field yang
 //    cuma ada di session guru, bukan siswa.
