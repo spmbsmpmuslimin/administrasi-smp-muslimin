@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-12T14:41:17.813Z",
-  "executionTimeMs": 1754,
+  "generatedAt": "2026-09-12T22:24:45.951Z",
+  "executionTimeMs": 4963,
   "filesScanned": 270,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
-    "warningCount": 3,
+    "warningCount": 1,
     "infoCount": 6,
-    "totalIssues": 9
+    "totalIssues": 7
   },
   "categories": [
     {
@@ -175,22 +175,6 @@
       "label": "Academic Year Service Usage",
       "issues": [
         {
-          "severity": "warning",
-          "title": "9 lokasi kemungkinan hardcode tahun ajaran dari kalender, bukan dari DB/service",
-          "description": "File ini ngitung tahun ajaran sendiri dari tanggal hari ini (pola `.getMonth()` + template literal semacam `${currentYear}/${currentYear + 1}`), gak pernah nyentuh tabel academic_years atau academicYearService sama sekali. Ini lebih riskan daripada sekadar 'belum pake service' — kalau tahun ajaran aktif di database di-override manual (misal kalender akademik meleset dari asumsi kode), nilai di file ini gak bakal pernah ikut berubah. Cek manual apakah ini emang disengaja (misal fallback pas query gagal) atau beneran jadi sumber utama.",
-          "details": [
-            "src/portal-siswa/StudentJadwal.js:24 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/spmb/SPMB.js:53 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/spmb/SPMB.js:55 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/spmb/SPMB.js:76 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/spmb/SPMB.js:78 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/spmb/SpmbExcel.js:46 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/spmb/SpmbExcel.js:48 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/system/SystemTab.js:346 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual",
-            "src/system/SystemTab.js:347 → hardcode tahun ajaran dari kalender (pola `${...year...}/${...year...}`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual"
-          ]
-        },
-        {
           "severity": "info",
           "title": "1 lokasi filter pakai academic_year_id tanpa import academicYearService",
           "description": "Sekadar FYI, BUKAN otomatis berarti salah. File ini filter query pakai academic_year_id tapi gak import academicYearService — ini sah-sah aja kalau ID-nya emang diterima dari luar (parameter fungsi / prop komponen) dan file ini cuma 'consumer', bukan yang nentuin tahun aktif. Cek manual satu-satu.",
@@ -205,37 +189,15 @@
       "label": "Frontend <-> Supabase Alignment",
       "issues": [
         {
-          "severity": "warning",
-          "title": "8 tabel di Supabase gak pernah dipanggil lewat .from() di frontend",
-          "description": "Ditarik langsung dari skema live Supabase (bukan strukturfile.txt), lalu dicocokin ke SEMUA file src/. Kandidat tabel 'mati' -- fitur yang udah dihapus/dipindah, atau tabel yang emang cuma diakses lewat Supabase Edge Function/RPC/database function (gak kelihatan dari static analysis kode frontend ini, jadi cek dulu manual sebelum drop tabelnya).",
-          "details": [
-            "academic_events",
-            "attendance_eraport",
-            "attendances_view",
-            "event_categories",
-            "kaldik_documents",
-            "spp_receipt_counters",
-            "teacher_attendance_view",
-            "tindaklanjut_homevisits"
-          ]
-        },
-        {
           "severity": "info",
-          "title": "14 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
+          "title": "7 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
           "description": "Tabelnya DIPAKE, tapi ada kolom yang gak pernah muncul di select/insert/update/filter manapun (dan gak ada select(\"*\") buat tabel ini yang bisa 'nyembunyiin' pemakaian implisit). Bisa jadi kolom peninggalan fitur lama, atau kolom yang emang cuma diisi lewat trigger/default value di DB. Cek manual, terutama kalau ada kolom NOT NULL tanpa default yang gak pernah di-insert dari frontend.",
           "details": [
-            "pengumuman_siswa → kolom gak pernah disebut: updated_at",
-            "nilai_eraport_detail → kolom gak pernah disebut: created_at, updated_at",
             "spp_bills → kolom gak pernah disebut: created_at, note, updated_at",
             "spp_payments → kolom gak pernah disebut: created_at",
             "other_fee_bills → kolom gak pernah disebut: created_at",
             "other_fee_payments → kolom gak pernah disebut: created_at",
-            "student_reports → kolom gak pernah disebut: attendance, created_at, created_by, extracurricular, homeroom_note, updated_at",
-            "student_report_grades → kolom gak pernah disebut: created_at",
-            "kkm_mapel → kolom gak pernah disebut: id",
-            "buku → kolom gak pernah disebut: created_at, kategori, penerbit, rak, tahun, total_eksemplar, updated_at",
             "period_schedules → kolom gak pernah disebut: created_at, updated_at",
-            "teacher_codes → kolom gak pernah disebut: created_at",
             "peserta_ujian → kolom gak pernah disebut: asal_kelas, created_at, id, no_peserta, nomor_ruangan, siswa_id",
             "teacher_profiles → kolom gak pernah disebut: created_at, id, updated_at"
           ]

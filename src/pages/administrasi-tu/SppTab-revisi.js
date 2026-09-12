@@ -57,7 +57,6 @@ import {
   Trash2,
   Printer,
   FileSpreadsheet,
-  ClipboardList,
 } from "lucide-react";
 import { MONTH_NAMES, formatRupiah, Field, inputClass, EmptyRow } from "./keuanganShared";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
@@ -123,7 +122,7 @@ const getKelasByJenjang = (classes, jenjang) =>
 // buat arti "Lunas" di dalem konten -- gak dipake buat identitas tab.
 const SUB_TABS = [
   { id: "pembayaran", label: "Catat Pembayaran", icon: CreditCard, activeClass: "bg-blue-600" },
-  { id: "rekap", label: "Rekap Pembayaran", icon: ClipboardList, activeClass: "bg-amber-600" },
+  { id: "tunggakan", label: "Tunggakan", icon: AlertTriangle, activeClass: "bg-amber-600" },
   { id: "riwayat", label: "Riwayat", icon: History, activeClass: "bg-indigo-600" },
 ];
 
@@ -215,8 +214,8 @@ const SppTab = ({ classes = [], darkMode, user, onShowToast }) => {
               onPresetApplied={() => setPembayaranPreset(null)}
             />
           )}
-          {subTab === "rekap" && (
-            <RekapPanel
+          {subTab === "tunggakan" && (
+            <TunggakanPanel
               classes={classes}
               darkMode={darkMode}
               nominalPerTA={nominalPerTA}
@@ -887,180 +886,145 @@ const MonthDot = ({ status, isDue, label }) => {
   return <X size={20} strokeWidth={3.5} className="text-red-500" title={title} />;
 };
 
-// Skema running TA sekarang (dari tanggal hari ini).
+// Skema running TA sekarang (dari tanggal hari ini) -- dipake sebagai
+// definisi 12 kolom bulan yang SAMA buat semua siswa di tabel, gak
+// peduli tahun masuk siswa itu bareng-bareng atau enggak. Tunggakan
+// dari TA-TA sebelumnya (kalo ada) diringkes jadi 1 kolom terpisah.
 const getCurrentTAInfo = () => {
   const now = new Date();
   const start = now.getMonth() + 1 >= 7 ? now.getFullYear() : now.getFullYear() - 1;
   return { start, label: academicYearLabel(start) };
 };
 
-// Model tabel ini SENGAJA ngikutin cara TU kerja pake buku catatan
-// fisik: 1 buku = 1 Tahun Ajaran. Mau cek tunggakan siswa kelas 9 pas
-// masih kelas 7/8, TU tinggal ganti "buku" (pilih TA di dropdown), BUKAN
-// expand baris atau klik-klik detail. Setiap kartu bulan cuma nunjukin
-// status BUAT TA YANG LAGI DIPILIH itu doang -- simpel & konsisten sama
-// mental model tabel manual di buku.
-//
-// PENTING: dropdown TA-nya DIHITUNG DARI TAHUN MASUK SISWA YANG ADA DI
-// KELAS ITU (dibaca dari pola NIS), BUKAN dari histori spp_bills yang
-// udah kecatet. Kalo diambil dari histori bills, TA yang belom PERNAH
-// ada transaksi sama sekali (misal TA pas siswa kelas 9 sekarang masih
-// kelas 7, sementara aplikasi ini baru dipake belakangan) malah gak
-// bakal muncul di dropdown -- padahal itu justru yang mau dicek/dibayar
-// duluan. Row spp_bills tetep di-lazy-insert kayak biasa pas TU nyatet
-// pembayaran buat bulan manapun, gak peduli TA-nya lama atau baru.
-const STATUS_FILTERS = [
-  { id: "semua", label: "Semua" },
-  { id: "lunas", label: "Lunas" },
-  { id: "belum", label: "Belum Lunas" },
-];
-
-const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) => {
+const TunggakanPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) => {
   const [classId, setClassId] = useState("");
-  const [roster, setRoster] = useState([]); // siswa di kelas + entryYear + status per bulan (dari DB)
-  const [rosterLoading, setRosterLoading] = useState(false);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [openStudent, setOpenStudent] = useState(null);
 
   const currentTA = useMemo(() => getCurrentTAInfo(), []);
-  const [selectedTAStart, setSelectedTAStart] = useState(currentTA.start);
-  const selectedTA = academicYearLabel(selectedTAStart);
-  const isCurrentBook = selectedTAStart === currentTA.start;
-
-  // TA yang tersedia di dropdown = dari TA berjalan mundur sampe tahun
-  // masuk PALING LAMA di antara siswa kelas ini (biar kelas 9 kebagian
-  // opsi buku kelas 7 & 8-nya juga, kelas 7 cuma kebagian buku
-  // sendiri). Di-cap 5 biar gak kebablasan kalo ada siswa tinggal kelas
-  // berkali-kali / data NIS yang aneh.
-  const taOptions = useMemo(() => {
-    const resolvedYears = roster.filter((s) => !s.unresolved).map((s) => s.entryYear);
-    const minEntryYear = resolvedYears.length > 0 ? Math.min(...resolvedYears) : currentTA.start;
-    const span = Math.min(currentTA.start - Math.min(minEntryYear, currentTA.start), 4);
-    const years = [];
-    for (let y = currentTA.start; y >= currentTA.start - span; y--) years.push(y);
-    return years.map((start) => ({ start, label: academicYearLabel(start) }));
-  }, [roster, currentTA]);
-
-  // Fetch roster + SEMUA bill kelas ini SEKALI per ganti kelas (bukan
-  // tiap ganti dropdown TA) -- pindah "buku" abis ini tinggal itung
-  // ulang di memori, gak perlu roundtrip DB lagi, jadi kerasa instan.
-  useEffect(() => {
-    if (!classId) {
-      setRoster([]);
-      return;
-    }
-    const fetchRoster = async () => {
-      setRosterLoading(true);
-      try {
-        const { data: studentsInClass, error: studErr } = await supabase
-          .from("students")
-          .select("id, full_name, nis, class_id")
-          .eq("class_id", classId)
-          .eq("is_active", true)
-          .order("full_name", { ascending: true });
-        if (studErr) throw studErr;
-
-        const ids = (studentsInClass || []).map((s) => s.id);
-        let billsByStudent = new Map();
-        if (ids.length > 0) {
-          const { data: allBills, error: billsErr } = await supabase
-            .from("spp_bills")
-            .select("student_id, period_month, period_year, status")
-            .in("student_id", ids);
-          if (billsErr) throw billsErr;
-          billsByStudent = (allBills || []).reduce((map, b) => {
-            map.set(`${b.student_id}:${b.period_year}-${b.period_month}`, b.status);
-            return map;
-          }, new Map());
-        }
-
-        setRoster(
-          (studentsInClass || []).map((s) => {
-            const entryYear = parseEntryStartYear(s.nis);
-            return {
-              ...s,
-              entryYear,
-              unresolved: entryYear == null,
-              statusOf: (p) => billsByStudent.get(`${s.id}:${p.key}`) || "unpaid",
-            };
-          })
-        );
-      } catch (err) {
-        console.error("Error fetching roster tunggakan:", err);
-        setRoster([]);
-      } finally {
-        setRosterLoading(false);
-      }
-    };
-    fetchRoster();
-  }, [classId]);
-
-  // Reset ke TA berjalan tiap ganti kelas, biar gak nyangkut milih TA
-  // yang gak relevan buat kelas barunya.
-  const handleClassChange = (id) => {
-    setClassId(id);
-    setSelectedTAStart(currentTA.start);
-  };
-
-  // 12 kolom bulan buat TA yang lagi dipilih (buku ini doang).
+  // Header 12 bulan TA berjalan -- dipake buat semua baris siswa,
+  // dihasilin dari periode "seandainya masuk pas TA ini" biar urutan
+  // bulan+tahun kalendernya konsisten.
   const headerPeriods = useMemo(
-    () => generateExpectedPeriods(selectedTAStart).filter((p) => p.ta === selectedTA),
-    [selectedTAStart, selectedTA]
+    () => generateExpectedPeriods(currentTA.start).filter((p) => p.ta === currentTA.label),
+    [currentTA]
   );
 
-  // Rows dihitung LOKAL dari roster yang udah ke-fetch -- ganti buku TA
-  // gak perlu nunggu loading DB lagi. SEMUA siswa tetep dimasukin
-  // (termasuk yang udah lunas) -- filter tampilan diatur lewat
-  // `statusFilter` di bawah, BUKAN dibuang dari data mentahnya. Status
-  // "lunas" cuma ngeliat bulan yang udah `isDue` (bulan yang belom
-  // jalan gak dihitung, biar siswa baru bayar 3 bulan awal tetep
-  // kecatet Lunas, bukan nyangkut di Belum Lunas gara-gara 9 bulan
-  // depan belom waktunya).
-  const [statusFilter, setStatusFilter] = useState("belum");
+  const fetchTunggakan = useCallback(async () => {
+    if (!classId) {
+      setRows([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data: studentsInClass, error: studErr } = await supabase
+        .from("students")
+        .select("id, full_name, nis, class_id")
+        .eq("class_id", classId)
+        .eq("is_active", true)
+        .order("full_name", { ascending: true });
+      if (studErr) throw studErr;
 
-  const allRows = useMemo(() => {
-    return roster.map((s) => {
-      if (s.unresolved) return { ...s, months: [], status: "unresolved", totalTunggakan: 0 };
-      if (s.entryYear > selectedTAStart)
-        return { ...s, months: [], belumMasuk: true, status: "n/a", totalTunggakan: 0 };
+      const ids = (studentsInClass || []).map((s) => s.id);
+      let billsByStudent = new Map();
+      if (ids.length > 0) {
+        const { data: allBills, error: billsErr } = await supabase
+          .from("spp_bills")
+          .select("student_id, period_month, period_year, status")
+          .in("student_id", ids);
+        if (billsErr) throw billsErr;
+        billsByStudent = (allBills || []).reduce((map, b) => {
+          map.set(`${b.student_id}:${b.period_year}-${b.period_month}`, b.status);
+          return map;
+        }, new Map());
+      }
 
-      const months = headerPeriods.map((hp) => ({ ...hp, status: s.statusOf(hp) }));
-      const dueMonths = months.filter((p) => p.isDue);
-      const belum = dueMonths.filter((p) => p.status !== "paid");
-      const totalTunggakan = belum.reduce((sum, p) => sum + (nominalPerTA[p.ta] ?? 0), 0);
+      const result = (studentsInClass || [])
+        .map((s) => {
+          const entryYear = parseEntryStartYear(s.nis);
+          if (entryYear == null)
+            return {
+              ...s,
+              unresolved: true,
+              currentMonths: [],
+              tunggakanLalu: 0,
+              totalTunggakan: 0,
+            };
 
-      const status =
-        dueMonths.length === 0 || belum.length === 0
-          ? "paid"
-          : belum.length === dueMonths.length
-            ? "unpaid"
-            : "partial";
+          const allPeriods = generateExpectedPeriods(entryYear);
+          const statusOf = (p) => billsByStudent.get(`${s.id}:${p.key}`) || "unpaid";
 
-      return { ...s, months, belumMasuk: false, status, totalTunggakan };
-    });
-  }, [roster, headerPeriods, nominalPerTA, selectedTAStart]);
+          const currentMonths = headerPeriods.map((hp) => {
+            // Siswa yang baru masuk pertengahan/kemudian dari TA
+            // berjalan tetep dikasih 12 kolom (biar tabelnya rapi),
+            // tapi bulan sebelum dia masuk ditandain "-" (bukan
+            // tunggakan, emang belom jadi siswa).
+            const belumJadiSiswa =
+              entryYear > currentTA.start || (entryYear === currentTA.start && false); // entryYear === currentTA.start berarti masuk pas awal TA ini, semua bulan relevan
+            if (entryYear > currentTA.start) return { ...hp, status: "n/a" };
+            return { ...hp, status: statusOf(hp) };
+          });
 
-  const rows = useMemo(() => {
-    if (statusFilter === "lunas") return allRows.filter((r) => r.status === "paid");
-    if (statusFilter === "belum")
-      return allRows.filter((r) => r.status === "unpaid" || r.status === "partial");
-    return allRows;
-  }, [allRows, statusFilter]);
+          const priorPeriodsDue = allPeriods.filter((p) => p.ta !== currentTA.label && p.isDue);
+          const priorBelum = priorPeriodsDue.filter((p) => statusOf(p) !== "paid");
+          const tunggakanLalu = priorBelum.reduce((sum, p) => sum + (nominalPerTA[p.ta] ?? 0), 0);
+          // Dikelompokin per Tahun Ajaran, biar pas di-expand keliatan
+          // jelas: "TA 2024/2025 (kelas 7): 5 bulan", "TA 2025/2026
+          // (kelas 8): 2 bulan", dst -- bukan cuma 1 angka total.
+          const priorByTA = Object.values(
+            priorBelum.reduce((acc, p) => {
+              if (!acc[p.ta]) acc[p.ta] = { ta: p.ta, grade: p.grade, periods: [], nominal: 0 };
+              acc[p.ta].periods.push(p);
+              acc[p.ta].nominal += nominalPerTA[p.ta] ?? 0;
+              return acc;
+            }, {})
+          ).sort((a, b) => a.ta.localeCompare(b.ta));
 
-  const loading = rosterLoading;
+          const currentBelumDue = currentMonths.filter(
+            (p) => p.status !== "n/a" && p.isDue && p.status !== "paid"
+          );
+          const tunggakanSekarang = currentBelumDue.reduce(
+            (sum, p) => sum + (nominalPerTA[p.ta] ?? 0),
+            0
+          );
 
-  const totalTunggakanKelas = allRows.reduce((sum, r) => sum + (r.totalTunggakan || 0), 0);
-  const jumlahLunas = allRows.filter((r) => r.status === "paid").length;
-  const jumlahResolvable = allRows.filter(
-    (r) => r.status !== "n/a" && r.status !== "unresolved"
-  ).length;
+          return {
+            ...s,
+            unresolved: false,
+            currentMonths,
+            tunggakanLaluCount: priorBelum.length,
+            tunggakanLalu,
+            priorByTA,
+            totalTunggakan: tunggakanLalu + tunggakanSekarang,
+          };
+        })
+        .filter((s) => s.unresolved || s.totalTunggakan > 0);
+
+      setRows(result);
+    } catch (err) {
+      console.error("Error fetching tunggakan:", err);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [classId, nominalPerTA, headerPeriods, currentTA]);
+
+  useEffect(() => {
+    fetchTunggakan();
+  }, [fetchTunggakan]);
+
+  const totalTunggakanKelas = rows.reduce((sum, r) => sum + (r.totalTunggakan || 0), 0);
 
   const handleExportExcel = async () => {
-    // PERHATIAN: struktur `rows` sekarang pake `r.months` (array
-    // periode + status, cuma buat TA yang lagi dipilih) &
-    // `r.totalTunggakan`, BUKAN `r.belumBulan` kayak versi paling
-    // awal. Kalau exportRekapTunggakanKelas() di sppExcelExport.js
-    // masih baca `r.belumBulan`, kolom di Excel-nya bisa kosong --
-    // cek & sesuain sppExcelExport.js kalau ternyata gitu pas dites.
+    // PERHATIAN: struktur `rows` di bawah ini udah beda dari versi lama
+    // (dulu ada `r.belumBulan`, sekarang `r.currentMonths` +
+    // `r.tunggakanLalu` + `r.tunggakanLaluCount`). Kalau
+    // exportRekapTunggakanKelas() di sppExcelExport.js masih baca
+    // `r.belumBulan`, kolom "Bulan Belum Bayar" di file Excel-nya bisa
+    // kosong/salah -- CEK & SESUAIN sppExcelExport.js kalau ternyata
+    // gitu pas dites.
     setExporting(true);
     try {
       await exportRekapTunggakanKelas({ classId, rows, showToast: notify });
@@ -1083,7 +1047,10 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
           <Field label="Pilih Kelas" darkMode={darkMode}>
             <select
               value={classId}
-              onChange={(e) => handleClassChange(e.target.value)}
+              onChange={(e) => {
+                setClassId(e.target.value);
+                setOpenStudent(null);
+              }}
               className={inputClass(darkMode)}
             >
               <option value="">Pilih kelas</option>
@@ -1095,37 +1062,17 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
             </select>
           </Field>
         </div>
-        <div className="sm:w-56">
-          <Field label="Tahun Ajaran (buku)" darkMode={darkMode}>
-            <select
-              value={selectedTAStart}
-              onChange={(e) => setSelectedTAStart(Number(e.target.value))}
-              className={inputClass(darkMode)}
-            >
-              {taOptions.map((t) => (
-                <option key={t.start} value={t.start}>
-                  {t.label} {t.start === currentTA.start ? "(berjalan)" : ""}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
         {classId && (
           <div className="flex items-center gap-2.5 flex-wrap">
             <div
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-emerald-900/20 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}
-            >
-              {jumlahLunas} dari {jumlahResolvable} siswa lunas
-            </div>
-            <div
               className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-red-900/20 text-red-300" : "bg-red-50 text-red-700"}`}
             >
-              Total tunggakan TA {selectedTA}: {formatRupiah(totalTunggakanKelas)}
+              Total tunggakan kelas: {formatRupiah(totalTunggakanKelas)} ({rows.length} siswa)
             </div>
             <button
               onClick={handleExportExcel}
-              disabled={exporting || allRows.length === 0}
-              title="Export Rekap Pembayaran Kelas (Excel)"
+              disabled={exporting || rows.length === 0}
+              title="Export Rekap Tunggakan Kelas (Excel)"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-colors active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100"
             >
               {exporting ? (
@@ -1138,33 +1085,6 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
           </div>
         )}
       </div>
-
-      {classId && (
-        <div className="flex items-center gap-1.5">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setStatusFilter(f.id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                statusFilter === f.id
-                  ? "bg-amber-600 text-white"
-                  : darkMode
-                    ? "bg-gray-800 text-gray-400 hover:text-gray-200"
-                    : "bg-gray-100 text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!isCurrentBook && classId && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-700 flex items-center gap-2">
-          <AlertTriangle size={14} className="shrink-0" />
-          Lagi liat buku TA {selectedTA} (bukan TA berjalan) -- semua bulan di buku ini udah lewat.
-        </div>
-      )}
 
       {rows.length > 0 && (
         <div
@@ -1180,12 +1100,10 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
           <span className="flex items-center gap-1.5">
             <X size={16} strokeWidth={3} className="text-red-500" /> Belum bayar
           </span>
-          {isCurrentBook && (
-            <span className="flex items-center gap-1.5">
-              <Minus size={16} strokeWidth={3} className="text-gray-300 dark:text-gray-600" /> Belum
-              jalan
-            </span>
-          )}
+          <span className="flex items-center gap-1.5">
+            <Minus size={16} strokeWidth={3} className="text-gray-300 dark:text-gray-600" /> Belum
+            jalan
+          </span>
         </div>
       )}
 
@@ -1215,103 +1133,131 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
                   </span>
                 </th>
               ))}
+              <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide whitespace-nowrap">
+                Tunggakan Lalu
+              </th>
               <th className="px-5 py-3 text-right text-xs font-semibold tracking-wide whitespace-nowrap">
                 Total Tunggakan
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-semibold tracking-wide whitespace-nowrap">
-                Status
               </th>
             </tr>
           </thead>
           <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
             {!classId ? (
-              <EmptyRow darkMode={darkMode}>Pilih kelas dulu buat lihat rekap.</EmptyRow>
+              <EmptyRow darkMode={darkMode}>Pilih kelas dulu buat lihat tunggakan.</EmptyRow>
             ) : loading ? (
               <EmptyRow darkMode={darkMode}>Memuat...</EmptyRow>
             ) : rows.length === 0 ? (
               <EmptyRow darkMode={darkMode}>
                 <span className="flex items-center justify-center gap-2">
-                  <CheckCircle2 size={16} className="text-emerald-500" />
-                  {statusFilter === "lunas"
-                    ? "Belum ada yang lunas buat TA ini."
-                    : statusFilter === "belum"
-                      ? "Gak ada tunggakan buat TA ini."
-                      : "Belum ada siswa aktif di kelas ini."}
+                  <CheckCircle2 size={16} className="text-emerald-500" /> Semua siswa di kelas ini
+                  lunas.
                 </span>
               </EmptyRow>
             ) : (
-              rows.map((r) => (
-                <tr
-                  key={r.id}
-                  onClick={() => onPilihSiswa?.(r, classId)}
-                  title="Klik buat langsung catat pembayaran siswa ini"
-                  className={`cursor-pointer transition-colors ${
-                    darkMode
-                      ? "text-gray-200 hover:bg-gray-800/70"
-                      : "text-gray-700 hover:bg-amber-50/70"
-                  }`}
-                >
-                  <td className="px-5 py-3 font-medium whitespace-nowrap">
-                    {r.full_name}
-                    <span
-                      className={`block font-mono text-[11px] font-normal ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+              rows.map((r) => {
+                const isOpen = openStudent === r.id;
+                const totalCols = headerPeriods.length + 3; // Nama + kolom bulan + Tunggakan Lalu + Total
+                return (
+                  <React.Fragment key={r.id}>
+                    <tr
+                      onClick={() => onPilihSiswa?.(r, classId)}
+                      title="Klik buat langsung catat pembayaran siswa ini"
+                      className={`cursor-pointer transition-colors ${
+                        darkMode
+                          ? "text-gray-200 hover:bg-gray-800/70"
+                          : "text-gray-700 hover:bg-amber-50/70"
+                      }`}
                     >
-                      {r.nis}
-                    </span>
-                  </td>
-                  {r.unresolved ? (
-                    <td
-                      colSpan={headerPeriods.length}
-                      className={`px-3 py-3 text-xs text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-                    >
-                      NIS gak sesuai pola, cek manual
-                    </td>
-                  ) : r.belumMasuk ? (
-                    <td
-                      colSpan={headerPeriods.length}
-                      className={`px-3 py-3 text-xs text-center ${darkMode ? "text-gray-500" : "text-gray-400"}`}
-                    >
-                      Belum jadi siswa pas TA ini
-                    </td>
-                  ) : (
-                    r.months.map((p) => (
-                      <td key={p.key} className="px-2 py-3 text-center">
-                        <MonthDot
-                          status={p.status}
-                          isDue={p.isDue}
-                          label={`${MONTH_SHORT[p.month - 1]} ${p.year}`}
-                        />
+                      <td className="px-5 py-3 font-medium whitespace-nowrap">
+                        {r.full_name}
+                        <span
+                          className={`block font-mono text-[11px] font-normal ${darkMode ? "text-gray-500" : "text-gray-400"}`}
+                        >
+                          {r.nis}
+                        </span>
                       </td>
-                    ))
-                  )}
-                  <td className="px-5 py-3 text-right font-medium whitespace-nowrap">
-                    {formatRupiah(r.totalTunggakan)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {r.status === "unresolved" ? (
-                      <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                        -
-                      </span>
-                    ) : r.status === "n/a" ? (
-                      <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                        -
-                      </span>
-                    ) : r.status === "paid" ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                        <Check size={14} strokeWidth={3} /> Lunas
-                      </span>
-                    ) : r.status === "partial" ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600">
-                        <Circle size={10} className="fill-amber-500" /> Sebagian
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
-                        <X size={14} strokeWidth={3} /> Belum Bayar
-                      </span>
+                      {r.unresolved ? (
+                        <td
+                          colSpan={headerPeriods.length}
+                          className={`px-3 py-3 text-xs text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                        >
+                          NIS gak sesuai pola, cek manual
+                        </td>
+                      ) : (
+                        r.currentMonths.map((p) =>
+                          p.status === "n/a" ? (
+                            <td key={p.key} className="px-2 py-3 text-center text-gray-300 text-xs">
+                              -
+                            </td>
+                          ) : (
+                            <td key={p.key} className="px-2 py-3 text-center">
+                              <MonthDot
+                                status={p.status}
+                                isDue={p.isDue}
+                                label={`${MONTH_SHORT[p.month - 1]} ${p.year}`}
+                              />
+                            </td>
+                          )
+                        )
+                      )}
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        {r.tunggakanLalu > 0 ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenStudent(isOpen ? null : r.id);
+                            }}
+                            title={`${r.tunggakanLaluCount} bulan dari TA sebelumnya -- klik buat rincian`}
+                            className={`flex items-center gap-1 ml-auto underline decoration-dotted underline-offset-2 ${
+                              darkMode ? "text-amber-300" : "text-amber-700"
+                            }`}
+                          >
+                            {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                            {formatRupiah(r.tunggakanLalu)}
+                          </button>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-right font-medium whitespace-nowrap">
+                        {formatRupiah(r.totalTunggakan)}
+                      </td>
+                    </tr>
+                    {isOpen && r.priorByTA?.length > 0 && (
+                      <tr onClick={(e) => e.stopPropagation()} className="cursor-default">
+                        <td
+                          colSpan={totalCols}
+                          className={darkMode ? "bg-gray-800/40" : "bg-amber-50/60"}
+                        >
+                          <div className="px-5 py-3 space-y-2">
+                            <p
+                              className={`text-xs font-semibold ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                            >
+                              Rincian tunggakan tahun ajaran sebelumnya:
+                            </p>
+                            {r.priorByTA.map((g) => (
+                              <div
+                                key={g.ta}
+                                className="flex flex-wrap items-center justify-between gap-2 text-xs px-2 py-1.5"
+                              >
+                                <span className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                                  TA {g.ta} (kelas {g.grade}) — {g.periods.length} bulan:{" "}
+                                  {g.periods
+                                    .map((p) => `${MONTH_SHORT[p.month - 1]} ${p.year}`)
+                                    .join(", ")}
+                                </span>
+                                <span className="font-medium whitespace-nowrap">
+                                  {formatRupiah(g.nominal)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                </tr>
-              ))
+                  </React.Fragment>
+                );
+              })
             )}
           </tbody>
         </table>

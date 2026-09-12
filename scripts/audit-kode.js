@@ -105,6 +105,33 @@ const SUPABASE_CALL_RE = /\.from\(\s*["'`]/;
 const GET_MONTH_CALL_RE = /\.getMonth\(\)/;
 const HARDCODED_YEAR_TEMPLATE_RE = /`\$\{[^`]*?[Yy]ear[^`]*?\}\s*\/\s*\$\{[^`]*?[Yy]ear[^`]*?\}`/;
 
+// Sinyal "ini fallback yang disengaja, bukan sumber utama": dipanggil lewat
+// `sesuatu || getXxxAcademicYear()` / `sesuatu || getTahunAjaranAktif()` dst
+// — pola "coba ambil dari DB/prop dulu, baru hitung dari kalender kalau
+// kosong/gagal". Kalau pola ini kedeteksi DI MANA PUN dalam file, semua
+// hit hardcode-kalender di file itu di-downgrade (dianggap udah di-review
+// & aman), soalnya fallback yang jarang kepake (cuma pas DB kosong/gagal)
+// tetep sah biarpun kena bug matematika kecil.
+// Dicek 2025-11: StudentJadwal.js, SPMB.js, SystemTab.js kena pola ini.
+const FALLBACK_OR_USAGE_RE = /\|\|\s*(?:this\.)?get\w*(?:AcademicYear|TahunAjaran)\w*\s*\(\s*\)/i;
+
+// Daftar manual file yang UDAH DI-REVIEW dan dipastikan aman meskipun kena
+// sinyal hardcode-kalender di atas, TAPI ngga kepasang pola fallback
+// (FALLBACK_OR_USAGE_RE) di atas karena bentuknya beda: dipake cuma buat
+// label teks / nama file export (Excel/PDF), sama sekali ngga dipake buat
+// nge-filter query ke database, jadi ngga ada resiko data nyasar/ke-skip.
+// ⚠️ Kalau salah satu file ini nanti diubah jadi ikut nge-filter query,
+// HAPUS dari daftar ini biar kena flag lagi & di-review ulang.
+// Direview manual 2025-11 (lihat percakapan waktu itu untuk detail):
+//  - DataExcel.js, SpmbExcel.js -> cuma buat nama file & header teks Excel
+//  - StudentPresensi.js -> cuma nentuin default pilihan dropdown bulan di
+//    UI; data presensi asli tetep difilter pake tanggal, bukan tahun ajaran
+const HARDCODED_CALENDAR_REVIEWED_SAFE_FILES = [
+  "src/pages/DataExcel.js",
+  "src/spmb/SpmbExcel.js",
+  "src/portal-siswa/StudentPresensi.js",
+];
+
 // Pattern backup/restore: query academic_years yang muncul cuma sebagai
 // bagian dari operasi bulk multi-tabel (backup/restore/cleanup seluruh
 // database), BUKAN usaha nentuin "tahun ajaran aktif". Dua tanda:
@@ -693,13 +720,24 @@ function checkAcademicYearServiceUsage(allFiles) {
 
     // --- Sinyal kuat #2: hardcode tahun ajaran dari kalender ---
     if (GET_MONTH_CALL_RE.test(content) && HARDCODED_YEAR_TEMPLATE_RE.test(content)) {
-      lines.forEach((line, idx) => {
-        if (HARDCODED_YEAR_TEMPLATE_RE.test(line)) {
-          hardcodedCalendarDetails.push(
-            `${rel}:${idx + 1} → hardcode tahun ajaran dari kalender (pola \`\${...year...}/\${...year...}\`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual`
-          );
-        }
-      });
+      // ✅ Udah kepasang pola fallback (`x || getXxxAcademicYear()`) di
+      // file ini -> aman, skip semua hit di file ini.
+      const isFallback = FALLBACK_OR_USAGE_RE.test(content);
+      // ✅ Atau udah direview manual & masuk daftar aman (cuma label/nama
+      // file, ngga pernah dipake buat filter query).
+      const isReviewedSafe = HARDCODED_CALENDAR_REVIEWED_SAFE_FILES.some((safe) =>
+        rel.endsWith(safe)
+      );
+
+      if (!isFallback && !isReviewedSafe) {
+        lines.forEach((line, idx) => {
+          if (HARDCODED_YEAR_TEMPLATE_RE.test(line)) {
+            hardcodedCalendarDetails.push(
+              `${rel}:${idx + 1} → hardcode tahun ajaran dari kalender (pola \`\${...year...}/\${...year...}\`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual`
+            );
+          }
+        });
+      }
     }
 
     // --- Sinyal lemah: cuma filter tabel lain pake academic_year_id ---
@@ -1006,12 +1044,49 @@ async function checkFrontendBackendAlignment(allFiles) {
   const unknownColumnDetails = [];
   const FROM_RE = /\.from\(\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]\s*\)/g;
 
+  // Pola "table registry dinamis": file yang nyimpen daftar nama tabel di
+  // sebuah array/object (misal `{ name: "academic_events", display: "..." }`)
+  // terus manggilnya lewat `.from(variabel)` — BUKAN `.from("literal")`.
+  // Contoh nyata: src/system/SystemTab.js (fitur "Monitor Sistem", backup/
+  // restore/health-check semua tabel). FROM_RE di atas gak bisa nangkep ini
+  // karena bukan string literal, jadi tabel-tabel di registry ini keflag
+  // "dead" padahal beneran dipake. Dicek 2025-11.
+  const DYNAMIC_FROM_RE = /\.from\(\s*[a-zA-Z_$][\w.$]*\s*\)/;
+  const REGISTRY_NAME_RE = /\bname\s*:\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]/g;
+
+  // Tabel yang UDAH DI-REVIEW manual dan dipastikan beneran dipake, tapi
+  // cuma lewat Supabase RPC/database function (jadi genuinely gak keliatan
+  // dari analisis statis .from() manapun, dinamis atau literal). Cocokin
+  // manual ke source RPC-nya kalau mau verifikasi ulang.
+  // Direview manual 2025-11:
+  //  - spp_receipt_counters -> dibaca/diupdate di dalem Postgres function
+  //    `generate_spp_receipt_number()`, dipanggil dari SppTab.js lewat
+  //    `supabase.rpc("generate_spp_receipt_number")`. Ngga pernah disentuh
+  //    langsung dari JS sama sekali.
+  const RPC_ONLY_REVIEWED_SAFE_TABLES = ["spp_receipt_counters"];
+
   for (const file of allFiles) {
     const rel = toRel(file);
     if (rel.includes("/system/") && rel.includes("checkers/")) continue;
 
     const raw = fs.readFileSync(file, "utf8");
     const content = stripComments(raw);
+
+    // --- Tabel yang dipake lewat pola registry dinamis (lihat komentar
+    //     di atas) -- tandain semua "name: ..." di file ini kalau file-nya
+    //     juga ada pola `.from(variabel)` ---
+    if (DYNAMIC_FROM_RE.test(content)) {
+      REGISTRY_NAME_RE.lastIndex = 0;
+      let rm;
+      while ((rm = REGISTRY_NAME_RE.exec(content)) !== null) {
+        const table = rm[1];
+        if (!usage.has(table))
+          usage.set(table, { usedAsFrom: true, columns: new Set(), usesStar: false });
+        const entry = usage.get(table);
+        entry.usedAsFrom = true;
+        entry.usesStar = true; // gak bisa dilacak kolomnya statis, anggap select(*) biar gak ke-flag "dead column" juga
+      }
+    }
 
     const fromMatches = [...content.matchAll(FROM_RE)];
     for (let idx = 0; idx < fromMatches.length; idx++) {
@@ -1094,7 +1169,10 @@ async function checkFrontendBackendAlignment(allFiles) {
   }
 
   // --- a) DEAD TABLES: ada di Supabase, gak pernah di .from() manapun ---
-  const deadTables = [...liveSchema.keys()].filter((t) => !usage.has(t)).sort();
+  const deadTables = [...liveSchema.keys()]
+    .filter((t) => !usage.has(t))
+    .filter((t) => !RPC_ONLY_REVIEWED_SAFE_TABLES.includes(t))
+    .sort();
 
   // --- b) DEAD COLUMNS: tabel dipake, tapi kolom gak pernah disebut, dan
   //        gak ada select("*") buat tabel itu di manapun ---
