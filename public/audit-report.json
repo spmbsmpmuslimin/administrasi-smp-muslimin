@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-13T05:42:04.205Z",
-  "executionTimeMs": 5415,
-  "filesScanned": 271,
+  "generatedAt": "2026-09-13T09:16:14.448Z",
+  "executionTimeMs": 3114,
+  "filesScanned": 272,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
@@ -38,7 +38,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5422 class warna (di 191 file) kemungkinan belum dark-mode-aware",
+          "title": "5429 class warna (di 192 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",

@@ -124,4 +124,73 @@ function bagiRuangan(dataSiswaPerKelas, kapasitas = 40) {
   return hasilRuangan;
 }
 
-export { bagiRuangan };
+/**
+ * Terapkan quota manual (hasil edit admin) ke atas hasil bagiRuangan() yang
+ * asli, TANPA mengubah urutan siswa per kelas (tetap FIFO -- siswa yang
+ * sama yang bakal masuk ruangan tertentu, cuma jumlah per kelas per
+ * ruangan yang diganti sesuai input admin).
+ *
+ * Alur pemakaian:
+ * 1. bagiRuangan() dipanggil dulu (auto-generate, proporsional) -> hasilAsli
+ * 2. Admin lihat breakdown per ruangan di UI, dan BOLEH mengubah jumlah
+ *    per kelas per ruangan (mis. Ruang 1: 7A=14, 8A=13, 9A=13)
+ * 3. Quota yang sudah diedit itu (quotaPerRuangan) dikirim ke sini bareng
+ *    hasilAsli -- fungsi ini yang nentuin SIAPA (siswa mana persis) yang
+ *    masuk tiap ruangan berdasarkan quota baru itu.
+ *
+ * PENTING: total quota per kelas di semua ruangan (dijumlah) HARUS SAMA
+ * dengan total siswa kelas itu di hasilAsli, kalau tidak akan ada siswa
+ * yang hilang atau ke-assign dobel. Makanya validasi total per kelas
+ * WAJIB dilakukan di sisi UI sebelum fungsi ini dipanggil (lihat
+ * hitungTotalPerKelas di bawah, dipakai untuk validasi itu).
+ *
+ * @param {Array} hasilAsli - hasil bagiRuangan() asli (sumber urutan siswa per kelas)
+ * @param {Array} quotaPerRuangan - [{ nomor_ruangan, quota: { "7A": 14, "8A": 13, ... } }, ...]
+ * @returns {Array} hasil ruangan baru sesuai quota manual, format sama seperti bagiRuangan()
+ */
+function terapkanQuotaManual(hasilAsli, quotaPerRuangan) {
+  // Susun ulang antrian per kelas (BUKAN per angkatan) dari hasilAsli,
+  // urut sesuai nomor_ruangan supaya urutan asli (alfabetis dari query)
+  // tetap terjaga -- karena tiap kelas cuma pernah "disisipin" berurutan
+  // waktu bagiRuangan() jalan, mengumpulkannya kembali per kelas otomatis
+  // balikin urutan semula.
+  const antrianPerKelas = {};
+  [...hasilAsli]
+    .sort((a, b) => a.nomor_ruangan - b.nomor_ruangan)
+    .forEach((r) => {
+      r.siswa.forEach((s) => {
+        if (!antrianPerKelas[s.asal_kelas]) antrianPerKelas[s.asal_kelas] = [];
+        antrianPerKelas[s.asal_kelas].push(s);
+      });
+    });
+
+  return quotaPerRuangan.map((r) => {
+    const siswaRuanganIni = [];
+    Object.entries(r.quota).forEach(([kelas, jumlah]) => {
+      if (!jumlah || jumlah <= 0) return;
+      const ambil = (antrianPerKelas[kelas] || []).splice(0, jumlah);
+      siswaRuanganIni.push(...ambil);
+    });
+    return {
+      nomor_ruangan: r.nomor_ruangan,
+      siswa: siswaRuanganIni.map((s, idx) => ({ ...s, no_kursi: idx + 1 })),
+    };
+  });
+}
+
+/**
+ * Hitung total siswa per kelas dari hasil bagiRuangan() (dipakai sebagai
+ * "angka target" buat validasi quota manual di UI -- total quota yang
+ * diedit admin per kelas harus PAS sama angka ini).
+ */
+function hitungTotalPerKelas(hasilRuangan) {
+  const total = {};
+  hasilRuangan.forEach((r) => {
+    r.siswa.forEach((s) => {
+      total[s.asal_kelas] = (total[s.asal_kelas] || 0) + 1;
+    });
+  });
+  return total;
+}
+
+export { bagiRuangan, terapkanQuotaManual, hitungTotalPerKelas };
