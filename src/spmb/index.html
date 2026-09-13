@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pendaftaran Siswa Baru - SMP Muslimin Cililin</title>
+    <title>Formulir Kelengkapan Data Siswa Baru - SMP Muslimin Cililin</title>
     <style>
       * {
         margin: 0;
@@ -549,7 +549,7 @@
       <div class="header">
         <div class="organization">YAYASAN PENDIDIKAN NURUL ULUM (YPNU)</div>
         <div class="school-name">SEKOLAH MENENGAH PERTAMA MUSLIMIN CILILIN</div>
-        <h1>Formulir Pendaftaran Siswa Baru</h1>
+        <h1>Formulir Kelengkapan Data Siswa Baru</h1>
         <div class="academic-year" id="headerAcademicYear">
           <div
             class="loading-spinner"
@@ -806,7 +806,7 @@
               <button type="button" class="btn btn-reset" onclick="resetForm()">
                 🔄 Reset Form
               </button>
-              <button type="submit" class="btn btn-submit">📝 Daftar Sekarang</button>
+              <button type="submit" class="btn btn-submit">💾 Simpan Sekarang</button>
             </div>
           </form>
         </div>
@@ -1074,7 +1074,7 @@
 
           // Success message dengan no_pendaftaran
           successMsg.innerHTML = `
-            ✅ Pendaftaran berhasil! Data <strong>${formData.nama_lengkap}</strong> telah tersimpan.
+            ✅ Data berhasil disimpan! Data <strong>${formData.nama_lengkap}</strong> telah tersimpan.
             <span class="nis-info">📋 No. Pendaftaran: ${
               savedData.no_pendaftaran || "Sedang diproses"
             }</span>
@@ -1093,7 +1093,7 @@
           errorMsg.scrollIntoView({ behavior: "smooth", block: "center" });
         } finally {
           submitBtn.disabled = false;
-          submitBtn.textContent = "📝 Daftar Sekarang";
+          submitBtn.textContent = "💾 Simpan Sekarang";
         }
       }
 

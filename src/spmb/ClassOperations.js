@@ -80,96 +80,17 @@ export const saveClassAssignments = async (
   }
 };
 
-// Bersihin value kosong/placeholder ("-", "", null, undefined) jadi null
-// beneran -- dipake pas mapping siswa_baru -> student_profile_details,
-// biar kolom kayak NISN (yang di siswa_baru defaultnya "-" kalau kosong,
-// lihat StudentForm.js) gak ikut nyangkut jadi teks "-" di profil resmi.
-const cleanValue = (value) => {
-  if (value === null || value === undefined) return null;
-  const trimmed = String(value).trim();
-  return trimmed === "" || trimmed === "-" ? null : trimmed;
-};
-
-// ✅ FIX: student_profile_details.jenis_kelamin punya CHECK constraint
-// yang cuma nerima "LAKI-LAKI"/"PEREMPUAN" -- sedangkan siswa_baru nyimpen
-// "L"/"P". Tanpa konversi ini, upsert ke student_profile_details bakal
-// gagal (23514 check constraint violation) buat SEMUA siswa.
-const toJenisKelaminLabel = (kode) => {
-  const k = cleanValue(kode);
-  if (k === "L") return "LAKI-LAKI";
-  if (k === "P") return "PEREMPUAN";
-  return k; // biarin apa adanya kalau udah full text atau null
-};
-
-// ✅ FIX: student_profile_details.pendidikan_ayah/ibu punya CHECK
-// constraint yang cuma nerima kode singkat (SD/SMP/SMA/D3/S1/S2) --
-// sedangkan siswa_baru ada yang formatnya "SD/Sederajat", "SMA/SMK", dll.
-// Ambil bagian sebelum "/" biar konsisten sama constraint.
-const toPendidikanCode = (val) => {
-  const v = cleanValue(val);
-  return v ? v.split("/")[0].trim() : v;
-};
-
-// Susun payload buat student_profile_details dari 1 row siswa_baru + id
-// students yang baru di-insert. SEMUA field yang udah dikumpulin pas SPMB
-// disalin ke sini (biar siswa/ortu gak perlu isi ulang manual lewat
-// StudentProfile.js -- field2 ini emang udah dikunci read-only di sana,
-// lihat catatan panjang di StudentProfile.js).
-//
-// ⚠️ MAPPING PENTING: siswa_baru.no_hp itu SEBENARNYA nomor HP ORANG TUA
-// (lihat label "No. HP Orang Tua" di StudentForm.js), BUKAN nomor HP
-// siswa. Jadi harus dipetakan ke `no_hp_ortu`, BUKAN ke `no_hp` (yang di
-// student_profile_details artinya nomor pribadi siswa sendiri, field itu
-// sengaja dibiarin kosong -- cuma bisa diisi belakangan sama siswa lewat
-// StudentProfile.js kalau/pas udah punya HP sendiri).
-//
-// `no_daftar` diisi dari `no_pendaftaran` (nomor SPMB, contoh
-// "SPMB-26.27.07.001") -- korespondensi alami, gak perlu Admin isi ulang.
-//
-// Field yang SENGAJA dibiarin null/gak disalin dari SPMB karena emang gak
-// pernah dikumpulin di sana (murni Admin-only atau isian mandiri siswa
-// belakangan): no_hp (siswa), no_ijazah, no_peserta_ujian, no_kip*, dusun,
-// anak_ke, keterangan.
-// *no_kip TETAP disalin kalau ada -- itu udah masuk field SPMB (Step 1).
-//
-// `verified_at` SENGAJA di-set null (belum diverifikasi) walau datanya
-// dari form SPMB -- tetep perlu dicek TU ke dokumen fisik dulu, konsisten
-// sama alur verifikasi yang udah ada di DataSiswaInduk.js.
-function buildProfileDetailPayload(siswa, studentId) {
-  return {
-    student_id: studentId,
-    jenis_kelamin: toJenisKelaminLabel(siswa.jenis_kelamin), // ✅ FIX: L/P -> LAKI-LAKI/PEREMPUAN
-    tempat_lahir: cleanValue(siswa.tempat_lahir),
-    tanggal_lahir: siswa.tanggal_lahir || null,
-    nisn: cleanValue(siswa.nisn),
-    sekolah_asal: cleanValue(siswa.asal_sekolah),
-    // ✅ FIX: seragamin ke uppercase (data siswa_baru ada campuran
-    // "Islam"/"ISLAM"/kosong) -- gak ada CHECK constraint di kolom ini,
-    // jadi ini murni konsistensi, bukan wajib buat menghindari error.
-    agama: cleanValue(siswa.agama) ? cleanValue(siswa.agama).toUpperCase() : null,
-    nik: cleanValue(siswa.nik),
-    no_kk: cleanValue(siswa.no_kk),
-    no_akta_lahir: cleanValue(siswa.no_akta_lahir),
-    no_kip: cleanValue(siswa.no_kip),
-    no_daftar: cleanValue(siswa.no_pendaftaran),
-    nama_ayah: cleanValue(siswa.nama_ayah),
-    pekerjaan_ayah: cleanValue(siswa.pekerjaan_ayah),
-    pendidikan_ayah: toPendidikanCode(siswa.pendidikan_ayah), // ✅ FIX: "SD/Sederajat" -> "SD"
-    nik_ayah: cleanValue(siswa.nik_ayah),
-    tempat_tgl_lahir_ayah: cleanValue(siswa.tempat_tgl_lahir_ayah),
-    nama_ibu: cleanValue(siswa.nama_ibu),
-    pekerjaan_ibu: cleanValue(siswa.pekerjaan_ibu),
-    pendidikan_ibu: toPendidikanCode(siswa.pendidikan_ibu), // ✅ FIX: "SD/Sederajat" -> "SD"
-    nik_ibu: cleanValue(siswa.nik_ibu),
-    tempat_tgl_lahir_ibu: cleanValue(siswa.tempat_tgl_lahir_ibu),
-    alamat: cleanValue(siswa.alamat),
-    kode_pos: cleanValue(siswa.kode_pos),
-    // ⚠️ no_hp di siswa_baru = HP ORANG TUA, dipetakan ke no_hp_ortu.
-    no_hp_ortu: cleanValue(siswa.no_hp),
-    updated_at: new Date().toISOString(),
-    verified_at: null,
-  };
-}
+// ✅ FIX (transaksi atomik): logic mapping siswa_baru -> students +
+// student_profile_details (cleanValue, toJenisKelaminLabel,
+// toPendidikanCode, buildProfileDetailPayload) UDAH PINDAH ke SQL
+// function `transfer_siswa_ke_students` (lihat
+// transfer_siswa_ke_students.sql, dijalankan sekali lewat Supabase SQL
+// Editor). Sebelumnya insert `students` + upsert `student_profile_details`
+// + update `siswa_baru` itu 3 request Supabase TERPISAH -- kalau request
+// ke-2/3 gagal di tengah, siswa itu udah kesimpen di `students` tapi
+// `siswa_baru.is_transferred` masih false, jadi retry bisa insert dobel.
+// Sekarang ke-3 langkah itu 1 transaksi Postgres (all-or-nothing per
+// siswa) lewat RPC, dipanggil di dalam transferToStudents() di bawah.
 
 // Transfer ke tabel students
 export const transferToStudents = async (
@@ -203,73 +124,27 @@ export const transferToStudents = async (
     const currentYear = getCurrentAcademicYear();
 
     for (const siswa of studentsWithClass) {
-      // .select() ditambahin biar dapet balik `id` yang baru di-generate --
-      // dibutuhin buat FK student_profile_details.student_id di bawah.
-      const { data: insertedRows, error: insertError } = await supabase
-        .from("students")
-        .insert([
-          {
-            full_name: siswa.nama_lengkap,
-            // ✅ FIX: dulu hardcode null dengan komentar "NIS diisi
-            // belakangan di proses assignment NIS terpisah (bukan di
-            // sini)" -- padahal gak ada proses lain yang beneran baca
-            // siswa_baru.nis lalu nulis ke students.nis. Baca langsung
-            // dari sini (NIS udah digenerate di Tahap 3 / generateAndSaveNIS
-            // sebelum transfer). cleanValue() jaga-jaga kalau ternyata
-            // ada siswa yang ke-transfer sebelum sempat di-generate NIS-nya.
-            nis: cleanValue(siswa.nis),
-            // ✅ FIX: kolom nisn di tabel students sebelumnya gak pernah
-            // diisi sama sekali (siswa baru selalu punya nisn kosong
-            // sampai admin isi manual).
-            nisn: cleanValue(siswa.nisn),
-            class_id: siswa.kelas,
-            academic_year: currentYear,
-            // ✅ FIX: dulu gak pernah keisi sama sekali dari sini (cuma
-            // YearTransition.js yang isi ini, lewat insert manualnya
-            // sendiri). Sekarang ikut ditulis kalau pemanggil ngasih
-            // (misal dari proses Transisi Tahun Ajaran) -- null kalau
-            // enggak, sama kayak kelakuan lama.
-            academic_year_id: academicYearId || null,
-            gender: siswa.jenis_kelamin,
-            is_active: true,
-          },
-        ])
-        .select("id");
+      // ✅ FIX: 1 RPC = 1 transaksi Postgres (insert students + upsert
+      // student_profile_details + update siswa_baru sekaligus, gak bisa
+      // kepotong di tengah). Lihat transfer_siswa_ke_students.sql.
+      const { data: newStudentId, error: rpcError } = await supabase.rpc(
+        "transfer_siswa_ke_students",
+        {
+          p_siswa_baru_id: siswa.id,
+          p_academic_year: currentYear,
+          p_academic_year_id: academicYearId || null,
+          p_transferred_by: transferredBy || null,
+        }
+      );
 
-      if (insertError) throw insertError;
-
-      const newStudentId = insertedRows?.[0]?.id;
+      if (rpcError) {
+        throw new Error(`Gagal transfer siswa "${siswa.nama_lengkap}": ${rpcError.message}`);
+      }
       if (!newStudentId) {
         throw new Error(
-          `Gagal ambil ID siswa baru buat ${siswa.nama_lengkap} (insert ke students sukses tapi id gak balik)`
+          `Gagal transfer siswa "${siswa.nama_lengkap}" (RPC sukses tapi id siswa baru gak balik)`
         );
       }
-
-      // Auto-isi student_profile_details dari data SPMB, biar siswa/ortu
-      // gak perlu isi ulang manual data yang udah pernah dikasih pas
-      // daftar. Upsert (bukan insert polos) buat jaga-jaga kalau baris
-      // student_id itu somehow udah ada.
-      const { error: profileError } = await supabase
-        .from("student_profile_details")
-        .upsert(buildProfileDetailPayload(siswa, newStudentId), {
-          onConflict: "student_id",
-        });
-
-      if (profileError) throw profileError;
-
-      const { error: updateError } = await supabase
-        .from("siswa_baru")
-        .update({
-          is_transferred: true,
-          transferred_at: new Date().toISOString(),
-          // ✅ FIX: dulu gak pernah keisi dari sini (siswa yang ditransfer
-          // manual di SPMB gak kecatat siapa yang ngerjain), sekarang ikut
-          // ditulis kalau pemanggil ngasih.
-          transferred_by: transferredBy || null,
-        })
-        .eq("id", siswa.id);
-
-      if (updateError) throw updateError;
     }
 
     showToast(`✅ Berhasil transfer ${studentsWithClass.length} siswa ke Students!`, "success");
@@ -280,9 +155,21 @@ export const transferToStudents = async (
   } catch (error) {
     console.error("Error transferring students:", error);
     showToast("❌ Gagal transfer siswa: " + error.message, "error");
-    // ✅ FIX: rethrow biar pemanggil (misal YearTransition.js, yang masih
-    // punya beberapa step lanjutan setelah ini) tau proses ini gagal dan
-    // bisa berhenti -- sebelumnya error ditelen di sini doang, jadi kalau
+    // ✅ FIX: refresh data WALAU gagal di tengah batch -- siswa sebelum
+    // yang gagal itu udah beneran sukses (masing-masing atomik lewat RPC),
+    // jadi state React (`allStudents`) harus ikut ke-update biar kalau TU
+    // klik "Transfer" lagi, siswa yang udah sukses gak keitung ulang.
+    // Sebelumnya cuma direfresh pas full-sukses, jadi retry abis gagal
+    // separuh jalan bisa nyoba insert siswa yang sebenernya udah pernah
+    // ditransfer (RPC sekarang bakal nolak siswa itu spesifik dengan
+    // pesan "sudah pernah ditransfer sebelumnya", tapi tetep mending
+    // biar gak ke-loop lagi dari awal).
+    if (onRefreshData) {
+      await onRefreshData();
+    }
+    // rethrow biar pemanggil (misal YearTransition.js, yang masih punya
+    // beberapa step lanjutan setelah ini) tau proses ini gagal dan bisa
+    // berhenti -- sebelumnya error ditelen di sini doang, jadi kalau
     // dipanggil dari alur multi-step, step-step setelahnya tetap lanjut
     // jalan walau transfer ini gagal di tengah.
     throw error;
