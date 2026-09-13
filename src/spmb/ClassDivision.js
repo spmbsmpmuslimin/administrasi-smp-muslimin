@@ -964,10 +964,10 @@ const ClassDivision = ({
                   <thead className="bg-gray-100 dark:bg-gray-700">
                     <tr>
                       <th className="p-2 text-left">No</th>
-                      <th className="p-2 text-center">Skor</th>
                       <th className="p-2 text-left">Nama</th>
                       <th className="p-2 text-center">L/P</th>
                       <th className="p-2 text-left">Asal Sekolah</th>
+                      <th className="p-2 text-center">Skor</th>
                       {isEditModeActive && <th className="p-2 text-center">Aksi</th>}
                     </tr>
                   </thead>
@@ -984,11 +984,6 @@ const ClassDivision = ({
                           }
                         >
                           <td className="p-2">{idx + 1}</td>
-                          <td className="p-2 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                            {typeof student.skor_akademik === "number"
-                              ? student.skor_akademik
-                              : "-"}
-                          </td>
                           <td className="p-2 font-medium dark:text-gray-100 truncate max-w-[120px] sm:max-w-none">
                             {student.nama_lengkap}
                           </td>
@@ -1005,6 +1000,11 @@ const ClassDivision = ({
                           </td>
                           <td className="p-2 text-gray-600 dark:text-gray-400 truncate max-w-[100px] sm:max-w-none">
                             {student.asal_sekolah}
+                          </td>
+                          <td className="p-2 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                            {typeof student.skor_akademik === "number"
+                              ? student.skor_akademik
+                              : "-"}
                           </td>
                           <td className="p-2 text-center">
                             <select
@@ -1144,10 +1144,10 @@ const ClassDivision = ({
                   <thead className="bg-gray-100 dark:bg-gray-700">
                     <tr>
                       <th className="p-2 text-left">No</th>
-                      <th className="p-2 text-center">Skor</th>
                       <th className="p-2 text-left">Nama</th>
                       <th className="p-2 text-center">L/P</th>
                       <th className="p-2 text-left">Asal Sekolah</th>
+                      <th className="p-2 text-center">Skor</th>
                       {isEditModeActive && <th className="p-2 text-center">Aksi</th>}
                     </tr>
                   </thead>
@@ -1167,11 +1167,6 @@ const ClassDivision = ({
                           }
                         >
                           <td className="p-2">{idx + 1}</td>
-                          <td className="p-2 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                            {typeof student.skor_akademik === "number"
-                              ? student.skor_akademik
-                              : "-"}
-                          </td>
                           <td className="p-2 font-medium dark:text-gray-100 truncate max-w-[120px] sm:max-w-none">
                             {student.nama_lengkap}
                           </td>
@@ -1188,6 +1183,11 @@ const ClassDivision = ({
                           </td>
                           <td className="p-2 text-gray-600 dark:text-gray-400 truncate max-w-[100px] sm:max-w-none">
                             {student.asal_sekolah}
+                          </td>
+                          <td className="p-2 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                            {typeof student.skor_akademik === "number"
+                              ? student.skor_akademik
+                              : "-"}
                           </td>
                           {isEditModeActive && (
                             <td className="p-2 text-center">

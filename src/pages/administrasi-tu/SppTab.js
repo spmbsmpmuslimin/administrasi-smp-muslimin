@@ -1142,15 +1142,11 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
   ).length;
 
   const handleExportExcel = async () => {
-    // PERHATIAN: struktur `rows` sekarang pake `r.months` (array
-    // periode + status, cuma buat TA yang lagi dipilih) &
-    // `r.totalTunggakan`, BUKAN `r.belumBulan` kayak versi paling
-    // awal. Kalau exportRekapTunggakanKelas() di sppExcelExport.js
-    // masih baca `r.belumBulan`, kolom di Excel-nya bisa kosong --
-    // cek & sesuain sppExcelExport.js kalau ternyata gitu pas dites.
+    // sppExcelExport.js UDAH disesuain (baca r.months/r.status, bukan lagi
+    // r.belumBulan versi lama), jadi tinggal panggil apa adanya.
     setExporting(true);
     try {
-      await exportRekapTunggakanKelas({ classId, rows, showToast: notify });
+      await exportRekapTunggakanKelas({ classId, selectedTA, rows, showToast: notify });
     } catch (err) {
       console.error("Error exporting rekap tunggakan:", err);
       notify?.("Gagal export Excel", "error");

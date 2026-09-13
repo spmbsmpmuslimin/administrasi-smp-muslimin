@@ -81,6 +81,40 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
   const [importPreview, setImportPreview] = useState(null);
   const fileInputRef = useRef(null);
 
+  // ✅ FIX (jaga-jaga salah input): baris yang skornya UDAH PERNAH
+  // tersimpan (ada nilai di DB) sengaja dibikin read-only dulu, biar TU
+  // gak gak sengaja kepencet/ketik ulang angka yang udah bener. Baru bisa
+  // diubah lagi kalau sengaja klik "Edit" -- keyed by student.id, true
+  // berarti field itu lagi "dibuka" buat diedit.
+  const [editingRows, setEditingRows] = useState({});
+
+  // Baris dianggap "udah pernah disimpan" kalau salah satu dari 3 skor
+  // udah ada isinya di data ASLI (bukan edit lokal yang belum disimpan).
+  // Baris yang emang belum pernah diisi sama sekali TETAP bebas diedit
+  // langsung tanpa perlu klik "Edit" dulu -- gak ada yang perlu dijaga di
+  // situ karena belum ada data lama yang bisa ke-timpa gak sengaja.
+  const hasSavedData = (student) =>
+    (student.skor_akademik !== null && student.skor_akademik !== undefined) ||
+    (student.skor_baca_latin !== null && student.skor_baca_latin !== undefined) ||
+    (student.skor_baca_quran !== null && student.skor_baca_quran !== undefined);
+
+  const isRowEditable = (student) => !hasSavedData(student) || !!editingRows[student.id];
+
+  const startEditRow = (studentId) => {
+    setEditingRows((prev) => ({ ...prev, [studentId]: true }));
+  };
+
+  // Batal edit: buang perubahan lokal yang belum disimpan & kunci lagi
+  // field-nya, TANPA nyimpen apa-apa ke DB.
+  const cancelEditRow = (studentId) => {
+    clearEdit(studentId);
+    setEditingRows((prev) => {
+      const next = { ...prev };
+      delete next[studentId];
+      return next;
+    });
+  };
+
   // Nilai yang ditampilkan di cell: edit lokal kalau ada, kalau nggak ambil
   // dari data siswa asli.
   const getFieldValue = (student, field) => {
@@ -204,6 +238,12 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
       const success = await onSaveDiagnostik(student.id, built.data);
       if (success) {
         clearEdit(student.id);
+        // Relock lagi field-nya setelah sukses disimpan.
+        setEditingRows((prev) => {
+          const next = { ...prev };
+          delete next[student.id];
+          return next;
+        });
         if (showToast) showToast(`Skor ${student.nama_lengkap} tersimpan`, "success");
         if (onRefreshData) await onRefreshData();
       } else if (showToast) {
@@ -237,6 +277,12 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
       if (success) {
         successCount += 1;
         clearEdit(student.id);
+        // Relock lagi field-nya setelah sukses disimpan.
+        setEditingRows((prev) => {
+          const next = { ...prev };
+          delete next[student.id];
+          return next;
+        });
       } else {
         failCount += 1;
       }
@@ -539,6 +585,12 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                   const kategoriQuran = getKategoriFromScore(
                     getFieldValue(student, "skor_baca_quran")
                   );
+                  // ✅ FIX: baris yang skornya udah pernah kesimpen jadi
+                  // read-only sampai TU sengaja klik "Edit".
+                  const editable = isRowEditable(student);
+                  const lockedFieldClass = !editable
+                    ? "bg-gray-100 dark:bg-gray-700/40 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                    : "bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200";
 
                   return (
                     <tr
@@ -564,10 +616,11 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                           type="number"
                           min="0"
                           max="100"
-                          step="0.01"
+                          step="1"
                           value={getFieldValue(student, "skor_akademik")}
                           onChange={(e) => updateEdit(student.id, "skor_akademik", e.target.value)}
-                          className="w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
+                          disabled={!editable}
+                          className={`w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none ${lockedFieldClass}`}
                           placeholder="-"
                         />
                       </td>
@@ -577,12 +630,13 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                             type="number"
                             min="0"
                             max="100"
-                            step="0.01"
+                            step="1"
                             value={getFieldValue(student, "skor_baca_latin")}
                             onChange={(e) =>
                               updateEdit(student.id, "skor_baca_latin", e.target.value)
                             }
-                            className="w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
+                            disabled={!editable}
+                            className={`w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none ${lockedFieldClass}`}
                             placeholder="-"
                           />
                           {kategoriLatin && (
@@ -600,12 +654,13 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                             type="number"
                             min="0"
                             max="100"
-                            step="0.01"
+                            step="1"
                             value={getFieldValue(student, "skor_baca_quran")}
                             onChange={(e) =>
                               updateEdit(student.id, "skor_baca_quran", e.target.value)
                             }
-                            className="w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none"
+                            disabled={!editable}
+                            className={`w-24 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none ${lockedFieldClass}`}
                             placeholder="-"
                           />
                           {kategoriQuran && (
@@ -629,19 +684,52 @@ const DiagnostikPage = ({ allStudents, onSaveDiagnostik, onRefreshData, showToas
                         )}
                       </td>
                       <td className="p-3">
-                        <button
-                          onClick={() => handleSaveRow(student)}
-                          disabled={!dirty || saving}
-                          className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 justify-center min-h-[36px] min-w-[70px]"
-                          title="Simpan baris ini"
-                        >
-                          {saving ? (
-                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          ) : (
-                            <i className="fas fa-save text-xs"></i>
-                          )}
-                          <span>{saving ? "..." : "Simpan"}</span>
-                        </button>
+                        {/* ✅ FIX: baris yang UDAH pernah kesimpen & lagi
+                        terkunci -> tampilin tombol "Edit" doang, biar TU
+                        harus sengaja klik dulu sebelum bisa ubah angka.
+                        Baris baru (belum pernah keisi) atau yang lagi
+                        "dibuka" buat edit -> tampilin "Simpan" (+ "Batal"
+                        kalau emang lagi dalam mode edit). */}
+                        {hasSavedData(student) && !editingRows[student.id] ? (
+                          <button
+                            onClick={() => startEditRow(student.id)}
+                            className="bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 justify-center min-h-[36px] min-w-[70px]"
+                            title="Buka field ini buat diedit"
+                          >
+                            <i className="fas fa-pen text-xs"></i>
+                            <span>Edit</span>
+                          </button>
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                            <button
+                              onClick={() => handleSaveRow(student)}
+                              disabled={!dirty || saving}
+                              className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 justify-center min-h-[36px] min-w-[70px]"
+                              title="Simpan baris ini"
+                            >
+                              {saving ? (
+                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                              ) : (
+                                <i className="fas fa-save text-xs"></i>
+                              )}
+                              <span>{saving ? "..." : "Simpan"}</span>
+                            </button>
+                            {/* Tombol Batal cuma relevan buat baris yang emang
+                            udah punya data lama & lagi dibuka buat edit --
+                            baris yang baru pertama kali diisi gak perlu
+                            "batal" karena belum ada data lama yang dijaga. */}
+                            {hasSavedData(student) && editingRows[student.id] && (
+                              <button
+                                onClick={() => cancelEditRow(student.id)}
+                                disabled={saving}
+                                className="bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 justify-center min-h-[28px]"
+                                title="Batal, kunci lagi tanpa nyimpen"
+                              >
+                                Batal
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

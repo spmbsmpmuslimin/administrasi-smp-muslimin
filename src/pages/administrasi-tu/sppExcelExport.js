@@ -41,11 +41,14 @@ const STATUS_LABEL = {
  * @param {Object} params
  * @param {string} params.classId - "" kalau lagi mode "Semua kelas" (dalam
  *   1 jenjang); kalau ada isinya dipake di judul & nama file, mis. "9C"
+ * @param {string} [params.selectedTA] - label TA yang lagi dipilih di
+ *   dropdown "Tahun Ajaran (buku)", mis. "2026/2027" -- ditulis di
+ *   letterhead biar walikelas tau ini rekap buat TA yang mana.
  * @param {Array} params.rows - hasil RekapPanel (allRows/rows yang lagi
  *   kefilter di layar), lihat komentar struktur di atas
  * @param {Function} [params.showToast] - signature (message, type)
  */
-export async function exportRekapTunggakanKelas({ classId, rows, showToast }) {
+export async function exportRekapTunggakanKelas({ classId, selectedTA, rows, showToast }) {
   if (!guardHasData(rows, { showToast, message: "Tidak ada data untuk diexport." })) {
     return;
   }
@@ -108,6 +111,7 @@ export async function exportRekapTunggakanKelas({ classId, rows, showToast }) {
     title: `REKAP PEMBAYARAN SPP - KELAS ${kelasLabel}`,
     mergeCols: showKelasColumn ? 7 : 6,
     metaLines: [
+      ...(selectedTA ? [`Tahun Ajaran: ${selectedTA}`] : []),
       `Dicetak: ${new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}`,
       `Jumlah siswa ditampilkan: ${resolvedRows.length}`,
       `Jumlah siswa menunggak: ${jumlahMenunggak}`,
@@ -176,7 +180,7 @@ export async function exportRekapTunggakanKelas({ classId, rows, showToast }) {
   });
 
   setupPrintOptions(worksheet, { orientation: "landscape", freezeHeaderRow: headerRowIndex });
-  autoFitColumns(worksheet);
+  autoFitColumns(worksheet, { startRow: headerRowIndex });
 
   const filenameSuffix =
     classId || (distinctClassIds.length > 0 ? distinctClassIds.join("-") : "Semua");

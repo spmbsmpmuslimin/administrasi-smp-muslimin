@@ -839,6 +839,29 @@
       </div>
     </div>
 
+    <div id="duplicateModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>📋 Data Sudah Pernah Disimpan</h2>
+        </div>
+        <div class="modal-body">
+          <p>
+            Data dengan <strong>Nama &amp; Tanggal Lahir</strong> (atau <strong>NISN</strong>) ini
+            kelihatannya <strong>sudah pernah disimpan</strong> sebelumnya.
+          </p>
+          <p style="margin-top: 10px; font-size: 14px; color: #64748b">
+            Kalau ada data yang perlu dikoreksi, hubungi TU/Admin sekolah -- jangan isi form ini
+            lagi ya.
+          </p>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="modal-btn modal-btn-confirm" onclick="closeDuplicateModal()">
+            Mengerti
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script>
       // =====================================================
       // 🎓 CONFIG
@@ -937,11 +960,43 @@
         e.target.value = e.target.value.replace(/\D/g, "");
       });
 
+      // Cek apakah data siswa ini kemungkinan udah pernah disimpan
+      // sebelumnya -- lewat RPC `cek_duplikat_siswa_baru` (cuma balikin
+      // true/false, gak pernah expose data siswa lain). Fail-open: kalau
+      // function ini sendiri error/gak bisa diakses, JANGAN blokir
+      // submit -- biar orang yang emang jujur belum pernah isi gak
+      // keblokir gara-gara masalah teknis di luar kendali mereka.
+      async function cekDuplikatSiswa(nisn, namaLengkap, tanggalLahirIso) {
+        try {
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/cek_duplikat_siswa_baru`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              p_nisn: nisn && nisn.length === 10 ? nisn : null,
+              p_nama_lengkap: namaLengkap,
+              p_tanggal_lahir: tanggalLahirIso,
+            }),
+          });
+          if (!response.ok) {
+            console.warn("cekDuplikatSiswa gagal, lanjut submit tanpa cek:", await response.text());
+            return false;
+          }
+          return await response.json();
+        } catch (err) {
+          console.warn("cekDuplikatSiswa gagal (network), lanjut submit tanpa cek:", err);
+          return false;
+        }
+      }
+
       // =====================================================
       // FORM SUBMIT
       // =====================================================
 
-      document.getElementById("registrationForm").addEventListener("submit", function (e) {
+      document.getElementById("registrationForm").addEventListener("submit", async function (e) {
         e.preventDefault();
 
         const successMsg = document.getElementById("successMessage");
@@ -995,12 +1050,35 @@
           return;
         }
 
+        // ✅ FIX: cek duplikat SEBELUM munculin modal konfirmasi, biar
+        // siswa yang datanya udah pernah kesimpen gak ke-insert dobel.
+        const [dupDay, dupMonth, dupYear] = tanggalLahir.split("-");
+        const tanggalLahirIsoUntukCek = `${dupYear}-${dupMonth}-${dupDay}`;
+
+        const submitBtnEl = document.querySelector(".btn-submit");
+        submitBtnEl.disabled = true;
+        submitBtnEl.textContent = "🔍 Memeriksa data...";
+
+        const sudahAda = await cekDuplikatSiswa(nisn, namaLengkap, tanggalLahirIsoUntukCek);
+
+        submitBtnEl.disabled = false;
+        submitBtnEl.textContent = "💾 Simpan Sekarang";
+
+        if (sudahAda) {
+          document.getElementById("duplicateModal").style.display = "block";
+          return;
+        }
+
         // Tampilkan modal konfirmasi
         document.getElementById("confirmModal").style.display = "block";
       });
 
       function closeModal() {
         document.getElementById("confirmModal").style.display = "none";
+      }
+
+      function closeDuplicateModal() {
+        document.getElementById("duplicateModal").style.display = "none";
       }
 
       async function confirmSubmit() {

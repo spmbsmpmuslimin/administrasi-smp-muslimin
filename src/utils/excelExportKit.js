@@ -54,14 +54,9 @@ export const STANDARD_CELL_BORDER = {
  * @param {number} [opts.startRow=1]
  * @returns {number} baris kosong berikutnya, siap dipakai buat header tabel
  */
-export function addLetterhead(
-  worksheet,
-  { title, mergeCols, metaLines = [], startRow = 1 },
-) {
+export function addLetterhead(worksheet, { title, mergeCols, metaLines = [], startRow = 1 }) {
   let row = startRow;
-  const lastCol = String.fromCharCode(
-    64 + Math.min(Math.max(mergeCols, 1), 26),
-  );
+  const lastCol = String.fromCharCode(64 + Math.min(Math.max(mergeCols, 1), 26));
 
   const schoolCell = worksheet.getCell(`A${row}`);
   worksheet.mergeCells(`A${row}:${lastCol}${row}`);
@@ -111,10 +106,7 @@ export function addLetterhead(
  * @param {Object} [opts]
  * @param {string} [opts.fillColor] - default biru primary, bisa dioverride (misal EXCEL_COLORS.accentPurple)
  */
-export function styleTableHeaderRow(
-  headerRow,
-  { fillColor = EXCEL_COLORS.primary } = {},
-) {
+export function styleTableHeaderRow(headerRow, { fillColor = EXCEL_COLORS.primary } = {}) {
   headerRow.eachCell((cell) => {
     cell.font = {
       name: EXCEL_FONT_FAMILY,
@@ -143,12 +135,7 @@ export function styleTableHeaderRow(
  *   kalau dibiarin jadi number, angka nol di depan (mis. "007123") bisa
  *   hilang atau kolom keformat aneh pas dibuka di Excel.
  */
-export function styleTableDataRow(
-  dataRow,
-  rowIndex,
-  centerCols = [],
-  textCols = [],
-) {
+export function styleTableDataRow(dataRow, rowIndex, centerCols = [], textCols = []) {
   dataRow.eachCell((cell, colNumber) => {
     cell.font = { name: EXCEL_FONT_FAMILY, size: 10 };
     cell.border = STANDARD_CELL_BORDER;
@@ -201,20 +188,34 @@ export async function downloadWorkbook(workbook, filename) {
  * Kalau file lo udah nentuin lebar kolom manual (worksheet.columns = [...])
  * dan itu sengaja/pas, nggak perlu pakai ini -- opsional, bukan wajib.
  *
+ * PENTING soal `startRow`: letterhead (nama sekolah, judul laporan,
+ * metaLines) numpuk semua di kolom A, dan teksnya biasanya jauh lebih
+ * panjang dari isi kolom A yang sebenernya (mis. cuma nomor urut "1", "2").
+ * Kalau baris-baris itu ikut kehitung, kolom A (atau kolom lain yang
+ * kebetulan nampung teks letterhead) bisa jadi kebangetan lebar padahal
+ * data aslinya pendek. Isi `startRow` = nomor baris header tabel (yang
+ * dibalikin sama `addLetterhead()`) biar baris di atasnya dilewatin pas
+ * ngitung lebar kolom.
+ *
  * @param {ExcelJS.Worksheet} worksheet
  * @param {Object} [opts]
  * @param {number} [opts.minWidth=6]
  * @param {number} [opts.maxWidth=60] - dibatasin biar kolom isian panjang
  *   (alamat, catatan, dll) nggak bikin sheet jadi kelebaran pas di-print
  * @param {number} [opts.padding=2]
+ * @param {number} [opts.startRow=1] - baris paling atas yang ikut dihitung;
+ *   default 1 (semua baris) biar file lama yang belom di-update tetep
+ *   jalan kayak biasa. Export baru sebaiknya isi ini = headerRowIndex dari
+ *   addLetterhead().
  */
 export function autoFitColumns(
   worksheet,
-  { minWidth = 6, maxWidth = 60, padding = 2 } = {},
+  { minWidth = 6, maxWidth = 60, padding = 2, startRow = 1 } = {}
 ) {
   worksheet.columns.forEach((column) => {
     let maxLength = 0;
-    column.eachCell({ includeEmpty: false }, (cell) => {
+    column.eachCell({ includeEmpty: false }, (cell, rowNumber) => {
+      if (rowNumber < startRow) return; // skip baris letterhead di atas tabel
       const length = cell.value ? cell.value.toString().length : 0;
       if (length > maxLength) maxLength = length;
     });
@@ -235,10 +236,7 @@ export function autoFitColumns(
  *   letterhead) yang mau di-freeze, kalau ada. Baris di atasnya (letterhead,
  *   dst) akan ikut freeze juga karena posisinya di atas.
  */
-export function setupPrintOptions(
-  worksheet,
-  { orientation = "portrait", freezeHeaderRow } = {},
-) {
+export function setupPrintOptions(worksheet, { orientation = "portrait", freezeHeaderRow } = {}) {
   worksheet.pageSetup = {
     orientation,
     fitToPage: true,
@@ -272,10 +270,7 @@ export function setupPrintOptions(
  * @param {string} [opts.message="Tidak ada data untuk diexport!"]
  * @returns {boolean} true kalau data ada isinya (aman lanjut export)
  */
-export function guardHasData(
-  data,
-  { showToast, message = "Tidak ada data untuk diexport!" } = {},
-) {
+export function guardHasData(data, { showToast, message = "Tidak ada data untuk diexport!" } = {}) {
   if (data && data.length > 0) return true;
 
   if (showToast) {
