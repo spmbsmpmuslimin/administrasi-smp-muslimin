@@ -3,7 +3,7 @@ import {
   Home,
   ClipboardCheck,
   UserCheck,
-  BookOpenText,
+  Calendar,
   LogOut,
   MessageCircle,
   FileBarChart,
@@ -25,7 +25,7 @@ import {
 //    (bukan "teacherattendance"), "jurnal-harian" (bukan "teachingjournal").
 //  - Dukung darkMode karena app ini punya toggle dark mode di header.
 //  - ✅ ROLE-AWARE: menu beda buat guru vs admin (userRole dari Layout.js).
-//    Guru: Home, P. Siswa, P. Guru, Jurnal, Akun
+//    Guru: Home, P. Siswa, P. Guru, Jadwal Mengajar, Akun
 //    Admin: Home, P. Guru, Pengaturan, Monitor, Akun
 //    Guru BK: Home, Konseling, Home Visit, Laporan, Akun
 //  - ✅ NEW: Tombol "Keluar" diganti "Akun" — isinya dropdown yang sama
@@ -110,9 +110,14 @@ export default function BottomNav({
       activeBg: "bg-blue-500",
     },
     {
-      id: "jurnal-harian",
-      label: "Jurnal",
-      icon: BookOpenText,
+      // ✅ REVISI: sebelumnya nunjuk ke "jurnal-harian" (Jurnal Mengajar,
+      // form isi jurnal harian) berlabel "Jurnal" -- sekarang diganti ke
+      // "jadwal-saya" (Jadwal Mengajar, liat jadwal ngajar), sesuai
+      // menu/icon yang sama kayak di sidebarConfig.js. Jurnal harian masih
+      // bisa diakses lewat sidebar, cuma dihilangin dari bottom nav.
+      id: "jadwal-saya",
+      label: "Jadwal Mengajar",
+      icon: Calendar,
       bg: darkMode ? "bg-rose-900/50" : "bg-rose-100",
       iconColor: darkMode ? "text-rose-300" : "text-rose-600",
       activeBg: "bg-rose-500",
