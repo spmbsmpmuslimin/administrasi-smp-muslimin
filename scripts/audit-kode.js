@@ -105,33 +105,6 @@ const SUPABASE_CALL_RE = /\.from\(\s*["'`]/;
 const GET_MONTH_CALL_RE = /\.getMonth\(\)/;
 const HARDCODED_YEAR_TEMPLATE_RE = /`\$\{[^`]*?[Yy]ear[^`]*?\}\s*\/\s*\$\{[^`]*?[Yy]ear[^`]*?\}`/;
 
-// Sinyal "ini fallback yang disengaja, bukan sumber utama": dipanggil lewat
-// `sesuatu || getXxxAcademicYear()` / `sesuatu || getTahunAjaranAktif()` dst
-// — pola "coba ambil dari DB/prop dulu, baru hitung dari kalender kalau
-// kosong/gagal". Kalau pola ini kedeteksi DI MANA PUN dalam file, semua
-// hit hardcode-kalender di file itu di-downgrade (dianggap udah di-review
-// & aman), soalnya fallback yang jarang kepake (cuma pas DB kosong/gagal)
-// tetep sah biarpun kena bug matematika kecil.
-// Dicek 2025-11: StudentJadwal.js, SPMB.js, SystemTab.js kena pola ini.
-const FALLBACK_OR_USAGE_RE = /\|\|\s*(?:this\.)?get\w*(?:AcademicYear|TahunAjaran)\w*\s*\(\s*\)/i;
-
-// Daftar manual file yang UDAH DI-REVIEW dan dipastikan aman meskipun kena
-// sinyal hardcode-kalender di atas, TAPI ngga kepasang pola fallback
-// (FALLBACK_OR_USAGE_RE) di atas karena bentuknya beda: dipake cuma buat
-// label teks / nama file export (Excel/PDF), sama sekali ngga dipake buat
-// nge-filter query ke database, jadi ngga ada resiko data nyasar/ke-skip.
-// ⚠️ Kalau salah satu file ini nanti diubah jadi ikut nge-filter query,
-// HAPUS dari daftar ini biar kena flag lagi & di-review ulang.
-// Direview manual 2025-11 (lihat percakapan waktu itu untuk detail):
-//  - DataExcel.js, SpmbExcel.js -> cuma buat nama file & header teks Excel
-//  - StudentPresensi.js -> cuma nentuin default pilihan dropdown bulan di
-//    UI; data presensi asli tetep difilter pake tanggal, bukan tahun ajaran
-const HARDCODED_CALENDAR_REVIEWED_SAFE_FILES = [
-  "src/pages/DataExcel.js",
-  "src/spmb/SpmbExcel.js",
-  "src/portal-siswa/StudentPresensi.js",
-];
-
 // Pattern backup/restore: query academic_years yang muncul cuma sebagai
 // bagian dari operasi bulk multi-tabel (backup/restore/cleanup seluruh
 // database), BUKAN usaha nentuin "tahun ajaran aktif". Dua tanda:
@@ -518,10 +491,80 @@ function checkDarkModeRegression(allFiles) {
 // 5: SUPABASE EMBEDDED JOIN DETECTION
 // ---------------------------------------------------------------------
 
-function checkEmbeddedJoins(allFiles) {
+// Narik peta foreign key ASLI dari skema live Supabase, lewat RPC
+// `get_foreign_key_map()` (liat instruksi bikinnya di FK_MAP_RPC_SETUP_SQL
+// di bawah). PostgREST endpoint biasa (yang dipake fetchLiveSchema di atas)
+// cuma ngasih daftar kolom per tabel, BUKAN relasi FK -- makanya butuh RPC
+// terpisah yang query information_schema langsung di sisi Postgres.
+//
+// Return: Map "parent_table->foreign_table" -> Set(nama kolom FK).
+// Kalau Set-nya isi 2+ kolom, berarti ada 2+ FK antar tabel itu -> beneran
+// rawan PGRST200 kalau di-embed tanpa hint. Kalau null, berarti RPC-nya
+// belum ke-setup / gagal dipanggil (checkEmbeddedJoins bakal fallback ke
+// perilaku lama: flag semua sebagai "worth di-cek").
+const FK_MAP_RPC_SETUP_SQL = `
+-- Jalanin SEKALI aja di Supabase SQL Editor (Dashboard -> SQL Editor),
+-- biar audit-kode.js bisa introspeksi FK asli & cross-check embedded join.
+-- Aman & read-only (cuma baca information_schema, gak nyentuh data).
+create or replace function get_foreign_key_map()
+returns table(table_name text, column_name text, foreign_table_name text)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    tc.table_name::text,
+    kcu.column_name::text,
+    ccu.table_name::text as foreign_table_name
+  from information_schema.table_constraints tc
+  join information_schema.key_column_usage kcu
+    on tc.constraint_name = kcu.constraint_name
+   and tc.table_schema = kcu.table_schema
+  join information_schema.constraint_column_usage ccu
+    on tc.constraint_name = ccu.constraint_name
+   and tc.table_schema = ccu.table_schema
+  where tc.constraint_type = 'FOREIGN KEY'
+    and tc.table_schema = 'public';
+$$;
+
+grant execute on function get_foreign_key_map() to anon, authenticated;
+`;
+
+async function fetchForeignKeyMap(url, key) {
+  if (typeof fetch !== "function") return null;
+  try {
+    const endpoint = `${url.replace(/\/$/, "")}/rest/v1/rpc/get_foreign_key_map`;
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!res.ok) return null; // kemungkinan besar fungsinya belum di-setup di DB
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return null;
+
+    const map = new Map(); // "parent->foreign" -> Set(nama kolom fk)
+    for (const row of rows) {
+      const pairKey = `${row.table_name}->${row.foreign_table_name}`;
+      if (!map.has(pairKey)) map.set(pairKey, new Set());
+      map.get(pairKey).add(row.column_name);
+    }
+    return map;
+  } catch {
+    return null;
+  }
+}
+
+function checkEmbeddedJoins(allFiles, fkMap = null) {
   const issues = [];
   const nakedDetails = [];
   const hintedDetails = [];
+  const riskyDetails = []; // fkMap KETEMU 2+ FK asli -> beneran wajib hint
+  const confirmedSafeDetails = []; // fkMap ketemu, FK cuma 1 -> aman
 
   // .select("... , identifier( ... ) ...")  -> tanda embedded join
   const SELECT_RE = /\.select\(\s*([`'"])([\s\S]*?)\1/g;
@@ -530,6 +573,16 @@ function checkEmbeddedJoins(allFiles) {
   // ":"), berarti udah ada disambiguation hint.
   const EMBED_RE =
     /([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(|([a-zA-Z_][a-zA-Z0-9_]*)\s*!\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\(|\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
+
+  function findNearestParentTable(content, beforeIdx) {
+    const FROM_BEFORE_RE = /\.from\(\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]\s*\)/g;
+    const windowStart = Math.max(0, beforeIdx - 600);
+    const windowStr = content.slice(windowStart, beforeIdx);
+    let lastMatch = null;
+    let fm;
+    while ((fm = FROM_BEFORE_RE.exec(windowStr)) !== null) lastMatch = fm[1];
+    return lastMatch;
+  }
 
   for (const file of allFiles) {
     const rel = toRel(file);
@@ -542,10 +595,14 @@ function checkEmbeddedJoins(allFiles) {
       let em;
       let hasEmbed = false;
       let allHinted = true;
+      const unhintedChildTables = [];
       while ((em = EMBED_RE.exec(selectArg)) !== null) {
         hasEmbed = true;
         const isHinted = em[1] !== undefined || em[3] !== undefined; // alias: atau !hint
-        if (!isHinted) allHinted = false;
+        if (!isHinted) {
+          allHinted = false;
+          if (em[4]) unhintedChildTables.push(em[4]);
+        }
       }
       if (!hasEmbed) continue;
 
@@ -553,12 +610,64 @@ function checkEmbeddedJoins(allFiles) {
       const lineNo = upTo.split(/\r?\n/).length;
       const snippet = selectArg.replace(/\s+/g, " ").trim().slice(0, 90);
       const line = `${rel}:${lineNo} → select("${snippet}")`;
+
       if (allHinted) {
         hintedDetails.push(line);
-      } else {
-        nakedDetails.push(line);
+        continue;
       }
+
+      if (fkMap) {
+        const parentTable = findNearestParentTable(content, m.index);
+        let hasRealAmbiguity = false;
+        let allPairsResolved = unhintedChildTables.length > 0;
+        for (const child of unhintedChildTables) {
+          if (!parentTable) {
+            allPairsResolved = false;
+            continue;
+          }
+          let fkCols = fkMap.get(`${parentTable}->${child}`);
+          if (!fkCols) fkCols = fkMap.get(`${child}->${parentTable}`);
+          if (!fkCols) {
+            allPairsResolved = false;
+            continue;
+          }
+          if (fkCols.size >= 2) hasRealAmbiguity = true;
+        }
+
+        if (hasRealAmbiguity) {
+          riskyDetails.push(
+            `${line} ⚠️ KETEMU 2+ FK asli antara tabel ini di skema live — WAJIB dikasih hint`
+          );
+          continue;
+        }
+        if (allPairsResolved) {
+          confirmedSafeDetails.push(line);
+          continue;
+        }
+      }
+
+      nakedDetails.push(line);
     }
+  }
+
+  if (riskyDetails.length > 0) {
+    pushIssue(
+      issues,
+      "critical",
+      `${riskyDetails.length} embedded join yang KETEMU 2+ FK asli tanpa hint (beneran rawan PGRST200)`,
+      "Ini bukan tebakan lagi -- udah di-cross-check ke skema live Supabase (via RPC get_foreign_key_map) dan kepastian ada 2 kolom FK atau lebih antara 2 tabel yang di-embed. Query ini WAJIB dikasih hint (`!inner`, `!nama_fk_constraint`, atau `alias:table`), soalnya kalau enggak, query ini bisa gagal kapan aja dengan error PGRST200.",
+      riskyDetails.slice(0, 50)
+    );
+  }
+
+  if (confirmedSafeDetails.length > 0) {
+    pushIssue(
+      issues,
+      "info",
+      `${confirmedSafeDetails.length} embedded join tanpa hint TAPI udah dicek ke skema live, FK-nya cuma 1 (aman)`,
+      "Udah di-cross-check ke skema live Supabase (via RPC get_foreign_key_map): antara 2 tabel yang di-embed di sini cuma ada 1 FK, jadi PostgREST ngga akan pernah bingung nentuin relasinya. Ngga perlu ditambahin hint.",
+      confirmedSafeDetails.slice(0, 50)
+    );
   }
 
   if (nakedDetails.length > 0) {
@@ -566,7 +675,9 @@ function checkEmbeddedJoins(allFiles) {
       issues,
       "warning",
       `${nakedDetails.length} embedded join TANPA disambiguation hint`,
-      "Query ini pake relational select (`select('*, table(...)')`) tanpa hint kayak `!inner`, `!nama_fk`, atau `alias:table`. Ini yang paling rawan kena PGRST200 kalau ada lebih dari satu foreign key antar 2 tabel itu. Worth di-cek satu-satu.",
+      fkMap
+        ? "Query ini pake relational select tanpa hint, dan gagal di-cross-check ke skema live (kemungkinan parent table-nya gak ke-detect otomatis dari pola .from(), atau relasinya bukan lewat FK langsung). Cek manual satu-satu."
+        : "Query ini pake relational select (`select('*, table(...)')`) tanpa hint kayak `!inner`, `!nama_fk`, atau `alias:table`. Ini yang paling rawan kena PGRST200 kalau ada lebih dari satu foreign key antar 2 tabel itu. Worth di-cek satu-satu. (Setup RPC get_foreign_key_map -- lihat FK_MAP_RPC_SETUP_SQL di script ini -- biar checker ini bisa cross-check ke skema live & lebih presisi.)",
       nakedDetails.slice(0, 50)
     );
   }
@@ -585,6 +696,8 @@ function checkEmbeddedJoins(allFiles) {
     issues,
     nakedCount: nakedDetails.length,
     hintedCount: hintedDetails.length,
+    riskyCount: riskyDetails.length,
+    confirmedSafeCount: confirmedSafeDetails.length,
   };
 }
 
@@ -720,24 +833,13 @@ function checkAcademicYearServiceUsage(allFiles) {
 
     // --- Sinyal kuat #2: hardcode tahun ajaran dari kalender ---
     if (GET_MONTH_CALL_RE.test(content) && HARDCODED_YEAR_TEMPLATE_RE.test(content)) {
-      // ✅ Udah kepasang pola fallback (`x || getXxxAcademicYear()`) di
-      // file ini -> aman, skip semua hit di file ini.
-      const isFallback = FALLBACK_OR_USAGE_RE.test(content);
-      // ✅ Atau udah direview manual & masuk daftar aman (cuma label/nama
-      // file, ngga pernah dipake buat filter query).
-      const isReviewedSafe = HARDCODED_CALENDAR_REVIEWED_SAFE_FILES.some((safe) =>
-        rel.endsWith(safe)
-      );
-
-      if (!isFallback && !isReviewedSafe) {
-        lines.forEach((line, idx) => {
-          if (HARDCODED_YEAR_TEMPLATE_RE.test(line)) {
-            hardcodedCalendarDetails.push(
-              `${rel}:${idx + 1} → hardcode tahun ajaran dari kalender (pola \`\${...year...}/\${...year...}\`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual`
-            );
-          }
-        });
-      }
+      lines.forEach((line, idx) => {
+        if (HARDCODED_YEAR_TEMPLATE_RE.test(line)) {
+          hardcodedCalendarDetails.push(
+            `${rel}:${idx + 1} → hardcode tahun ajaran dari kalender (pola \`\${...year...}/\${...year...}\`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual`
+          );
+        }
+      });
     }
 
     // --- Sinyal lemah: cuma filter tabel lain pake academic_year_id ---
@@ -1044,49 +1146,12 @@ async function checkFrontendBackendAlignment(allFiles) {
   const unknownColumnDetails = [];
   const FROM_RE = /\.from\(\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]\s*\)/g;
 
-  // Pola "table registry dinamis": file yang nyimpen daftar nama tabel di
-  // sebuah array/object (misal `{ name: "academic_events", display: "..." }`)
-  // terus manggilnya lewat `.from(variabel)` — BUKAN `.from("literal")`.
-  // Contoh nyata: src/system/SystemTab.js (fitur "Monitor Sistem", backup/
-  // restore/health-check semua tabel). FROM_RE di atas gak bisa nangkep ini
-  // karena bukan string literal, jadi tabel-tabel di registry ini keflag
-  // "dead" padahal beneran dipake. Dicek 2025-11.
-  const DYNAMIC_FROM_RE = /\.from\(\s*[a-zA-Z_$][\w.$]*\s*\)/;
-  const REGISTRY_NAME_RE = /\bname\s*:\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]/g;
-
-  // Tabel yang UDAH DI-REVIEW manual dan dipastikan beneran dipake, tapi
-  // cuma lewat Supabase RPC/database function (jadi genuinely gak keliatan
-  // dari analisis statis .from() manapun, dinamis atau literal). Cocokin
-  // manual ke source RPC-nya kalau mau verifikasi ulang.
-  // Direview manual 2025-11:
-  //  - spp_receipt_counters -> dibaca/diupdate di dalem Postgres function
-  //    `generate_spp_receipt_number()`, dipanggil dari SppTab.js lewat
-  //    `supabase.rpc("generate_spp_receipt_number")`. Ngga pernah disentuh
-  //    langsung dari JS sama sekali.
-  const RPC_ONLY_REVIEWED_SAFE_TABLES = ["spp_receipt_counters"];
-
   for (const file of allFiles) {
     const rel = toRel(file);
     if (rel.includes("/system/") && rel.includes("checkers/")) continue;
 
     const raw = fs.readFileSync(file, "utf8");
     const content = stripComments(raw);
-
-    // --- Tabel yang dipake lewat pola registry dinamis (lihat komentar
-    //     di atas) -- tandain semua "name: ..." di file ini kalau file-nya
-    //     juga ada pola `.from(variabel)` ---
-    if (DYNAMIC_FROM_RE.test(content)) {
-      REGISTRY_NAME_RE.lastIndex = 0;
-      let rm;
-      while ((rm = REGISTRY_NAME_RE.exec(content)) !== null) {
-        const table = rm[1];
-        if (!usage.has(table))
-          usage.set(table, { usedAsFrom: true, columns: new Set(), usesStar: false });
-        const entry = usage.get(table);
-        entry.usedAsFrom = true;
-        entry.usesStar = true; // gak bisa dilacak kolomnya statis, anggap select(*) biar gak ke-flag "dead column" juga
-      }
-    }
 
     const fromMatches = [...content.matchAll(FROM_RE)];
     for (let idx = 0; idx < fromMatches.length; idx++) {
@@ -1169,10 +1234,7 @@ async function checkFrontendBackendAlignment(allFiles) {
   }
 
   // --- a) DEAD TABLES: ada di Supabase, gak pernah di .from() manapun ---
-  const deadTables = [...liveSchema.keys()]
-    .filter((t) => !usage.has(t))
-    .filter((t) => !RPC_ONLY_REVIEWED_SAFE_TABLES.includes(t))
-    .sort();
+  const deadTables = [...liveSchema.keys()].filter((t) => !usage.has(t)).sort();
 
   // --- b) DEAD COLUMNS: tabel dipake, tapi kolom gak pernah disebut, dan
   //        gak ada select("*") buat tabel itu di manapun ---
@@ -1403,9 +1465,23 @@ async function main() {
   const darkModeResult = checkDarkModeRegression(allFiles);
   console.log(`   → dark mode heuristic selesai (${darkModeResult.flaggedCount} flagged)`);
 
-  const joinResult = checkEmbeddedJoins(allFiles);
+  // ✅ Narik peta FK asli dari skema live (kalau credential Supabase ada
+  // & RPC get_foreign_key_map udah di-setup) -- biar checkEmbeddedJoins
+  // bisa cross-check beneran, bukan cuma nebak dari pola select.
+  let fkMap = null;
+  const embedCreds = loadSupabaseCredentials();
+  if (embedCreds) {
+    fkMap = await fetchForeignKeyMap(embedCreds.url, embedCreds.key);
+  }
   console.log(
-    `   → embedded join check selesai (${joinResult.nakedCount} tanpa hint, ${joinResult.hintedCount} udah ada hint)`
+    fkMap
+      ? `   → peta FK live berhasil ditarik (${fkMap.size} pasangan tabel)`
+      : `   → peta FK live gak ke-ambil (credential gak ada / RPC get_foreign_key_map belum di-setup) -- embedded join check bakal fallback ke mode tebak-pola`
+  );
+
+  const joinResult = checkEmbeddedJoins(allFiles, fkMap);
+  console.log(
+    `   → embedded join check selesai (${joinResult.riskyCount} BENERAN rawan, ${joinResult.nakedCount} gak ke-cross-check, ${joinResult.confirmedSafeCount} udah dicek & aman, ${joinResult.hintedCount} udah ada hint)`
   );
 
   const tableResult = checkTableDrift(allFiles);
@@ -1530,7 +1606,9 @@ if (require.main === module) {
   // asli + nulis ke public/*.json).
   module.exports = {
     checkFrontendBackendAlignment,
+    checkEmbeddedJoins,
     fetchLiveSchema,
+    fetchForeignKeyMap,
     loadSupabaseCredentials,
     extractSelectColumns,
     extractBalancedBlock,

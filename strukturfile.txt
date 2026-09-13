@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 12 Sep 2026, 16.40
+Di-download dari UI: 13 Sep 2026, 12.43
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 12 Sep 2026, 16.40
+Terakhir di-generate: 13 Sep 2026, 12.42
 ======================================================================
 |-- src
 |   |-- assets
@@ -20,10 +20,8 @@ Terakhir di-generate: 12 Sep 2026, 16.40
 |   |   |-- AdminAttendanceView.js
 |   |   |-- AttendanceTabs.js
 |   |   |-- CustomDatePicker.js
-|   |   |-- ExportExcel.js
 |   |   |-- LocationValidator.js
 |   |   |-- ManualCheckIn.js
-|   |   |-- MonthlyView.js
 |   |   |-- MyAttendanceStatus.js
 |   |   |-- MyMonthlyHistory.js
 |   |   |-- QRCodeGenerator.js
@@ -105,6 +103,7 @@ Terakhir di-generate: 12 Sep 2026, 16.40
 |   |   |   |-- KeuanganTab.js
 |   |   |   |-- PersuratanTab.js
 |   |   |   |-- SppTab-Backup.js
+|   |   |   |-- SppTab-revisi.js
 |   |   |   |-- SppTab.js
 |   |   |   |-- TagihanLainTab.js
 |   |   |   |-- keuanganShared.js
@@ -238,6 +237,11 @@ Terakhir di-generate: 12 Sep 2026, 16.40
 |   |   |   |-- JadwalMassalModals.js
 |   |   |   |-- KelolaJamPelajaran.js
 |   |   |   `-- useJadwalMassalLogic.js
+|   |   |-- kelola-ujian
+|   |   |   |-- KelolaUjianTab.js
+|   |   |   |-- PembagianRuanganTab.js
+|   |   |   |-- bagiRuangan.js
+|   |   |   `-- pembagianRuanganSupabase.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
 |   |   |   `-- PortalSiswaTab.js
@@ -274,7 +278,8 @@ Terakhir di-generate: 12 Sep 2026, 16.40
 |   |   |-- SpmbExcel.js
 |   |   |-- Statistics.js
 |   |   |-- StudentForm.js
-|   |   `-- StudentList.js
+|   |   |-- StudentList.js
+|   |   `-- index.html
 |   |-- system
 |   |   |-- checkers
 |   |   |   |-- AppHealthChecker.js
@@ -289,7 +294,6 @@ Terakhir di-generate: 12 Sep 2026, 16.40
 |   |   |-- DatabaseCleanupMonitor.js
 |   |   |-- HealthChecker.js
 |   |   |-- MaintenanceModeTab.js
-|   |   |-- MaintenancePage-backup.js
 |   |   |-- MaintenancePage.js
 |   |   |-- MaintenanceTab.js
 |   |   |-- MonitorDashboard.js
@@ -318,7 +322,7 @@ Terakhir di-generate: 12 Sep 2026, 16.40
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 12 Sep 2026, 16.40
+Terakhir di-generate: 13 Sep 2026, 12.42
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
@@ -360,6 +364,7 @@ other_fee_payments : id,bill_id,student_id,amount_paid,payment_date,payment_meth
 peminjaman : id,buku_id,judul_buku_snapshot,nama_peminjam,no_anggota,tanggal_pinjam,tanggal_jatuh_tempo,tanggal_kembali,status,denda,kondisi_buku,catatan,petugas_id,created_at,updated_at,peminjam_student_id
 pengumuman_siswa : id,title,content,target_class,created_by,is_pinned,created_at,updated_at
 period_schedules : id,academic_year_id,day,period,start_time,end_time,session_type,label,created_at,updated_at
+peserta_ujian : id,ujian_id,siswa_id,nomor_ruangan,no_peserta,asal_kelas,created_at
 raport_config : id,class_id,mata_pelajaran,academic_year_id,kkm,created_at,updated_at,jenjang,semester,is_jenjang_default
 raport_metadata : id,academic_year_id,semester,tanggal_raport,tempat,nama_kepala_sekolah,nip_kepala_sekolah,ttd_kepala_sekolah,created_at,updated_at
 ruang_belajar : id,title,category,description,content,resource_type,thumbnail,url,estimated_minutes,is_featured,is_active,created_by,created_at,updated_at
@@ -389,5 +394,6 @@ teacher_profiles : id,teacher_id,nuptk,jenis_kelamin,tempat_lahir,tanggal_lahir,
 teacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,created_at,updated_at,academic_year_id,subject,source
 tindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at
 tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active
+ujian : id,jenis,academic_year_id,status,kapasitas_ruangan,created_at,updated_at
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
 users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count,jabatan_struktural,is_blocked

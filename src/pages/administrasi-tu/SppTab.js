@@ -875,15 +875,32 @@ const MONTH_SHORT = [
 // dibungkus lingkaran) biar keliatan jelas walau di kolom sempit,
 // strokeWidth ditebelin + size digedein dari versi awal.
 const MonthDot = ({ status, isDue, label }) => {
-  const title = `${label}: ${!isDue ? "belum jalan" : status === "paid" ? "lunas" : status === "partial" ? "kebayar sebagian" : "belum bayar"}`;
-  if (!isDue)
-    return (
-      <Minus size={18} strokeWidth={3} className="text-gray-300 dark:text-gray-600" title={title} />
-    );
+  // PENTING: cek status "paid"/"partial" DULUAN, baru fallback ke isDue.
+  // Urutan kebalik (isDue dicek duluan) bikin siswa yang bayar DI MUKA
+  // (bulan yang belom `isDue` tapi udah kecatet lunas) malah keliatan
+  // "Minus" (belum jalan) walau sebenernya udah lunas -- padahal
+  // isDue cuma buat nentuin apa bulan itu udah waktunya ditagih, bukan
+  // penentu status pembayarannya.
+  const isAdvance = status === "paid" && !isDue;
+  const title = `${label}: ${
+    status === "paid"
+      ? isAdvance
+        ? "lunas (bayar di muka)"
+        : "lunas"
+      : status === "partial"
+        ? "kebayar sebagian"
+        : !isDue
+          ? "belum jalan"
+          : "belum bayar"
+  }`;
   if (status === "paid")
     return <Check size={20} strokeWidth={3.5} className="text-emerald-500" title={title} />;
   if (status === "partial")
     return <Circle size={16} className="text-amber-500 fill-amber-500" title={title} />;
+  if (!isDue)
+    return (
+      <Minus size={18} strokeWidth={3} className="text-gray-300 dark:text-gray-600" title={title} />
+    );
   return <X size={20} strokeWidth={3.5} className="text-red-500" title={title} />;
 };
 
@@ -916,8 +933,9 @@ const STATUS_FILTERS = [
 ];
 
 const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) => {
-  const [classId, setClassId] = useState("");
-  const [roster, setRoster] = useState([]); // siswa di kelas + entryYear + status per bulan (dari DB)
+  const [jenjang, setJenjang] = useState("");
+  const [classId, setClassId] = useState(""); // "" = Semua kelas (dalam jenjang yang dipilih)
+  const [roster, setRoster] = useState([]); // siswa + entryYear + status per bulan (dari DB)
   const [rosterLoading, setRosterLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -926,9 +944,20 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
   const selectedTA = academicYearLabel(selectedTAStart);
   const isCurrentBook = selectedTAStart === currentTA.start;
 
+  // Kalau classId spesifik dipilih, fetch kelas itu doang. Kalau "Semua
+  // kelas" (classId "") yang dipilih, fetch SEMUA kelas dalam jenjang
+  // yang lagi aktif -- biar TU yang baru pilih Jenjang langsung liat
+  // semua siswanya, gak perlu mecah pilih kelas satu-satu dulu (dan gak
+  // ngerasa "ilang" nama siswa gara-gara defaultnya kosong).
+  const resolvedClassIds = useMemo(() => {
+    if (classId) return [classId];
+    if (!jenjang) return []; // belum pilih jenjang -- jangan tarik SEMUA sekolah
+    return getKelasByJenjang(classes, jenjang).map((c) => c.id);
+  }, [classId, jenjang, classes]);
+
   // TA yang tersedia di dropdown = dari TA berjalan mundur sampe tahun
-  // masuk PALING LAMA di antara siswa kelas ini (biar kelas 9 kebagian
-  // opsi buku kelas 7 & 8-nya juga, kelas 7 cuma kebagian buku
+  // masuk PALING LAMA di antara siswa yang lagi ditampilin (biar kelas 9
+  // kebagian opsi buku kelas 7 & 8-nya juga, kelas 7 cuma kebagian buku
   // sendiri). Di-cap 5 biar gak kebablasan kalo ada siswa tinggal kelas
   // berkali-kali / data NIS yang aneh.
   const taOptions = useMemo(() => {
@@ -940,11 +969,11 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
     return years.map((start) => ({ start, label: academicYearLabel(start) }));
   }, [roster, currentTA]);
 
-  // Fetch roster + SEMUA bill kelas ini SEKALI per ganti kelas (bukan
-  // tiap ganti dropdown TA) -- pindah "buku" abis ini tinggal itung
-  // ulang di memori, gak perlu roundtrip DB lagi, jadi kerasa instan.
+  // Fetch roster + SEMUA bill siswa yang relevan SEKALI per ganti
+  // jenjang/kelas (bukan tiap ganti dropdown TA) -- pindah "buku" abis
+  // ini tinggal itung ulang di memori, gak perlu roundtrip DB lagi.
   useEffect(() => {
-    if (!classId) {
+    if (resolvedClassIds.length === 0) {
       setRoster([]);
       return;
     }
@@ -954,7 +983,7 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
         const { data: studentsInClass, error: studErr } = await supabase
           .from("students")
           .select("id, full_name, nis, class_id")
-          .eq("class_id", classId)
+          .in("class_id", resolvedClassIds)
           .eq("is_active", true)
           .order("full_name", { ascending: true });
         if (studErr) throw studErr;
@@ -992,14 +1021,25 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
       }
     };
     fetchRoster();
-  }, [classId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedClassIds.join(",")]);
 
-  // Reset ke TA berjalan tiap ganti kelas, biar gak nyangkut milih TA
-  // yang gak relevan buat kelas barunya.
+  // Reset ke TA berjalan tiap ganti jenjang -- biar gak nyangkut milih
+  // TA yang gak relevan buat siswa jenjang barunya.
+  const handleJenjangChange = (val) => {
+    setJenjang(val);
+    setClassId(""); // balik ke "Semua kelas" dalam jenjang baru
+    setSelectedTAStart(currentTA.start);
+  };
+
   const handleClassChange = (id) => {
     setClassId(id);
     setSelectedTAStart(currentTA.start);
   };
+
+  // Kelas lebih dari 1 lagi ditampilin bareng (mode "Semua kelas") --
+  // dipake buat nampilin/nyembunyiin kolom "Kelas" di tabel.
+  const showKelasColumn = resolvedClassIds.length > 1;
 
   // 12 kolom bulan buat TA yang lagi dipilih (buku ini doang).
   const headerPeriods = useMemo(
@@ -1015,7 +1055,7 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
   // jalan gak dihitung, biar siswa baru bayar 3 bulan awal tetep
   // kecatet Lunas, bukan nyangkut di Belum Lunas gara-gara 9 bulan
   // depan belom waktunya).
-  const [statusFilter, setStatusFilter] = useState("belum");
+  const [statusFilter, setStatusFilter] = useState("semua");
 
   const allRows = useMemo(() => {
     return roster.map((s) => {
@@ -1028,6 +1068,16 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
       const belum = dueMonths.filter((p) => p.status !== "paid");
       const totalTunggakan = belum.reduce((sum, p) => sum + (nominalPerTA[p.ta] ?? 0), 0);
 
+      // Estimasi kewajiban 12 bulan PENUH buat TA ini (gak peduli isDue) --
+      // beda dari totalTunggakan yang cuma ngitung bulan yang beneran
+      // udah lewat tanggalnya. Ini murni info tambahan (proyeksi), BUKAN
+      // dipake buat nentuin status "Belum Lunas"/badge Tertunggak.
+      const belumSemuaBulan = months.filter((p) => p.status !== "paid");
+      const totalEstimasiTA = belumSemuaBulan.reduce(
+        (sum, p) => sum + (nominalPerTA[p.ta] ?? 0),
+        0
+      );
+
       const status =
         dueMonths.length === 0 || belum.length === 0
           ? "paid"
@@ -1035,7 +1085,7 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
             ? "unpaid"
             : "partial";
 
-      return { ...s, months, belumMasuk: false, status, totalTunggakan };
+      return { ...s, months, belumMasuk: false, status, totalTunggakan, totalEstimasiTA };
     });
   }, [roster, headerPeriods, nominalPerTA, selectedTAStart]);
 
@@ -1046,9 +1096,46 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
     return allRows;
   }, [allRows, statusFilter]);
 
+  // Tunggakan siswa DI LUAR buku yang lagi dibuka -- biar TU gak ngira
+  // siswa "lunas" cuma karena buku yang lagi ditampilin doang yang
+  // beres, padahal ada nunggakan yg "tersembunyi" di TA lain (misal
+  // siswa kelas 9 masih nunggak dari kelas 7/8). Diitung dari SEMUA
+  // periode sejak entryYear siswa (generateExpectedPeriods udah urut
+  // kronologis per TA), MINUS TA yang lagi dipilih di dropdown.
+  const otherTAOwed = useMemo(() => {
+    const map = new Map(); // student id -> { total, taCount, earliestTA }
+    for (const s of roster) {
+      if (s.unresolved) continue;
+      const owedByTA = new Map(); // TA label -> total nominal
+      for (const p of generateExpectedPeriods(s.entryYear)) {
+        if (p.ta === selectedTA) continue; // skip buku yang lagi dibuka
+        if (!p.isDue) continue;
+        if (s.statusOf(p) === "paid") continue;
+        owedByTA.set(p.ta, (owedByTA.get(p.ta) || 0) + (nominalPerTA[p.ta] ?? 0));
+      }
+      if (owedByTA.size > 0) {
+        map.set(s.id, {
+          total: [...owedByTA.values()].reduce((a, b) => a + b, 0),
+          taCount: owedByTA.size,
+          earliestTA: [...owedByTA.keys()][0], // insertion order = kronologis
+        });
+      }
+    }
+    return map;
+  }, [roster, selectedTA, nominalPerTA]);
+
+  const countOtherTA = useMemo(
+    () => allRows.filter((r) => otherTAOwed.has(r.id)).length,
+    [allRows, otherTAOwed]
+  );
+
+  // Balik label "2023/2024" -> tahun mulai (2023), buat jump ke buku itu.
+  const jumpToTA = (taLabel) => setSelectedTAStart(parseInt(taLabel.split("/")[0], 10));
+
   const loading = rosterLoading;
 
   const totalTunggakanKelas = allRows.reduce((sum, r) => sum + (r.totalTunggakan || 0), 0);
+  const totalEstimasiKelas = allRows.reduce((sum, r) => sum + (r.totalEstimasiTA || 0), 0);
   const jumlahLunas = allRows.filter((r) => r.status === "paid").length;
   const jumlahResolvable = allRows.filter(
     (r) => r.status !== "n/a" && r.status !== "unresolved"
@@ -1079,15 +1166,32 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
           darkMode ? "bg-gray-800/60 border-gray-700" : "bg-gray-50 border-gray-200"
         }`}
       >
+        <div className="sm:w-40">
+          <Field label="Pilih Jenjang" darkMode={darkMode}>
+            <select
+              value={jenjang}
+              onChange={(e) => handleJenjangChange(e.target.value)}
+              className={inputClass(darkMode)}
+            >
+              <option value="">Pilih jenjang</option>
+              {getJenjangOptions(classes).map((g) => (
+                <option key={g} value={g}>
+                  Kelas {g}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
         <div className="sm:w-56">
           <Field label="Pilih Kelas" darkMode={darkMode}>
             <select
               value={classId}
               onChange={(e) => handleClassChange(e.target.value)}
               className={inputClass(darkMode)}
+              disabled={!jenjang}
             >
-              <option value="">Pilih kelas</option>
-              {classes.map((c) => (
+              <option value="">Semua kelas</option>
+              {getKelasByJenjang(classes, jenjang).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.id}
                 </option>
@@ -1110,7 +1214,38 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
             </select>
           </Field>
         </div>
-        {classId && (
+        {jenjang && countOtherTA > 0 && (
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 ${darkMode ? "bg-amber-900/20 text-amber-300" : "bg-amber-50 text-amber-700"}`}
+            >
+              <AlertTriangle size={15} />
+              {countOtherTA} siswa punya tunggakan di TA lain (di luar buku ini)
+            </div>
+          </div>
+        )}
+      </div>
+
+      {jenjang && (
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-1.5">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setStatusFilter(f.id)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  statusFilter === f.id
+                    ? "bg-amber-600 text-white"
+                    : darkMode
+                      ? "bg-gray-800 text-gray-400 hover:text-gray-200"
+                      : "bg-gray-100 text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center gap-2.5 flex-wrap">
             <div
               className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-emerald-900/20 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}
@@ -1118,9 +1253,18 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
               {jumlahLunas} dari {jumlahResolvable} siswa lunas
             </div>
             <div
-              className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${darkMode ? "bg-red-900/20 text-red-300" : "bg-red-50 text-red-700"}`}
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold ${
+                totalTunggakanKelas > 0 ? "ring-2 ring-red-400/60 animate-pulse" : ""
+              } ${darkMode ? "bg-red-900/20 text-red-300" : "bg-red-50 text-red-700"}`}
             >
-              Total tunggakan TA {selectedTA}: {formatRupiah(totalTunggakanKelas)}
+              Tertunggak TA {selectedTA}: {formatRupiah(totalTunggakanKelas)}
+              {totalEstimasiKelas !== totalTunggakanKelas && (
+                <span
+                  className={`block text-[11px] font-normal mt-0.5 ${darkMode ? "text-red-300/60" : "text-red-700/60"}`}
+                >
+                  Estimasi total 1 TA (12 bulan): {formatRupiah(totalEstimasiKelas)}
+                </span>
+              )}
             </div>
             <button
               onClick={handleExportExcel}
@@ -1136,30 +1280,10 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
               Export Excel
             </button>
           </div>
-        )}
-      </div>
-
-      {classId && (
-        <div className="flex items-center gap-1.5">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setStatusFilter(f.id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                statusFilter === f.id
-                  ? "bg-amber-600 text-white"
-                  : darkMode
-                    ? "bg-gray-800 text-gray-400 hover:text-gray-200"
-                    : "bg-gray-100 text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
         </div>
       )}
 
-      {!isCurrentBook && classId && (
+      {!isCurrentBook && jenjang && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-700 flex items-center gap-2">
           <AlertTriangle size={14} className="shrink-0" />
           Lagi liat buku TA {selectedTA} (bukan TA berjalan) -- semua bulan di buku ini udah lewat.
@@ -1204,6 +1328,11 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
               <th className="px-5 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap">
                 Nama Siswa
               </th>
+              {showKelasColumn && (
+                <th className="px-3 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap">
+                  Kelas
+                </th>
+              )}
               {headerPeriods.map((p) => (
                 <th
                   key={p.key}
@@ -1224,8 +1353,8 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
             </tr>
           </thead>
           <tbody className={`divide-y ${darkMode ? "divide-gray-800" : "divide-gray-100"}`}>
-            {!classId ? (
-              <EmptyRow darkMode={darkMode}>Pilih kelas dulu buat lihat rekap.</EmptyRow>
+            {!jenjang ? (
+              <EmptyRow darkMode={darkMode}>Pilih jenjang dulu buat lihat rekap.</EmptyRow>
             ) : loading ? (
               <EmptyRow darkMode={darkMode}>Memuat...</EmptyRow>
             ) : rows.length === 0 ? (
@@ -1243,7 +1372,7 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
               rows.map((r) => (
                 <tr
                   key={r.id}
-                  onClick={() => onPilihSiswa?.(r, classId)}
+                  onClick={() => onPilihSiswa?.(r, r.class_id)}
                   title="Klik buat langsung catat pembayaran siswa ini"
                   className={`cursor-pointer transition-colors ${
                     darkMode
@@ -1258,7 +1387,28 @@ const RekapPanel = ({ classes, darkMode, nominalPerTA, notify, onPilihSiswa }) =
                     >
                       {r.nis}
                     </span>
+                    {otherTAOwed.has(r.id) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // jangan ikut trigger onPilihSiswa di <tr>
+                          jumpToTA(otherTAOwed.get(r.id).earliestTA);
+                        }}
+                        title={`Tunggakan ${formatRupiah(otherTAOwed.get(r.id).total)} di ${otherTAOwed.get(r.id).taCount} TA lain -- klik buat pindah ke buku terlama`}
+                        className={`mt-0.5 flex items-center gap-1 text-[10px] font-semibold hover:underline ${
+                          darkMode ? "text-amber-400" : "text-amber-600"
+                        }`}
+                      >
+                        <AlertTriangle size={11} /> +{otherTAOwed.get(r.id).taCount} TA lain
+                      </button>
+                    )}
                   </td>
+                  {showKelasColumn && (
+                    <td
+                      className={`px-3 py-3 text-xs whitespace-nowrap ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                    >
+                      {r.class_id}
+                    </td>
+                  )}
                   {r.unresolved ? (
                     <td
                       colSpan={headerPeriods.length}

@@ -18,6 +18,8 @@ import {
   Wallet,
   Plus,
   Trash2,
+  Receipt,
+  ClipboardList,
 } from "lucide-react";
 
 const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
@@ -35,6 +37,8 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     npsn: "20240001",
     grades: ["7", "8", "9"],
     spp_nominal_per_ta: {},
+    other_fee_items_awal_tahun: {},
+    other_fee_items_akhir_tahun: {},
   });
 
   const [editingSchoolSettings, setEditingSchoolSettings] = useState(false);
@@ -48,6 +52,12 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
   // State bantu untuk form tambah data SPP
   const [newSppYear, setNewSppYear] = useState("");
   const [newSppNominal, setNewSppNominal] = useState("");
+
+  // State bantu untuk form tambah item biaya lain-lain (awal & akhir tahun)
+  const [newFeeItem, setNewFeeItem] = useState({
+    awal_tahun: { year: "", name: "", amount: "" },
+    akhir_tahun: { year: "", name: "", amount: "" },
+  });
 
   const ALL_GRADE_OPTIONS = ["7", "8", "9", "10", "11", "12"];
 
@@ -108,7 +118,12 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
       if (settingsData && settingsData.length > 0) {
         const settings = {};
-        const jsonKeys = ["grades", "spp_nominal_per_ta"];
+        const jsonKeys = [
+          "grades",
+          "spp_nominal_per_ta",
+          "other_fee_items_awal_tahun",
+          "other_fee_items_akhir_tahun",
+        ];
 
         settingsData.forEach((item) => {
           let value = item.setting_value;
@@ -117,7 +132,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
             try {
               value = JSON.parse(value);
             } catch (e) {
-              value = item.setting_key === "spp_nominal_per_ta" ? {} : [];
+              value = item.setting_key === "grades" ? [] : {};
             }
           }
 
@@ -358,7 +373,12 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
     try {
       setLoading(true);
 
-      const jsonKeys = ["grades", "spp_nominal_per_ta"];
+      const jsonKeys = [
+        "grades",
+        "spp_nominal_per_ta",
+        "other_fee_items_awal_tahun",
+        "other_fee_items_akhir_tahun",
+      ];
 
       const updatePromises = Object.entries(tempSchoolSettings).map(([key, value]) => {
         let storedValue = value;
@@ -440,6 +460,84 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
       return { ...prev, spp_nominal_per_ta: updated };
     });
   };
+
+  // ✅ BIAYA LAIN-LAIN (AWAL & AKHIR TAHUN)
+  const addOtherFeeItem = (type) => {
+    const key = `other_fee_items_${type}`;
+    const form = newFeeItem[type];
+
+    if (!form.year.trim() || !form.name.trim() || !form.amount) {
+      showToast("Tahun ajaran, nama item, dan nominal wajib diisi", "error");
+      return;
+    }
+
+    const yearRegex = /^\d{4}\/\d{4}$/;
+    if (!yearRegex.test(form.year.trim())) {
+      showToast("Format tahun ajaran harus: YYYY/YYYY (contoh: 2026/2027)", "error");
+      return;
+    }
+
+    setTempSchoolSettings((prev) => {
+      const current = prev[key] || {};
+      const yearData = current[form.year.trim()] || { due_date: null, items: [] };
+      return {
+        ...prev,
+        [key]: {
+          ...current,
+          [form.year.trim()]: {
+            ...yearData,
+            items: [
+              ...(yearData.items || []),
+              { name: form.name.trim(), amount: Number(form.amount) },
+            ],
+          },
+        },
+      };
+    });
+
+    setNewFeeItem((prev) => ({
+      ...prev,
+      [type]: { ...prev[type], name: "", amount: "" },
+    }));
+  };
+
+  const removeOtherFeeItem = (type, year, index) => {
+    const key = `other_fee_items_${type}`;
+    setTempSchoolSettings((prev) => {
+      const current = { ...(prev[key] || {}) };
+      const yearData = current[year];
+      if (!yearData) return prev;
+
+      const updatedItems = (yearData.items || []).filter((_, i) => i !== index);
+      if (updatedItems.length === 0) {
+        delete current[year];
+      } else {
+        current[year] = { ...yearData, items: updatedItems };
+      }
+      return { ...prev, [key]: current };
+    });
+  };
+
+  const removeOtherFeeYear = (type, year) => {
+    const key = `other_fee_items_${type}`;
+    setTempSchoolSettings((prev) => {
+      const current = { ...(prev[key] || {}) };
+      delete current[year];
+      return { ...prev, [key]: current };
+    });
+  };
+
+  const updateOtherFeeDueDate = (type, year, dueDate) => {
+    const key = `other_fee_items_${type}`;
+    setTempSchoolSettings((prev) => {
+      const current = { ...(prev[key] || {}) };
+      const yearData = current[year] || { due_date: null, items: [] };
+      current[year] = { ...yearData, due_date: dueDate || null };
+      return { ...prev, [key]: current };
+    });
+  };
+
+  const sumFeeItems = (items) => (items || []).reduce((sum, it) => sum + Number(it.amount || 0), 0);
 
   const formatRupiah = (value) => {
     if (value === undefined || value === null || value === "") return "-";
@@ -898,87 +996,266 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
           </div>
         </div>
 
-        {/* ── SPP Nominal ── */}
-        <div className={cardClass}>
-          <h3 className={sectionTitleClass}>
-            <div
-              className={iconBadge(
-                "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
-              )}
-            >
-              <Wallet size={18} />
-            </div>
-            Nominal SPP per Tahun Ajaran
-          </h3>
+        {/* ── SPP - Uang Awal Tahun - Uang Akhir Tahun (3 kolom sejajar) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          {/* SPP Nominal */}
+          <div className={`${cardClass} h-full flex flex-col`}>
+            <h3 className={sectionTitleClass}>
+              <div
+                className={iconBadge(
+                  "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
+                )}
+              >
+                <Wallet size={18} />
+              </div>
+              Nominal SPP per Tahun Ajaran
+            </h3>
 
-          <div className="space-y-2 mb-4">
-            {Object.entries(
-              (editingSchoolSettings
-                ? tempSchoolSettings.spp_nominal_per_ta
-                : schoolSettings.spp_nominal_per_ta) || {}
-            )
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([year, nominal]) => (
-                <div
-                  key={year}
-                  className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg"
-                >
-                  <span className="font-medium text-gray-800 dark:text-white text-sm">{year}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm">
-                      {formatRupiah(nominal)}
+            <div className="space-y-2 mb-4 flex-1">
+              {Object.entries(
+                (editingSchoolSettings
+                  ? tempSchoolSettings.spp_nominal_per_ta
+                  : schoolSettings.spp_nominal_per_ta) || {}
+              )
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([year, nominal]) => (
+                  <div
+                    key={year}
+                    className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700 rounded-lg"
+                  >
+                    <span className="font-medium text-gray-800 dark:text-white text-sm">
+                      {year}
                     </span>
-                    {editingSchoolSettings && (
-                      <button
-                        type="button"
-                        onClick={() => removeSppNominal(year)}
-                        className="text-red-500 hover:text-red-700 p-1 touch-manipulation active:scale-90"
-                        title="Hapus"
-                        aria-label={`Hapus nominal SPP ${year}`}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm">
+                        {formatRupiah(nominal)}
+                      </span>
+                      {editingSchoolSettings && (
+                        <button
+                          type="button"
+                          onClick={() => removeSppNominal(year)}
+                          className="text-red-500 hover:text-red-700 p-1 touch-manipulation active:scale-90"
+                          title="Hapus"
+                          aria-label={`Hapus nominal SPP ${year}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            {Object.keys(
-              (editingSchoolSettings
-                ? tempSchoolSettings.spp_nominal_per_ta
-                : schoolSettings.spp_nominal_per_ta) || {}
-            ).length === 0 && (
-              <p className="text-sm text-gray-400 dark:text-gray-500">
-                Belum ada nominal SPP diset
-              </p>
+                ))}
+              {Object.keys(
+                (editingSchoolSettings
+                  ? tempSchoolSettings.spp_nominal_per_ta
+                  : schoolSettings.spp_nominal_per_ta) || {}
+              ).length === 0 && (
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  Belum ada nominal SPP diset
+                </p>
+              )}
+            </div>
+
+            {editingSchoolSettings && (
+              <div className="flex flex-col gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <input
+                  type="text"
+                  value={newSppYear}
+                  onChange={(e) => setNewSppYear(e.target.value)}
+                  placeholder="2026/2027"
+                  className={`${inputClass} mt-3`}
+                />
+                <input
+                  type="number"
+                  value={newSppNominal}
+                  onChange={(e) => setNewSppNominal(e.target.value)}
+                  placeholder="Nominal SPP (Rp)"
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={addOrUpdateSppNominal}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors min-h-[42px] touch-manipulation active:scale-[0.98]"
+                >
+                  <Plus size={16} />
+                  Tambah/Update
+                </button>
+              </div>
             )}
           </div>
 
-          {editingSchoolSettings && (
-            <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-              <input
-                type="text"
-                value={newSppYear}
-                onChange={(e) => setNewSppYear(e.target.value)}
-                placeholder="2026/2027"
-                className={`${inputClass} flex-1 mt-3`}
-              />
-              <input
-                type="number"
-                value={newSppNominal}
-                onChange={(e) => setNewSppNominal(e.target.value)}
-                placeholder="Nominal SPP (Rp)"
-                className={`${inputClass} flex-1 mt-3`}
-              />
-              <button
-                type="button"
-                onClick={addOrUpdateSppNominal}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 mt-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors min-h-[42px] touch-manipulation active:scale-[0.98]"
-              >
-                <Plus size={16} />
-                Tambah/Update
-              </button>
-            </div>
-          )}
+          {/* ── Biaya Lain-lain (Awal & Akhir Tahun) per Tahun Ajaran ── */}
+          {["awal_tahun", "akhir_tahun"].map((type) => {
+            const key = `other_fee_items_${type}`;
+            const label =
+              type === "awal_tahun" ? "Biaya Lain Awal Tahun" : "Biaya Lain Akhir Tahun";
+            const FeeIcon = type === "awal_tahun" ? Receipt : ClipboardList;
+            const badgeColor =
+              type === "awal_tahun"
+                ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
+                : "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400";
+            const btnColor =
+              type === "awal_tahun"
+                ? "bg-orange-600 hover:bg-orange-700"
+                : "bg-indigo-600 hover:bg-indigo-700";
+            const data =
+              (editingSchoolSettings ? tempSchoolSettings[key] : schoolSettings[key]) || {};
+            const form = newFeeItem[type];
+
+            return (
+              <div className={`${cardClass} h-full flex flex-col`} key={type}>
+                <h3 className={sectionTitleClass}>
+                  <div className={iconBadge(badgeColor)}>
+                    <FeeIcon size={18} />
+                  </div>
+                  {label}
+                </h3>
+
+                <div className="space-y-4 mb-4 flex-1 overflow-y-auto max-h-[420px] pr-1">
+                  {Object.entries(data)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([year, yearData]) => (
+                      <div
+                        key={year}
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900/30"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-medium text-gray-800 dark:text-white text-sm">
+                            {year}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Total:{" "}
+                              <span className="font-semibold text-gray-700 dark:text-gray-200">
+                                {formatRupiah(sumFeeItems(yearData.items))}
+                              </span>
+                            </span>
+                            {editingSchoolSettings && (
+                              <button
+                                type="button"
+                                onClick={() => removeOtherFeeYear(type, year)}
+                                className="text-red-500 hover:text-red-700 p-1 touch-manipulation active:scale-90"
+                                title={`Hapus semua item ${year}`}
+                                aria-label={`Hapus semua item ${label} ${year}`}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {editingSchoolSettings ? (
+                          <div className="mb-3">
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                              Jatuh Tempo
+                            </label>
+                            <input
+                              type="date"
+                              value={yearData.due_date || ""}
+                              onChange={(e) => updateOtherFeeDueDate(type, year, e.target.value)}
+                              className={inputClass}
+                            />
+                          </div>
+                        ) : (
+                          yearData.due_date && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                              Jatuh tempo: <span className="font-medium">{yearData.due_date}</span>
+                            </p>
+                          )
+                        )}
+
+                        <div className="space-y-1.5">
+                          {(yearData.items || []).map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                            >
+                              <span className="text-sm text-gray-700 dark:text-gray-200">
+                                {item.name}
+                              </span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-gray-800 dark:text-white">
+                                  {formatRupiah(item.amount)}
+                                </span>
+                                {editingSchoolSettings && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeOtherFeeItem(type, year, idx)}
+                                    className="text-red-500 hover:text-red-700 p-1 touch-manipulation active:scale-90"
+                                    title="Hapus item"
+                                    aria-label={`Hapus item ${item.name}`}
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {(yearData.items || []).length === 0 && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                              Belum ada item
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  {Object.keys(data).length === 0 && (
+                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                      Belum ada data {label.toLowerCase()}
+                    </p>
+                  )}
+                </div>
+
+                {editingSchoolSettings && (
+                  <div className="flex flex-col gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <input
+                      type="text"
+                      value={form.year}
+                      onChange={(e) =>
+                        setNewFeeItem((prev) => ({
+                          ...prev,
+                          [type]: { ...prev[type], year: e.target.value },
+                        }))
+                      }
+                      placeholder="2026/2027"
+                      className={`${inputClass} mt-3`}
+                    />
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={(e) =>
+                        setNewFeeItem((prev) => ({
+                          ...prev,
+                          [type]: { ...prev[type], name: e.target.value },
+                        }))
+                      }
+                      placeholder="Nama item (mis. Kaos Olahraga)"
+                      className={inputClass}
+                    />
+                    <input
+                      type="number"
+                      value={form.amount}
+                      onChange={(e) =>
+                        setNewFeeItem((prev) => ({
+                          ...prev,
+                          [type]: { ...prev[type], amount: e.target.value },
+                        }))
+                      }
+                      placeholder="Nominal (Rp)"
+                      className={inputClass}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addOtherFeeItem(type)}
+                      className={`flex items-center justify-center gap-2 px-5 py-2.5 text-white text-sm font-medium rounded-lg transition-colors min-h-[42px] touch-manipulation active:scale-[0.98] ${btnColor}`}
+                    >
+                      <Plus size={16} />
+                      Tambah Item
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* ── Action bar (sticky di bawah, ngikutin lebar konten — bukan fixed ke viewport, jadi ga nabrak sidebar) ── */}
