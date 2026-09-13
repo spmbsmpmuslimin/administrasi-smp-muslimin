@@ -34,6 +34,13 @@
  */
 
 function bagiRuangan(dataSiswaPerKelas, kapasitas = 40) {
+  // Guard: kapasitas <= 0 (atau bukan angka valid) bikin
+  // potongSatuRuangan() ambil 0 siswa per iterasi -- totalSisa() gak
+  // pernah berkurang -> while loop di bawah looping tanpa henti.
+  if (!Number.isFinite(kapasitas) || kapasitas <= 0) {
+    throw new Error("Kapasitas ruangan harus angka positif");
+  }
+
   // 1. Ambil semua huruf kelas yang unik, urutkan abjad (A, B, C, ...)
   const semuaKelas = Object.keys(dataSiswaPerKelas);
   const hurufSet = [...new Set(semuaKelas.map((k) => k.slice(-1)))].sort();
@@ -54,8 +61,7 @@ function bagiRuangan(dataSiswaPerKelas, kapasitas = 40) {
   const hasilRuangan = []; // [{ nomor_ruangan, siswa: [...] }]
   let nomorRuanganBerjalan = 1;
 
-  const totalSisa = () =>
-    angkatanUrut.reduce((sum, a) => sum + antrianPerAngkatan[a].length, 0);
+  const totalSisa = () => angkatanUrut.reduce((sum, a) => sum + antrianPerAngkatan[a].length, 0);
 
   // Potong 1 ruangan dari antrian yang ada SEKARANG, jatah tiap angkatan
   // proporsional ke sisa antrian angkatan itu saat ini (largest remainder
@@ -68,9 +74,7 @@ function bagiRuangan(dataSiswaPerKelas, kapasitas = 40) {
     // Ruangan terakhir (sisa < kapasitas) gak perlu dipaksa penuh.
     const kapasitasRuanganIni = Math.min(kapasitas, totalSisaSekarang);
 
-    const jatahEksak = sisaPerAngkatan.map(
-      (n) => (n / totalSisaSekarang) * kapasitasRuanganIni
-    );
+    const jatahEksak = sisaPerAngkatan.map((n) => (n / totalSisaSekarang) * kapasitasRuanganIni);
     const jatahBulat = jatahEksak.map(Math.floor);
     let sisaKursi = kapasitasRuanganIni - jatahBulat.reduce((s, v) => s + v, 0);
 

@@ -16,20 +16,11 @@ import {
   KONFIGURASI_JENIS_UJIAN,
 } from "./pembagianRuanganSupabase";
 
-const JENIS_UJIAN_OPTIONS = [
-  {
-    value: "PSAS",
-    label: "PSAS - Penilaian Sumatif Akhir Semester (kelas 7-9)",
-  },
-  {
-    value: "PSAT",
-    label: "PSAT - Penilaian Sumatif Akhir Tahun (kelas 7-8)",
-  },
-  {
-    value: "PSAJ",
-    label: "PSAJ - Penilaian Sumatif Akhir Jenjang (kelas 9)",
-  },
-];
+const JENIS_UJIAN_LABEL = {
+  PSAS: "PSAS - Penilaian Sumatif Akhir Semester (kelas 7-9)",
+  PSAT: "PSAT - Penilaian Sumatif Akhir Tahun (kelas 7-8)",
+  PSAJ: "PSAJ - Penilaian Sumatif Akhir Jenjang (kelas 9)",
+};
 
 // Cari kolom yang paling masuk akal buat label tahun ajaran, karena kita
 // nggak tau pasti nama kolomnya (year / tahun_ajaran / name / dst)
@@ -37,11 +28,15 @@ function labelTahunAjaran(row) {
   return row.year || row.tahun_ajaran || row.name || row.label || row.nama || `ID: ${row.id}`;
 }
 
-const PembagianRuanganTab = ({ showToast, onBack }) => {
+// jenisUjian sekarang datang dari level atas (JenisUjianMenuTab / pemilihan
+// PSAS-PSAT-PSAJ) -- sudah fixed di sini, jadi tidak ada lagi dropdown buat
+// gonta-ganti jenis ujian di dalam sub-fitur ini.
+const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
   const [daftarTahunAjaran, setDaftarTahunAjaran] = useState([]);
   const [tahunAjaranId, setTahunAjaranId] = useState("");
-  const [jenisUjian, setJenisUjian] = useState("PSAS");
-  const [kapasitas, setKapasitas] = useState(KONFIGURASI_JENIS_UJIAN.PSAS?.defaultKapasitas || 40);
+  const [kapasitas, setKapasitas] = useState(
+    KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40
+  );
 
   const [loadingTahunAjaran, setLoadingTahunAjaran] = useState(true);
   const [memproses, setMemproses] = useState(false);
@@ -72,16 +67,9 @@ const PembagianRuanganTab = ({ showToast, onBack }) => {
     })();
   }, [showToast]);
 
-  // Tiap ganti jenis ujian, kapasitas direset ke default jenis itu
-  // (PSAS/PSAT = 40, PSAJ = 20) -- admin tetap bisa ubah manual setelahnya
-  // kalau perlu beda dari default.
-  useEffect(() => {
-    const defaultKapasitas = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40;
-    setKapasitas(defaultKapasitas);
-  }, [jenisUjian]);
-
-  // Setiap ganti jenis ujian (atau data tahun ajaran baru kemuat), pastikan
-  // tahunAjaranId yang aktif selalu ada di daftar opsi yang lagi ditampilin.
+  // Begitu data tahun ajaran kemuat, pastikan tahunAjaranId yang aktif
+  // selalu ada di daftar opsi yang lagi ditampilin (jenisUjian sendiri
+  // sudah fixed dari prop, jadi tidak perlu lagi jadi dependency di sini).
   useEffect(() => {
     if (opsiTahunAjaran.length === 0) {
       setTahunAjaranId("");
@@ -94,11 +82,18 @@ const PembagianRuanganTab = ({ showToast, onBack }) => {
       setTahunAjaranId((aktif || opsiTahunAjaran[0]).id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jenisUjian, daftarTahunAjaran]);
+  }, [daftarTahunAjaran]);
 
   const handleProses = async () => {
     if (!tahunAjaranId) {
       showToast?.("Pilih tahun ajaran dulu", "error");
+      return;
+    }
+    // Guard: kapasitas <= 0 (misal field dikosongin admin) bikin
+    // bagiRuangan() looping tanpa henti -- ditangkep di sini dulu sebelum
+    // sempat manggil algoritmanya.
+    if (!Number.isFinite(kapasitas) || kapasitas <= 0) {
+      showToast?.("Kapasitas per ruangan harus angka positif", "error");
       return;
     }
     setMemproses(true);
@@ -143,28 +138,18 @@ const PembagianRuanganTab = ({ showToast, onBack }) => {
         onClick={onBack}
         className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
       >
-        <ChevronLeft size={16} /> Kembali ke Manajemen Ujian
+        <ChevronLeft size={16} /> Kembali ke Sub-fitur
       </button>
 
-      {/* Form pilihan */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-            Jenis Ujian
-          </label>
-          <select
-            value={jenisUjian}
-            onChange={(e) => setJenisUjian(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-          >
-            {JENIS_UJIAN_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="mb-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400">Jenis Ujian</p>
+        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+          {JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian}
+        </p>
+      </div>
 
+      {/* Form pilihan */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         <div>
           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
             Tahun Ajaran
