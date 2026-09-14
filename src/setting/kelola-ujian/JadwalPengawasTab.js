@@ -7,7 +7,7 @@
 // peringatan untuk proses ruangan dulu.
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Plus, Trash2, X, CalendarClock, Users, Loader2 } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, X, CalendarClock, Users, Loader2, Shuffle } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
@@ -23,6 +23,8 @@ import {
   ambilPengawasUntukJadwal,
   tambahPengawas,
   hapusPengawas,
+  kelompokkanJadwalPerHari,
+  terapkanRotasiPengawasHarian,
 } from "./jadwalPengawasSupabase";
 
 const JENIS_UJIAN_LABEL = {
@@ -83,6 +85,13 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   const [loadingPengawas, setLoadingPengawas] = useState(false);
   const [guruTerpilihBaru, setGuruTerpilihBaru] = useState({});
   const [menambahPengawas, setMenambahPengawas] = useState(null);
+
+  // ---- Rotasi Otomatis: base assignment sesi pertama 1 hari, sesi
+  // berikutnya di hari yang sama otomatis digeser +1 ruangan (wrap). ----
+  const [showModalRotasi, setShowModalRotasi] = useState(false);
+  const [tanggalRotasi, setTanggalRotasi] = useState("");
+  const [guruPerRuanganRotasi, setGuruPerRuanganRotasi] = useState({});
+  const [savingRotasi, setSavingRotasi] = useState(false);
 
   const semesterDibutuhkan = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.semester;
   const tahunAjaranTerfilter = daftarTahunAjaran.filter(
@@ -316,6 +325,87 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
     [daftarJadwal]
   );
 
+  // Grouping jadwal per hari, dipakai buat pilihan tanggal di modal Rotasi
+  // Otomatis -- 1 hari bisa punya beberapa sesi (jam ke 1, 2, dst).
+  const jadwalPerHari = useMemo(() => kelompokkanJadwalPerHari(daftarJadwal), [daftarJadwal]);
+
+  const daftarRuanganUrut = useMemo(
+    () => [...daftarRuangan].sort((a, b) => a.nomor_ruangan - b.nomor_ruangan),
+    [daftarRuangan]
+  );
+
+  const openModalRotasi = () => {
+    setTanggalRotasi(jadwalPerHari[0]?.tanggal || "");
+    setGuruPerRuanganRotasi({});
+    setShowModalRotasi(true);
+  };
+
+  const closeModalRotasi = () => {
+    setShowModalRotasi(false);
+    setTanggalRotasi("");
+    setGuruPerRuanganRotasi({});
+  };
+
+  const sesiHariTerpilih = useMemo(
+    () => jadwalPerHari.find((h) => h.tanggal === tanggalRotasi)?.sesi || [],
+    [jadwalPerHari, tanggalRotasi]
+  );
+
+  const handleTerapkanRotasi = async () => {
+    if (daftarRuanganUrut.length === 0) {
+      showToast?.("Belum ada data ruangan untuk ujian ini", "error");
+      return;
+    }
+    const guruIdSesiPertama = daftarRuanganUrut.map(
+      (r) => guruPerRuanganRotasi[r.nomor_ruangan] || ""
+    );
+    const belumLengkap = guruIdSesiPertama.some((g) => !g);
+    if (belumLengkap) {
+      showToast?.("Semua ruangan harus diisi guru pengawas dulu", "error");
+      return;
+    }
+    if (sesiHariTerpilih.length === 0) {
+      showToast?.("Tanggal ini belum punya sesi jadwal", "error");
+      return;
+    }
+
+    setSavingRotasi(true);
+    try {
+      const jumlahTersimpan = await terapkanRotasiPengawasHarian(
+        supabase,
+        sesiHariTerpilih,
+        daftarRuanganUrut.map((r) => r.nomor_ruangan),
+        guruIdSesiPertama
+      );
+      showToast?.(
+        `Rotasi diterapkan: ${jumlahTersimpan} penugasan pengawas tersimpan untuk ${sesiHariTerpilih.length} sesi`,
+        "success"
+      );
+      closeModalRotasi();
+      // Refresh tampilan pengawas sesi yang lagi aktif (kalau termasuk hari ini)
+      if (jadwalPengawasAktif && sesiHariTerpilih.some((s) => s.id === jadwalPengawasAktif)) {
+        setLoadingPengawas(true);
+        try {
+          const data = await ambilPengawasUntukJadwal(supabase, jadwalPengawasAktif);
+          const grouped = {};
+          daftarRuangan.forEach((r) => (grouped[r.nomor_ruangan] = []));
+          data.forEach((p) => {
+            if (!grouped[p.nomor_ruangan]) grouped[p.nomor_ruangan] = [];
+            grouped[p.nomor_ruangan].push(p);
+          });
+          setPengawasPerRuangan(grouped);
+        } finally {
+          setLoadingPengawas(false);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal menerapkan rotasi: " + err.message, "error");
+    } finally {
+      setSavingRotasi(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6">
       <button
@@ -468,6 +558,14 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                 </p>
               ) : (
                 <>
+                  <button
+                    onClick={openModalRotasi}
+                    disabled={daftarRuanganUrut.length === 0}
+                    className="flex items-center gap-2 px-4 py-2.5 mb-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                  >
+                    <Shuffle size={16} /> Rotasi Otomatis
+                  </button>
+
                   <div className="mb-4 max-w-sm">
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                       Pilih Sesi
@@ -659,6 +757,106 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showModalRotasi && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 pb-3 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">
+                  Rotasi Otomatis Pengawas
+                </h2>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  Isi pengawas untuk sesi PERTAMA hari ini. Sesi berikutnya otomatis digeser +1
+                  ruangan (ruangan terakhir muter balik ke Ruang 1).
+                </p>
+              </div>
+              <button
+                onClick={closeModalRotasi}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0 ml-3"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5 pt-3 overflow-y-auto">
+              <div className="mb-4 max-w-xs">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Hari
+                </label>
+                <select
+                  value={tanggalRotasi}
+                  onChange={(e) => setTanggalRotasi(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                >
+                  {jadwalPerHari.map((h) => (
+                    <option key={h.tanggal} value={h.tanggal}>
+                      {formatHariTanggal(h.tanggal)} ({h.sesi.length} sesi)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {sesiHariTerpilih.length > 0 && (
+                <div className="mb-4 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-[11px] text-gray-600 dark:text-gray-400">
+                  Sesi hari ini:{" "}
+                  {sesiHariTerpilih
+                    .map((s) => `Jam Ke ${s.sesi_ke} (${s.mata_pelajaran})`)
+                    .join(", ")}
+                </div>
+              )}
+
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                Pengawas Sesi Pertama (Jam Ke {sesiHariTerpilih[0]?.sesi_ke ?? "-"}) per Ruangan
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {daftarRuanganUrut.map((r) => (
+                  <div key={r.nomor_ruangan} className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">
+                      Ruang {r.nomor_ruangan}
+                    </span>
+                    <select
+                      value={guruPerRuanganRotasi[r.nomor_ruangan] || ""}
+                      onChange={(e) =>
+                        setGuruPerRuanganRotasi((prev) => ({
+                          ...prev,
+                          [r.nomor_ruangan]: e.target.value,
+                        }))
+                      }
+                      className="flex-1 min-w-0 px-2 py-1.5 text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                    >
+                      <option value="">Pilih guru...</option>
+                      {daftarGuru.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.full_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2 p-5 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={closeModalRotasi}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleTerapkanRotasi}
+                disabled={savingRotasi}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {savingRotasi ? "Menerapkan..." : "Terapkan Rotasi"}
+              </button>
+            </div>
           </div>
         </div>
       )}

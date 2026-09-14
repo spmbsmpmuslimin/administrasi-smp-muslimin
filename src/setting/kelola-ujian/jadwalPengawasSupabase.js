@@ -130,6 +130,93 @@ async function hapusPengawas(supabase, pengawasId) {
   if (error) throw error;
 }
 
+/**
+ * Kelompokkan daftar jadwal (dari ambilJadwalSesi) per tanggal, tiap
+ * grup diurutkan berdasarkan sesi_ke ascending. Dipakai buat fitur
+ * "Rotasi Otomatis" -- 1 hari bisa punya beberapa sesi (jam ke 1, 2, dst)
+ * yang perlu digeser berurutan.
+ * @returns {Array<{ tanggal: string, sesi: Array }>} diurutkan berdasarkan tanggal
+ */
+function kelompokkanJadwalPerHari(daftarJadwal) {
+  const perHari = {};
+  daftarJadwal.forEach((j) => {
+    if (!perHari[j.tanggal]) perHari[j.tanggal] = [];
+    perHari[j.tanggal].push(j);
+  });
+  return Object.entries(perHari)
+    .map(([tanggal, sesi]) => ({
+      tanggal,
+      sesi: [...sesi].sort((a, b) => a.sesi_ke - b.sesi_ke),
+    }))
+    .sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+}
+
+/**
+ * Terapkan rotasi otomatis pengawas untuk SEMUA sesi dalam 1 hari.
+ *
+ * Pola (sesuai kebiasaan sekolah): admin cuma nentuin siapa pengawas di
+ * tiap ruangan untuk SESI PERTAMA hari itu (base assignment). Sesi-sesi
+ * berikutnya di hari yang sama otomatis "digeser": guru yang tadinya di
+ * Ruang N pindah ke Ruang N+1, dan Ruang terakhir muter balik ke Ruang 1
+ * (wrap-around). Geseran selalu +1 ruangan tiap pindah sesi, berlaku
+ * konsisten walau hari itu ada lebih dari 2 sesi.
+ *
+ * Idempotent: pengawas yang sudah ada untuk sesi-sesi hari ini dihapus
+ * dulu sebelum diisi ulang, supaya "Terapkan Rotasi" aman dipanggil
+ * berkali-kali (misal admin mau ganti susunan) tanpa bikin data dobel.
+ *
+ * @param {object} supabase
+ * @param {Array} sesiHariIni - daftar jadwal 1 hari, HARUS sudah terurut
+ *   berdasarkan sesi_ke ascending (pakai kelompokkanJadwalPerHari)
+ * @param {number[]} urutanRuangan - nomor ruangan terurut, misal [1,2,...,18]
+ * @param {string[]} guruIdSesiPertama - guru_id per ruangan UNTUK SESI
+ *   PERTAMA, urutannya sejajar dengan urutanRuangan (index 0 = ruangan
+ *   pertama). Panjangnya harus sama dengan urutanRuangan.
+ * @returns {Promise<number>} jumlah baris pengawas yang tersimpan (jumlah ruangan x jumlah sesi)
+ */
+async function terapkanRotasiPengawasHarian(
+  supabase,
+  sesiHariIni,
+  urutanRuangan,
+  guruIdSesiPertama
+) {
+  const jumlahRuangan = urutanRuangan.length;
+  if (guruIdSesiPertama.length !== jumlahRuangan) {
+    throw new Error(
+      `Jumlah guru (${guruIdSesiPertama.length}) harus sama dengan jumlah ruangan (${jumlahRuangan})`
+    );
+  }
+  if (sesiHariIni.length === 0) {
+    throw new Error("Tidak ada sesi untuk hari ini");
+  }
+
+  const jadwalIds = sesiHariIni.map((j) => j.id);
+  const { error: errDelete } = await supabase
+    .from("ujian_pengawas")
+    .delete()
+    .in("jadwal_id", jadwalIds);
+  if (errDelete) throw errDelete;
+
+  const rows = [];
+  sesiHariIni.forEach((jadwal, sesiIdx) => {
+    for (let i = 0; i < jumlahRuangan; i++) {
+      // Geser +1 ruangan tiap sesi berikutnya (wrap-around ke awal).
+      // Ruangan ke-i pada sesi ke-`sesiIdx` diisi guru yang jadi base
+      // assignment di ruangan ke-(i - sesiIdx), dihitung mundur & wrap.
+      const guruId = guruIdSesiPertama[(i - sesiIdx + jumlahRuangan) % jumlahRuangan];
+      rows.push({
+        jadwal_id: jadwal.id,
+        nomor_ruangan: urutanRuangan[i],
+        guru_id: guruId,
+      });
+    }
+  });
+
+  const { error: errInsert } = await supabase.from("ujian_pengawas").insert(rows);
+  if (errInsert) throw errInsert;
+  return rows.length;
+}
+
 export {
   ambilRuanganUjian,
   ambilDaftarGuru,
@@ -139,4 +226,6 @@ export {
   ambilPengawasUntukJadwal,
   tambahPengawas,
   hapusPengawas,
+  kelompokkanJadwalPerHari,
+  terapkanRotasiPengawasHarian,
 };
