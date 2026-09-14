@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 13 Sep 2026, 12.43
+Di-download dari UI: 14 Sep 2026, 09.21
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 13 Sep 2026, 12.42
+Terakhir di-generate: 14 Sep 2026, 09.21
 ======================================================================
 |-- src
 |   |-- assets
@@ -238,9 +238,12 @@ Terakhir di-generate: 13 Sep 2026, 12.42
 |   |   |   |-- KelolaJamPelajaran.js
 |   |   |   `-- useJadwalMassalLogic.js
 |   |   |-- kelola-ujian
+|   |   |   |-- JadwalPengawasTab.js
+|   |   |   |-- JenisUjianMenuTab.js
 |   |   |   |-- KelolaUjianTab.js
 |   |   |   |-- PembagianRuanganTab.js
 |   |   |   |-- bagiRuangan.js
+|   |   |   |-- jadwalPengawasSupabase.js
 |   |   |   `-- pembagianRuanganSupabase.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
@@ -322,7 +325,7 @@ Terakhir di-generate: 13 Sep 2026, 12.42
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 13 Sep 2026, 12.42
+Terakhir di-generate: 14 Sep 2026, 09.21
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
@@ -395,5 +398,7 @@ teacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,c
 tindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at
 tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active
 ujian : id,jenis,academic_year_id,status,kapasitas_ruangan,created_at,updated_at
+ujian_jadwal : id,ujian_id,tanggal,sesi_ke,waktu_mulai,waktu_selesai,mata_pelajaran,created_at
+ujian_pengawas : id,jadwal_id,nomor_ruangan,guru_id,created_at
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
 users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count,jabatan_struktural,is_blocked

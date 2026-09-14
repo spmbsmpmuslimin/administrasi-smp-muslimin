@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-13T09:16:14.448Z",
-  "executionTimeMs": 3114,
-  "filesScanned": 272,
+  "generatedAt": "2026-09-14T02:21:13.301Z",
+  "executionTimeMs": 2731,
+  "filesScanned": 274,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
@@ -38,7 +38,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5429 class warna (di 192 file) kemungkinan belum dark-mode-aware",
+          "title": "5518 class warna (di 193 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -65,6 +65,7 @@
             "src/setting/school-management/SchoolManagementTab.js — 64 class belum ada dark: variant",
             "src/system/DatabaseCleanupMonitor.js — 64 class belum ada dark: variant",
             "src/system/MonitorDashboard.js — 63 class belum ada dark: variant",
+            "src/setting/kelola-ujian/JadwalPengawasTab.js — 62 class belum ada dark: variant",
             "src/setting/school-management/SiswaLulusTab.js — 62 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
             "src/system/ActiveUsersTab.js — 57 class belum ada dark: variant",
@@ -72,15 +73,14 @@
             "src/setting/school-management/StudentModals.js — 54 class belum ada dark: variant",
             "src/e-raport/CetakRaport.js — 51 class belum ada dark: variant",
             "src/setting/academic/Simulator.js — 51 class belum ada dark: variant",
+            "src/spmb/DiagnostikPage.js — 51 class belum ada dark: variant",
             "src/pages/attendance/AdminAttendance.js — 50 class belum ada dark: variant",
             "src/setting/portal-siswa/AkunSiswaTab.js — 50 class belum ada dark: variant",
             "src/system/CodeAudit.js — 48 class belum ada dark: variant",
             "src/system/SystemTab.js — 48 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 47 class belum ada dark: variant",
             "src/konseling/KonselingModal.js — 47 class belum ada dark: variant",
-            "src/setting/school-management/SchoolSettingsTab.js — 47 class belum ada dark: variant",
-            "src/spmb/DiagnostikPage.js — 47 class belum ada dark: variant",
-            "src/attendance-teacher/reports/MonthlyView.js — 46 class belum ada dark: variant"
+            "src/setting/school-management/SchoolSettingsTab.js — 47 class belum ada dark: variant"
           ]
         }
       ]
@@ -103,7 +103,7 @@
             "src/pages/administrasi-tu/SppTab-revisi.js:297 → select(\"id, period_month, period_year, amount, status, spp_payments(payment_date)\")",
             "src/pages/administrasi-tu/SppTab-revisi.js:1291 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
             "src/pages/administrasi-tu/SppTab.js:298 → select(\"id, period_month, period_year, amount, status, spp_payments(payment_date)\")",
-            "src/pages/administrasi-tu/SppTab.js:1495 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
+            "src/pages/administrasi-tu/SppTab.js:1491 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
             "src/pages/administrasi-tu/TagihanLainTab.js:541 → select(\"id, item_name, amount, status, other_fee_payments(amount_paid)\")",
             "src/pages/administrasi-tu/TagihanLainTab.js:924 → select(\"student_id, item_name, amount, status, other_fee_payments(amount_paid)\")",
             "src/pages/administrasi-tu/TagihanLainTab.js:1141 → select(\"id, amount_paid, payment_date, payment_method, note, students(id, full_name, nis, class_id\")",
@@ -134,7 +134,7 @@
         },
         {
           "severity": "info",
-          "title": "27 embedded join yang UDAH pake disambiguation hint",
+          "title": "28 embedded join yang UDAH pake disambiguation hint",
           "description": "FYI aja — ternyata di banyak file (CetakRaport, ReportHelpers, AdminReports, dll) project ini sebenernya pake embedded join Supabase, bukan resolve manual semua di JS. Yang ini kelihatannya udah aman karena udah ada hint (`!inner`, `!nama_fk`, atau `alias:table`) yang secara eksplisit nunjuk relasi mana yang dimaksud — itu emang cara resmi Supabase buat ngehindarin PGRST200. Kalau ternyata ini emang pattern yang lo pake sengaja, gue bakal update catatan gue soal ini.",
           "details": [
             "src/attendance-teacher/reports/DailySummary.js:71 → select(\"*, users!teacher_id ( full_name )\")",
@@ -160,6 +160,7 @@
             "src/setting/academic/AcademicYearTab.js:167 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
             "src/setting/academic/AcademicYearTab.js:211 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
             "src/setting/feedback/FeedbackGuruTab.js:23 → select(\"*, guru:users!feedback_guru_guru_id_fkey ( full_name, username )\")",
+            "src/setting/kelola-ujian/jadwalPengawasSupabase.js:102 → select(\"id, jadwal_id, nomor_ruangan, guru_id, users:guru_id (full_name)\")",
             "src/system/ActiveUsersTab.js:96 → select(\"id, username, is_active, last_login, students:student_id(full_name, nis, nisn, class_id, a\")",
             "src/system/checkers/BusinessLogicChecker.js:241 → select(\"id, date, students!inner(is_active, full_name)\")",
             "src/system/checkers/BusinessLogicChecker.js:302 → select(\"id, created_at, students!inner(is_active, full_name)\")",
@@ -233,7 +234,7 @@
         },
         {
           "severity": "info",
-          "title": "14 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
+          "title": "16 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
           "description": "Tabelnya DIPAKE, tapi ada kolom yang gak pernah muncul di select/insert/update/filter manapun (dan gak ada select(\"*\") buat tabel ini yang bisa 'nyembunyiin' pemakaian implisit). Bisa jadi kolom peninggalan fitur lama, atau kolom yang emang cuma diisi lewat trigger/default value di DB. Cek manual, terutama kalau ada kolom NOT NULL tanpa default yang gak pernah di-insert dari frontend.",
           "details": [
             "pengumuman_siswa → kolom gak pernah disebut: updated_at",
@@ -248,7 +249,9 @@
             "buku → kolom gak pernah disebut: created_at, kategori, penerbit, rak, tahun, total_eksemplar, updated_at",
             "period_schedules → kolom gak pernah disebut: created_at, updated_at",
             "teacher_codes → kolom gak pernah disebut: created_at",
-            "peserta_ujian → kolom gak pernah disebut: asal_kelas, created_at, id, no_peserta, nomor_ruangan, siswa_id",
+            "peserta_ujian → kolom gak pernah disebut: asal_kelas, created_at, id, no_peserta, siswa_id",
+            "ujian_jadwal → kolom gak pernah disebut: created_at",
+            "ujian_pengawas → kolom gak pernah disebut: created_at",
             "teacher_profiles → kolom gak pernah disebut: created_at, id, updated_at"
           ]
         }
