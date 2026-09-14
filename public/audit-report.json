@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-14T02:21:13.301Z",
-  "executionTimeMs": 2731,
-  "filesScanned": 274,
+  "generatedAt": "2026-09-14T13:38:40.485Z",
+  "executionTimeMs": 2621,
+  "filesScanned": 278,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
@@ -38,7 +38,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5518 class warna (di 193 file) kemungkinan belum dark-mode-aware",
+          "title": "5584 class warna (di 195 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -56,6 +56,7 @@
             "src/pages/attendance/AttendanceManagement.js — 81 class belum ada dark: variant",
             "src/pages/datasiswa-induk/DataSiswaIndukListTab.js — 76 class belum ada dark: variant",
             "src/pages/datasiswa-induk/DataSiswaIndukDetailPanel.js — 75 class belum ada dark: variant",
+            "src/setting/kelola-ujian/JadwalPengawasTab.js — 75 class belum ada dark: variant",
             "src/components/TeacherDashboard.js — 71 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
             "src/attendance-teacher/reports/ITMReport.js — 67 class belum ada dark: variant",
@@ -65,7 +66,6 @@
             "src/setting/school-management/SchoolManagementTab.js — 64 class belum ada dark: variant",
             "src/system/DatabaseCleanupMonitor.js — 64 class belum ada dark: variant",
             "src/system/MonitorDashboard.js — 63 class belum ada dark: variant",
-            "src/setting/kelola-ujian/JadwalPengawasTab.js — 62 class belum ada dark: variant",
             "src/setting/school-management/SiswaLulusTab.js — 62 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
             "src/system/ActiveUsersTab.js — 57 class belum ada dark: variant",
@@ -91,7 +91,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "24 embedded join tanpa hint TAPI udah dicek ke skema live, FK-nya cuma 1 (aman)",
+          "title": "26 embedded join tanpa hint TAPI udah dicek ke skema live, FK-nya cuma 1 (aman)",
           "description": "Udah di-cross-check ke skema live Supabase (via RPC get_foreign_key_map): antara 2 tabel yang di-embed di sini cuma ada 1 FK, jadi PostgREST ngga akan pernah bingung nentuin relasinya. Ngga perlu ditambahin hint.",
           "details": [
             "src/components/StudentLogin.js:70 → select(\"*, students(id, full_name, nis, class_id, academic_year)\")",
@@ -115,6 +115,8 @@
             "src/portal-siswa/StudentRaport.js:137 → select(\"id, academic_year, semester, status, student_report_grades(subject, score)\")",
             "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
             "src/setting/academic/YearTransition.js:370 → select(\"id, full_name, nis, nisn, class_id, student_profile_details ( jenis_kelamin, tempat_lahir,\")",
+            "src/setting/kelola-ujian/kartuUjianSupabase.js:21 → select(\"no_peserta, asal_kelas, students(full_name, nis)\")",
+            "src/setting/kelola-ujian/pembagianRuanganSupabase.js:182 → select(\"nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)\")",
             "src/setting/school-management/SiswaLulusTab.js:549 → select(\"id, tahun_lulus, kelas_terakhir, academic_year_id, academic_years(id, year, semester, star\")",
             "src/setting/school-management/SiswaLulusTab.js:596 → select(\"*, academic_years(id, year, semester, start_date)\")",
             "src/setting/school-management/SiswaLulusTab.js:659 → select(\"*, academic_years(id, year, semester, start_date)\")"
@@ -160,11 +162,11 @@
             "src/setting/academic/AcademicYearTab.js:167 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
             "src/setting/academic/AcademicYearTab.js:211 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
             "src/setting/feedback/FeedbackGuruTab.js:23 → select(\"*, guru:users!feedback_guru_guru_id_fkey ( full_name, username )\")",
-            "src/setting/kelola-ujian/jadwalPengawasSupabase.js:102 → select(\"id, jadwal_id, nomor_ruangan, guru_id, users:guru_id (full_name)\")",
+            "src/setting/kelola-ujian/jadwalPengawasSupabase.js:118 → select(\"id, jadwal_id, nomor_ruangan, guru_id, users:guru_id (full_name)\")",
             "src/system/ActiveUsersTab.js:96 → select(\"id, username, is_active, last_login, students:student_id(full_name, nis, nisn, class_id, a\")",
             "src/system/checkers/BusinessLogicChecker.js:241 → select(\"id, date, students!inner(is_active, full_name)\")",
             "src/system/checkers/BusinessLogicChecker.js:302 → select(\"id, created_at, students!inner(is_active, full_name)\")",
-            "src/system/checkers/DataValidator.js:540 → select(\"id, student_id, students!inner(is_active, full_name)\")"
+            "src/system/checkers/DataValidator.js:543 → select(\"id, student_id, students!inner(is_active, full_name)\")"
           ]
         }
       ]
@@ -205,10 +207,11 @@
         },
         {
           "severity": "info",
-          "title": "1 lokasi filter pakai academic_year_id tanpa import academicYearService",
+          "title": "2 lokasi filter pakai academic_year_id tanpa import academicYearService",
           "description": "Sekadar FYI, BUKAN otomatis berarti salah. File ini filter query pakai academic_year_id tapi gak import academicYearService — ini sah-sah aja kalau ID-nya emang diterima dari luar (parameter fungsi / prop komponen) dan file ini cuma 'consumer', bukan yang nentuin tahun aktif. Cek manual satu-satu.",
           "details": [
-            "src/pages/attendance/AttendancePDF.js:139 → filter pakai academic_year_id (cek: ID-nya didapat dari mana — kalau dikasih via parameter/prop, ini WAJAR & gak perlu import service)"
+            "src/pages/attendance/AttendancePDF.js:139 → filter pakai academic_year_id (cek: ID-nya didapat dari mana — kalau dikasih via parameter/prop, ini WAJAR & gak perlu import service)",
+            "src/setting/kelola-ujian/kartuUjianSupabase.js:84 → filter pakai academic_year_id (cek: ID-nya didapat dari mana — kalau dikasih via parameter/prop, ini WAJAR & gak perlu import service)"
           ]
         }
       ]
@@ -249,7 +252,7 @@
             "buku → kolom gak pernah disebut: created_at, kategori, penerbit, rak, tahun, total_eksemplar, updated_at",
             "period_schedules → kolom gak pernah disebut: created_at, updated_at",
             "teacher_codes → kolom gak pernah disebut: created_at",
-            "peserta_ujian → kolom gak pernah disebut: asal_kelas, created_at, id, no_peserta, siswa_id",
+            "peserta_ujian → kolom gak pernah disebut: created_at, id",
             "ujian_jadwal → kolom gak pernah disebut: created_at",
             "ujian_pengawas → kolom gak pernah disebut: created_at",
             "teacher_profiles → kolom gak pernah disebut: created_at, id, updated_at"

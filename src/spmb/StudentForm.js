@@ -43,6 +43,8 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
     kode_pos: "",
   });
 
+  const formRef = useRef(null);
+
   const refs = {
     nama_lengkap: useRef(),
     jenis_kelamin: useRef(),
@@ -166,6 +168,22 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
     "LAINNYA",
   ];
 
+  // Data lama/dari sumber lain (mis. import Dapodik) kadang nyimpen jenis
+  // kelamin sebagai "L"/"P" atau "LAKI-LAKI"/"PEREMPUAN" semua kapital,
+  // padahal <option> di form ini persis "Laki-laki"/"Perempuan". Kalau
+  // nggak dicocokin dulu, pas edit value-nya nggak match ke option manapun
+  // sehingga dropdown keliatan kosong dan harus dipilih ulang meski
+  // datanya sebenarnya sudah ada. Fungsi ini nyamain ke format baku.
+  const normalizeJenisKelamin = useCallback((value) => {
+    if (!value) return "";
+    const v = String(value).trim().toUpperCase();
+    if (v === "LAKI-LAKI" || v === "LAKI LAKI" || v === "L" || v === "LK") return "Laki-laki";
+    if (v === "PEREMPUAN" || v === "P" || v === "PR") return "Perempuan";
+    // Kalau formatnya udah persis sama salah satu option, pakai apa adanya
+    if (value === "Laki-laki" || value === "Perempuan") return value;
+    return "";
+  }, []);
+
   useEffect(() => {
     if (editingStudent) {
       const pekerjaanAyah = editingStudent.pekerjaan_ayah || "";
@@ -177,7 +195,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
 
       setFormData({
         nama_lengkap: editingStudent.nama_lengkap || "",
-        jenis_kelamin: editingStudent.jenis_kelamin || "",
+        jenis_kelamin: normalizeJenisKelamin(editingStudent.jenis_kelamin),
         tempat_lahir: editingStudent.tempat_lahir || "",
         tanggal_lahir: convertDateToDisplay(editingStudent.tanggal_lahir) || "",
         asal_sekolah: editingStudent.asal_sekolah || "",
@@ -240,7 +258,7 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
       setShowPekerjaanIbuLainnya(false);
       setCurrentStep(1);
     }
-  }, [editingStudent, convertDateToDisplay]);
+  }, [editingStudent, convertDateToDisplay, normalizeJenisKelamin]);
 
   const validateDateFormat = useCallback(
     (dateString) => /^\d{2}-\d{2}-\d{4}$/.test(dateString),
@@ -740,6 +758,32 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
     setCurrentStep((prev) => prev - 1);
   }, []);
 
+  // Biar user bisa pencet Enter buat pindah ke field berikutnya, gak
+  // harus klik pakai mouse satu-satu. Dikecualikan: textarea (alamat)
+  // biar Enter tetap bisa bikin baris baru, dan tombol (biar perilaku
+  // aslinya - submit/lanjut/kembali - gak keganggu).
+  const handleFormKeyDown = useCallback((e) => {
+    if (e.key !== "Enter") return;
+    const target = e.target;
+    if (target.tagName === "TEXTAREA" || target.tagName === "BUTTON") return;
+
+    e.preventDefault();
+
+    if (!formRef.current) return;
+    const focusable = Array.from(
+      formRef.current.querySelectorAll("input, select, textarea")
+    ).filter((el) => !el.disabled && el.offsetParent !== null);
+
+    const currentIndex = focusable.indexOf(target);
+    if (currentIndex > -1 && currentIndex < focusable.length - 1) {
+      const nextField = focusable[currentIndex + 1];
+      nextField.focus();
+      if (typeof nextField.select === "function" && nextField.type !== "checkbox") {
+        nextField.select();
+      }
+    }
+  }, []);
+
   const steps = [
     { number: 1, title: "Data Siswa", icon: "fa-user" },
     { number: 2, title: "Data Orang Tua", icon: "fa-users" },
@@ -867,7 +911,12 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        onKeyDown={handleFormKeyDown}
+        className="space-y-4 sm:space-y-6"
+      >
         {(currentStep === 1 || window.innerWidth >= 640) && (
           <div className="bg-blue-50 dark:bg-gray-800 border-l-4 border-blue-400 dark:border-blue-600 p-3 sm:p-4 rounded-r-lg">
             <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
@@ -1226,21 +1275,6 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
 
                 <div>
                   <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
-                    Tempat, Tanggal Lahir Ayah (Opsional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tempat_tgl_lahir_ayah}
-                    onChange={(e) => updateFormData("tempat_tgl_lahir_ayah", e.target.value)}
-                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
-                    placeholder="Contoh: Bandung, 29-12-1989"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
                     NIK Ibu (Opsional)
                   </label>
                   <input
@@ -1251,6 +1285,21 @@ const StudentForm = ({ editingStudent, setEditingStudent, students, onSaveStuden
                     placeholder="16 digit NIK ibu"
                     inputMode="numeric"
                     maxLength="16"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+                    Tempat, Tanggal Lahir Ayah (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.tempat_tgl_lahir_ayah}
+                    onChange={(e) => updateFormData("tempat_tgl_lahir_ayah", e.target.value)}
+                    className="w-full p-3 sm:p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-sm sm:text-base transition-all duration-300 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900/30 focus:outline-none"
+                    placeholder="Contoh: Bandung, 29-12-1989"
                   />
                 </div>
 

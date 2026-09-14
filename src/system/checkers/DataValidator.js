@@ -240,7 +240,10 @@ const validateUsers = async () => {
     // homeroom_class_id, Kepala Sekolah cuma metadata cetak raport) --
     // sementara "tu" & "petugas_perpus" yang BENERAN dipakai malah kelewat,
     // jadi user TU/petugas perpus selalu salah kena flag "invalid role".
-    const validRoles = ["admin", "teacher", "guru_bk", "tu", "petugas_perpus"];
+    // "developer" juga ditambahin: itu akun maintenance/dev yang sengaja
+    // dibuat (bukan data korup), sebelumnya kelewat dari list jadi selalu
+    // ke-flag padahal role-nya sah.
+    const validRoles = ["admin", "teacher", "guru_bk", "tu", "petugas_perpus", "developer"];
     const { data: invalidRoles } = await supabase
       .from("users")
       .select("id, username, role, full_name")
