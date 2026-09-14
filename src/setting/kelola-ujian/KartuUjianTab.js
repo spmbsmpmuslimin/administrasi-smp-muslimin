@@ -13,7 +13,11 @@ import {
   KONFIGURASI_JENIS_UJIAN,
 } from "./pembagianRuanganSupabase";
 import { ambilRuanganUjian } from "./jadwalPengawasSupabase";
-import { ambilPesertaRuangan, ambilJadwalPengawasPerGuru, ambilMetadataKepsek } from "./kartuUjianSupabase";
+import {
+  ambilPesertaRuangan,
+  ambilJadwalPengawasPerGuru,
+  ambilMetadataKepsek,
+} from "./kartuUjianSupabase";
 import { generateKartuPesertaPdf, generateKartuPengawasPdf } from "./kartuUjianPdf";
 
 const JENIS_UJIAN_LABEL = {
@@ -138,6 +142,13 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
         ambilMetadataKepsek(supabase, ta.id, ta.semester),
       ]);
 
+      if (kepsek.nama === "-") {
+        showToast?.(
+          "Nama kepala sekolah belum diisi di Raport Config untuk tahun ajaran ini -- kartu tetap dicetak, tapi kolom nama kepsek kosong",
+          "error"
+        );
+      }
+
       generateKartuPesertaPdf({
         daftarPeserta,
         jenisUjian,
@@ -161,6 +172,12 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
     setMencetakSemuaPengawas(true);
     try {
       const kepsek = await ambilMetadataKepsek(supabase, ta.id, ta.semester);
+      if (kepsek.nama === "-") {
+        showToast?.(
+          "Nama kepala sekolah belum diisi di Raport Config untuk tahun ajaran ini -- kartu tetap dicetak, tapi kolom nama kepsek kosong",
+          "error"
+        );
+      }
       generateKartuPengawasPdf({
         daftarGuruJadwal,
         jenisUjian,
