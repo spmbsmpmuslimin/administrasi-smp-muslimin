@@ -31,13 +31,12 @@
 //   begitu ada guru baru ditambah/dihapus di sini).
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Loader2, Save, Plus, Trash2, ListOrdered } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import {
   ambilDaftarPengawasKode,
   ambilCalonPengawas,
   hapusPengawasKode,
-  sarankanKodeDariTeacherId,
   simpanKodePengawas,
 } from "./jadwalPengawasSupabase";
 
@@ -57,6 +56,7 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
   const [calonTerpilih, setCalonTerpilih] = useState([]); // array guru_id yang dicentang
   const [menambah, setMenambah] = useState(false);
   const [menghapus, setMenghapus] = useState(null); // id guru yang lagi dihapus
+  const [merapikan, setMerapikan] = useState(false); // lagi proses "Urutkan Ulang Kode"
 
   const muatData = useCallback(async () => {
     setLoading(true);
@@ -93,9 +93,16 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
     setCalonTerpilih(semuaTercentang ? [] : calonPengawas.map((g) => g.id));
   };
 
-  // Kode tiap guru yang ditambah otomatis disaranin dari teacher_id-nya
-  // (sarankanKodeDariTeacherId) -- kalau ada yang perlu dikoreksi, tinggal
-  // diedit belakangan lewat kolom Kode di tabel + "Simpan Perubahan".
+  // Kode tiap guru yang ditambah dulu disaranin dari teacher_id, tapi itu
+  // bikin nomor bolong-bolong (mis. 03 loncat ke 07) karena tidak semua
+  // guru jadi pengawas -- ada yang cuma panitia. Jadi sekarang, tiap kali
+  // ADA PENAMBAHAN, seluruh Daftar Pengawas (yang lama + yang baru
+  // dicentang) dinomori ULANG dari 01 sampai terakhir sesuai jumlah
+  // pengawas yang aktif saat itu. Yang lama tetap di urutan semula
+  // (kode-nya bisa ikut bergeser kalau sebelumnya sempat bolong), yang
+  // baru nempel di belakang sesuai urutan checklist-nya. Penomoran ulang
+  // ini HANYA terjadi di titik "tambah" ini -- hapus guru dari daftar
+  // tidak otomatis menutup bolong yang tersisa.
   const handleTambahBanyak = async () => {
     if (calonTerpilih.length === 0) {
       showToast?.("Centang minimal 1 guru dulu", "error");
@@ -103,12 +110,14 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
     }
     setMenambah(true);
     try {
-      const perubahan = calonTerpilih.map((id) => {
-        const guru = calonPengawas.find((g) => g.id === id);
-        return { id, kode_pengawas: sarankanKodeDariTeacherId(guru?.teacher_id) };
-      });
-      const jumlah = await simpanKodePengawas(supabase, perubahan);
-      showToast?.(`${jumlah} guru ditambahkan ke Daftar Pengawas`, "success");
+      const guruBaruUrut = calonPengawas.filter((g) => calonTerpilih.includes(g.id));
+      const gabunganUrut = [...daftarAsli, ...guruBaruUrut];
+      const perubahan = gabunganUrut.map((g, idx) => ({
+        id: g.id,
+        kode_pengawas: String(idx + 1).padStart(2, "0"),
+      }));
+      await simpanKodePengawas(supabase, perubahan);
+      showToast?.(`${guruBaruUrut.length} guru ditambahkan ke Daftar Pengawas`, "success");
       setCalonTerpilih([]);
       await muatData();
       onPerubahan?.();
@@ -117,6 +126,32 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
       showToast?.("Gagal menambah pengawas: " + err.message, "error");
     } finally {
       setMenambah(false);
+    }
+  };
+
+  // Buat merapikan guru yang UDAH ada di daftar sekarang (misal 22 orang
+  // ini ditambahin sebelum logic penomoran otomatis di atas ada, jadi
+  // kode-nya masih peninggalan cara lama/bolong-bolong). Nomor ulang dari
+  // urutan tabel yang lagi ditampilin (daftarEdit) -- kalau ada baris yang
+  // barusan dikoreksi manual di kolom Kode tapi belum ditekan "Simpan
+  // Perubahan", urutan itu tetap dihormati.
+  const handleUrutkanUlang = async () => {
+    if (daftarEdit.length === 0) return;
+    setMerapikan(true);
+    try {
+      const perubahan = daftarEdit.map((g, idx) => ({
+        id: g.id,
+        kode_pengawas: String(idx + 1).padStart(2, "0"),
+      }));
+      await simpanKodePengawas(supabase, perubahan);
+      showToast?.(`Kode ${daftarEdit.length} pengawas berhasil diurutkan ulang`, "success");
+      await muatData();
+      onPerubahan?.();
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal mengurutkan ulang kode: " + err.message, "error");
+    } finally {
+      setMerapikan(false);
     }
   };
 
@@ -316,14 +351,25 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
             </div>
           </div>
 
-          <button
-            onClick={handleSimpan}
-            disabled={menyimpan || !adaPerubahan}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-          >
-            <Save size={16} />
-            {menyimpan ? "Menyimpan..." : "Simpan Perubahan"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleSimpan}
+              disabled={menyimpan || !adaPerubahan}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+            >
+              <Save size={16} />
+              {menyimpan ? "Menyimpan..." : "Simpan Perubahan"}
+            </button>
+            <button
+              onClick={handleUrutkanUlang}
+              disabled={merapikan || daftarEdit.length === 0}
+              title="Nomori ulang semua kode di daftar ini jadi 01, 02, ... sesuai urutan tabel sekarang"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-60 transition-all active:scale-95"
+            >
+              <ListOrdered size={16} />
+              {merapikan ? "Mengurutkan..." : "Urutkan Ulang Kode"}
+            </button>
+          </div>
         </>
       )}
     </div>

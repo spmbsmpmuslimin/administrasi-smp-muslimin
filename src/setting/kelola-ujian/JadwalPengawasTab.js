@@ -20,6 +20,7 @@ import {
   Loader2,
   Shuffle,
   ClipboardList,
+  Table2,
 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import {
@@ -123,6 +124,13 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   const [modeGenerate, setModeGenerate] = useState(false); // true = lagi nampilin checklist guru
   const [guruTerpilihGenerate, setGuruTerpilihGenerate] = useState([]); // array guru_id
   const [sedangGenerate, setSedangGenerate] = useState(false);
+
+  // ---- Tab "Rekap" -- preview semua hari & semua sesi sekaligus, jadi
+  // panitia tidak perlu klik satu-satu dropdown sesi buat ngecek semua
+  // jadwal sebelum di-print. Disimpan per jadwal_id (bukan per hari)
+  // supaya gampang dipetakan ke tiap kolom sesi di tabel rekap. ----
+  const [rekapPerJadwal, setRekapPerJadwal] = useState({}); // { [jadwalId]: { [nomor_ruangan]: [{id, nama}] } }
+  const [loadingRekap, setLoadingRekap] = useState(false);
 
   const semesterDibutuhkan = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.semester;
   // Kalau jenis ujian tidak dikenal (semesterDibutuhkan undefined), filter
@@ -250,6 +258,45 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
     if (tabAktif !== "pengawas" || !jadwalPengawasAktif) return;
     muatPengawasUntukJadwal(jadwalPengawasAktif);
   }, [tabAktif, jadwalPengawasAktif, muatPengawasUntukJadwal]);
+
+  /**
+   * Versi "borongan" dari muatPengawasUntukJadwal -- ambil pengawas untuk
+   * SEMUA sesi (semua hari) sekaligus, dipetakan per jadwal_id. Dipakai
+   * khusus tab "Rekap" supaya satu tabel per hari bisa langsung nunjukin
+   * semua sesi tanpa harus gonta-ganti dropdown dulu.
+   */
+  const muatRekapSemua = useCallback(async () => {
+    if (daftarJadwal.length === 0) return;
+    setLoadingRekap(true);
+    try {
+      const hasilPerJadwal = await Promise.all(
+        daftarJadwal.map((j) => ambilPengawasUntukJadwal(supabase, j.id))
+      );
+      const map = {};
+      daftarJadwal.forEach((j, idx) => {
+        const grouped = {};
+        hasilPerJadwal[idx].forEach((p) => {
+          if (!grouped[p.nomor_ruangan]) grouped[p.nomor_ruangan] = [];
+          grouped[p.nomor_ruangan].push(p);
+        });
+        map[j.id] = grouped;
+      });
+      setRekapPerJadwal(map);
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal memuat rekap pengawas: " + err.message, "error");
+    } finally {
+      setLoadingRekap(false);
+    }
+  }, [daftarJadwal, showToast]);
+
+  // Muat ulang tiap kali tab "Rekap" dibuka -- termasuk setelah admin
+  // baru generate/koreksi di tab "Jadwal Ngawas" lalu balik ke sini, jadi
+  // rekap selalu nunjukin data paling baru.
+  useEffect(() => {
+    if (tabAktif !== "rekap") return;
+    muatRekapSemua();
+  }, [tabAktif, muatRekapSemua]);
 
   // Default hari aktif = hari pertama yang punya jadwal. Reset juga kalau
   // hari aktif sekarang udah tidak valid (mis. sesi hari itu dihapus),
@@ -564,6 +611,16 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
             >
               <Users size={15} /> Jadwal Ngawas
             </button>
+            <button
+              onClick={() => setTabAktif("rekap")}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                tabAktif === "rekap"
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
+            >
+              <Table2 size={15} /> Rekap
+            </button>
           </div>
 
           {tabAktif === "jadwal" && (
@@ -864,6 +921,90 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                     </>
                   )}
                 </>
+              )}
+            </div>
+          )}
+
+          {tabAktif === "rekap" && (
+            <div>
+              {daftarJadwal.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">
+                  Belum ada jadwal sesi. Tambahkan dulu di tab "Jadwal Sesi".
+                </p>
+              ) : loadingRekap ? (
+                <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <Loader2 size={14} className="animate-spin" /> Memuat rekap pengawas...
+                </p>
+              ) : (
+                <div className="space-y-8">
+                  {jadwalPerHari.map((h) => {
+                    const sesiHariIni = [...h.sesi].sort((a, b) => a.sesi_ke - b.sesi_ke);
+                    return (
+                      <div key={h.tanggal}>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                          {formatHariTanggal(h.tanggal)}
+                        </p>
+                        {daftarRuanganUrut.length === 0 ? (
+                          <p className="text-xs text-gray-400 italic">
+                            Belum ada data ruangan untuk ujian ini.
+                          </p>
+                        ) : (
+                          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                            <table className="w-full text-xs sm:text-sm border-collapse">
+                              <thead>
+                                <tr className="text-left text-gray-600 dark:text-gray-400">
+                                  <th className="py-2 pr-3 font-medium whitespace-nowrap">Ruang</th>
+                                  {sesiHariIni.map((s) => (
+                                    <th
+                                      key={s.id}
+                                      className="py-2 pr-3 font-medium whitespace-nowrap"
+                                    >
+                                      Jam Ke {s.sesi_ke}
+                                      <span className="block font-normal text-[11px] text-gray-500 dark:text-gray-400">
+                                        {s.mata_pelajaran}
+                                        {s.waktu_mulai && s.waktu_selesai
+                                          ? ` (${s.waktu_mulai}–${s.waktu_selesai})`
+                                          : ""}
+                                      </span>
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {daftarRuanganUrut.map((r) => (
+                                  <tr
+                                    key={r.nomor_ruangan}
+                                    className="border-t border-gray-100 dark:border-gray-700"
+                                  >
+                                    <td className="py-2 pr-3 font-medium whitespace-nowrap text-gray-800 dark:text-gray-100">
+                                      Ruang {r.nomor_ruangan}
+                                    </td>
+                                    {sesiHariIni.map((s) => {
+                                      const pengawas =
+                                        rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
+                                      return (
+                                        <td
+                                          key={s.id}
+                                          className="py-2 pr-3 text-gray-700 dark:text-gray-300"
+                                        >
+                                          {pengawas.length === 0 ? (
+                                            <span className="text-gray-400 italic">Belum ada</span>
+                                          ) : (
+                                            pengawas.map((p) => p.nama).join(", ")
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
