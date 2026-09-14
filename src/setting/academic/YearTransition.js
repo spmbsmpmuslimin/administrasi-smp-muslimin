@@ -1,5 +1,5 @@
 // src/components/settings/academic/YearTransition.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import { Eye, CheckCircle, AlertTriangle, RefreshCw, Info } from "lucide-react";
 import Simulator from "./Simulator";
@@ -32,6 +32,38 @@ const YearTransition = ({
   const [localAcademicInfo, setLocalAcademicInfo] = useState(academicInfo);
   // ✅ Simpan hasil analisis simulator — dipakai buat "gerbang" sebelum tombol eksekusi aktif
   const [simulationResult, setSimulationResult] = useState(null);
+
+  // ✅ Type-to-confirm modal (gantiin native prompt "EXECUTE" + confirm
+  // countdown) -- native window.prompt/confirm gak bisa disable tombol
+  // secara live pas user ngetik, jadi butuh modal custom biar tombolnya
+  // beneran abu-abu/disabled sampai teks yang diketik cocok persis.
+  const CONFIRM_PHRASE = "LANJUTKAN-TRANSISI";
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmInputText, setConfirmInputText] = useState("");
+  const confirmResolverRef = useRef(null);
+
+  // Buka modal dan balikin Promise yang resolve true/false begitu user
+  // klik tombol Lanjutkan (teks cocok) atau Batal/tutup modal.
+  const requestTypedConfirmation = () => {
+    return new Promise((resolve) => {
+      confirmResolverRef.current = resolve;
+      setConfirmInputText("");
+      setConfirmModalOpen(true);
+    });
+  };
+
+  const handleConfirmModalSubmit = () => {
+    if (confirmInputText !== CONFIRM_PHRASE) return;
+    setConfirmModalOpen(false);
+    confirmResolverRef.current?.(true);
+    confirmResolverRef.current = null;
+  };
+
+  const handleConfirmModalCancel = () => {
+    setConfirmModalOpen(false);
+    confirmResolverRef.current?.(false);
+    confirmResolverRef.current = null;
+  };
 
   // Config dari schoolConfig
   const config = {
@@ -269,21 +301,11 @@ const YearTransition = ({
 
     if (!confirm1) return;
 
-    const confirm2 = prompt(`Untuk konfirmasi, ketik "EXECUTE" (huruf besar semua):`);
+    // Validasi kedua: modal ketik-untuk-konfirmasi (gaya GitHub/Vercel
+    // Danger Zone) -- tombol Lanjutkan disabled sampai teksnya cocok persis.
+    const confirmed = await requestTypedConfirmation();
 
-    if (confirm2 !== "EXECUTE") {
-      showToast("Transisi tahun ajaran dibatalkan", "info");
-      return;
-    }
-
-    // Final countdown confirmation
-    const confirm3 = window.confirm(
-      `⏳ Final Warning!\n\n` +
-        `Transisi tahun ajaran akan dimulai dalam 3 detik.\n\n` +
-        `Tekan OK untuk melanjutkan, Cancel untuk membatalkan.`
-    );
-
-    if (!confirm3) {
+    if (!confirmed) {
       showToast("Transisi tahun ajaran dibatalkan", "info");
       return;
     }
@@ -818,6 +840,59 @@ const YearTransition = ({
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Type-to-confirm modal — validasi kedua sebelum eksekusi transisi */}
+      {confirmModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertTriangle
+                className="text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5"
+                size={22}
+              />
+              <div>
+                <h4 className="font-bold text-gray-800 dark:text-gray-100">
+                  Konfirmasi Terakhir
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Tindakan ini akan langsung dieksekusi dan{" "}
+                  <span className="font-semibold">tidak bisa dibatalkan</span>. Untuk
+                  melanjutkan, ketik persis teks berikut:
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 mb-3 text-center font-mono text-sm font-bold text-gray-800 dark:text-gray-100 select-all">
+              {CONFIRM_PHRASE}
+            </div>
+
+            <input
+              type="text"
+              value={confirmInputText}
+              onChange={(e) => setConfirmInputText(e.target.value)}
+              placeholder="Ketik di sini..."
+              autoFocus
+              className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleConfirmModalSubmit}
+                disabled={confirmInputText !== CONFIRM_PHRASE}
+                className="flex-1 px-5 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-bold transition min-h-[44px]"
+              >
+                Lanjutkan
+              </button>
+              <button
+                onClick={handleConfirmModalCancel}
+                className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px]"
+              >
+                Batal
+              </button>
             </div>
           </div>
         </div>
