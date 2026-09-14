@@ -1,13 +1,26 @@
 // setting/kelola-ujian/JadwalPengawasTab.js
-// Sub-fitur "Jadwal & Pengawas" dari Manajemen Ujian.
-// Alur: pilih tahun ajaran -> kelola daftar sesi ujian (tanggal, jam, mapel)
-// di tab "Jadwal Sesi" -> assign guru pengawas per ruangan untuk tiap sesi
-// di tab "Pengawas". Ruangan yang tersedia diambil dari hasil Pembagian
-// Ruangan (tabel peserta_ujian) -- kalau belum diproses, tampilkan
-// peringatan untuk proses ruangan dulu.
+// Sub-fitur "Jadwal & Pengawas" dari Manajemen Ujian, sekarang punya 3 tab:
+// 1. "Jadwal Sesi" -- kelola daftar sesi ujian (tanggal, jam, mapel).
+// 2. "Daftar Pengawas" -- kode singkat per guru (embed dari
+//    DaftarPengawasTab.js, dulu kartu sub-fitur sendiri).
+// 3. "Jadwal Ngawas" -- assign guru pengawas per ruangan untuk tiap sesi
+//    (dulu namanya cuma "Pengawas").
+// Ruangan yang tersedia diambil dari hasil Pembagian Ruangan (tabel
+// peserta_ujian) -- kalau belum diproses, tampilkan peringatan untuk
+// proses ruangan dulu.
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, Plus, Trash2, X, CalendarClock, Users, Loader2, Shuffle } from "lucide-react";
+import {
+  ChevronLeft,
+  Plus,
+  Trash2,
+  X,
+  CalendarClock,
+  Users,
+  Loader2,
+  Shuffle,
+  ClipboardList,
+} from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
@@ -26,6 +39,7 @@ import {
   kelompokkanJadwalPerHari,
   terapkanRotasiPengawasHarian,
 } from "./jadwalPengawasSupabase";
+import DaftarPengawasTab from "./DaftarPengawasTab";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -87,7 +101,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   const [daftarJadwal, setDaftarJadwal] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
 
-  const [tabAktif, setTabAktif] = useState("jadwal"); // "jadwal" | "pengawas"
+  const [tabAktif, setTabAktif] = useState("jadwal"); // "jadwal" | "daftar" | "pengawas"
 
   const [showModalJadwal, setShowModalJadwal] = useState(false);
   const [editingJadwal, setEditingJadwal] = useState(null);
@@ -531,6 +545,16 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
               <CalendarClock size={15} /> Jadwal Sesi
             </button>
             <button
+              onClick={() => setTabAktif("daftar")}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                tabAktif === "daftar"
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
+            >
+              <ClipboardList size={15} /> Daftar Pengawas
+            </button>
+            <button
               onClick={() => setTabAktif("pengawas")}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 tabAktif === "pengawas"
@@ -538,7 +562,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
-              <Users size={15} /> Pengawas
+              <Users size={15} /> Jadwal Ngawas
             </button>
           </div>
 
@@ -608,6 +632,15 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
             </div>
           )}
 
+          {tabAktif === "daftar" && (
+            <DaftarPengawasTab
+              jenisUjian={jenisUjian}
+              showToast={showToast}
+              embedded
+              onPerubahan={muatData}
+            />
+          )}
+
           {tabAktif === "pengawas" && (
             <div>
               {daftarJadwal.length === 0 ? (
@@ -639,7 +672,12 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
 
                   {hariAktif && (
                     <>
-                      {/* ---- Panel generate (checklist guru + acak) ---- */}
+                      {/* ---- Panel generate (checklist guru + acak) ----
+                          Ditampilin inline (bukan modal/popup) -- checklist-nya
+                          TANPA batas tinggi/scroll internal (dulu max-h-56 bikin
+                          harus digeser-geser dalam kotak sempit buat liat semua
+                          nama guru). Sekarang tingginya ngikutin isi, jadi scroll
+                          halaman biasa aja yang jalan kalau daftar gurunya panjang. */}
                       {modeGenerate ? (
                         <div className="p-4 mb-5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
                           <div className="flex items-center justify-between mb-1">
@@ -659,7 +697,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                             berlaku juga untuk sesi berikutnya hari ini (rotasi geser +1 ruangan).
                           </p>
 
-                          <div className="max-h-56 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-3 p-2 rounded-lg bg-white dark:bg-gray-800">
+                          <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 mb-3 p-2 rounded-lg bg-white dark:bg-gray-800">
                             {daftarGuru.map((g) => {
                               const terpilih = guruTerpilihGenerate.includes(g.id);
                               const limitTercapai =
@@ -668,7 +706,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                               return (
                                 <label
                                   key={g.id}
-                                  className={`flex items-center gap-2 text-xs px-1.5 py-1 rounded ${
+                                  className={`flex items-center gap-2 text-xs px-1.5 py-1 mb-1 rounded break-inside-avoid ${
                                     limitTercapai
                                       ? "text-gray-400 dark:text-gray-600 cursor-not-allowed"
                                       : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
@@ -681,13 +719,17 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                                     onChange={() => toggleGuruTerpilih(g.id)}
                                     className="rounded border-gray-300"
                                   />
-                                  {g.full_name}
+                                  {g.kode_pengawas
+                                    ? `${g.kode_pengawas} - ${g.full_name}`
+                                    : g.full_name}
                                 </label>
                               );
                             })}
                           </div>
 
-                          <div className="flex items-center justify-between">
+                          {/* Sticky di dalam viewport pas discroll, biar tombol "Acak &
+                              Terapkan" tetap keliatan walau lagi scroll checklist yang panjang. */}
+                          <div className="sticky bottom-0 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2 pb-1 bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-between">
                             <span
                               className={`text-xs font-medium ${
                                 guruTerpilihGenerate.length === daftarRuanganUrut.length
@@ -801,7 +843,9 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                                   <option value="">Ganti guru (koreksi manual)...</option>
                                   {daftarGuru.map((g) => (
                                     <option key={g.id} value={g.id}>
-                                      {g.full_name}
+                                      {g.kode_pengawas
+                                        ? `${g.kode_pengawas} - ${g.full_name}`
+                                        : g.full_name}
                                     </option>
                                   ))}
                                 </select>

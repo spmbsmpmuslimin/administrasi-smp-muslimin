@@ -31,15 +31,31 @@ async function ambilRuanganUjian(supabase, ujianId) {
 }
 
 /**
- * Ambil daftar guru (semua users yang berstatus guru, ditandai lewat
- * teacher_id terisi -- pola yang sama dengan AdminTeacherDataTab.js).
+ * Saranin kode_pengawas dari teacher_id, misal "G-01" -> "01". Dipakai
+ * buat pre-fill input kode waktu admin nambah guru baru ke Daftar
+ * Pengawas -- tetap bisa diedit manual sebelum disimpan, ini cuma saran
+ * awal biar admin gak perlu ngetik dari nol.
+ */
+function sarankanKodeDariTeacherId(teacherId) {
+  if (!teacherId) return "";
+  const bagian = String(teacherId).split("-");
+  return bagian[bagian.length - 1] || "";
+}
+
+/**
+ * Ambil daftar guru yang SUDAH jadi pengawas (kode_pengawas terisi) --
+ * dipakai di dropdown "Ganti guru" & checklist "Generate Pengawas" di
+ * tab "Jadwal Ngawas". Gak semua guru ngawas, jadi yang belum ditambah
+ * ke Daftar Pengawas (kode_pengawas masih null) sengaja tidak muncul di
+ * sini -- tambahin dulu lewat tab "Daftar Pengawas".
  */
 async function ambilDaftarGuru(supabase) {
   const { data, error } = await supabase
     .from("users")
-    .select("id, full_name")
+    .select("id, full_name, teacher_id, kode_pengawas")
     .not("teacher_id", "is", null)
-    .order("full_name", { ascending: true });
+    .not("kode_pengawas", "is", null)
+    .order("teacher_id", { ascending: true });
 
   if (error) throw error;
   return data || [];
@@ -243,6 +259,93 @@ async function simpanJadwalSesiBulk(supabase, ujianId, daftarSesi) {
   return rows.length;
 }
 
+/**
+ * Ambil daftar guru yang SUDAH jadi pengawas (kode_pengawas terisi) buat
+ * ditampilkan & diedit di tabel "Daftar Pengawas". Guru yang belum
+ * ditambahkan (kode_pengawas masih null) TIDAK muncul di sini -- mereka
+ * ada di ambilCalonPengawas, ditambahin lewat tambahPengawasKode.
+ * Urutan berdasarkan teacher_id (mis. "G-01", "G-16").
+ */
+async function ambilDaftarPengawasKode(supabase) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, full_name, teacher_id, kode_pengawas")
+    .not("teacher_id", "is", null)
+    .not("kode_pengawas", "is", null)
+    .order("teacher_id", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Ambil daftar guru yang BELUM jadi pengawas (kode_pengawas masih null)
+ * -- dipakai buat dropdown "Tambah Pengawas" di tabel "Daftar Pengawas",
+ * soalnya gak semua guru kebagian tugas ngawas ujian.
+ */
+async function ambilCalonPengawas(supabase) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, full_name, teacher_id")
+    .not("teacher_id", "is", null)
+    .is("kode_pengawas", null)
+    .order("teacher_id", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Tambahkan 1 guru ke Daftar Pengawas dengan ngisi kode_pengawas-nya.
+ * Ini yang bikin guru itu muncul di ambilDaftarGuru / ambilDaftarPengawasKode
+ * dan hilang dari ambilCalonPengawas.
+ */
+async function tambahPengawasKode(supabase, guruId, kode) {
+  const kodeBersih = kode?.trim();
+  if (!kodeBersih) throw new Error("Kode pengawas wajib diisi");
+
+  const { error } = await supabase
+    .from("users")
+    .update({ kode_pengawas: kodeBersih })
+    .eq("id", guruId);
+  if (error) throw error;
+}
+
+/**
+ * Hapus 1 guru dari Daftar Pengawas -- cukup ngosongin kode_pengawas
+ * jadi null (BUKAN hapus baris user), soalnya kode_pengawas juga yang
+ * jadi penanda "guru ini kebagian tugas ngawas atau enggak". Guru yang
+ * dihapus dari sini otomatis balik muncul di ambilCalonPengawas.
+ */
+async function hapusPengawasKode(supabase, guruId) {
+  const { error } = await supabase.from("users").update({ kode_pengawas: null }).eq("id", guruId);
+  if (error) throw error;
+}
+
+/**
+ * Simpan perubahan kode_pengawas. `perubahan` cuma berisi baris yang
+ * BENERAN diedit admin (lihat handleSimpan di DaftarPengawasTab.js) --
+ * bukan seluruh daftar guru, biar gak ada update sia-sia ke baris yang
+ * gak diapa-apain. String kosong disimpen sebagai null (biar konsisten
+ * sama guru yang emang belum pernah diisi kodenya).
+ *
+ * @param {object} supabase
+ * @param {Array<{id: string, kode_pengawas: string}>} perubahan
+ * @returns {Promise<number>} jumlah baris yang berhasil diupdate
+ */
+async function simpanKodePengawas(supabase, perubahan) {
+  if (!perubahan || perubahan.length === 0) return 0;
+
+  for (const item of perubahan) {
+    const { error } = await supabase
+      .from("users")
+      .update({ kode_pengawas: item.kode_pengawas?.trim() || null })
+      .eq("id", item.id);
+    if (error) throw error;
+  }
+  return perubahan.length;
+}
+
 export {
   ambilRuanganUjian,
   ambilDaftarGuru,
@@ -255,4 +358,10 @@ export {
   hapusPengawas,
   kelompokkanJadwalPerHari,
   terapkanRotasiPengawasHarian,
+  ambilDaftarPengawasKode,
+  ambilCalonPengawas,
+  tambahPengawasKode,
+  hapusPengawasKode,
+  sarankanKodeDariTeacherId,
+  simpanKodePengawas,
 };

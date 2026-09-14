@@ -5,9 +5,11 @@
 // supaya query/filter siswa & kapasitas default otomatis sesuai (lihat
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
-// Skema final 5 kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
+// Skema final 4 kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
 // 1. Pembagian Ruangan (aktif)
-// 2. Jadwal & Pengawas (aktif)
+// 2. Jadwal & Pengawas (aktif) -- sekarang punya 3 tab di dalamnya:
+//    Jadwal Sesi, Daftar Pengawas, dan Jadwal Ngawas. "Daftar Pengawas"
+//    dulu kartu sendiri, sekarang di-embed di sini (lihat JadwalPengawasTab.js).
 // 3. Kartu Ujian (aktif)
 // 4. Presensi, Berita Acara & Laporan (belum dibangun)
 // 5. Kepanitiaan & Regulasi (belum dibangun)
@@ -44,7 +46,8 @@ const SUB_FITUR = [
   {
     id: "jadwal-pengawas",
     title: "Jadwal & Pengawas",
-    description: "Atur jadwal sesi ujian per mapel dan penugasan guru pengawas per ruangan",
+    description:
+      "Atur jadwal sesi ujian per mapel, kode & daftar pengawas, dan penugasan guru pengawas per ruangan",
     icon: CalendarClock,
     status: "done",
     clickable: true,
