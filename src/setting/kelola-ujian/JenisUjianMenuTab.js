@@ -2,16 +2,28 @@
 // Level 2 dari Manajemen Ujian: grid sub-fitur untuk SATU jenis ujian yang
 // sudah dipilih di KelolaUjianTab (PSAS/PSAT/PSAJ). Grid & sub-fitur ini
 // sama persis untuk ketiga jenis -- jenisUjian cuma diteruskan ke bawah
-// (PembagianRuanganTab, dst) supaya query/filter siswa & kapasitas default
-// otomatis sesuai (lihat KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
+// supaya query/filter siswa & kapasitas default otomatis sesuai (lihat
+// KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
-// 🔧 STATUS: DUMMY / PLACEHOLDER (Sep 2026)
-// Sub-fitur di bawah akan dibangun bertahap, dimulai dari Pembagian
-// Ruangan (algoritma sudah ada di ./bagiRuangan.js + ./pembagianRuanganSupabase.js).
+// Skema final 5 kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
+// 1. Pembagian Ruangan (aktif)
+// 2. Kepanitiaan & Regulasi (belum dibangun)
+// 3. Kartu Ujian (belum dibangun)
+// 4. Jadwal & Pengawas (aktif)
+// 5. Presensi, Berita Acara & Laporan (belum dibangun)
 
 import React, { useState } from "react";
-import { ChevronLeft, DoorOpen, IdCard, Users, FileBarChart2, Construction } from "lucide-react";
+import {
+  ChevronLeft,
+  DoorOpen,
+  FileText,
+  IdCard,
+  CalendarClock,
+  FileBarChart2,
+  Construction,
+} from "lucide-react";
 import PembagianRuanganTab from "./PembagianRuanganTab";
+import JadwalPengawasTab from "./JadwalPengawasTab";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -19,37 +31,43 @@ const JENIS_UJIAN_LABEL = {
   PSAJ: "PSAJ - Penilaian Sumatif Akhir Jenjang",
 };
 
-// Daftar sub-fitur modul ujian. Tiap item nanti diganti jadi komponen
-// beneran satu-satu -- urutan sesuai prioritas pengerjaan.
 const SUB_FITUR = [
   {
     id: "pembagian-ruangan",
     title: "Pembagian Ruangan",
     description: "Bagi siswa ke ruangan ujian otomatis berdasarkan kelas & huruf",
     icon: DoorOpen,
-    status: "next", // next | planned
+    status: "done",
     clickable: true,
+  },
+  {
+    id: "kepanitiaan",
+    title: "Kepanitiaan & Regulasi",
+    description: "SK panitia, SK tugas pengawas, dan tata tertib ujian",
+    icon: FileText,
+    status: "planned",
+    clickable: false,
   },
   {
     id: "kartu-ujian",
     title: "Kartu Ujian",
-    description: "Cetak kartu peserta ujian per siswa (PDF massal)",
+    description: "Cetak kartu peserta & kartu pengawas ujian (PDF massal)",
     icon: IdCard,
     status: "planned",
     clickable: false,
   },
   {
     id: "jadwal-pengawas",
-    title: "Jadwal Pengawas",
-    description: "Atur jadwal guru pengawas per ruangan & sesi",
-    icon: Users,
-    status: "planned",
-    clickable: false,
+    title: "Jadwal & Pengawas",
+    description: "Atur jadwal sesi ujian per mapel dan penugasan guru pengawas per ruangan",
+    icon: CalendarClock,
+    status: "done",
+    clickable: true,
   },
   {
     id: "laporan",
-    title: "Laporan Pelaksanaan",
-    description: "Bundel laporan lengkap: jadwal, ruangan, daftar hadir, berita acara",
+    title: "Presensi, Berita Acara & Laporan",
+    description: "Daftar hadir, berita acara, serah terima lembar jawab, dan laporan akhir",
     icon: FileBarChart2,
     status: "planned",
     clickable: false,
@@ -57,9 +75,9 @@ const SUB_FITUR = [
 ];
 
 const STATUS_STYLE = {
-  next: {
-    badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    label: "Sedang dikerjakan",
+  done: {
+    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    label: "Aktif",
   },
   planned: {
     badge: "bg-gray-100 text-gray-500 dark:bg-gray-700/50 dark:text-gray-400",
@@ -73,6 +91,16 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
   if (activeSubFitur === "pembagian-ruangan") {
     return (
       <PembagianRuanganTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
+
+  if (activeSubFitur === "jadwal-pengawas") {
+    return (
+      <JadwalPengawasTab
         jenisUjian={jenisUjian}
         showToast={showToast}
         onBack={() => setActiveSubFitur(null)}
@@ -95,7 +123,6 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
         </h2>
       </div>
 
-      {/* Banner status dummy */}
       <div className="flex items-start gap-3 p-4 mb-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl">
         <Construction className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
         <div>
@@ -103,12 +130,12 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
             Modul dalam pengembangan
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
-            Sub-fitur akan diaktifkan satu per satu. Pembagian Ruangan sudah bisa dipakai.
+            Sub-fitur akan diaktifkan satu per satu. Pembagian Ruangan dan Jadwal & Pengawas sudah
+            bisa dipakai.
           </p>
         </div>
       </div>
 
-      {/* Grid sub-fitur */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {SUB_FITUR.map((fitur) => {
           const IconComponent = fitur.icon;
@@ -129,9 +156,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
                 <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/40">
                   <IconComponent className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <span
-                  className={`text-[11px] font-medium px-2 py-1 rounded-full ${statusStyle.badge}`}
-                >
+                <span className={`text-[11px] font-medium px-2 py-1 rounded-full ${statusStyle.badge}`}>
                   {statusStyle.label}
                 </span>
               </div>
