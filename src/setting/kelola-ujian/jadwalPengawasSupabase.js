@@ -217,11 +217,38 @@ async function terapkanRotasiPengawasHarian(
   return rows.length;
 }
 
+/**
+ * Simpan banyak sesi jadwal sekaligus (bulk insert) -- dipakai fitur
+ * "Generate Rentang Tanggal" supaya admin gak perlu isi form satu-satu
+ * per sesi. Semua baris dianggap baru (insert), bukan update.
+ * @param {object} supabase
+ * @param {string} ujianId
+ * @param {Array<{tanggal:string, sesi_ke:number, waktu_mulai:string, waktu_selesai:string, mata_pelajaran:string}>} daftarSesi
+ * @returns {Promise<number>} jumlah baris yang berhasil disimpan
+ */
+async function simpanJadwalSesiBulk(supabase, ujianId, daftarSesi) {
+  if (!daftarSesi || daftarSesi.length === 0) return 0;
+
+  const rows = daftarSesi.map((s) => ({
+    ujian_id: ujianId,
+    tanggal: s.tanggal,
+    sesi_ke: s.sesi_ke,
+    waktu_mulai: s.waktu_mulai || null,
+    waktu_selesai: s.waktu_selesai || null,
+    mata_pelajaran: s.mata_pelajaran.trim(),
+  }));
+
+  const { error } = await supabase.from("ujian_jadwal").insert(rows);
+  if (error) throw error;
+  return rows.length;
+}
+
 export {
   ambilRuanganUjian,
   ambilDaftarGuru,
   ambilJadwalSesi,
   simpanJadwalSesi,
+  simpanJadwalSesiBulk,
   hapusJadwalSesi,
   ambilPengawasUntukJadwal,
   tambahPengawas,
