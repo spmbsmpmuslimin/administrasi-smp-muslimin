@@ -7,10 +7,10 @@
 //
 // Skema final 5 kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
 // 1. Pembagian Ruangan (aktif)
-// 2. Kepanitiaan & Regulasi (belum dibangun)
-// 3. Kartu Ujian (belum dibangun)
-// 4. Jadwal & Pengawas (aktif)
-// 5. Presensi, Berita Acara & Laporan (belum dibangun)
+// 2. Jadwal & Pengawas (aktif)
+// 3. Kartu Ujian (aktif)
+// 4. Presensi, Berita Acara & Laporan (belum dibangun)
+// 5. Kepanitiaan & Regulasi (belum dibangun)
 
 import React, { useState } from "react";
 import {
@@ -42,12 +42,12 @@ const SUB_FITUR = [
     clickable: true,
   },
   {
-    id: "kepanitiaan",
-    title: "Kepanitiaan & Regulasi",
-    description: "SK panitia, SK tugas pengawas, dan tata tertib ujian",
-    icon: FileText,
-    status: "planned",
-    clickable: false,
+    id: "jadwal-pengawas",
+    title: "Jadwal & Pengawas",
+    description: "Atur jadwal sesi ujian per mapel dan penugasan guru pengawas per ruangan",
+    icon: CalendarClock,
+    status: "done",
+    clickable: true,
   },
   {
     id: "kartu-ujian",
@@ -58,18 +58,18 @@ const SUB_FITUR = [
     clickable: true,
   },
   {
-    id: "jadwal-pengawas",
-    title: "Jadwal & Pengawas",
-    description: "Atur jadwal sesi ujian per mapel dan penugasan guru pengawas per ruangan",
-    icon: CalendarClock,
-    status: "done",
-    clickable: true,
-  },
-  {
     id: "laporan",
     title: "Presensi, Berita Acara & Laporan",
     description: "Daftar hadir, berita acara, serah terima lembar jawab, dan laporan akhir",
     icon: FileBarChart2,
+    status: "planned",
+    clickable: false,
+  },
+  {
+    id: "kepanitiaan",
+    title: "Kepanitiaan & Regulasi",
+    description: "SK panitia, SK tugas pengawas, dan tata tertib ujian",
+    icon: FileText,
     status: "planned",
     clickable: false,
   },
@@ -141,8 +141,8 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
             Modul dalam pengembangan
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
-            Sub-fitur akan diaktifkan satu per satu. Pembagian Ruangan, Jadwal & Pengawas, dan
-            Kartu Ujian sudah bisa dipakai.
+            Sub-fitur akan diaktifkan satu per satu. Pembagian Ruangan, Jadwal & Pengawas, dan Kartu
+            Ujian sudah bisa dipakai.
           </p>
         </div>
       </div>
@@ -167,7 +167,9 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
                 <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/40">
                   <IconComponent className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <span className={`text-[11px] font-medium px-2 py-1 rounded-full ${statusStyle.badge}`}>
+                <span
+                  className={`text-[11px] font-medium px-2 py-1 rounded-full ${statusStyle.badge}`}
+                >
                   {statusStyle.label}
                 </span>
               </div>

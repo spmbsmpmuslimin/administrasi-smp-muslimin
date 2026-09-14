@@ -60,20 +60,6 @@ function formatHariTanggal(tanggal) {
   return `${namaHari}, ${tanggalFormat}`;
 }
 
-/**
- * Fisher-Yates shuffle -- dipakai supaya urutan guru ke ruangan acak.
- * Ditaruh di luar komponen karena pure function (tidak butuh state/props),
- * supaya tidak di-recreate tiap render.
- */
-function acakUrutan(arr) {
-  const hasil = [...arr];
-  for (let i = hasil.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [hasil[i], hasil[j]] = [hasil[j], hasil[i]];
-  }
-  return hasil;
-}
-
 const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   const [daftarTahunAjaran, setDaftarTahunAjaran] = useState([]);
   const [tahunAjaranId, setTahunAjaranId] = useState("");
@@ -111,9 +97,6 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   const [sedangGenerate, setSedangGenerate] = useState(false);
 
   const semesterDibutuhkan = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.semester;
-  // Kalau jenis ujian tidak dikenal (semesterDibutuhkan undefined), filter
-  // tidak akan cocok sama sekali -- sengaja fallback ke semua tahun ajaran
-  // supaya user tetap bisa pilih manual daripada dropdown kosong.
   const tahunAjaranTerfilter = daftarTahunAjaran.filter(
     (ta) => String(ta.semester) === semesterDibutuhkan
   );
@@ -204,62 +187,6 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
     muatData();
   }, [muatData]);
 
-  /**
-   * Ambil pengawas untuk 1 jadwal & kelompokkan per nomor ruangan.
-   * Dipakai di 2 tempat (efek saat ganti sesi aktif, dan setelah generate
-   * rotasi harian), jadi diekstrak supaya tidak duplikat.
-   */
-  const muatPengawasUntukJadwal = useCallback(
-    async (jadwalId) => {
-      if (!jadwalId) return;
-      setLoadingPengawas(true);
-      try {
-        const data = await ambilPengawasUntukJadwal(supabase, jadwalId);
-        const grouped = {};
-        daftarRuangan.forEach((r) => (grouped[r.nomor_ruangan] = []));
-        data.forEach((p) => {
-          if (!grouped[p.nomor_ruangan]) grouped[p.nomor_ruangan] = [];
-          grouped[p.nomor_ruangan].push(p);
-        });
-        setPengawasPerRuangan(grouped);
-      } catch (err) {
-        console.error(err);
-        showToast?.("Gagal memuat data pengawas: " + err.message, "error");
-      } finally {
-        setLoadingPengawas(false);
-      }
-    },
-    [daftarRuangan, showToast]
-  );
-
-  useEffect(() => {
-    if (tabAktif !== "pengawas" || !jadwalPengawasAktif) return;
-    muatPengawasUntukJadwal(jadwalPengawasAktif);
-  }, [tabAktif, jadwalPengawasAktif, muatPengawasUntukJadwal]);
-
-  // Default hari aktif = hari pertama yang punya jadwal. Reset juga kalau
-  // hari aktif sekarang udah tidak valid (mis. sesi hari itu dihapus),
-  // biar tidak nunjuk ke tanggal yang sudah tidak ada.
-  useEffect(() => {
-    if (tabAktif !== "pengawas" || jadwalPerHari.length === 0) return;
-    const hariMasihValid = jadwalPerHari.some((h) => h.tanggal === hariAktif);
-    if (!hariAktif || !hariMasihValid) {
-      setHariAktif(jadwalPerHari[0].tanggal);
-    }
-  }, [tabAktif, jadwalPerHari, hariAktif]);
-
-  // Begitu hari aktif berubah, tampilan pengawas ngikut ke sesi PERTAMA
-  // hari itu (base assignment) -- efek ambilPengawasUntukJadwal di atas
-  // yang bergantung ke jadwalPengawasAktif otomatis jalan lagi.
-  useEffect(() => {
-    if (!hariAktif) return;
-    const sesiHari = jadwalPerHari.find((h) => h.tanggal === hariAktif)?.sesi || [];
-    setJadwalPengawasAktif(sesiHari[0]?.id ?? null);
-    setModeGenerate(false);
-    setGuruTerpilihGenerate([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hariAktif]);
-
   const openAddJadwal = () => {
     setEditingJadwal(null);
     setFormJadwal(emptyJadwalForm);
@@ -323,15 +250,54 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
       await hapusJadwalSesi(supabase, jadwal.id);
       showToast?.("Jadwal dihapus", "success");
       if (jadwalPengawasAktif === jadwal.id) setJadwalPengawasAktif(null);
-      // Tidak perlu set hariAktif(null) manual -- efek "default hari aktif"
-      // di atas akan otomatis reset ke hari valid pertama begitu daftarJadwal
-      // ke-refresh lewat muatData().
+      if (hariAktif === jadwal.tanggal) setHariAktif(null);
       muatData();
     } catch (err) {
       console.error(err);
       showToast?.("Gagal menghapus jadwal: " + err.message, "error");
     }
   };
+
+  useEffect(() => {
+    if (tabAktif !== "pengawas" || !jadwalPengawasAktif) return;
+    (async () => {
+      setLoadingPengawas(true);
+      try {
+        const data = await ambilPengawasUntukJadwal(supabase, jadwalPengawasAktif);
+        const grouped = {};
+        daftarRuangan.forEach((r) => (grouped[r.nomor_ruangan] = []));
+        data.forEach((p) => {
+          if (!grouped[p.nomor_ruangan]) grouped[p.nomor_ruangan] = [];
+          grouped[p.nomor_ruangan].push(p);
+        });
+        setPengawasPerRuangan(grouped);
+      } catch (err) {
+        console.error(err);
+        showToast?.("Gagal memuat data pengawas: " + err.message, "error");
+      } finally {
+        setLoadingPengawas(false);
+      }
+    })();
+  }, [tabAktif, jadwalPengawasAktif, daftarRuangan, showToast]);
+
+  useEffect(() => {
+    if (tabAktif === "pengawas" && !hariAktif && jadwalPerHari.length > 0) {
+      setHariAktif(jadwalPerHari[0].tanggal);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabAktif, jadwalPerHari]);
+
+  // Begitu hari aktif berubah, tampilan pengawas ngikut ke sesi PERTAMA
+  // hari itu (base assignment) -- efek ambilPengawasUntukJadwal di atas
+  // yang bergantung ke jadwalPengawasAktif otomatis jalan lagi.
+  useEffect(() => {
+    if (!hariAktif) return;
+    const sesiHari = jadwalPerHari.find((h) => h.tanggal === hariAktif)?.sesi || [];
+    setJadwalPengawasAktif(sesiHari[0]?.id ?? null);
+    setModeGenerate(false);
+    setGuruTerpilihGenerate([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hariAktif]);
 
   const handleTambahPengawas = async (nomorRuangan) => {
     const guruId = guruTerpilihBaru[nomorRuangan];
@@ -410,15 +376,20 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   };
 
   const toggleGuruTerpilih = (guruId) => {
-    setGuruTerpilihGenerate((prev) => {
-      if (prev.includes(guruId)) return prev.filter((id) => id !== guruId);
-      // Batasi jumlah centang = jumlah ruangan. Lebih dari itu tidak akan
-      // bisa di-apply (validasi handleGenerateHari), jadi cegah di awal
-      // supaya user tidak bingung kenapa tombolnya disabled.
-      if (prev.length >= daftarRuanganUrut.length) return prev;
-      return [...prev, guruId];
-    });
+    setGuruTerpilihGenerate((prev) =>
+      prev.includes(guruId) ? prev.filter((id) => id !== guruId) : [...prev, guruId]
+    );
   };
+
+  /** Fisher-Yates shuffle -- dipakai supaya urutan guru ke ruangan acak. */
+  function acakUrutan(arr) {
+    const hasil = [...arr];
+    for (let i = hasil.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [hasil[i], hasil[j]] = [hasil[j], hasil[i]];
+    }
+    return hasil;
+  }
 
   const handleGenerateHari = async () => {
     const jumlahRuangan = daftarRuanganUrut.length;
@@ -452,9 +423,22 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
         "success"
       );
       batalModeGenerate();
-      // Refresh tampilan pengawas sesi yang lagi ditampilin (pakai helper
-      // yang sama seperti efek, jadi tidak duplikat logika grouping).
-      if (jadwalPengawasAktif) await muatPengawasUntukJadwal(jadwalPengawasAktif);
+      // Refresh tampilan pengawas sesi yang lagi ditampilin
+      if (jadwalPengawasAktif) {
+        setLoadingPengawas(true);
+        try {
+          const data = await ambilPengawasUntukJadwal(supabase, jadwalPengawasAktif);
+          const grouped = {};
+          daftarRuangan.forEach((r) => (grouped[r.nomor_ruangan] = []));
+          data.forEach((p) => {
+            if (!grouped[p.nomor_ruangan]) grouped[p.nomor_ruangan] = [];
+            grouped[p.nomor_ruangan].push(p);
+          });
+          setPengawasPerRuangan(grouped);
+        } finally {
+          setLoadingPengawas(false);
+        }
+      }
     } catch (err) {
       console.error(err);
       showToast?.("Gagal generate pengawas: " + err.message, "error");
@@ -463,7 +447,6 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
     }
   };
 
-  // ... (JSX sama seperti sebelumnya, tidak ada perubahan tampilan)
   return (
     <div className="p-4 sm:p-6">
       <button
@@ -660,31 +643,20 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                           </p>
 
                           <div className="max-h-56 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-3 p-2 rounded-lg bg-white dark:bg-gray-800">
-                            {daftarGuru.map((g) => {
-                              const terpilih = guruTerpilihGenerate.includes(g.id);
-                              const limitTercapai =
-                                !terpilih &&
-                                guruTerpilihGenerate.length >= daftarRuanganUrut.length;
-                              return (
-                                <label
-                                  key={g.id}
-                                  className={`flex items-center gap-2 text-xs px-1.5 py-1 rounded ${
-                                    limitTercapai
-                                      ? "text-gray-400 dark:text-gray-600 cursor-not-allowed"
-                                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={terpilih}
-                                    disabled={limitTercapai}
-                                    onChange={() => toggleGuruTerpilih(g.id)}
-                                    className="rounded border-gray-300"
-                                  />
-                                  {g.full_name}
-                                </label>
-                              );
-                            })}
+                            {daftarGuru.map((g) => (
+                              <label
+                                key={g.id}
+                                className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 px-1.5 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={guruTerpilihGenerate.includes(g.id)}
+                                  onChange={() => toggleGuruTerpilih(g.id)}
+                                  className="rounded border-gray-300"
+                                />
+                                {g.full_name}
+                              </label>
+                            ))}
                           </div>
 
                           <div className="flex items-center justify-between">

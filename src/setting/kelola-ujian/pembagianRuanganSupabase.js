@@ -144,11 +144,74 @@ async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan) {
   return rows.length; // jumlah baris tersimpan
 }
 
+/**
+ * Cari record `ujian` untuk kombinasi jenis + tahun ajaran, TANPA bikin
+ * baru kalau belum ada (beda dari getOrCreateUjian di atas). Dipakai
+ * buat cek "udah pernah diproses/disimpan belum" pas tab dibuka /
+ * tahun ajaran diganti -- kalau dipakai getOrCreateUjian malah bikin
+ * record ujian kosong cuma buat sekedar ngecek doang.
+ *
+ * @returns {Promise<object|null>} record ujian, atau null kalau belum ada
+ */
+async function cariUjian(supabase, jenis, academicYearId) {
+  const { data, error } = await supabase
+    .from("ujian")
+    .select("*")
+    .eq("jenis", jenis)
+    .eq("academic_year_id", academicYearId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Ambil hasil pembagian ruangan yang SUDAH TERSIMPAN di peserta_ujian
+ * buat 1 ujian tertentu, dibentuk ulang ke format yang SAMA PERSIS
+ * seperti output bagiRuangan() -- [{ nomor_ruangan, siswa: [{ id, nama,
+ * nis, asal_kelas, no_kursi }] }] -- biar bisa langsung dipakai ngisi
+ * ulang state UI (hasilAsli) tanpa perlu generate ulang dari tabel
+ * students. Ini yang bikin data tersimpan tetap muncul lagi walau
+ * admin pindah tab terus balik lagi.
+ *
+ * @returns {Promise<Array>} array kosong kalau belum ada apa-apa tersimpan
+ */
+async function ambilPembagianTersimpan(supabase, ujianId) {
+  const { data, error } = await supabase
+    .from("peserta_ujian")
+    .select("nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)")
+    .eq("ujian_id", ujianId)
+    .order("nomor_ruangan", { ascending: true })
+    .order("no_peserta", { ascending: true });
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  // Kelompokkan flat rows dari DB balik jadi per-ruangan
+  const perRuangan = {};
+  for (const row of data) {
+    if (!perRuangan[row.nomor_ruangan]) perRuangan[row.nomor_ruangan] = [];
+    perRuangan[row.nomor_ruangan].push({
+      id: row.siswa_id,
+      nama: row.students?.full_name || "(siswa tidak ditemukan)",
+      nis: row.students?.nis,
+      asal_kelas: row.asal_kelas,
+      no_kursi: row.no_peserta,
+    });
+  }
+
+  return Object.entries(perRuangan)
+    .map(([nomor, siswa]) => ({ nomor_ruangan: Number(nomor), siswa }))
+    .sort((a, b) => a.nomor_ruangan - b.nomor_ruangan);
+}
+
 export {
   ambilSiswaPerKelas,
   ambilDaftarTahunAjaran,
   getOrCreateUjian,
+  cariUjian,
   prosesPembagianRuangan,
   simpanPembagianRuangan,
+  ambilPembagianTersimpan,
   KONFIGURASI_JENIS_UJIAN,
 };

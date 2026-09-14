@@ -21,8 +21,10 @@ import { supabase } from "../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
   getOrCreateUjian,
+  cariUjian,
   prosesPembagianRuangan,
   simpanPembagianRuangan,
+  ambilPembagianTersimpan,
   KONFIGURASI_JENIS_UJIAN,
 } from "./pembagianRuanganSupabase";
 import { terapkanQuotaManual, hitungTotalPerKelas } from "./bagiRuangan";
@@ -52,6 +54,10 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
   const [loadingTahunAjaran, setLoadingTahunAjaran] = useState(true);
   const [memproses, setMemproses] = useState(false);
   const [menyimpan, setMenyimpan] = useState(false);
+  // Loading khusus buat proses "narik data tersimpan" pas tab ini dibuka /
+  // tahun ajaran diganti -- beda dari `memproses` (itu buat generate ulang
+  // manual lewat tombol "Proses Pembagian").
+  const [memuatTersimpan, setMemuatTersimpan] = useState(false);
 
   // hasilAsli = hasil bagiRuangan() ASLI (auto-generate, proporsional),
   // dipakai sebagai "sumber siswa" waktu quota manual diterapkan --
@@ -110,6 +116,56 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [daftarTahunAjaran]);
+
+  // Begitu tahunAjaranId siap (termasuk pas tab ini pertama kali dibuka
+  // atau admin balik lagi setelah sempat pindah ke card lain), coba tarik
+  // dulu data yang SUDAH TERSIMPAN di peserta_ujian buat kombinasi
+  // jenisUjian + tahunAjaranId ini. Kalau ada, langsung isi hasilAsli +
+  // quotaPerRuangan dari situ -- jadi admin lihat lagi hasil yang udah
+  // disimpan, bukan form kosong kayak awal. Kalau belum pernah
+  // diproses/disimpan sama sekali, biarin kosong seperti semula (nunggu
+  // admin pencet "Proses Pembagian").
+  useEffect(() => {
+    if (!tahunAjaranId) return;
+    let dibatalkan = false;
+    (async () => {
+      setMemuatTersimpan(true);
+      setHasilAsli(null);
+      setQuotaPerRuangan(null);
+      try {
+        const ujian = await cariUjian(supabase, jenisUjian, tahunAjaranId);
+        if (!ujian) return; // belum pernah diproses buat kombinasi ini
+        const tersimpan = await ambilPembagianTersimpan(supabase, ujian.id);
+        if (dibatalkan || tersimpan.length === 0) return;
+
+        setKapasitas(ujian.kapasitas_ruangan || kapasitas);
+        setHasilAsli(tersimpan);
+        setTargetPerKelas(hitungTotalPerKelas(tersimpan));
+        setDaftarKelas(
+          [...new Set(tersimpan.flatMap((r) => r.siswa.map((s) => s.asal_kelas)))].sort()
+        );
+        setQuotaPerRuangan(
+          tersimpan.map((r) => {
+            const quota = {};
+            r.siswa.forEach((s) => {
+              quota[s.asal_kelas] = (quota[s.asal_kelas] || 0) + 1;
+            });
+            return { nomor_ruangan: r.nomor_ruangan, quota };
+          })
+        );
+        setRuanganPreviewAktif(tersimpan[0]?.nomor_ruangan ?? null);
+      } catch (err) {
+        console.error(err);
+        showToast?.("Gagal memuat data tersimpan: " + err.message, "error");
+      } finally {
+        if (!dibatalkan) setMemuatTersimpan(false);
+      }
+    })();
+    return () => {
+      dibatalkan = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tahunAjaranId, jenisUjian]);
 
   const handleProses = async () => {
     if (!tahunAjaranId) {
@@ -280,9 +336,13 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         </div>
       </div>
 
+      {memuatTersimpan && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Memuat data tersimpan...</p>
+      )}
+
       <button
         onClick={handleProses}
-        disabled={memproses}
+        disabled={memproses || memuatTersimpan}
         className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
       >
         <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
