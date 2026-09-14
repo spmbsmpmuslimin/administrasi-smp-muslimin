@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import PembagianRuanganTab from "./PembagianRuanganTab";
 import JadwalPengawasTab from "./JadwalPengawasTab";
+import KartuUjianTab from "./KartuUjianTab";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -53,8 +54,8 @@ const SUB_FITUR = [
     title: "Kartu Ujian",
     description: "Cetak kartu peserta & kartu pengawas ujian (PDF massal)",
     icon: IdCard,
-    status: "planned",
-    clickable: false,
+    status: "done",
+    clickable: true,
   },
   {
     id: "jadwal-pengawas",
@@ -108,6 +109,16 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     );
   }
 
+  if (activeSubFitur === "kartu-ujian") {
+    return (
+      <KartuUjianTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6">
       <button
@@ -130,8 +141,8 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
             Modul dalam pengembangan
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
-            Sub-fitur akan diaktifkan satu per satu. Pembagian Ruangan dan Jadwal & Pengawas sudah
-            bisa dipakai.
+            Sub-fitur akan diaktifkan satu per satu. Pembagian Ruangan, Jadwal & Pengawas, dan
+            Kartu Ujian sudah bisa dipakai.
           </p>
         </div>
       </div>
