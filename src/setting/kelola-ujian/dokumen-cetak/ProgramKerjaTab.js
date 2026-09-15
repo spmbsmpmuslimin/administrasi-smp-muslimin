@@ -32,13 +32,13 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { supabase } from "../../../../supabaseClient";
+import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
   getOrCreateUjian,
   KONFIGURASI_JENIS_UJIAN,
-} from "../../pembagian-ruangan/pembagianRuanganSupabase";
-import { ambilRekapPeserta, ambilRekapPengawas } from "../laporanRekapAkhirSupabase";
+} from "../pembagian-ruangan/pembagianRuanganSupabase";
+import { ambilRekapPeserta, ambilRekapPengawas } from "./laporanRekapAkhirSupabase";
 import { generateProgramKerjaPdf } from "./programKerjaPdf";
 
 const JENIS_UJIAN_LABEL = {

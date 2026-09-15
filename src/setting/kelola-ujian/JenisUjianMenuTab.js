@@ -14,7 +14,11 @@
 // 4. Presensi & Berita Acara (aktif) -- bagian "Laporan" (rekap akhir)
 //    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
 //    kosong buat dicetak & diisi manual, lihat PresensiBeritaAcaraTab.js).
-// 5. Kepanitiaan & Regulasi (belum dibangun)
+// 5. Kepanitiaan & Regulasi -> sekarang "Program Kerja Pelaksanaan" (aktif) --
+//    dokumen rencana pelaksanaan (dasar hukum, susunan panitia, jadwal per
+//    sesi, pembagian ruang & pengawas reuse dari sub-fitur lain, tata
+//    tertib) untuk bahan pemeriksaan pengawas. Lihat ProgramKerjaTab.js &
+//    programKerjaPdf.js.
 // 6. Anggaran & Biaya (aktif) -- catat rencana anggaran & realisasi biaya
 //    per pos (ATK, konsumsi, honor pengawas, dst), lihat AnggaranBiayaTab.js.
 // 7. Petunjuk & Penggunaan Aplikasi (aktif) -- panduan statis langkah demi
@@ -49,6 +53,7 @@ import PresensiBeritaAcaraTab from "./dokumen-cetak/PresensiBeritaAcaraTab";
 import AnggaranBiayaTab from "./dokumen-cetak/AnggaranBiayaTab";
 import PetunjukPenggunaanTab from "./petunjuk-penggunaan/PetunjukPenggunaanTab";
 import LaporanRekapAkhirTab from "./dokumen-cetak/LaporanRekapAkhirTab";
+import ProgramKerjaTab from "./dokumen-cetak/ProgramKerjaTab";
 import ExportSemuaTab from "./ExportSemuaTab";
 
 const JENIS_UJIAN_LABEL = {
@@ -94,11 +99,11 @@ const SUB_FITUR = [
   },
   {
     id: "kepanitiaan",
-    title: "Kepanitiaan & Regulasi",
-    description: "SK panitia, SK tugas pengawas, dan tata tertib ujian",
+    title: "Program Kerja Pelaksanaan",
+    description: "Dasar hukum, susunan panitia, jadwal, tata tertib -- bahan pemeriksaan pengawas",
     icon: FileText,
-    status: "planned",
-    clickable: false,
+    status: "done",
+    clickable: true,
   },
   {
     id: "anggaran-biaya",
@@ -195,6 +200,16 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     return <PetunjukPenggunaanTab showToast={showToast} onBack={() => setActiveSubFitur(null)} />;
   }
 
+  if (activeSubFitur === "kepanitiaan") {
+    return (
+      <ProgramKerjaTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
+
   if (activeSubFitur === "laporan-rekap-akhir") {
     return (
       <LaporanRekapAkhirTab
@@ -246,7 +261,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
             Sub-fitur akan diaktifkan satu per satu. Peserta & Pembagian Ruangan, Jadwal & Pengawas,
             Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, Petunjuk & Penggunaan Aplikasi,
-            dan Laporan Rekap Akhir sudah bisa dipakai.
+            Program Kerja Pelaksanaan, dan Laporan Rekap Akhir sudah bisa dipakai.
           </p>
         </div>
       </div>

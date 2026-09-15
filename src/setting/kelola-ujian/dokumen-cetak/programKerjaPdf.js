@@ -36,7 +36,7 @@ import {
   PDF_FONT_FAMILY,
   SCHOOL_NAME,
   SCHOOL_CITY,
-} from "../../../../utils/pdfExportKit";
+} from "../../../utils/pdfExportKit";
 
 const JUDUL_UJIAN = {
   PSAS: "PENILAIAN SUMATIF AKHIR SEMESTER",
