@@ -5,7 +5,7 @@
 // supaya query/filter siswa & kapasitas default otomatis sesuai (lihat
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
-// Skema final 4 kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
+// Skema kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
 // 1. Peserta & Pembagian Ruangan (aktif)
 // 2. Jadwal & Pengawas (aktif) -- sekarang punya 3 tab di dalamnya:
 //    Jadwal Sesi, Daftar Pengawas, dan Jadwal Ngawas. "Daftar Pengawas"
@@ -15,6 +15,10 @@
 //    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
 //    kosong buat dicetak & diisi manual, lihat PresensiBeritaAcaraTab.js).
 // 5. Kepanitiaan & Regulasi (belum dibangun)
+// 6. Anggaran & Biaya (aktif) -- catat rencana anggaran & realisasi biaya
+//    per pos (ATK, konsumsi, honor pengawas, dst), lihat AnggaranBiayaTab.js.
+// 7. Petunjuk & Penggunaan Aplikasi (aktif) -- panduan statis langkah demi
+//    langkah tiap sub-fitur, lihat PetunjukPenggunaanTab.js.
 
 import React, { useState } from "react";
 import {
@@ -24,12 +28,16 @@ import {
   IdCard,
   CalendarClock,
   FileBarChart2,
+  Wallet,
+  BookOpen,
   Construction,
 } from "lucide-react";
 import PembagianRuanganTab from "./PembagianRuanganTab";
 import JadwalPengawasTab from "./JadwalPengawasTab";
 import KartuUjianTab from "./KartuUjianTab";
 import PresensiBeritaAcaraTab from "./PresensiBeritaAcaraTab";
+import AnggaranBiayaTab from "./AnggaranBiayaTab";
+import PetunjukPenggunaanTab from "./PetunjukPenggunaanTab";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -79,6 +87,22 @@ const SUB_FITUR = [
     icon: FileText,
     status: "planned",
     clickable: false,
+  },
+  {
+    id: "anggaran-biaya",
+    title: "Anggaran & Biaya",
+    description: "Catat rencana anggaran & realisasi biaya per pos (ATK, konsumsi, honor, dll)",
+    icon: Wallet,
+    status: "done",
+    clickable: true,
+  },
+  {
+    id: "petunjuk-penggunaan",
+    title: "Petunjuk & Penggunaan Aplikasi",
+    description: "Panduan langkah demi langkah cara memakai tiap sub-fitur Manajemen Ujian",
+    icon: BookOpen,
+    status: "done",
+    clickable: true,
   },
 ];
 
@@ -136,6 +160,20 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     );
   }
 
+  if (activeSubFitur === "anggaran-biaya") {
+    return (
+      <AnggaranBiayaTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
+
+  if (activeSubFitur === "petunjuk-penggunaan") {
+    return <PetunjukPenggunaanTab showToast={showToast} onBack={() => setActiveSubFitur(null)} />;
+  }
+
   return (
     <div className="p-4 sm:p-6">
       <button
@@ -159,7 +197,8 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
             Sub-fitur akan diaktifkan satu per satu. Peserta & Pembagian Ruangan, Jadwal & Pengawas,
-            Kartu Ujian, dan Presensi & Berita Acara sudah bisa dipakai.
+            Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, dan Petunjuk & Penggunaan
+            Aplikasi sudah bisa dipakai.
           </p>
         </div>
       </div>
