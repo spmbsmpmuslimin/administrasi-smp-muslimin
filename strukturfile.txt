@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 15 Sep 2026, 10.06
+Di-download dari UI: 15 Sep 2026, 12.47
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 15 Sep 2026, 10.05
+Terakhir di-generate: 15 Sep 2026, 12.47
 ======================================================================
 |-- src
 |   |-- assets
@@ -244,6 +244,7 @@ Terakhir di-generate: 15 Sep 2026, 10.05
 |   |   |   |-- JenisUjianMenuTab.js
 |   |   |   |-- KartuUjianTab.js
 |   |   |   |-- KelolaUjianTab.js
+|   |   |   |-- LaporanRekapAkhirTab.js
 |   |   |   |-- PembagianRuanganTab.js
 |   |   |   |-- PetunjukPenggunaanTab.js
 |   |   |   |-- PresensiBeritaAcaraTab.js
@@ -254,6 +255,8 @@ Terakhir di-generate: 15 Sep 2026, 10.05
 |   |   |   |-- jadwalPengawasSupabase.js
 |   |   |   |-- kartuUjianPdf.js
 |   |   |   |-- kartuUjianSupabase.js
+|   |   |   |-- laporanRekapAkhirPdf.js
+|   |   |   |-- laporanRekapAkhirSupabase.js
 |   |   |   |-- noPeserta.js
 |   |   |   |-- pembagianRuanganSupabase.js
 |   |   |   |-- petunjukPenggunaanData.js
@@ -285,7 +288,8 @@ Terakhir di-generate: 15 Sep 2026, 10.05
 |   |   |-- ChangePasswordSection.js
 |   |   |-- Setting.js
 |   |   |-- TeacherAssignmentExcel.js
-|   |   `-- UserManagementTab.js
+|   |   |-- UserManagementTab.js
+|   |   `-- kelola-ujian.zip
 |   |-- spmb
 |   |   |-- ClassDistribution.js
 |   |   |-- ClassDivision.js
@@ -340,7 +344,7 @@ Terakhir di-generate: 15 Sep 2026, 10.05
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 15 Sep 2026, 10.05
+Terakhir di-generate: 15 Sep 2026, 12.47
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
@@ -375,6 +379,7 @@ kaldik_documents : id,academic_year,title,file_url,uploaded_by,created_at
 kelulusan_config : id,nilai_akhir_minimum,updated_at
 kkm_mapel : id,mata_pelajaran,kkm,updated_at
 konseling : id,student_id,nis,full_name,gender,class_id,tanggal,jenis_layanan,bidang_bimbingan,permasalahan,kronologi,tindakan_layanan,hasil_layanan,rencana_tindak_lanjut,status_layanan,guru_bk_id,guru_bk_name,academic_year,semester,created_at,updated_at,tingkat_urgensi,kategori_masalah,perlu_followup,tanggal_followup,academic_year_id
+laporan_rekap_ujian : id,ujian_id,keterangan_nilai,evaluasi_kendala,kesimpulan_saran,updated_at
 nilai_eraport : id,student_id,class_id,mata_pelajaran,guru_id,academic_year_id,semester,nilai_akhir,deskripsi_capaian,kkm,created_at,updated_at,created_by,updated_by
 nilai_eraport_detail : id,nilai_eraport_id,tujuan_pembelajaran_id,status_tercapai,created_at,updated_at
 notifications : id,recipient_id,type,title,message,student_id,note_id,class_id,created_by,created_by_name,is_read,read_at,created_at,student_name,category,label,note_content,action_taken
@@ -386,6 +391,7 @@ period_schedules : id,academic_year_id,day,period,start_time,end_time,session_ty
 peserta_ujian : id,ujian_id,siswa_id,nomor_ruangan,asal_kelas,created_at,no_peserta
 raport_config : id,class_id,mata_pelajaran,academic_year_id,kkm,created_at,updated_at,jenjang,semester,is_jenjang_default
 raport_metadata : id,academic_year_id,semester,tanggal_raport,tempat,nama_kepala_sekolah,nip_kepala_sekolah,ttd_kepala_sekolah,created_at,updated_at
+rekap_kehadiran_ujian : id,ujian_id,nomor_ruangan,jumlah_hadir,jumlah_tidak_hadir,keterangan,updated_at
 ruang_belajar : id,title,category,description,content,resource_type,thumbnail,url,estimated_minutes,is_featured,is_active,created_by,created_at,updated_at
 saran_masukan : id,student_id,class_id,message,status,created_at
 school_settings : id,setting_key,setting_value,created_at,updated_at

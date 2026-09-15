@@ -176,119 +176,121 @@ function generateKartuPesertaPdf({ daftarPeserta, jenisUjian, tahunAjaran, nomor
 }
 
 // ============================================================
-// KARTU PENGAWAS -- 1 kartu = 1 guru, isi rekap semua sesi &
-// ruangan yang dia pegang. 2 kartu per halaman (atas-bawah),
-// tinggi baris tabel fleksibel biar tetap muat berapa pun jumlah
-// sesinya.
+// KARTU PENGAWAS -- format ID CARD/NAME TAG buat digantung pakai
+// lanyard (BUKAN lagi kartu A4 lebar isi tabel jadwal lengkap).
+// Ukuran 9 x 13 cm portrait, 4 kartu per halaman A4 (grid 2x2,
+// dikasih garis potong + lingkaran penanda lubang lanyard di atas).
+// Rekap jadwal tetap ditampilkan tapi diringkas jadi list 2-baris
+// per sesi (bukan tabel 5 kolom) biar muat di kartu sempit.
 // ============================================================
 
-const PENGAWAS_PER_HALAMAN = 2;
+const LANYARD_LEBAR = 90; // mm (9 cm)
+const LANYARD_TINGGI = 130; // mm (13 cm)
+const LANYARD_KOLOM = 2;
+const LANYARD_BARIS = 2;
+const LANYARD_PER_HALAMAN = LANYARD_KOLOM * LANYARD_BARIS;
+const LANYARD_GUTTER = 5; // mm, jarak antar kartu buat garis gunting
 
 function gambarSatuKartuPengawas(
   doc,
   { x, y, width, height },
   { guru, jenisUjian, tahunAjaran, kepsek, tanggalCetak }
 ) {
+  // Border kartu (garis potong)
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.2);
   doc.rect(x, y, width, height);
 
-  const padding = 5;
+  const padding = 6;
   const innerLeft = x + padding;
   const innerRight = x + width - padding;
   const innerWidth = innerRight - innerLeft;
   const centerX = x + width / 2;
-  let cy = y + padding + 3.5;
+
+  // ---- Penanda lubang lanyard (cuma panduan visual, dilubangi manual) ----
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.2);
+  doc.circle(centerX, y + 7, 1.8, "S");
+
+  let cy = y + 15;
 
   // ---- Header ----
   doc.setTextColor(0, 0, 0);
   doc.setFont(PDF_FONT_FAMILY, "bold");
-  doc.setFontSize(10);
-  doc.text(SCHOOL_NAME, centerX, cy, { align: "center" });
-  cy += 4.2;
+  doc.setFontSize(8.5);
+  doc.text(SCHOOL_NAME, centerX, cy, { align: "center", maxWidth: innerWidth });
+  cy += 4;
 
+  doc.setFont(PDF_FONT_FAMILY, "normal");
+  doc.setFontSize(6.5);
+  doc.text("TANDA PENGENAL PENGAWAS UJIAN", centerX, cy, { align: "center" });
+  cy += 3.5;
+
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.15);
+  doc.line(innerLeft, cy, innerRight, cy);
+  cy += 6;
+
+  // ---- Nama guru (elemen paling menonjol di kartu) ----
   doc.setFont(PDF_FONT_FAMILY, "bold");
-  doc.setFontSize(7.5);
-  const judul = JUDUL_UJIAN[jenisUjian] || jenisUjian;
-  doc.text(judul, centerX, cy, { align: "center", maxWidth: innerWidth });
-  cy += 3.8;
+  doc.setFontSize(12);
+  const barisNama = doc.splitTextToSize(guru.nama || "-", innerWidth);
+  barisNama.forEach((line, i) => doc.text(line, centerX, cy + i * 5, { align: "center" }));
+  cy += barisNama.length * 5 + 2;
 
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(7.5);
-  doc.text(`TAHUN AJARAN ${tahunAjaran}`, centerX, cy, { align: "center" });
-  cy += 4.5;
-
-  doc.setFont(PDF_FONT_FAMILY, "bold");
-  doc.setFontSize(9);
-  doc.text("KARTU PENGAWAS UJIAN", centerX, cy, { align: "center" });
-  cy += 5.5;
-
-  doc.setFont(PDF_FONT_FAMILY, "bold");
-  doc.setFontSize(8.5);
-  doc.text(`Nama: ${guru.nama}`, innerLeft, cy);
-  cy += 4;
+  const judul = JUDUL_UJIAN[jenisUjian] || jenisUjian;
+  doc.text(judul, centerX, cy, { align: "center", maxWidth: innerWidth });
+  cy += 3.5;
+  doc.text(`Tahun Ajaran ${tahunAjaran}`, centerX, cy, { align: "center" });
+  cy += 5;
 
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.15);
   doc.line(innerLeft, cy, innerRight, cy);
   cy += 4;
 
-  // ---- Tabel jadwal ngawas ----
-  const kolom = [
-    { label: "Hari/Tanggal", w: 0.3 },
-    { label: "Jam Ke", w: 0.12 },
-    { label: "Waktu", w: 0.18 },
-    { label: "Mata Pelajaran", w: 0.26 },
-    { label: "Ruang", w: 0.14 },
-  ];
-  let colX = innerLeft;
-  const colPos = kolom.map((k) => {
-    const pos = { ...k, x: colX };
-    colX += innerWidth * k.w;
-    return pos;
-  });
-
+  // ---- Ringkasan jadwal ngawas -- list, bukan tabel (kartu terlalu
+  // sempit buat 5 kolom kayak versi A4 lama) ----
   doc.setFont(PDF_FONT_FAMILY, "bold");
-  doc.setFontSize(6.5);
-  colPos.forEach((k) => doc.text(k.label, k.x, cy));
-  cy += 1.2;
-  doc.setLineWidth(0.15);
-  doc.line(innerLeft, cy, innerRight, cy);
-  cy += 3;
+  doc.setFontSize(7);
+  doc.text("JADWAL MENGAWAS", innerLeft, cy);
+  cy += 4;
 
-  // Tinggi baris fleksibel: area tersisa di kartu dibagi rata ke semua
-  // baris, dibatasi min 4mm (biar tetap kebaca) dan max 7mm (biar nggak
-  // kelewat renggang kalau gurunya cuma ngawas 1-2 sesi).
-  const sisaTinggi = y + height - padding - cy;
+  // Tinggi baris fleksibel: sisa area dibagi rata ke semua sesi, dibatasi
+  // min 6.5mm (2 baris teks) dan max 10mm, dengan ruang footer tanda
+  // tangan (~24mm) tetap disisakan di bawah.
+  const footerReserved = 24;
+  const sisaTinggi = y + height - padding - footerReserved - cy;
   const jumlahBaris = guru.sesi.length || 1;
-  const tinggiBaris = Math.min(7, Math.max(4, sisaTinggi / jumlahBaris));
+  const tinggiBaris = Math.min(10, Math.max(6.5, sisaTinggi / jumlahBaris));
 
-  doc.setFont(PDF_FONT_FAMILY, "normal");
-  doc.setFontSize(6.5);
   guru.sesi.forEach((s) => {
     const waktu = s.waktu_mulai && s.waktu_selesai ? `${s.waktu_mulai}-${s.waktu_selesai}` : "-";
-    doc.text(formatHariTanggalSingkat(s.tanggal), colPos[0].x, cy, {
-      maxWidth: innerWidth * kolom[0].w - 1,
+    doc.setFont(PDF_FONT_FAMILY, "bold");
+    doc.setFontSize(6.5);
+    doc.text(`${formatHariTanggalSingkat(s.tanggal)} \u2022 Sesi ${s.sesi_ke}`, innerLeft, cy, {
+      maxWidth: innerWidth,
     });
-    doc.text(String(s.sesi_ke), colPos[1].x, cy);
-    doc.text(waktu, colPos[2].x, cy, { maxWidth: innerWidth * kolom[2].w - 1 });
-    doc.text(s.mata_pelajaran || "-", colPos[3].x, cy, { maxWidth: innerWidth * kolom[3].w - 1 });
-    doc.text(`Ruang ${s.nomor_ruangan}`, colPos[4].x, cy, {
-      maxWidth: innerWidth * kolom[4].w - 1,
+    doc.setFont(PDF_FONT_FAMILY, "normal");
+    doc.setFontSize(6.5);
+    doc.text(`${waktu}  \u2014  Ruang ${s.nomor_ruangan}`, innerLeft, cy + 3, {
+      maxWidth: innerWidth,
     });
     cy += tinggiBaris;
   });
 
-  // ---- Tanda tangan kepala sekolah (kolom kanan kartu, rata kiri -- lihat
-  // alasan & angka offset di gambarSatuKartu()) ----
-  const sigX = innerRight - 36;
+  // ---- Tanda tangan kepala sekolah -- dipusatkan (kartu terlalu sempit
+  // buat rata kiri kayak versi A4 lama) ----
   const ry0 = y + height - padding - 13;
   doc.setFont(PDF_FONT_FAMILY, "normal");
-  doc.setFontSize(6.5);
-  doc.text(`${kepsek.tempat}, ${tanggalCetak}`, sigX, ry0);
-  doc.text("Kepala Sekolah", sigX, ry0 + 3.2);
+  doc.setFontSize(6.3);
+  doc.text(`${kepsek.tempat}, ${tanggalCetak}`, centerX, ry0, { align: "center" });
+  doc.text("Kepala Sekolah", centerX, ry0 + 3.2, { align: "center" });
   doc.setFont(PDF_FONT_FAMILY, "bold");
-  doc.text(kepsek.nama, sigX, ry0 + 3.2 + 8);
+  doc.setFontSize(6.5);
+  doc.text(kepsek.nama, centerX, ry0 + 3.2 + 8, { align: "center" });
 }
 
 /**
@@ -306,9 +308,10 @@ function formatHariTanggalSingkat(tanggal) {
 }
 
 /**
- * Generate & langsung download PDF kartu pengawas -- 1 PDF berisi kartu
- * SEMUA guru yang kebagian jadwal ngawas di ujian ini, 2 kartu per
- * halaman (atas-bawah).
+ * Generate & langsung download PDF kartu pengawas -- 1 PDF berisi name
+ * tag/ID card SEMUA guru yang kebagian jadwal ngawas di ujian ini,
+ * ukuran 9x13 cm (lanyard), grid 2x2 = 4 kartu per halaman A4, dikasih
+ * garis potong + penanda lubang lanyard di tiap kartu.
  *
  * @param {Object} opts
  * @param {Array} opts.daftarGuruJadwal - dari ambilJadwalPengawasPerGuru(): [{guru_id, nama, sesi:[...]}]
@@ -325,8 +328,13 @@ function generateKartuPengawasPdf({ daftarGuruJadwal, jenisUjian, tahunAjaran, k
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  const cardWidth = pageWidth - MARGIN * 2;
-  const cardHeight = (pageHeight - MARGIN * 2 - GUTTER) / PENGAWAS_PER_HALAMAN;
+  // Grid kartu di-center ke halaman A4, bukan nempel ke MARGIN tetap --
+  // karena ukuran kartu sekarang fixed (9x13cm), sisa ruang di halaman
+  // dibagi rata jadi margin kiri-kanan/atas-bawah.
+  const totalLebarGrid = LANYARD_KOLOM * LANYARD_LEBAR + (LANYARD_KOLOM - 1) * LANYARD_GUTTER;
+  const totalTinggiGrid = LANYARD_BARIS * LANYARD_TINGGI + (LANYARD_BARIS - 1) * LANYARD_GUTTER;
+  const marginX = (pageWidth - totalLebarGrid) / 2;
+  const marginY = (pageHeight - totalTinggiGrid) / 2;
 
   const tanggalCetak = new Date().toLocaleDateString("id-ID", {
     day: "numeric",
@@ -335,15 +343,17 @@ function generateKartuPengawasPdf({ daftarGuruJadwal, jenisUjian, tahunAjaran, k
   });
 
   daftarGuruJadwal.forEach((guru, idx) => {
-    const posisiDiHalaman = idx % PENGAWAS_PER_HALAMAN;
+    const posisiDiHalaman = idx % LANYARD_PER_HALAMAN;
     if (idx > 0 && posisiDiHalaman === 0) doc.addPage();
 
-    const x = MARGIN;
-    const y = MARGIN + posisiDiHalaman * (cardHeight + GUTTER);
+    const kolom = posisiDiHalaman % LANYARD_KOLOM;
+    const baris = Math.floor(posisiDiHalaman / LANYARD_KOLOM);
+    const x = marginX + kolom * (LANYARD_LEBAR + LANYARD_GUTTER);
+    const y = marginY + baris * (LANYARD_TINGGI + LANYARD_GUTTER);
 
     gambarSatuKartuPengawas(
       doc,
-      { x, y, width: cardWidth, height: cardHeight },
+      { x, y, width: LANYARD_LEBAR, height: LANYARD_TINGGI },
       { guru, jenisUjian, tahunAjaran, kepsek, tanggalCetak }
     );
   });

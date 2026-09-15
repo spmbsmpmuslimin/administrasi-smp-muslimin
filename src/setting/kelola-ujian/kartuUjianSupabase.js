@@ -7,7 +7,11 @@
 //   lewat jadwalPengawasSupabase.js -- SENGAJA reuse fungsi yang sama biar
 //   nggak ada 2 cara beda buat ambil data yang identik)
 
-import { ambilJadwalSesi, ambilPengawasUntukJadwal } from "./jadwalPengawasSupabase";
+import {
+  ambilJadwalSesi,
+  ambilPengawasUntukJadwal,
+  ambilDaftarGuru,
+} from "./jadwalPengawasSupabase";
 
 /**
  * Ambil peserta 1 ruangan tertentu lengkap dengan data siswa (nama, NIS),
@@ -37,27 +41,42 @@ async function ambilPesertaRuangan(supabase, ujianId, nomorRuangan) {
  * Ambil semua sesi ujian + siapa aja pengawasnya, lalu dikelompokkan PER
  * GURU (bukan per sesi) -- karena Kartu Pengawas isinya 1 guru = 1 kartu,
  * berisi rekap semua sesi & ruangan yang dia pegang selama ujian ini.
+ *
+ * DIFILTER ke Daftar Pengawas resmi (users.kode_pengawas terisi, lewat
+ * ambilDaftarGuru() -- sumber yang sama dipakai DaftarPengawasTab.js &
+ * JadwalPengawasTab.js). Ini SENGAJA, bukan sekadar filter role: kalau
+ * suatu saat ada baris nyasar di `ujian_pengawas` (guru_id ke-assign
+ * padahal bukan/belum ditambahin ke Daftar Pengawas -- misklik pas isi
+ * jadwal, dsb), orang itu otomatis di-skip di sini dan gak ikut kecetak
+ * di Kartu Pengawas, tanpa perlu bersih-bersih manual ke database dulu.
  * @returns {Promise<Array>} [{ guru_id, nama, sesi: [{tanggal, sesi_ke, waktu_mulai, waktu_selesai, mata_pelajaran, nomor_ruangan}] }]
  */
 async function ambilJadwalPengawasPerGuru(supabase, ujianId) {
-  const daftarJadwal = await ambilJadwalSesi(supabase, ujianId);
+  const [daftarJadwal, daftarPengawasResmi] = await Promise.all([
+    ambilJadwalSesi(supabase, ujianId),
+    ambilDaftarGuru(supabase),
+  ]);
+  const idPengawasResmi = new Set(daftarPengawasResmi.map((g) => g.id));
+
   const perGuru = {};
 
   for (const jadwal of daftarJadwal) {
     const pengawasSesi = await ambilPengawasUntukJadwal(supabase, jadwal.id);
-    pengawasSesi.forEach((p) => {
-      if (!perGuru[p.guru_id]) {
-        perGuru[p.guru_id] = { guru_id: p.guru_id, nama: p.nama, sesi: [] };
-      }
-      perGuru[p.guru_id].sesi.push({
-        tanggal: jadwal.tanggal,
-        sesi_ke: jadwal.sesi_ke,
-        waktu_mulai: jadwal.waktu_mulai,
-        waktu_selesai: jadwal.waktu_selesai,
-        mata_pelajaran: jadwal.mata_pelajaran,
-        nomor_ruangan: p.nomor_ruangan,
+    pengawasSesi
+      .filter((p) => idPengawasResmi.has(p.guru_id))
+      .forEach((p) => {
+        if (!perGuru[p.guru_id]) {
+          perGuru[p.guru_id] = { guru_id: p.guru_id, nama: p.nama, sesi: [] };
+        }
+        perGuru[p.guru_id].sesi.push({
+          tanggal: jadwal.tanggal,
+          sesi_ke: jadwal.sesi_ke,
+          waktu_mulai: jadwal.waktu_mulai,
+          waktu_selesai: jadwal.waktu_selesai,
+          mata_pelajaran: jadwal.mata_pelajaran,
+          nomor_ruangan: p.nomor_ruangan,
+        });
       });
-    });
   }
 
   const hasil = Object.values(perGuru).map((g) => ({
