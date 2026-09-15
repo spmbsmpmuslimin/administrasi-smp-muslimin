@@ -11,7 +11,9 @@
 //    Jadwal Sesi, Daftar Pengawas, dan Jadwal Ngawas. "Daftar Pengawas"
 //    dulu kartu sendiri, sekarang di-embed di sini (lihat JadwalPengawasTab.js).
 // 3. Kartu Ujian (aktif)
-// 4. Presensi, Berita Acara & Laporan (belum dibangun)
+// 4. Presensi & Berita Acara (aktif) -- bagian "Laporan" (rekap akhir)
+//    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
+//    kosong buat dicetak & diisi manual, lihat PresensiBeritaAcaraTab.js).
 // 5. Kepanitiaan & Regulasi (belum dibangun)
 
 import React, { useState } from "react";
@@ -27,6 +29,7 @@ import {
 import PembagianRuanganTab from "./PembagianRuanganTab";
 import JadwalPengawasTab from "./JadwalPengawasTab";
 import KartuUjianTab from "./KartuUjianTab";
+import PresensiBeritaAcaraTab from "./PresensiBeritaAcaraTab";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -63,11 +66,11 @@ const SUB_FITUR = [
   },
   {
     id: "laporan",
-    title: "Presensi, Berita Acara & Laporan",
-    description: "Daftar hadir, berita acara, serah terima lembar jawab, dan laporan akhir",
+    title: "Presensi & Berita Acara",
+    description: "Cetak PDF Daftar Hadir & Berita Acara per sesi/ruangan (diisi & TTD manual)",
     icon: FileBarChart2,
-    status: "planned",
-    clickable: false,
+    status: "done",
+    clickable: true,
   },
   {
     id: "kepanitiaan",
@@ -123,6 +126,16 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     );
   }
 
+  if (activeSubFitur === "laporan") {
+    return (
+      <PresensiBeritaAcaraTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6">
       <button
@@ -146,7 +159,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
             Sub-fitur akan diaktifkan satu per satu. Peserta & Pembagian Ruangan, Jadwal & Pengawas,
-            dan Kartu Ujian sudah bisa dipakai.
+            Kartu Ujian, dan Presensi & Berita Acara sudah bisa dipakai.
           </p>
         </div>
       </div>
