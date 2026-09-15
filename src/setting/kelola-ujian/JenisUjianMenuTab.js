@@ -203,7 +203,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {SUB_FITUR.map((fitur) => {
           const IconComponent = fitur.icon;
           const statusStyle = STATUS_STYLE[fitur.status];

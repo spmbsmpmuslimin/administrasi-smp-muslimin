@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 14 Sep 2026, 20.42
+Di-download dari UI: 15 Sep 2026, 10.06
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 14 Sep 2026, 20.38
+Terakhir di-generate: 15 Sep 2026, 10.05
 ======================================================================
 |-- src
 |   |-- assets
@@ -238,17 +238,28 @@ Terakhir di-generate: 14 Sep 2026, 20.38
 |   |   |   |-- KelolaJamPelajaran.js
 |   |   |   `-- useJadwalMassalLogic.js
 |   |   |-- kelola-ujian
+|   |   |   |-- AnggaranBiayaTab.js
 |   |   |   |-- DaftarPengawasTab.js
 |   |   |   |-- JadwalPengawasTab.js
 |   |   |   |-- JenisUjianMenuTab.js
 |   |   |   |-- KartuUjianTab.js
 |   |   |   |-- KelolaUjianTab.js
 |   |   |   |-- PembagianRuanganTab.js
+|   |   |   |-- PetunjukPenggunaanTab.js
+|   |   |   |-- PresensiBeritaAcaraTab.js
+|   |   |   |-- anggaranBiayaSupabase.js
 |   |   |   |-- bagiRuangan.js
+|   |   |   |-- daftarPesertaExcelExport.js
+|   |   |   |-- daftarPesertaPdfExport.js
 |   |   |   |-- jadwalPengawasSupabase.js
 |   |   |   |-- kartuUjianPdf.js
 |   |   |   |-- kartuUjianSupabase.js
-|   |   |   `-- pembagianRuanganSupabase.js
+|   |   |   |-- noPeserta.js
+|   |   |   |-- pembagianRuanganSupabase.js
+|   |   |   |-- petunjukPenggunaanData.js
+|   |   |   |-- petunjukPenggunaanPdf.js
+|   |   |   |-- presensiBeritaAcaraPdf.js
+|   |   |   `-- presensiBeritaAcaraSupabase.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
 |   |   |   `-- PortalSiswaTab.js
@@ -329,11 +340,12 @@ Terakhir di-generate: 14 Sep 2026, 20.38
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 14 Sep 2026, 20.38
+Terakhir di-generate: 15 Sep 2026, 10.05
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
 academic_years : id,year,semester,start_date,end_date,is_active,created_at,updated_at
+anggaran_ujian : id,ujian_id,kategori,uraian,anggaran,realisasi,keterangan,created_at
 announcement : id,title,content,created_at,updated_at,effective_from,effective_until,target_role,is_active
 announcement_reads : id,announcement_id,user_id,read_at,created_at
 app_config : id,is_maintenance,maintenance_message,updated_at
@@ -371,7 +383,7 @@ other_fee_payments : id,bill_id,student_id,amount_paid,payment_date,payment_meth
 peminjaman : id,buku_id,judul_buku_snapshot,nama_peminjam,no_anggota,tanggal_pinjam,tanggal_jatuh_tempo,tanggal_kembali,status,denda,kondisi_buku,catatan,petugas_id,created_at,updated_at,peminjam_student_id
 pengumuman_siswa : id,title,content,target_class,created_by,is_pinned,created_at,updated_at
 period_schedules : id,academic_year_id,day,period,start_time,end_time,session_type,label,created_at,updated_at
-peserta_ujian : id,ujian_id,siswa_id,nomor_ruangan,no_peserta,asal_kelas,created_at
+peserta_ujian : id,ujian_id,siswa_id,nomor_ruangan,asal_kelas,created_at,no_peserta
 raport_config : id,class_id,mata_pelajaran,academic_year_id,kkm,created_at,updated_at,jenjang,semester,is_jenjang_default
 raport_metadata : id,academic_year_id,semester,tanggal_raport,tempat,nama_kepala_sekolah,nip_kepala_sekolah,ttd_kepala_sekolah,created_at,updated_at
 ruang_belajar : id,title,category,description,content,resource_type,thumbnail,url,estimated_minutes,is_featured,is_active,created_by,created_at,updated_at
