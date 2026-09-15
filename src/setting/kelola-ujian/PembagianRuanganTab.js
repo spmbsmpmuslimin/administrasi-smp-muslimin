@@ -4,6 +4,12 @@
 // dulu, belum nyimpen ke DB) -> kalau udah oke, "Simpan ke Database".
 // Proses ulang aman dipanggil berkali-kali (lihat simpanPembagianRuangan
 // di pembagianRuanganSupabase.js -- data lama dihapus dulu tiap simpan).
+//
+// Kelas peserta per jenis ujian (PSAS = 7-9, PSAT = 7-8, PSAJ = 9 saja)
+// SUDAH otomatis difilter di prosesPembagianRuangan() lewat
+// KONFIGURASI_JENIS_UJIAN[jenisUjian].grades -- jadi sengaja TIDAK ada
+// dropdown "pilih kelas" manual di UI ini, admin cukup pilih jenis ujian
+// di layar sebelumnya.
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -40,6 +46,15 @@ const JENIS_UJIAN_LABEL = {
   PSAT: "PSAT - Penilaian Sumatif Akhir Tahun (kelas 7-8)",
   PSAJ: "PSAJ - Penilaian Sumatif Akhir Jenjang (kelas 9)",
 };
+
+// Definisi 3 tab di bagian bawah (dulu masing-masing ditulis manual jadi
+// 3 blok JSX yang identik kecuali label/ikon) -- sekarang cukup 1 array
+// yang di-map, biar kalau nambah/ubah tab nggak perlu copy-paste style-nya lagi.
+const TAB_LIST = [
+  { id: "edit", label: "Pembagian Ruangan", icon: Table2 },
+  { id: "preview", label: "Preview Per Ruangan", icon: Eye },
+  { id: "export", label: "Export Daftar Peserta", icon: FileSpreadsheet },
+];
 
 // Cari kolom yang paling masuk akal buat label tahun ajaran, karena kita
 // nggak tau pasti nama kolomnya (year / tahun_ajaran / name / dst)
@@ -222,17 +237,26 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
 
   // Total quota per kelas SAAT INI (setelah admin ubah2), buat dibandingin
   // sama targetPerKelas -- ini yang nentuin tombol Simpan boleh diklik atau nggak.
-  const totalPerKelasSaatIni = {};
-  (quotaPerRuangan || []).forEach((r) => {
-    Object.entries(r.quota).forEach(([kelas, jumlah]) => {
-      totalPerKelasSaatIni[kelas] = (totalPerKelasSaatIni[kelas] || 0) + (Number(jumlah) || 0);
+  // Di-useMemo biar konsisten sama derived state lain di file ini (hasilLive,
+  // petaNoPeserta) -- cuma dihitung ulang kalau quotaPerRuangan beneran berubah.
+  const totalPerKelasSaatIni = useMemo(() => {
+    const totals = {};
+    (quotaPerRuangan || []).forEach((r) => {
+      Object.entries(r.quota).forEach(([kelas, jumlah]) => {
+        totals[kelas] = (totals[kelas] || 0) + (Number(jumlah) || 0);
+      });
     });
-  });
-  const quotaValid =
-    quotaPerRuangan != null &&
-    daftarKelas.every(
-      (kelas) => (totalPerKelasSaatIni[kelas] || 0) === (targetPerKelas[kelas] || 0)
-    );
+    return totals;
+  }, [quotaPerRuangan]);
+
+  const quotaValid = useMemo(
+    () =>
+      quotaPerRuangan != null &&
+      daftarKelas.every(
+        (kelas) => (totalPerKelasSaatIni[kelas] || 0) === (targetPerKelas[kelas] || 0)
+      ),
+    [quotaPerRuangan, daftarKelas, totalPerKelasSaatIni, targetPerKelas]
+  );
 
   const handleUbahQuota = (nomorRuangan, kelas, valueBaru) => {
     setQuotaPerRuangan((prev) =>
@@ -442,38 +466,25 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
             </span>
           </div>
 
-          {/* Tab switcher: Pembagian Ruangan <-> Preview Per Ruangan */}
-          <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => setTabAktif("edit")}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tabAktif === "edit"
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <Table2 size={15} /> Pembagian Ruangan
-            </button>
-            <button
-              onClick={() => setTabAktif("preview")}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tabAktif === "preview"
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <Eye size={15} /> Preview Per Ruangan
-            </button>
-            <button
-              onClick={() => setTabAktif("export")}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tabAktif === "export"
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <FileSpreadsheet size={15} /> Export Daftar Peserta
-            </button>
+          {/* Tab switcher: Pembagian Ruangan <-> Preview Per Ruangan <-> Export.
+              flex-wrap supaya 3 tab ini nggak kepotong/nyempil di layar HP sempit. */}
+          <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
+            {TAB_LIST.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setTabAktif(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                    tabAktif === tab.id
+                      ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <Icon size={15} /> {tab.label}
+                </button>
+              );
+            })}
           </div>
 
           {tabAktif === "edit" && (
@@ -721,7 +732,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
                 <button
                   onClick={handleExportExcel}
                   disabled={mengexport || hasilLive.length === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
                 >
                   {mengexport ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -734,7 +745,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
                 <button
                   onClick={handleExportPdf}
                   disabled={mengexportPdf || hasilLive.length === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 w-full sm:w-auto bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
                 >
                   {mengexportPdf ? (
                     <Loader2 size={16} className="animate-spin" />

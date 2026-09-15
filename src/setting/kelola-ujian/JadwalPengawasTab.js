@@ -131,6 +131,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   // supaya gampang dipetakan ke tiap kolom sesi di tabel rekap. ----
   const [rekapPerJadwal, setRekapPerJadwal] = useState({}); // { [jadwalId]: { [nomor_ruangan]: [{id, nama}] } }
   const [loadingRekap, setLoadingRekap] = useState(false);
+  const [hariRekapAktif, setHariRekapAktif] = useState(null);
 
   const semesterDibutuhkan = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.semester;
   // Kalau jenis ujian tidak dikenal (semesterDibutuhkan undefined), filter
@@ -308,6 +309,18 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
       setHariAktif(jadwalPerHari[0].tanggal);
     }
   }, [tabAktif, jadwalPerHari, hariAktif]);
+
+  // Sama kayak default hari aktif di tab "Jadwal Ngawas" di atas, tapi
+  // buat state hari yang dipakai tab "Rekap" -- dipisah state-nya
+  // (bukan gantian pakai hariAktif) supaya pilihan hari di 2 tab ini
+  // independen satu sama lain.
+  useEffect(() => {
+    if (tabAktif !== "rekap" || jadwalPerHari.length === 0) return;
+    const hariMasihValid = jadwalPerHari.some((h) => h.tanggal === hariRekapAktif);
+    if (!hariRekapAktif || !hariMasihValid) {
+      setHariRekapAktif(jadwalPerHari[0].tanggal);
+    }
+  }, [tabAktif, jadwalPerHari, hariRekapAktif]);
 
   // Begitu hari aktif berubah, tampilan pengawas ngikut ke sesi PERTAMA
   // hari itu (base assignment) -- efek ambilPengawasUntukJadwal di atas
@@ -936,75 +949,102 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
                   <Loader2 size={14} className="animate-spin" /> Memuat rekap pengawas...
                 </p>
               ) : (
-                <div className="space-y-8">
-                  {jadwalPerHari.map((h) => {
-                    const sesiHariIni = [...h.sesi].sort((a, b) => a.sesi_ke - b.sesi_ke);
-                    return (
-                      <div key={h.tanggal}>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                          {formatHariTanggal(h.tanggal)}
-                        </p>
-                        {daftarRuanganUrut.length === 0 ? (
+                <>
+                  {/* ---- Pilih hari pelaksanaan -- pola sama persis kayak
+                      selector hari di tab "Jadwal Ngawas", biar konsisten:
+                      nama-nama hari tampil sebagai tombol di atas, lalu
+                      cuma rekap hari yang dipilih yang ditampilkan di
+                      bawahnya (dulu semua hari ditumpuk sekaligus). ---- */}
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Pilih hari pelaksanaan:
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    {jadwalPerHari.map((h) => (
+                      <button
+                        key={h.tanggal}
+                        onClick={() => setHariRekapAktif(h.tanggal)}
+                        className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                          hariRekapAktif === h.tanggal
+                            ? "bg-indigo-600 border-indigo-600 text-white"
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-indigo-300 dark:hover:border-indigo-700"
+                        }`}
+                      >
+                        {formatHariTanggal(h.tanggal)}
+                        <span className="opacity-70"> ({h.sesi.length} sesi)</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {hariRekapAktif &&
+                    (() => {
+                      const hariTerpilih = jadwalPerHari.find((h) => h.tanggal === hariRekapAktif);
+                      if (!hariTerpilih) return null;
+                      const sesiHariIni = [...hariTerpilih.sesi].sort(
+                        (a, b) => a.sesi_ke - b.sesi_ke
+                      );
+
+                      if (daftarRuanganUrut.length === 0) {
+                        return (
                           <p className="text-xs text-gray-400 italic">
                             Belum ada data ruangan untuk ujian ini.
                           </p>
-                        ) : (
-                          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                            <table className="w-full text-xs sm:text-sm border-collapse">
-                              <thead>
-                                <tr className="text-left text-gray-600 dark:text-gray-400">
-                                  <th className="py-2 pr-3 font-medium whitespace-nowrap">Ruang</th>
-                                  {sesiHariIni.map((s) => (
-                                    <th
-                                      key={s.id}
-                                      className="py-2 pr-3 font-medium whitespace-nowrap"
-                                    >
-                                      Jam Ke {s.sesi_ke}
-                                      <span className="block font-normal text-[11px] text-gray-500 dark:text-gray-400">
-                                        {s.mata_pelajaran}
-                                        {s.waktu_mulai && s.waktu_selesai
-                                          ? ` (${s.waktu_mulai}–${s.waktu_selesai})`
-                                          : ""}
-                                      </span>
-                                    </th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {daftarRuanganUrut.map((r) => (
-                                  <tr
-                                    key={r.nomor_ruangan}
-                                    className="border-t border-gray-100 dark:border-gray-700"
+                        );
+                      }
+
+                      return (
+                        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                          <table className="w-full text-xs sm:text-sm border-collapse">
+                            <thead>
+                              <tr className="text-left text-gray-600 dark:text-gray-400">
+                                <th className="py-2 pr-3 font-medium whitespace-nowrap">Ruang</th>
+                                {sesiHariIni.map((s) => (
+                                  <th
+                                    key={s.id}
+                                    className="py-2 pr-3 font-medium whitespace-nowrap"
                                   >
-                                    <td className="py-2 pr-3 font-medium whitespace-nowrap text-gray-800 dark:text-gray-100">
-                                      Ruang {r.nomor_ruangan}
-                                    </td>
-                                    {sesiHariIni.map((s) => {
-                                      const pengawas =
-                                        rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
-                                      return (
-                                        <td
-                                          key={s.id}
-                                          className="py-2 pr-3 text-gray-700 dark:text-gray-300"
-                                        >
-                                          {pengawas.length === 0 ? (
-                                            <span className="text-gray-400 italic">Belum ada</span>
-                                          ) : (
-                                            pengawas.map((p) => p.nama).join(", ")
-                                          )}
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
+                                    Jam Ke {s.sesi_ke}
+                                    <span className="block font-normal text-[11px] text-gray-500 dark:text-gray-400">
+                                      {s.mata_pelajaran}
+                                      {s.waktu_mulai && s.waktu_selesai
+                                        ? ` (${s.waktu_mulai}–${s.waktu_selesai})`
+                                        : ""}
+                                    </span>
+                                  </th>
                                 ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {daftarRuanganUrut.map((r) => (
+                                <tr
+                                  key={r.nomor_ruangan}
+                                  className="border-t border-gray-100 dark:border-gray-700"
+                                >
+                                  <td className="py-2 pr-3 font-medium whitespace-nowrap text-gray-800 dark:text-gray-100">
+                                    Ruang {r.nomor_ruangan}
+                                  </td>
+                                  {sesiHariIni.map((s) => {
+                                    const pengawas = rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
+                                    return (
+                                      <td
+                                        key={s.id}
+                                        className="py-2 pr-3 text-gray-700 dark:text-gray-300"
+                                      >
+                                        {pengawas.length === 0 ? (
+                                          <span className="text-gray-400 italic">Belum ada</span>
+                                        ) : (
+                                          pengawas.map((p) => p.nama).join(", ")
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                </>
               )}
             </div>
           )}
