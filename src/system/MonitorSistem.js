@@ -19,6 +19,10 @@ import ActiveUsersTab from "./ActiveUsersTab";
 // perlu grep manual tiap kali ketemu bug "role X kelewat di allowedRoles
 // / role-check manual" kayak developer/tu kemarin.
 import RoleAccessAudit from "./RoleAccessAudit";
+// ✅ BARU (Sep 2026): dashboard cek tabel mana yang udah bisa di-CRUD
+// penuh lewat UI vs yang masih butuh akses Supabase manual. Sumber
+// datanya dari coverageMap.js (isi manual per tabel).
+import CoverageChecker from "./CoverageChecker";
 // ✅ BARU (Sep 2026): SystemTab.js (export CSV, backup/restore database)
 // dipindah ke sini juga dari Setting.js grup "Data & Sistem", nyusul
 // MaintenanceModeTab & ActiveUsersTab. Beda dari 2 komponen itu, SystemTab
@@ -39,6 +43,7 @@ import {
   Wrench,
   UserCheck,
   ShieldCheck,
+  ListChecks,
 } from "lucide-react";
 
 // Palet pastel per kartu menu, sama persis pendekatannya kayak di
@@ -211,6 +216,17 @@ function MonitorSistem({ user, onShowToast }) {
       icon: ShieldCheck,
       color: "indigo",
       component: RoleAccessAudit,
+      available: isMaintenanceOrActiveUserAllowed,
+    },
+    // ✅ BARU (Sep 2026): cek tabel mana yang udah full CRUD lewat UI vs
+    // yang masih butuh buka Supabase manual buat operasionalnya.
+    {
+      id: "coverage",
+      title: "Coverage Checker",
+      description: "Cek tabel mana yang sudah full lewat UI vs masih butuh Supabase manual",
+      icon: ListChecks,
+      color: "violet",
+      component: CoverageChecker,
       available: isMaintenanceOrActiveUserAllowed,
     },
   ];

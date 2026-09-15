@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 15 Sep 2026, 12.47
+Di-download dari UI: 15 Sep 2026, 19.26
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 15 Sep 2026, 12.47
+Terakhir di-generate: 15 Sep 2026, 19.19
 ======================================================================
 |-- src
 |   |-- assets
@@ -240,6 +240,7 @@ Terakhir di-generate: 15 Sep 2026, 12.47
 |   |   |-- kelola-ujian
 |   |   |   |-- AnggaranBiayaTab.js
 |   |   |   |-- DaftarPengawasTab.js
+|   |   |   |-- ExportSemuaTab.js
 |   |   |   |-- JadwalPengawasTab.js
 |   |   |   |-- JenisUjianMenuTab.js
 |   |   |   |-- KartuUjianTab.js
@@ -252,6 +253,7 @@ Terakhir di-generate: 15 Sep 2026, 12.47
 |   |   |   |-- bagiRuangan.js
 |   |   |   |-- daftarPesertaExcelExport.js
 |   |   |   |-- daftarPesertaPdfExport.js
+|   |   |   |-- exportSemuaKelolaUjian.js
 |   |   |   |-- jadwalPengawasSupabase.js
 |   |   |   |-- kartuUjianPdf.js
 |   |   |   |-- kartuUjianSupabase.js
@@ -288,8 +290,7 @@ Terakhir di-generate: 15 Sep 2026, 12.47
 |   |   |-- ChangePasswordSection.js
 |   |   |-- Setting.js
 |   |   |-- TeacherAssignmentExcel.js
-|   |   |-- UserManagementTab.js
-|   |   `-- kelola-ujian.zip
+|   |   `-- UserManagementTab.js
 |   |-- spmb
 |   |   |-- ClassDistribution.js
 |   |   |-- ClassDivision.js
@@ -313,6 +314,7 @@ Terakhir di-generate: 15 Sep 2026, 12.47
 |   |   |-- BlockUserTab.js
 |   |   |-- CodeAudit.js
 |   |   |-- ConnectedDevicesAdminTab.js
+|   |   |-- CoverageChecker.js
 |   |   |-- DatabaseCleanupMonitor.js
 |   |   |-- HealthChecker.js
 |   |   |-- MaintenanceModeTab.js
@@ -325,6 +327,7 @@ Terakhir di-generate: 15 Sep 2026, 12.47
 |   |   |-- StrukturSistem.js
 |   |   |-- StudentConnectedDevicesAdminTab.js
 |   |   |-- SystemTab.js
+|   |   |-- coverageMap.js
 |   |   `-- debugLog.js
 |   |-- utils
 |   |   |-- deviceInfo.js
@@ -344,7 +347,7 @@ Terakhir di-generate: 15 Sep 2026, 12.47
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 15 Sep 2026, 12.47
+Terakhir di-generate: 15 Sep 2026, 19.19
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
