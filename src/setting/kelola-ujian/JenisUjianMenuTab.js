@@ -22,7 +22,11 @@
 // 8. Laporan Rekap Akhir (aktif) -- kumpulan rekap dari sub-fitur lain
 //    (peserta, pengawas, anggaran) + input manual kehadiran & catatan
 //    evaluasi, bahan Laporan Pelaksanaan Ujian. Lihat LaporanRekapAkhirTab.js
-//    & laporanRekapAkhirSupabase.js. Item "Export PDF" masih placeholder.
+//    & laporanRekapAkhirSupabase.js.
+// 9. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
+//    kartu sub-fitur, karena bukan area kerja tersendiri). Checklist semua
+//    dokumen PDF dari sub-fitur 1-4 & 8, query ulang dari DB (bukan reuse
+//    state tab lain). Lihat ExportSemuaTab.js & exportSemuaKelolaUjian.js.
 
 import React, { useState } from "react";
 import {
@@ -36,6 +40,7 @@ import {
   Wallet,
   BookOpen,
   Construction,
+  FileDown,
 } from "lucide-react";
 import PembagianRuanganTab from "./PembagianRuanganTab";
 import JadwalPengawasTab from "./JadwalPengawasTab";
@@ -44,6 +49,7 @@ import PresensiBeritaAcaraTab from "./PresensiBeritaAcaraTab";
 import AnggaranBiayaTab from "./AnggaranBiayaTab";
 import PetunjukPenggunaanTab from "./PetunjukPenggunaanTab";
 import LaporanRekapAkhirTab from "./LaporanRekapAkhirTab";
+import ExportSemuaTab from "./ExportSemuaTab";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -199,6 +205,16 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     );
   }
 
+  if (activeSubFitur === "export-semua") {
+    return (
+      <ExportSemuaTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6">
       <button
@@ -208,10 +224,17 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
         <ChevronLeft size={16} /> Ganti Jenis Ujian
       </button>
 
-      <div className="mb-5">
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
         <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
           {JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian}
         </h2>
+        <button
+          onClick={() => setActiveSubFitur("export-semua")}
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all active:scale-95"
+        >
+          <FileDown className="w-3.5 h-3.5" />
+          Export Semua (PDF)
+        </button>
       </div>
 
       <div className="flex items-start gap-3 p-4 mb-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl">
