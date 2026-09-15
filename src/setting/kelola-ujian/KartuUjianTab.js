@@ -139,12 +139,12 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
     try {
       const [daftarPeserta, kepsek] = await Promise.all([
         ambilPesertaRuangan(supabase, ujian.id, nomorRuangan),
-        ambilMetadataKepsek(supabase, ta.id, ta.semester),
+        ambilMetadataKepsek(supabase),
       ]);
 
       if (kepsek.nama === "-") {
         showToast?.(
-          "Nama kepala sekolah belum diisi di Raport Config untuk tahun ajaran ini -- kartu tetap dicetak, tapi kolom nama kepsek kosong",
+          "Nama kepala sekolah belum diisi di Setting > Profil Sekolah -- kartu tetap dicetak, tapi kolom nama kepsek kosong",
           "error"
         );
       }
@@ -171,10 +171,10 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
 
     setMencetakSemuaPengawas(true);
     try {
-      const kepsek = await ambilMetadataKepsek(supabase, ta.id, ta.semester);
+      const kepsek = await ambilMetadataKepsek(supabase);
       if (kepsek.nama === "-") {
         showToast?.(
-          "Nama kepala sekolah belum diisi di Raport Config untuk tahun ajaran ini -- kartu tetap dicetak, tapi kolom nama kepsek kosong",
+          "Nama kepala sekolah belum diisi di Setting > Profil Sekolah -- kartu tetap dicetak, tapi kolom nama kepsek kosong",
           "error"
         );
       }

@@ -16,6 +16,9 @@ import {
   Trash2,
   Table2,
   Eye,
+  FileSpreadsheet,
+  FileText,
+  Loader2,
 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import {
@@ -28,6 +31,9 @@ import {
   KONFIGURASI_JENIS_UJIAN,
 } from "./pembagianRuanganSupabase";
 import { terapkanQuotaManual, hitungTotalPerKelas } from "./bagiRuangan";
+import { exportDaftarPesertaUjian } from "./daftarPesertaExcelExport";
+import { exportDaftarPesertaUjianPdf } from "./daftarPesertaPdfExport";
+import { bangunPetaNoPeserta } from "./noPeserta";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester (kelas 7-9)",
@@ -75,6 +81,11 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
   const [tabAktif, setTabAktif] = useState("edit");
   // Ruangan yang lagi dipilih di dropdown tab Preview
   const [ruanganPreviewAktif, setRuanganPreviewAktif] = useState(null);
+  // Tab "Export Daftar": ruangan mana yang mau diexport. "semua" = semua
+  // ruangan jadi 1 file (1 sheet per ruangan), selain itu isinya nomor ruangan.
+  const [ruanganExport, setRuanganExport] = useState("semua");
+  const [mengexport, setMengexport] = useState(false);
+  const [mengexportPdf, setMengexportPdf] = useState(false);
 
   // Tahun ajaran yang relevan sama jenis ujian yang dipilih (PSAS = semester
   // ganjil/1, PSAT & PSAJ = semester genap/2). Kalau nggak ada yang cocok,
@@ -262,13 +273,82 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         (r) => r.siswa.length > 0
       );
       const ujian = await getOrCreateUjian(supabase, jenisUjian, tahunAjaranId, kapasitas);
-      const jumlah = await simpanPembagianRuangan(supabase, ujian.id, hasilFinal);
+      const jumlah = await simpanPembagianRuangan(
+        supabase,
+        ujian.id,
+        hasilFinal,
+        labelTahunAjaranAktif
+      );
       showToast?.(`Berhasil disimpan: ${jumlah} siswa ke ${hasilFinal.length} ruangan`, "success");
     } catch (err) {
       console.error(err);
       showToast?.("Gagal menyimpan ke database: " + err.message, "error");
     } finally {
       setMenyimpan(false);
+    }
+  };
+
+  // Label tahun ajaran yang lagi dipilih (mis. "2026/2027"), dipakai di
+  // letterhead file Excel. Diambil dari record academic_years yang lagi
+  // aktif di dropdown -- bukan diketik manual, biar ikut kebawa otomatis
+  // kalau tahun ajarannya ganti.
+  const labelTahunAjaranAktif = useMemo(() => {
+    const ta = daftarTahunAjaran.find((t) => t.id === tahunAjaranId);
+    return ta ? labelTahunAjaran(ta) : "";
+  }, [daftarTahunAjaran, tahunAjaranId]);
+
+  // Peta No. Peserta buat tab "Preview Per Ruangan" -- dihitung dari
+  // hasilLive UTUH (semua ruangan, bukan cuma yang lagi dipilih di
+  // dropdown) biar nomornya urut lintas ruangan, PERSIS sama kayak yang
+  // dipakai di daftarPesertaExcelExport.js.
+  const petaNoPeserta = useMemo(
+    () => bangunPetaNoPeserta(hasilLive, labelTahunAjaranAktif),
+    [hasilLive, labelTahunAjaranAktif]
+  );
+
+  const handleExportExcel = async () => {
+    setMengexport(true);
+    try {
+      // hasilLive dikirim UTUH (bukan difilter di sini) walaupun yang dicetak
+      // cuma 1 ruangan -- nomor peserta urut lintas ruangan, jadi fungsi
+      // export butuh lihat semuanya dulu baru motong.
+      //
+      // Sengaja pakai hasilLive (bukan narik ulang dari DB) supaya yang
+      // keexport PERSIS yang lagi keliatan di layar, termasuk kalau admin
+      // baru ngubah quota dan belum sempat klik "Simpan ke Database".
+      await exportDaftarPesertaUjian({
+        semuaRuangan: hasilLive,
+        nomorRuangan: ruanganExport === "semua" ? null : Number(ruanganExport),
+        jenisUjian,
+        tahunAjaran: labelTahunAjaranAktif,
+        showToast,
+      });
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal export Excel: " + err.message, "error");
+    } finally {
+      setMengexport(false);
+    }
+  };
+
+  // Sama persis alurnya dengan handleExportExcel di atas -- cuma manggil
+  // fungsi PDF-nya, dan hasilLive yang dikirim juga UTUH (bukan difilter
+  // duluan) karena nomor peserta harus urut lintas ruangan.
+  const handleExportPdf = async () => {
+    setMengexportPdf(true);
+    try {
+      await exportDaftarPesertaUjianPdf({
+        semuaRuangan: hasilLive,
+        nomorRuangan: ruanganExport === "semua" ? null : Number(ruanganExport),
+        jenisUjian,
+        tahunAjaran: labelTahunAjaranAktif,
+        showToast,
+      });
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal export PDF: " + err.message, "error");
+    } finally {
+      setMengexportPdf(false);
     }
   };
 
@@ -362,7 +442,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
             </span>
           </div>
 
-          {/* Tab switcher: Edit Quota <-> Preview Per Ruangan */}
+          {/* Tab switcher: Pembagian Ruangan <-> Preview Per Ruangan */}
           <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setTabAktif("edit")}
@@ -372,7 +452,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
-              <Table2 size={15} /> Edit Quota
+              <Table2 size={15} /> Pembagian Ruangan
             </button>
             <button
               onClick={() => setTabAktif("preview")}
@@ -383,6 +463,16 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
               }`}
             >
               <Eye size={15} /> Preview Per Ruangan
+            </button>
+            <button
+              onClick={() => setTabAktif("export")}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                tabAktif === "export"
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
+            >
+              <FileSpreadsheet size={15} /> Export Daftar Peserta
             </button>
           </div>
 
@@ -519,9 +609,6 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
               {(() => {
                 const siswaRuanganIni =
                   hasilLive.find((h) => h.nomor_ruangan === ruanganPreviewAktif)?.siswa || [];
-                const kelasDiRuanganIni = daftarKelas.filter((kelas) =>
-                  siswaRuanganIni.some((s) => s.asal_kelas === kelas)
-                );
 
                 if (siswaRuanganIni.length === 0) {
                   return (
@@ -529,47 +616,148 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
                   );
                 }
 
+                // Urut pakai no_kursi (= no_peserta yang disimpan ke DB) --
+                // sama persis dengan urutan di daftarPesertaExcelExport.js,
+                // biar preview ini benar-benar cerminan hasil Excel-nya.
+                const siswaTerurut = [...siswaRuanganIni].sort(
+                  (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
+                );
+
                 return (
                   <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                          Ruang {ruanganPreviewAktif}
+                    {/* Kop dokumen -- meniru letterhead di file Excel */}
+                    <div className="text-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        DAFTAR PESERTA {(JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian).toUpperCase()}
+                      </p>
+                      {labelTahunAjaranAktif && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          TAHUN AJARAN {labelTahunAjaranAktif}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian}
-                        </p>
-                      </div>
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                        {siswaRuanganIni.length} siswa
-                      </span>
+                      )}
+                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5">
+                        RUANG {String(ruanganPreviewAktif).padStart(2, "0")}
+                      </p>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                      {kelasDiRuanganIni.map((kelas) => {
-                        const siswaKelasIni = siswaRuanganIni.filter((s) => s.asal_kelas === kelas);
-                        return (
-                          <div key={kelas}>
-                            <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">
-                              Kelas {kelas}
-                            </p>
-                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1.5">
-                              {siswaKelasIni.length} orang
-                            </p>
-                            <ol className="text-xs text-gray-700 dark:text-gray-300 list-decimal list-inside space-y-0.5">
-                              {siswaKelasIni.map((s) => (
-                                <li key={s.id} className="truncate">
-                                  {s.nama}
-                                </li>
-                              ))}
-                            </ol>
-                          </div>
-                        );
-                      })}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-gray-200 dark:border-gray-700">
+                            <th className="py-1.5 pr-3 w-10 text-left font-semibold text-gray-600 dark:text-gray-300">
+                              No
+                            </th>
+                            <th className="py-1.5 pr-3 text-left font-semibold text-gray-600 dark:text-gray-300">
+                              Nama Peserta
+                            </th>
+                            <th className="py-1.5 pr-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                              No. Peserta
+                            </th>
+                            <th className="py-1.5 text-center font-semibold text-gray-600 dark:text-gray-300">
+                              NIS
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {siswaTerurut.map((s, idx) => (
+                            <tr
+                              key={s.id}
+                              className="border-b border-gray-50 dark:border-gray-800/60"
+                            >
+                              <td className="py-1.5 pr-3 text-gray-700 dark:text-gray-300">
+                                {idx + 1}
+                              </td>
+                              <td className="py-1.5 pr-3 text-gray-800 dark:text-gray-100 truncate">
+                                {s.nama || "-"}
+                              </td>
+                              <td className="py-1.5 pr-3 text-center text-gray-700 dark:text-gray-300">
+                                {petaNoPeserta.get(String(s.id)) || "-"}
+                              </td>
+                              <td className="py-1.5 text-center text-gray-700 dark:text-gray-300">
+                                {s.nis || "-"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
+
+                    <p className="text-right text-[11px] text-gray-500 dark:text-gray-400 mt-3">
+                      {siswaRuanganIni.length} siswa
+                    </p>
                   </div>
                 );
               })()}
+            </div>
+          )}
+
+          {tabAktif === "export" && (
+            <div className="mb-5">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                Export daftar peserta ke Excel — buat ditempel di pintu ruangan & pegangan pengawas.
+                Isinya mengikuti pembagian yang sedang tampil di layar, termasuk perubahan quota
+                yang belum disimpan.
+              </p>
+
+              <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-4">
+                <div className="flex-1 sm:max-w-xs">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Ruangan
+                  </label>
+                  <select
+                    value={ruanganExport}
+                    onChange={(e) => setRuanganExport(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                  >
+                    <option value="semua">Semua Ruangan (1 file, 1 sheet per ruangan)</option>
+                    {quotaPerRuangan.map((r) => (
+                      <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
+                        Ruang {String(r.nomor_ruangan).padStart(2, "0")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleExportExcel}
+                  disabled={mengexport || hasilLive.length === 0}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                >
+                  {mengexport ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <FileSpreadsheet size={16} />
+                  )}
+                  {mengexport ? "Menyiapkan file..." : "Download Excel"}
+                </button>
+
+                <button
+                  onClick={handleExportPdf}
+                  disabled={mengexportPdf || hasilLive.length === 0}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                >
+                  {mengexportPdf ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <FileText size={16} />
+                  )}
+                  {mengexportPdf ? "Menyiapkan file..." : "Download PDF"}
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 mb-4">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                  Isi file
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Kop SMP Muslimin Cililin, judul{" "}
+                  <span className="font-medium">
+                    Daftar Peserta {JENIS_UJIAN_LABEL[jenisUjian]?.split(" - ")[1] || jenisUjian}
+                  </span>
+                  , Tahun Ajaran {labelTahunAjaranAktif || "-"}, nomor ruangan, lalu tabel: No, Nama
+                  Peserta, No. Peserta, NIS.
+                </p>
+              </div>
             </div>
           )}
 

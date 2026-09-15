@@ -6,7 +6,7 @@
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
 // Skema final 4 kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
-// 1. Pembagian Ruangan (aktif)
+// 1. Peserta & Pembagian Ruangan (aktif)
 // 2. Jadwal & Pengawas (aktif) -- sekarang punya 3 tab di dalamnya:
 //    Jadwal Sesi, Daftar Pengawas, dan Jadwal Ngawas. "Daftar Pengawas"
 //    dulu kartu sendiri, sekarang di-embed di sini (lihat JadwalPengawasTab.js).
@@ -37,8 +37,9 @@ const JENIS_UJIAN_LABEL = {
 const SUB_FITUR = [
   {
     id: "pembagian-ruangan",
-    title: "Pembagian Ruangan",
-    description: "Bagi siswa ke ruangan ujian otomatis berdasarkan kelas & huruf",
+    title: "Peserta & Pembagian Ruangan",
+    description:
+      "Kelola daftar peserta & bagi siswa ke ruangan ujian otomatis berdasarkan kelas & huruf",
     icon: DoorOpen,
     status: "done",
     clickable: true,
@@ -144,8 +145,8 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
             Modul dalam pengembangan
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
-            Sub-fitur akan diaktifkan satu per satu. Pembagian Ruangan, Jadwal & Pengawas, dan Kartu
-            Ujian sudah bisa dipakai.
+            Sub-fitur akan diaktifkan satu per satu. Peserta & Pembagian Ruangan, Jadwal & Pengawas,
+            dan Kartu Ujian sudah bisa dipakai.
           </p>
         </div>
       </div>

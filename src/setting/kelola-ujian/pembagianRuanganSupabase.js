@@ -1,5 +1,6 @@
 import { bagiRuangan } from "./bagiRuangan";
 import { getAllAcademicYears } from "../../services/academicYearService";
+import { bangunPetaNoPeserta } from "./noPeserta";
 
 /**
  * Konfigurasi per jenis ujian: jenjang (grade) mana yang ikut, dan
@@ -118,13 +119,28 @@ async function prosesPembagianRuangan(supabase, academicYearId, jenisUjian, kapa
  * Idempotent: kalau ujian ini sudah pernah diproses sebelumnya, data lama
  * dihapus dulu baru diganti yang baru -- supaya "Proses Ulang" aman
  * dipakai kalau ada siswa baru/pindah kelas.
+ *
+ * no_peserta yang ditulis ke DB formatnya "26-27-001" (kode tahun ajaran +
+ * nomor urut GLOBAL lintas ruangan, lihat noPeserta.js) -- BUKAN lagi angka
+ * lokal per-ruangan. Ini yang dibaca langsung sama Kartu Ujian
+ * (kartuUjianSupabase.js) buat nyetak "No. Peserta", jadi begitu disimpan
+ * di sini, Kartu Ujian otomatis ikut benar tanpa perlu diubah.
+ *
+ * @param {string} tahunAjaran - label tahun ajaran, mis. "2026/2027" -- dipakai
+ *   buat bikin prefix kode. WAJIB dikirim; kalau kosong, no_peserta jadi
+ *   angka urut polos tanpa prefix (fallback, jangan sengaja diandalkan).
  */
-async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan) {
+async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan, tahunAjaran) {
   const { error: errDelete } = await supabase
     .from("peserta_ujian")
     .delete()
     .eq("ujian_id", ujianId);
   if (errDelete) throw errDelete;
+
+  // Dihitung dari SELURUH hasilRuangan yang dikirim (bukan per-ruangan) --
+  // itu yang bikin no_peserta ruangan ke-2 lanjut dari ruangan ke-1, bukan
+  // balik ke 001.
+  const petaNoPeserta = bangunPetaNoPeserta(hasilRuangan, tahunAjaran);
 
   const rows = [];
   for (const ruangan of hasilRuangan) {
@@ -133,7 +149,7 @@ async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan) {
         ujian_id: ujianId,
         siswa_id: s.id,
         nomor_ruangan: ruangan.nomor_ruangan,
-        no_peserta: s.no_kursi,
+        no_peserta: petaNoPeserta.get(String(s.id)) || String(s.no_kursi).padStart(3, "0"),
         asal_kelas: s.asal_kelas,
       });
     }
@@ -173,6 +189,13 @@ async function cariUjian(supabase, jenis, academicYearId) {
  * ulang state UI (hasilAsli) tanpa perlu generate ulang dari tabel
  * students. Ini yang bikin data tersimpan tetap muncul lagi walau
  * admin pindah tab terus balik lagi.
+ *
+ * CATATAN soal no_kursi di sini: nilainya diisi dari kolom no_peserta di DB
+ * apa adanya, yang sejak migrasi format-no-peserta ISINYA STRING KODE
+ * ("26-27-041"), bukan angka urut lokal lagi. Nggak masalah -- field ini di
+ * hilir cuma dipakai buat nyortir & langsung DITIMPA ULANG jadi angka
+ * urut lokal begitu lewat terapkanQuotaManual() (lihat bagiRuangan.js), jadi
+ * nggak ada kode lain yang bergantung ke nilai aslinya.
  *
  * @returns {Promise<Array>} array kosong kalau belum ada apa-apa tersimpan
  */

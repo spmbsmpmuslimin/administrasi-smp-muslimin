@@ -31,7 +31,7 @@
 //   begitu ada guru baru ditambah/dihapus di sini).
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, Loader2, Save, Plus, Trash2, ListOrdered } from "lucide-react";
+import { ChevronLeft, Loader2, Save, Plus, Trash2, ListOrdered, RotateCcw } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import {
   ambilDaftarPengawasKode,
@@ -57,6 +57,7 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
   const [menambah, setMenambah] = useState(false);
   const [menghapus, setMenghapus] = useState(null); // id guru yang lagi dihapus
   const [merapikan, setMerapikan] = useState(false); // lagi proses "Urutkan Ulang Kode"
+  const [mereset, setMereset] = useState(false); // lagi proses "Reset Daftar Pengawas"
 
   const muatData = useCallback(async () => {
     setLoading(true);
@@ -152,6 +153,41 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
       showToast?.("Gagal mengurutkan ulang kode: " + err.message, "error");
     } finally {
       setMerapikan(false);
+    }
+  };
+
+  // Reset Daftar Pengawas -- ngosongin kode_pengawas SEMUA guru yang lagi
+  // ada di daftar ini (bukan hapus akun guru, sama prinsipnya kayak
+  // hapusPengawasKode per baris, cuma sekaligus buat semua). Kode
+  // pengawas nempel di tabel `users` dan TIDAK terikat ke tahun ajaran
+  // tertentu, jadi ini murni tombol manual buat admin -- dipakai pas mau
+  // mulai bersih dari 01 lagi waktu ganti semester/tahun ajaran baru,
+  // bukan sesuatu yang otomatis "ketimpa" sendiri oleh sistem.
+  const handleReset = async () => {
+    if (daftarAsli.length === 0) return;
+    if (
+      !window.confirm(
+        `Reset Daftar Pengawas? Kode pengawas ${daftarAsli.length} guru di daftar ini akan dikosongkan semua (mereka balik muncul di checklist "Tambah Pengawas"). Tindakan ini tidak bisa dibatalkan.`
+      )
+    )
+      return;
+
+    setMereset(true);
+    try {
+      const perubahan = daftarAsli.map((g) => ({ id: g.id, kode_pengawas: "" }));
+      await simpanKodePengawas(supabase, perubahan);
+      showToast?.(
+        `Daftar Pengawas direset: ${perubahan.length} guru dikosongkan kodenya`,
+        "success"
+      );
+      setCalonTerpilih([]);
+      await muatData();
+      onPerubahan?.();
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal mereset Daftar Pengawas: " + err.message, "error");
+    } finally {
+      setMereset(false);
     }
   };
 
@@ -368,6 +404,15 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
             >
               <ListOrdered size={16} />
               {merapikan ? "Mengurutkan..." : "Urutkan Ulang Kode"}
+            </button>
+            <button
+              onClick={handleReset}
+              disabled={mereset || daftarAsli.length === 0}
+              title="Kosongkan kode pengawas SEMUA guru di daftar ini -- dipakai buat mulai bersih pas ganti semester/tahun ajaran baru"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-60 transition-all active:scale-95"
+            >
+              <RotateCcw size={16} />
+              {mereset ? "Mereset..." : "Reset Daftar Pengawas"}
             </button>
           </div>
         </>

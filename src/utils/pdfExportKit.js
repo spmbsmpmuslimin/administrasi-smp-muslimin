@@ -72,7 +72,8 @@ export function createPdfDocument({ orientation = "portrait" } = {}) {
  * @param {jsPDF} doc
  * @param {Object} opts
  * @param {string} opts.title        - judul laporan, misal "LAPORAN PRESENSI SISWA KELAS 7A"
- * @param {string} [opts.subtitle]   - baris tambahan di bawah judul (mis. "SEMESTER : GANJIL 2026/2027"), rata tengah juga
+ * @param {string} [opts.subtitle]   - satu baris tambahan di bawah judul (mis. "SEMESTER : GANJIL 2026/2027"), rata tengah juga
+ * @param {string[]} [opts.subtitleLines] - beberapa baris tambahan di bawah judul, tiap elemen = 1 baris, rata tengah, font sama besar dengan `subtitle`. Kalau diisi, ini yang dipakai (bukan `subtitle`) -- buat kasus yang butuh 2+ baris info (mis. "TAHUN AJARAN ..." lalu "RUANG 01") tanpa digabung jadi 1 baris panjang.
  * @param {string[]} [opts.metaLines] - baris info kiri (bukan center), 1 string = 1 baris. Buat info sekunder kayak tanggal export.
  * @param {number} [opts.startY=18]
  * @param {boolean} [opts.withDivider=true] - garis horizontal pemisah di bawah letterhead
@@ -80,7 +81,7 @@ export function createPdfDocument({ orientation = "portrait" } = {}) {
  */
 export function addLetterhead(
   doc,
-  { title, subtitle, metaLines = [], startY = 18, withDivider = true } = {},
+  { title, subtitle, subtitleLines = [], metaLines = [], startY = 18, withDivider = true } = {}
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;
@@ -100,7 +101,17 @@ export function addLetterhead(
     y += 6;
   }
 
-  if (subtitle) {
+  // subtitleLines (array) menang kalau diisi -- tiap baris dicetak
+  // terpisah, font & size SAMA PERSIS kayak subtitle tunggal di bawah,
+  // jadi nggak ada baris yang keliatan "lebih besar" cuma karena beda cara render.
+  if (subtitleLines.length > 0) {
+    doc.setFont(PDF_FONT_FAMILY, "normal");
+    doc.setFontSize(10.5);
+    subtitleLines.forEach((line) => {
+      doc.text(line, pageWidth / 2, y, { align: "center" });
+      y += 5.5;
+    });
+  } else if (subtitle) {
     doc.setFont(PDF_FONT_FAMILY, "normal");
     doc.setFontSize(10.5);
     doc.text(subtitle, pageWidth / 2, y, { align: "center" });
@@ -171,7 +182,7 @@ export function tableTheme(
     fontSize = 9,
     margin = { left: 15, right: 15 },
     styles = {},
-  } = {},
+  } = {}
 ) {
   return {
     startY,

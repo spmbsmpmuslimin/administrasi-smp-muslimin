@@ -50,11 +50,21 @@ export const STANDARD_CELL_BORDER = {
  * @param {Object} opts
  * @param {string} opts.title       - judul laporan, misal "DATA CALON SISWA BARU"
  * @param {number} opts.mergeCols   - jumlah kolom tabel (buat merge cell judul biar center penuh)
- * @param {string[]} [opts.metaLines] - baris info tambahan (tahun ajaran, total data, dst), 1 string = 1 baris
+ * @param {string[]} [opts.subtitleLines] - baris yang masih BAGIAN DARI KOP:
+ *   center, bold, merge selebar tabel, persis di bawah judul & TANPA baris
+ *   kosong pemisah. Buat info yang statusnya "identitas dokumen", bukan
+ *   sekadar catatan -- mis. "TAHUN AJARAN 2026/2027" dan "RUANG 01" di
+ *   daftar peserta ujian. Bedanya sama metaLines: yang ini keliatan kayak
+ *   bagian kop resmi, metaLines keliatan kayak keterangan kecil.
+ * @param {string[]} [opts.metaLines] - baris info tambahan (tanggal cetak, total data, dst),
+ *   rata kiri, kecil & italic abu-abu, dipisah baris kosong dari kop. 1 string = 1 baris
  * @param {number} [opts.startRow=1]
  * @returns {number} baris kosong berikutnya, siap dipakai buat header tabel
  */
-export function addLetterhead(worksheet, { title, mergeCols, metaLines = [], startRow = 1 }) {
+export function addLetterhead(
+  worksheet,
+  { title, mergeCols, subtitleLines = [], metaLines = [], startRow = 1 }
+) {
   let row = startRow;
   const lastCol = String.fromCharCode(64 + Math.min(Math.max(mergeCols, 1), 26));
 
@@ -80,6 +90,17 @@ export function addLetterhead(worksheet, { title, mergeCols, metaLines = [], sta
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
     row++;
   }
+
+  // Nempel langsung di bawah judul (nggak ada baris kosong di antaranya)
+  // supaya kebaca sebagai satu blok kop yang utuh.
+  subtitleLines.forEach((line) => {
+    const cell = worksheet.getCell(`A${row}`);
+    worksheet.mergeCells(`A${row}:${lastCol}${row}`);
+    cell.value = line;
+    cell.font = { name: EXCEL_FONT_FAMILY, bold: true, size: 11 };
+    cell.alignment = { horizontal: "center", vertical: "middle" };
+    row++;
+  });
 
   row++; // baris kosong pemisah
 

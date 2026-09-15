@@ -109,18 +109,21 @@ function gambarSatuKartu(
     cy = tulisLabelValue(doc, { ...labelOpts, y: cy }, label, value) + 1.2;
   });
 
-  // ---- Tanda tangan kepala sekolah -- pojok kanan-BAWAH kartu (bukan
-  // sejajar identitas), anchor dari batas bawah kartu supaya posisinya
-  // konsisten walau jumlah baris identitas di atas beda-beda.
-  const ry0 = y + height - padding - 9;
+  // ---- Tanda tangan kepala sekolah -- kolom kanan kartu, teks rata KIRI
+  // mulai dari sigX (bukan rata kanan nempel innerRight, supaya nggak
+  // mepet ke tepi kanan). Angka offset (36mm dari innerRight, 13mm dari
+  // batas bawah) hasil ubahan manual -- kalau kartu lain butuh geser
+  // lagi, ini yang diubah.
+  const sigX = innerRight - 36;
+  const ry0 = y + height - padding - 13;
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(6.3);
-  doc.text(`${kepsek.tempat}, ${tanggalCetak}`, innerRight, ry0, { align: "right" });
-  doc.text("Kepala Sekolah", innerRight, ry0 + 3.2, { align: "right" });
+  doc.text(`${kepsek.tempat}, ${tanggalCetak}`, sigX, ry0);
+  doc.text("Kepala Sekolah", sigX, ry0 + 3.2);
 
   doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setFontSize(6.5);
-  doc.text(kepsek.nama, innerRight, ry0 + 3.2 + 8, { align: "right" });
+  doc.text(kepsek.nama, sigX, ry0 + 3.2 + 8);
   doc.setFont(PDF_FONT_FAMILY, "normal");
 }
 
@@ -276,14 +279,16 @@ function gambarSatuKartuPengawas(
     cy += tinggiBaris;
   });
 
-  // ---- Tanda tangan kepala sekolah (pojok kanan bawah kartu) ----
-  const ry0 = y + height - padding - 9;
+  // ---- Tanda tangan kepala sekolah (kolom kanan kartu, rata kiri -- lihat
+  // alasan & angka offset di gambarSatuKartu()) ----
+  const sigX = innerRight - 36;
+  const ry0 = y + height - padding - 13;
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(6.5);
-  doc.text(`${kepsek.tempat}, ${tanggalCetak}`, innerRight, ry0, { align: "right" });
-  doc.text("Kepala Sekolah", innerRight, ry0 + 3.2, { align: "right" });
+  doc.text(`${kepsek.tempat}, ${tanggalCetak}`, sigX, ry0);
+  doc.text("Kepala Sekolah", sigX, ry0 + 3.2);
   doc.setFont(PDF_FONT_FAMILY, "bold");
-  doc.text(kepsek.nama, innerRight, ry0 + 3.2 + 8, { align: "right" });
+  doc.text(kepsek.nama, sigX, ry0 + 3.2 + 8);
 }
 
 /**

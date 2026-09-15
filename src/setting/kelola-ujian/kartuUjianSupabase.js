@@ -72,24 +72,31 @@ async function ambilJadwalPengawasPerGuru(supabase, ujianId) {
 
 /**
  * Ambil nama kepala sekolah untuk dicantumkan di kolom tanda tangan kartu.
- * SENGAJA pakai ulang tabel raport_metadata yang sudah ada (dikelola di
- * e-raport/RaportConfig.js) -- 1 sumber data untuk semua dokumen cetak
- * resmi, biar kalau nama kepsek di-update di situ, kartu ujian ikut
- * kebawa otomatis tanpa perlu input dobel.
+ *
+ * SEBELUMNYA baca dari raport_metadata (nama_kepala_sekolah) -- tapi tabel
+ * itu TERNYATA KOSONG (0 baris) di database ini, makanya nama kepsek
+ * selalu blank di kartu. Sekarang baca dari school_settings (key-value),
+ * key "principal_name" -- sumber yang sama dipakai fitur Setting > Profil
+ * Sekolah, dan sudah keisi.
+ *
+ * `tempat` belum ada key setting-nya sendiri (nggak ada "school_city" atau
+ * semacamnya) -- di-hardcode "Cililin", samain sama nama sekolah (SMP
+ * MUSLIMIN CILILIN). Kalau nanti ada key resmi buat ini, tinggal ganti
+ * baris return-nya.
+ * @returns {Promise<{nama: string, tempat: string}>}
  */
-async function ambilMetadataKepsek(supabase, academicYearId, semester) {
+async function ambilMetadataKepsek(supabase) {
   const { data, error } = await supabase
-    .from("raport_metadata")
-    .select("nama_kepala_sekolah, tempat")
-    .eq("academic_year_id", academicYearId)
-    .eq("semester", semester)
+    .from("school_settings")
+    .select("setting_value")
+    .eq("setting_key", "principal_name")
     .maybeSingle();
 
   if (error) throw error;
 
   return {
-    nama: data?.nama_kepala_sekolah || "-",
-    tempat: data?.tempat || "Cililin",
+    nama: data?.setting_value || "-",
+    tempat: "Cililin",
   };
 }
 
