@@ -6,7 +6,7 @@
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
 // Skema kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
-// 1. Peserta & Pembagian Ruangan (aktif)
+// 1. Peserta & Pembagian Ruangan (Aktif)
 // 2. Jadwal & Pengawas (aktif) -- sekarang punya 3 tab di dalamnya:
 //    Jadwal Sesi, Daftar Pengawas, dan Jadwal Ngawas. "Daftar Pengawas"
 //    dulu Kartu sendiri, sekarang di-embed di sini (lihat JadwalPengawasTab.js).
