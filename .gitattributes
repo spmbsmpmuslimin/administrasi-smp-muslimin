@@ -1,0 +1,14 @@
+# Seragamkan line ending semua file text jadi LF di dalam repo,
+# supaya Git nggak perlu konversi bolak-balik CRLF<->LF pas commit/pull
+# (itu sumber warning "LF will be replaced by CRLF..." kemarin).
+* text=auto eol=lf
+
+# File biner jangan disentuh sama sekali (jaga-jaga kalau ada gambar/font/pdf dsb)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
