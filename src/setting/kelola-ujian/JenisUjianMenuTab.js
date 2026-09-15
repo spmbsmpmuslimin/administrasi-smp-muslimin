@@ -19,6 +19,10 @@
 //    per pos (ATK, konsumsi, honor pengawas, dst), lihat AnggaranBiayaTab.js.
 // 7. Petunjuk & Penggunaan Aplikasi (aktif) -- panduan statis langkah demi
 //    langkah tiap sub-fitur, lihat PetunjukPenggunaanTab.js.
+// 8. Laporan Rekap Akhir (aktif) -- kumpulan rekap dari sub-fitur lain
+//    (peserta, pengawas, anggaran) + input manual kehadiran & catatan
+//    evaluasi, bahan Laporan Pelaksanaan Ujian. Lihat LaporanRekapAkhirTab.js
+//    & laporanRekapAkhirSupabase.js. Item "Export PDF" masih placeholder.
 
 import React, { useState } from "react";
 import {
@@ -28,6 +32,7 @@ import {
   IdCard,
   CalendarClock,
   FileBarChart2,
+  ClipboardCheck,
   Wallet,
   BookOpen,
   Construction,
@@ -38,6 +43,7 @@ import KartuUjianTab from "./KartuUjianTab";
 import PresensiBeritaAcaraTab from "./PresensiBeritaAcaraTab";
 import AnggaranBiayaTab from "./AnggaranBiayaTab";
 import PetunjukPenggunaanTab from "./PetunjukPenggunaanTab";
+import LaporanRekapAkhirTab from "./LaporanRekapAkhirTab";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -101,6 +107,15 @@ const SUB_FITUR = [
     title: "Petunjuk & Penggunaan Aplikasi",
     description: "Panduan langkah demi langkah cara memakai tiap sub-fitur Manajemen Ujian",
     icon: BookOpen,
+    status: "done",
+    clickable: true,
+  },
+  {
+    id: "laporan-rekap-akhir",
+    title: "Laporan Rekap Akhir",
+    description:
+      "Rekap peserta, kehadiran, pengawas, anggaran, & catatan evaluasi -- bahan Laporan Pelaksanaan Ujian",
+    icon: ClipboardCheck,
     status: "done",
     clickable: true,
   },
@@ -174,6 +189,16 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     return <PetunjukPenggunaanTab showToast={showToast} onBack={() => setActiveSubFitur(null)} />;
   }
 
+  if (activeSubFitur === "laporan-rekap-akhir") {
+    return (
+      <LaporanRekapAkhirTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6">
       <button
@@ -197,8 +222,8 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
             Sub-fitur akan diaktifkan satu per satu. Peserta & Pembagian Ruangan, Jadwal & Pengawas,
-            Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, dan Petunjuk & Penggunaan
-            Aplikasi sudah bisa dipakai.
+            Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, Petunjuk & Penggunaan
+            Aplikasi, dan Laporan Rekap Akhir sudah bisa dipakai.
           </p>
         </div>
       </div>
