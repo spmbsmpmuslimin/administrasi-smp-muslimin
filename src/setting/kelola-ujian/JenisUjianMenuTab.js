@@ -9,7 +9,7 @@
 // 1. Peserta & Pembagian Ruangan (aktif)
 // 2. Jadwal & Pengawas (aktif) -- sekarang punya 3 tab di dalamnya:
 //    Jadwal Sesi, Daftar Pengawas, dan Jadwal Ngawas. "Daftar Pengawas"
-//    dulu kartu sendiri, sekarang di-embed di sini (lihat JadwalPengawasTab.js).
+//    dulu Kartu sendiri, sekarang di-embed di sini (lihat JadwalPengawasTab.js).
 // 3. Kartu Ujian (aktif)
 // 4. Presensi & Berita Acara (aktif) -- bagian "Laporan" (rekap akhir)
 //    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
@@ -222,8 +222,8 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
             Sub-fitur akan diaktifkan satu per satu. Peserta & Pembagian Ruangan, Jadwal & Pengawas,
-            Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, Petunjuk & Penggunaan
-            Aplikasi, dan Laporan Rekap Akhir sudah bisa dipakai.
+            Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, Petunjuk & Penggunaan Aplikasi,
+            dan Laporan Rekap Akhir sudah bisa dipakai.
           </p>
         </div>
       </div>
