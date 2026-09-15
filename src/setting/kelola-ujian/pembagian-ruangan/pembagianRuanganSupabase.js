@@ -33,17 +33,41 @@ async function ambilDaftarTahunAjaran() {
  * Ambil semua siswa aktif untuk 1 tahun ajaran, dikelompokkan per class_id
  * (class_id formatnya udah "7A", "8B", dst — sama seperti key yang dipakai bagiRuangan)
  *
+ * ⚠️ PENTING (Sept 2026): filter di sini SENGAJA pakai kolom `academic_year`
+ * (teks, mis. "2026/2027") di tabel students, BUKAN `academic_year_id`.
+ * `academicYearId` yang diterima function ini adalah ID baris SEMESTER
+ * TERTENTU (mis. baris "2026/2027 Semester 2" khusus buat PSAT/PSAJ),
+ * sedangkan `students.academic_year_id` cuma nunjuk ke SATU semester yang
+ * lagi aktif sekarang (ikut disinkron tiap toggle semester, lihat
+ * setActiveAcademicYear() di academicYearService.js). Kalau match langsung
+ * ke academicYearId, PSAT baru ketemu siswanya pas semester aktif KEBETULAN
+ * lagi semester 2 — nggak bisa dipreview dari semester 1 padahal siswa kelas
+ * 7/8-nya sama aja. Semester itu atribut jenis ujian, bukan kriteria siswa —
+ * makanya di sini kita samain dulu academicYearId -> label tahun ajarannya,
+ * baru filter siswa pakai label itu.
+ *
  * @param {object} supabase - instance supabase client
- * @param {string} academicYearId - academic_year_id yang aktif (uuid)
+ * @param {string} academicYearId - id baris academic_years (semester tertentu)
+ *   yang dipilih admin di dropdown; dipakai buat nentuin TAHUN AJARANNYA, bukan
+ *   buat match langsung ke academic_year_id siswa.
  * @param {string[]|null} allowedGrades - jenjang yang boleh ikut, misal ["7","8"].
  *   Kalau null, semua jenjang diambil (dipakai buat PSAS).
  * @returns {Promise<object>} dataSiswaPerKelas siap dipakai bagiRuangan()
  */
 async function ambilSiswaPerKelas(supabase, academicYearId, allowedGrades = null) {
+  // Samain academicYearId (ID semester spesifik) -> label tahun ajaran (teks).
+  const { data: tahunAjaran, error: errTahun } = await supabase
+    .from("academic_years")
+    .select("year")
+    .eq("id", academicYearId)
+    .single();
+
+  if (errTahun) throw errTahun;
+
   const { data: siswa, error } = await supabase
     .from("students")
     .select("id, full_name, nis, nisn, class_id, gender")
-    .eq("academic_year_id", academicYearId)
+    .eq("academic_year", tahunAjaran.year) // <- diganti dari academic_year_id
     .eq("is_active", true)
     .order("full_name", { ascending: true }); // urutan dalam 1 kelas: alfabetis nama
 
@@ -102,7 +126,11 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40)
  * -> bagi ruangan -> return preview (belum disimpan ke DB)
  *
  * @param {object} supabase - instance supabase client
- * @param {string} academicYearId - academic_year_id yang dipakai untuk filter siswa
+ * @param {string} academicYearId - id baris academic_years (semester tertentu, mis.
+ *   "2026/2027 Semester 2" buat PSAT) yang dipilih admin di dropdown. Cuma
+ *   dipakai buat nentuin TAHUN AJARANNYA (lihat catatan di ambilSiswaPerKelas)
+ *   dan buat scope record `ujian` -- bukan buat match langsung ke
+ *   academic_year_id siswa.
  * @param {string} jenisUjian - "PSAS" | "PSAT" | "PSAJ", nentuin jenjang mana yang ikut
  * @param {number} kapasitas - kapasitas per ruangan (default 40)
  * @returns {Promise<Array>} hasil pembagian ruangan (untuk ditampilkan / preview di UI dulu sebelum disimpan)

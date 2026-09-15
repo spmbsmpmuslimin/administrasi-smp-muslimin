@@ -368,13 +368,22 @@ export const setActiveAcademicYear = async (semesterId) => {
     // (executeYearTransition) - JANGAN disentuh dari sini, biar nggak ada dua
     // tempat yang sama-sama mikir dirinya "yang nentuin" academic_year_id.
     //
-    // ⚠️ CATATAN BUAT teacher_assignments: sync ini UPDATE-in-place (bukan
-    // duplikat baris), karena penugasan guru di sekolah ini tetap sama
-    // sepanjang tahun ajaran (dikonfirmasi manual, bukan per-semester).
-    // Kalau SemesterManagement.js (STEP 4 di handleSemesterSwitch) MASIH
-    // punya logic copy/insert manual buat teacher_assignments, itu HARUS
-    // dihapus/disederhanain - kalau nggak, assignment bakal kegandain
-    // (satu dari copy manual, satu lagi dari sync otomatis di bawah ini).
+    // ⚠️ classes & students vs teacher_assignments DIBEDAIN SENGAJA (Sept 2026):
+    // - classes & students: UPDATE in-place. Dua tabel ini murni "status
+    //   sekarang" - nggak ada satupun modul lain (sudah diaudit) yang butuh
+    //   versi historisnya per semester, jadi aman dipindah maju begitu aja.
+    // - teacher_assignments: di-COPY (baris lama TETAP DIBIARIN, baris baru
+    //   dibikin buat semester baru), BUKAN dipindah. Alasannya: banyak layar
+    //   (Grades.js input nilai, TeacherAssignmentTab.js, CekStatusNilai.js,
+    //   AttendanceMain.js presensi) punya mode "lihat semester lalu" yang
+    //   nyari teacher_assignments PAKAI ID SEMESTER SPESIFIK, bukan cuma yang
+    //   aktif. Kalau di-update in-place, begitu ada guru yang assignment-nya
+    //   beneran berubah/keluar di semester baru, jejak "dia ngajar apa pas
+    //   semester lalu" ikut hilang dari 4 layar itu (nilai/presensi aslinya
+    //   sendiri tetap aman, cuma "pintu masuk" ke situ yang keputus).
+    //   Copy bikin teacher_assignments berperilaku kayak grades/attendances
+    //   (histori per semester), bukan kayak students/classes (status
+    //   sekarang doang) - sesuai sifat datanya yang emang beda.
     const syncResults = [];
     const isSameYearToggle =
       currentActive?.year === data.year &&
@@ -382,13 +391,13 @@ export const setActiveAcademicYear = async (semesterId) => {
       currentActive.activeSemesterId !== semesterId;
 
     if (isSameYearToggle) {
-      const tablesToSync = [
+      // --- classes & students: UPDATE in-place ---
+      const updateInPlaceTables = [
         { table: "classes", label: "Kelas" },
         { table: "students", label: "Data Siswa" },
-        { table: "teacher_assignments", label: "Penugasan Guru" },
       ];
 
-      for (const { table, label } of tablesToSync) {
+      for (const { table, label } of updateInPlaceTables) {
         const { data: updatedRows, error: syncError } = await supabase
           .from(table)
           .update({ academic_year_id: semesterId, academic_year: data.year })
@@ -407,6 +416,67 @@ export const setActiveAcademicYear = async (semesterId) => {
           );
           syncResults.push({ table, label, success: true, rowsUpdated: updatedRows?.length || 0 });
         }
+      }
+
+      // --- teacher_assignments: COPY, bukan update in-place ---
+      try {
+        // Idempotent guard: hapus dulu row yang KEBETULAN udah nyangkut di
+        // semester target (misal semester ini sempat diaktifkan lalu
+        // dinonaktifkan lagi sebelumnya), biar re-toggle nggak numpuk
+        // duplikat. Yang dihapus cuma row DI semester target, row semester
+        // lama (sumber copy) sama sekali nggak disentuh.
+        const { error: cleanupError } = await supabase
+          .from("teacher_assignments")
+          .delete()
+          .eq("academic_year_id", semesterId);
+
+        if (cleanupError) throw cleanupError;
+
+        const { data: sourceAssignments, error: fetchError } = await supabase
+          .from("teacher_assignments")
+          .select("teacher_id, subject, class_id")
+          .eq("academic_year_id", currentActive.activeSemesterId);
+
+        if (fetchError) throw fetchError;
+
+        if (sourceAssignments && sourceAssignments.length > 0) {
+          const copies = sourceAssignments.map((a) => ({
+            teacher_id: a.teacher_id,
+            subject: a.subject,
+            class_id: a.class_id,
+            academic_year_id: semesterId,
+            academic_year: data.year,
+            semester: data.semester,
+          }));
+
+          const { error: insertError } = await supabase.from("teacher_assignments").insert(copies);
+          if (insertError) throw insertError;
+
+          console.log(
+            `✅ Sync Penugasan Guru: ${copies.length} baris di-copy ke semester baru (riwayat semester lama tetap utuh)`
+          );
+          syncResults.push({
+            table: "teacher_assignments",
+            label: "Penugasan Guru",
+            success: true,
+            rowsUpdated: copies.length,
+          });
+        } else {
+          syncResults.push({
+            table: "teacher_assignments",
+            label: "Penugasan Guru",
+            success: true,
+            rowsUpdated: 0,
+          });
+        }
+      } catch (syncError) {
+        console.error(`🚨 Gagal sync academic_year_id di teacher_assignments:`, syncError);
+        syncResults.push({
+          table: "teacher_assignments",
+          label: "Penugasan Guru",
+          success: false,
+          error: syncError.message,
+        });
       }
     }
 
