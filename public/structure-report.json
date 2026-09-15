@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-15T12:19:22.261Z",
-  "executionTimeMs": 350,
+  "generatedAt": "2026-09-15T13:21:48.116Z",
+  "executionTimeMs": 283,
   "tree": {
     "name": "src",
     "path": "src",
@@ -6363,7 +6363,7 @@
             "file": {
               "path": "src/system/coverageMap.js",
               "type": "system",
-              "lines": 181,
+              "lines": 294,
               "functions": [],
               "imports": [],
               "importedBy": [
@@ -12388,7 +12388,7 @@
     "src/system/coverageMap.js": {
       "path": "src/system/coverageMap.js",
       "type": "system",
-      "lines": 181,
+      "lines": 294,
       "functions": [],
       "imports": [],
       "importedBy": [
